@@ -58,6 +58,13 @@ export const CommunicationStats = ({ entityType, entityId }: CommunicationStatsP
         .eq('store_id', entityId)
         .order('created_at', { ascending: false });
 
+      // Fetch canonical communication logs (SMS, calls, email — all writers land here)
+      const { data: logs } = await supabase
+        .from('communication_logs')
+        .select('id, channel, direction, outcome, event_type, summary, message_content, created_at')
+        .eq('store_id', entityId)
+        .order('created_at', { ascending: false });
+
       // Fetch visit logs (in-person visits)
       const { data: visits } = await supabase
         .from('visit_logs')
