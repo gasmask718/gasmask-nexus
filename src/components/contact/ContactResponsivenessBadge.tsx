@@ -93,6 +93,12 @@ export function ContactResponsivenessBadge({
   const tooltipContent = (
     <div className="space-y-2 text-xs">
       <div className="font-semibold border-b pb-1 mb-2">Communication Summary</div>
+      {badNumber && (
+        <div className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-600">
+          {config.label} — excluded from all retry / follow-up / auto-outreach queues. Needs a new number.
+        </div>
+      )}
+
       
       <div className="flex items-center gap-2">
         <Phone className="h-3 w-3" />
