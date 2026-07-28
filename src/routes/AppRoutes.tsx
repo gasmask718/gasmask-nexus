@@ -53,7 +53,6 @@ const BikerLogin = lazy(() => import('@/pages/portal/BikerLogin'));
 const InviteSignup = lazy(() => import('@/pages/auth/InviteSignup'));
 const PublicIntakePage = lazy(() => import('@/pages/auth/PublicIntakePage'));
 const StoreSignupPage = lazy(() => import('@/pages/auth/StoreSignupPage'));
-const UserInvitations = lazy(() => import('@/pages/security/UserInvitations'));
 const InviteLanding = lazy(() => import('@/pages/portal/InviteLanding'));
 const InstallPwa = lazy(() => import('@/pages/InstallPwa'));
 const DeveloperPortal = lazy(() => import('@/pages/developer/DeveloperPortal'));
@@ -182,7 +181,6 @@ const ProductionPipelinePage = lazy(() => import('@/pages/brandaro/ProductionPip
 const ClientPortalPage = lazy(() => import('@/pages/brandaro/ClientPortalPage'));
 const CanvaAssetsPage = lazy(() => import('@/pages/brandaro/CanvaAssetsPage'));
 const CanvaTemplatesPage = lazy(() => import('@/pages/brandaro/CanvaTemplatesPage'));
-const AmbassadorInviteGovernance = lazy(() => import('@/pages/admin/AmbassadorInviteGovernance'));
 
 // Profile pages
 const AmbassadorProfilePage = lazy(() => import('@/pages/profile').then(m => ({ default: m.AmbassadorProfilePage })));
