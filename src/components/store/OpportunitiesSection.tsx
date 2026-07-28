@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { dynastyDate } from '@/lib/dates';
 import { AddOpportunityModal } from './AddOpportunityModal';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
+import { StoreFollowUpsPanel } from './StoreFollowUpsPanel';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -139,49 +140,25 @@ export function OpportunitiesSection({ storeId, storeName }: OpportunitiesSectio
           </Button>
         </CardHeader>
         <CardContent>
-          {!opportunities || opportunities.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p className="text-base font-medium">No opportunities yet</p>
-              <p className="text-sm mt-1">Add opportunities to track potential revenue</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Pending Opportunities */}
-              {pendingOpportunities.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Circle className="h-4 w-4 text-primary" />
-                    Pending ({pendingOpportunities.length})
-                  </h4>
-                  {pendingOpportunities.map((opportunity) => (
-                    <OpportunityItem
-                      key={opportunity.id}
-                      opportunity={opportunity}
-                      onToggle={() => handleToggleCompletion(opportunity)}
-                      isToggling={toggleCompletion.isPending}
-                    />
-                  ))}
-                </div>
-              )}
+          {/* SHARED with the KPI quick-view — urgent, add-to-route, complete, add form */}
+          {storeMasterId && (
+            <StoreFollowUpsPanel storeId={storeMasterId} storeName={storeName} />
+          )}
 
-              {/* Completed Opportunities */}
-              {completedOpportunities.length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-border/30">
-                  <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                    Completed ({completedOpportunities.length})
-                  </h4>
-                  {completedOpportunities.map((opportunity) => (
-                    <OpportunityItem
-                      key={opportunity.id}
-                      opportunity={opportunity}
-                      onToggle={() => handleToggleCompletion(opportunity)}
-                      isToggling={toggleCompletion.isPending}
-                    />
-                  ))}
-                </div>
-              )}
+          {completedOpportunities.length > 0 && (
+            <div className="space-y-3 pt-4 mt-4 border-t border-border/30">
+              <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                Completed ({completedOpportunities.length})
+              </h4>
+              {completedOpportunities.map((opportunity) => (
+                <OpportunityItem
+                  key={opportunity.id}
+                  opportunity={opportunity}
+                  onToggle={() => handleToggleCompletion(opportunity)}
+                  isToggling={toggleCompletion.isPending}
+                />
+              ))}
             </div>
           )}
         </CardContent>
