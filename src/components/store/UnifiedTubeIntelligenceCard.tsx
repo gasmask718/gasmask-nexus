@@ -17,10 +17,16 @@ import { useStoreBrandRelationships } from '@/hooks/useStoreBrandRelationships';
 import {
   Package, Save, RefreshCw, Clock, Calendar, ShoppingCart, FlaskConical,
   Gift, ThumbsUp, ThumbsDown, AlertTriangle, User, MapPin, Phone, MessageSquare, Monitor,
-  Power, Repeat
+  Power, Repeat, Eye
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
-import { dynastyDate } from '@/lib/dates';
+import {
+  dynastyDate,
+  dynastyDateAbsolute,
+  dynastyDaysWithDate,
+  dynastyStamp,
+  dynastyStampWithRelative,
+} from '@/lib/dates';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
@@ -65,6 +71,7 @@ interface TubeInventoryRecord {
   brand: string;
   current_tubes_left: number;
   last_updated: string;
+  last_checked_at: string | null;
   created_by: string;
 }
 
@@ -410,6 +417,18 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
 
   const lastUpdated = getLastUpdated();
 
+  // "Last inventory check" — most recent touch of ANY inventory row for this
+  // store (canonical: store_tube_inventory.last_checked_at, DB-trigger driven),
+  // falling back to the per-brand intelligence check stamp.
+  const lastChecked = useMemo(() => {
+    const stamps = [
+      ...(inventory || []).map(i => i.last_checked_at).filter(Boolean),
+      ...intelData.map(i => i.last_inventory_check_at).filter(Boolean),
+    ] as string[];
+    if (!stamps.length) return null;
+    return stamps.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+  }, [inventory, intelData]);
+
   // ══════════════════════════════════════════════
   // RENDER GUARD — If no brand intelligence rows → show system warning
   // ══════════════════════════════════════════════
@@ -631,26 +650,54 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                     {(() => {
                       const los = getLOSForBrand(brand.id);
                       return (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                           <Calendar className="h-3 w-3" />
                           <span>
                             {t('card.tube_intel.last_order')}:{' '}
                             {los && !los.is_placeholder && los.last_order_date ? (
                               <span className="text-foreground">
-                                {dynastyDate(los.last_order_date)} · {los.last_order_size_label}
+                                {dynastyDateAbsolute(los.last_order_date)}
+                                {' · '}{los.last_order_size_label}
                                 <span className="text-muted-foreground"> · {los.days_since_last_order}d ago</span>
                               </span>
                             ) : (
                               <span className={cn(
                                 kpi?.last_order_date ? 'text-foreground' : 'text-warning font-medium'
                               )}>
-                                {kpi?.last_order_label || t('card.tube_intel.never_ordered')}
+                                {kpi?.last_order_date
+                                  ? dynastyDaysWithDate(kpi.last_order_date)
+                                  : (kpi?.last_order_label || t('card.tube_intel.never_ordered'))}
                               </span>
                             )}
                           </span>
                         </div>
                       );
                     })()}
+
+                    {/* ── Counts last updated / last inventory check (FIX 1-3) ── */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground mb-3">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Counts updated:{' '}
+                        <span className="text-foreground font-medium">
+                          {originalItem?.last_updated
+                            ? dynastyStampWithRelative(originalItem.last_updated)
+                            : 'never'}
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        Inventory checked:{' '}
+                        <span className="text-foreground font-medium">
+                          {(originalItem as any)?.last_checked_at
+                            ? dynastyStamp((originalItem as any).last_checked_at)
+                            : (intel?.last_inventory_check_at
+                                ? dynastyStamp(intel.last_inventory_check_at)
+                                : 'never')}
+                        </span>
+                      </span>
+                    </div>
+
 
                     {/* ═══════════════════════════════════════════════════ */}
                     {/* PER-BRAND OPERATIONAL SIGNALS (RESTORED)          */}
@@ -880,16 +927,10 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                       {/* Attribution: Date + Relative Time + Method Badge + Role */}
                       {intel && (
                         <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground pt-1.5 border-t border-border/20 mt-1">
-                          {/* Date + relative time */}
                           <span className="flex items-center gap-1">
                             <Clock className="h-2.5 w-2.5" />
                             {intel.last_updated_at
-                              ? <>
-                                  {dynastyDate(intel.last_updated_at)}
-                                  <span className="opacity-70">
-                                    ({formatDistanceToNow(new Date(intel.last_updated_at), { addSuffix: false })} ago)
-                                  </span>
-                                </>
+                              ? <span className="text-foreground/90">{dynastyStampWithRelative(intel.last_updated_at)}</span>
                               : <span className="italic">Unknown · Legacy data</span>
                             }
                           </span>
@@ -964,13 +1005,23 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
               </Alert>
             )}
 
-            {/* Last updated (inventory counts) */}
-            {lastUpdated && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
-                <Clock className="h-3 w-3" />
-                <span>
-                  Inventory updated {formatDistanceToNow(new Date(lastUpdated), { addSuffix: true })}
-                </span>
+            {/* Counts last updated + last inventory check (store-wide) */}
+            {(lastUpdated || lastChecked) && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t border-border/30">
+                {lastUpdated && (
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3 w-3" />
+                    Counts last updated:{' '}
+                    <span className="text-foreground font-medium">{dynastyStampWithRelative(lastUpdated)}</span>
+                  </span>
+                )}
+                {lastChecked && (
+                  <span className="flex items-center gap-1.5">
+                    <Eye className="h-3 w-3" />
+                    Last inventory check:{' '}
+                    <span className="text-foreground font-medium">{dynastyStamp(lastChecked)}</span>
+                  </span>
+                )}
               </div>
             )}
           </>

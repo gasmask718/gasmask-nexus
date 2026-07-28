@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { FileText, Plus, X, Package, Loader2, Calendar, User, Camera, Upload as UploadIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DatePicker } from '@/components/ui/datetime-picker';
+import { dynastyDateWithWeekday, dynastyRelative } from '@/lib/dates';
 import { PhotoUploadMultiple } from './PhotoUploadMultiple';
 import { BulkStoreSelector } from './BulkStoreSelector';
 import { GRABBA_COMPANY_IDS } from '@/hooks/useVisitProducts';
@@ -1190,7 +1191,9 @@ export function CreateStoreInvoiceModal({
               placeholder="Pick a date to backdate"
             />
             <p className="text-xs text-muted-foreground">
-              Select a date to backdate this invoice when transferring old orders
+              {invoiceDate
+                ? <>Invoice dated <span className="text-foreground font-medium">{dynastyDateWithWeekday(invoiceDate)}</span></>
+                : 'Select a date to backdate this invoice when transferring old orders'}
             </p>
           </div>
 
@@ -1205,6 +1208,29 @@ export function CreateStoreInvoiceModal({
               onChange={setDueDate}
               placeholder="Select due date"
             />
+            <div className="flex flex-wrap items-center gap-2">
+              {[7, 14, 30].map((days) => (
+                <Button
+                  key={days}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    const base = invoiceDate ? new Date(invoiceDate) : new Date();
+                    base.setDate(base.getDate() + days);
+                    setDueDate(base);
+                  }}
+                >
+                  Net {days}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {dueDate
+                ? <>Due <span className="text-foreground font-medium">{dynastyDateWithWeekday(dueDate)}</span> ({dynastyRelative(dueDate)})</>
+                : 'No due date set'}
+            </p>
           </div>
 
           {/* Recipient Contact (for SMS receipt) */}

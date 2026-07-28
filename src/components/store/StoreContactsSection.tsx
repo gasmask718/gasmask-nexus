@@ -21,6 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { StoreContactActions } from './StoreContactActions';
 import { ContactRelationshipMarkers } from './ContactRelationshipMarkers';
 import { PhoneStatusControl } from './PhoneStatusControl';
+import { ContactPhoneNote } from './ContactPhoneNote';
 
 interface StoreContact {
   id: string;
@@ -252,6 +253,12 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                             phone={contact.phone}
                             status={contact.responsiveness_status}
                             storeId={storeId}
+                            invalidateKeys={[['store-contacts-responsiveness', storeId]]}
+                          />
+                          {/* Per-number note (field context) */}
+                          <ContactPhoneNote
+                            contactId={contact.id}
+                            phoneNote={(contact as any).phone_note}
                             invalidateKeys={[['store-contacts-responsiveness', storeId]]}
                           />
                         </div>

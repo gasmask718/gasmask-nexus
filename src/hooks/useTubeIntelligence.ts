@@ -41,6 +41,11 @@ export interface TubeIntelStatus {
   last_updated_by_role: string | null;
   last_updated_at: string;
   last_updated_method: string | null;
+  /** Bumped ONLY when current_tubes_left actually changes (DB trigger). */
+  tubes_updated_at: string | null;
+  /** Bumped on ANY write to the row — "when was this inventory last checked". */
+  last_inventory_check_at: string | null;
+  last_inventory_check_by: string | null;
   is_simulation: boolean;
 }
 
@@ -183,6 +188,7 @@ export function useTubeIntelligence(storeId: string | null) {
           last_updated_by_role: effectiveRole || null,
           last_updated_at: new Date().toISOString(),
           last_updated_method: effectiveMethod,
+          last_inventory_check_by: user?.id || null,
         };
         // When toggling switch off, clear quantity/notes/flagged fields
         if (field === 'needs_switch' && value === false) {

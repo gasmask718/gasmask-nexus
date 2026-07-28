@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { FileText, Plus, X, Package, Calendar, User, Camera } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DatePicker } from '@/components/ui/datetime-picker';
+import { dynastyDateWithWeekday, dynastyRelative } from '@/lib/dates';
 import { PhotoUploadMultiple } from './PhotoUploadMultiple';
 
 interface Invoice {
@@ -555,6 +556,11 @@ export function EditStoreInvoiceModal({
                 onChange={setDueDate}
                 placeholder="Select due date"
               />
+              <p className="text-xs text-muted-foreground">
+                {dueDate
+                  ? <>Due <span className="text-foreground font-medium">{dynastyDateWithWeekday(dueDate)}</span> ({dynastyRelative(dueDate)})</>
+                  : 'No due date set'}
+              </p>
             </div>
 
             {/* Notes */}
