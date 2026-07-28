@@ -36678,48 +36678,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "communication_logs_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "store_intelligence_v"
-            referencedColumns: ["store_id"]
-          },
-          {
-            foreignKeyName: "communication_logs_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "communication_logs_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "v_gm_cadence_due"
-            referencedColumns: ["store_id"]
-          },
-          {
-            foreignKeyName: "communication_logs_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "v_merge_orphan_candidates"
-            referencedColumns: ["store_id"]
-          },
-          {
-            foreignKeyName: "communication_logs_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "v_reactivation_targets"
-            referencedColumns: ["store_id"]
-          },
-          {
-            foreignKeyName: "communication_logs_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "v_store_tube_summary"
-            referencedColumns: ["store_id"]
-          },
-          {
             foreignKeyName: "communication_logs_thread_id_fkey"
             columns: ["thread_id"]
             isOneToOne: false
@@ -130826,6 +130784,18 @@ export type Database = {
           raw_phone: string | null
           source: string | null
           store_id: string | null
+        }
+        Relationships: []
+      }
+      store_directory: {
+        Row: {
+          id: string | null
+          phone: string | null
+          relationship_status: string | null
+          source: string | null
+          status: string | null
+          store_name: string | null
+          store_type: string | null
         }
         Relationships: []
       }
