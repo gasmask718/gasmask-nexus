@@ -97,6 +97,12 @@ export function StoreCardContactsQuickSection({ storeId, storeName }: Props) {
                   </Badge>
                 )}
               </div>
+              <ContactRelationshipMarkers
+                contact={c as any}
+                storeId={storeId}
+                compact
+                invalidateKeys={[['store-contacts', storeId]]}
+              />
               <StoreContactActions
                 contact={c as any}
                 storeId={storeId}
