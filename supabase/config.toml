@@ -577,3 +577,8 @@ verify_jwt = false
 
 [functions.gasmask-voicemail-transcription]
 verify_jwt = false
+
+# Field-portal calling/texting. JWT is verified IN CODE (we need the signed-in
+# user to resolve their assigned stores), so the platform default applies.
+[functions.field-portal-comms]
+verify_jwt = false
