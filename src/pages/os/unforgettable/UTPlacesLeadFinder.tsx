@@ -64,14 +64,18 @@ interface PlaceResult {
   state: string;
   types: string[];
   rating: number | null;
+  rating_count?: number | null;
   business_status: string | null;
   maps_url: string | null;
   phone: string | null;
   website: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   ut_category: string;
   category_confidence: number;
   duplicate_status: "new" | "probable_duplicate" | "exact_duplicate";
 }
+
 
 export default function UTPlacesLeadFinder() {
   const navigate = useNavigate();
