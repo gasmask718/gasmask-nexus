@@ -312,6 +312,15 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                     className="ml-13 pl-13"
                   />
 
+                  {/* Relationship markers: Confirm Owner + My Homie (independent) */}
+                  <div className="pl-13 ml-13">
+                    <ContactRelationshipMarkers
+                      contact={contact as any}
+                      storeId={storeId}
+                      invalidateKeys={[['store-contacts-responsiveness', storeId]]}
+                    />
+                  </div>
+
                   {/* Compliance-safe per-channel actions: mark responsive + opt-in with confirm */}
                   <div className="pl-13 ml-13">
                     <StoreContactActions
