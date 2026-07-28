@@ -46,7 +46,7 @@ export function useStoreInventoryStampsBatch(storeIds: string[]) {
           .in('store_id', ids),
         (supabase as any)
           .from('store_tube_inventory_status')
-          .select('store_id, last_updated_at, last_inventory_check_at, last_inventory_check_by')
+          .select('store_id, brand_id, last_updated_at, last_inventory_check_at, last_inventory_check_by')
           .in('store_id', ids),
       ]);
       if (invRes.error) throw invRes.error;
