@@ -69,7 +69,7 @@ const RouteDetail = () => {
           .from('routes')
           .select(`
             *,
-            assigned_user:profiles(name, phone)
+            assigned_user:profiles!routes_assigned_to_fkey(name, phone)
           `)
           .eq('id', id)
           .single();
