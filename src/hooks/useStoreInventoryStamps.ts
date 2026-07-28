@@ -55,7 +55,7 @@ export function useStoreInventoryStampsBatch(storeIds: string[]) {
       const map = new Map<string, StoreInventoryStampData>();
       const get = (id: string) => {
         let e = map.get(id);
-        if (!e) { e = { lastUpdated: null, lastChecked: null, checkedBy: null }; map.set(id, e); }
+        if (!e) { e = { lastUpdated: null, lastChecked: null, checkedBy: null, perSku: {} }; map.set(id, e); }
         return e;
       };
 
@@ -71,6 +71,13 @@ export function useStoreInventoryStampsBatch(storeIds: string[]) {
         e.lastChecked = newest([prev, r.last_inventory_check_at]);
         if (r.last_inventory_check_by && e.lastChecked === r.last_inventory_check_at) {
           e.checkedBy = r.last_inventory_check_by;
+        }
+        if (r.brand_id) {
+          const cur = e.perSku[r.brand_id] ?? { lastChecked: null, lastUpdated: null };
+          e.perSku[r.brand_id] = {
+            lastChecked: newest([cur.lastChecked, r.last_inventory_check_at]),
+            lastUpdated: newest([cur.lastUpdated, r.last_updated_at]),
+          };
         }
       }
       return map;
