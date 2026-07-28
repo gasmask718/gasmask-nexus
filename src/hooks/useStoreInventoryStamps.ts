@@ -13,10 +13,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface SkuStamp {
+  lastChecked: string | null;
+  lastUpdated: string | null;
+}
+
 export interface StoreInventoryStampData {
   lastUpdated: string | null;
   lastChecked: string | null;
   checkedBy: string | null;
+  /** Per-SKU (store_tube_inventory_status.brand_id) check/update stamps */
+  perSku: Record<string, SkuStamp>;
 }
 
 const newest = (stamps: (string | null | undefined)[]): string | null => {
