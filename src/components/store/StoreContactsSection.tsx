@@ -19,6 +19,7 @@ import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
 import { VerifyNumberButton } from './VerifyNumberButton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { StoreContactActions } from './StoreContactActions';
+import { ContactRelationshipMarkers } from './ContactRelationshipMarkers';
 
 interface StoreContact {
   id: string;
