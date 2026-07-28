@@ -11,6 +11,9 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const APP_URL = Deno.env.get("APP_PUBLIC_URL") || "https://gasmask-os-nexus.lovable.app";
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
+// resend.dev only delivers to the Resend account owner. Set INVITE_FROM_EMAIL
+// to an address on a verified domain once one is configured.
+const FROM_EMAIL = Deno.env.get("INVITE_FROM_EMAIL") || "Dynasty Direct <onboarding@resend.dev>";
 
 const ROLE_COPY: Record<string, { title: string; line: string }> = {
   wholesaler: { title: "Dynasty Direct — Wholesaler Invite", line: "You've been invited as a Wholesaler on Dynasty Direct." },
