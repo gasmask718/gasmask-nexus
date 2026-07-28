@@ -141,6 +141,8 @@ export function StoreBrandFlagStickers({ storeId, compact = false, className, up
                         <div className="flex flex-wrap gap-1.5 pl-3 border-l-2 border-border/50 ml-1 py-1">
                           {brand.products.map(product => {
                             const pOn = isProductOn(flags, product.skuKey, type);
+                            const checkedAt =
+                              stamps?.perSku?.[product.skuKey]?.lastChecked ?? stamps?.lastChecked ?? null;
                             return (
                               <button
                                 key={product.skuKey}
@@ -148,8 +150,13 @@ export function StoreBrandFlagStickers({ storeId, compact = false, className, up
                                 onClick={() => tapProduct(product, type)}
                                 aria-pressed={pOn}
                                 aria-label={`${label} — ${product.label}`}
+                                title={
+                                  checkedAt
+                                    ? `${product.label} — inventory checked ${dynastyStamp(checkedAt)}`
+                                    : `${product.label} — inventory never checked`
+                                }
                                 className={cn(
-                                  'rounded-full border transition-colors select-none',
+                                  'rounded-full border transition-colors select-none flex flex-col items-center leading-tight',
                                   compact ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1.5 text-[11px]',
                                   pOn
                                     ? 'text-white border-transparent shadow-sm'
@@ -157,10 +164,16 @@ export function StoreBrandFlagStickers({ storeId, compact = false, className, up
                                 )}
                                 style={pOn ? { backgroundColor: product.color || 'hsl(var(--primary))' } : undefined}
                               >
-                                {product.shortName}
+                                <span>{product.shortName}</span>
+                                {checkedAt && (
+                                  <span className={cn('text-[8px]', pOn ? 'opacity-90' : 'opacity-70')}>
+                                    {dynastyStamp(checkedAt)}
+                                  </span>
+                                )}
                               </button>
                             );
                           })}
+
                         </div>
                       )}
                     </div>
