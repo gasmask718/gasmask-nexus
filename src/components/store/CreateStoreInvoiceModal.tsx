@@ -295,19 +295,20 @@ export function CreateStoreInvoiceModal({
       existing.profit = (existing.unit_price_used - existing.cost_per_unit) * existing.quantity;
       // Recompute canonical units for updated quantity
       if (existing.sale_unit === 'pack') {
-        existing.quantity_tubes = existing.quantity * existing.pack_size_snapshot;
-        existing.computed_tubes_total = existing.quantity * existing.pack_size_snapshot;
+        existing.quantity_tubes = Math.round(existing.quantity * existing.pack_size_snapshot);
+        existing.computed_tubes_total = Math.round(existing.quantity * existing.pack_size_snapshot);
       } else if (existing.sale_unit === 'box') {
         existing.quantity_boxes = existing.quantity;
         if (existing.packs_per_box_snapshot && existing.pack_size_snapshot > 1) {
-          existing.computed_tubes_total = existing.quantity * existing.packs_per_box_snapshot * existing.pack_size_snapshot;
+          existing.computed_tubes_total = Math.round(existing.quantity * existing.packs_per_box_snapshot * existing.pack_size_snapshot);
         } else {
-          existing.computed_tubes_total = existing.quantity * existing.units_per_box;
+          existing.computed_tubes_total = Math.round(existing.quantity * existing.units_per_box);
         }
       } else {
         existing.quantity_tubes = existing.quantity;
         existing.computed_tubes_total = existing.quantity;
       }
+
       setLineItems(updated);
     } else {
       setLineItems([
