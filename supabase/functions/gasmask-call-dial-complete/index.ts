@@ -115,6 +115,19 @@ Deno.serve(async (req) => {
     },
   });
 
+  // ── AI-agent fallback (preserves the legacy inbound behaviour) ──
+  // Humans got first crack. Nobody picked up, so hand the caller to the
+  // existing AI phone agent route (dc-inbound-call → Bland AI DID). That
+  // route also fires gasmask-missed-call-handler, which sends the recovery
+  // SMS and — with vm=1 — falls through to voicemail if the agent misses too.
+  if ((settings?.no_answer_action ?? "ai_agent") === "ai_agent") {
+    await patchCallLog(supabase, callSid, {
+      summary: `No human answer (${dialStatus || "no-answer"}) — handing off to AI phone agent`,
+    });
+    const aiUrl = `${base}/dc-inbound-call?biz=gasmask&vm=${settings?.voicemail_enabled ? "1" : "0"}&stage=ai_fallback`;
+    return twiml(`<Redirect method="POST">${escapeXml(aiUrl)}</Redirect>`);
+  }
+
   if (!settings?.voicemail_enabled) {
     return twiml(`<Say voice="alice">Sorry we missed you. Please try again later.</Say><Hangup/>`);
   }

@@ -27,6 +27,10 @@ export interface VoiceRoutingSettings {
   voicemail_enabled: boolean;
   sms_transcript_to_owner: boolean;
   is_active: boolean;
+  /** What happens when no human answers: hand off to the AI phone agent (legacy
+   *  inbound behaviour) or go straight to voicemail. */
+  no_answer_action: "ai_agent" | "voicemail";
+  ai_agent_timeout_seconds: number;
 }
 
 export function svcClient(): SupabaseClient {
@@ -204,7 +208,8 @@ export async function upsertCallLog(
       brand: "gasmask",
       source_business: "gasmask",
       provider: "twilio",
-      performed_by: "inbound-routing",
+      // performed_by is constrained to ai|va|system — routing is a system action.
+      performed_by: "system",
       started_at: new Date().toISOString(),
       summary: args.summary || `Inbound call from ${match.store_name || match.contact_name || args.from}`,
       event_type: "inbound_call",

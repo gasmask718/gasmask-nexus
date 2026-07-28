@@ -163,6 +163,31 @@ export function VoiceRoutingSettingsCard({ business = "gasmask" }: { business?: 
           />
         </div>
 
+        <div className="space-y-2 rounded-md border p-3">
+          <Label className="text-sm">If nobody answers</Label>
+          <p className="text-xs text-muted-foreground">
+            Humans always ring first. This is what happens next.
+          </p>
+          <div className="flex gap-2 pt-1">
+            {[
+              { key: "ai_agent", label: "AI phone agent, then voicemail" },
+              { key: "voicemail", label: "Voicemail only" },
+            ].map((opt) => (
+              <Button
+                key={opt.key}
+                size="sm"
+                variant={
+                  (settings.no_answer_action ?? "ai_agent") === opt.key ? "default" : "outline"
+                }
+                onClick={() => save.mutate({ no_answer_action: opt.key })}
+                disabled={save.isPending}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         <div className="space-y-2">
           <Label className="text-sm">VA phones</Label>
           {(vas || []).length === 0 && (

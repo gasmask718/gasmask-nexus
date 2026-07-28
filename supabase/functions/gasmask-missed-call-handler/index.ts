@@ -15,6 +15,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, readForm, verifyTwilio, xmlHeaders } from "../_shared/dialer.ts";
 import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
+import { voicemailTwiml } from "../_shared/voicemailTwiml.ts";
+import { canonicalUrl } from "../_shared/dialer.ts";
 
 const EMPTY = `<?xml version="1.0" encoding="UTF-8"?>\n<Response></Response>`;
 
@@ -60,8 +62,17 @@ Deno.serve(async (req) => {
 
   console.log(`[gasmask-missed-call] biz=${business} status=${dialStatus} caller=${caller} biz_num=${businessNumber}`);
 
+  // vm=1 → we are the tail of the gasmask-inbound-voice flow: the AI agent was
+  // the fallback and it didn't pick up either, so take a voicemail before hanging up.
+  const wantsVoicemail = url.searchParams.get("vm") === "1" && MISSED_STATUSES.has(dialStatus);
+  const cu = new URL(canonicalUrl(req));
+  const vmBase = `${cu.protocol}//${cu.host}/functions/v1`;
+  const vmTail = wantsVoicemail
+    ? voicemailTwiml(vmBase, "Sorry we missed you. Please leave a message after the tone and we will call you right back.")
+    : "";
+
   // Always end the call gracefully — only side-effects on missed
-  const respond = (extra = "") => new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<Response>${extra}</Response>`, { headers: xmlHeaders });
+  const respond = (extra = vmTail) => new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<Response>${extra}</Response>`, { headers: xmlHeaders });
 
   if (business !== "gasmask") return respond();
   if (!MISSED_STATUSES.has(dialStatus)) return respond();
