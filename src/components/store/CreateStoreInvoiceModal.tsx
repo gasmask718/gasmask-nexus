@@ -930,7 +930,7 @@ export function CreateStoreInvoiceModal({
               </div>
             )}
 
-            {/* Quantity */}
+            {/* Quantity — supports halves (1/2) */}
             {selectedProductId && (
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">
@@ -941,15 +941,34 @@ export function CreateStoreInvoiceModal({
                     return (product?.track_by || 'tubes') === 'bags' ? 'Bags' : 'Tubes';
                   })()})
                 </Label>
+                <div className="flex gap-2">
+                  {[0.5, 1, 2, 3].map((q) => (
+                    <Button
+                      key={q}
+                      type="button"
+                      size="sm"
+                      variant={quantity === q ? 'default' : 'outline'}
+                      onClick={() => setQuantity(q)}
+                      className="text-xs px-3"
+                    >
+                      {q === 0.5 ? '½' : q}
+                    </Button>
+                  ))}
+                </div>
                 <Input
                   type="number"
-                  min="1"
+                  min="0.5"
+                  step="0.5"
                   value={quantity}
-                  onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    setQuantity(!isNaN(v) && v > 0 ? v : 0.5);
+                  }}
                   className="bg-background"
                 />
               </div>
             )}
+
 
             {/* Add Button */}
             {selectedProductId && (
