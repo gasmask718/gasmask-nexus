@@ -256,6 +256,9 @@ export function useToggleStoreBrandFlag(storeId: string | null | undefined) {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['store-brand-flags', storeId] });
       qc.invalidateQueries({ queryKey: ['store-flags', storeId] });
+      // Canonical inventory stamps feed every product-card surface
+      qc.invalidateQueries({ queryKey: ['store-inventory-stamps'] });
+
       qc.invalidateQueries({ queryKey: ['tube-intelligence', storeId] });
       qc.invalidateQueries({ queryKey: ['global-tube-intelligence'] });
       qc.invalidateQueries({ queryKey: ['orders-requested'] });
