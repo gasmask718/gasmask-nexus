@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Phone, MessageSquare, Star, User, Eye, Edit, Trash2, History, ChevronDown } from 'lucide-react';
+import { Users, Plus, Phone, MessageSquare, Star, User, Eye, Edit, Trash2, History, ChevronDown, Handshake, BadgeCheck } from 'lucide-react';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { toast } from 'sonner';
 import { AddContactModal } from './AddContactModal';
