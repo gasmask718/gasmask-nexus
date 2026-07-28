@@ -101352,6 +101352,7 @@ export type Database = {
           owner_confirmed_at: string | null
           owner_confirmed_by: string | null
           phone: string | null
+          phone_note: string | null
           preferred_sms_provider: string | null
           relationship_type: string | null
           relationship_type_custom: string | null
@@ -101412,6 +101413,7 @@ export type Database = {
           owner_confirmed_at?: string | null
           owner_confirmed_by?: string | null
           phone?: string | null
+          phone_note?: string | null
           preferred_sms_provider?: string | null
           relationship_type?: string | null
           relationship_type_custom?: string | null
@@ -101472,6 +101474,7 @@ export type Database = {
           owner_confirmed_at?: string | null
           owner_confirmed_by?: string | null
           phone?: string | null
+          phone_note?: string | null
           preferred_sms_provider?: string | null
           relationship_type?: string | null
           relationship_type_custom?: string | null
@@ -104354,6 +104357,7 @@ export type Database = {
           current_tubes_left: number | null
           id: string
           is_simulation: boolean
+          last_checked_at: string
           last_updated: string | null
           needs_operator_verification: boolean
           product_id: string | null
@@ -104365,6 +104369,7 @@ export type Database = {
           current_tubes_left?: number | null
           id?: string
           is_simulation?: boolean
+          last_checked_at?: string
           last_updated?: string | null
           needs_operator_verification?: boolean
           product_id?: string | null
@@ -104376,6 +104381,7 @@ export type Database = {
           current_tubes_left?: number | null
           id?: string
           is_simulation?: boolean
+          last_checked_at?: string
           last_updated?: string | null
           needs_operator_verification?: boolean
           product_id?: string | null
@@ -104451,6 +104457,8 @@ export type Database = {
           has_ever_ordered: boolean
           id: string
           is_simulation: boolean
+          last_inventory_check_at: string | null
+          last_inventory_check_by: string | null
           last_order_date: string | null
           last_updated_at: string
           last_updated_by: string | null
@@ -104466,6 +104474,7 @@ export type Database = {
           switch_flagged_by: string | null
           switch_notes: string | null
           switch_quantity: number | null
+          tubes_updated_at: string | null
         }
         Insert: {
           brand_id: string
@@ -104477,6 +104486,8 @@ export type Database = {
           has_ever_ordered?: boolean
           id?: string
           is_simulation?: boolean
+          last_inventory_check_at?: string | null
+          last_inventory_check_by?: string | null
           last_order_date?: string | null
           last_updated_at?: string
           last_updated_by?: string | null
@@ -104492,6 +104503,7 @@ export type Database = {
           switch_flagged_by?: string | null
           switch_notes?: string | null
           switch_quantity?: number | null
+          tubes_updated_at?: string | null
         }
         Update: {
           brand_id?: string
@@ -104503,6 +104515,8 @@ export type Database = {
           has_ever_ordered?: boolean
           id?: string
           is_simulation?: boolean
+          last_inventory_check_at?: string | null
+          last_inventory_check_by?: string | null
           last_order_date?: string | null
           last_updated_at?: string
           last_updated_by?: string | null
@@ -104518,6 +104532,7 @@ export type Database = {
           switch_flagged_by?: string | null
           switch_notes?: string | null
           switch_quantity?: number | null
+          tubes_updated_at?: string | null
         }
         Relationships: [
           {
