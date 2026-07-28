@@ -138971,6 +138971,13 @@ export type Database = {
       }
       ut_get_va_performance: { Args: never; Returns: Json }
       ut_score_products: { Args: never; Returns: number }
+      ut_upsert_partner_lead: {
+        Args: { p: Json }
+        Returns: {
+          lead_id: string
+          was_insert: boolean
+        }[]
+      }
       validate_agent_state_transition: {
         Args: { p_current_status: string; p_new_status: string }
         Returns: boolean
