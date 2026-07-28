@@ -145,9 +145,9 @@ Deno.serve(async (req) => {
     if (invite.id) {
       await admin.from("ambassador_invite_events").insert({
         invite_id: invite.id,
-        event_type: invite_id ? "resent" : "sent",
+        event_type: "sent",
         actor_user_id: userData.user.id,
-        metadata: { channel, send_log: sendLog, name },
+        metadata: { channel, send_log: sendLog, name, resend: !!invite_id },
       });
     }
 
