@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public.store_brand_flags;

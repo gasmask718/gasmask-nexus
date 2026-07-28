@@ -226,6 +226,10 @@ export function useTubeIntelligence(storeId: string | null) {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['tube-intelligence', storeId] });
       queryClient.invalidateQueries({ queryKey: ['field-submissions'] });
+      // Brand stickers are a rollup VIEW over this same canonical table —
+      // repaint them so both surfaces always agree.
+      queryClient.invalidateQueries({ queryKey: ['store-brand-flags', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['global-tube-intelligence'] });
       
       // Check if this was a governed submission
       if (result && typeof result === 'object' && 'governed' in result) {
