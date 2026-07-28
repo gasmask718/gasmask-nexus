@@ -380,6 +380,7 @@ function InventorySection({ storeId }: { storeId: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: skus = [], isLoading } = useStoreInventoryBySku(storeId);
+  const { data: stamps } = useStoreInventoryStamps(storeId);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   const saveSku = useMutation({
