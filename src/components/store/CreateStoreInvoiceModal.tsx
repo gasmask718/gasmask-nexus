@@ -257,19 +257,19 @@ export function CreateStoreInvoiceModal({
     let computedTubesTotal: number;
 
     if (saleUnit === 'pack') {
-      // Pack: quantity packs × pack_size = canonical units
+      // Pack: quantity packs × pack_size = canonical units (halves rounded)
       quantityBoxes = null;
-      quantityTubes = quantity * packSize;
-      computedTubesTotal = quantity * packSize;
+      quantityTubes = Math.round(quantity * packSize);
+      computedTubesTotal = Math.round(quantity * packSize);
     } else if (saleUnit === 'box') {
       quantityBoxes = quantity;
       quantityTubes = null;
       if (packsPerBox && packSize > 1) {
         // New path: boxes × packs_per_box × pack_size
-        computedTubesTotal = quantity * packsPerBox * packSize;
+        computedTubesTotal = Math.round(quantity * packsPerBox * packSize);
       } else {
         // Legacy path: boxes × units_per_box
-        computedTubesTotal = quantity * unitsPerBox;
+        computedTubesTotal = Math.round(quantity * unitsPerBox);
       }
     } else {
       // Unit: 1:1 canonical
@@ -277,6 +277,7 @@ export function CreateStoreInvoiceModal({
       quantityTubes = quantity;
       computedTubesTotal = quantity;
     }
+
 
     const lineSubtotal = unitPrice * quantity;
 
