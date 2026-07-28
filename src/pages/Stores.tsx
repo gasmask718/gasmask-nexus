@@ -840,6 +840,7 @@ const Stores = () => {
                         <Badge variant="outline" className="text-xs">
                           {store.type.replace('_', ' ')}
                         </Badge>
+                        <StoreContactGlanceIcons glance={contactGlance?.[store.id]} />
                         {payStatus && payStatus.level !== 'paid' && (
                           <StorePaymentBadge status={payStatus} />
                         )}
