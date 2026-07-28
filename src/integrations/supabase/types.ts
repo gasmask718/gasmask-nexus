@@ -100609,6 +100609,44 @@ export type Database = {
           },
         ]
       }
+      store_brand_flags: {
+        Row: {
+          brand_id: string
+          created_at: string
+          flag_type: string
+          id: string
+          set_by: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          flag_type: string
+          id?: string
+          set_by?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          flag_type?: string
+          id?: string
+          set_by?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_brand_flags_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_brand_relationships: {
         Row: {
           brand_activated_at: string | null
