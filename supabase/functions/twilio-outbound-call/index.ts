@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isSuppressed } from "../_shared/dnc.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -79,6 +80,23 @@ Deno.serve(async (req) => {
       console.error("❌ Queue item lookup failed:", itemErr);
       return jsonResponse({ success: false, error: "Queue item not found." }, 404);
     }
+
+    // ── Unified suppression gate (dnc_list + opt_out_events), fails CLOSED ──
+    const suppression = await isSuppressed(supabase, item.phone_number || "");
+    if (suppression.blocked) {
+      console.warn(
+        `🚫 Suppressed call blocked (${suppression.source}): ${suppression.reason} — queue item ${queueItemId}`,
+      );
+      return jsonResponse({
+        success: false,
+        status: "blocked",
+        reason: suppression.reason || "suppressed",
+        source: suppression.source,
+        error: `Recipient is suppressed (${suppression.reason || "suppressed"}).`,
+      });
+    }
+
+
 
     // Prefer Brandaro Twilio credentials (real AC... Account SID), fall back to legacy vars.
     const twilioAccountSid =

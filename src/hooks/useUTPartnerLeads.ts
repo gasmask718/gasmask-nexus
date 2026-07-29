@@ -308,10 +308,21 @@ export function useUTLeadMutations() {
         .replace(/\[VA Name\]/g, input.vaName || 'Your Partner Rep')
         .replace(/\[LINK\]/g, 'https://unforgettabletimes.com/join');
 
-      const { data } = await supabase.functions.invoke('send-sms', {
+      const { data, error } = await supabase.functions.invoke('send-sms', {
         body: { to_number: input.lead.phone, message_body: body, idempotency_key: crypto.randomUUID(),
           metadata: { brand: 'unforgettable_times', template: input.templateKey, lead_id: input.lead.id } },
       });
+      if (error) throw error;
+
+      // Suppression / delivery failure — NEVER record this lead as contacted.
+      if (data?.success !== true) {
+        const reason = data?.reason || data?.status || data?.error || 'send_failed';
+        await (supabase.from('ut_outreach_logs') as any).insert({
+          lead_id: input.lead.id, channel: 'sms', outcome: 'sms_blocked',
+          notes: String(reason), template_name: input.templateKey,
+        });
+        return { success: false as const, reason: String(reason), templateLabel: tpl.label };
+      }
 
       await (supabase.from('ut_outreach_logs') as any).insert({
         lead_id: input.lead.id, channel: 'sms', outcome: 'sms_sent',
@@ -323,9 +334,13 @@ export function useUTLeadMutations() {
         last_contacted_at: new Date().toISOString(), updated_at: new Date().toISOString(),
       }).eq('id', input.lead.id);
 
-      return { success: data?.success ?? true, templateLabel: tpl.label };
+      return { success: true as const, reason: undefined as string | undefined, templateLabel: tpl.label };
     },
-    onSuccess: (result) => { invalidateAll(); toast.success(`📱 ${result.templateLabel} SMS sent`); },
+    onSuccess: (result) => {
+      invalidateAll();
+      if (result.success) toast.success(`📱 ${result.templateLabel} SMS sent`);
+      else toast.error(`🚫 Blocked: ${result.reason} — not sent, lead not marked contacted`);
+    },
     onError: (e: Error) => toast.error(`SMS failed: ${e.message}`),
   });
 
@@ -358,16 +373,33 @@ export function useUTLeadMutations() {
       const tpl = UT_SMS_TEMPLATES.find(t => t.key === 'onboarding_link_text')!;
       const body = tpl.body.replace(/\[LINK\]/g, input.onboardingLink).replace(/\[Contact Name\]/g, input.lead.contact_name || 'there');
 
-      await supabase.functions.invoke('send-sms', {
+      const { data, error } = await supabase.functions.invoke('send-sms', {
         body: { to_number: input.lead.phone, message_body: body, idempotency_key: crypto.randomUUID(),
           metadata: { brand: 'unforgettable_times', template: 'onboarding_link_text', lead_id: input.lead.id } },
       });
+      if (error) throw error;
+
+      // Suppression / delivery failure — do not mark the link as sent.
+      if (data?.success !== true) {
+        const reason = data?.reason || data?.status || data?.error || 'send_failed';
+        await (supabase.from('ut_outreach_logs') as any).insert({
+          lead_id: input.lead.id, channel: 'sms', outcome: 'sms_blocked',
+          notes: String(reason), template_name: 'onboarding_link_text',
+        });
+        return { success: false as const, reason: String(reason) };
+      }
 
       await (supabase.from('ut_partner_onboarding') as any).update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', input.onboardingId);
-      await (supabase.from('ut_partner_leads') as any).update({ onboarding_link_sent_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', input.lead.id);
+      await (supabase.from('ut_partner_leads') as any).update({ onboarding_link_sent_at: new Date().toISOString(), last_contacted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', input.lead.id);
       await (supabase.from('ut_outreach_logs') as any).insert({ lead_id: input.lead.id, channel: 'sms', outcome: 'onboarding_link_sent', template_name: 'onboarding_link_text' });
+
+      return { success: true as const, reason: undefined as string | undefined };
     },
-    onSuccess: () => { invalidateAll(); toast.success('📱 Onboarding link sent'); },
+    onSuccess: (result) => {
+      invalidateAll();
+      if (result.success) toast.success('📱 Onboarding link sent');
+      else toast.error(`🚫 Blocked: ${result.reason} — link not sent`);
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 

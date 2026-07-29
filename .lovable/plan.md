@@ -1,154 +1,58 @@
-## Scope
+## UT-025 — Outreach Compliance (plan only, nothing applied)
 
-Two files only.
+### Fix 1 — The swallowed block (highest priority)
+File: `src/hooks/useUTPartnerLeads.ts`
 
-- **CREATE** `src/components/map/GeoMapView.tsx`
-- **MODIFY** `src/components/territory/TerritoryMapView.tsx` → thin adapter
-- **UNTOUCHED**: `src/pages/territory/TerritoryOverview.tsx` — its `<TerritoryMapView />` at line 144 keeps working because the zero-prop signature is preserved
+`sendSmsTemplate` (~:298) and `sendOnboardingLink` (~:369) both discard the edge-function response. Rewrite both mutation bodies to:
 
-The UT Partner Map page is explicitly NOT created in this pass.
+1. `const { data, error } = await supabase.functions.invoke('send-sms', {...})` — throw on `error`.
+2. Treat `data?.success === false` as a **block**, not a send:
+   - insert `ut_outreach_logs` with `outcome: 'sms_blocked'`, `notes: data.reason ?? 'blocked'`, `template_name` still recorded, `channel: 'sms'`
+   - **no** `sms_sent` row, **no** `sms_count` increment, **no** `last_contacted_at`, **no** `last_sms_template` update
+   - for `sendOnboardingLink`: also skip the `ut_partner_onboarding` → `status:'sent'`/`sent_at` update and skip `onboarding_link_sent_at`
+   - return `{ success: false, reason, templateLabel }` so the UI renders a blocked state
+3. Only on `data?.success === true` keep today's logging + counter updates.
+4. `onSuccess` branches on `result.success`: success → existing green toast; blocked → `toast.error('🚫 Blocked: <reason>')`. No silent success path remains (`?? true` default is removed — an absent/undefined `success` is treated as failure).
 
----
+### Fix 2 — Unified suppression check
+File: `supabase/functions/_shared/dnc.ts` — **pure addition**. `isOnDNC`, `normalizeE164`, `CANONICAL_DISPOSITIONS`, `DISPOSITION_ALIASES`, `canonicalizeDisposition` untouched, so GasMask / `dd-` / `tt-` / `dc-*` behaviour is unchanged.
 
-## 1. `src/components/map/GeoMapView.tsx` (new)
+New export:
 
-### Exported types
-
-```ts
-export interface GeoPoint {
-  id: string;
-  lng: number;
-  lat: number;
-  title: string;
-  subtitle?: string;
-  groupKey?: string;
-  statusKey?: string;
-  meta?: Record<string, any>;
-}
+```text
+isSuppressed(supabase, phone)
+  -> { blocked: boolean; reason?: string; source?: 'dnc_list' | 'opt_out_events' }
 ```
 
-Props exactly as you specified, plus defaults `showHulls = false`, `clustering = false`. Unknown `statusKey` falls back to `#6b7280` — the current fallback in `statusColor`.
+- normalises with the existing `normalizeE164`
+- checks `dnc_list` (same OR-query shape as `isOnDNC`: `phone_e164`, `phone_number`, raw)
+- checks `opt_out_events` by digits-only `phone_number` (the format that table actually stores, per `send-sms`)
+- returns the first hit with its `source`
+- **fails CLOSED**: any thrown lookup error → `{ blocked: true, reason: 'suppression_lookup_failed' }`
 
-### Moved unchanged
+Wiring:
 
-- `convexHull` (`:83-118`) — Andrew's monotone chain, verbatim
-- `padHull` (`:121-129`) — verbatim
-- Group → hull memo (`:155-182`), with `resolveBoroughForCity(a.city)` swapped for `resolveGroup(p)`; `TERRITORY_COLORS` stays in GeoMapView (generic palette, no GasMask meaning)
-- Layer pipeline (`:261-319`): `fill` @ 0.15, `line` width 2 / 0.8, `symbol` label `${name} (${count})` in `DIN Pro Medium`, hover → 0.35, click → select group
-- Marker path (`:332-362`): 8px circle div, `1px rgba(255,255,255,0.4)` border, popup `offset: 10, closeButton: false`
-- `flyTo` (`:364-375`) — zoom 16, duration 1200
-- `fitBounds` on group filter (`:322-326`) — padding 60, duration 800
-- Map init (`:208-224`): `dark-v11`, `NavigationControl` top-left, `mapLoaded` state
-- Chrome: filter `Select` top-right, `Search` `Input`, 380px slide-out panel, `ScrollArea`, close button
+- `supabase/functions/send-sms/index.ts` (~246-266): replace the inline `opt_out_events` query with `isSuppressed`. Response shape stays `{ success:false, status:'blocked', reason }` (reason now carries the DNC reason when the hit came from `dnc_list`), and the `outbound_messages` row still logs `status:'blocked'` with the reason in `error_message`.
+- `supabase/functions/twilio-outbound-call/index.ts`: no suppression check today. Add `isSuppressed` immediately after the `outbound_call_queue` lookup, gating on `item.phone_number` (that function takes `queue_item_id` + `business_id`, not a raw `to_number`), returning `{ success:false, status:'blocked', reason }` before any Twilio API call.
 
-### One addition to your prop list
+Out of scope, untouched: `dc-bland-dispatch`, `dc-outbound-call`, `ut-/dd-/tt-trigger-bland-campaign`, `dc-bland-webhook`, both `gasmask-dnc-*` functions.
 
-Today's popup HTML (`:356`) hardcodes `store_name` / `full_address` / `phone` / `discovery_status` / `discovered_by`. To keep GasMask's popup byte-identical without leaking those field names into the shared component, I'll add:
+### Fix 3 — STOP footer
+File: `src/config/utScripts.ts` — append ` Reply STOP to opt out.` to the four first-contact templates: `intro_text`, `send_info_text`, `missed_you_text`, `owner_unavailable_text`. The three reply-context templates (`callback_text`, `interested_followup`, `onboarding_link_text`) are left alone as they only follow an established conversation.
 
-```ts
-renderPopupHTML?: (p: GeoPoint) => string;
+Before/after example (`intro_text`):
+
+```text
+- ...No upfront cost — customers come to you. Want me to get you set up?
++ ...No upfront cost — customers come to you. Want me to get you set up? Reply STOP to opt out.
 ```
 
-TerritoryMapView passes the exact current template. Without it, GeoMapView falls back to generic `title` / `subtitle` / `statusKey` markup. Flagging because it's outside your stated prop list.
+### Verification I will run and paste
+- `git diff supabase/functions/_shared/dnc.ts` — additions only, `isOnDNC` body byte-identical
+- `git diff --stat supabase/functions/gasmask-*` — empty
+- Live test: call `send-sms` against a number seeded in `dnc_list` only → expect `status:'blocked'`; confirm no `sms_sent` row and `sms_count`/`last_contacted_at` unchanged on the lead
+- Confirm `twilio-outbound-call` returns blocked for a suppressed queue item without hitting Twilio
+- `tsgo` typecheck + build
 
-### Fix 1 — clean teardown
-
-`:231-255` currently removes layers three times and contains a dead no-op loop (`:235-242`). Replaced with one pass over explicit refs:
-
-```ts
-layerIdsRef.current.forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
-sourceIdsRef.current.forEach(id => { if (map.getSource(id)) map.removeSource(id); });
-layerIdsRef.current = [];
-sourceIdsRef.current = [];
-```
-
-A new `sourceIdsRef` tracks sources directly instead of deriving them via layer-id string surgery.
-
-### Fix 2 — slugified layer IDs
-
-`slug(name) = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')`. IDs become `grp-<slug>-fill` / `-line` / `-label`, source `grp-<slug>-src`. Kills the `Staten Island-fill` latent bug. A `slug → display name` map keeps click handlers resolving to the real group name.
-
-### Fix 3 — handler leak (not previously flagged)
-
-The current code calls `map.on('mouseenter'|'mouseleave'|'click', fillId, ...)` on every redraw and never calls `map.off`. Since layer IDs were stable, duplicate handlers silently stacked on each filter change. Teardown will now `map.off` the three handlers before layer removal. Not user-observable — handlers were idempotent.
-
-### NEW — clustering (`clustering === true`)
-
-Entirely separate branch; the marker path is untouched when `false`.
-
-- GeoJSON source `pts-src`, `cluster: true`, `clusterMaxZoom: 14`, `clusterRadius: 50`; features carry `id`, `title`, `subtitle`, `statusKey`
-- `clusters` — `circle`, `filter: ['has','point_count']`, step-scaled radius + colour
-- `cluster-count` — `symbol`, `{point_count_abbreviated}`
-- `unclustered-point` — `circle`, `filter: ['!',['has','point_count']]`, colour from `['match', ['get','statusKey'], ...flatten(statusColors), '#6b7280']`
-- Cluster click → `getClusterExpansionZoom` → `easeTo`
-- Point click → resolve by `id` → `onPointClick` + open detail panel
-- Pointer cursor on both layers
-- `points` changes update via `setData`, not teardown/rebuild
-
-### Token guard
-
-Mirrors `src/components/ambassador/AmbassadorStoreMap.tsx:142-162`: when `!import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN`, render a bordered placeholder — `Map unavailable: VITE_MAPBOX_PUBLIC_TOKEN is not configured.` — and skip map init. Semantic tokens only (`bg-muted/30`, `text-muted-foreground`), no hardcoded colours.
-
-### Purity guarantee
-
-Zero occurrences of `territory_addresses`, `borough`, `grabba`, `store_name`, `discovery_status`, `supabase`, `useQuery`. Verified with `rg -i` and pasted.
-
----
-
-## 2. `src/components/territory/TerritoryMapView.tsx` (adapter, ~140 lines)
-
-Signature unchanged: `export function TerritoryMapView()` — zero props.
-
-**Kept locally (GasMask-specific):**
-- `BOROUGH_CITY_MAP` (`:16-22`) — verbatim
-- `resolveBoroughForCity` (`:24-30`) — verbatim
-- `interface TerritoryAddress` (`:32-49`) — verbatim
-- `statusColor` (`:64-72`) → flattened to `STATUS_COLORS = { new:'#3b82f6', verified:'#22c55e', rejected:'#ef4444', pending_visit:'#eab308' }`, passed as `statusColors`
-- `statusBadgeVariant` (`:74-80`) — verbatim, used in `renderListItem`
-- The `useQuery` block (`:141-152`) — verbatim: same `queryKey: ['territory-map-addresses']`, same 16-column select, same two `.not(...)` filters
-
-**Mapping:**
-
-```ts
-const points: GeoPoint[] = useMemo(() => addresses
-  .filter(a => a.latitude != null && a.longitude != null)
-  .map(a => ({
-    id: a.id,
-    lng: a.longitude!,
-    lat: a.latitude!,
-    title: a.store_name || 'Unknown Store',
-    subtitle: a.full_address || '—',
-    groupKey: resolveBoroughForCity(a.city || 'Unknown'),
-    statusKey: (a.discovery_status || 'new').toLowerCase(),
-    meta: a,
-  })), [addresses]);
-```
-
-**Props passed:** `showHulls`, `clustering={false}`, `initialCenter={[-73.95, 40.73]}`, `initialZoom={10.5}`, `resolveGroup={p => p.groupKey ?? null}`, `groupFilterLabel="All Territories"`, `searchFields` returning `store_name` / `full_address` / `notes` / `discovered_by`, `renderPopupHTML` with the exact `:356` template, `renderListItem` reproducing `:448-484` verbatim (MapPin + address, `address_type` outline badge, `Eye` + `discovered_by`, `created_at` locale date, `statusBadgeVariant` badge, and the `verified_sells_grabba` → green `CheckCircle` **Grabba** badge at `:478-482`), `renderDetail` supplying the `"{n} ingested addresses"` header copy (`:415`), and the `No addresses found` `emptyState`.
-
----
-
-## Behavioural deltas — full disclosure
-
-Everything visible is identical. Three internal changes, none observable:
-
-| Change | Observable? |
-|---|---|
-| Layer IDs slugified | No — internal to Mapbox |
-| Teardown collapsed to one pass | No — same end state |
-| `map.off` before removal | No — fixes a leak |
-
-Genuine risk: popup and list markup move across a file boundary as render props. I'll diff the rendered output against the original rather than eyeballing it.
-
----
-
-## Verification before reporting done
-
-1. `rg -n "export function TerritoryMapView" src/` → zero-prop signature
-2. `git diff --stat src/pages/territory/TerritoryOverview.tsx` → empty, pasted verbatim
-3. `rg -in "territory_addresses|borough|grabba|store_name|discovery_status|supabase" src/components/map/GeoMapView.tsx` → zero hits, pasted
-4. `rg -n "clustering" src/components/territory/TerritoryMapView.tsx` → `clustering={false}` only
-5. `tsgo` typecheck clean
-6. Playwright on the territory overview in map mode: screenshot, confirm NYC center, labelled borough polygons, coloured markers; click a polygon → panel opens; confirm a Grabba badge renders; check console for Mapbox errors
-
-Say **apply** and I'll write both files.
+### Note (not in scope, flagging)
+`useUTAIDialer.ts` sends `to_number`/`agent_id` to `twilio-outbound-call`, which requires `queue_item_id`/`business_id` — that hook is already dead code (commented out in `UTOutreachCommand.tsx`) and would 400 if re-enabled. I will not change it here.

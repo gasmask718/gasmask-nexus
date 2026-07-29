@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isSuppressed } from "../_shared/dnc.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -242,15 +243,10 @@ serve(async (req: Request) => {
 
     const formattedTo = normalizePhone(to_number);
 
-    // ── 2. Opt-Out Check ─────────────────────────────────────────────
-    const normalizedLookup = formattedTo.replace(/\D/g, "");
-    const { data: optOut } = await supabase
-      .from("opt_out_events")
-      .select("id")
-      .eq("phone_number", normalizedLookup)
-      .maybeSingle();
+    // ── 2. Unified Suppression Check (dnc_list + opt_out_events) ─────
+    const suppression = await isSuppressed(supabase, formattedTo);
 
-    if (optOut) {
+    if (suppression.blocked) {
       // Log blocked attempt
       await supabase.from("outbound_messages").insert({
         idempotency_key,
@@ -258,12 +254,17 @@ serve(async (req: Request) => {
         message_body,
         provider: explicit_provider || "biztext",
         status: "blocked",
-        error_message: "Recipient opted out",
+        error_message: `Suppressed (${suppression.source || "unknown"}): ${suppression.reason || "blocked"}`,
         store_id: store_id || null,
         campaign_id: campaign_id || null,
-        metadata: enrichedMetadata,
+        metadata: { ...enrichedMetadata, suppression_source: suppression.source || null },
       });
-      return respond(200, { success: false, status: "blocked", reason: "opted_out" });
+      return respond(200, {
+        success: false,
+        status: "blocked",
+        reason: suppression.reason || "opted_out",
+        source: suppression.source,
+      });
     }
 
     // ── 3. Idempotency Check ─────────────────────────────────────────

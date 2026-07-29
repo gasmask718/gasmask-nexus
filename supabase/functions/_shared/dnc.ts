@@ -85,3 +85,62 @@ export function canonicalizeDisposition(raw: string | null | undefined): string 
   console.warn(`[disposition] unrecognized code "${raw}" → defaulting to "called"`);
   return "called";
 }
+
+// ---------------------------------------------------------------------------
+// UNIFIED SUPPRESSION CHECK (UT-025)
+// `dnc_list` (voice-side) and `opt_out_events` (SMS-side) are two separate
+// suppression sources that were never cross-checked. isSuppressed() checks BOTH.
+// isOnDNC() above is intentionally left untouched — GasMask / dd- / tt- / dc-*
+// functions depend on its exact behaviour.
+// ---------------------------------------------------------------------------
+export async function isSuppressed(
+  supabase: any,
+  phone: string,
+): Promise<{ blocked: boolean; reason?: string; source?: "dnc_list" | "opt_out_events" }> {
+  const e164 = normalizeE164(phone);
+  if (!e164) return { blocked: false };
+  const digits = e164.replace(/\D/g, "");
+
+  // NOTE: we deliberately use .in() rather than .or() here. PostgREST `or=`
+  // filter strings are sent raw, so a leading "+" decodes as a space and an
+  // E.164 match silently misses. .in() values are properly URL-encoded.
+  const variants = Array.from(new Set([e164, digits, String(phone || "")].filter(Boolean)));
+
+  // 1) dnc_list — normalized column + legacy column (two encoded .in() queries).
+  try {
+    for (const col of ["phone_e164", "phone_number"]) {
+      const { data, error } = await supabase
+        .from("dnc_list")
+        .select("reason")
+        .in(col, variants)
+        .limit(1);
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row) {
+        return { blocked: true, reason: row.reason || "dnc_list", source: "dnc_list" };
+      }
+    }
+  } catch (_e) {
+    // Fail CLOSED for compliance, matching isOnDNC.
+    return { blocked: true, reason: "suppression_lookup_failed", source: "dnc_list" };
+  }
+
+  // 2) opt_out_events — stores digits-only phone_number (see send-sms).
+  try {
+    const { data, error } = await supabase
+      .from("opt_out_events")
+      .select("id")
+      .in("phone_number", variants)
+      .limit(1);
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) {
+      return { blocked: true, reason: "opted_out", source: "opt_out_events" };
+    }
+  } catch (_e) {
+    return { blocked: true, reason: "suppression_lookup_failed", source: "opt_out_events" };
+  }
+
+
+  return { blocked: false };
+}
