@@ -256,35 +256,10 @@ async function callDurable(payload: any): Promise<{ ok: true; site_id: string; s
   }
 }
 
-async function tryVercelHook(supabase: any, industry: string, aiContent: AiContent, designMd: string | null, lead: any): Promise<string | null> {
-  const { data: template } = await supabase
-    .from("brandaro_demo_templates")
-    .select("vercel_deploy_hook_url, vercel_template_repo")
-    .eq("industry", industry)
-    .eq("is_active", true)
-    .single();
+// NOTE: Vercel deploy hooks were removed. Demos are now served by a single
+// dynamic app that reads brandaro_demo_sites at request time, so a demo is
+// live the moment the row is written — no per-demo build.
 
-  const hook = template?.vercel_deploy_hook_url;
-  if (!hook) return null;
-  try {
-    const res = await fetch(hook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        DESIGN_MD_CONTENT: designMd ? btoa(unescape(encodeURIComponent(designMd))) : "",
-        business: {
-          name: lead.business_name, city: lead.city, state: lead.state, phone: lead.phone,
-        },
-        content: aiContent,
-      }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json().catch(() => ({}));
-    return data.job?.id || data.deployment_id || null;
-  } catch {
-    return null;
-  }
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
