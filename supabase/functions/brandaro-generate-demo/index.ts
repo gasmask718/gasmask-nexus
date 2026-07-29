@@ -256,42 +256,17 @@ async function callDurable(payload: any): Promise<{ ok: true; site_id: string; s
   }
 }
 
-async function tryVercelHook(supabase: any, industry: string, aiContent: AiContent, designMd: string | null, lead: any): Promise<string | null> {
-  const { data: template } = await supabase
-    .from("brandaro_demo_templates")
-    .select("vercel_deploy_hook_url, vercel_template_repo")
-    .eq("industry", industry)
-    .eq("is_active", true)
-    .single();
+// NOTE: Vercel deploy hooks were removed. Demos are now served by a single
+// dynamic app that reads brandaro_demo_sites at request time, so a demo is
+// live the moment the row is written — no per-demo build.
 
-  const hook = template?.vercel_deploy_hook_url;
-  if (!hook) return null;
-  try {
-    const res = await fetch(hook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        DESIGN_MD_CONTENT: designMd ? btoa(unescape(encodeURIComponent(designMd))) : "",
-        business: {
-          name: lead.business_name, city: lead.city, state: lead.state, phone: lead.phone,
-        },
-        content: aiContent,
-      }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json().catch(() => ({}));
-    return data.job?.id || data.deployment_id || null;
-  } catch {
-    return null;
-  }
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { lead_id, engine = "native", dry_run, deploy_vercel } = (await req.json()) as GenerateRequest;
+    const { lead_id, engine = "native", dry_run } = (await req.json()) as GenerateRequest;
 
     if (dry_run) {
       return new Response(JSON.stringify({ ok: true, dry_run: true }), {
@@ -339,12 +314,10 @@ Deno.serve(async (req) => {
       });
 
       const demoSlug = `${(lead.business_name || "demo").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}-${Date.now()}`;
-      const demoUrl = `https://${demoSlug}.${industry}.demo.brandarodigital.com`;
-
-      let vercelDeploymentId: string | null = null;
-      if (deploy_vercel) {
-        vercelDeploymentId = await tryVercelHook(supabase, industry, aiRes.content, designMd, lead);
-      }
+      // Single-label subdomain: `slug--industry.demo.brandarodigital.com`
+      // (avoids a two-level wildcard certificate).
+      const demoUrl = `https://${demoSlug}--${industry}.demo.brandarodigital.com`;
+      const nowIso = new Date().toISOString();
 
       const { data: demo, error: insertErr } = await supabase.from("brandaro_demo_sites").insert({
         lead_id, business_name: lead.business_name, industry: lead.industry,
@@ -353,11 +326,13 @@ Deno.serve(async (req) => {
         seo_text: aiRes.content.about_paragraph,
         generation_status: "ready", generation_engine: "native",
         engine_status: "ready", template_used: industry,
+        slug: demoSlug,
         demo_url: demoUrl, hosting_path: `/demos/${demoSlug}`,
         generated_html: html,
         content_blocks: aiRes.content,
         generated_colors: { primary: aiRes.content.color_primary, secondary: aiRes.content.color_secondary, font: aiRes.content.font_recommendation },
-        vercel_deployment_id: vercelDeploymentId,
+        published_at: nowIso,
+        public_status: "live",
         demo_ready_for_conversion: true,
       }).select().single();
 
