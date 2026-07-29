@@ -936,6 +936,7 @@ const UTBusinessProducts = lazy(() => import('@/pages/os/unforgettable').then(m 
 const UTBusinessPackages = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTBusinessPackages })));
 const UTEventBookings = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTEventBookings })));
 const UTLeadIntelligence = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTLeadIntelligence })));
+const UTPartnerMap = lazy(() => import('@/pages/os/unforgettable/UTPartnerMap'));
 const UTOutreachEngine = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTOutreachEngine })));
 const UTAutomationRuns = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAutomationRuns })));
 const UTAmbassadorFinder = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAmbassadorFinder })));
@@ -3924,6 +3925,7 @@ export default function AppRoutes() {
           <Route path="venues" element={<UTVenuesManagement />} />
           <Route path="event-bookings" element={<UTEventBookings />} />
           <Route path="leads" element={<UTLeadIntelligence />} />
+          <Route path="partner-map" element={<UTPartnerMap />} />
           <Route path="outreach-engine" element={<UTOutreachEngine />} />
           <Route path="automation-runs" element={<UTAutomationRuns />} />
           <Route path="ambassador-finder" element={<UTAmbassadorFinder />} />
