@@ -256,9 +256,15 @@ async function callDurable(payload: any): Promise<{ ok: true; site_id: string; s
   }
 }
 
-async function tryVercelHook(industry: string, aiContent: AiContent, designMd: string | null, lead: any): Promise<string | null> {
-  const secretName = `VERCEL_DEPLOY_HOOK_${industry.toUpperCase()}`;
-  const hook = Deno.env.get(secretName);
+async function tryVercelHook(supabase: any, industry: string, aiContent: AiContent, designMd: string | null, lead: any): Promise<string | null> {
+  const { data: template } = await supabase
+    .from("brandaro_demo_templates")
+    .select("vercel_deploy_hook_url, vercel_template_repo")
+    .eq("industry", industry)
+    .eq("is_active", true)
+    .single();
+
+  const hook = template?.vercel_deploy_hook_url;
   if (!hook) return null;
   try {
     const res = await fetch(hook, {
