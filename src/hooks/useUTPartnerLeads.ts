@@ -308,10 +308,21 @@ export function useUTLeadMutations() {
         .replace(/\[VA Name\]/g, input.vaName || 'Your Partner Rep')
         .replace(/\[LINK\]/g, 'https://unforgettabletimes.com/join');
 
-      const { data } = await supabase.functions.invoke('send-sms', {
+      const { data, error } = await supabase.functions.invoke('send-sms', {
         body: { to_number: input.lead.phone, message_body: body, idempotency_key: crypto.randomUUID(),
           metadata: { brand: 'unforgettable_times', template: input.templateKey, lead_id: input.lead.id } },
       });
+      if (error) throw error;
+
+      // Suppression / delivery failure — NEVER record this lead as contacted.
+      if (data?.success !== true) {
+        const reason = data?.reason || data?.status || data?.error || 'send_failed';
+        await (supabase.from('ut_outreach_logs') as any).insert({
+          lead_id: input.lead.id, channel: 'sms', outcome: 'sms_blocked',
+          notes: String(reason), template_name: input.templateKey,
+        });
+        return { success: false as const, reason: String(reason), templateLabel: tpl.label };
+      }
 
       await (supabase.from('ut_outreach_logs') as any).insert({
         lead_id: input.lead.id, channel: 'sms', outcome: 'sms_sent',
@@ -323,9 +334,13 @@ export function useUTLeadMutations() {
         last_contacted_at: new Date().toISOString(), updated_at: new Date().toISOString(),
       }).eq('id', input.lead.id);
 
-      return { success: data?.success ?? true, templateLabel: tpl.label };
+      return { success: true as const, reason: undefined as string | undefined, templateLabel: tpl.label };
     },
-    onSuccess: (result) => { invalidateAll(); toast.success(`📱 ${result.templateLabel} SMS sent`); },
+    onSuccess: (result) => {
+      invalidateAll();
+      if (result.success) toast.success(`📱 ${result.templateLabel} SMS sent`);
+      else toast.error(`🚫 Blocked: ${result.reason} — not sent, lead not marked contacted`);
+    },
     onError: (e: Error) => toast.error(`SMS failed: ${e.message}`),
   });
 
