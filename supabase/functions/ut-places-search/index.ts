@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   corsHeaders,
   delay,
@@ -6,6 +7,7 @@ import {
   placeDetails,
   parseCityState,
   DETAILS_MASK_FULL,
+  createUsageTracker,
 } from "../_shared/places-client.ts";
 
 function mapPlace(p: any) {
@@ -39,20 +41,71 @@ serve(async (req) => {
     });
   }
 
+  // Ledger-only client (service role). Not used for any search behaviour.
+  const sbUrl = Deno.env.get('SUPABASE_URL');
+  const sbKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const sb = sbUrl && sbKey ? createClient(sbUrl, sbKey) : null;
+
+  let tracker = createUsageTracker(200);
+  let ledgerCtx: Record<string, unknown> = {};
+  let ledgerWritten = false;
+
+  // Writes one ut_api_usage_log row per SKU used. Never throws.
+  const writeLedger = async () => {
+    if (ledgerWritten || !sb) return;
+    ledgerWritten = true;
+    const rows = tracker.rows();
+    if (rows.length === 0) return;
+    try {
+      await sb.from('ut_api_usage_log').insert(rows.map((r) => ({
+        run_id: tracker.runId,
+        function_name: 'ut-places-search',
+        provider: 'google_places',
+        sku: r.sku,
+        request_count: r.request_count,
+        estimated_cost: r.estimated_cost,
+        capped: tracker.capped,
+        ...ledgerCtx,
+      })));
+    } catch (e) {
+      console.error('Ledger write failed:', e instanceof Error ? e.message : e);
+    }
+  };
+
+  const meta = () => ({
+    requests_made: tracker.total(),
+    estimated_cost: Number(tracker.estimatedCost().toFixed(4)),
+    capped: tracker.capped,
+  });
+
   try {
     const body = await req.json();
     const { action } = body;
+    if (typeof body.max_requests === 'number' && body.max_requests > 0) {
+      tracker = createUsageTracker(body.max_requests);
+    }
 
     // ── SEARCH: single page (returns nextPageToken if available) ──
     if (action === 'search') {
       const { query, page_token } = body;
       if (!query) throw new Error('query is required');
-      const result = await textSearch(query, apiKey, page_token || undefined);
-      const places = (result.places || []).map(mapPlace);
+      ledgerCtx = { search_term: query };
+      let places: any[] = [];
+      let nextPageToken: string | null = null;
+      if (tracker.canRequest()) {
+        const result = await textSearch(query, apiKey, page_token || undefined, tracker);
+        places = (result.places || []).map(mapPlace);
+        nextPageToken = result.nextPageToken || null;
+      } else {
+        tracker.capped = true;
+      }
+      ledgerCtx = { ...ledgerCtx, results_returned: places.length };
+      await writeLedger();
       return new Response(JSON.stringify({
         places,
         count: places.length,
-        next_page_token: result.nextPageToken || null,
+        next_page_token: nextPageToken,
+        ...meta(),
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -67,21 +120,28 @@ serve(async (req) => {
       let pageToken: string | undefined;
       const pages = Math.min(max_pages, 3);
 
+      ledgerCtx = { search_term: query };
+
       for (let page = 0; page < pages; page++) {
         if (page > 0 && !pageToken) break;
+        if (!tracker.canRequest()) { tracker.capped = true; break; }
         if (page > 0) await delay(2000); // Google requires delay before using pageToken
 
-        const result = await textSearch(query, apiKey, pageToken);
+        const result = await textSearch(query, apiKey, pageToken, tracker);
         const mapped = (result.places || []).map(mapPlace);
         allPlaces.push(...mapped);
         pageToken = result.nextPageToken;
         if (!pageToken) break;
       }
 
+      ledgerCtx = { ...ledgerCtx, results_returned: allPlaces.length };
+      await writeLedger();
+
       return new Response(JSON.stringify({
         places: allPlaces,
         count: allPlaces.length,
         pages_fetched: Math.min(allPlaces.length > 0 ? Math.ceil(allPlaces.length / 20) : 0, pages),
+        ...meta(),
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -91,8 +151,15 @@ serve(async (req) => {
     if (action === 'details') {
       const { place_id } = body;
       if (!place_id) throw new Error('place_id is required');
-      const p = await placeDetails(place_id, apiKey, DETAILS_MASK_FULL);
+      if (!tracker.canRequest()) {
+        tracker.capped = true;
+        await writeLedger();
+        throw new Error('Request cap reached before Place Details call');
+      }
+      const p = await placeDetails(place_id, apiKey, DETAILS_MASK_FULL, tracker);
       if (!p) throw new Error(`Place Details failed for ${place_id}`);
+      ledgerCtx = { results_returned: 1 };
+      await writeLedger();
       const { city, state } = parseCityState(p.addressComponents);
       return new Response(JSON.stringify({
         place_id: p.id,
@@ -109,6 +176,7 @@ serve(async (req) => {
         maps_url: p.googleMapsUri || null,
         latitude: typeof p.location?.latitude === 'number' ? p.location.latitude : null,
         longitude: typeof p.location?.longitude === 'number' ? p.location.longitude : null,
+        ...meta(),
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -125,8 +193,9 @@ serve(async (req) => {
       let failed = 0;
 
       for (const pid of ids) {
+        if (!tracker.canRequest()) { tracker.capped = true; break; }
         try {
-          const p = await placeDetails(pid, apiKey, DETAILS_MASK_FULL);
+          const p = await placeDetails(pid, apiKey, DETAILS_MASK_FULL, tracker);
           if (!p) throw new Error(`Place Details failed for ${pid}`);
           enriched.push({
             place_id: p.id,
@@ -144,11 +213,15 @@ serve(async (req) => {
         if (ids.length > 5) await delay(200);
       }
 
+      ledgerCtx = { results_returned: enriched.length };
+      await writeLedger();
+
       return new Response(JSON.stringify({
         enriched,
         enriched_count: enriched.length,
         failed,
         capped_at: MAX_BATCH,
+        ...meta(),
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -157,7 +230,8 @@ serve(async (req) => {
     throw new Error(`Unknown action: ${action}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: msg }), {
+    await writeLedger();
+    return new Response(JSON.stringify({ error: msg, ...meta() }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
