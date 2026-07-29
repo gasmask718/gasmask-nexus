@@ -65,11 +65,11 @@ const PortalDashboard = () => {
     enabled: !!customerId,
   });
 
-  const handleLogout = () => {
-    localStorage.removeItem('portal_session');
-    localStorage.removeItem('portal_customer_id');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate('/portal/login');
   };
+
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
