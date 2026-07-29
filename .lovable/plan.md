@@ -1,41 +1,42 @@
 ## UT-006 — Places API cost guard + usage ledger
 
-Scope: metering and a cap only. No search behaviour, pagination, delay, or field-mask changes. `ingest-google-places` untouched. No migration — `ut_api_usage_log` already exists.
+State check first: sections 2–5 (metering, cap, ledger, response fields) are **already implemented and deployed** from the earlier UT-006 pass. Verified in the current code:
 
-Confirmed ledger columns: `run_id, function_name, provider(default google_places), sku, request_count, estimated_cost, job_id, city, state, category, search_term, results_returned, leads_new, leads_duplicate, capped, created_at`.
+- `_shared/places-client.ts` — `SKU_TEXT_SEARCH = 'text_search_enterprise'` @ `$0.035`, `SKU_PLACE_DETAILS = 'place_details_enterprise'` @ `$0.020`, both flagged as Google list prices needing billing verification; `createUsageTracker()` with `canRequest()`, `total()`, `estimatedCost()`, `rows()`; both `textSearch()` and `placeDetails()` take an optional trailing tracker and increment before `fetch`.
+- `ut-run-territory-job` — `max_requests` (default 200), cap guards before each page and each details call, `writeLedger()` one row per non-zero SKU on success/cap/error, response carries `requests_made`, `estimated_cost`, `capped`.
+- `ut-places-search` — same tracker, cap, service-role ledger client, and response fields.
 
-### 1. `_shared/places-client.ts` (add only)
-- Named constants with a verification comment:
-  - `SKU_TEXT_SEARCH = 'text_search_enterprise'`, `COST_TEXT_SEARCH = 0.035`
-  - `SKU_PLACE_DETAILS = 'place_details_enterprise'`, `COST_PLACE_DETAILS = 0.020`
-  - Comment: rates must be verified against actual Google Cloud billing.
-- `createUsageTracker(maxRequests = 200)` returns an object with:
-  - `runId` (crypto.randomUUID), `textSearchCount`, `placeDetailsCount`, `total`, `capped`
-  - `canRequest()` → total < maxRequests
-  - `note(sku)` internal increment
-  - `estimatedCost(sku)` helper and `rows()` → array of `{sku, request_count, estimated_cost}` (only non-zero SKUs, so a run using both writes two rows).
-- `textSearch(query, apiKey, pageToken?, tracker?)` and `placeDetails(placeId, apiKey, fieldMask?, tracker?)` gain an **optional trailing** tracker arg and increment it immediately before `fetch`. Existing call signatures, request bodies, headers, masks and return values are unchanged — every existing caller (incl. any without a tracker) behaves byte-identically.
+So the remaining work is **section 1 only**: search-term support.
 
-### 2. Per-run cap
-- Both functions read optional `max_requests` from the request body, default `200`.
-- Loop guards: before each `textSearch` page and before each `placeDetails` enrichment, check `tracker.canRequest()`. If false, set `capped = true` and break out of the API-calling loop.
-- In `ut-run-territory-job`, the cap only stops further API calls — the place-processing/upsert loop still finishes writing every place already fetched, and job status/coverage updates still run. Never abort mid-write.
-- In `ut-places-search`, `search_all` and `enrich_batch` stop fetching additional pages/ids and return what was gathered. `MAX_BATCH = 20` stays.
+### The one change
 
-### 3. Ledger writes
-- `ut-run-territory-job` already has a service-role client; it writes ledger rows in a `finally`-style path so rows are written on success, on cap, and on error.
-- `ut-places-search` currently has no Supabase client — add a service-role client used **only** for ledger inserts.
-- One row per non-zero SKU per invocation: `run_id` (per-invocation uuid), `function_name`, `sku`, `request_count`, `estimated_cost = count * rate`, `job_id`, `city`, `state`, `category`, `search_term` (the query), `results_returned` (places fetched), `leads_new`/`leads_duplicate` (reused directly from the existing `was_insert`-based `leadsFound` / `duplicatesSkipped` — no recount), `capped`.
-- For `ut-places-search` (no job context), job/city/state/category are null; `leads_new`/`leads_duplicate` null.
-- Ledger insert failures are caught and logged only — they never fail the job.
+`supabase/functions/ut-run-territory-job/index.ts`, lines 69–78:
 
-### 4. Response
-- Add `requests_made`, `estimated_cost`, `capped` to both functions' JSON responses. No existing field removed or renamed (`success`, `leads_found`, `duplicates_skipped`, `enriched_count`, `places`, `count`, `next_page_token`, `pages_fetched`, `enriched`, `enriched_count`, `failed`, `capped_at` all stay).
+```ts
+const searchTerm = job.search_term || job.category || '';
+const term = searchTerm.replace(/_/g, ' ');
+const query = `${term} in ${job.city}, ${job.state}`;
+```
+
+`ledgerCtx.search_term` stays as-is (already the literal query phrase used).
+
+Everything else in that file is untouched. Critically, line ~169 already writes `category: job.category` to `ut_partner_leads` — the canonical value — so `search_term` never reaches the lead row and the 18-value CHECK constraint stays satisfied. No edit there; I'll just re-confirm it in the diff.
+
+`ut-places-search` needs no change — it already takes a free-text `query` from the caller.
+
+### Behaviour
+
+- `search_term = 'banquet hall'`, `category = 'event_hall'` → Google gets `"banquet hall in Marietta, GA"`; leads written with `category = 'event_hall'`; ledger row records `search_term = 'banquet hall in Marietta, GA'`.
+- `search_term = NULL` → falls back to `job.category` with the same `_ → space` normalisation, i.e. byte-identical to today's query string.
+
+### Not touched
+
+`ingest-google-places`, pagination (3 pages), `delay(2500)`/`delay(150)`/`delay(200)`, both field masks, `MAX_BATCH = 20`. No migration — both tables already exist.
 
 ### Verification before reporting done
-- `git diff` on `supabase/functions/ingest-google-places` empty
-- no files added under `supabase/migrations`
-- live run with `max_requests: 6` returns `capped: true` and stops early
-- ledger `request_count` equals response `requests_made`
-- diff review confirming pagination counts, `delay(2000)`/`delay(2500)`/`delay(150)`/`delay(200)` and both field masks unchanged
-- build/typecheck passes
+
+- `git diff` on `ingest-google-places` empty; no new files under `supabase/migrations`
+- deploy `ut-run-territory-job`, run a job with `search_term = 'banquet hall'` / `category = 'event_hall'`; confirm resulting `ut_partner_leads.category = 'event_hall'` and ledger `search_term` shows the banquet-hall phrase
+- run a NULL-`search_term` job; confirm query string unchanged
+- run with `max_requests: 6` → `capped: true`, and ledger `sum(request_count)` equals response `requests_made`
+- diff review for pagination/delays/masks; build passes

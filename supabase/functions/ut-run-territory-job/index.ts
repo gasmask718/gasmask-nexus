@@ -66,8 +66,9 @@ serve(async (req) => {
     // 2. Mark running
     await sb.from('ut_territory_jobs').update({ status: 'running', started_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', job_id);
 
-    const category = (job.category || '').replace(/_/g, ' ');
-    const query = `${category} in ${job.city}, ${job.state}`;
+    // Query uses coalesce(search_term, category); leads always get canonical job.category.
+    const term = (job.search_term || job.category || '').replace(/_/g, ' ');
+    const query = `${term} in ${job.city}, ${job.state}`;
 
     ledgerCtx = {
       job_id,
