@@ -223,7 +223,7 @@ export const UT_SMS_TEMPLATES: UTSmsTemplate[] = [
   {
     key: 'intro_text',
     label: 'Intro Text',
-    body: 'Hey! This is [VA Name] from Unforgettable Times 🎉 We\'re a platform that brings event bookings directly to vendors like you. No upfront cost — customers come to you. Want me to get you set up?',
+    body: 'Hey! This is [VA Name] from Unforgettable Times 🎉 We\'re a platform that brings event bookings directly to vendors like you. No upfront cost — customers come to you. Want me to get you set up? Reply STOP to opt out.',
   },
   {
     key: 'callback_text',
@@ -243,17 +243,17 @@ export const UT_SMS_TEMPLATES: UTSmsTemplate[] = [
   {
     key: 'missed_you_text',
     label: 'Missed Call',
-    body: 'Hey! Tried to reach you — this is [VA Name] from Unforgettable Times. We help event vendors get more bookings at no upfront cost. When\'s a good time to chat?',
+    body: 'Hey! Tried to reach you — this is [VA Name] from Unforgettable Times. We help event vendors get more bookings at no upfront cost. When\'s a good time to chat? Reply STOP to opt out.',
   },
   {
     key: 'owner_unavailable_text',
     label: 'Owner Unavailable',
-    body: 'Hey [Contact Name]! Spoke with your team earlier. I\'m [VA Name] from Unforgettable Times — we connect vendors with event customers. Would love to chat with the owner when they\'re free. What\'s a good time?',
+    body: 'Hey [Contact Name]! Spoke with your team earlier. I\'m [VA Name] from Unforgettable Times — we connect vendors with event customers. Would love to chat with the owner when they\'re free. What\'s a good time? Reply STOP to opt out.',
   },
   {
     key: 'send_info_text',
     label: 'Send Info',
-    body: 'Hey [Contact Name]! As promised, here\'s info about Unforgettable Times: We\'re a marketplace connecting top event vendors with paying customers. Zero upfront cost — you only pay when you get booked. Ready to join? Reply YES!',
+    body: 'Hey [Contact Name]! As promised, here\'s info about Unforgettable Times: We\'re a marketplace connecting top event vendors with paying customers. Zero upfront cost — you only pay when you get booked. Ready to join? Reply YES! Reply STOP to opt out.',
   },
 ];
 
