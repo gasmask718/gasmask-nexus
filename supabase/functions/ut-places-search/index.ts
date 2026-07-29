@@ -126,13 +126,16 @@ serve(async (req) => {
 
       for (const pid of ids) {
         try {
-          const p = await placeDetails(pid, apiKey);
+          const p = await placeDetails(pid, apiKey, DETAILS_MASK_FULL);
+          if (!p) throw new Error(`Place Details failed for ${pid}`);
           enriched.push({
             place_id: p.id,
             phone: p.nationalPhoneNumber || p.internationalPhoneNumber || null,
             website: p.websiteUri || null,
             rating: p.rating || null,
             rating_count: p.userRatingCount || null,
+            latitude: typeof p.location?.latitude === 'number' ? p.location.latitude : null,
+            longitude: typeof p.location?.longitude === 'number' ? p.location.longitude : null,
           });
         } catch {
           failed++;
