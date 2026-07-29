@@ -266,7 +266,7 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { lead_id, engine = "native", dry_run, deploy_vercel } = (await req.json()) as GenerateRequest;
+    const { lead_id, engine = "native", dry_run } = (await req.json()) as GenerateRequest;
 
     if (dry_run) {
       return new Response(JSON.stringify({ ok: true, dry_run: true }), {
