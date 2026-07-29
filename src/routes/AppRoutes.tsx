@@ -2057,16 +2057,16 @@ export default function AppRoutes() {
             </RequireRole>
           }
         />
-        <Route path="/dynasty-direct/catalog" element={<MarketplaceAdminPortalPage />} />
-        <Route path="/dynasty-direct/store-storefront" element={<StorePortalPage />} />
-        <Route path="/dynasty-direct/d2c-storefront" element={<Shop />} />
-        <Route path="/dynasty-direct/fulfillment" element={<DynastyDirectFulfillmentConsole />} />
-        <Route path="/dynasty-direct/shipping" element={<DDShippingPage />} />
-        <Route path="/dynasty-direct/products" element={<DDProductManagementPage />} />
-        <Route path="/dynasty-direct/pricing" element={<DDPricingPage />} />
+        <Route path="/dynasty-direct/catalog" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><MarketplaceAdminPortalPage /></RequireRole>} />
+        <Route path="/dynasty-direct/store-storefront" element={<RequireRole allowedRoles={['admin', 'owner', 'store']} showLocked><StorePortalPage /></RequireRole>} />
+        <Route path="/dynasty-direct/d2c-storefront" element={<RequireRole allowedRoles={['admin', 'owner', 'customer']} showLocked><Shop /></RequireRole>} />
+        <Route path="/dynasty-direct/fulfillment" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DynastyDirectFulfillmentConsole /></RequireRole>} />
+        <Route path="/dynasty-direct/shipping" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDShippingPage /></RequireRole>} />
+        <Route path="/dynasty-direct/products" element={<RequireRole allowedRoles={['admin', 'owner', 'wholesaler']} showLocked><DDProductManagementPage /></RequireRole>} />
+        <Route path="/dynasty-direct/pricing" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDPricingPage /></RequireRole>} />
         <Route path="/dynasty-direct/delivery" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDLocalDelivery /></RequireRole>} />
-        <Route path="/dynasty-direct/suppliers/instructions" element={<DDSupplierInstructions />} />
-        <Route path="/dynasty-direct/splits" element={<DynastyDirectSplitConsole />} />
+        <Route path="/dynasty-direct/suppliers/instructions" element={<RequireRole allowedRoles={['admin', 'owner', 'wholesaler']} showLocked><DDSupplierInstructions /></RequireRole>} />
+        <Route path="/dynasty-direct/splits" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DynastyDirectSplitConsole /></RequireRole>} />
         <Route
           path="/dynasty-direct/inventory"
           element={
@@ -2076,15 +2076,15 @@ export default function AppRoutes() {
           }
         />
         <Route path="/dynasty-direct/inventory/forecast" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDInventoryForecast /></RequireRole>} />
-        <Route path="/dynasty-direct/suppliers/portal" element={<WholesalerPortalPage />} />
-        <Route path="/dynasty-direct/suppliers/inventory" element={<WholesalerPortalPage />} />
-        <Route path="/dynasty-direct/suppliers/performance" element={<DDSupplierPerformance />} />
+        <Route path="/dynasty-direct/suppliers/portal" element={<RequireRole allowedRoles={['admin', 'owner', 'wholesaler']} showLocked><WholesalerPortalPage /></RequireRole>} />
+        <Route path="/dynasty-direct/suppliers/inventory" element={<RequireRole allowedRoles={['admin', 'owner', 'wholesaler']} showLocked><WholesalerPortalPage /></RequireRole>} />
+        <Route path="/dynasty-direct/suppliers/performance" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDSupplierPerformance /></RequireRole>} />
         <Route path="/dynasty-direct/purchase-orders" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDPurchaseOrders /></RequireRole>} />
         <Route path="/dynasty-direct/qa" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDProductQA /></RequireRole>} />
         <Route path="/dynasty-direct/reviews" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDReviews /></RequireRole>} />
         <Route path="/dynasty-direct/flash-sales" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDFlashSales /></RequireRole>} />
         <Route path="/dynasty-direct/catalog/bundles" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDBundles /></RequireRole>} />
-        <Route path="/dynasty-direct/grabba-bridge" element={<DynastyDirectGrabbaBridge />} />
+        <Route path="/dynasty-direct/grabba-bridge" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DynastyDirectGrabbaBridge /></RequireRole>} />
         <Route
           path="/dynasty-direct/affiliates"
           element={
