@@ -343,7 +343,7 @@ Deno.serve(async (req) => {
 
       let vercelDeploymentId: string | null = null;
       if (deploy_vercel) {
-        vercelDeploymentId = await tryVercelHook(industry, aiRes.content, designMd, lead);
+        vercelDeploymentId = await tryVercelHook(supabase, industry, aiRes.content, designMd, lead);
       }
 
       const { data: demo, error: insertErr } = await supabase.from("brandaro_demo_sites").insert({
