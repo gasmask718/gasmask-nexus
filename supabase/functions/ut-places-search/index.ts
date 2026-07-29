@@ -91,7 +91,8 @@ serve(async (req) => {
     if (action === 'details') {
       const { place_id } = body;
       if (!place_id) throw new Error('place_id is required');
-      const p = await placeDetails(place_id, apiKey);
+      const p = await placeDetails(place_id, apiKey, DETAILS_MASK_FULL);
+      if (!p) throw new Error(`Place Details failed for ${place_id}`);
       const { city, state } = parseCityState(p.addressComponents);
       return new Response(JSON.stringify({
         place_id: p.id,
@@ -106,6 +107,8 @@ serve(async (req) => {
         types: p.types || [],
         business_status: p.businessStatus || null,
         maps_url: p.googleMapsUri || null,
+        latitude: typeof p.location?.latitude === 'number' ? p.location.latitude : null,
+        longitude: typeof p.location?.longitude === 'number' ? p.location.longitude : null,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
