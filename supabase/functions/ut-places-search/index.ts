@@ -1,67 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-// ── Google Places Text Search with pagination ────────────────────
-async function textSearch(query: string, apiKey: string, pageToken?: string) {
-  const body: Record<string, unknown> = {
-    textQuery: query,
-    maxResultCount: 20,
-    languageCode: 'en',
-  };
-  if (pageToken) {
-    body.pageToken = pageToken;
-  }
-  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.types,places.rating,places.userRatingCount,places.googleMapsUri,places.businessStatus,places.nationalPhoneNumber,places.websiteUri,places.addressComponents,places.location,nextPageToken',
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Places Text Search failed [${res.status}]: ${err}`);
-  }
-  return res.json();
-}
-
-// ── Place Details for enrichment ─────────────────────────────────
-async function placeDetails(placeId: string, apiKey: string) {
-  const res = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
-    headers: {
-      'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': 'id,displayName,formattedAddress,nationalPhoneNumber,internationalPhoneNumber,websiteUri,rating,userRatingCount,types,businessStatus,googleMapsUri,addressComponents',
-    },
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Place Details failed [${res.status}]: ${err}`);
-  }
-  return res.json();
-}
-
-// Normalise to the exact 2-char uppercase form the ut_upsert RPC / CHECK requires.
-// Returns '' when unresolvable — callers MUST skip those rows before calling the RPC.
-function normState(raw: string | null | undefined): string {
-  const s = (raw || '').toUpperCase().slice(0, 2);
-  return s.length === 2 ? s : '';
-}
-
-function parseCityState(addressComponents: any[]): { city: string; state: string } {
-  let city = '', state = '';
-  if (!addressComponents) return { city, state };
-  for (const c of addressComponents) {
-    if (c.types?.includes('locality')) city = c.longText || c.shortText || '';
-    if (c.types?.includes('administrative_area_level_1')) state = normState(c.shortText);
-  }
-  return { city, state };
-}
+import {
+  corsHeaders,
+  delay,
+  textSearch,
+  placeDetails,
+  parseCityState,
+  DETAILS_MASK_FULL,
+} from "../_shared/places-client.ts";
 
 function mapPlace(p: any) {
   const { city, state } = parseCityState(p.addressComponents);
@@ -83,9 +28,6 @@ function mapPlace(p: any) {
   };
 }
 
-
-// ── Delay helper ─────────────────────────────────────────────────
-const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
