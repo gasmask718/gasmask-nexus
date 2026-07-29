@@ -7,10 +7,67 @@ const corsHeaders = {
 };
 
 const KNOWN_INDUSTRIES = [
-  "cleaning", "landscaping", "restaurant", "plumbing", "electrician",
-  "hvac", "roofing", "auto_repair", "salon", "gym", "dentist", "legal",
-  "real_estate", "photography", "construction", "general",
+  "cleaning", "hvac", "general", "contractor", "auto", "beauty",
+  "restaurant", "landscaping", "medical", "realestate", "legal",
+  "fitness", "events", "trucking", "childcare", "pets",
 ];
+
+// Real-world phrasing -> canonical industry key (checked as substrings, longest first)
+const INDUSTRY_ALIASES: Record<string, string> = {
+  // cleaning
+  "cleaning service": "cleaning", "cleaning services": "cleaning", "cleaning company": "cleaning",
+  "janitorial": "cleaning", "maid": "cleaning", "housekeeping": "cleaning", "cleaner": "cleaning",
+  "carpet cleaning": "cleaning", "pressure washing": "cleaning",
+  // auto
+  "auto repair shop": "auto", "auto repair": "auto", "car repair": "auto", "mechanic": "auto",
+  "auto body": "auto", "body shop": "auto", "tire shop": "auto", "car wash": "auto",
+  "automotive": "auto", "auto_repair": "auto", "dealership": "auto",
+  // hvac (incl. plumbing per business rule)
+  "hvac contractor": "hvac", "heating and cooling": "hvac", "air conditioning": "hvac",
+  "heating": "hvac", "cooling": "hvac", "plumber": "hvac", "plumbing": "hvac",
+  // contractor / trades
+  "general contractor": "contractor", "construction": "contractor", "remodeling": "contractor",
+  "renovation": "contractor", "handyman": "contractor", "roofing": "contractor", "roofer": "contractor",
+  "electrician": "contractor", "electrical": "contractor", "painting": "contractor",
+  "flooring": "contractor", "carpentry": "contractor",
+  // realestate
+  "real estate": "realestate", "real_estate": "realestate", "realtor": "realestate",
+  "property management": "realestate", "broker": "realestate",
+  // beauty
+  "salon": "beauty", "hair salon": "beauty", "barber": "beauty", "barbershop": "beauty",
+  "nail salon": "beauty", "spa": "beauty", "esthetician": "beauty", "lash": "beauty",
+  "makeup": "beauty", "beauty salon": "beauty",
+  // medical
+  "dentist": "medical", "dental": "medical", "doctor": "medical", "clinic": "medical",
+  "chiropractor": "medical", "physical therapy": "medical", "urgent care": "medical",
+  "medspa": "medical", "med spa": "medical", "healthcare": "medical", "health care": "medical",
+  "optometrist": "medical", "veterinar": "pets",
+  // legal
+  "attorney": "legal", "lawyer": "legal", "law firm": "legal", "law office": "legal",
+  // fitness
+  "gym": "fitness", "personal trainer": "fitness", "training": "fitness", "yoga": "fitness",
+  "pilates": "fitness", "crossfit": "fitness", "martial arts": "fitness",
+  // restaurant
+  "restaurant": "restaurant", "cafe": "restaurant", "coffee shop": "restaurant", "bakery": "restaurant",
+  "catering": "restaurant", "food truck": "restaurant", "pizzeria": "restaurant", "diner": "restaurant",
+  "bar": "restaurant", "deli": "restaurant",
+  // landscaping
+  "landscaping": "landscaping", "landscaper": "landscaping", "lawn care": "landscaping",
+  "lawn": "landscaping", "tree service": "landscaping", "snow removal": "landscaping",
+  // events
+  "event planning": "events", "event planner": "events", "wedding": "events", "party rental": "events",
+  "photography": "events", "photographer": "events", "dj": "events", "venue": "events",
+  // trucking
+  "trucking": "trucking", "freight": "trucking", "logistics": "trucking", "hauling": "trucking",
+  "moving company": "trucking", "movers": "trucking", "courier": "trucking", "delivery": "trucking",
+  // childcare
+  "childcare": "childcare", "child care": "childcare", "daycare": "childcare", "day care": "childcare",
+  "preschool": "childcare", "nanny": "childcare", "tutoring": "childcare",
+  // pets
+  "pet grooming": "pets", "pet sitting": "pets", "dog walking": "pets", "dog training": "pets",
+  "groomer": "pets", "kennel": "pets", "pet": "pets",
+};
+
 
 interface GenerateRequest {
   lead_id: string;
@@ -31,9 +88,38 @@ interface AiContent {
 }
 
 function normalizeIndustry(raw?: string): string {
-  const s = (raw || "general").toLowerCase().replace(/[^a-z0-9]+/g, "_");
-  return KNOWN_INDUSTRIES.includes(s) ? s : "general";
+  const cleaned = (raw || "general").toLowerCase().trim();
+  if (!cleaned) return "general";
+
+  // Pass 1: exact match on the slugified value ("Real Estate" -> "real_estate")
+  const slug = cleaned.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  if (KNOWN_INDUSTRIES.includes(slug)) return slug;
+
+  // Pass 1b: exact match with separators stripped ("real estate" -> "realestate")
+  const compact = cleaned.replace(/[^a-z0-9]+/g, "");
+  if (KNOWN_INDUSTRIES.includes(compact)) return compact;
+
+  // Pass 2: alias table, longest alias first so "auto repair shop" beats "auto"
+  const spaced = cleaned.replace(/[^a-z0-9]+/g, " ").trim();
+  const aliases = Object.keys(INDUSTRY_ALIASES).sort((a, b) => b.length - a.length);
+  for (const alias of aliases) {
+    const aliasSpaced = alias.replace(/[^a-z0-9]+/g, " ").trim();
+    if (spaced === aliasSpaced || spaced.includes(aliasSpaced)) {
+      return INDUSTRY_ALIASES[alias];
+    }
+  }
+
+  // Pass 3: fuzzy substring against the known industry keys themselves
+  const byLength = [...KNOWN_INDUSTRIES]
+    .filter((k) => k !== "general")
+    .sort((a, b) => b.length - a.length);
+  for (const key of byLength) {
+    if (compact.includes(key) || spaced.includes(key)) return key;
+  }
+
+  return "general";
 }
+
 
 async function loadDesignMd(supabase: any, industry: string): Promise<string | null> {
   for (const name of [`${industry}.md`, "general.md"]) {
@@ -170,9 +256,15 @@ async function callDurable(payload: any): Promise<{ ok: true; site_id: string; s
   }
 }
 
-async function tryVercelHook(industry: string, aiContent: AiContent, designMd: string | null, lead: any): Promise<string | null> {
-  const secretName = `VERCEL_DEPLOY_HOOK_${industry.toUpperCase()}`;
-  const hook = Deno.env.get(secretName);
+async function tryVercelHook(supabase: any, industry: string, aiContent: AiContent, designMd: string | null, lead: any): Promise<string | null> {
+  const { data: template } = await supabase
+    .from("brandaro_demo_templates")
+    .select("vercel_deploy_hook_url, vercel_template_repo")
+    .eq("industry", industry)
+    .eq("is_active", true)
+    .single();
+
+  const hook = template?.vercel_deploy_hook_url;
   if (!hook) return null;
   try {
     const res = await fetch(hook, {
@@ -251,7 +343,7 @@ Deno.serve(async (req) => {
 
       let vercelDeploymentId: string | null = null;
       if (deploy_vercel) {
-        vercelDeploymentId = await tryVercelHook(industry, aiRes.content, designMd, lead);
+        vercelDeploymentId = await tryVercelHook(supabase, industry, aiRes.content, designMd, lead);
       }
 
       const { data: demo, error: insertErr } = await supabase.from("brandaro_demo_sites").insert({
