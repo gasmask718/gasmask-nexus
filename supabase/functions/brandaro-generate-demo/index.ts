@@ -88,9 +88,38 @@ interface AiContent {
 }
 
 function normalizeIndustry(raw?: string): string {
-  const s = (raw || "general").toLowerCase().replace(/[^a-z0-9]+/g, "_");
-  return KNOWN_INDUSTRIES.includes(s) ? s : "general";
+  const cleaned = (raw || "general").toLowerCase().trim();
+  if (!cleaned) return "general";
+
+  // Pass 1: exact match on the slugified value ("Real Estate" -> "real_estate")
+  const slug = cleaned.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  if (KNOWN_INDUSTRIES.includes(slug)) return slug;
+
+  // Pass 1b: exact match with separators stripped ("real estate" -> "realestate")
+  const compact = cleaned.replace(/[^a-z0-9]+/g, "");
+  if (KNOWN_INDUSTRIES.includes(compact)) return compact;
+
+  // Pass 2: alias table, longest alias first so "auto repair shop" beats "auto"
+  const spaced = cleaned.replace(/[^a-z0-9]+/g, " ").trim();
+  const aliases = Object.keys(INDUSTRY_ALIASES).sort((a, b) => b.length - a.length);
+  for (const alias of aliases) {
+    const aliasSpaced = alias.replace(/[^a-z0-9]+/g, " ").trim();
+    if (spaced === aliasSpaced || spaced.includes(aliasSpaced)) {
+      return INDUSTRY_ALIASES[alias];
+    }
+  }
+
+  // Pass 3: fuzzy substring against the known industry keys themselves
+  const byLength = [...KNOWN_INDUSTRIES]
+    .filter((k) => k !== "general")
+    .sort((a, b) => b.length - a.length);
+  for (const key of byLength) {
+    if (compact.includes(key) || spaced.includes(key)) return key;
+  }
+
+  return "general";
 }
+
 
 async function loadDesignMd(supabase: any, industry: string): Promise<string | null> {
   for (const name of [`${industry}.md`, "general.md"]) {
