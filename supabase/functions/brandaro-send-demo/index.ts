@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     if (!demo) throw new Error("Demo not found");
 
-    const demoLink = demo.demo_url || `https://demo.brandaro.com/${demo.slug || demo_id}`;
+    const demoLink = demo.demo_url || `https://${(demo.slug || demo_id)}.demo.brandarodigital.com`;
     const message = message_override ||
       buildSmsTemplate("brandaro_demo_invite", {
         business_name: demo.business_name,
