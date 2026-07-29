@@ -18847,7 +18847,7 @@ export type Database = {
           seo_text: string | null
           services_inferred: string[] | null
           services_variant: string | null
-          slug: string | null
+          slug: string
           sms_sent_at: string | null
           state: string | null
           stripe_session_id: string | null
@@ -18909,7 +18909,7 @@ export type Database = {
           seo_text?: string | null
           services_inferred?: string[] | null
           services_variant?: string | null
-          slug?: string | null
+          slug?: string
           sms_sent_at?: string | null
           state?: string | null
           stripe_session_id?: string | null
@@ -18971,7 +18971,7 @@ export type Database = {
           seo_text?: string | null
           services_inferred?: string[] | null
           services_variant?: string | null
-          slug?: string | null
+          slug?: string
           sms_sent_at?: string | null
           state?: string | null
           stripe_session_id?: string | null
