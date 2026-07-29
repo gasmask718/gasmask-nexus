@@ -92,16 +92,25 @@ serve(async (req) => {
       let website = p.websiteUri || null;
       let rating = p.rating || null;
       let reviewCount = p.userRatingCount ?? null;
+      let types = p.types || [];
+      let mapsUrl = p.googleMapsUri || null;
+      let lat = typeof p.location?.latitude === 'number' ? p.location.latitude : null;
+      let lng = typeof p.location?.longitude === 'number' ? p.location.longitude : null;
 
       // Enrich if no phone
       if (!phone) {
         try {
-          const details = await placeDetails(p.id, apiKey);
+          const details = await placeDetails(p.id, apiKey, DETAILS_MASK_FULL);
           if (details) {
             phone = details.nationalPhoneNumber || details.internationalPhoneNumber || null;
             website = details.websiteUri || website;
             rating = details.rating || rating;
             reviewCount = details.userRatingCount ?? reviewCount;
+            if ((!types || types.length === 0) && details.types) types = details.types;
+            mapsUrl = mapsUrl || details.googleMapsUri || null;
+            // Persist Details coordinates only when Text Search did not supply them.
+            if (lat === null && typeof details.location?.latitude === 'number') lat = details.location.latitude;
+            if (lng === null && typeof details.location?.longitude === 'number') lng = details.location.longitude;
             enrichedCount++;
           }
           await delay(150);
@@ -119,14 +128,15 @@ serve(async (req) => {
         state: finalState,
         google_rating: rating,
         review_count: reviewCount,
-        google_types: p.types || [],
-        maps_url: p.googleMapsUri || null,
+        google_types: types,
+        maps_url: mapsUrl,
         source: 'google_places',
         external_source: 'google_places',
         status: 'new',
       };
-      if (typeof p.location?.latitude === 'number') placeRecord.latitude = p.location.latitude;
-      if (typeof p.location?.longitude === 'number') placeRecord.longitude = p.location.longitude;
+      if (lat !== null) placeRecord.latitude = lat;
+      if (lng !== null) placeRecord.longitude = lng;
+
 
       try {
         const { data: up, error: upErr } = await sb.rpc('ut_upsert_partner_lead', { p: placeRecord });
