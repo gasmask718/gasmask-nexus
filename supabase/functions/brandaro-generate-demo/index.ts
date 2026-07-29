@@ -314,12 +314,10 @@ Deno.serve(async (req) => {
       });
 
       const demoSlug = `${(lead.business_name || "demo").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}-${Date.now()}`;
-      const demoUrl = `https://${demoSlug}.${industry}.demo.brandarodigital.com`;
-
-      let vercelDeploymentId: string | null = null;
-      if (deploy_vercel) {
-        vercelDeploymentId = await tryVercelHook(supabase, industry, aiRes.content, designMd, lead);
-      }
+      // Single-label subdomain: `slug--industry.demo.brandarodigital.com`
+      // (avoids a two-level wildcard certificate).
+      const demoUrl = `https://${demoSlug}--${industry}.demo.brandarodigital.com`;
+      const nowIso = new Date().toISOString();
 
       const { data: demo, error: insertErr } = await supabase.from("brandaro_demo_sites").insert({
         lead_id, business_name: lead.business_name, industry: lead.industry,
@@ -328,11 +326,13 @@ Deno.serve(async (req) => {
         seo_text: aiRes.content.about_paragraph,
         generation_status: "ready", generation_engine: "native",
         engine_status: "ready", template_used: industry,
+        slug: demoSlug,
         demo_url: demoUrl, hosting_path: `/demos/${demoSlug}`,
         generated_html: html,
         content_blocks: aiRes.content,
         generated_colors: { primary: aiRes.content.color_primary, secondary: aiRes.content.color_secondary, font: aiRes.content.font_recommendation },
-        vercel_deployment_id: vercelDeploymentId,
+        published_at: nowIso,
+        public_status: "live",
         demo_ready_for_conversion: true,
       }).select().single();
 
