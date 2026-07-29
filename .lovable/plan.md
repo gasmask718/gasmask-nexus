@@ -1,58 +1,41 @@
-## UT-025 — Outreach Compliance (plan only, nothing applied)
+## UT-006 — Places API cost guard + usage ledger
 
-### Fix 1 — The swallowed block (highest priority)
-File: `src/hooks/useUTPartnerLeads.ts`
+Scope: metering and a cap only. No search behaviour, pagination, delay, or field-mask changes. `ingest-google-places` untouched. No migration — `ut_api_usage_log` already exists.
 
-`sendSmsTemplate` (~:298) and `sendOnboardingLink` (~:369) both discard the edge-function response. Rewrite both mutation bodies to:
+Confirmed ledger columns: `run_id, function_name, provider(default google_places), sku, request_count, estimated_cost, job_id, city, state, category, search_term, results_returned, leads_new, leads_duplicate, capped, created_at`.
 
-1. `const { data, error } = await supabase.functions.invoke('send-sms', {...})` — throw on `error`.
-2. Treat `data?.success === false` as a **block**, not a send:
-   - insert `ut_outreach_logs` with `outcome: 'sms_blocked'`, `notes: data.reason ?? 'blocked'`, `template_name` still recorded, `channel: 'sms'`
-   - **no** `sms_sent` row, **no** `sms_count` increment, **no** `last_contacted_at`, **no** `last_sms_template` update
-   - for `sendOnboardingLink`: also skip the `ut_partner_onboarding` → `status:'sent'`/`sent_at` update and skip `onboarding_link_sent_at`
-   - return `{ success: false, reason, templateLabel }` so the UI renders a blocked state
-3. Only on `data?.success === true` keep today's logging + counter updates.
-4. `onSuccess` branches on `result.success`: success → existing green toast; blocked → `toast.error('🚫 Blocked: <reason>')`. No silent success path remains (`?? true` default is removed — an absent/undefined `success` is treated as failure).
+### 1. `_shared/places-client.ts` (add only)
+- Named constants with a verification comment:
+  - `SKU_TEXT_SEARCH = 'text_search_enterprise'`, `COST_TEXT_SEARCH = 0.035`
+  - `SKU_PLACE_DETAILS = 'place_details_enterprise'`, `COST_PLACE_DETAILS = 0.020`
+  - Comment: rates must be verified against actual Google Cloud billing.
+- `createUsageTracker(maxRequests = 200)` returns an object with:
+  - `runId` (crypto.randomUUID), `textSearchCount`, `placeDetailsCount`, `total`, `capped`
+  - `canRequest()` → total < maxRequests
+  - `note(sku)` internal increment
+  - `estimatedCost(sku)` helper and `rows()` → array of `{sku, request_count, estimated_cost}` (only non-zero SKUs, so a run using both writes two rows).
+- `textSearch(query, apiKey, pageToken?, tracker?)` and `placeDetails(placeId, apiKey, fieldMask?, tracker?)` gain an **optional trailing** tracker arg and increment it immediately before `fetch`. Existing call signatures, request bodies, headers, masks and return values are unchanged — every existing caller (incl. any without a tracker) behaves byte-identically.
 
-### Fix 2 — Unified suppression check
-File: `supabase/functions/_shared/dnc.ts` — **pure addition**. `isOnDNC`, `normalizeE164`, `CANONICAL_DISPOSITIONS`, `DISPOSITION_ALIASES`, `canonicalizeDisposition` untouched, so GasMask / `dd-` / `tt-` / `dc-*` behaviour is unchanged.
+### 2. Per-run cap
+- Both functions read optional `max_requests` from the request body, default `200`.
+- Loop guards: before each `textSearch` page and before each `placeDetails` enrichment, check `tracker.canRequest()`. If false, set `capped = true` and break out of the API-calling loop.
+- In `ut-run-territory-job`, the cap only stops further API calls — the place-processing/upsert loop still finishes writing every place already fetched, and job status/coverage updates still run. Never abort mid-write.
+- In `ut-places-search`, `search_all` and `enrich_batch` stop fetching additional pages/ids and return what was gathered. `MAX_BATCH = 20` stays.
 
-New export:
+### 3. Ledger writes
+- `ut-run-territory-job` already has a service-role client; it writes ledger rows in a `finally`-style path so rows are written on success, on cap, and on error.
+- `ut-places-search` currently has no Supabase client — add a service-role client used **only** for ledger inserts.
+- One row per non-zero SKU per invocation: `run_id` (per-invocation uuid), `function_name`, `sku`, `request_count`, `estimated_cost = count * rate`, `job_id`, `city`, `state`, `category`, `search_term` (the query), `results_returned` (places fetched), `leads_new`/`leads_duplicate` (reused directly from the existing `was_insert`-based `leadsFound` / `duplicatesSkipped` — no recount), `capped`.
+- For `ut-places-search` (no job context), job/city/state/category are null; `leads_new`/`leads_duplicate` null.
+- Ledger insert failures are caught and logged only — they never fail the job.
 
-```text
-isSuppressed(supabase, phone)
-  -> { blocked: boolean; reason?: string; source?: 'dnc_list' | 'opt_out_events' }
-```
+### 4. Response
+- Add `requests_made`, `estimated_cost`, `capped` to both functions' JSON responses. No existing field removed or renamed (`success`, `leads_found`, `duplicates_skipped`, `enriched_count`, `places`, `count`, `next_page_token`, `pages_fetched`, `enriched`, `enriched_count`, `failed`, `capped_at` all stay).
 
-- normalises with the existing `normalizeE164`
-- checks `dnc_list` (same OR-query shape as `isOnDNC`: `phone_e164`, `phone_number`, raw)
-- checks `opt_out_events` by digits-only `phone_number` (the format that table actually stores, per `send-sms`)
-- returns the first hit with its `source`
-- **fails CLOSED**: any thrown lookup error → `{ blocked: true, reason: 'suppression_lookup_failed' }`
-
-Wiring:
-
-- `supabase/functions/send-sms/index.ts` (~246-266): replace the inline `opt_out_events` query with `isSuppressed`. Response shape stays `{ success:false, status:'blocked', reason }` (reason now carries the DNC reason when the hit came from `dnc_list`), and the `outbound_messages` row still logs `status:'blocked'` with the reason in `error_message`.
-- `supabase/functions/twilio-outbound-call/index.ts`: no suppression check today. Add `isSuppressed` immediately after the `outbound_call_queue` lookup, gating on `item.phone_number` (that function takes `queue_item_id` + `business_id`, not a raw `to_number`), returning `{ success:false, status:'blocked', reason }` before any Twilio API call.
-
-Out of scope, untouched: `dc-bland-dispatch`, `dc-outbound-call`, `ut-/dd-/tt-trigger-bland-campaign`, `dc-bland-webhook`, both `gasmask-dnc-*` functions.
-
-### Fix 3 — STOP footer
-File: `src/config/utScripts.ts` — append ` Reply STOP to opt out.` to the four first-contact templates: `intro_text`, `send_info_text`, `missed_you_text`, `owner_unavailable_text`. The three reply-context templates (`callback_text`, `interested_followup`, `onboarding_link_text`) are left alone as they only follow an established conversation.
-
-Before/after example (`intro_text`):
-
-```text
-- ...No upfront cost — customers come to you. Want me to get you set up?
-+ ...No upfront cost — customers come to you. Want me to get you set up? Reply STOP to opt out.
-```
-
-### Verification I will run and paste
-- `git diff supabase/functions/_shared/dnc.ts` — additions only, `isOnDNC` body byte-identical
-- `git diff --stat supabase/functions/gasmask-*` — empty
-- Live test: call `send-sms` against a number seeded in `dnc_list` only → expect `status:'blocked'`; confirm no `sms_sent` row and `sms_count`/`last_contacted_at` unchanged on the lead
-- Confirm `twilio-outbound-call` returns blocked for a suppressed queue item without hitting Twilio
-- `tsgo` typecheck + build
-
-### Note (not in scope, flagging)
-`useUTAIDialer.ts` sends `to_number`/`agent_id` to `twilio-outbound-call`, which requires `queue_item_id`/`business_id` — that hook is already dead code (commented out in `UTOutreachCommand.tsx`) and would 400 if re-enabled. I will not change it here.
+### Verification before reporting done
+- `git diff` on `supabase/functions/ingest-google-places` empty
+- no files added under `supabase/migrations`
+- live run with `max_requests: 6` returns `capped: true` and stops early
+- ledger `request_count` equals response `requests_made`
+- diff review confirming pagination counts, `delay(2000)`/`delay(2500)`/`delay(150)`/`delay(200)` and both field masks unchanged
+- build/typecheck passes
