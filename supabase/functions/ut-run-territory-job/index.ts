@@ -1,58 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  corsHeaders,
+  delay,
+  textSearch,
+  placeDetails,
+  parseCityState,
+  normState,
+  DETAILS_MASK_FULL,
+} from "../_shared/places-client.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
-
-// Google Places Text Search
-async function textSearch(query: string, apiKey: string, pageToken?: string) {
-  const body: Record<string, unknown> = { textQuery: query, maxResultCount: 20, languageCode: 'en' };
-  if (pageToken) body.pageToken = pageToken;
-  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.types,places.rating,places.userRatingCount,places.googleMapsUri,places.businessStatus,places.nationalPhoneNumber,places.websiteUri,places.addressComponents,places.location,nextPageToken',
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`Places search failed [${res.status}]: ${await res.text()}`);
-  return res.json();
-}
-
-// Place Details for phone enrichment
-async function placeDetails(placeId: string, apiKey: string) {
-  const res = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
-    headers: {
-      'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': 'id,displayName,formattedAddress,nationalPhoneNumber,internationalPhoneNumber,websiteUri,rating,userRatingCount,addressComponents',
-    },
-  });
-  if (!res.ok) return null;
-  return res.json();
-}
-
-// Normalise to the exact 2-char uppercase form the ut_upsert RPC / CHECK requires.
-// Returns '' when unresolvable — those places are skipped, never sent to the RPC.
-function normState(raw: string | null | undefined): string {
-  const s = (raw || '').toUpperCase().slice(0, 2);
-  return s.length === 2 ? s : '';
-}
-
-function parseCityState(addressComponents: any[]): { city: string; state: string } {
-  let city = '', state = '';
-  if (!addressComponents) return { city, state };
-  for (const c of addressComponents) {
-    if (c.types?.includes('locality')) city = c.longText || c.shortText || '';
-    if (c.types?.includes('administrative_area_level_1')) state = normState(c.shortText);
-  }
-  return { city, state };
-}
 
 
 serve(async (req) => {
