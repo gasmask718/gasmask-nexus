@@ -109,11 +109,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fire-and-forget view metering; never blocks the response path.
-    supabase
-      .rpc("noop_never_called")
-      .then(() => {})
-      .catch(() => {});
+    // Lightweight view metering.
     await supabase
       .from("brandaro_demo_sites")
       .update({ last_viewed_at: new Date().toISOString() })
