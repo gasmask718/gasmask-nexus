@@ -120515,6 +120515,7 @@ export type Database = {
           leads_found: number | null
           next_run_at: string | null
           priority: number
+          search_term: string | null
           source: string
           started_at: string | null
           state: string
@@ -120533,6 +120534,7 @@ export type Database = {
           leads_found?: number | null
           next_run_at?: string | null
           priority?: number
+          search_term?: string | null
           source?: string
           started_at?: string | null
           state: string
@@ -120551,6 +120553,7 @@ export type Database = {
           leads_found?: number | null
           next_run_at?: string | null
           priority?: number
+          search_term?: string | null
           source?: string
           started_at?: string | null
           state?: string
