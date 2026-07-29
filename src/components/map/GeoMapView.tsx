@@ -38,6 +38,7 @@ export interface GeoMapViewProps {
   searchFields?: (p: GeoPoint) => string[];
   groupFilterLabel?: string;
   groupCountLabel?: (count: number) => string;
+  searchPlaceholder?: string;
   emptyState?: React.ReactNode;
   onPointClick?: (p: GeoPoint) => void;
   className?: string;
@@ -130,6 +131,7 @@ export function GeoMapView({
   searchFields,
   groupFilterLabel = 'All Groups',
   groupCountLabel = (n) => `${n} points`,
+  searchPlaceholder = 'Search...',
   emptyState,
   onPointClick,
   className,
@@ -579,7 +581,7 @@ export function GeoMapView({
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search..."
+                placeholder={searchPlaceholder}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="pl-9 h-9"
