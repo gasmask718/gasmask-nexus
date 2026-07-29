@@ -52,7 +52,11 @@ export function ContactPhoneNote({
       toast.success('Number note saved');
       setEditing(false);
       invalidateKeys.forEach((key) => qc.invalidateQueries({ queryKey: key }));
+      // Every surface that reads store_contacts must repaint.
       qc.invalidateQueries({ queryKey: ['store-contacts'] });
+      qc.invalidateQueries({ queryKey: ['store-contacts-responsiveness'] });
+      qc.invalidateQueries({ queryKey: ['contact-responsiveness'] });
+      qc.invalidateQueries({ queryKey: ['store-contact-glance'] });
     },
     onError: (e: any) => {
       // Surface the REAL error — never swallow it.

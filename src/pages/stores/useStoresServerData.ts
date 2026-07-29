@@ -212,13 +212,20 @@ export function useStoresServerData(args: UseStoresServerDataArgs) {
       }
 
       // ── active / inactive (via MV set) ────────────────────────────
-      if (args.activeFilter === 'active') {
-        const ids = Array.from(args.activeStoreIds);
-        if (ids.length === 0) return { rows: [], total: 0 };
-        qb = qb.in('id', ids);
-      } else if (args.activeFilter === 'inactive') {
-        const ids = Array.from(args.activeStoreIds);
-        if (ids.length > 0) qb = qb.not('id', 'in', `(${ids.join(',')})`);
+      // NOTE: "active" = has at least one invoice ever. A newly captured /
+      // connected store has no invoices yet, so it is invisible under the
+      // default Active tab. When the user is explicitly SEARCHING, search the
+      // whole universe — otherwise brand-new stores can never be found.
+      const isSearching = !!args.searchQuery?.trim();
+      if (!isSearching) {
+        if (args.activeFilter === 'active') {
+          const ids = Array.from(args.activeStoreIds);
+          if (ids.length === 0) return { rows: [], total: 0 };
+          qb = qb.in('id', ids);
+        } else if (args.activeFilter === 'inactive') {
+          const ids = Array.from(args.activeStoreIds);
+          if (ids.length > 0) qb = qb.not('id', 'in', `(${ids.join(',')})`);
+        }
       }
 
       // ── relationship ──────────────────────────────────────────────

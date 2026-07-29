@@ -143,6 +143,7 @@ export function useStoreContactsWithResponsiveness(storeId: string) {
           can_receive_sms,
           influence_level,
           notes,
+          phone_note,
           total_calls_attempted,
           total_calls_answered,
           last_call_attempt_at,
