@@ -69,6 +69,7 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
     title: '📣 Growth Engine',
     items: [
       { path: '/os/unforgettable/leads', label: 'Lead Intelligence', icon: Brain },
+      { path: '/os/unforgettable/partner-map', label: 'Partner Map', icon: MapPin },
       { path: '/os/unforgettable/intelligence', label: 'Intelligence Hub', icon: Target },
       { path: '/os/unforgettable/outreach', label: 'Outreach Command', icon: Phone },
       { path: '/os/unforgettable/outreach-engine', label: 'Outreach Engine', icon: Send },
