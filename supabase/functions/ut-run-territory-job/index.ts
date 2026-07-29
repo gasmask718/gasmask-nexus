@@ -8,6 +8,7 @@ import {
   parseCityState,
   normState,
   DETAILS_MASK_FULL,
+  createUsageTracker,
 } from "../_shared/places-client.ts";
 
 
@@ -22,9 +23,39 @@ serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const sb = createClient(supabaseUrl, serviceKey);
 
+  let tracker = createUsageTracker(200);
+  let ledgerCtx: Record<string, unknown> = {};
+  let ledgerWritten = false;
+
+  // Writes one ut_api_usage_log row per SKU used. Never throws.
+  const writeLedger = async () => {
+    if (ledgerWritten) return;
+    ledgerWritten = true;
+    const rows = tracker.rows();
+    if (rows.length === 0) return;
+    try {
+      await sb.from('ut_api_usage_log').insert(rows.map((r) => ({
+        run_id: tracker.runId,
+        function_name: 'ut-run-territory-job',
+        provider: 'google_places',
+        sku: r.sku,
+        request_count: r.request_count,
+        estimated_cost: r.estimated_cost,
+        capped: tracker.capped,
+        ...ledgerCtx,
+      })));
+    } catch (e) {
+      console.error('Ledger write failed:', e instanceof Error ? e.message : e);
+    }
+  };
+
   try {
-    const { job_id } = await req.json();
+    const reqBody = await req.json();
+    const { job_id } = reqBody;
+    const maxRequests = typeof reqBody.max_requests === 'number' && reqBody.max_requests > 0
+      ? reqBody.max_requests : 200;
     if (!job_id) throw new Error('job_id required');
+    tracker = createUsageTracker(maxRequests);
 
     // 1. Fetch job
     const { data: job, error: jErr } = await sb.from('ut_territory_jobs').select('*').eq('id', job_id).single();
@@ -38,14 +69,23 @@ serve(async (req) => {
     const category = (job.category || '').replace(/_/g, ' ');
     const query = `${category} in ${job.city}, ${job.state}`;
 
+    ledgerCtx = {
+      job_id,
+      city: job.city,
+      state: job.state,
+      category: job.category,
+      search_term: query,
+    };
+
     // 3. Search Google Places (up to 3 pages)
     const allPlaces: any[] = [];
     let pageToken: string | undefined;
     for (let page = 0; page < 3; page++) {
       if (page > 0 && !pageToken) break;
+      if (!tracker.canRequest()) { tracker.capped = true; break; }
       if (page > 0) await delay(2500);
       try {
-        const result = await textSearch(query, apiKey, pageToken);
+        const result = await textSearch(query, apiKey, pageToken, tracker);
         allPlaces.push(...(result.places || []));
         pageToken = result.nextPageToken;
         if (!pageToken) break;
@@ -60,7 +100,12 @@ serve(async (req) => {
         status: 'completed', finished_at: new Date().toISOString(), leads_found: 0,
         duplicates_skipped: 0, enriched_count: 0, updated_at: new Date().toISOString(),
       }).eq('id', job_id);
-      return new Response(JSON.stringify({ success: true, leads_found: 0, duplicates_skipped: 0, enriched_count: 0 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      ledgerCtx = { ...ledgerCtx, results_returned: 0, leads_new: 0, leads_duplicate: 0 };
+      await writeLedger();
+      return new Response(JSON.stringify({
+        success: true, leads_found: 0, duplicates_skipped: 0, enriched_count: 0,
+        requests_made: tracker.total(), estimated_cost: Number(tracker.estimatedCost().toFixed(4)), capped: tracker.capped,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     let leadsFound = 0;
@@ -98,9 +143,10 @@ serve(async (req) => {
       let lng = typeof p.location?.longitude === 'number' ? p.location.longitude : null;
 
       // Enrich if no phone
-      if (!phone) {
+      if (!phone && !tracker.canRequest()) tracker.capped = true;
+      if (!phone && tracker.canRequest()) {
         try {
-          const details = await placeDetails(p.id, apiKey, DETAILS_MASK_FULL);
+          const details = await placeDetails(p.id, apiKey, DETAILS_MASK_FULL, tracker);
           if (details) {
             phone = details.nationalPhoneNumber || details.internationalPhoneNumber || null;
             website = details.websiteUri || website;
@@ -173,8 +219,17 @@ serve(async (req) => {
       }).eq('state', job.state);
     }
 
+    ledgerCtx = {
+      ...ledgerCtx,
+      results_returned: allPlaces.length,
+      leads_new: leadsFound,
+      leads_duplicate: duplicatesSkipped,
+    };
+    await writeLedger();
+
     return new Response(JSON.stringify({
       success: true, leads_found: leadsFound, duplicates_skipped: duplicatesSkipped, enriched_count: enrichedCount,
+      requests_made: tracker.total(), estimated_cost: Number(tracker.estimatedCost().toFixed(4)), capped: tracker.capped,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (err) {
@@ -189,7 +244,14 @@ serve(async (req) => {
       }
     } catch { /* ignore */ }
 
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Unknown error' }), {
+    await writeLedger();
+
+    return new Response(JSON.stringify({
+      error: err instanceof Error ? err.message : 'Unknown error',
+      requests_made: tracker.total(),
+      estimated_cost: Number(tracker.estimatedCost().toFixed(4)),
+      capped: tracker.capped,
+    }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

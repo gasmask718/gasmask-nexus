@@ -23,10 +23,69 @@ export const DETAILS_MASK_FULL =
 // Cheapest tier (Essentials SKU) — coordinates only.
 export const DETAILS_MASK_GEO = 'id,location';
 
+// ── Cost metering (UT-006) ───────────────────────────────────────────────
+// IMPORTANT: these SKU names and per-call rates are estimates and MUST be
+// verified against actual Google Cloud billing before being used for any
+// financial reporting.
+export const SKU_TEXT_SEARCH = 'text_search_enterprise';
+export const COST_TEXT_SEARCH = 0.035; // USD per call — verify against GCP billing
+export const SKU_PLACE_DETAILS = 'place_details_enterprise';
+export const COST_PLACE_DETAILS = 0.020; // USD per call — verify against GCP billing
+
+export const SKU_RATES: Record<string, number> = {
+  [SKU_TEXT_SEARCH]: COST_TEXT_SEARCH,
+  [SKU_PLACE_DETAILS]: COST_PLACE_DETAILS,
+};
+
+export interface UsageLedgerRow {
+  sku: string;
+  request_count: number;
+  estimated_cost: number;
+}
+
+export interface UsageTracker {
+  runId: string;
+  maxRequests: number;
+  capped: boolean;
+  counts: Record<string, number>;
+  total(): number;
+  canRequest(): boolean;
+  note(sku: string): void;
+  estimatedCost(): number;
+  rows(): UsageLedgerRow[];
+}
+
+// Per-invocation request counter + cap. Passing this to textSearch/placeDetails
+// is optional; without it those functions behave exactly as before.
+export function createUsageTracker(maxRequests = 200): UsageTracker {
+  const counts: Record<string, number> = {};
+  const t: UsageTracker = {
+    runId: crypto.randomUUID(),
+    maxRequests,
+    capped: false,
+    counts,
+    total: () => Object.values(counts).reduce((a, b) => a + b, 0),
+    canRequest: () => t.total() < maxRequests,
+    note: (sku: string) => { counts[sku] = (counts[sku] || 0) + 1; },
+    estimatedCost: () =>
+      Object.entries(counts).reduce((sum, [sku, n]) => sum + n * (SKU_RATES[sku] || 0), 0),
+    rows: () =>
+      Object.entries(counts)
+        .filter(([, n]) => n > 0)
+        .map(([sku, n]) => ({
+          sku,
+          request_count: n,
+          estimated_cost: Number((n * (SKU_RATES[sku] || 0)).toFixed(4)),
+        })),
+  };
+  return t;
+}
+
 // Google Places Text Search (paginated).
-export async function textSearch(query: string, apiKey: string, pageToken?: string) {
+export async function textSearch(query: string, apiKey: string, pageToken?: string, tracker?: UsageTracker) {
   const body: Record<string, unknown> = { textQuery: query, maxResultCount: 20, languageCode: 'en' };
   if (pageToken) body.pageToken = pageToken;
+  tracker?.note(SKU_TEXT_SEARCH);
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',
     headers: {
@@ -48,7 +107,9 @@ export async function placeDetails(
   placeId: string,
   apiKey: string,
   fieldMask: string = DETAILS_MASK_FULL,
+  tracker?: UsageTracker,
 ) {
+  tracker?.note(SKU_PLACE_DETAILS);
   const res = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
     headers: {
       'X-Goog-Api-Key': apiKey,
