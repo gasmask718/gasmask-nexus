@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { usePortalCustomerId } from '@/hooks/usePortalCustomerId';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,19 +13,8 @@ import {
 
 const PortalDashboard = () => {
   const navigate = useNavigate();
-  const [customerId, setCustomerId] = useState<string | null>(null);
+  const { customerId } = usePortalCustomerId();
 
-  useEffect(() => {
-    const sessionToken = localStorage.getItem('portal_session');
-    const storedCustomerId = localStorage.getItem('portal_customer_id');
-    
-    if (!sessionToken || !storedCustomerId) {
-      navigate('/portal/login');
-      return;
-    }
-    
-    setCustomerId(storedCustomerId);
-  }, [navigate]);
 
   // Fetch customer data
   const { data: customer } = useQuery({
