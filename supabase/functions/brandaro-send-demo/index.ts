@@ -28,13 +28,13 @@ Deno.serve(async (req) => {
     // Get demo info
     const { data: demo } = await supabase
       .from("brandaro_demo_sites")
-      .select("demo_url, business_name, slug")
+      .select("demo_url, business_name, slug, industry")
       .eq("id", demo_id)
       .single();
 
     if (!demo) throw new Error("Demo not found");
 
-    const demoLink = demo.demo_url || `https://${(demo.slug || demo_id)}.demo.brandarodigital.com`;
+    const demoLink = demo.demo_url || `https://${(demo.slug || demo_id)}.${demo.industry || "general"}.demo.brandarodigital.com`;
     const message = message_override ||
       buildSmsTemplate("brandaro_demo_invite", {
         business_name: demo.business_name,
