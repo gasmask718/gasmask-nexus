@@ -115729,6 +115729,39 @@ export type Database = {
           },
         ]
       }
+      ut_partner_categories: {
+        Row: {
+          category: string
+          category_group: string
+          created_at: string
+          display_name: string
+          is_primary: boolean
+          notes: string | null
+          outreach_weight: number
+          search_terms: string[]
+        }
+        Insert: {
+          category: string
+          category_group: string
+          created_at?: string
+          display_name: string
+          is_primary?: boolean
+          notes?: string | null
+          outreach_weight?: number
+          search_terms?: string[]
+        }
+        Update: {
+          category?: string
+          category_group?: string
+          created_at?: string
+          display_name?: string
+          is_primary?: boolean
+          notes?: string | null
+          outreach_weight?: number
+          search_terms?: string[]
+        }
+        Relationships: []
+      }
       ut_partner_creative_collections: {
         Row: {
           base_price: number | null
