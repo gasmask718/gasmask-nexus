@@ -113197,6 +113197,66 @@ export type Database = {
           },
         ]
       }
+      ut_api_usage_log: {
+        Row: {
+          capped: boolean | null
+          category: string | null
+          city: string | null
+          created_at: string
+          estimated_cost: number | null
+          function_name: string
+          id: string
+          job_id: string | null
+          leads_duplicate: number | null
+          leads_new: number | null
+          provider: string
+          request_count: number
+          results_returned: number | null
+          run_id: string
+          search_term: string | null
+          sku: string | null
+          state: string | null
+        }
+        Insert: {
+          capped?: boolean | null
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          estimated_cost?: number | null
+          function_name: string
+          id?: string
+          job_id?: string | null
+          leads_duplicate?: number | null
+          leads_new?: number | null
+          provider?: string
+          request_count?: number
+          results_returned?: number | null
+          run_id: string
+          search_term?: string | null
+          sku?: string | null
+          state?: string | null
+        }
+        Update: {
+          capped?: boolean | null
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          estimated_cost?: number | null
+          function_name?: string
+          id?: string
+          job_id?: string | null
+          leads_duplicate?: number | null
+          leads_new?: number | null
+          provider?: string
+          request_count?: number
+          results_returned?: number | null
+          run_id?: string
+          search_term?: string | null
+          sku?: string | null
+          state?: string | null
+        }
+        Relationships: []
+      }
       ut_automation_runs: {
         Row: {
           completed_at: string | null
