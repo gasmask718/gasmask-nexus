@@ -7,10 +7,67 @@ const corsHeaders = {
 };
 
 const KNOWN_INDUSTRIES = [
-  "cleaning", "landscaping", "restaurant", "plumbing", "electrician",
-  "hvac", "roofing", "auto_repair", "salon", "gym", "dentist", "legal",
-  "real_estate", "photography", "construction", "general",
+  "cleaning", "hvac", "general", "contractor", "auto", "beauty",
+  "restaurant", "landscaping", "medical", "realestate", "legal",
+  "fitness", "events", "trucking", "childcare", "pets",
 ];
+
+// Real-world phrasing -> canonical industry key (checked as substrings, longest first)
+const INDUSTRY_ALIASES: Record<string, string> = {
+  // cleaning
+  "cleaning service": "cleaning", "cleaning services": "cleaning", "cleaning company": "cleaning",
+  "janitorial": "cleaning", "maid": "cleaning", "housekeeping": "cleaning", "cleaner": "cleaning",
+  "carpet cleaning": "cleaning", "pressure washing": "cleaning",
+  // auto
+  "auto repair shop": "auto", "auto repair": "auto", "car repair": "auto", "mechanic": "auto",
+  "auto body": "auto", "body shop": "auto", "tire shop": "auto", "car wash": "auto",
+  "automotive": "auto", "auto_repair": "auto", "dealership": "auto",
+  // hvac (incl. plumbing per business rule)
+  "hvac contractor": "hvac", "heating and cooling": "hvac", "air conditioning": "hvac",
+  "heating": "hvac", "cooling": "hvac", "plumber": "hvac", "plumbing": "hvac",
+  // contractor / trades
+  "general contractor": "contractor", "construction": "contractor", "remodeling": "contractor",
+  "renovation": "contractor", "handyman": "contractor", "roofing": "contractor", "roofer": "contractor",
+  "electrician": "contractor", "electrical": "contractor", "painting": "contractor",
+  "flooring": "contractor", "carpentry": "contractor",
+  // realestate
+  "real estate": "realestate", "real_estate": "realestate", "realtor": "realestate",
+  "property management": "realestate", "broker": "realestate",
+  // beauty
+  "salon": "beauty", "hair salon": "beauty", "barber": "beauty", "barbershop": "beauty",
+  "nail salon": "beauty", "spa": "beauty", "esthetician": "beauty", "lash": "beauty",
+  "makeup": "beauty", "beauty salon": "beauty",
+  // medical
+  "dentist": "medical", "dental": "medical", "doctor": "medical", "clinic": "medical",
+  "chiropractor": "medical", "physical therapy": "medical", "urgent care": "medical",
+  "medspa": "medical", "med spa": "medical", "healthcare": "medical", "health care": "medical",
+  "optometrist": "medical", "veterinar": "pets",
+  // legal
+  "attorney": "legal", "lawyer": "legal", "law firm": "legal", "law office": "legal",
+  // fitness
+  "gym": "fitness", "personal trainer": "fitness", "training": "fitness", "yoga": "fitness",
+  "pilates": "fitness", "crossfit": "fitness", "martial arts": "fitness",
+  // restaurant
+  "restaurant": "restaurant", "cafe": "restaurant", "coffee shop": "restaurant", "bakery": "restaurant",
+  "catering": "restaurant", "food truck": "restaurant", "pizzeria": "restaurant", "diner": "restaurant",
+  "bar": "restaurant", "deli": "restaurant",
+  // landscaping
+  "landscaping": "landscaping", "landscaper": "landscaping", "lawn care": "landscaping",
+  "lawn": "landscaping", "tree service": "landscaping", "snow removal": "landscaping",
+  // events
+  "event planning": "events", "event planner": "events", "wedding": "events", "party rental": "events",
+  "photography": "events", "photographer": "events", "dj": "events", "venue": "events",
+  // trucking
+  "trucking": "trucking", "freight": "trucking", "logistics": "trucking", "hauling": "trucking",
+  "moving company": "trucking", "movers": "trucking", "courier": "trucking", "delivery": "trucking",
+  // childcare
+  "childcare": "childcare", "child care": "childcare", "daycare": "childcare", "day care": "childcare",
+  "preschool": "childcare", "nanny": "childcare", "tutoring": "childcare",
+  // pets
+  "pet grooming": "pets", "pet sitting": "pets", "dog walking": "pets", "dog training": "pets",
+  "groomer": "pets", "kennel": "pets", "pet": "pets",
+};
+
 
 interface GenerateRequest {
   lead_id: string;
