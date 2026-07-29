@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { usePortalCustomerId } from '@/hooks/usePortalCustomerId';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,17 +13,9 @@ import type { ReceiptStatus } from '@/components/invoice/ReceiptStatusIndicator'
 
 const PortalInvoices = () => {
   const navigate = useNavigate();
-  const [customerId, setCustomerId] = useState<string | null>(null);
+  const { customerId } = usePortalCustomerId();
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    const storedCustomerId = localStorage.getItem('portal_customer_id');
-    if (!storedCustomerId) {
-      navigate('/portal/login');
-      return;
-    }
-    setCustomerId(storedCustomerId);
-  }, [navigate]);
 
   const { data: invoices, isLoading } = useQuery({
     queryKey: ['portal-all-invoices', customerId],
