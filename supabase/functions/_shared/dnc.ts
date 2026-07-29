@@ -106,21 +106,19 @@ export async function isSuppressed(
   // E.164 match silently misses. .in() values are properly URL-encoded.
   const variants = Array.from(new Set([e164, digits, String(phone || "")].filter(Boolean)));
 
-  // 1) dnc_list — normalized column + legacy column.
+  // 1) dnc_list — normalized column + legacy column (two encoded .in() queries).
   try {
-    const { data, error } = await supabase
-      .from("dnc_list")
-      .select("reason, phone_e164, phone_number")
-      .or(
-        `phone_e164.in.(${variants.map((v) => `"${v}"`).join(",")}),phone_number.in.(${
-          variants.map((v) => `"${v}"`).join(",")
-        })`,
-      )
-      .limit(1);
-    if (error) throw error;
-    const row = Array.isArray(data) ? data[0] : data;
-    if (row) {
-      return { blocked: true, reason: row.reason || "dnc_list", source: "dnc_list" };
+    for (const col of ["phone_e164", "phone_number"]) {
+      const { data, error } = await supabase
+        .from("dnc_list")
+        .select("reason")
+        .in(col, variants)
+        .limit(1);
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row) {
+        return { blocked: true, reason: row.reason || "dnc_list", source: "dnc_list" };
+      }
     }
   } catch (_e) {
     // Fail CLOSED for compliance, matching isOnDNC.
