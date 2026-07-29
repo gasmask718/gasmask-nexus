@@ -23,25 +23,25 @@ serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const sb = createClient(supabaseUrl, serviceKey);
 
-  let tracker: ReturnType<typeof createUsageTracker> | null = null;
+  let tracker = createUsageTracker(200);
   let ledgerCtx: Record<string, unknown> = {};
   let ledgerWritten = false;
 
   // Writes one ut_api_usage_log row per SKU used. Never throws.
   const writeLedger = async () => {
-    if (!tracker || ledgerWritten) return;
+    if (ledgerWritten) return;
     ledgerWritten = true;
     const rows = tracker.rows();
     if (rows.length === 0) return;
     try {
       await sb.from('ut_api_usage_log').insert(rows.map((r) => ({
-        run_id: tracker!.runId,
+        run_id: tracker.runId,
         function_name: 'ut-run-territory-job',
         provider: 'google_places',
         sku: r.sku,
         request_count: r.request_count,
         estimated_cost: r.estimated_cost,
-        capped: tracker!.capped,
+        capped: tracker.capped,
         ...ledgerCtx,
       })));
     } catch (e) {
@@ -248,9 +248,9 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       error: err instanceof Error ? err.message : 'Unknown error',
-      requests_made: tracker?.total() ?? 0,
-      estimated_cost: tracker ? Number(tracker.estimatedCost().toFixed(4)) : 0,
-      capped: tracker?.capped ?? false,
+      requests_made: tracker.total(),
+      estimated_cost: Number(tracker.estimatedCost().toFixed(4)),
+      capped: tracker.capped,
     }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
