@@ -101,16 +101,26 @@ export async function isSuppressed(
   if (!e164) return { blocked: false };
   const digits = e164.replace(/\D/g, "");
 
-  // 1) dnc_list — same OR-shape as isOnDNC (normalized + legacy + raw).
+  // NOTE: we deliberately use .in() rather than .or() here. PostgREST `or=`
+  // filter strings are sent raw, so a leading "+" decodes as a space and an
+  // E.164 match silently misses. .in() values are properly URL-encoded.
+  const variants = Array.from(new Set([e164, digits, String(phone || "")].filter(Boolean)));
+
+  // 1) dnc_list — normalized column + legacy column.
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("dnc_list")
       .select("reason, phone_e164, phone_number")
-      .or(`phone_e164.eq.${e164},phone_number.eq.${e164},phone_number.eq.${phone}`)
-      .limit(1)
-      .maybeSingle();
-    if (data) {
-      return { blocked: true, reason: data.reason || "dnc_list", source: "dnc_list" };
+      .or(
+        `phone_e164.in.(${variants.map((v) => `"${v}"`).join(",")}),phone_number.in.(${
+          variants.map((v) => `"${v}"`).join(",")
+        })`,
+      )
+      .limit(1);
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) {
+      return { blocked: true, reason: row.reason || "dnc_list", source: "dnc_list" };
     }
   } catch (_e) {
     // Fail CLOSED for compliance, matching isOnDNC.
@@ -119,18 +129,20 @@ export async function isSuppressed(
 
   // 2) opt_out_events — stores digits-only phone_number (see send-sms).
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("opt_out_events")
       .select("id")
-      .or(`phone_number.eq.${digits},phone_number.eq.${e164}`)
-      .limit(1)
-      .maybeSingle();
-    if (data) {
+      .in("phone_number", variants)
+      .limit(1);
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) {
       return { blocked: true, reason: "opted_out", source: "opt_out_events" };
     }
   } catch (_e) {
     return { blocked: true, reason: "suppression_lookup_failed", source: "opt_out_events" };
   }
+
 
   return { blocked: false };
 }
