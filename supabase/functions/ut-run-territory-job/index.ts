@@ -1,58 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  corsHeaders,
+  delay,
+  textSearch,
+  placeDetails,
+  parseCityState,
+  normState,
+  DETAILS_MASK_FULL,
+} from "../_shared/places-client.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
-
-// Google Places Text Search
-async function textSearch(query: string, apiKey: string, pageToken?: string) {
-  const body: Record<string, unknown> = { textQuery: query, maxResultCount: 20, languageCode: 'en' };
-  if (pageToken) body.pageToken = pageToken;
-  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.types,places.rating,places.userRatingCount,places.googleMapsUri,places.businessStatus,places.nationalPhoneNumber,places.websiteUri,places.addressComponents,places.location,nextPageToken',
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`Places search failed [${res.status}]: ${await res.text()}`);
-  return res.json();
-}
-
-// Place Details for phone enrichment
-async function placeDetails(placeId: string, apiKey: string) {
-  const res = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
-    headers: {
-      'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': 'id,displayName,formattedAddress,nationalPhoneNumber,internationalPhoneNumber,websiteUri,rating,userRatingCount,addressComponents',
-    },
-  });
-  if (!res.ok) return null;
-  return res.json();
-}
-
-// Normalise to the exact 2-char uppercase form the ut_upsert RPC / CHECK requires.
-// Returns '' when unresolvable — those places are skipped, never sent to the RPC.
-function normState(raw: string | null | undefined): string {
-  const s = (raw || '').toUpperCase().slice(0, 2);
-  return s.length === 2 ? s : '';
-}
-
-function parseCityState(addressComponents: any[]): { city: string; state: string } {
-  let city = '', state = '';
-  if (!addressComponents) return { city, state };
-  for (const c of addressComponents) {
-    if (c.types?.includes('locality')) city = c.longText || c.shortText || '';
-    if (c.types?.includes('administrative_area_level_1')) state = normState(c.shortText);
-  }
-  return { city, state };
-}
 
 
 serve(async (req) => {
@@ -135,16 +92,25 @@ serve(async (req) => {
       let website = p.websiteUri || null;
       let rating = p.rating || null;
       let reviewCount = p.userRatingCount ?? null;
+      let types = p.types || [];
+      let mapsUrl = p.googleMapsUri || null;
+      let lat = typeof p.location?.latitude === 'number' ? p.location.latitude : null;
+      let lng = typeof p.location?.longitude === 'number' ? p.location.longitude : null;
 
       // Enrich if no phone
       if (!phone) {
         try {
-          const details = await placeDetails(p.id, apiKey);
+          const details = await placeDetails(p.id, apiKey, DETAILS_MASK_FULL);
           if (details) {
             phone = details.nationalPhoneNumber || details.internationalPhoneNumber || null;
             website = details.websiteUri || website;
             rating = details.rating || rating;
             reviewCount = details.userRatingCount ?? reviewCount;
+            if ((!types || types.length === 0) && details.types) types = details.types;
+            mapsUrl = mapsUrl || details.googleMapsUri || null;
+            // Persist Details coordinates only when Text Search did not supply them.
+            if (lat === null && typeof details.location?.latitude === 'number') lat = details.location.latitude;
+            if (lng === null && typeof details.location?.longitude === 'number') lng = details.location.longitude;
             enrichedCount++;
           }
           await delay(150);
@@ -162,14 +128,15 @@ serve(async (req) => {
         state: finalState,
         google_rating: rating,
         review_count: reviewCount,
-        google_types: p.types || [],
-        maps_url: p.googleMapsUri || null,
+        google_types: types,
+        maps_url: mapsUrl,
         source: 'google_places',
         external_source: 'google_places',
         status: 'new',
       };
-      if (typeof p.location?.latitude === 'number') placeRecord.latitude = p.location.latitude;
-      if (typeof p.location?.longitude === 'number') placeRecord.longitude = p.location.longitude;
+      if (lat !== null) placeRecord.latitude = lat;
+      if (lng !== null) placeRecord.longitude = lng;
+
 
       try {
         const { data: up, error: upErr } = await sb.rpc('ut_upsert_partner_lead', { p: placeRecord });
