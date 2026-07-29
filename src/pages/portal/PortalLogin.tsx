@@ -8,62 +8,62 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Package, Mail, Phone } from 'lucide-react';
 
+/**
+ * Customer Portal login — uses REAL Supabase auth (OTP).
+ * Email → magic link. Phone → SMS code + verification step.
+ * This creates a real session so RLS policies actually apply.
+ */
 const PortalLogin = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
+  const [stage, setStage] = useState<'request' | 'verify'>('request');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const requestOtp = async () => {
     setIsLoading(true);
-
     try {
-      const identifier = loginMethod === 'email' ? email : phone;
-      
-      if (!identifier) {
-        toast.error('Please enter your ' + loginMethod);
-        setIsLoading(false);
-        return;
-      }
-
-      // Find customer by email or phone
-      const { data: customer, error: customerError } = await supabase
-        .from('crm_customers')
-        .select('id, name, email, phone')
-        .or(`email.eq.${email},phone.eq.${phone}`)
-        .single();
-
-      if (customerError || !customer) {
-        toast.error('Customer not found. Please contact support.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Generate session token
-      const sessionToken = crypto.randomUUID();
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour session
-
-      const { error: sessionError } = await supabase
-        .from('customer_portal_sessions')
-        .insert({
-          customer_id: customer.id,
-          session_token: sessionToken,
-          expires_at: expiresAt.toISOString(),
+      if (loginMethod === 'email') {
+        if (!email) { toast.error('Please enter your email'); return; }
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: `${window.location.origin}/portal/dashboard` },
         });
+        if (error) throw error;
+        toast.success('Check your email for the sign-in link.');
+      } else {
+        if (!phone) { toast.error('Please enter your phone number'); return; }
+        const { error } = await supabase.auth.signInWithOtp({ phone });
+        if (error) throw error;
+        toast.success('We sent you a 6-digit code by SMS.');
+        setStage('verify');
+      }
+    } catch (err: any) {
+      console.error('Portal login error:', err);
+      toast.error(err.message || 'Could not start sign-in. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      if (sessionError) throw sessionError;
-
-      // Store session token in localStorage
-      localStorage.setItem('portal_session', sessionToken);
-      localStorage.setItem('portal_customer_id', customer.id);
-
-      toast.success(`Welcome back, ${customer.name}!`);
+  const verifyOtp = async () => {
+    setIsLoading(true);
+    try {
+      if (!otpCode) { toast.error('Enter the 6-digit code'); return; }
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone,
+        token: otpCode,
+        type: 'sms',
+      });
+      if (error) throw error;
+      if (!data.session) throw new Error('No session returned');
+      toast.success('Signed in!');
       navigate('/portal/dashboard');
-    } catch (error: any) {
-      console.error('Login error:', error);
-      toast.error('Login failed. Please try again.');
+    } catch (err: any) {
+      console.error('OTP verify error:', err);
+      toast.error(err.message || 'Verification failed.');
     } finally {
       setIsLoading(false);
     }
@@ -82,57 +82,82 @@ const PortalLogin = () => {
           <p className="text-muted-foreground">Access your invoices and billing</p>
         </div>
 
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <Button
-              variant={loginMethod === 'email' ? 'default' : 'outline'}
-              onClick={() => setLoginMethod('email')}
-              className="flex-1"
-            >
-              <Mail className="mr-2 h-4 w-4" />
-              Email
-            </Button>
-            <Button
-              variant={loginMethod === 'phone' ? 'default' : 'outline'}
-              onClick={() => setLoginMethod('phone')}
-              className="flex-1"
-            >
-              <Phone className="mr-2 h-4 w-4" />
-              Phone
+        {stage === 'request' ? (
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Button
+                variant={loginMethod === 'email' ? 'default' : 'outline'}
+                onClick={() => setLoginMethod('email')}
+                className="flex-1"
+              >
+                <Mail className="mr-2 h-4 w-4" /> Email
+              </Button>
+              <Button
+                variant={loginMethod === 'phone' ? 'default' : 'outline'}
+                onClick={() => setLoginMethod('phone')}
+                className="flex-1"
+              >
+                <Phone className="mr-2 h-4 w-4" /> Phone
+              </Button>
+            </div>
+
+            {loginMethod === 'email' ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email Address</label>
+                <EmailInput
+                  placeholder="your.email@example.com"
+                  value={email}
+                  onChange={setEmail}
+                  onKeyPress={(e) => e.key === 'Enter' && requestOtp()}
+                />
+                <p className="text-xs text-muted-foreground">We'll email you a secure sign-in link.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Phone Number</label>
+                <Input
+                  type="tel"
+                  placeholder="+15551234567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && requestOtp()}
+                />
+                <p className="text-xs text-muted-foreground">Enter in international format (e.g. +1…). We'll text a 6-digit code.</p>
+              </div>
+            )}
+
+            <Button className="w-full" onClick={requestOtp} disabled={isLoading}>
+              {isLoading ? 'Sending…' : loginMethod === 'email' ? 'Send Magic Link' : 'Send Code'}
             </Button>
           </div>
-
-          {loginMethod === 'email' ? (
+        ) : (
+          <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Email Address</label>
-              <EmailInput
-                placeholder="your.email@example.com"
-                value={email}
-                onChange={setEmail}
-                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-              />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Phone Number</label>
+              <label className="text-sm font-medium">Verification Code</label>
               <Input
-                type="tel"
-                placeholder="(555) 123-4567"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="123456"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                onKeyPress={(e) => e.key === 'Enter' && verifyOtp()}
               />
+              <p className="text-xs text-muted-foreground">Enter the code we texted to {phone}.</p>
             </div>
-          )}
-
-          <Button
-            className="w-full"
-            onClick={handleLogin}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Logging in...' : 'Access Portal'}
-          </Button>
-        </div>
+            <Button className="w-full" onClick={verifyOtp} disabled={isLoading}>
+              {isLoading ? 'Verifying…' : 'Verify & Sign In'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => { setStage('request'); setOtpCode(''); }}
+              disabled={isLoading}
+            >
+              Use a different number
+            </Button>
+          </div>
+        )}
 
         <p className="text-xs text-center text-muted-foreground">
           By logging in, you agree to our Terms of Service and Privacy Policy
