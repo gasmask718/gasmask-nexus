@@ -1,16 +1,9 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Search, MapPin, CheckCircle, Eye, Filter } from 'lucide-react';
-
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
+import { MapPin, CheckCircle, Eye } from 'lucide-react';
+import { GeoMapView, type GeoPoint } from '@/components/map/GeoMapView';
 
 // Reverse map: given a city name, resolve to its canonical borough
 const BOROUGH_CITY_MAP: Record<string, string[]> = {
@@ -48,27 +41,13 @@ interface TerritoryAddress {
   created_at: string | null;
 }
 
-interface DynamicTerritory {
-  name: string;
-  color: string;
-  coordinates: [number, number][][];
-  center: [number, number];
-  count: number;
-}
-
-const TERRITORY_COLORS = [
-  '#ef4444', '#f97316', '#eab308', '#22c55e', '#6366f1',
-  '#ec4899', '#14b8a6', '#8b5cf6', '#f43f5e', '#06b6d4',
-];
-
-const statusColor = (s: string | null) => {
-  if (!s) return '#6b7280';
-  const lower = s.toLowerCase();
-  if (lower === 'new') return '#3b82f6';
-  if (lower === 'verified') return '#22c55e';
-  if (lower === 'rejected') return '#ef4444';
-  if (lower === 'pending_visit') return '#eab308';
-  return '#6b7280';
+// Same values as the previous statusColor(); the '#6b7280' fallback for unknown
+// statuses is GeoMapView's default.
+const STATUS_COLORS: Record<string, string> = {
+  new: '#3b82f6',
+  verified: '#22c55e',
+  rejected: '#ef4444',
+  pending_visit: '#eab308',
 };
 
 const statusBadgeVariant = (s: string | null): 'default' | 'secondary' | 'destructive' | 'outline' => {
@@ -79,65 +58,7 @@ const statusBadgeVariant = (s: string | null): 'default' | 'secondary' | 'destru
   return 'secondary';
 };
 
-/** Compute convex hull of 2D points using Andrew's monotone chain */
-function convexHull(points: [number, number][]): [number, number][] {
-  if (points.length < 3) {
-    // For 1-2 points, create a small buffer polygon
-    if (points.length === 0) return [];
-    const [cx, cy] = points.length === 1
-      ? points[0]
-      : [(points[0][0] + points[1][0]) / 2, (points[0][1] + points[1][1]) / 2];
-    const r = 0.005; // ~500m buffer
-    return [
-      [cx - r, cy - r], [cx + r, cy - r],
-      [cx + r, cy + r], [cx - r, cy + r],
-      [cx - r, cy - r],
-    ];
-  }
-
-  const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  const cross = (O: [number, number], A: [number, number], B: [number, number]) =>
-    (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
-
-  const lower: [number, number][] = [];
-  for (const p of sorted) {
-    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
-    lower.push(p);
-  }
-  const upper: [number, number][] = [];
-  for (const p of sorted.reverse()) {
-    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
-    upper.push(p);
-  }
-  upper.pop();
-  lower.pop();
-  const hull = lower.concat(upper);
-  // Close the ring
-  if (hull.length > 0) hull.push(hull[0]);
-  return hull;
-}
-
-/** Add a small padding to convex hull by expanding outward from centroid */
-function padHull(hull: [number, number][], factor = 0.08): [number, number][] {
-  if (hull.length < 4) return hull;
-  const cx = hull.slice(0, -1).reduce((s, p) => s + p[0], 0) / (hull.length - 1);
-  const cy = hull.slice(0, -1).reduce((s, p) => s + p[1], 0) / (hull.length - 1);
-  return hull.map(([x, y]) => [
-    cx + (x - cx) * (1 + factor),
-    cy + (y - cy) * (1 + factor),
-  ] as [number, number]);
-}
-
 export function TerritoryMapView() {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const layerIdsRef = useRef<string[]>([]);
-  const [selectedTerritory, setSelectedTerritory] = useState<string | null>(null);
-  const [filterTerritory, setFilterTerritory] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [mapLoaded, setMapLoaded] = useState(false);
-
   const { data: addresses = [] } = useQuery({
     queryKey: ['territory-map-addresses'],
     queryFn: async () => {
@@ -151,344 +72,82 @@ export function TerritoryMapView() {
     },
   });
 
-  // Build dynamic territories from address data via convex hull
-  const dynamicTerritories = useMemo((): DynamicTerritory[] => {
-    if (addresses.length === 0) return [];
-
-    // Group addresses by resolved borough/territory
-    const groups: Record<string, [number, number][]> = {};
-    addresses.forEach(a => {
-      if (a.latitude == null || a.longitude == null) return;
-      const territory = resolveBoroughForCity(a.city || 'Unknown');
-      if (!groups[territory]) groups[territory] = [];
-      groups[territory].push([a.longitude, a.latitude]);
-    });
-
-    // Generate convex hull per territory
-    const names = Object.keys(groups).sort();
-    return names.map((name, i) => {
-      const points = groups[name];
-      const hull = padHull(convexHull(points));
-      const cx = points.reduce((s, p) => s + p[0], 0) / points.length;
-      const cy = points.reduce((s, p) => s + p[1], 0) / points.length;
-      return {
-        name,
-        color: TERRITORY_COLORS[i % TERRITORY_COLORS.length],
-        coordinates: [hull],
-        center: [cx, cy] as [number, number],
-        count: points.length,
-      };
-    });
-  }, [addresses]);
-
-  // Available territory names for filter dropdown
-  const territoryNames = useMemo(() => dynamicTerritories.map(t => t.name), [dynamicTerritories]);
-
-  // Filtered addresses for the selected territory panel
-  const territoryAddresses = useMemo(() => {
-    if (!selectedTerritory) return [];
-    return addresses.filter(a => {
-      const resolved = resolveBoroughForCity(a.city || 'Unknown');
-      return resolved === selectedTerritory;
-    });
-  }, [selectedTerritory, addresses]);
-
-  const filteredAddresses = useMemo(() => {
-    if (!searchQuery) return territoryAddresses;
-    const q = searchQuery.toLowerCase();
-    return territoryAddresses.filter(a =>
-      (a.store_name || '').toLowerCase().includes(q) ||
-      (a.full_address || '').toLowerCase().includes(q) ||
-      (a.notes || '').toLowerCase().includes(q) ||
-      (a.discovered_by || '').toLowerCase().includes(q)
-    );
-  }, [territoryAddresses, searchQuery]);
-
-  // Initialize map
-  useEffect(() => {
-    if (!mapContainer.current || mapRef.current) return;
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-
-    const map = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: [-73.95, 40.73],
-      zoom: 10.5,
-    });
-
-    map.addControl(new mapboxgl.NavigationControl(), 'top-left');
-    map.on('load', () => setMapLoaded(true));
-
-    mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
-  }, []);
-
-  // Draw dynamic territory polygons whenever territories or filter changes
-  const drawTerritories = useCallback(() => {
-    const map = mapRef.current;
-    if (!map || !mapLoaded) return;
-
-    // Remove old layers/sources
-    layerIdsRef.current.forEach(id => {
-      if (map.getLayer(id)) map.removeLayer(id);
-    });
-    layerIdsRef.current.forEach(id => {
-      const srcId = id.replace(/-fill$|-line$|-label$/, '');
-      if (map.getSource(`dyn-${srcId}`) && !layerIdsRef.current.some(
-        lid => lid !== id && lid.startsWith(srcId) && map.getLayer(lid)
-      )) {
-        // Don't remove source yet — handled below
-      }
-    });
-    // Brute remove all dyn sources
-    dynamicTerritories.forEach(t => {
-      const srcId = `dyn-${t.name}`;
-      [`${t.name}-fill`, `${t.name}-line`, `${t.name}-label`].forEach(lid => {
-        if (map.getLayer(lid)) map.removeLayer(lid);
-      });
-      if (map.getSource(srcId)) map.removeSource(srcId);
-    });
-    // Also remove any stale sources from previous renders
-    layerIdsRef.current.forEach(lid => {
-      if (map.getLayer(lid)) map.removeLayer(lid);
-    });
-    layerIdsRef.current = [];
-
-    const visible = filterTerritory === 'all'
-      ? dynamicTerritories
-      : dynamicTerritories.filter(t => t.name === filterTerritory);
-
-    visible.forEach(t => {
-      if (t.coordinates[0].length < 3) return;
-      const srcId = `dyn-${t.name}`;
-
-      // Clean up if somehow exists
-      if (map.getSource(srcId)) {
-        [`${t.name}-fill`, `${t.name}-line`, `${t.name}-label`].forEach(lid => {
-          if (map.getLayer(lid)) map.removeLayer(lid);
-        });
-        map.removeSource(srcId);
-      }
-
-      map.addSource(srcId, {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: { name: t.name },
-          geometry: { type: 'Polygon', coordinates: t.coordinates },
-        },
-      });
-
-      const fillId = `${t.name}-fill`;
-      const lineId = `${t.name}-line`;
-      const labelId = `${t.name}-label`;
-
-      map.addLayer({
-        id: fillId, type: 'fill', source: srcId,
-        paint: { 'fill-color': t.color, 'fill-opacity': 0.15 },
-      });
-      map.addLayer({
-        id: lineId, type: 'line', source: srcId,
-        paint: { 'line-color': t.color, 'line-width': 2, 'line-opacity': 0.8 },
-      });
-      map.addLayer({
-        id: labelId, type: 'symbol', source: srcId,
-        layout: {
-          'text-field': `${t.name} (${t.count})`,
-          'text-size': 13,
-          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
-        },
-        paint: { 'text-color': t.color, 'text-halo-color': '#000', 'text-halo-width': 1 },
-      });
-
-      layerIdsRef.current.push(fillId, lineId, labelId);
-
-      // Interactions
-      map.on('mouseenter', fillId, () => {
-        map.getCanvas().style.cursor = 'pointer';
-        map.setPaintProperty(fillId, 'fill-opacity', 0.35);
-      });
-      map.on('mouseleave', fillId, () => {
-        map.getCanvas().style.cursor = '';
-        map.setPaintProperty(fillId, 'fill-opacity', 0.15);
-      });
-      map.on('click', fillId, () => {
-        setSelectedTerritory(t.name);
-        setSearchQuery('');
-      });
-    });
-
-    // Fit map to visible territories
-    if (visible.length > 0 && filterTerritory !== 'all') {
-      const bounds = new mapboxgl.LngLatBounds();
-      visible.forEach(t => t.coordinates[0].forEach(c => bounds.extend(c)));
-      map.fitBounds(bounds, { padding: 60, duration: 800 });
-    }
-  }, [dynamicTerritories, filterTerritory, mapLoaded]);
-
-  useEffect(() => { drawTerritories(); }, [drawTerritories]);
-
-  // Render address markers (filtered by territory filter)
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-
-    const visibleAddresses = filterTerritory === 'all'
-      ? addresses
-      : addresses.filter(a => resolveBoroughForCity(a.city || 'Unknown') === filterTerritory);
-
-    visibleAddresses.forEach(a => {
-      if (a.latitude == null || a.longitude == null) return;
-      const el = document.createElement('div');
-      el.style.width = '8px';
-      el.style.height = '8px';
-      el.style.borderRadius = '50%';
-      el.style.backgroundColor = statusColor(a.discovery_status);
-      el.style.border = '1px solid rgba(255,255,255,0.4)';
-
-      const marker = new mapboxgl.Marker({ element: el })
-        .setLngLat([a.longitude, a.latitude])
-        .setPopup(
-          new mapboxgl.Popup({ offset: 10, closeButton: false })
-            .setHTML(`<div style="color:#000;font-size:12px"><strong>${a.store_name || 'Unknown Store'}</strong><br/><span style="color:#555">${a.full_address || '—'}</span>${a.phone ? `<br/><span style=\"color:#555\">Phone: ${a.phone}</span>` : ''}<br/><span style="color:#888;font-size:11px">${(a.discovery_status || 'new').replace('_', ' ')} · ${a.discovered_by || '—'}</span></div>`)
-        )
-        .addTo(map);
-
-      markersRef.current.push(marker);
-    });
-  }, [addresses, filterTerritory]);
-
-  const flyToAddress = (addr: TerritoryAddress) => {
-    if (!mapRef.current || !addr.latitude || !addr.longitude) return;
-    mapRef.current.flyTo({ center: [addr.longitude, addr.latitude], zoom: 16, duration: 1200 });
-    // Find in currently visible markers
-    const visibleAddresses = filterTerritory === 'all'
-      ? addresses
-      : addresses.filter(a => resolveBoroughForCity(a.city || 'Unknown') === filterTerritory);
-    const idx = visibleAddresses.findIndex(a => a.id === addr.id);
-    if (idx >= 0 && markersRef.current[idx]) {
-      markersRef.current[idx].togglePopup();
-    }
-  };
+  const points = useMemo<GeoPoint[]>(() => addresses
+    .filter(a => a.latitude != null && a.longitude != null)
+    .map(a => ({
+      id: a.id,
+      lng: a.longitude!,
+      lat: a.latitude!,
+      title: a.store_name || 'Unknown Store',
+      subtitle: a.full_address || '—',
+      groupKey: resolveBoroughForCity(a.city || 'Unknown'),
+      statusKey: (a.discovery_status || 'new').toLowerCase(),
+      meta: a as unknown as Record<string, any>,
+    })), [addresses]);
 
   return (
-    <div className="relative w-full h-[calc(100vh-220px)] rounded-lg overflow-hidden border border-border">
-      <div ref={mapContainer} className="w-full h-full" />
-
-      {/* Territory filter dropdown */}
-      <div className="absolute top-3 right-3 z-20">
-        <div className="flex items-center gap-2 bg-background/90 backdrop-blur rounded-lg border border-border p-2 shadow-lg">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select value={filterTerritory} onValueChange={(val) => {
-            setFilterTerritory(val);
-            if (val !== 'all') {
-              setSelectedTerritory(val);
-              setSearchQuery('');
-            } else {
-              setSelectedTerritory(null);
-            }
-          }}>
-            <SelectTrigger className="w-[180px] h-8 text-sm border-none bg-transparent">
-              <SelectValue placeholder="All Territories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Territories ({addresses.length})</SelectItem>
-              {dynamicTerritories.map(t => (
-                <SelectItem key={t.name} value={t.name}>
-                  {t.name} ({t.count})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Slide-out panel */}
-      {selectedTerritory && (
-        <div className="absolute top-0 right-0 h-full w-[380px] bg-background/95 backdrop-blur border-l border-border shadow-xl flex flex-col z-10">
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <div>
-              <h3 className="font-semibold text-lg">{selectedTerritory}</h3>
-              <p className="text-xs text-muted-foreground">{territoryAddresses.length} ingested addresses</p>
+    <GeoMapView
+      points={points}
+      statusColors={STATUS_COLORS}
+      initialCenter={[-73.95, 40.73]}
+      initialZoom={10.5}
+      showHulls
+      clustering={false}
+      resolveGroup={p => p.groupKey ?? null}
+      groupFilterLabel="All Territories"
+      groupCountLabel={n => `${n} ingested addresses`}
+      searchPlaceholder="Search addresses..."
+      searchFields={p => {
+        const a = p.meta as TerritoryAddress;
+        return [a?.store_name || '', a?.full_address || '', a?.notes || '', a?.discovered_by || ''];
+      }}
+      renderPopupHTML={p => {
+        const a = p.meta as TerritoryAddress;
+        return `<div style="color:#000;font-size:12px"><strong>${a.store_name || 'Unknown Store'}</strong><br/><span style="color:#555">${a.full_address || '—'}</span>${a.phone ? `<br/><span style=\"color:#555\">Phone: ${a.phone}</span>` : ''}<br/><span style="color:#888;font-size:11px">${(a.discovery_status || 'new').replace('_', ' ')} · ${a.discovered_by || '—'}</span></div>`;
+      }}
+      emptyState={<p className="text-sm text-muted-foreground py-8 text-center">No addresses found</p>}
+      renderListItem={p => {
+        const addr = p.meta as TerritoryAddress;
+        return (
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-sm truncate">{addr.store_name || 'Unknown Store'}</p>
+              <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                <MapPin className="h-3 w-3 shrink-0" />
+                {addr.full_address || '—'}
+              </p>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {addr.address_type && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                    {addr.address_type}
+                  </Badge>
+                )}
+                {addr.discovered_by && (
+                  <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                    <Eye className="h-3 w-3 shrink-0" />
+                    {addr.discovered_by}
+                  </span>
+                )}
+                {addr.created_at && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {new Date(addr.created_at).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => {
-              setSelectedTerritory(null);
-              if (filterTerritory !== 'all') setFilterTerritory('all');
-            }}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="px-4 py-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search addresses..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="pl-9 h-9"
-              />
-            </div>
-          </div>
-
-          <ScrollArea className="flex-1">
-            <div className="px-4 pb-4 space-y-1">
-              {filteredAddresses.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">No addresses found</p>
-              ) : (
-                filteredAddresses.map(addr => (
-                  <button
-                    key={addr.id}
-                    onClick={() => flyToAddress(addr)}
-                    className="w-full text-left p-3 rounded-md hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm truncate">{addr.store_name || 'Unknown Store'}</p>
-                        <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          {addr.full_address || '—'}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          {addr.address_type && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              {addr.address_type}
-                            </Badge>
-                          )}
-                          {addr.discovered_by && (
-                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                              <Eye className="h-3 w-3 shrink-0" />
-                              {addr.discovered_by}
-                            </span>
-                          )}
-                          {addr.created_at && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {new Date(addr.created_at).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <Badge variant={statusBadgeVariant(addr.discovery_status)} className="text-[10px] px-1.5 py-0">
-                          {addr.discovery_status || 'new'}
-                        </Badge>
-                        {addr.verified_sells_grabba && (
-                          <span className="text-[10px] font-medium text-green-500 flex items-center gap-0.5">
-                            <CheckCircle className="h-3 w-3" /> Grabba
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                ))
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              <Badge variant={statusBadgeVariant(addr.discovery_status)} className="text-[10px] px-1.5 py-0">
+                {addr.discovery_status || 'new'}
+              </Badge>
+              {addr.verified_sells_grabba && (
+                <span className="text-[10px] font-medium text-green-500 flex items-center gap-0.5">
+                  <CheckCircle className="h-3 w-3" /> Grabba
+                </span>
               )}
             </div>
-          </ScrollArea>
-        </div>
-      )}
-    </div>
+          </div>
+        );
+      }}
+    />
   );
 }
