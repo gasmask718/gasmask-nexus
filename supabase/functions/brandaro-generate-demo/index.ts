@@ -338,8 +338,8 @@ Deno.serve(async (req) => {
         phone: lead.phone, ai: aiRes.content,
       });
 
-      const demoSlug = `${industry}-${(lead.city || "local").toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`;
-      const demoUrl = `https://demo.brandaro.com/${demoSlug}`;
+      const demoSlug = `${(lead.business_name || "demo").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}-${Date.now()}`;
+      const demoUrl = `https://${demoSlug}.${industry}.demo.brandarodigital.com`;
 
       let vercelDeploymentId: string | null = null;
       if (deploy_vercel) {
