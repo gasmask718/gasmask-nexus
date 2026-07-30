@@ -256,18 +256,132 @@ async function callDurable(payload: any): Promise<{ ok: true; site_id: string; s
   }
 }
 
-// Per-industry Vercel projects: each industry has its own Vercel project and
-// deploy hook, stored in brandaro_demo_templates.vercel_deploy_hook_url.
-// Firing the hook triggers a rebuild of that industry's project so the new
-// demo row is picked up at build time.
+// Per-industry Vercel projects: each industry has its own Vercel project
+// (vercel_project_id) and deploy hook (vercel_deploy_hook_url), both stored in
+// brandaro_demo_templates.
+//
+// Deploy hooks DISCARD any POST body, so personalization cannot ride along with
+// the hook. Instead we do a two-step delivery:
+//   1. Write the demo's content into the project's production environment
+//      variables via the Vercel REST API (upsert semantics).
+//   2. Only then fire the deploy hook so the build picks up the new values.
+//
+// ACCEPTED TRADE-OFF: environment variables are project-scoped, so only ONE
+// demo can be live per industry at a time. Generating a new demo for the same
+// industry overwrites the previous demo's content once the build completes.
+const VERCEL_ENV_TARGET = ["production"];
+
+interface EnvVarResult {
+  key: string;
+  ok: boolean;
+  action: "created" | "updated" | "failed";
+  status?: number;
+  error?: string;
+}
+
+/**
+ * Upsert a single production env var on a Vercel project.
+ * POST /v10/projects/{id}/env?upsert=true handles both create and update.
+ * If the deployment rejects upsert (409 / already exists), fall back to an
+ * explicit lookup + PATCH on /v9/projects/{id}/env/{envId}.
+ */
+async function upsertVercelEnvVar(
+  token: string,
+  projectId: string,
+  key: string,
+  value: string,
+): Promise<EnvVarResult> {
+  try {
+    const res = await fetch(
+      `https://api.vercel.com/v10/projects/${projectId}/env?upsert=true`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ key, value, type: "plain", target: VERCEL_ENV_TARGET }),
+      },
+    );
+
+    if (res.ok) return { key, ok: true, action: "created", status: res.status };
+
+    const body = await res.text();
+
+    // Already exists and upsert wasn't honored -> find the env var id and PATCH it.
+    if (res.status === 409 || /already exists/i.test(body)) {
+      const listRes = await fetch(`https://api.vercel.com/v9/projects/${projectId}/env`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!listRes.ok) {
+        return {
+          key, ok: false, action: "failed", status: listRes.status,
+          error: `env list failed: ${(await listRes.text()).slice(0, 200)}`,
+        };
+      }
+      const list = await listRes.json();
+      const existing = (list?.envs ?? []).find(
+        (e: { key: string; target?: string[]; id: string }) =>
+          e.key === key && (e.target ?? []).includes("production"),
+      );
+      if (!existing?.id) {
+        return { key, ok: false, action: "failed", status: res.status, error: `conflict but no existing production var found` };
+      }
+
+      const patchRes = await fetch(
+        `https://api.vercel.com/v9/projects/${projectId}/env/${existing.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ value, type: "plain", target: VERCEL_ENV_TARGET }),
+        },
+      );
+      if (patchRes.ok) return { key, ok: true, action: "updated", status: patchRes.status };
+      return {
+        key, ok: false, action: "failed", status: patchRes.status,
+        error: `PATCH ${patchRes.status}: ${(await patchRes.text()).slice(0, 200)}`,
+      };
+    }
+
+    return { key, ok: false, action: "failed", status: res.status, error: `POST ${res.status}: ${body.slice(0, 200)}` };
+  } catch (e) {
+    return { key, ok: false, action: "failed", error: e instanceof Error ? e.message : "request failed" };
+  }
+}
+
 async function tryVercelHook(
   supabase: ReturnType<typeof createClient>,
   industry: string,
-  payload: Record<string, unknown>,
-): Promise<{ ok: boolean; skipped?: boolean; status?: number; error?: string; repo?: string }> {
+  payload: {
+    demo_id: string;
+    slug: string;
+    industry: string;
+    business_name: string;
+    demo_url: string;
+    city?: string | null;
+    phone?: string | null;
+    hero_headline?: string;
+    hero_sub?: string;
+    cta_text?: string;
+    color_primary?: string;
+    color_secondary?: string;
+  },
+): Promise<{
+  ok: boolean;
+  skipped?: boolean;
+  status?: number;
+  error?: string;
+  repo?: string;
+  project_id?: string;
+  env_vars?: EnvVarResult[];
+  env_failed?: string[];
+}> {
   const { data: tpl, error } = await supabase
     .from("brandaro_demo_templates")
-    .select("vercel_deploy_hook_url, vercel_template_repo")
+    .select("vercel_deploy_hook_url, vercel_template_repo, vercel_project_id, primary_color, secondary_color")
     .eq("industry", industry)
     .eq("is_active", true)
     .maybeSingle();
@@ -277,22 +391,72 @@ async function tryVercelHook(
     return { ok: false, skipped: true, error: `No deploy hook configured for industry "${industry}"` };
   }
 
+  // ---- Step 1: push personalization into the project's production env vars ----
+  const token = Deno.env.get("VERCEL_API_TOKEN");
+  const envVars: Record<string, string> = {
+    VITE_BUSINESS_NAME: payload.business_name ?? "",
+    VITE_BUSINESS_CITY: payload.city ?? "",
+    VITE_BUSINESS_PHONE: payload.phone ?? "",
+    VITE_HERO_HEADLINE: payload.hero_headline ?? "",
+    VITE_HERO_SUB: payload.hero_sub ?? "",
+    VITE_CTA_TEXT: payload.cta_text ?? "",
+    VITE_COLOR_PRIMARY: payload.color_primary ?? tpl.primary_color ?? "",
+    VITE_COLOR_SECONDARY: payload.color_secondary ?? tpl.secondary_color ?? "",
+    VITE_DEMO_SLUG: payload.slug ?? "",
+  };
+
+  let envResults: EnvVarResult[] = [];
+  if (!token) {
+    console.warn("[vercel] VERCEL_API_TOKEN missing — skipping env var sync, deploying with stale content");
+  } else if (!tpl.vercel_project_id) {
+    console.warn(`[vercel] No vercel_project_id for industry "${industry}" — skipping env var sync`);
+  } else {
+    // Sequential + non-fatal: one bad var must not block the others.
+    for (const [key, value] of Object.entries(envVars)) {
+      const result = await upsertVercelEnvVar(token, tpl.vercel_project_id, key, value);
+      envResults.push(result);
+      if (!result.ok) {
+        console.error(`[vercel] env var "${key}" failed for project ${tpl.vercel_project_id}: ${result.error}`);
+      }
+    }
+  }
+  const envFailed = envResults.filter((r) => !r.ok).map((r) => r.key);
+  if (envFailed.length) {
+    console.warn(`[vercel] ${envFailed.length}/${envResults.length} env vars failed: ${envFailed.join(", ")} — firing deploy hook anyway`);
+  }
+
+  // ---- Step 2: fire the deploy hook so the build picks up the new env vars ----
   try {
     const res = await fetch(tpl.vercel_deploy_hook_url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // Deploy hooks ignore the body, but we send context for log/debug parity.
+      // Deploy hooks ignore the body; content is delivered via env vars above.
       body: JSON.stringify(payload),
     });
     const text = await res.text();
     if (!res.ok) {
-      return { ok: false, status: res.status, error: `Vercel hook ${res.status}: ${text.slice(0, 300)}`, repo: tpl.vercel_template_repo };
+      return {
+        ok: false, status: res.status,
+        error: `Vercel hook ${res.status}: ${text.slice(0, 300)}`,
+        repo: tpl.vercel_template_repo, project_id: tpl.vercel_project_id,
+        env_vars: envResults, env_failed: envFailed,
+      };
     }
-    return { ok: true, status: res.status, repo: tpl.vercel_template_repo };
+    return {
+      ok: true, status: res.status,
+      repo: tpl.vercel_template_repo, project_id: tpl.vercel_project_id,
+      env_vars: envResults, env_failed: envFailed,
+    };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Vercel hook request failed", repo: tpl.vercel_template_repo };
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Vercel hook request failed",
+      repo: tpl.vercel_template_repo, project_id: tpl.vercel_project_id,
+      env_vars: envResults, env_failed: envFailed,
+    };
   }
 }
+
 
 
 
