@@ -692,6 +692,16 @@ CRITICAL RULES FROM CALIBRATION DATA:
       }
     }
 
+    // ═══ HARD CEILING: odds_only can never present as moderate+ ═══
+    // Applied AFTER all brains, penalties, bonuses and live calibration —
+    // this is the final mutation of finalScore. Any future adjustment must
+    // be added ABOVE this block, never below it.
+    const ODDS_ONLY_MAX_CONFIDENCE = 54; // one below the 'moderate' floor (55) at the tier line
+    if (dataQuality === 'odds_only' && finalScore > ODDS_ONLY_MAX_CONFIDENCE) {
+      console.log(`odds_only hard cap: ${finalScore} → ${ODDS_ONLY_MAX_CONFIDENCE} (no real stats feed)`);
+      finalScore = ODDS_ONLY_MAX_CONFIDENCE;
+    }
+
     // Don't save predictions below 50% — they add noise
     if (finalScore < 50) {
       console.log(`Prediction below 50% threshold (${finalScore}%) — not saving`);
