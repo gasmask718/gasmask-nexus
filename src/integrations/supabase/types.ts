@@ -129391,14 +129391,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -131474,6 +131474,21 @@ export type Database = {
           dead_count: number | null
           latest_lead_at: string | null
           onboarded_count: number | null
+          total_leads: number | null
+        }
+        Relationships: []
+      }
+      ut_territory_stats_summary: {
+        Row: {
+          categories_covered: number | null
+          completed_jobs: number | null
+          failed_jobs: number | null
+          queued_jobs: number | null
+          running_jobs: number | null
+          states_covered: number | null
+          total_dupes: number | null
+          total_enriched: number | null
+          total_jobs: number | null
           total_leads: number | null
         }
         Relationships: []
