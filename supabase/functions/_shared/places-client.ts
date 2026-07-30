@@ -27,10 +27,13 @@ export const DETAILS_MASK_GEO = 'id,location';
 // IMPORTANT: these SKU names and per-call rates are estimates and MUST be
 // verified against actual Google Cloud billing before being used for any
 // financial reporting.
+// Rate verified 31 Jul 2026 against actual Google Cloud billing: 444 requests = $38.56.
+// This is a BLENDED rate across Text Search and Place Details; Google's report does not
+// separate them. Re-verify if field masks change, since adding fields moves the SKU tier.
 export const SKU_TEXT_SEARCH = 'text_search_enterprise';
-export const COST_TEXT_SEARCH = 0.035; // USD per call — verify against GCP billing
+export const COST_TEXT_SEARCH = 0.0868; // USD per call — blended, verified 31 Jul 2026
 export const SKU_PLACE_DETAILS = 'place_details_enterprise';
-export const COST_PLACE_DETAILS = 0.020; // USD per call — verify against GCP billing
+export const COST_PLACE_DETAILS = 0.0868; // USD per call — blended, verified 31 Jul 2026
 
 export const SKU_RATES: Record<string, number> = {
   [SKU_TEXT_SEARCH]: COST_TEXT_SEARCH,
