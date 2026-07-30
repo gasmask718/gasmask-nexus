@@ -306,7 +306,7 @@ export default function UTPenthouse() {
             </div>
             <div className="p-3 rounded-lg bg-muted/50">
               <p className="text-xs text-muted-foreground">Duplicates Excluded</p>
-              <p className="text-2xl font-bold text-muted-foreground">—</p>
+              <p className="text-2xl font-bold text-muted-foreground">{isLoading ? '…' : n(stats?.duplicates)}</p>
               <p className="text-xs text-muted-foreground">Filtered from all counts</p>
             </div>
           </div>

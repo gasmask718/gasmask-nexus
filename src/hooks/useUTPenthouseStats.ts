@@ -16,6 +16,7 @@ export interface UTPenthouseStats {
   states: number;
   cities: number;
   partners: number;
+  duplicates: number;
   conversionRate: number;
 }
 
@@ -44,6 +45,11 @@ export function useUTPenthouseStats() {
         countOf((q: any) => q.lte('callback_due_at', nowIso)),
       ]);
 
+      const { count: duplicates, error: dErr } = await (supabase.from('ut_partner_leads' as any) as any)
+        .select('*', { count: 'exact', head: true })
+        .not('duplicate_of', 'is', null);
+      if (dErr) throw dErr;
+
       const { count: partners, error: pErr } = await (supabase.from('ut_partners' as any) as any)
         .select('*', { count: 'exact', head: true });
       if (pErr) throw pErr;
@@ -70,6 +76,7 @@ export function useUTPenthouseStats() {
         states,
         cities,
         partners: partners || 0,
+        duplicates: duplicates || 0,
         conversionRate: totalLeads > 0 ? (onboarded / totalLeads) * 100 : 0,
       };
     },
