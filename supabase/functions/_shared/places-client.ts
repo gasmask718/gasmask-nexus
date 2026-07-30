@@ -139,3 +139,93 @@ export function parseCityState(addressComponents: any[]): { city: string; state:
   }
   return { city, state };
 }
+
+// ── Budget gate (UT-006b) ────────────────────────────────────────────────
+// Reads the existing ut_api_budget_status view. Added ALONGSIDE the tracker;
+// nothing above is modified. Fail-safe: any read failure = paused.
+export interface BudgetStatus {
+  provider: string;
+  monthly_limit: number;
+  spend_total: number;
+  spend_month: number;
+  spend_today: number;
+  balance: number;
+  balance_pct: number;
+  month_remaining: number;
+  manual_pause: boolean;
+  auto_paused: boolean;
+  is_paused: boolean;
+  status: string;
+  calls_total: number;
+}
+
+export interface BudgetGate {
+  ok: boolean;
+  paused: boolean;
+  reason: string | null;
+  status: BudgetStatus | null;
+  month_remaining: number;
+}
+
+export async function fetchBudgetStatus(
+  sb: any,
+  provider = 'google_places',
+): Promise<BudgetGate> {
+  if (!sb) {
+    return { ok: false, paused: true, reason: 'budget_status_unavailable', status: null, month_remaining: 0 };
+  }
+  const { data, error } = await sb
+    .from('ut_api_budget_status')
+    .select('*')
+    .eq('provider', provider)
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error('Budget status read failed:', error?.message || 'no row');
+    return { ok: false, paused: true, reason: 'budget_status_unavailable', status: null, month_remaining: 0 };
+  }
+
+  const s = data as BudgetStatus;
+  const depleted = s.status === 'depleted';
+  const paused = Boolean(s.is_paused) || depleted;
+  const reason = depleted
+    ? 'budget_depleted'
+    : s.auto_paused
+      ? 'auto_paused'
+      : s.manual_pause
+        ? 'manual_pause'
+        : null;
+
+  return {
+    ok: !paused,
+    paused,
+    reason,
+    status: s,
+    month_remaining: Number(s.month_remaining ?? 0),
+  };
+}
+
+// Persists the pause when the budget is depleted so a human must resume.
+export async function enforceBudgetGate(sb: any, gate: BudgetGate, provider = 'google_places') {
+  const s = gate.status;
+  if (!sb || !s) return;
+  if (s.status === 'depleted' && !s.auto_paused) {
+    try {
+      await sb.from('ut_api_budget')
+        .update({ auto_paused: true, auto_paused_at: new Date().toISOString() })
+        .eq('provider', provider);
+    } catch (e) {
+      console.error('auto_paused flip failed:', e instanceof Error ? e.message : e);
+    }
+  }
+}
+
+export function pausedResponse(gate: BudgetGate) {
+  return {
+    success: false,
+    paused: true,
+    reason: gate.reason || 'paused',
+    month_remaining: gate.month_remaining,
+    status: gate.status?.status || 'unknown',
+  };
+}
