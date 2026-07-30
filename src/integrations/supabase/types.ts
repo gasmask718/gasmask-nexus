@@ -113206,6 +113206,60 @@ export type Database = {
           },
         ]
       }
+      ut_api_budget: {
+        Row: {
+          auto_paused: boolean
+          auto_paused_at: string | null
+          autopause_pct: number
+          cost_verified: boolean
+          created_at: string
+          credits_loaded: number
+          critical_pct: number
+          id: string
+          last_reload_at: string | null
+          manual_pause: boolean
+          monthly_limit: number
+          notes: string | null
+          provider: string
+          updated_at: string
+          warn_pct: number
+        }
+        Insert: {
+          auto_paused?: boolean
+          auto_paused_at?: string | null
+          autopause_pct?: number
+          cost_verified?: boolean
+          created_at?: string
+          credits_loaded?: number
+          critical_pct?: number
+          id?: string
+          last_reload_at?: string | null
+          manual_pause?: boolean
+          monthly_limit?: number
+          notes?: string | null
+          provider?: string
+          updated_at?: string
+          warn_pct?: number
+        }
+        Update: {
+          auto_paused?: boolean
+          auto_paused_at?: string | null
+          autopause_pct?: number
+          cost_verified?: boolean
+          created_at?: string
+          credits_loaded?: number
+          critical_pct?: number
+          id?: string
+          last_reload_at?: string | null
+          manual_pause?: boolean
+          monthly_limit?: number
+          notes?: string | null
+          provider?: string
+          updated_at?: string
+          warn_pct?: number
+        }
+        Relationships: []
+      }
       ut_api_usage_log: {
         Row: {
           capped: boolean | null
@@ -129337,14 +129391,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -131367,6 +131421,26 @@ export type Database = {
             referencedColumns: ["store_id"]
           },
         ]
+      }
+      ut_api_budget_status: {
+        Row: {
+          auto_paused: boolean | null
+          balance: number | null
+          balance_pct: number | null
+          calls_total: number | null
+          cost_verified: boolean | null
+          credits_loaded: number | null
+          is_paused: boolean | null
+          manual_pause: boolean | null
+          month_remaining: number | null
+          monthly_limit: number | null
+          provider: string | null
+          spend_month: number | null
+          spend_today: number | null
+          spend_total: number | null
+          status: string | null
+        }
+        Relationships: []
       }
       ut_category_demand: {
         Row: {
