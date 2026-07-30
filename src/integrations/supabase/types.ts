@@ -70720,6 +70720,9 @@ export type Database = {
         Row: {
           affiliate_code: string | null
           affiliate_id: string | null
+          age_confirmed: boolean
+          age_confirmed_at: string | null
+          age_confirmed_ip: string | null
           ambassador_id: string | null
           billing_address: Json | null
           campaign_id: string | null
@@ -70764,6 +70767,9 @@ export type Database = {
         Insert: {
           affiliate_code?: string | null
           affiliate_id?: string | null
+          age_confirmed?: boolean
+          age_confirmed_at?: string | null
+          age_confirmed_ip?: string | null
           ambassador_id?: string | null
           billing_address?: Json | null
           campaign_id?: string | null
@@ -70808,6 +70814,9 @@ export type Database = {
         Update: {
           affiliate_code?: string | null
           affiliate_id?: string | null
+          age_confirmed?: boolean
+          age_confirmed_at?: string | null
+          age_confirmed_ip?: string | null
           ambassador_id?: string | null
           billing_address?: Json | null
           campaign_id?: string | null

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/services/marketplace/useCart";
 import { useCheckout, ShippingAddress } from "@/services/marketplace/useCheckout";
@@ -13,10 +13,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { 
   ShoppingCart, ArrowLeft, CreditCard, Truck, Store, 
-  Package, Loader2, CheckCircle, MapPin 
+  Package, Loader2, CheckCircle, MapPin, ShieldAlert 
 } from "lucide-react";
 
 export default function Checkout() {
@@ -47,8 +49,45 @@ export default function Checkout() {
 
   const [isRedirecting, setIsRedirecting] = useState(false);
 
+  // ── Age verification at point of sale ──────────────────────────
+  const [hasRestrictedItems, setHasRestrictedItems] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [clientIp, setClientIp] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ids = items.map(i => i.product_id).filter(Boolean);
+    if (ids.length === 0) { setHasRestrictedItems(false); return; }
+    let cancelled = false;
+    supabase
+      .from('products_all')
+      .select('id, is_age_restricted')
+      .in('id', ids)
+      .then(({ data }) => {
+        if (cancelled) return;
+        const seen = new Map((data || []).map((r: any) => [r.id, !!r.is_age_restricted]));
+        // Fail CLOSED: unresolvable products count as restricted.
+        setHasRestrictedItems(ids.some(id => seen.get(id as string) !== false));
+      });
+    return () => { cancelled = true; };
+  }, [items]);
+
+  useEffect(() => {
+    if (!hasRestrictedItems) return;
+    fetch('https://api.ipify.org?format=json')
+      .then(r => r.json())
+      .then(d => setClientIp(d?.ip || null))
+      .catch(() => setClientIp(null));
+  }, [hasRestrictedItems]);
+
+  const ageBlocked = hasRestrictedItems && !ageConfirmed;
+
   const handlePlaceOrder = async () => {
     try {
+      if (hasRestrictedItems && !ageConfirmed) {
+        toast.error('Please confirm you are 21 years or older to purchase age-restricted products.');
+        return;
+      }
+
       // Card payments MUST go through Stripe Checkout — never fulfill from the client.
       if (paymentMethod === 'card') {
         if (!user) {
@@ -64,6 +103,8 @@ export default function Checkout() {
           deliveryType,
           paymentMethod,
           notes,
+          ageConfirmed: hasRestrictedItems ? ageConfirmed : undefined,
+          ageConfirmedIp: clientIp,
         });
 
         // 2) Hand off to Stripe via dd-create-checkout (hosted session).
@@ -94,6 +135,8 @@ export default function Checkout() {
         deliveryType,
         paymentMethod,
         notes,
+        ageConfirmed: hasRestrictedItems ? ageConfirmed : undefined,
+        ageConfirmedIp: clientIp,
       });
 
       await clearCart();
@@ -420,6 +463,30 @@ export default function Checkout() {
                       ))}
                     </div>
                   </div>
+
+                  {hasRestrictedItems && (
+                    <Alert data-testid="age-restricted-notice">
+                      <ShieldAlert className="h-4 w-4" />
+                      <AlertDescription>
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            id="age-confirm"
+                            data-testid="age-confirm-checkbox"
+                            checked={ageConfirmed}
+                            onCheckedChange={(v) => setAgeConfirmed(v === true)}
+                            className="mt-0.5"
+                          />
+                          <Label htmlFor="age-confirm" className="text-sm font-normal leading-snug cursor-pointer">
+                            I confirm I am 21 years or older and authorized to purchase this product.
+                            <span className="block text-xs text-muted-foreground mt-1">
+                              This order contains age-restricted tobacco/vape products. Your
+                              confirmation is recorded with a timestamp for compliance.
+                            </span>
+                          </Label>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </CardContent>
                 <CardFooter className="flex gap-3">
                   <Button variant="outline" onClick={() => setStep('payment')}>
@@ -428,7 +495,8 @@ export default function Checkout() {
                   <Button 
                     className="flex-1" 
                     onClick={handlePlaceOrder}
-                    disabled={isCreatingOrder || isRedirecting}
+                    data-testid="place-order"
+                    disabled={isCreatingOrder || isRedirecting || ageBlocked}
                   >
                     {isCreatingOrder || isRedirecting ? (
                       <>
