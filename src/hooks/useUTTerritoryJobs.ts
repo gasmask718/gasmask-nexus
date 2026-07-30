@@ -38,19 +38,30 @@ export interface StateCoverage {
   updated_at: string;
 }
 
+const PAGE_SIZE = 1000;
+
 export function useStateCoverage() {
   return useQuery({
     queryKey: ["ut-state-coverage"],
     queryFn: async () => {
-      const { data, error } = await (supabase.from("ut_state_coverage" as any) as any)
-        .select("*")
-        .order("state");
-      if (error) throw error;
-      return (data || []) as StateCoverage[];
+      // Paginated: PostgREST caps unbounded selects at 1,000 rows.
+      const rows: StateCoverage[] = [];
+      for (let from = 0; ; from += PAGE_SIZE) {
+        const { data, error } = await (supabase.from("ut_state_coverage" as any) as any)
+          .select("*")
+          .order("state")
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        const page = (data || []) as StateCoverage[];
+        rows.push(...page);
+        if (page.length < PAGE_SIZE) break;
+      }
+      return rows;
     },
     staleTime: 30_000,
   });
 }
+
 
 export function useTerritoryJobs(filters?: { state?: string; status?: string; category?: string }) {
   return useQuery({
