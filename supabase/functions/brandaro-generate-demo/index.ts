@@ -349,9 +349,9 @@ Deno.serve(async (req) => {
       });
 
       const demoSlug = `${(lead.business_name || "demo").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}-${Date.now()}`;
-      // Single-label subdomain: `slug--industry.demo.brandarodigital.com`
-      // (avoids a two-level wildcard certificate).
-      const demoUrl = `https://${demoSlug}--${industry}.demo.brandarodigital.com`;
+      // Two-level subdomain served by the industry's own Vercel project:
+      // `<slug>.<industry>.demo.brandarodigital.com`
+      const demoUrl = `https://${demoSlug}.${industry}.demo.brandarodigital.com`;
       const nowIso = new Date().toISOString();
 
       const { data: demo, error: insertErr } = await supabase.from("brandaro_demo_sites").insert({
