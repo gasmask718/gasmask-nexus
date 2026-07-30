@@ -55,6 +55,7 @@ const App = () => (
                         <MessageProvider>
                           <BackendFingerprint />
                           <SchemaSanityChecker />
+                          <AgeGate />
                           <RefCapture />
                           <FlashSaleBanner />
                           <ViewAsBanner />
