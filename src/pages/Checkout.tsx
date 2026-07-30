@@ -60,11 +60,14 @@ export default function Checkout() {
     let cancelled = false;
     supabase
       .from('products_all')
-      .select('id')
+      .select('id, is_age_restricted')
       .in('id', ids)
-      .eq('is_age_restricted', true)
-      .limit(1)
-      .then(({ data }) => { if (!cancelled) setHasRestrictedItems((data?.length || 0) > 0); });
+      .then(({ data }) => {
+        if (cancelled) return;
+        const seen = new Map((data || []).map((r: any) => [r.id, !!r.is_age_restricted]));
+        // Fail CLOSED: unresolvable products count as restricted.
+        setHasRestrictedItems(ids.some(id => seen.get(id as string) !== false));
+      });
     return () => { cancelled = true; };
   }, [items]);
 

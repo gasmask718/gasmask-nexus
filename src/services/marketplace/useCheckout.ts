@@ -120,14 +120,14 @@ export function useCheckout() {
       const productIds = data.items.map(i => i.product_id).filter(Boolean) as string[];
       let hasRestricted = false;
       if (productIds.length > 0) {
-        const { data: restrictedRows, error: restrictedErr } = await supabase
+        const { data: rows, error: restrictedErr } = await supabase
           .from('products_all')
-          .select('id')
-          .in('id', productIds)
-          .eq('is_age_restricted', true)
-          .limit(1);
+          .select('id, is_age_restricted')
+          .in('id', productIds);
         if (restrictedErr) throw restrictedErr;
-        hasRestricted = (restrictedRows?.length || 0) > 0;
+        const seen = new Map((rows || []).map((r: any) => [r.id, !!r.is_age_restricted]));
+        // Fail CLOSED: a product we cannot resolve is treated as restricted.
+        hasRestricted = productIds.some(id => seen.get(id) !== false);
       }
       if (hasRestricted && !data.ageConfirmed) {
         throw new Error('Age verification required: you must confirm you are 21 years or older to purchase these products.');
