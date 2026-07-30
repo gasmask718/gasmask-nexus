@@ -54,17 +54,29 @@ export function useUTPenthouseStats() {
         .select('*', { count: 'exact', head: true });
       if (pErr) throw pErr;
 
-      // Distinct geography
-      const { data: geo, error: gErr } = await (supabase.from('ut_partner_leads' as any) as any)
-        .select('state, city')
-        .is('duplicate_of', null)
-        .range(0, 9999);
-      if (gErr) throw gErr;
+      // Distinct geography — paginate (PostgREST caps rows at 1000 per request).
+      // States and cities are counted INDEPENDENTLY: a lead with a state but no
+      // city still counts toward the state total.
+      const stateSet = new Set<string>();
+      const citySet = new Set<string>();
+      const PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const { data: geo, error: gErr } = await (supabase.from('ut_partner_leads' as any) as any)
+          .select('state, city')
+          .is('duplicate_of', null)
+          .range(from, from + PAGE - 1);
+        if (gErr) throw gErr;
+        const rows = geo || [];
+        for (const r of rows) {
+          if (r.state) stateSet.add(String(r.state).trim());
+          if (r.city) citySet.add(String(r.city).trim());
+        }
+        if (rows.length < PAGE) break;
+      }
 
-      const states = new Set((geo || []).map((r: any) => r.state).filter(Boolean)).size;
-      const cities = new Set(
-        (geo || []).map((r: any) => (r.city ? `${r.state || ''}|${r.city}` : null)).filter(Boolean)
-      ).size;
+      const states = stateSet.size;
+      const cities = citySet.size;
+
 
       return {
         totalLeads,
