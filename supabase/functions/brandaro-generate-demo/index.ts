@@ -550,6 +550,13 @@ Deno.serve(async (req) => {
         industry,
         business_name: lead.business_name,
         demo_url: demoUrl,
+        city: lead.city,
+        phone: lead.phone,
+        hero_headline: aiRes.content.hero_headline,
+        hero_sub: aiRes.content.hero_subheadline,
+        cta_text: aiRes.content.cta_text,
+        color_primary: aiRes.content.color_primary,
+        color_secondary: aiRes.content.color_secondary,
       });
       if (!vercel.ok) console.warn("Vercel deploy hook not fired:", vercel.error);
 
