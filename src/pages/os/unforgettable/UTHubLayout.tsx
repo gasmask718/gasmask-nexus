@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
+import { useUTApiBudget } from '@/hooks/useUTApiBudget';
+import { AlertTriangle } from 'lucide-react';
 
 const PINK = '#E91E8C';
 
@@ -157,6 +159,7 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
 export default function UTHubLayout() {
   const location = useLocation();
   const [pendingCount, setPendingCount] = useState(0);
+  const { data: budget } = useUTApiBudget();
 
   const isActive = (path: string) => {
     if (path === '/os/unforgettable') return location.pathname === '/os/unforgettable';
@@ -233,6 +236,24 @@ export default function UTHubLayout() {
       </aside>
 
       <main className="flex-1 p-6 overflow-auto">
+        {budget && (budget.is_paused || ['warning', 'critical', 'depleted'].includes(budget.status)) && (
+          <Link
+            to="/os/unforgettable"
+            className={cn(
+              'mb-4 flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium',
+              budget.is_paused || budget.status === 'depleted'
+                ? 'border-red-500/40 bg-red-500/10 text-red-500'
+                : budget.status === 'critical'
+                  ? 'border-orange-500/40 bg-orange-500/10 text-orange-500'
+                  : 'border-amber-500/40 bg-amber-500/10 text-amber-500'
+            )}
+          >
+            <AlertTriangle className="h-4 w-4" />
+            {budget.is_paused || budget.status === 'depleted'
+              ? `Places API PAUSED — $${Number(budget.month_remaining ?? 0).toFixed(2)} left of $${Number(budget.monthly_limit ?? 0).toFixed(2)}. No Google calls will be made.`
+              : `Places API budget ${budget.status} — $${Number(budget.month_remaining ?? 0).toFixed(2)} left of $${Number(budget.monthly_limit ?? 0).toFixed(2)}.`}
+          </Link>
+        )}
         <Outlet />
       </main>
     </div>

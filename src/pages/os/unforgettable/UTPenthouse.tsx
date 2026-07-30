@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import ApiBudgetCard from '@/components/unforgettable/ApiBudgetCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +53,9 @@ export default function UTPenthouse() {
 
   return (
     <div className="space-y-6">
+      {/* API budget balance (UT-006b) */}
+      <ApiBudgetCard />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
