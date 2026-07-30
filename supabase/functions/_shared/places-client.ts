@@ -49,7 +49,9 @@ export interface UsageLedgerRow {
 export interface UsageTracker {
   runId: string;
   maxRequests: number;
+  maxSpend: number;
   capped: boolean;
+  capReason: 'requests' | 'spend' | null;
   counts: Record<string, number>;
   total(): number;
   canRequest(): boolean;
@@ -60,16 +62,24 @@ export interface UsageTracker {
 
 // Per-invocation request counter + cap. Passing this to textSearch/placeDetails
 // is optional; without it those functions behave exactly as before.
-export function createUsageTracker(maxRequests = 200): UsageTracker {
+// maxRequests limits CALLS; maxSpend limits DOLLARS. Both apply.
+export function createUsageTracker(maxRequests = 200, maxSpend = Infinity): UsageTracker {
   const counts: Record<string, number> = {};
   const t: UsageTracker = {
     runId: crypto.randomUUID(),
     maxRequests,
+    maxSpend,
     capped: false,
+    capReason: null,
     counts,
     total: () => Object.values(counts).reduce((a, b) => a + b, 0),
-    canRequest: () => t.total() < maxRequests,
+    canRequest: () => {
+      if (t.total() >= maxRequests) { t.capReason = 'requests'; return false; }
+      if (t.estimatedCost() >= maxSpend) { t.capReason = 'spend'; return false; }
+      return true;
+    },
     note: (sku: string) => { counts[sku] = (counts[sku] || 0) + 1; },
+
     estimatedCost: () =>
       Object.entries(counts).reduce((sum, [sku, n]) => sum + n * (SKU_RATES[sku] || 0), 0),
     rows: () =>
@@ -138,4 +148,94 @@ export function parseCityState(addressComponents: any[]): { city: string; state:
     if (c.types?.includes('administrative_area_level_1')) state = normState(c.shortText);
   }
   return { city, state };
+}
+
+// ── Budget gate (UT-006b) ────────────────────────────────────────────────
+// Reads the existing ut_api_budget_status view. Added ALONGSIDE the tracker;
+// nothing above is modified. Fail-safe: any read failure = paused.
+export interface BudgetStatus {
+  provider: string;
+  monthly_limit: number;
+  spend_total: number;
+  spend_month: number;
+  spend_today: number;
+  balance: number;
+  balance_pct: number;
+  month_remaining: number;
+  manual_pause: boolean;
+  auto_paused: boolean;
+  is_paused: boolean;
+  status: string;
+  calls_total: number;
+}
+
+export interface BudgetGate {
+  ok: boolean;
+  paused: boolean;
+  reason: string | null;
+  status: BudgetStatus | null;
+  month_remaining: number;
+}
+
+export async function fetchBudgetStatus(
+  sb: any,
+  provider = 'google_places',
+): Promise<BudgetGate> {
+  if (!sb) {
+    return { ok: false, paused: true, reason: 'budget_status_unavailable', status: null, month_remaining: 0 };
+  }
+  const { data, error } = await sb
+    .from('ut_api_budget_status')
+    .select('*')
+    .eq('provider', provider)
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error('Budget status read failed:', error?.message || 'no row');
+    return { ok: false, paused: true, reason: 'budget_status_unavailable', status: null, month_remaining: 0 };
+  }
+
+  const s = data as BudgetStatus;
+  const depleted = s.status === 'depleted';
+  const paused = Boolean(s.is_paused) || depleted;
+  const reason = depleted
+    ? 'budget_depleted'
+    : s.auto_paused
+      ? 'auto_paused'
+      : s.manual_pause
+        ? 'manual_pause'
+        : null;
+
+  return {
+    ok: !paused,
+    paused,
+    reason,
+    status: s,
+    month_remaining: Number(s.month_remaining ?? 0),
+  };
+}
+
+// Persists the pause when the budget is depleted so a human must resume.
+export async function enforceBudgetGate(sb: any, gate: BudgetGate, provider = 'google_places') {
+  const s = gate.status;
+  if (!sb || !s) return;
+  if (s.status === 'depleted' && !s.auto_paused) {
+    try {
+      await sb.from('ut_api_budget')
+        .update({ auto_paused: true, auto_paused_at: new Date().toISOString() })
+        .eq('provider', provider);
+    } catch (e) {
+      console.error('auto_paused flip failed:', e instanceof Error ? e.message : e);
+    }
+  }
+}
+
+export function pausedResponse(gate: BudgetGate) {
+  return {
+    success: false,
+    paused: true,
+    reason: gate.reason || 'paused',
+    month_remaining: gate.month_remaining,
+    status: gate.status?.status || 'unknown',
+  };
 }
