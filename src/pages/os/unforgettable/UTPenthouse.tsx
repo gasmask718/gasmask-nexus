@@ -3,32 +3,15 @@ import ApiBudgetCard from '@/components/unforgettable/ApiBudgetCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useUTPenthouseStats } from '@/hooks/useUTPenthouseStats';
 import {
   PartyPopper, Target, Phone, ClipboardCheck, Store, TrendingUp, Users,
   AlertTriangle, ArrowRight, BarChart3, Bot, Package, DollarSign, Plus,
-  PhoneCall, UserPlus, Eye, Zap
+  PhoneCall, UserPlus, Eye, Zap, MapPin
 } from 'lucide-react';
 
 const PINK = '#E91E8C';
-
-// KPI cards
-const KPI_CARDS = [
-  { label: 'Total Leads', value: '2,847', icon: Target, change: '+312 this week', color: PINK },
-  { label: 'Contacted', value: '1,204', icon: Phone, change: '42% contact rate', color: '#8B5CF6' },
-  { label: 'Interested', value: '387', icon: Users, change: '32% interest rate', color: '#3B82F6' },
-  { label: 'Onboarded', value: '94', icon: ClipboardCheck, change: '24% conversion', color: '#10B981' },
-  { label: 'Active Listings', value: '72', icon: Store, change: '12 pending review', color: '#F59E0B' },
-  { label: 'Conversion Rate', value: '3.3%', icon: TrendingUp, change: 'Lead → Listing', color: '#EC4899' },
-];
-
-// Funnel stages
-const FUNNEL = [
-  { stage: 'New Leads', count: 1643, pct: 100, color: 'bg-pink-500' },
-  { stage: 'Contacted', count: 1204, pct: 73, color: 'bg-purple-500' },
-  { stage: 'Interested', count: 387, pct: 24, color: 'bg-blue-500' },
-  { stage: 'Onboarded', count: 94, pct: 6, color: 'bg-emerald-500' },
-  { stage: 'Live Listing', count: 72, pct: 4, color: 'bg-amber-500' },
-];
 
 // Quick actions
 const QUICK_ACTIONS = [
@@ -40,16 +23,49 @@ const QUICK_ACTIONS = [
   { label: 'Analytics', icon: BarChart3, path: '/os/unforgettable/analytics', color: 'text-cyan-500 hover:bg-cyan-500/10' },
 ];
 
-// Alerts
-const ALERTS = [
-  { text: '8 vendors stuck in onboarding > 7 days', severity: 'high', action: '/os/unforgettable/onboarding' },
-  { text: '143 leads not contacted in 48+ hours', severity: 'high', action: '/os/unforgettable/outreach' },
-  { text: '12 listings blocked by marketplace gate', severity: 'medium', action: '/os/unforgettable/marketplace' },
-  { text: '3 callback leads overdue', severity: 'medium', action: '/os/unforgettable/outreach' },
-];
+function NotTracked({ label, note = 'Not yet tracked' }: { label: string; note?: string }) {
+  return (
+    <div className="p-3 rounded-lg bg-muted/50">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-2xl font-bold text-muted-foreground">—</p>
+      <p className="text-xs text-muted-foreground">{note}</p>
+    </div>
+  );
+}
 
 export default function UTPenthouse() {
   const navigate = useNavigate();
+  const { data: stats, isLoading, error } = useUTPenthouseStats();
+
+  const n = (v?: number) => (v ?? 0).toLocaleString();
+
+  const kpis = [
+    { label: 'Total Leads', value: n(stats?.totalLeads), icon: Target, sub: `${n(stats?.states)} states · ${n(stats?.cities)} cities`, color: PINK },
+    { label: 'Contacted', value: n(stats?.contacted), icon: Phone, sub: stats?.totalLeads ? `${((stats.contacted / stats.totalLeads) * 100).toFixed(1)}% contact rate` : '—', color: '#8B5CF6' },
+    { label: 'Interested', value: n(stats?.interested), icon: Users, sub: 'status = interested', color: '#3B82F6' },
+    { label: 'Onboarded', value: n(stats?.onboarded), icon: ClipboardCheck, sub: 'onboarded_at set', color: '#10B981' },
+    { label: 'Active Vendors', value: n(stats?.partners), icon: Store, sub: 'ut_partners records', color: '#F59E0B' },
+    { label: 'Conversion Rate', value: `${(stats?.conversionRate ?? 0).toFixed(1)}%`, icon: TrendingUp, sub: 'Lead → Onboarded', color: '#EC4899' },
+  ];
+
+  const funnel = [
+    { stage: 'Total Leads', count: stats?.totalLeads ?? 0, color: 'bg-pink-500' },
+    { stage: 'Contacted', count: stats?.contacted ?? 0, color: 'bg-purple-500' },
+    { stage: 'Interested', count: stats?.interested ?? 0, color: 'bg-blue-500' },
+    { stage: 'Onboarded', count: stats?.onboarded ?? 0, color: 'bg-emerald-500' },
+    { stage: 'Active Vendors', count: stats?.partners ?? 0, color: 'bg-amber-500' },
+  ];
+  const funnelMax = Math.max(1, ...funnel.map((f) => f.count));
+
+  // Alerts derived only from real queries. No fabricated entries.
+  const alerts: { text: string; severity: 'high' | 'medium'; action: string }[] = [];
+  if (stats) {
+    const uncontacted = stats.totalLeads - stats.contacted;
+    if (uncontacted > 0) alerts.push({ text: `${uncontacted.toLocaleString()} leads have never been contacted`, severity: 'high', action: '/os/unforgettable/outreach' });
+    if (stats.needsEnrichment > 0) alerts.push({ text: `${stats.needsEnrichment.toLocaleString()} leads need enrichment`, severity: 'medium', action: '/os/unforgettable/places' });
+    if (stats.callbacksDue > 0) alerts.push({ text: `${stats.callbacksDue.toLocaleString()} callbacks overdue`, severity: 'medium', action: '/os/unforgettable/outreach' });
+    if (stats.onboarded > 0 && stats.partners === 0) alerts.push({ text: 'Onboarded leads exist but no vendor records created', severity: 'high', action: '/os/unforgettable/onboarding' });
+  }
 
   return (
     <div className="space-y-6">
@@ -71,17 +87,29 @@ export default function UTPenthouse() {
         </Badge>
       </div>
 
+      {error && (
+        <Card className="border-destructive/50">
+          <CardContent className="p-4 text-sm text-destructive">
+            Failed to load live stats: {(error as Error).message}
+          </CardContent>
+        </Card>
+      )}
+
       {/* KPI Bar */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {KPI_CARDS.map((kpi) => (
+        {kpis.map((kpi) => (
           <Card key={kpi.label} className="border-border/50">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
                 <kpi.icon className="h-4 w-4" style={{ color: kpi.color }} />
                 <span className="text-xs text-muted-foreground">{kpi.label}</span>
               </div>
-              <p className="text-2xl font-bold">{kpi.value}</p>
-              <p className="text-xs text-muted-foreground mt-1">{kpi.change}</p>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <p className="text-2xl font-bold">{kpi.value}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">{kpi.sub}</p>
             </CardContent>
           </Card>
         ))}
@@ -98,45 +126,43 @@ export default function UTPenthouse() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {FUNNEL.map((f) => (
+            {funnel.map((f) => (
               <div key={f.stage}>
                 <div className="flex items-center justify-between text-sm mb-1">
                   <span>{f.stage}</span>
-                  <span className="font-medium">{f.count.toLocaleString()}</span>
+                  <span className="font-medium">{isLoading ? '…' : f.count.toLocaleString()}</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className={`h-full ${f.color} rounded-full transition-all`} style={{ width: `${f.pct}%` }} />
+                  <div
+                    className={`h-full ${f.color} rounded-full transition-all`}
+                    style={{ width: `${Math.max(f.count > 0 ? 2 : 0, (f.count / funnelMax) * 100)}%` }}
+                  />
                 </div>
               </div>
             ))}
           </CardContent>
         </Card>
 
-        {/* Outreach Activity */}
+        {/* Outreach Activity — no call/SMS activity source is wired yet */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Phone className="h-4 w-4 text-purple-500" />
               Outreach Activity
+              <Badge variant="outline" className="text-xs ml-auto">Not yet tracked</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">Calls Today</p>
-                <p className="text-2xl font-bold">47</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">AI Calls</p>
-                <p className="text-2xl font-bold">128</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">Connect Rate</p>
-                <p className="text-2xl font-bold">34%</p>
-              </div>
+              <NotTracked label="Calls Today" note="No call log wired" />
+              <NotTracked label="AI Calls" note="AI dialer disabled" />
+              <NotTracked label="Connect Rate" note="No call log wired" />
               <div className="p-3 rounded-lg bg-muted/50">
                 <p className="text-xs text-muted-foreground">Callbacks Due</p>
-                <p className="text-2xl font-bold text-amber-500">12</p>
+                {isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-amber-500">{n(stats?.callbacksDue)}</p>
+                )}
+                <p className="text-xs text-muted-foreground">From lead records</p>
               </div>
             </div>
             <Button variant="outline" className="w-full" onClick={() => navigate('/os/unforgettable/outreach')}>
@@ -157,20 +183,14 @@ export default function UTPenthouse() {
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 rounded-lg bg-muted/50">
                 <p className="text-xs text-muted-foreground">Active Vendors</p>
-                <p className="text-2xl font-bold">94</p>
+                {isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold">{n(stats?.partners)}</p>
+                )}
+                <p className="text-xs text-muted-foreground">ut_partners</p>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">Listings Live</p>
-                <p className="text-2xl font-bold text-emerald-500">72</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">Pending Review</p>
-                <p className="text-2xl font-bold text-amber-500">12</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">Blocked by Gate</p>
-                <p className="text-2xl font-bold text-red-500">5</p>
-              </div>
+              <NotTracked label="Listings Live" note="No listings source" />
+              <NotTracked label="Pending Review" note="No listings source" />
+              <NotTracked label="Blocked by Gate" note="No listings source" />
             </div>
             <Button variant="outline" className="w-full" onClick={() => navigate('/os/unforgettable/marketplace')}>
               Marketplace Control <ArrowRight className="h-4 w-4 ml-2" />
@@ -232,31 +252,64 @@ export default function UTPenthouse() {
         </Card>
       </div>
 
-      {/* Alerts */}
-      <Card className="border-amber-500/30">
+      {/* Alerts — derived from live queries only */}
+      {alerts.length > 0 && (
+        <Card className="border-amber-500/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              Alerts
+              <Badge className="ml-auto bg-amber-500/10 text-amber-600 border-amber-500/30" variant="outline">
+                {alerts.length} active
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {alerts.map((alert, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted/80 cursor-pointer transition-colors"
+                onClick={() => navigate(alert.action)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`h-2 w-2 rounded-full ${alert.severity === 'high' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                  <span className="text-sm">{alert.text}</span>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Coverage */}
+      <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            Alerts
-            <Badge className="ml-auto bg-amber-500/10 text-amber-600 border-amber-500/30" variant="outline">
-              {ALERTS.length} active
-            </Badge>
+            <MapPin className="h-4 w-4" style={{ color: PINK }} />
+            Coverage
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {ALERTS.map((alert, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted/80 cursor-pointer transition-colors"
-              onClick={() => navigate(alert.action)}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`h-2 w-2 rounded-full ${alert.severity === 'high' ? 'bg-red-500' : 'bg-amber-500'}`} />
-                <span className="text-sm">{alert.text}</span>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-xs text-muted-foreground">States</p>
+              <p className="text-2xl font-bold">{isLoading ? '…' : n(stats?.states)}</p>
             </div>
-          ))}
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-xs text-muted-foreground">Cities</p>
+              <p className="text-2xl font-bold">{isLoading ? '…' : n(stats?.cities)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-xs text-muted-foreground">Needs Enrichment</p>
+              <p className="text-2xl font-bold">{isLoading ? '…' : n(stats?.needsEnrichment)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-xs text-muted-foreground">Duplicates Excluded</p>
+              <p className="text-2xl font-bold text-muted-foreground">—</p>
+              <p className="text-xs text-muted-foreground">Filtered from all counts</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
