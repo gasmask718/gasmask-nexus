@@ -18994,10 +18994,12 @@ export type Database = {
       }
       brandaro_demo_templates: {
         Row: {
+          accent_color: string | null
           brand_colors: Json | null
           color_scheme: Json | null
           created_at: string | null
           cta_text: string | null
+          design_md_key: string | null
           design_md_path: string | null
           hero_headline: string
           hero_subheadline: string
@@ -19005,6 +19007,8 @@ export type Database = {
           industry: string
           industry_keywords: string[] | null
           is_active: boolean | null
+          primary_color: string | null
+          secondary_color: string | null
           sections: Json | null
           template_name: string
           updated_at: string | null
@@ -19012,10 +19016,12 @@ export type Database = {
           vercel_template_repo: string | null
         }
         Insert: {
+          accent_color?: string | null
           brand_colors?: Json | null
           color_scheme?: Json | null
           created_at?: string | null
           cta_text?: string | null
+          design_md_key?: string | null
           design_md_path?: string | null
           hero_headline: string
           hero_subheadline: string
@@ -19023,6 +19029,8 @@ export type Database = {
           industry: string
           industry_keywords?: string[] | null
           is_active?: boolean | null
+          primary_color?: string | null
+          secondary_color?: string | null
           sections?: Json | null
           template_name: string
           updated_at?: string | null
@@ -19030,10 +19038,12 @@ export type Database = {
           vercel_template_repo?: string | null
         }
         Update: {
+          accent_color?: string | null
           brand_colors?: Json | null
           color_scheme?: Json | null
           created_at?: string | null
           cta_text?: string | null
+          design_md_key?: string | null
           design_md_path?: string | null
           hero_headline?: string
           hero_subheadline?: string
@@ -19041,6 +19051,8 @@ export type Database = {
           industry?: string
           industry_keywords?: string[] | null
           is_active?: boolean | null
+          primary_color?: string | null
+          secondary_color?: string | null
           sections?: Json | null
           template_name?: string
           updated_at?: string | null
