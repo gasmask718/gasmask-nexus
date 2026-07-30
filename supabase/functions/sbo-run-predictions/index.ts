@@ -145,8 +145,16 @@ async function runStatsBrain(ctx: any, supabase: any, calibrationText: string): 
       });
       if (data?.context_text) {
         statsContext = data.context_text;
-        dataQuality = 'full';
+        // TRUTHFULNESS GUARD: sbo-get-player-context ALWAYS returns a non-empty
+        // context_text template (filled with N/A when no rows match). Only claim
+        // 'full' when there is actually real stat data behind it — otherwise a
+        // sport with no stats feed (e.g. MLB today) would be mislabeled 'full'.
+        const recentValues = data.raw?.recent_values ?? [];
+        const gamesPlayed = Number(data.raw?.season_stats?.games_played ?? 0);
+        const hasRealStats = recentValues.length > 0 || gamesPlayed > 0;
+        dataQuality = hasRealStats ? 'full' : 'odds_only';
       }
+
     } else if (ctx.prediction_type === 'moneyline') {
       console.log('Looking up intel for game_id:', ctx.game_id, 'type:', typeof ctx.game_id);
       const { data: intel, error: intelError } = await supabase
