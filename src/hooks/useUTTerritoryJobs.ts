@@ -38,19 +38,30 @@ export interface StateCoverage {
   updated_at: string;
 }
 
+const PAGE_SIZE = 1000;
+
 export function useStateCoverage() {
   return useQuery({
     queryKey: ["ut-state-coverage"],
     queryFn: async () => {
-      const { data, error } = await (supabase.from("ut_state_coverage" as any) as any)
-        .select("*")
-        .order("state");
-      if (error) throw error;
-      return (data || []) as StateCoverage[];
+      // Paginated: PostgREST caps unbounded selects at 1,000 rows.
+      const rows: StateCoverage[] = [];
+      for (let from = 0; ; from += PAGE_SIZE) {
+        const { data, error } = await (supabase.from("ut_state_coverage" as any) as any)
+          .select("*")
+          .order("state")
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        const page = (data || []) as StateCoverage[];
+        rows.push(...page);
+        if (page.length < PAGE_SIZE) break;
+      }
+      return rows;
     },
     staleTime: 30_000,
   });
 }
+
 
 export function useTerritoryJobs(filters?: { state?: string; status?: string; category?: string }) {
   return useQuery({
@@ -130,37 +141,32 @@ export function useTerritoryStats() {
   return useQuery({
     queryKey: ["ut-territory-stats"],
     queryFn: async () => {
-      const { data: jobs, error: jErr } = await (supabase.from("ut_territory_jobs" as any) as any)
-        .select("status, leads_found, duplicates_skipped, enriched_count");
-      if (jErr) throw jErr;
+      // Aggregated in Postgres (ut_territory_stats_summary) so totals never
+      // silently under-report once ut_territory_jobs exceeds 1,000 rows.
+      const { data, error } = await (supabase.from("ut_territory_stats_summary" as any) as any)
+        .select("*")
+        .maybeSingle();
+      if (error) throw error;
 
-      const { data: states, error: sErr } = await (supabase.from("ut_state_coverage" as any) as any)
-        .select("status, total_leads, total_onboarded, categories_searched");
-      if (sErr) throw sErr;
-
-      const allJobs = (jobs || []) as TerritoryJob[];
-      const allStates = (states || []) as StateCoverage[];
-
-      const totalLeads = allJobs.reduce((s, j) => s + (j.leads_found || 0), 0);
-      const totalDupes = allJobs.reduce((s, j) => s + (j.duplicates_skipped || 0), 0);
-      const totalEnriched = allJobs.reduce((s, j) => s + (j.enriched_count || 0), 0);
-      const statesCovered = allStates.filter(s => s.status === "completed" || s.status === "in_progress").length;
-      const categoriesCovered = new Set(allJobs.filter(j => j.status === "completed").map((j: any) => j.category)).size;
+      const r: any = data || {};
+      const totalLeads = Number(r.total_leads || 0);
+      const totalDupes = Number(r.total_dupes || 0);
 
       return {
         totalLeads,
         totalDupes,
-        totalEnriched,
-        statesCovered,
-        categoriesCovered,
-        totalJobs: allJobs.length,
-        completedJobs: allJobs.filter(j => j.status === "completed").length,
-        failedJobs: allJobs.filter(j => j.status === "failed").length,
-        queuedJobs: allJobs.filter(j => j.status === "queued").length,
-        runningJobs: allJobs.filter(j => j.status === "running").length,
+        totalEnriched: Number(r.total_enriched || 0),
+        statesCovered: Number(r.states_covered || 0),
+        categoriesCovered: Number(r.categories_covered || 0),
+        totalJobs: Number(r.total_jobs || 0),
+        completedJobs: Number(r.completed_jobs || 0),
+        failedJobs: Number(r.failed_jobs || 0),
+        queuedJobs: Number(r.queued_jobs || 0),
+        runningJobs: Number(r.running_jobs || 0),
         dupeRate: totalLeads > 0 ? Math.round((totalDupes / (totalLeads + totalDupes)) * 100) : 0,
       };
     },
     staleTime: 15_000,
   });
+
 }

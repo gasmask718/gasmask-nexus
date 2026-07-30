@@ -44,22 +44,41 @@ export function useProcessQueue() {
     abortRef.current = false;
 
     try {
-      // Fetch all queued jobs
-      const { data: queuedJobs, error } = await (supabase.from("ut_territory_jobs" as any) as any)
-        .select("id, state, city, category")
-        .eq("status", "queued")
-        .order("priority", { ascending: true })
-        .order("created_at", { ascending: true });
+      // Size the work first (exact count), then page through every queued job.
+      // An unbounded select would silently stop at PostgREST's 1,000-row cap.
+      const { count: queuedCount, error: countErr } = await (supabase.from("ut_territory_jobs" as any) as any)
+        .select("id", { count: "exact", head: true })
+        .eq("status", "queued");
+      if (countErr) throw countErr;
 
-      if (error) throw error;
-      if (!queuedJobs || queuedJobs.length === 0) {
+      const PAGE_SIZE = 1000;
+      const queuedJobs: any[] = [];
+      for (let from = 0; ; from += PAGE_SIZE) {
+        const { data, error } = await (supabase.from("ut_territory_jobs" as any) as any)
+          .select("id, state, city, category")
+          .eq("status", "queued")
+          .order("priority", { ascending: true })
+          .order("created_at", { ascending: true })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        const page = (data || []) as any[];
+        queuedJobs.push(...page);
+        if (page.length < PAGE_SIZE) break;
+      }
+
+      if (queuedJobs.length === 0) {
         toast.info("No queued jobs to process");
         setIsRunning(false);
         return;
       }
 
+      if (typeof queuedCount === "number" && queuedCount !== queuedJobs.length) {
+        console.warn(`Queue size drift: counted ${queuedCount}, fetched ${queuedJobs.length}`);
+      }
+
       setProgress({ current: 0, total: queuedJobs.length, currentJob: "" });
       toast.info(`Starting queue: ${queuedJobs.length} jobs`);
+
 
       for (let i = 0; i < queuedJobs.length; i++) {
         if (abortRef.current) {
