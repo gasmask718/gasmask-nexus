@@ -142,23 +142,34 @@ serve(async (req) => {
     ) => {
       const costInfo = API_COSTS[step.fn];
       const records = opts.records ?? 0;
-      if (opts.status === 'skipped') {
+
+      // A REQUIRED step that "succeeds" with zero records and no explanatory
+      // note is not healthy — it's a silent no-op (dead feed, off-season, etc).
+      // Downgrade to `warning` so it surfaces instead of reading green.
+      let status = opts.status;
+      let note = opts.note;
+      if (status === 'success' && step.required && records === 0 && !opts.note) {
+        status = 'warning';
+        note = 'Required step returned 0 records — feed may be stale, off-season, or misconfigured';
+      }
+
+      if (status === 'skipped') {
         skippedCount += 1;
-      } else if (opts.status !== 'error') {
+      } else if (status !== 'error') {
         totalRecords += records;
         totalCalls += 1;
         totalCostCents += costInfo?.cost_cents || 0;
       }
-      if (opts.status !== 'skipped') {
+      if (status !== 'skipped') {
         await supabase.from('sbo_api_costs').insert({
           run_date: date,
           feed_name: step.fn,
           api_provider: costInfo?.provider || 'unknown',
           endpoint_called: step.fn,
           records_returned: records,
-          estimated_cost_cents: opts.status === 'error' ? 0 : (costInfo?.cost_cents || 0),
+          estimated_cost_cents: status === 'error' ? 0 : (costInfo?.cost_cents || 0),
           api_calls_made: 1,
-          response_status: opts.status === 'error' ? 'error' : 'success',
+          response_status: status === 'error' ? 'error' : 'success',
         });
       }
       const entry = {
@@ -167,12 +178,13 @@ serve(async (req) => {
         sport: opts.sport,
         records,
         duration_ms: opts.duration_ms,
-        status: opts.status,
-        note: opts.note ?? costInfo?.note,
+        status,
+        note: note ?? costInfo?.note,
         ...(opts.error ? { error: opts.error } : {}),
       };
-      if (opts.status === 'error') failed.push(entry);
+      if (status === 'error') failed.push(entry);
       else completed.push(entry);
+
     };
 
     // ---------- Per-sport loop ----------
