@@ -9,6 +9,9 @@ import {
   normState,
   DETAILS_MASK_FULL,
   createUsageTracker,
+  fetchBudgetStatus,
+  enforceBudgetGate,
+  pausedResponse,
 } from "../_shared/places-client.ts";
 
 
@@ -55,7 +58,20 @@ serve(async (req) => {
     const maxRequests = typeof reqBody.max_requests === 'number' && reqBody.max_requests > 0
       ? reqBody.max_requests : 200;
     if (!job_id) throw new Error('job_id required');
-    tracker = createUsageTracker(maxRequests);
+
+    // ── UT-006b budget gate: read ONCE, before any Google call ──
+    const gate = await fetchBudgetStatus(sb);
+    await enforceBudgetGate(sb, gate);
+    if (gate.paused) {
+      // Zero Google calls, zero ledger rows — nothing was spent.
+      return new Response(JSON.stringify(pausedResponse(gate)), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const maxSpend = typeof reqBody.max_spend === 'number' && reqBody.max_spend > 0
+      ? reqBody.max_spend : gate.month_remaining;
+    tracker = createUsageTracker(maxRequests, maxSpend);
 
     // 1. Fetch job
     const { data: job, error: jErr } = await sb.from('ut_territory_jobs').select('*').eq('id', job_id).single();
