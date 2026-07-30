@@ -379,7 +379,17 @@ Deno.serve(async (req) => {
 
       await supabase.from("brandaro_qualified_leads").update({ demo_status: "generated" }).eq("id", lead_id);
 
-      return new Response(JSON.stringify({ success: true, demo, engine: "native", design_md_loaded: !!designMd }), {
+      // Trigger a rebuild of this industry's Vercel project.
+      const vercel = await tryVercelHook(supabase, industry, {
+        demo_id: demo.id,
+        slug: demoSlug,
+        industry,
+        business_name: lead.business_name,
+        demo_url: demoUrl,
+      });
+      if (!vercel.ok) console.warn("Vercel deploy hook not fired:", vercel.error);
+
+      return new Response(JSON.stringify({ success: true, demo, engine: "native", design_md_loaded: !!designMd, vercel }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
