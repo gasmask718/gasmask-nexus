@@ -23,6 +23,9 @@ export interface CheckoutData {
   deliveryType: 'ship' | 'pickup' | 'delivery';
   paymentMethod: 'card' | 'cash' | 'net_terms';
   notes?: string;
+  /** Point-of-sale 21+ affirmation (required when the cart holds restricted items) */
+  ageConfirmed?: boolean;
+  ageConfirmedIp?: string | null;
 }
 
 interface OrderResult {
@@ -110,6 +113,34 @@ export function useCheckout() {
       }
 
       // ═══════════════════════════════════════════════════════════
+      // AGE GATE — HARD CHECK AT POINT OF SALE
+      // Any age-restricted line item requires an explicit 21+
+      // affirmation at checkout (separate from the site-entry gate).
+      // ═══════════════════════════════════════════════════════════
+      const productIds = data.items.map(i => i.product_id).filter(Boolean) as string[];
+      let hasRestricted = false;
+      if (productIds.length > 0) {
+        const { data: restrictedRows, error: restrictedErr } = await supabase
+          .from('products_all')
+          .select('id')
+          .in('id', productIds)
+          .eq('is_age_restricted', true)
+          .limit(1);
+        if (restrictedErr) throw restrictedErr;
+        hasRestricted = (restrictedRows?.length || 0) > 0;
+      }
+      if (hasRestricted && !data.ageConfirmed) {
+        throw new Error('Age verification required: you must confirm you are 21 years or older to purchase these products.');
+      }
+      const ageAudit = hasRestricted && data.ageConfirmed
+        ? {
+            age_confirmed: true,
+            age_confirmed_at: new Date().toISOString(),
+            age_confirmed_ip: data.ageConfirmedIp || null,
+          }
+        : {};
+
+      // ═══════════════════════════════════════════════════════════
       // SPRINT 5: GEOGRAPHIC ROUTER
       // For each line item, ask dd_pick_supplier_for_item which
       // supplier should fulfill (pins → in_state → nearest → default
@@ -186,6 +217,7 @@ export function useCheckout() {
           total: data.totals.total,
           shipping_funded_by_customer: true,
           notes: data.notes,
+          ...ageAudit,
         }])
         .select('id')
         .single();
