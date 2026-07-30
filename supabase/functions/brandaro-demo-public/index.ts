@@ -1,3 +1,8 @@
+// DEPRECATED / UNUSED — retained for reference only.
+// The dynamic single-app rendering approach was reverted in favor of 16
+// per-industry Vercel projects driven by deploy hooks. Nothing calls this
+// endpoint anymore; do not wire new consumers to it.
+//
 // Public, unauthenticated read endpoint for demo sites.
 // Consumed by the brandaro-base dynamic app (middleware -> page render).
 // Returns ONLY allowlisted, non-sensitive fields.
