@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { DataQualityBadge } from '@/components/sbo/DataQualityBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -101,7 +102,7 @@ function useNightlyGames(sport: SportKey) {
         .select(`
           *,
           sbo_odds!game_id(home_odds, away_odds, spread_home, spread_away, total_line, bookmaker),
-          sbo_predictions!game_id(predicted_outcome, final_confidence, confidence_tier, stats_brain_score, market_brain_score, context_brain_score, reasoning)
+          sbo_predictions!game_id(predicted_outcome, final_confidence, confidence_tier, data_quality, stats_brain_score, market_brain_score, context_brain_score, reasoning)
         `)
         .eq('sport_key', sport)
         .gte('commence_time', start)
@@ -123,7 +124,7 @@ function useBestBets(sport: SportKey) {
       const { data, error } = await (supabase as any)
         .from('sbo_predictions')
         .select(`
-          id, predicted_outcome, final_confidence, confidence_tier, prediction_type, prop_id, game_id,
+          id, predicted_outcome, final_confidence, confidence_tier, data_quality, prediction_type, prop_id, game_id,
           sbo_games!inner(home_team, away_team, commence_time, sport_key),
           sbo_player_props(player_name, prop_type, line)
         `)
@@ -331,6 +332,9 @@ function PropsPanel({
                       <span className="rounded border border-[#C9A84C]/30 bg-[#C9A84C]/10 px-2 py-0.5 text-[10px] font-bold text-[#C9A84C]">
                         AI: {pred.predicted_outcome?.toUpperCase()} {pred.final_confidence}%
                       </span>
+                    ) : null}
+                    {pred ? (
+                      <DataQualityBadge quality={pred.data_quality} compact />
                     ) : (
                       <span className="flex gap-1">
                         <button onClick={() => onRunPropPrediction(prop.id, 'over')}
@@ -407,7 +411,10 @@ function BestBetsPanel({
               <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${badgeCls}`}>
                 {conf >= 80 ? '⭐' : conf >= 70 ? '✅' : '📊'} {conf}%
               </span>
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{tierLabel}</span>
+              <span className="flex items-center gap-1.5">
+                <DataQualityBadge quality={b.data_quality} compact />
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{tierLabel}</span>
+              </span>
             </div>
             <div className="text-sm font-bold">{label}</div>
             <div className="text-[11px] text-muted-foreground">
@@ -474,7 +481,7 @@ export default function NightlyBoardTab() {
       .from('sbo_player_props')
       .select(`
         *,
-        sbo_predictions!prop_id(predicted_outcome, final_confidence, confidence_tier, stats_brain_score, market_brain_score, context_brain_score),
+        sbo_predictions!prop_id(predicted_outcome, final_confidence, confidence_tier, data_quality, stats_brain_score, market_brain_score, context_brain_score),
         sbo_prop_accuracy(over_total, over_correct, under_total, under_correct)
       `)
       .eq('game_id', gameId)
