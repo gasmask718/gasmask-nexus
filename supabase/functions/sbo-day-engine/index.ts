@@ -28,7 +28,9 @@ const MORNING_STEPS = [
 
 const PREGAME_STEPS = [
   { fn: 'sbo-fetch-odds', label: 'Live Odds (DK/FD/BetMGM/Caesars)', icon: '💰', required: true },
+  { fn: 'sbo-run-prop-predictions', label: 'AI Prop Predictions (per prop)', icon: '🎯', required: false },
   { fn: 'sbo-run-predictions', label: 'AI Predictions (per game, moneyline)', icon: '🧠', required: false },
+
   { fn: 'sbo-sync-pregame', label: 'Projections + Game Logs + SDIO Props', icon: '📈', required: true },
   { fn: 'sbo-sync-prizepicks', label: 'PrizePicks Props', icon: '🎯', required: false },
   { fn: 'sbo-sync-polymarket-full', label: 'Polymarket Full (214 NBA Markets)', icon: '🔮', required: false },
