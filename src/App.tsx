@@ -20,6 +20,7 @@ import { MaintenanceGuard } from "./components/MaintenanceGuard";
 import { VACallWidget } from "./components/va/VACallWidget";
 import { GlobalTrainingHelp } from "./components/training/GlobalTrainingHelp";
 import { RefCapture } from "./components/dynasty-direct/RefCapture";
+import { AgeGate } from "./components/dynasty-direct/AgeGate";
 import { FlashSaleBanner } from "./components/FlashSaleBanner";
 
 import './modules';
