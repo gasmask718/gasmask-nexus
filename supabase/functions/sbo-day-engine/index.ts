@@ -9,6 +9,8 @@ const corsHeaders = {
 const API_COSTS: Record<string, { provider: string; cost_cents: number; note: string }> = {
   'sbo-fetch-odds': { provider: 'the_odds_api', cost_cents: 0, note: 'Free tier' },
   'sbo-run-predictions': { provider: 'internal', cost_cents: 0, note: 'Internal AI predictions' },
+  'sbo-run-prop-predictions': { provider: 'internal', cost_cents: 0, note: 'Internal AI prop predictions (fanout)' },
+
   'sbo-sync-daily': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-sync-pregame': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-sync-prizepicks': { provider: 'prizepicks', cost_cents: 0, note: 'Free unofficial API' },
@@ -28,7 +30,9 @@ const MORNING_STEPS = [
 
 const PREGAME_STEPS = [
   { fn: 'sbo-fetch-odds', label: 'Live Odds (DK/FD/BetMGM/Caesars)', icon: '💰', required: true },
+  { fn: 'sbo-run-prop-predictions', label: 'AI Prop Predictions (per prop)', icon: '🎯', required: false },
   { fn: 'sbo-run-predictions', label: 'AI Predictions (per game, moneyline)', icon: '🧠', required: false },
+
   { fn: 'sbo-sync-pregame', label: 'Projections + Game Logs + SDIO Props', icon: '📈', required: true },
   { fn: 'sbo-sync-prizepicks', label: 'PrizePicks Props', icon: '🎯', required: false },
   { fn: 'sbo-sync-polymarket-full', label: 'Polymarket Full (214 NBA Markets)', icon: '🔮', required: false },
@@ -68,6 +72,8 @@ serve(async (req) => {
       run_type = 'manual',
       steps = 'full',
       date = new Date().toISOString().split('T')[0],
+      prop_fanout_limit,
+
     } = body;
 
     const supabase = createClient(
@@ -206,7 +212,93 @@ serve(async (req) => {
         try {
           console.log(`[${sport}] Running step: ${step.fn}`);
 
+          // ── Per-prop prediction fanout ──────────────────────────────────
+          // Invokes sbo-run-predictions' player_prop branch once per deduped
+          // prop. Idempotent (same-day predictions are pre-filtered), capped,
+          // and bounded by a wall-clock budget so it can never eat the whole
+          // 150s edge-function limit. Resumable across pregame runs.
+          if (step.fn === 'sbo-run-prop-predictions') {
+            const MAX_PROPS_PER_RUN = Number(prop_fanout_limit ?? 25);
+            const TIME_BUDGET_MS = 60_000;
+
+            const dayStart = `${date}T00:00:00Z`;
+            const _next = new Date(`${date}T00:00:00Z`);
+            _next.setUTCDate(_next.getUTCDate() + 1);
+            const dayEnd = _next.toISOString();
+
+            const { data: props, error: propsErr } = await supabase
+              .from('sbo_player_props')
+              .select('id, player_name, prop_type, line, source, created_at')
+              .eq('sport_key', sport)
+              .gte('game_date', dayStart)
+              .lt('game_date', dayEnd)
+              .order('created_at', { ascending: false });
+            if (propsErr) throw propsErr;
+
+            // Dedupe by (player_name, prop_type): freshest wins, book preference
+            // breaks ties (real sportsbook line beats a PrizePicks line).
+            const SOURCE_RANK: Record<string, number> = { draftkings: 3, fanduel: 2, prizepicks: 1 };
+            const bestByKey = new Map<string, any>();
+            for (const p of (props ?? [])) {
+              const key = `${(p.player_name || '').toLowerCase()}|${p.prop_type}`;
+              const cur = bestByKey.get(key);
+              if (!cur) { bestByKey.set(key, p); continue; }
+              const newer = new Date(p.created_at).getTime() > new Date(cur.created_at).getTime();
+              const better = (SOURCE_RANK[p.source] ?? 0) > (SOURCE_RANK[cur.source] ?? 0);
+              if (newer || better) bestByKey.set(key, p);
+            }
+            let queue = [...bestByKey.values()];
+            const dedupedTotal = queue.length;
+
+            // Pre-filter props that already have a prediction today (resumable).
+            const etToday = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+            const { data: existing } = await supabase
+              .from('sbo_predictions')
+              .select('prop_id')
+              .eq('prediction_type', 'player_prop')
+              .gte('created_at', `${etToday}T00:00:00`)
+              .not('prop_id', 'is', null);
+            const done = new Set((existing ?? []).map((r: any) => r.prop_id));
+            queue = queue.filter(p => !done.has(p.id));
+            const pending = queue.length;
+
+            let saved = 0, skipped = 0, failedProps = 0, invoked = 0;
+            let stopReason: string | null = null;
+
+            for (const prop of queue) {
+              if (invoked >= MAX_PROPS_PER_RUN) { stopReason = `cap ${MAX_PROPS_PER_RUN} reached`; break; }
+              if (Date.now() - stepStart > TIME_BUDGET_MS) { stopReason = `time budget ${TIME_BUDGET_MS / 1000}s reached`; break; }
+
+              invoked += 1;
+              try {
+                const { data: res, error: invErr } = await supabase.functions.invoke('sbo-run-predictions', {
+                  body: { prop_id: prop.id, prediction_type: 'player_prop' },
+                });
+                if (invErr) { failedProps += 1; continue; }
+                if (res?.insert_error) { failedProps += 1; continue; }
+                if (res?.saved === true && res?.prediction_id) saved += 1;
+                else if (res?.skipped === true || res?.source === 'cache') skipped += 1;
+                else failedProps += 1;
+              } catch (propErr: any) {
+                console.error(`[${sport}] prop ${prop.id} failed:`, propErr?.message);
+                failedProps += 1;
+              }
+              await new Promise(r => setTimeout(r, 400));
+            }
+
+            const remaining = Math.max(pending - invoked, 0);
+            await recordStep(step, {
+              sport,
+              status: failedProps > 0 && saved === 0 && invoked > 0 ? 'warning' : 'success',
+              records: saved,
+              duration_ms: Date.now() - stepStart,
+              note: `${dedupedTotal} deduped props (${(props ?? []).length} raw) · ${invoked} invoked · ${saved} saved · ${skipped} skipped · ${failedProps} failed · ${remaining} remaining${stopReason ? ` — stopped: ${stopReason}` : ''}${dedupedTotal === 0 ? ' — no props for this sport today' : ''}`,
+            });
+            continue;
+          }
+
           // Special handling: run-predictions fans out per game
+
           if (step.fn === 'sbo-run-predictions') {
             // DISABLED 2026-07-22: sbo-run-predictions has no derivation
             // for `predicted_outcome` on moneyline predictions — every

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { DataQualityBadge } from '@/components/sbo/DataQualityBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -711,7 +712,7 @@ export function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }
             {localPrediction.created_at && (
               <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground mt-1.5">
                 <span>🧠 AI ran: {new Date(localPrediction.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {new Date(localPrediction.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                <span>📊 {localPrediction.data_quality === 'full' ? 'Full Stats' : localPrediction.data_quality === 'partial' ? 'Partial Stats' : 'Odds Only'}</span>
+                <DataQualityBadge quality={localPrediction.data_quality} compact />
               </div>
             )}
             {/* Kelly stake recommendation */}

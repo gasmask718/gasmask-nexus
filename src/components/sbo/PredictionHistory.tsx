@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { DataQualityBadge } from '@/components/sbo/DataQualityBadge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -228,9 +229,7 @@ function PredictionHistoryRow({ prediction }: { prediction: any }) {
                 timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit'
               })}
             </span>
-            <span>
-              {prediction.data_quality === 'full' ? '📊' : prediction.data_quality === 'partial' ? '⚠️' : '🔴'}
-            </span>
+            <DataQualityBadge quality={prediction.data_quality} compact />
           </div>
 
           {isGame && game && (

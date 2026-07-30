@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DataQualityBadge } from '@/components/sbo/DataQualityBadge';
 import { ArrowLeft, Trophy, Target, Activity } from 'lucide-react';
 
 /**
@@ -32,7 +33,7 @@ export default function OwnerSportsDetailPage() {
     queryFn: async () => {
       const { data, error, count } = await (supabase as any)
         .from('sbo_saved_picks')
-        .select('id, label, pick_type, sport, confidence, stake, potential_payout, result, pick_date, created_at', { count: 'exact' })
+        .select('id, label, pick_type, sport, confidence, stake, potential_payout, result, pick_date, created_at, source_id, sbo_predictions!source_id(data_quality, sport_key)', { count: 'exact' })
         .order('created_at', { ascending: false })
         .limit(10);
       if (error) throw error;
@@ -139,6 +140,11 @@ export default function OwnerSportsDetailPage() {
                     <p className="text-xs text-muted-foreground">
                       {p.sport || '—'} · conf {p.confidence ?? '—'} · {p.pick_date || (p.created_at && new Date(p.created_at).toLocaleDateString())}
                     </p>
+                    {p.sbo_predictions && (
+                      <div className="mt-1">
+                        <DataQualityBadge quality={(Array.isArray(p.sbo_predictions) ? p.sbo_predictions[0] : p.sbo_predictions)?.data_quality} compact />
+                      </div>
+                    )}
                   </div>
                   <Badge variant="outline" className={
                     p.result === 'W' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'

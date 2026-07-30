@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DataQualityBadge } from '@/components/sbo/DataQualityBadge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, Upload, Camera, Save, Send, RefreshCw, Zap, FileJson, Trash2, Database } from 'lucide-react';
@@ -649,16 +650,7 @@ export function PrizePicksAnalyzer() {
               </p>
             )}
 
-            {pred.data_quality && (
-              <Badge variant="outline" className={`text-[8px] h-4 px-1 ${
-                pred.data_quality === 'full' ? 'text-green-500 border-green-500/40' :
-                pred.data_quality === 'partial' ? 'text-yellow-500 border-yellow-500/40' :
-                'text-destructive border-destructive/40'
-              }`}>
-                {pred.data_quality === 'full' ? '✅ Full Stats' :
-                 pred.data_quality === 'partial' ? '⚠️ Partial Stats' : '🔴 Odds Only'}
-              </Badge>
-            )}
+            {pred.data_quality && <DataQualityBadge quality={pred.data_quality} compact />}
 
             {/* Verdict Note */}
             {(verification?.verdict_note) && (
