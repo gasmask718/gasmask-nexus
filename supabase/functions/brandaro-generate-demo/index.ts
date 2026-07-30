@@ -256,9 +256,44 @@ async function callDurable(payload: any): Promise<{ ok: true; site_id: string; s
   }
 }
 
-// NOTE: Vercel deploy hooks were removed. Demos are now served by a single
-// dynamic app that reads brandaro_demo_sites at request time, so a demo is
-// live the moment the row is written — no per-demo build.
+// Per-industry Vercel projects: each industry has its own Vercel project and
+// deploy hook, stored in brandaro_demo_templates.vercel_deploy_hook_url.
+// Firing the hook triggers a rebuild of that industry's project so the new
+// demo row is picked up at build time.
+async function tryVercelHook(
+  supabase: ReturnType<typeof createClient>,
+  industry: string,
+  payload: Record<string, unknown>,
+): Promise<{ ok: boolean; skipped?: boolean; status?: number; error?: string; repo?: string }> {
+  const { data: tpl, error } = await supabase
+    .from("brandaro_demo_templates")
+    .select("vercel_deploy_hook_url, vercel_template_repo")
+    .eq("industry", industry)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error) return { ok: false, error: `Template lookup failed: ${error.message}` };
+  if (!tpl?.vercel_deploy_hook_url) {
+    return { ok: false, skipped: true, error: `No deploy hook configured for industry "${industry}"` };
+  }
+
+  try {
+    const res = await fetch(tpl.vercel_deploy_hook_url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // Deploy hooks ignore the body, but we send context for log/debug parity.
+      body: JSON.stringify(payload),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      return { ok: false, status: res.status, error: `Vercel hook ${res.status}: ${text.slice(0, 300)}`, repo: tpl.vercel_template_repo };
+    }
+    return { ok: true, status: res.status, repo: tpl.vercel_template_repo };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Vercel hook request failed", repo: tpl.vercel_template_repo };
+  }
+}
+
 
 
 Deno.serve(async (req) => {
@@ -314,9 +349,9 @@ Deno.serve(async (req) => {
       });
 
       const demoSlug = `${(lead.business_name || "demo").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}-${Date.now()}`;
-      // Single-label subdomain: `slug--industry.demo.brandarodigital.com`
-      // (avoids a two-level wildcard certificate).
-      const demoUrl = `https://${demoSlug}--${industry}.demo.brandarodigital.com`;
+      // Two-level subdomain served by the industry's own Vercel project:
+      // `<slug>.<industry>.demo.brandarodigital.com`
+      const demoUrl = `https://${demoSlug}.${industry}.demo.brandarodigital.com`;
       const nowIso = new Date().toISOString();
 
       const { data: demo, error: insertErr } = await supabase.from("brandaro_demo_sites").insert({
@@ -344,7 +379,17 @@ Deno.serve(async (req) => {
 
       await supabase.from("brandaro_qualified_leads").update({ demo_status: "generated" }).eq("id", lead_id);
 
-      return new Response(JSON.stringify({ success: true, demo, engine: "native", design_md_loaded: !!designMd }), {
+      // Trigger a rebuild of this industry's Vercel project.
+      const vercel = await tryVercelHook(supabase, industry, {
+        demo_id: demo.id,
+        slug: demoSlug,
+        industry,
+        business_name: lead.business_name,
+        demo_url: demoUrl,
+      });
+      if (!vercel.ok) console.warn("Vercel deploy hook not fired:", vercel.error);
+
+      return new Response(JSON.stringify({ success: true, demo, engine: "native", design_md_loaded: !!designMd, vercel }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
