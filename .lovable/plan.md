@@ -1,165 +1,104 @@
-## Phase A — `sbo-fetch-odds` props unblock (proposal only, nothing changed)
+## Recon evidence (read-only, done now)
 
-Scope: `supabase/functions/sbo-fetch-odds/index.ts` only. No day-engine, no run-predictions, no prizepicks/pregame/SportsDataIO.
+**Today's MLB prop data (`sbo_player_props`, sport_key='mlb', last 24h)**
+- 316 raw rows, 3 sources (draftkings, fanduel, prizepicks), 3 prop types (`hits`, `strikeouts_p`, `total_bases`)
+- **278 distinct (player_name, prop_type)**; 281 distinct (player, prop_type, line) → books mostly agree on the line, so dedupe on (player, prop_type) collapses 316 → 278. Only ~3 line disagreements.
 
-During recon for this proposal I found **two more blockers past the cache guard** that would have made the fix look like it worked while still writing zero rows. Both are in the same file and same code path, so they belong in Phase A.
+**data_quality behavior — MUST FIX, evidence below**
+`sbo-run-predictions/index.ts:130-148`:
+```ts
+let dataQuality = 'odds_only';
+if (ctx.prediction_type === 'player_prop' && ctx.player_name) {
+  const { data } = await supabase.functions.invoke('sbo-get-player-context', {...});
+  if (data?.context_text) { statsContext = data.context_text; dataQuality = 'full'; }
+}
+```
+`sbo-get-player-context` **always** returns a non-empty `context_text` — it's a template string that fills `N/A`/`0` when no rows are found (index.ts:93-115). So an MLB prop with zero baseball stats would come back `data_quality: 'full'` with an all-N/A NBA-shaped context (pts/ast/reb/3pm). Confirmed the tables are NBA-only: `sbo_player_season_stats` = 587 rows, `sbo_player_game_logs` = 130 rows, and `propFieldMap` has no baseball keys (`hits`, `strikeouts_p`, `total_bases` all fall back to `points`).
+
+Existing MLB predictions (11, all moneyline, from 2026-07-21) show 5 rows already mislabeled `full` on the team-stats path.
+
+**Conclusion:** shipping the fanout as-is would produce **falsely `full`-labeled** MLB props — the exact opposite of the labeling requirement. The proposal therefore includes one narrow, additive truthfulness guard (not brain-logic change).
 
 ---
 
-### Blocker inventory
+## 1. Fanout step design
 
-| # | Bug | Effect |
+New step in `PREGAME_STEPS`, placed immediately after `sbo-fetch-odds`, `required: false`, **not** in `NBA_ONLY_STEPS`:
+
+```ts
+{ fn: 'sbo-run-prop-predictions', label: 'AI Prop Predictions (per prop)', icon: '🎯', required: false }
+```
+
+This is a **virtual step** handled inline in the per-sport loop (same shape as the existing disabled `sbo-run-predictions` branch at index.ts:207-236) — no new edge function to deploy, no new secrets.
+
+Behavior inside the branch:
+1. Query today's props for the current sport using the ET day window already proven in Phase A:
+   `sbo_player_props` where `sport_key = sport` and `game_date` in [etDayStartUTC, etDayEndUTC).
+2. **Dedupe** in JS by `${player_name}|${prop_type}`, keeping the row with the most recent `created_at` (tiebreak: prefer `source='draftkings'` → `fanduel` → `prizepicks`, so we keep a real sportsbook line over PrizePicks when both exist).
+3. **Cap + time budget.** 278 props is far beyond a single invocation: each `sbo-run-predictions` call makes 3 sequential/parallel AI calls (stats → then market/context/polymarket in parallel), realistically 5-9s per prop. The day-engine already warns at 150s wall-clock (index.ts:331). So:
+   - `MAX_PROPS_PER_RUN = 25` (overridable via request body `prop_fanout_limit`)
+   - `TIME_BUDGET_MS = 60_000` — break out of the loop when exceeded, whichever comes first
+   - Order by `created_at desc` so the freshest lines get predicted first
+   - **Idempotent + resumable:** `sbo-run-predictions` already short-circuits on an existing same-day prediction for a `prop_id` (index.ts:511-533, returns `source: 'cache'`). We pre-filter those prop_ids out of the queue before invoking, so each successive pregame run advances the slate instead of re-burning the cap. Note in the step record how many remain unprocessed.
+4. Invoke per prop: `supabase.functions.invoke('sbo-run-predictions', { body: { prop_id, prediction_type: 'player_prop' } })`, sequential, `await sleep(400)` between calls.
+5. **Per-item error isolation + save verification** (the pattern from this session): try/catch per prop; count from the response, not from the absence of an error:
+   - `saved` ← `data.saved === true && data.prediction_id`
+   - `skipped` ← `data.skipped === true` (sub-50% confidence) or `data.source === 'cache'`
+   - `failed` ← thrown error, `error` from invoke, or `data.insert_error` non-null
+   - `records` reported to `recordStep` = **saved only**; note string carries `saved/skipped/failed/remaining` and the cap/time-budget reason if we bailed early.
+6. `API_COSTS` entry added for the step (`internal`, 0 cents) so the `sbo_api_costs` insert doesn't log `unknown`.
+
+The existing disabled `sbo-run-predictions` moneyline branch is **left exactly as-is**.
+
+## 2. data_quality truthfulness guard (narrow, required for point 3 to mean anything)
+
+In `sbo-run-predictions/runStatsBrain`, the player-prop branch only: promote to `'full'` when the context actually contains real numbers, otherwise leave `'odds_only'`.
+
+```ts
+if (data?.context_text) {
+  statsContext = data.context_text;
+  const hasRealStats =
+    (data.raw?.recent_values?.length ?? 0) > 0 ||
+    (data.raw?.season_stats?.games_played ?? 0) > 0;
+  dataQuality = hasRealStats ? 'full' : 'odds_only';
+}
+```
+`sbo-get-player-context` already returns `raw.recent_values` and `raw.season_stats` (index.ts:115-128), so this needs **no change to that function** and no brain-logic change. Effect on NBA: none — NBA props have game logs, so `recent_values.length > 0` and they stay `full`. Effect on MLB: correctly `odds_only`, which also triggers the already-existing confidence cap at 55 (`index.ts:290, 323`) → these land in `weak`/`moderate` tiers, never `elite`.
+
+If you'd rather I not touch `sbo-run-predictions` at all, the alternative is the fanout step overwriting `data_quality` post-insert — dirtier, and it can't apply the 55 cap. I recommend the guard above.
+
+## 3. UI labeling — where it lands
+
+Existing badge pattern (reuse verbatim, `full → 📊 Full Stats` / `partial → ⚠️ Partial Stats` / else `🔴 Odds Only`):
+- `src/pages/sports-betting/SportsBettingOS.tsx:714, 747, 755` — already renders it ✅
+- `src/components/sbo/PrizePicksAnalyzer.tsx:652-659` — already renders it ✅
+- `src/components/sbo/PredictionHistory.tsx:232` — emoji only, already renders it ✅
+
+Gaps to close in this task:
+1. **`src/pages/sports-betting/tabs/NightlyBoardTab.tsx`** (lines 104, 126, 477) — selects `confidence_tier` and brain scores but **not** `data_quality`. Add `data_quality` to all three selects and render a badge next to the confidence tier on both the game rows and the prop rows (line 477 is the prop join — this is the primary surface these new MLB predictions will appear on).
+2. **Saved-picks surfaces.** `sbo-run-predictions` auto-saves every prediction into `sbo_saved_picks`, and that table has **no `data_quality` column**. Affected: `src/pages/owner/OwnerSportsDetailPage.tsx` and any other saved-picks list. Fix without a schema change: those queries already have `source_id` → join `sbo_predictions!source_id(data_quality, sport_key)` and render the same badge. (If you prefer a denormalized `data_quality` column on `sbo_saved_picks`, say so — that's a migration and I'd propose it separately.)
+3. Extract the badge into one shared `src/components/sbo/DataQualityBadge.tsx` (variant text: `Odds-Only — Limited Data` on hover/tooltip for the `odds_only` case) and swap the three existing inline copies to use it, so there's a single place to maintain.
+
+Verification before I call it done: run the fanout for MLB, then load NightlyBoardTab and the owner sports page and screenshot the badge actually rendering on real MLB prop rows — not just confirm the field exists.
+
+## 4. Realistic volume + duration estimate
+
+| | Today (real) | Typical full MLB slate |
 |---|---|---|
-| 1 | Cache guard returns early when games exist | Props loop never runs. Confirmed live today. |
-| 2 | ET wall-clock date compared to naive-UTC `game_date` | 4–5h offset window; yesterday's night games count as "today". |
-| 3 | **Insert omits `team`, which is `NOT NULL`** | Every prop insert would fail even if the loop ran. |
-| 4 | **Plain `.insert()` vs. unique `(player_name, prop_type, game_date, source)`** | Re-runs within a day error out instead of refreshing lines. |
+| Raw prop rows | 316 | ~400-900 |
+| Deduped (player, prop_type) | **278** | ~300-700 |
+| Predictions saved per pregame run (cap 25) | ~18-23 (some skipped <50% confidence) | same |
+| Runs to cover a slate | ~12 | ~15-30 |
 
-Bugs 3 and 4 are new information — they were invisible until now because the loop has never executed for MLB.
+Step duration per run: 25 props × (~6s AI + 0.4s pacing) ≈ **~150s** — too long on its own. That's why the **60s time budget wins in practice**: expect ~8-12 props per pregame run at ~60-70s, and the step reports `remaining: N` honestly. To cover a full slate you'd want pregame invoked repeatedly (existing cron cadence) or a follow-up task to move this to a dedicated `sbo-run-prop-predictions` edge function with chunked concurrency — flagged, not built here.
 
----
+## Explicitly not in scope
+`sbo-fetch-odds` (untouched), any SportsDataIO/NBA feed, Phase B baseball stats domain, moneyline fanout re-enable.
 
-### 1. Cache guard — current code (lines ~85–100)
-
-```ts
-const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-
-const { count } = await supabase
-  .from('sbo_games').select('*', { count: 'exact', head: true })
-  .eq('sport_key', sport_key)
-  .gte('game_date', `${today}T00:00:00`).lte('game_date', `${today}T23:59:59`);
-
-if (count && count > 0) {
-  return new Response(JSON.stringify({ ... source: 'cache', ... }));   // <-- props never reached
-}
-```
-
-**Proposed:** replace the early `return` with a *cached-games branch* that reuses the rows already in the DB and then falls into the shared props loop.
-
-```ts
-// Cache is about GAMES only. Props are fetched independently.
-const { data: cachedGames } = await supabase
-  .from('sbo_games')
-  .select('id, external_id, home_team, away_team, game_date')
-  .eq('sport_key', sport_key)
-  .gte('game_date', dayStartUtc).lt('game_date', dayEndUtc);
-
-const gamesAreCached = (cachedGames?.length ?? 0) > 0;
-
-let gameTargets: Array<{ id: string; external_id: string; home_team: string; away_team: string }>;
-
-if (gamesAreCached) {
-  gameTargets = cachedGames!;            // skip the games+odds API call entirely
-  source = 'cache';
-} else {
-  ... existing games fetch / upsert / odds insert loop ...
-  gameTargets = <rows upserted above>;
-}
-
-if (include_props && PROP_MARKETS[sport_key]?.length) {
-  for (const g of gameTargets) { ...existing per-event props fetch... }
-}
-```
-
-Net effect: games caching still saves API credits (no games/odds refetch), but props are always attempted. The props loop body itself is unchanged apart from bugs 3/4 below.
-
-Optional guard I recommend but will not add unless you say so: skip the props fetch for a game whose `commence_time` is already in the past, so we don't burn credits on finished games.
-
----
-
-### 2. Timezone convention
-
-**Proposed convention, documented in a comment at the top of the file:**
-
-> A sports "day" is the **America/New_York calendar date**, because that is how US books, PrizePicks slates, and `sbo_player_props.game_date` (a `date` column) already label slates. A 10:05pm ET first pitch belongs to that ET date, not to the following UTC date.
-
-**Implementation:** keep ET as the label, but convert the window to real UTC instants before querying, instead of interpolating a bare string.
-
-```ts
-// Current — ET label compared against UTC timestamps as naive strings
-const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-.gte('game_date', `${today}T00:00:00`).lte('game_date', `${today}T23:59:59`)
-
-// Proposed
-const etToday = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }); // 'YYYY-MM-DD'
-const etOffset = getEtOffsetHours();            // 4 during EDT, 5 during EST — derived, not hardcoded
-const dayStartUtc = new Date(`${etToday}T00:00:00-0${etOffset}:00`).toISOString();
-const dayEndUtc   = new Date(`${etToday}T00:00:00-0${etOffset}:00`);
-      dayEndUtc.setUTCDate(dayEndUtc.getUTCDate() + 1);   // exclusive upper bound
-.gte('game_date', dayStartUtc).lt('game_date', dayEndUtc.toISOString())
-```
-
-`etToday` remains the value written to `sbo_player_props.game_date`, so the ledger label and the query window finally agree. The `lte ...T23:59:59` inclusive bound also becomes an exclusive `lt`, removing the one-second hole.
-
----
-
-### 3. Insert fixes inside the props loop
-
-```ts
-// Current — omits NOT NULL `team`, and plain insert collides with the unique constraint
-await supabase.from('sbo_player_props').insert({
-  game_id, sport_key, player_name: player, prop_type: stdType, line: v.line,
-  over_odds, under_odds, source: bm.key, game_date: today,
-});
-
-// Proposed
-await supabase.from('sbo_player_props').upsert({
-  game_id: gameRecord.id,
-  sport_key,
-  player_name: player,
-  team: v.team ?? `${away_team} @ ${home_team}`,   // Odds API prop outcomes carry no team; matchup is the honest fallback
-  prop_type: stdType,
-  line: v.line,
-  over_odds: v.over_odds ?? null,
-  under_odds: v.under_odds ?? null,
-  source: bm.key,
-  game_date: etToday,
-  updated_at: new Date().toISOString(),
-}, { onConflict: 'player_name,prop_type,game_date,source' });
-```
-
-The upsert also makes repeated intraday calls refresh lines instead of erroring — which is what a day-engine cadence needs.
-
-Note on `team`: The Odds API player-prop outcomes only give `description` (player name), not a team. Options are (a) store the matchup string as shown, (b) leave a roster-join enrichment for a later phase. I propose (a) now, since the column is `NOT NULL` and blocking. Say the word if you'd rather I make `team` nullable via migration instead — that's a schema change, so I won't do it unprompted.
-
----
-
-### 4. Walkthrough against today's exact observed state
-
-Today, 2026-07-30. `sbo_games` holds 3 MLB rows inside the buggy window — Dodgers/Mariners 02:11Z, Athletics/Red Sox 01:41Z, Angels/Astros 01:39Z. All three are **last night's ET slate** (Jul 29 evening ET), already finished.
-
-**Before (observed live 10:18Z):**
-```json
-{"errors":[],"games_fetched":3,"games_inserted":0,
- "message":"Using 3 mlb games already fetched today",
- "props_fetched":0,"props_inserted":0,"source":"cache","sport_key":"mlb"}
-```
-
-**After both fixes, same invocation `{ sport_key: 'mlb' }`:**
-
-1. `etToday` = `2026-07-30`; window = `2026-07-30T04:00:00Z` → `2026-07-31T04:00:00Z`.
-2. The 3 stale rows at 01:39–02:11Z now fall **outside** the window — they correctly belong to the Jul 29 ET slate. So `gamesAreCached` is **false** for the Jul 30 ET slate.
-3. Games branch runs: fetches today's real MLB slate (the provider currently lists 10 upcoming MLB events, first pitch 16:11Z), upserts them, writes moneyline/spread/total odds.
-4. Props loop runs per event against the endpoint the diagnostic already proved returns 200 with live data — e.g. Rays/Rangers returned Shane McClanahan `pitcher_strikeouts` 5.5 (+132/-170, FanDuel) and Yandy Diaz `batter_hits` 1.5 (+191/-260, DraftKings).
-5. Rows upsert into `sbo_player_props` with `sport_key='mlb'`, `game_date='2026-07-30'` — the table's first MLB rows ever (currently 12,579 rows, all NBA).
-
-Second scenario, to prove the guard fix independently: if the day-engine calls this twice in one day, the second call hits `gamesAreCached = true`, **skips** the games/odds API entirely, and still runs the props loop, refreshing lines via upsert. That is the case that is broken today and the reason props have never landed.
-
-Credit cost: 1 request for the games list plus 1 per event for props — roughly 11 credits for a full MLB slate. Quota showed 246 remaining at diagnostic time.
-
----
-
-### 5. NBA impact: none
-
-- All logic is keyed off the `sport_key` parameter; NBA still resolves to `basketball_nba` with the unchanged `PROP_MARKETS.nba` list.
-- NBA_ONLY gating lives in `sbo-sync-prizepicks` / `sbo-sync-pregame` / SportsDataIO paths — not touched.
-- The only NBA-visible deltas are shared improvements: the corrected ET window, and props inserts becoming upserts (which for NBA means duplicate-key errors stop appearing in `errors[]`). No NBA row is deleted or rewritten with different semantics.
-- NBA is out of season today, so the practical NBA blast radius this week is zero.
-
----
-
-### Files touched if approved
-
-- `supabase/functions/sbo-fetch-odds/index.ts` — cache guard branch, ET/UTC window helper, props upsert with `team`.
-
-No migrations. No other functions. No downstream fanout — `sbo-run-predictions` invocation stays a separate follow-up as you specified.
+## Files touched if approved
+- `supabase/functions/sbo-day-engine/index.ts` — new step def + inline fanout branch + API_COSTS entry
+- `supabase/functions/sbo-run-predictions/index.ts` — 4-line data_quality truthfulness guard (player-prop branch only)
+- `src/components/sbo/DataQualityBadge.tsx` — new shared badge
+- `src/pages/sports-betting/tabs/NightlyBoardTab.tsx` — add `data_quality` to selects + render badge
+- `src/pages/owner/OwnerSportsDetailPage.tsx` — join `sbo_predictions` for quality + render badge
+- `SportsBettingOS.tsx` / `PrizePicksAnalyzer.tsx` / `PredictionHistory.tsx` — swap inline badge for shared component
