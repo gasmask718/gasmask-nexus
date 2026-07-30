@@ -27,17 +27,39 @@ BET TYPES:
 DIRECTION VALUES: OVER, UNDER, WIN, LOSE, YES, NO
 `;
 
+const NOISE_TOKENS = ['premium', 'official', 'picks', 'plays', 'locks', 'bets', 'pick', 'play', 'lock', 'bet', 'free', 'vip'];
+
 /**
  * Normalize a capper name for identity matching.
+ * Pass 1: whole-word noise stripping (handles "CAPPERS FREE").
+ * Pass 2: suffix-only noise stripping with a >=4 char minimum-residual
+ * guard (handles unspaced watermarks like "cappersfree").
  */
 function normalizeName(name: string): string {
-  return name
+  if (!name) return '';
+
+  let s = name
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}]/gu, '')
     .replace(/\b(vip|picks?|plays?|locks?|bets?|premium|free|official)\b/gi, '')
     .replace(/[^a-zA-Z0-9]/g, '')
     .toLowerCase()
     .trim();
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const token of NOISE_TOKENS) {
+      if (s.endsWith(token) && s.length - token.length >= 4) {
+        s = s.slice(0, s.length - token.length);
+        changed = true;
+        break;
+      }
+    }
+  }
+
+  return s;
 }
+
 
 /**
  * Resolve a capper by normalized name, checking aliases too.
