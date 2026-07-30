@@ -72,6 +72,8 @@ serve(async (req) => {
       run_type = 'manual',
       steps = 'full',
       date = new Date().toISOString().split('T')[0],
+      prop_fanout_limit,
+
     } = body;
 
     const supabase = createClient(
