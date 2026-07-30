@@ -9,6 +9,8 @@ const corsHeaders = {
 const API_COSTS: Record<string, { provider: string; cost_cents: number; note: string }> = {
   'sbo-fetch-odds': { provider: 'the_odds_api', cost_cents: 0, note: 'Free tier' },
   'sbo-run-predictions': { provider: 'internal', cost_cents: 0, note: 'Internal AI predictions' },
+  'sbo-run-prop-predictions': { provider: 'internal', cost_cents: 0, note: 'Internal AI prop predictions (fanout)' },
+
   'sbo-sync-daily': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-sync-pregame': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-sync-prizepicks': { provider: 'prizepicks', cost_cents: 0, note: 'Free unofficial API' },
