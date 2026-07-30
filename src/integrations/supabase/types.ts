@@ -19013,6 +19013,7 @@ export type Database = {
           template_name: string
           updated_at: string | null
           vercel_deploy_hook_url: string | null
+          vercel_project_id: string | null
           vercel_template_repo: string | null
         }
         Insert: {
@@ -19035,6 +19036,7 @@ export type Database = {
           template_name: string
           updated_at?: string | null
           vercel_deploy_hook_url?: string | null
+          vercel_project_id?: string | null
           vercel_template_repo?: string | null
         }
         Update: {
@@ -19057,6 +19059,7 @@ export type Database = {
           template_name?: string
           updated_at?: string | null
           vercel_deploy_hook_url?: string | null
+          vercel_project_id?: string | null
           vercel_template_repo?: string | null
         }
         Relationships: []
