@@ -5,6 +5,8 @@
 **Scope:** Supabase project `qalaaroashbggynpvqct` — all `sbo_*` tables, all `sbo-*` edge functions, all SBO cron jobs, full SBO frontend route tree.
 **Method:** Every claim below was re-verified against live database rows, live cron definitions, and current source files. No finding was carried forward from the original document.
 
+> **⚠️ READ FIRST:** The combined-confidence core loop (Section 7.3, Check 5) does not currently run on its own — every real result in this document was produced by manual invocation, not the live system. This is the single highest-priority open item.
+
 ---
 
 ## 7.1 Database Pre-Flight
@@ -15,9 +17,25 @@
 | 2. `sbo_cappers` populated | ✅ PASS | **108 rows** (was 3). Columns confirmed: `name`, `telegram_username`, `telegram_user_id`, `sports text[]`, `best_sport`, `picks_by_sport jsonb`, `win_rate`, `roi_pct`, `capper_weight`, `total_wins/losses/pushes`, `normalized_name`. The original's `capper_name`/`sport_specialties` spec names are still not the live names — code uses the live ones. | Spec doc should be updated to `name` + `sports[]`. No code change needed. |
 | 3. Win-rate defaults | ✅ PASS | `win_rate` / `roi_pct` default 0. `sbo_capper_performance` (721 rows) populating as picks resolve. | None. |
 | 4. RLS enabled on all `sbo_*` | ⚠️ PARTIAL | Zero tables with RLS off and zero tables with no policy — that part passes. **But 40 policies across `sbo_*` are fully permissive (`USING true`) on SELECT/ALL.** Posture work from the original doc is still unstarted. | See Prompt Fix 7.10-A. |
-| 5. `sbo_sport_performance` seeded | ⚠️ PARTIAL | Table now exists with **3 rows** (MLB week of 07-20 win rate 0.1176, MLB week of 07-27 rate 0, WNBA week of 07-27 rate 0.3333). Populated by the weekly optimizer, not seeded. `sbo_sports` seeded with 8 rows. | Acceptable — it is a rollup, not a seed table. MLB 07-27 at 0 warrants a look once the week closes. |
+| 5. `sbo_sport_performance` seeded | ⚠️ PARTIAL | Table now exists with **3 rows** (MLB week of 07-20 win rate 0.1176, MLB week of 07-27 rate 0, WNBA week of 07-27 rate 0.3333). Populated by the weekly optimizer, not seeded. `sbo_sports` seeded with 8 rows. | Acceptable as a rollup, **but the MLB 07-27 `0` is a stale artifact, not a real 0% week — re-verified directly (see below). Do not act on it; fix the rollup refresh instead.** |
 | 6. Stats-brain tables | ✅ PASS | `sbo_player_game_stats` **53,595** rows, `sbo_player_season_splits` **2,477**, `sbo_prop_stat_context` **2,100**, `sbo_player_props` **13,559**, `sbo_unified_props` **8,368**. | None. |
 | 7. Dead/empty tables | ⚠️ PARTIAL | Empty-but-present: `sbo_signal_inputs`, `sbo_signal_performance`, `sbo_prop_picks`, `sbo_prop_predictions`, `sbo_polymarket_signals`, `sbo_top_plays`, `sbo_actual_bets`, `sbo_weekly_reports`, `sbo_strategy_performance`, `sbo_daily_report`, plus 20 more. | Not blocking. Flagged in 7.10 as schema noise — several are the drifted-function targets. |
+
+### 7.1.1 Re-verification of the MLB week-of-07-27 0% figure (queried live 2026-07-31)
+
+The `sbo_sport_performance` row for MLB / `week_start 2026-07-27` has `created_at 2026-07-27 16:07:21` — written on the *first day* of the week and **never refreshed since**. It covers only **6 picks** (3 spread, 2 total, 1 moneyline), all graded losses, under the row's `min_confidence_threshold = 60`. That is a real 0-for-6, but on a six-pick sample taken on day one of a seven-day window.
+
+The actual MLB prediction population for game dates 2026-07-27 → 2026-08-02:
+
+| prediction_type | total | pending (`was_correct IS NULL`) | wins | losses |
+| :---- | ---: | ---: | ---: | ---: |
+| `player_prop` | 66 | 41 | 17 | 8 |
+| `moneyline` | 13 | 12 | 0 | 1 |
+| **Total** | **79** | **53 (67% ungraded)** | **17** | **9** |
+
+Graded win rate for the week is **17/26 = 65.4%**, not 0%. Two-thirds of the week is still ungraded, and **zero** graded MLB predictions in that week carry `final_confidence >= 60`, so the rollup's ≥60 filter matched none of the current population — the 6 picks it did count came from a different, earlier source population.
+
+**Conclusion:** the 0% is a stale, unrefreshed rollup over a 6-pick day-one sample, not a real losing week. The actual defect is that the weekly optimizer never rewrites the in-progress week's row. Do not treat the 0% as a model-accuracy signal.
 
 ---
 
@@ -71,26 +89,65 @@ DO NOT redesign the intake pipeline. Retry + replay only.
 ### 7.3.1 Prompt Fix 7.3-A
 
 ```
-FIX TASK — SCHEDULE THE CORE LOOP (sbo-run-predictions →
-sbo-signal-combiner)
+FIX TASK — SCHEDULE THE CORE LOOP AGAINST ITS REAL DEPENDENCY CHAIN
+(sbo-run-predictions -> sbo-signal-combiner)
 
 CONTEXT: The combined-confidence loop was built and verified working
 end-to-end this session, but neither half is on cron. sbo_signals only
 has rows because both functions were invoked manually.
 
+An earlier version of this fix proposed 23:15 / 23:30 — two adjacent
+timestamps chosen for proximity, not for the actual data dependencies.
+That is wrong for two reasons:
+  - sbo-signal-combiner scores signals using capper win-rate weights,
+    which are refreshed by sbo-match-capper-picks-daily at 04:00 UTC.
+    A 23:30 combiner pass runs against weights that are ~19.5 hours
+    stale — it never sees the same day's grading.
+  - sbo-run-predictions depends on the odds sync. If odds/signals can
+    be produced more than once a day as lines move, a single 23:30
+    combiner pass leaves everything generated after it uncombined.
+
 Existing SBO cron pattern to follow (from cron.job):
   SELECT private.cron_post('<fn-name>', '{}'::jsonb) AS request_id;
 
-DO:
-1. Add cron job 'sbo-run-predictions-daily' — run after the pregame
-   odds sync. sbo-pregame-sync runs at 23:00 UTC, so schedule
-   '15 23 * * *'.
-2. Add cron job 'sbo-signal-combiner-daily' at '30 23 * * *' so it
-   always runs against freshly-written signals.
-3. Verify ordering by checking that the run at 23:30 leaves zero
-   sbo_signals rows with combined_confidence = 0 for that game_date.
+DO — INVESTIGATE BEFORE SCHEDULING:
+1. Confirm the real cadence of the upstream jobs before proposing any
+   time. Specifically:
+   a. sbo-pregame-sync and sbo-morning-sync — how often do odds
+      actually land, and does sbo-run-predictions produce new signals
+      on more than one sync per day? Check created_at spread on
+      sbo_signals / sbo_predictions across several days, not one.
+   b. sbo-match-capper-picks-daily (30 4 * * *) — confirm it is what
+      writes sbo_cappers.win_rate / capper_weight, and confirm the
+      timestamp at which those weights actually change each day.
+2. Report the observed cadence and the proposed times BEFORE creating
+   any cron job.
 
-DO NOT change function logic. Scheduling only.
+THEN SCHEDULE, subject to these constraints:
+3. sbo-signal-combiner must run AFTER the 04:00 capper-grading job
+   completes, so it scores against that day's freshest weights — not
+   the previous day's.
+4. If step 1 shows signals are generated more than once a day, add a
+   SECOND combiner pass later in the day to sweep same-day signal and
+   capper-pick activity. Do not rely on one nightly pass.
+5. sbo-run-predictions is scheduled relative to its own dependency
+   (odds sync completion), not relative to the combiner.
+
+VERIFICATION — the old check ("zero rows with combined_confidence = 0")
+is insufficient: it only proves the combiner ran at all, and would pass
+even if it scored every signal against stale or incomplete capper data.
+Replace it with:
+6. For a given game_date, confirm the combiner run consumed capper
+   weight data from the SAME DAY's grading. Concretely: compare the
+   combiner run timestamp against the latest sbo_cappers /
+   sbo_capper_performance update timestamp for that date, and assert
+   the combiner ran after it. A combiner run whose newest input weight
+   predates that day's 04:00 grading is a FAILED verification, even if
+   every signal has a non-zero combined_confidence.
+7. Additionally confirm no signal for that game_date was written after
+   the last combiner pass (i.e. nothing left uncombined by timing).
+
+DO NOT change function logic. Scheduling and verification only.
 ```
 
 ---
@@ -244,7 +301,7 @@ Every item below was re-verified as still open today; items from the old list th
 | 2 | **RLS / security posture** | ❌ OPEN — unchanged | 40 permissive (`USING true`) SELECT/ALL policies across `sbo_*`. Still unstarted. → Prompt Fix 7.10-A. |
 | 3 | **`sbo_signals` never graded** | ❌ OPEN — new | All 13 rows `result='pending'`; nothing writes back. → Prompt Fix 7.5-A. |
 | 4 | **Telegram dispatch errors** | ⚠️ PARTIALLY RESOLVED | Not a chronic 24% — steady state is ~4%/day; 117 of 257 lifetime errors came from the single 2026-07-26 outage. Root cause still uninvestigated, 174 failed posts never replayed. → Prompt Fix 7.2-A. |
-| 5 | **`props_master` drift** | ❌ OPEN — unchanged | `sbo-top-plays` (3 refs), `sbo-send-daily-email` (1), `sbo-auto-bet` (4) all still read the legacy `props_master` (13,310 rows, last write 2026-07-31 13:30) while the rest of the engine has moved to `sbo_player_props` / `sbo_unified_props`. `sbo_top_plays` and `sbo_actual_bets` are both **0 rows** — these three functions produce nothing. → Prompt Fix 7.10-B. |
+| 5 | **`props_master` drift** | ❌ OPEN — unchanged | `sbo-top-plays` (3 refs), `sbo-send-daily-email` (1), `sbo-auto-bet` (4) all still read the legacy `props_master` (13,310 rows, last write 2026-07-31 13:30) while the rest of the engine has moved to `sbo_player_props` / `sbo_unified_props`. `sbo_top_plays` and `sbo_actual_bets` are both **0 rows** — these three functions produce nothing. → **Prompt Fix 7.10-B (urgent `sbo-auto-bet` safety check) first**, then Prompt Fix 7.10-C. |
 | 6 | **`athlete_id` not on props** | ❌ OPEN — unchanged | `sbo_player_game_stats` and `sbo_player_season_splits` carry `player_key`; `sbo_player_props` and `sbo_unified_props` carry neither `player_key` nor `athlete_id`, so prop→stats joins remain name-based. This is a probable contributor to the 7.7 coverage gate failure. |
 | 7 | **WNBA / NFL bring-up** | ❌ OPEN | WNBA has 102 picks/7d and is not even registered in `sbo_sports`. NFL is registered but has no grading config with the season approaching. |
 | 8 | **Optimizer is NBA-only** | ❌ OPEN — new | All 8 `sbo_weight_history` rows are `sport='nba'`; the optimizer has never produced MLB weights despite MLB carrying the volume. |
@@ -277,11 +334,50 @@ DO:
       fix first.
 3. Migrate bucket (c), then (b). Report before/after counts.
 
+VERIFICATION GATE — a policy count dropping from 40 permissive to 0 is
+NOT by itself evidence that nothing broke. This system has no automated
+test coverage, and a role-scoping change can silently break a page that
+assumed broader read access (an empty table renders as "no data", not
+as an error).
+4. After bucket (c) migrates — and again after bucket (b) — load the
+   actual frontend pages that read each affected table and confirm they
+   still render real rows. Do this BEFORE starting the next bucket.
+   At minimum, for each table touched, identify the consuming route(s)
+   from src/routes/AppRoutes.tsx and the SBO page components, load
+   them signed in as a normal operator (not service_role), and confirm
+   row counts on screen match the row counts in the table.
+5. Report per-page pass/fail alongside the policy counts. If any page
+   goes empty, revert that bucket's migration before continuing.
+
 DO NOT disable RLS anywhere. DO NOT drop a policy without replacing it
 in the same migration — the frontend reads these tables live.
 ```
 
-### 7.10.2 Prompt Fix 7.10-B
+### 7.10.2 Prompt Fix 7.10-B — ⚠️ URGENT SAFETY CHECK (do this first)
+
+```
+FIX TASK — CONFIRM sbo-auto-bet HAS NO LIVE BETTING CAPABILITY
+
+CONTEXT: sbo-auto-bet reads from the dead props_master table and has
+never written a row to sbo_actual_bets. Before treating this as routine
+cleanup, confirm whether this function is connected to any real
+sportsbook API/credentials that could place a real-money bet if it ever
+DID successfully read a row.
+
+DO:
+1. Read the full function. Identify every external API call it makes
+   and whether any require live credentials/API keys that exist in the
+   vault right now.
+2. Confirm explicitly: is there ANY code path in this function that
+   could place a real bet with real money, today, if its props_master
+   read succeeded?
+3. Report findings plainly — do not bundle this into the props_master
+   migration decision. This is a standalone safety confirmation.
+
+DO NOT modify the function. Read and report only.
+```
+
+### 7.10.3 Prompt Fix 7.10-C
 
 ```
 FIX TASK — RESOLVE props_master DRIFT (3 DEAD FUNCTIONS)
@@ -291,11 +387,15 @@ read the legacy props_master table. Their output tables are empty:
 sbo_top_plays = 0 rows, sbo_actual_bets = 0 rows. The rest of the
 engine reads sbo_player_props / sbo_unified_props.
 
+PREREQUISITE: Prompt Fix 7.10-B (the sbo-auto-bet live-betting safety
+confirmation) must be completed and reported before any decision is
+made about sbo-auto-bet here.
+
 DECIDE FIRST, THEN BUILD — report the recommendation before editing:
 1. For each of the three functions, determine whether it is wanted at
-   all. sbo-auto-bet places real bets and has never written a row;
-   confirm with the owner before reviving it rather than migrating it
-   silently.
+   all. Do not decide anything about sbo-auto-bet until 7.10-B has
+   reported; confirm with the owner before reviving it rather than
+   migrating it silently.
 2. For the ones that are wanted, repoint reads to sbo_player_props
    with the same field contract, and confirm the outbound contract
    (TopPlayCard reads ai_confidence / ai_recommendation) is preserved.
