@@ -707,6 +707,8 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       verified, correct, incorrect, pushes, scores_updated: scoresUpdated, accuracy,
+      // Surfaced for sbo-day-engine's required-step / warning-on-zero logic.
+      records_synced: verified + scoresUpdated,
       props_verified: propsVerified, props_correct: propsCorrect, props_incorrect: propsIncorrect,
       props_accuracy: propAccuracy, props_pending: propsPending,
       overall_correct: correct, overall_incorrect: incorrect,

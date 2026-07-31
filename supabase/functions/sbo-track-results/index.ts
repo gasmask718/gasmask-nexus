@@ -9,6 +9,9 @@ const corsHeaders = {
 const SDIO_KEY = () => Deno.env.get('VITE_SPORTSDATAIO_NBA_KEY')!;
 const BASE = 'https://api.sportsdata.io/v3/nba';
 
+// MLB finals come from the free ESPN scoreboard (additive; NBA path untouched).
+import { fetchEspnMlbFinals, mlbTeamMatches } from '../_shared/espnMlb.ts';
+
 async function sdioGet(endpoint: string) {
   const res = await fetch(`${BASE}${endpoint}?key=${SDIO_KEY()}`);
   if (!res.ok) throw new Error(`SDIO error: ${res.status} ${endpoint}`);
@@ -21,6 +24,8 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const date = body.date || new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    // Default 'nba' keeps the existing cron behavior byte-for-byte unchanged.
+    const sport: string = (body.sport || body.sport_key || 'nba').toLowerCase();
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -31,34 +36,80 @@ serve(async (req) => {
     const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     const sdioDate = `${parts[0]}-${months[parseInt(parts[1])-1]}-${parts[2]}`;
 
-    const results: Record<string, any> = { date };
+    const results: Record<string, any> = { date, sport };
     let gamesUpdated = 0;
     let predictionsGraded = 0;
     let propsGraded = 0;
 
     // 1. PULL FINAL SCORES
     let finalGames: any[] = [];
-    try {
-      const games = await sdioGet(`/scores/json/GamesByDate/${sdioDate}`);
-      finalGames = games.filter((g: any) => g.Status === 'Final');
+    if (sport === 'mlb') {
+      // ── MLB branch: free ESPN scoreboard (no SDIO key exists for baseball) ──
+      try {
+        const sb = await fetchEspnMlbFinals(date);
+        if (!sb.ok) throw new Error(sb.error || 'ESPN scoreboard failed');
 
-      for (const game of finalGames) {
-        const winner = game.HomeTeamScore > game.AwayTeamScore ? 'home' : 'away';
-        await supabase
+        const { data: ourGames } = await supabase
           .from('sbo_games')
-          .update({
-            status: 'final',
-            home_score: game.HomeTeamScore,
-            away_score: game.AwayTeamScore,
-            winner,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('external_id', game.GameID.toString());
-        gamesUpdated++;
+          .select('id, home_team, away_team, status')
+          .eq('sport_key', 'mlb')
+          .gte('game_date', `${date}T00:00:00Z`)
+          .lt('game_date', `${date}T23:59:59Z`);
+
+        if (sb.finals.length === 0 && (ourGames || []).some((g: any) => g.status !== 'final')) {
+          // Zero completed events on a day with pending games is a feed error,
+          // not a clean zero.
+          throw new Error(
+            `ESPN returned 0 completed MLB events for ${date} while pending games exist on our board`
+          );
+        }
+
+        for (const f of sb.finals) {
+          const matched = (ourGames || []).find((g: any) =>
+            mlbTeamMatches(g.home_team, f.homeName) && mlbTeamMatches(g.away_team, f.awayName)
+          );
+          if (!matched) continue;
+          await supabase
+            .from('sbo_games')
+            .update({
+              status: 'final',
+              home_score: f.homeScore,
+              away_score: f.awayScore,
+              winner: f.homeScore > f.awayScore ? 'home' : 'away',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', matched.id);
+          gamesUpdated++;
+        }
+        results.games_updated = gamesUpdated;
+        results.espn_events = sb.totalEvents;
+        results.espn_finals = sb.finals.length;
+      } catch (e: any) {
+        results.games_error = e.message;
       }
-      results.games_updated = gamesUpdated;
-    } catch (e: any) {
-      results.games_error = e.message;
+    } else {
+      try {
+        const games = await sdioGet(`/scores/json/GamesByDate/${sdioDate}`);
+        finalGames = games.filter((g: any) => g.Status === 'Final');
+
+        for (const game of finalGames) {
+          const winner = game.HomeTeamScore > game.AwayTeamScore ? 'home' : 'away';
+          await supabase
+            .from('sbo_games')
+            .update({
+              status: 'final',
+              home_score: game.HomeTeamScore,
+              away_score: game.AwayTeamScore,
+              winner,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('external_id', game.GameID.toString());
+          gamesUpdated++;
+        }
+        results.games_updated = gamesUpdated;
+      } catch (e: any) {
+        results.games_error = e.message;
+      }
     }
 
     // 2. GRADE MONEYLINE PREDICTIONS
@@ -90,8 +141,11 @@ serve(async (req) => {
       results.moneyline_error = e.message;
     }
 
-    // 3. GRADE PLAYER PROP PREDICTIONS
-    try {
+    // 3. GRADE PLAYER PROP PREDICTIONS (NBA/SDIO only — MLB props are graded
+    //    by sbo-verify-results Phase 3B off the free ESPN /summary feed)
+    if (sport === 'mlb') {
+      results.props_note = 'MLB player props are graded by sbo-verify-results (ESPN /summary)';
+    } else try {
       const playerStats = await sdioGet(`/stats/json/PlayerGameStatsByDate/${sdioDate}`);
       const statsByPlayer: Record<string, any> = {};
       for (const stat of playerStats) {
