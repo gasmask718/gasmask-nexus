@@ -122117,45 +122117,6 @@ export type Database = {
           },
         ]
       }
-      va_permissions: {
-        Row: {
-          allowed_brands: string[]
-          can_access_ai_engine: boolean | null
-          can_access_dashboard: boolean | null
-          can_access_delivery_routing: boolean | null
-          can_access_upload_engine: boolean | null
-          created_at: string | null
-          id: string
-          updated_at: string | null
-          user_id: string
-          va_role: Database["public"]["Enums"]["va_role"]
-        }
-        Insert: {
-          allowed_brands?: string[]
-          can_access_ai_engine?: boolean | null
-          can_access_dashboard?: boolean | null
-          can_access_delivery_routing?: boolean | null
-          can_access_upload_engine?: boolean | null
-          created_at?: string | null
-          id?: string
-          updated_at?: string | null
-          user_id: string
-          va_role: Database["public"]["Enums"]["va_role"]
-        }
-        Update: {
-          allowed_brands?: string[]
-          can_access_ai_engine?: boolean | null
-          can_access_dashboard?: boolean | null
-          can_access_delivery_routing?: boolean | null
-          can_access_upload_engine?: boolean | null
-          created_at?: string | null
-          id?: string
-          updated_at?: string | null
-          user_id?: string
-          va_role?: Database["public"]["Enums"]["va_role"]
-        }
-        Relationships: []
-      }
       va_profiles: {
         Row: {
           created_at: string | null
