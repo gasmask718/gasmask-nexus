@@ -948,6 +948,122 @@ async function checkFeatureModes(): Promise<Result[]> {
 
 
 // ────────────────────────────────────────────────────────────────────────────
+// ALERT SINK
+// Detection existed; notification did not. Every `fail` result is escalated
+// to Slack and/or SMS, deduped per (layer:target) for ALERT_DEDUPE_HOURS.
+//
+// Destinations (first configured wins; both fire if both are set):
+//   COMMS_ALERT_SLACK_WEBHOOK  — Slack incoming-webhook URL
+//   COMMS_ALERT_SMS_TO         — E.164 number (falls back to
+//                                ADMIN_ALERT_PHONE, then DAVID_PHONE_NUMBER)
+// Alert state lives in public.comms_health_alerts.
+// ────────────────────────────────────────────────────────────────────────────
+const ALERT_DEDUPE_HOURS = parseFloat(Deno.env.get("COMMS_ALERT_DEDUPE_HOURS") || "6");
+const SLACK_WEBHOOK = Deno.env.get("COMMS_ALERT_SLACK_WEBHOOK") || "";
+const ALERT_SMS_TO =
+  Deno.env.get("COMMS_ALERT_SMS_TO") ||
+  Deno.env.get("ADMIN_ALERT_PHONE") ||
+  Deno.env.get("DAVID_PHONE_NUMBER") ||
+  "";
+const ALERT_SMS_FROM =
+  Deno.env.get("TWILIO_FROM_NUMBER") || Deno.env.get("TWILIO_PHONE_NUMBER") || "";
+
+async function sendSlack(text: string): Promise<boolean> {
+  if (!SLACK_WEBHOOK) return false;
+  try {
+    const r = await fetch(SLACK_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!r.ok) console.error(`[comms-health] slack alert failed ${r.status}: ${(await r.text()).slice(0, 200)}`);
+    return r.ok;
+  } catch (e) {
+    console.error("[comms-health] slack alert threw:", (e as Error).message);
+    return false;
+  }
+}
+
+async function sendAlertSms(body: string): Promise<boolean> {
+  if (!ALERT_SMS_TO || !ALERT_SMS_FROM) return false;
+  const auth = twAuth();
+  if (!auth || !TWILIO_ACCOUNT_SID) return false;
+  try {
+    const r = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
+      {
+        method: "POST",
+        headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ To: ALERT_SMS_TO, From: ALERT_SMS_FROM, Body: body.slice(0, 600) }),
+      },
+    );
+    if (!r.ok) console.error(`[comms-health] sms alert failed ${r.status}: ${(await r.text()).slice(0, 200)}`);
+    return r.ok;
+  } catch (e) {
+    console.error("[comms-health] sms alert threw:", (e as Error).message);
+    return false;
+  }
+}
+
+async function escalateFailures(results: Result[]): Promise<number> {
+  const failures = results.filter((r) => r.status === "fail");
+  if (failures.length === 0) return 0;
+  if (!SLACK_WEBHOOK && !ALERT_SMS_TO) {
+    console.warn(
+      `[comms-health] ${failures.length} FAILING checks and NO alert destination configured ` +
+      `(set COMMS_ALERT_SLACK_WEBHOOK and/or COMMS_ALERT_SMS_TO).`,
+    );
+    return 0;
+  }
+
+  const supa = sb();
+  const keys = failures.map((f) => `${f.layer}:${f.target}`);
+  const { data: prior } = await supa
+    .from("comms_health_alerts")
+    .select("alert_key, last_alert_at")
+    .in("alert_key", keys);
+  const lastByKey = new Map<string, string>((prior ?? []).map((p: any) => [p.alert_key, p.last_alert_at]));
+
+  const due = failures.filter((f) => {
+    const last = lastByKey.get(`${f.layer}:${f.target}`);
+    if (!last) return true;
+    return (Date.now() - new Date(last).getTime()) / 3_600_000 >= ALERT_DEDUPE_HOURS;
+  });
+  if (due.length === 0) {
+    console.log(`[comms-health] ${failures.length} failures, all within ${ALERT_DEDUPE_HOURS}h dedupe window`);
+    return 0;
+  }
+
+  const lines = due.map((f) => `• [${f.provider || "twilio"}/${f.layer}] ${f.target} — ${f.message || "fail"}`);
+  const header = `🚨 COMMS HEALTH: ${due.length} new failure${due.length === 1 ? "" : "s"} (${failures.length} failing total)`;
+  const slackText = [header, ...lines].join("\n").slice(0, 3800);
+  const smsText = [header, ...lines.slice(0, 5)].join("\n") + (due.length > 5 ? `\n…+${due.length - 5} more` : "");
+
+  const [slackOk, smsOk] = await Promise.all([sendSlack(slackText), sendAlertSms(smsText)]);
+  if (!slackOk && !smsOk) {
+    console.error("[comms-health] all alert channels failed — not marking as alerted");
+    return 0;
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await supa.from("comms_health_alerts").upsert(
+    due.map((f) => ({
+      alert_key: `${f.layer}:${f.target}`,
+      last_alert_at: now,
+      last_status: f.status,
+      last_message: f.message || null,
+      updated_at: now,
+    })),
+    { onConflict: "alert_key" },
+  );
+  if (error) console.error("[comms-health] alert state upsert failed:", error.message);
+  console.log(`[comms-health] alerted on ${due.length} failures (slack=${slackOk} sms=${smsOk})`);
+  return due.length;
+}
+
+
+// ────────────────────────────────────────────────────────────────────────────
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -1007,6 +1123,9 @@ Deno.serve(async (req) => {
     console.error("[comms-health] persist threw:", e);
   }
 
+  // ── ALERTING ── (6h dedupe per layer:target)
+  const alerted = await escalateFailures(results);
+
 
   const failed = results.filter((r) => r.status === "fail");
   const warned = results.filter((r) => r.status === "warn");
@@ -1021,6 +1140,8 @@ Deno.serve(async (req) => {
       total: results.length,
       fail: failed.length,
       warn: warned.length,
+      alerted,
+
       results,
     }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
