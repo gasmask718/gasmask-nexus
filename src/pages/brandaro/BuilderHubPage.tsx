@@ -40,7 +40,7 @@ export default function BuilderHubPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("brandaro_demo_sites")
-        .select("id,business_name,industry,city,state,generation_engine,generation_status,engine_status,demo_url,durable_generated_url,durable_job_status,durable_last_error,audit_score,created_at,error_message")
+        .select("id,lead_id,sent_at,business_name,industry,city,state,generation_engine,generation_status,engine_status,demo_url,durable_generated_url,durable_job_status,durable_last_error,audit_score,created_at,error_message")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -91,16 +91,33 @@ export default function BuilderHubPage() {
   });
 
   const sendDemo = useMutation({
-    mutationFn: async (demoId: string) => {
+    mutationFn: async (demo: any) => {
+      // Column is `phone_number`, not `phone`.
+      const { data: lead, error: leadErr } = await supabase
+        .from("brandaro_qualified_leads")
+        .select("phone_number")
+        .eq("id", demo.lead_id)
+        .single();
+      if (leadErr) throw leadErr;
+      const destination = (lead as any)?.phone_number?.trim();
+      if (!destination) throw new Error("No phone number on file for this lead");
+
       const { data, error } = await supabase.functions.invoke("brandaro-send-demo", {
-        body: { demo_id: demoId },
+        body: { demo_id: demo.id, lead_id: demo.lead_id, channel: "sms", destination },
       });
       if (error) throw error;
-      return data;
+      return data as any;
     },
-    onSuccess: () => toast.success("Send queued"),
+    onSuccess: (data) => {
+      if (data?.already_sent) toast.info("Already sent — the demo link went out automatically when it was generated.");
+      else if (data?.suppressed) toast.error(`Blocked: contact is on the do-not-contact list (${data.reason}).`);
+      else if (data?.ok) toast.success("Demo SMS sent");
+      else toast.error(`SMS failed: ${data?.error || "unknown error"}`);
+      qc.invalidateQueries({ queryKey: ["builder-demos"] });
+    },
     onError: (e: any) => toast.error(e.message || "Send failed"),
   });
+
 
   const durableDemos = demos.filter(d => d.generation_engine === "durable");
 
@@ -208,9 +225,15 @@ export default function BuilderHubPage() {
                                 </Button>
                               )}
                               {d.generation_status === "ready" && (
-                                <Button size="sm" onClick={() => sendDemo.mutate(d.id)} disabled={sendDemo.isPending}>
-                                  Send SMS
-                                </Button>
+                                (d as any).sent_at ? (
+                                  <Badge variant="secondary">
+                                    Sent {new Date((d as any).sent_at).toLocaleDateString()}
+                                  </Badge>
+                                ) : (
+                                  <Button size="sm" onClick={() => sendDemo.mutate(d)} disabled={sendDemo.isPending}>
+                                    Send SMS
+                                  </Button>
+                                )
                               )}
                             </td>
                           </tr>
