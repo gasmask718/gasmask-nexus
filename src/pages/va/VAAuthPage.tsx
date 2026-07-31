@@ -229,7 +229,9 @@ export default function VAAuthPage() {
             <Headset className="h-8 w-8 text-cyan-400" />
           </div>
           <CardTitle className="text-2xl font-bold text-white">VA Portal</CardTitle>
-          <p className="text-sm text-slate-400">Virtual Assistant Portal</p>
+          <p className="text-sm text-slate-400">
+            {hubSlug ? `${hubSlug} hub — Virtual Assistant Portal` : 'Virtual Assistant Portal'}
+          </p>
           {hasInvite && companyName && (
             <div className="mx-auto rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-200">
               You've been invited to join <strong>{companyName}</strong>
