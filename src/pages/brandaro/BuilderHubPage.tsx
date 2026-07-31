@@ -40,7 +40,7 @@ export default function BuilderHubPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("brandaro_demo_sites")
-        .select("id,business_name,industry,city,state,generation_engine,generation_status,engine_status,demo_url,durable_generated_url,durable_job_status,durable_last_error,audit_score,created_at,error_message")
+        .select("id,lead_id,sent_at,business_name,industry,city,state,generation_engine,generation_status,engine_status,demo_url,durable_generated_url,durable_job_status,durable_last_error,audit_score,created_at,error_message")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
