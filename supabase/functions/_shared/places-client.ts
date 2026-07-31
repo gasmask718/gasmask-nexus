@@ -239,3 +239,92 @@ export function pausedResponse(gate: BudgetGate) {
     status: gate.status?.status || 'unknown',
   };
 }
+
+// ── Places API (New) content: reviews + photos ───────────────────────────
+// Field mask for the content-tier Details call. Reviews and photos are
+// Enterprise+Atmosphere SKU fields, so this is metered like any other
+// Place Details call.
+export const DETAILS_MASK_CONTENT = 'id,reviews,photos';
+
+export interface PlaceReview {
+  author: string;
+  rating: number | null;
+  text: string;
+  relative_time: string | null;
+  published_at: string | null;
+  profile_photo_url: string | null;
+}
+
+export interface PlacePhoto {
+  url: string;
+  width: number | null;
+  height: number | null;
+  attribution: string | null;
+}
+
+// Places API (New) photo media endpoint. skipHttpRedirect=true returns JSON
+// containing photoUri — a real, key-free image URL — instead of a 302 to it.
+// This is the conversion step: photo *references* are useless to the demo
+// site; photoUri is directly usable in an <img src>.
+export async function resolvePhotoUrl(
+  photoName: string,
+  apiKey: string,
+  maxWidthPx = 1600,
+): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&skipHttpRedirect=true&key=${apiKey}`,
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.photoUri || null;
+  } catch {
+    return null;
+  }
+}
+
+// One Details call (reviews + photos) followed by N photo-media resolutions.
+// Returns empty arrays rather than throwing — content is a nice-to-have and
+// must never break lead import.
+export async function fetchPlaceContent(
+  placeId: string,
+  apiKey: string,
+  opts: { maxReviews?: number; maxPhotos?: number; tracker?: UsageTracker } = {},
+): Promise<{ reviews: PlaceReview[]; photos: PlacePhoto[] }> {
+  const maxReviews = opts.maxReviews ?? 5;
+  const maxPhotos = opts.maxPhotos ?? 6;
+  const empty = { reviews: [] as PlaceReview[], photos: [] as PlacePhoto[] };
+
+  let detail: any;
+  try {
+    detail = await placeDetails(placeId, apiKey, DETAILS_MASK_CONTENT, opts.tracker);
+  } catch {
+    return empty;
+  }
+  if (!detail) return empty;
+
+  const reviews: PlaceReview[] = (detail.reviews || []).slice(0, maxReviews).map((r: any) => ({
+    author: r.authorAttribution?.displayName || 'Google user',
+    rating: typeof r.rating === 'number' ? r.rating : null,
+    text: r.originalText?.text || r.text?.text || '',
+    relative_time: r.relativePublishTimeDescription || null,
+    published_at: r.publishTime || null,
+    profile_photo_url: r.authorAttribution?.photoUri || null,
+  })).filter((r: PlaceReview) => r.text.trim().length > 0);
+
+  const rawPhotos = (detail.photos || []).slice(0, maxPhotos);
+  const resolved = await Promise.all(
+    rawPhotos.map(async (p: any) => {
+      const url = await resolvePhotoUrl(p.name, apiKey);
+      if (!url) return null;
+      return {
+        url,
+        width: p.widthPx ?? null,
+        height: p.heightPx ?? null,
+        attribution: p.authorAttributions?.[0]?.displayName || null,
+      } as PlacePhoto;
+    }),
+  );
+
+  return { reviews, photos: resolved.filter(Boolean) as PlacePhoto[] };
+}
