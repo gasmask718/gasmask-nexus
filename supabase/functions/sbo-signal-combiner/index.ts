@@ -34,6 +34,29 @@ interface SignalRow {
   pick_type: string | null;
   side: string | null;
   internal_confidence: number | null;
+  home_team: string | null;
+  away_team: string | null;
+}
+
+// Game identity: teams are free text on both sides, so normalize before compare.
+export function normalizeTeam(t: string | null | undefined): string {
+  if (!t) return '';
+  return String(t).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// A pick belongs to a signal's game only if one of its teams is a side of that game.
+export function isSameGame(
+  pick: { team: string | null; opponent: string | null },
+  sideKeys: string[],
+): boolean {
+  if (sideKeys.length === 0) return false;
+  const t = normalizeTeam(pick.team);
+  const o = normalizeTeam(pick.opponent);
+  return (!!t && sideKeys.includes(t)) || (!!o && sideKeys.includes(o));
 }
 
 function gradeFor(c: number): string {
