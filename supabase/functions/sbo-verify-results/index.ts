@@ -1,5 +1,15 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// MLB (free ESPN) grading helpers — additive, used only by the MLB branches below.
+import {
+  fetchEspnMlbFinals,
+  fetchEspnMlbSummary,
+  buildMlbStatLines,
+  getMlbPropValue,
+  mlbTeamMatches,
+  findPlayerStats as findMlbPlayerStats,
+} from '../_shared/espnMlb.ts';
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -133,7 +143,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { game_id, prediction_id, force_yesterday, force_rerun = false, specific_date = null } = body;
+    const { game_id, prediction_id, force_yesterday, force_rerun = false, specific_date = null, mlb_days_back = 1 } = body;
 
     const now = new Date();
     const yesterday = new Date(now);
@@ -157,7 +167,7 @@ serve(async (req) => {
     // ═══════════════════════════════════════
     // PHASE 1 — FETCH & UPDATE GAME SCORES
     // ═══════════════════════════════════════
-    const fetchAndUpdateScores = async (dateStr: string) => {
+    const fetchNbaScores = async (dateStr: string) => {
       if (!apiKey) return 0;
       let updated = 0;
       try {
@@ -206,9 +216,119 @@ serve(async (req) => {
       return updated;
     };
 
-    if (force_yesterday) scoresUpdated += await fetchAndUpdateScores(yesterdayET);
-    scoresUpdated += await fetchAndUpdateScores(yesterdayET);
-    scoresUpdated += await fetchAndUpdateScores(todayET);
+    if (force_yesterday) scoresUpdated += await fetchNbaScores(yesterdayET);
+    scoresUpdated += await fetchNbaScores(yesterdayET);
+    scoresUpdated += await fetchNbaScores(todayET);
+
+    // ═══════════════════════════════════════
+    // PHASE 1B — MLB SCORES VIA FREE ESPN SCOREBOARD
+    // (additive; the NBA/SportsDataIO path above is unchanged)
+    // ═══════════════════════════════════════
+    const mlb = {
+      days_checked: 0,
+      espn_events: 0,
+      espn_finals: 0,
+      games_matched: 0,
+      games_updated: 0,
+      unmatched_finals: 0,
+      props_seen: 0,
+      props_graded: 0,
+      props_correct: 0,
+      props_incorrect: 0,
+      props_push: 0,
+      props_pending_no_stats: 0,
+      props_pending_unmapped: 0,
+      game_id_backfilled: 0,
+      errors: [] as string[],
+    };
+
+    // our sbo_games.id → ESPN eventId, for the prop resolver below
+    const mlbEventMap = new Map<string, string>();
+
+    const fetchMlbScoresEspn = async (dateStr: string): Promise<number> => {
+      mlb.days_checked++;
+      let updated = 0;
+
+      const sb = await fetchEspnMlbFinals(dateStr);
+      if (!sb.ok) {
+        const msg = sb.error || `ESPN scoreboard failed for ${dateStr}`;
+        mlb.errors.push(msg);
+        console.error(msg);
+        return 0;
+      }
+      mlb.espn_events += sb.totalEvents;
+      mlb.espn_finals += sb.finals.length;
+
+      const start = `${dateStr}T00:00:00${etOffset}`;
+      const end = `${dateStr}T23:59:59${etOffset}`;
+
+      const { data: ourGames } = await supabase
+        .from('sbo_games')
+        .select('id, home_team, away_team, status')
+        .eq('sport_key', 'mlb')
+        .gte('game_date', start)
+        .lte('game_date', end);
+
+      const pending = (ourGames || []).filter(
+        (g: any) => !['closed', 'completed', 'final'].includes(String(g.status))
+      ).length;
+
+      // Explicit error, NOT a clean zero: if we hold pending games for a day
+      // and ESPN reports no completed events, that is a feed problem.
+      if (sb.finals.length === 0 && pending > 0) {
+        const msg = `ESPN returned 0 completed MLB events for ${dateStr} while ${pending} pending games are on our board — treating as feed error, not a clean zero`;
+        mlb.errors.push(msg);
+        console.error(msg);
+        return 0;
+      }
+
+      if (!ourGames?.length) return 0;
+
+      for (const f of sb.finals) {
+        const matched = ourGames.find((g: any) =>
+          mlbTeamMatches(g.home_team, f.homeName) && mlbTeamMatches(g.away_team, f.awayName)
+        );
+        if (!matched) { mlb.unmatched_finals++; continue; }
+
+        mlb.games_matched++;
+        mlbEventMap.set(matched.id, f.eventId);
+
+        const { error } = await supabase
+          .from('sbo_games')
+          .update({
+            home_score: f.homeScore,
+            away_score: f.awayScore,
+            status: 'closed',
+            winner: f.homeScore > f.awayScore ? matched.home_team : matched.away_team,
+          })
+          .eq('id', matched.id);
+
+        if (!error) {
+          updated++;
+          mlb.games_updated++;
+          console.log(`MLB score: ${matched.away_team} ${f.awayScore} @ ${matched.home_team} ${f.homeScore}`);
+        }
+      }
+      return updated;
+    };
+
+    const mlbDates: string[] = specific_date
+      ? [specific_date]
+      : (() => {
+          const out: string[] = [];
+          const back = Math.max(0, Number(mlb_days_back));
+          for (let i = back; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(d.getDate() - i);
+            out.push(d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }));
+          }
+          return out;
+        })();
+
+    for (const d of mlbDates) {
+      scoresUpdated += await fetchMlbScoresEspn(d);
+    }
+
 
     // ═══════════════════════════════════════
     // PHASE 2 — VERIFY MONEYLINE PREDICTIONS
@@ -429,6 +549,138 @@ serve(async (req) => {
       }
     }
 
+    // ═══════════════════════════════════════
+    // PHASE 3B — MLB PLAYER PROPS VIA FREE ESPN /summary
+    // ═══════════════════════════════════════
+
+    // 3B.0 — backfill game_id on orphaned player_prop predictions
+    {
+      const { data: orphans } = await supabase
+        .from('sbo_predictions')
+        .select('id, prop_id')
+        .eq('prediction_type', 'player_prop')
+        .is('game_id', null)
+        .not('prop_id', 'is', null);
+
+      if (orphans?.length) {
+        const propIds = [...new Set(orphans.map((o: any) => o.prop_id))];
+        const { data: propRows } = await supabase
+          .from('sbo_player_props')
+          .select('id, game_id')
+          .in('id', propIds);
+        const gameByProp = new Map(
+          (propRows || []).filter((r: any) => r.game_id).map((r: any) => [r.id, r.game_id])
+        );
+        for (const o of orphans) {
+          const gid = gameByProp.get(o.prop_id);
+          if (!gid) continue;
+          const { error } = await supabase.from('sbo_predictions').update({ game_id: gid }).eq('id', o.id);
+          if (!error) mlb.game_id_backfilled++;
+        }
+        console.log(`MLB game_id backfill: ${mlb.game_id_backfilled}/${orphans.length} orphaned prop predictions linked`);
+      }
+    }
+
+    // 3B.1 — grade props for every MLB game we just closed out
+    for (const [gameId, eventId] of mlbEventMap) {
+      let propsQuery = supabase
+        .from('sbo_player_props')
+        .select(`*, sbo_predictions(id, predicted_outcome, final_confidence, verdict, verified)`)
+        .eq('game_id', gameId);
+      if (!force_rerun) propsQuery = propsQuery.or('verified.is.null,verified.eq.false');
+
+      const { data: mlbProps } = await propsQuery;
+      if (!mlbProps?.length) continue;
+
+      const summary = await fetchEspnMlbSummary(eventId);
+      if (!summary) {
+        const msg = `ESPN summary unavailable for event ${eventId} — ${mlbProps.length} MLB props left pending`;
+        mlb.errors.push(msg);
+        console.error(msg);
+        propsPending += mlbProps.length;
+        continue;
+      }
+
+      const statLines = buildMlbStatLines(summary);
+
+      for (const prop of mlbProps) {
+        try {
+          mlb.props_seen++;
+
+          const ps = findMlbPlayerStats(statLines, prop.player_name);
+          if (!ps) { mlb.props_pending_no_stats++; propsPending++; continue; }
+
+          const actualValue = getMlbPropValue(ps, prop.prop_type);
+          if (actualValue === null) { mlb.props_pending_unmapped++; propsPending++; continue; }
+
+          const line = parseFloat(String(prop.line));
+          const actualNum = parseFloat(String(actualValue));
+          if (isNaN(line) || isNaN(actualNum)) { mlb.props_pending_unmapped++; propsPending++; continue; }
+
+          const epsilon = 0.001;
+          const aiPick = prop.sbo_predictions?.[0]?.predicted_outcome?.toLowerCase() || null;
+
+          let predictionVerdict: string;
+          if (Math.abs(actualNum - line) < epsilon) {
+            predictionVerdict = 'push';
+          } else if (actualNum > line + epsilon) {
+            predictionVerdict = aiPick === 'over' ? 'correct' : (aiPick === 'under' ? 'incorrect' : 'over');
+          } else {
+            predictionVerdict = aiPick === 'under' ? 'correct' : (aiPick === 'over' ? 'incorrect' : 'under');
+          }
+
+          const propVerdictNote = `${prop.player_name} had ${actualNum} ${prop.prop_type} (line: ${line}). Pick: ${(aiPick || 'N/A').toUpperCase()}. ${predictionVerdict === 'correct' ? '✅ CORRECT' : predictionVerdict === 'push' ? '➖ PUSH' : '❌ INCORRECT'} [source: ESPN]`;
+
+          console.log(`VERIFY MLB: ${prop.player_name} ${prop.prop_type} line=${line} actual=${actualNum} pick=${aiPick} → ${predictionVerdict}`);
+
+          await supabase.from('sbo_player_props').update({
+            actual_value: actualNum,
+            verdict: predictionVerdict,
+            verified: true,
+            verified_at: new Date().toISOString(),
+          }).eq('id', prop.id);
+
+          if (prop.sbo_predictions?.[0]?.id) {
+            const predId = prop.sbo_predictions[0].id;
+            await supabase.from('sbo_predictions').update({
+              verified: true, verdict: predictionVerdict,
+              was_correct: predictionVerdict === 'correct',
+              actual_outcome: predictionVerdict,
+              verified_at: new Date().toISOString(),
+            }).eq('id', predId);
+
+            await supabase.from('sbo_results_verification').upsert({
+              prediction_id: predId,
+              game_id: prop.game_id || null,
+              pick_type: 'prop',
+              our_pick: aiPick || 'unknown',
+              our_confidence: prop.sbo_predictions[0].final_confidence || null,
+              actual_result: `${prop.player_name} ${prop.prop_type}: ${actualNum} (line was ${line})`,
+              actual_value: actualNum,
+              was_correct: predictionVerdict === 'correct',
+              verdict: predictionVerdict,
+              verdict_note: propVerdictNote,
+              profit_loss: predictionVerdict === 'correct' ? 100 : predictionVerdict === 'push' ? 0 : -100,
+              verified_at: new Date().toISOString(),
+            }, { onConflict: 'prediction_id' });
+
+            await supabase.from('sbo_saved_picks')
+              .update({ result: predictionVerdict === 'correct' ? 'won' : predictionVerdict === 'push' ? 'push' : 'lost' })
+              .eq('source_id', predId);
+          }
+
+          mlb.props_graded++;
+          propsVerified++;
+          if (predictionVerdict === 'correct') { mlb.props_correct++; propsCorrect++; }
+          else if (predictionVerdict === 'incorrect') { mlb.props_incorrect++; propsIncorrect++; }
+          else { mlb.props_push++; propsPush++; }
+        } catch (e: any) {
+          console.error(`MLB prop verify failed for ${prop.player_name}:`, e.message);
+        }
+      }
+    }
+
+
     verified += propsVerified;
     correct += propsCorrect;
     incorrect += propsIncorrect;
@@ -459,8 +711,10 @@ serve(async (req) => {
       props_accuracy: propAccuracy, props_pending: propsPending,
       overall_correct: correct, overall_incorrect: incorrect,
       overall_accuracy: accuracy,
+      mlb,
       message: verified === 0 && scoresUpdated === 0 ? 'No unverified games or props with final scores found' : undefined,
     }), {
+
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
