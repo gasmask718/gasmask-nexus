@@ -141,8 +141,11 @@ serve(async (req) => {
       results.moneyline_error = e.message;
     }
 
-    // 3. GRADE PLAYER PROP PREDICTIONS
-    try {
+    // 3. GRADE PLAYER PROP PREDICTIONS (NBA/SDIO only — MLB props are graded
+    //    by sbo-verify-results Phase 3B off the free ESPN /summary feed)
+    if (sport === 'mlb') {
+      results.props_note = 'MLB player props are graded by sbo-verify-results (ESPN /summary)';
+    } else try {
       const playerStats = await sdioGet(`/stats/json/PlayerGameStatsByDate/${sdioDate}`);
       const statsByPlayer: Record<string, any> = {};
       for (const stat of playerStats) {
