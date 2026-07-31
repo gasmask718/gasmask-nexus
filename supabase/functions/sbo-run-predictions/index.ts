@@ -351,11 +351,20 @@ Statistical confidence 0-100.`;
 async function runMarketBrain(ctx: any) {
   // Market brain stays sport-neutral — reads odds signals, not sport context
   const system = `You are a professional sports betting market analyst. Read betting lines as signals: sharp money, line movement, implied probabilities, consensus across books. Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences max"}`;
-  const impliedProb = ctx.home_odds
-    ? ctx.home_odds < 0 ? Math.abs(ctx.home_odds) / (Math.abs(ctx.home_odds) + 100) * 100 : 100 / (ctx.home_odds + 100) * 100
-    : 50;
+  // ═══ IMPLIED PROBABILITY OF THE SIDE ACTUALLY PICKED ═══
+  // Previously this always computed the HOME implied probability regardless of
+  // which side was predicted. Now: prefer the de-vigged multi-book consensus for
+  // the derived side; fall back to that same side's single-book price.
+  const side: 'home' | 'away' = ctx.predicted_outcome === 'away' ? 'away' : 'home';
+  const sideOdds = Number(side === 'away' ? ctx.away_odds : ctx.home_odds);
+  const impliedProb = ctx.devig
+    ? (side === 'home' ? ctx.devig.home_prob : ctx.devig.away_prob) * 100
+    : (Number.isFinite(sideOdds) ? americanToImplied(sideOdds) * 100 : 50);
+  const consensusNote = ctx.devig
+    ? ` De-vigged consensus across ${ctx.devig.books_used} book(s): ${ctx.home_team} ${(ctx.devig.home_prob * 100).toFixed(1)}% / ${ctx.away_team} ${(ctx.devig.away_prob * 100).toFixed(1)}%.`
+    : '';
   const user = ctx.prediction_type === 'moneyline'
-    ? `${ctx.away_team} @ ${ctx.home_team}. DK odds: Home ${ctx.home_odds} / Away ${ctx.away_odds}. Implied prob of predicted winner: ${impliedProb.toFixed(1)}%. Market confidence 0-100 that ${ctx.predicted_outcome === 'home' ? ctx.home_team : ctx.away_team} wins.`
+    ? `${ctx.away_team} @ ${ctx.home_team}. Odds: Home ${ctx.home_odds} / Away ${ctx.away_odds}.${consensusNote} Implied prob of predicted winner (${side === 'home' ? ctx.home_team : ctx.away_team}): ${impliedProb.toFixed(1)}%. Market confidence 0-100 that ${side === 'home' ? ctx.home_team : ctx.away_team} wins.`
     : `${ctx.player_name} ${ctx.prop_type} ${(ctx.final_recommendation || ctx.predicted_outcome || 'OVER').toUpperCase()} ${ctx.line}. Over: ${ctx.over_odds}, Under: ${ctx.under_odds}. Market confidence 0-100.`;
   const raw = await callAI(system, user);
   try {
