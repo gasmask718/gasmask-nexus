@@ -134,7 +134,12 @@ Deno.serve(async (req) => {
       const { sid, actualTo, overridden } = await initiateOperatorCall({
         to: to_phone,
         recordingCallbackUrl,
+        bridgeToNumber:
+          typeof bridge_to_phone === "string" && /^\+\d{8,16}$/.test(bridge_to_phone)
+            ? bridge_to_phone
+            : undefined,
       });
+
 
       await svc
         .from("communication_logs")
