@@ -666,7 +666,7 @@ Deno.serve(async (req) => {
       });
       if (!vercel.ok) console.warn("Vercel deploy hook not fired:", vercel.error);
 
-      return new Response(JSON.stringify({ success: true, demo, engine: "native", design_md_loaded: !!designMd, vercel }), {
+      return new Response(JSON.stringify({ success: true, demo, engine: "native", design_md_loaded: !!designMd, vercel, sms }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
