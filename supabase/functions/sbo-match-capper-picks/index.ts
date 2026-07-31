@@ -34,15 +34,21 @@ const STAT_MAP: Record<string, string> = {
   'total_bases': 'total_bases', 'tb': 'total_bases',
 };
 
-function normalizeStat(s: string): string {
+// Every value STAT_MAP can produce. A string already in this set is canonical
+// and must be returned untouched — the substring fallback below would otherwise
+// corrupt it ('strikeouts_p' contains 'k', 'pts_reb_ast' contains 'pts').
+const CANONICAL_STATS = new Set(Object.values(STAT_MAP));
+
+export function normalizeStat(s: string): string {
   if (!s) return '';
-  let lower = s.toLowerCase().trim().replace(/[_\-\s]+/g, '_');
+  const lower = s.toLowerCase().trim().replace(/[_\-\s]+/g, '_');
+  if (CANONICAL_STATS.has(lower)) return lower;
   // Check direct map first
   if (STAT_MAP[lower]) return STAT_MAP[lower];
-  // Try partial replacements
-  for (const [k, v] of Object.entries(STAT_MAP)) {
-    if (lower.includes(k)) { lower = lower.replace(k, v); break; }
-  }
+  // Try token-level replacement — substring matching corrupts longer stats.
+  const tokens = lower.split('_');
+  const mapped = tokens.map((t) => STAT_MAP[t] ?? t);
+  if (mapped.some((t, i) => t !== tokens[i])) return mapped.join('_');
   return lower;
 }
 
