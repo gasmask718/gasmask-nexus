@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
     //   lead_id           -> lead_id
     //   business_name     -> (no column; lives on brandaro_demo_sites via demo_id)
     //   package_tier      -> package_tier
-    //   build_status      -> build_status = 'pending'
+    //   build_status      -> build_status = 'queued' (first value the CHECK allows)
     //   deployed_at       -> deployed_at = null
     //   lead_phone        -> (no column; reachable via lead_id -> phone_number)
     //   amount_paid       -> (no column; brandaro_demo_sites.paid_amount)
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
         client_id: null,
         lead_id,
         package_tier: tier,
-        build_status: "pending",
+        build_status: "queued",
         build_engine,
         progress_stage: "awaiting_intake",
         deployed_at: null,
