@@ -236,9 +236,15 @@ serve(async (req) => {
       props_correct: 0,
       props_incorrect: 0,
       props_push: 0,
+      // Prop resolved against a real box score but no AI prediction was
+      // attached, so there is no pick to score. NOT a push.
+      props_resolved_no_pick: 0,
       props_pending_no_stats: 0,
       props_pending_unmapped: 0,
       game_id_backfilled: 0,
+      backfill_orphans_scanned: 0,
+      backfill_props_resolved: 0,
+      backfill_update_errors: 0,
       errors: [] as string[],
     };
 
@@ -555,27 +561,58 @@ serve(async (req) => {
 
     // 3B.0 — backfill game_id on orphaned player_prop predictions
     {
-      const { data: orphans } = await supabase
-        .from('sbo_predictions')
-        .select('id, prop_id')
-        .eq('prediction_type', 'player_prop')
-        .is('game_id', null)
-        .not('prop_id', 'is', null);
+      // Page the orphan scan — PostgREST caps at 1000 rows per request.
+      const orphans: any[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data: page, error: pageErr } = await supabase
+          .from('sbo_predictions')
+          .select('id, prop_id')
+          .eq('prediction_type', 'player_prop')
+          .is('game_id', null)
+          .not('prop_id', 'is', null)
+          .range(from, from + 999);
+        if (pageErr) { mlb.errors.push(`orphan scan failed: ${pageErr.message}`); break; }
+        if (!page?.length) break;
+        orphans.push(...page);
+        if (page.length < 1000) break;
+      }
 
-      if (orphans?.length) {
+      mlb.backfill_orphans_scanned = orphans.length;
+
+      if (orphans.length) {
         const propIds = [...new Set(orphans.map((o: any) => o.prop_id))];
-        const { data: propRows } = await supabase
-          .from('sbo_player_props')
-          .select('id, game_id')
-          .in('id', propIds);
-        const gameByProp = new Map(
-          (propRows || []).filter((r: any) => r.game_id).map((r: any) => [r.id, r.game_id])
-        );
+
+        // Chunk the .in() lookup — a single 1400-id filter overflows the
+        // request URL and silently returns null (this is why the first live
+        // run reported 0/1435 backfilled).
+        const gameByProp = new Map<string, string>();
+        const CHUNK = 150;
+        for (let i = 0; i < propIds.length; i += CHUNK) {
+          const slice = propIds.slice(i, i + CHUNK);
+          const { data: propRows, error: propErr } = await supabase
+            .from('sbo_player_props')
+            .select('id, game_id')
+            .in('id', slice);
+          if (propErr) {
+            mlb.errors.push(`prop lookup chunk ${i}-${i + slice.length} failed: ${propErr.message}`);
+            continue;
+          }
+          for (const r of propRows || []) {
+            if (r.game_id) gameByProp.set(r.id, r.game_id);
+          }
+        }
+        mlb.backfill_props_resolved = gameByProp.size;
+
         for (const o of orphans) {
           const gid = gameByProp.get(o.prop_id);
           if (!gid) continue;
           const { error } = await supabase.from('sbo_predictions').update({ game_id: gid }).eq('id', o.id);
-          if (!error) mlb.game_id_backfilled++;
+          if (error) {
+            mlb.backfill_update_errors++;
+            if (mlb.errors.length < 5) mlb.errors.push(`backfill update failed: ${error.message}`);
+          } else {
+            mlb.game_id_backfilled++;
+          }
         }
         console.log(`MLB game_id backfill: ${mlb.game_id_backfilled}/${orphans.length} orphaned prop predictions linked`);
       }
@@ -673,7 +710,11 @@ serve(async (req) => {
           propsVerified++;
           if (predictionVerdict === 'correct') { mlb.props_correct++; propsCorrect++; }
           else if (predictionVerdict === 'incorrect') { mlb.props_incorrect++; propsIncorrect++; }
-          else { mlb.props_push++; propsPush++; }
+          else if (predictionVerdict === 'push') { mlb.props_push++; propsPush++; }
+          // 'over' / 'under' means the box score resolved but no AI pick was
+          // attached — outcome recorded, nothing to score. Must not inflate
+          // the push bucket or it corrupts accuracy reporting.
+          else { mlb.props_resolved_no_pick++; }
         } catch (e: any) {
           console.error(`MLB prop verify failed for ${prop.player_name}:`, e.message);
         }
