@@ -516,19 +516,44 @@ CRITICAL RULES FROM CALIBRATION DATA:
     if (game_id && prediction_type === 'moneyline' && !force_rerun) {
       const { data: existingPred } = await supabase
         .from('sbo_predictions')
-        .select('id, final_confidence, confidence_tier, data_quality')
+        .select('id, final_confidence, confidence_tier, data_quality, predicted_outcome')
         .eq('game_id', game_id)
         .eq('prediction_type', 'moneyline')
         .gte('created_at', `${today}T00:00:00`)
         .maybeSingle();
 
       if (existingPred) {
+        // Signal write is idempotent — keep it in sync even on a cache hit so a
+        // game predicted before sbo_signals existed still gets its signal row.
+        let cachedSignal: any = null;
+        try {
+          const { data: g } = await supabase
+            .from('sbo_games')
+            .select('home_team, away_team, game_date, sport_key')
+            .eq('id', game_id)
+            .maybeSingle();
+          if (g) {
+            cachedSignal = await upsertMoneylineSignal(supabase, {
+              sport_key: g.sport_key,
+              home_team: g.home_team,
+              away_team: g.away_team,
+              game_date: g.game_date,
+              side: existingPred.predicted_outcome,
+              internal_confidence: existingPred.final_confidence ?? 0,
+            });
+          }
+        } catch (sigErr) {
+          console.error('Non-fatal: cached sbo_signals upsert failed:', sigErr);
+        }
+
         return new Response(JSON.stringify({
           success: true,
           prediction_id: existingPred.id,
           final_confidence: existingPred.final_confidence,
           confidence_tier: existingPred.confidence_tier,
           data_quality: existingPred.data_quality,
+          predicted_outcome: existingPred.predicted_outcome,
+          signal: cachedSignal,
           source: 'cache',
           message: 'Prediction already exists for this game today',
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
