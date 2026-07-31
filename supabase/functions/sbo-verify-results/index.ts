@@ -555,22 +555,45 @@ serve(async (req) => {
 
     // 3B.0 — backfill game_id on orphaned player_prop predictions
     {
-      const { data: orphans } = await supabase
-        .from('sbo_predictions')
-        .select('id, prop_id')
-        .eq('prediction_type', 'player_prop')
-        .is('game_id', null)
-        .not('prop_id', 'is', null);
+      // Page the orphan scan — PostgREST caps at 1000 rows per request.
+      const orphans: any[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data: page, error: pageErr } = await supabase
+          .from('sbo_predictions')
+          .select('id, prop_id')
+          .eq('prediction_type', 'player_prop')
+          .is('game_id', null)
+          .not('prop_id', 'is', null)
+          .range(from, from + 999);
+        if (pageErr) { mlb.errors.push(`orphan scan failed: ${pageErr.message}`); break; }
+        if (!page?.length) break;
+        orphans.push(...page);
+        if (page.length < 1000) break;
+      }
 
-      if (orphans?.length) {
+      if (orphans.length) {
         const propIds = [...new Set(orphans.map((o: any) => o.prop_id))];
-        const { data: propRows } = await supabase
-          .from('sbo_player_props')
-          .select('id, game_id')
-          .in('id', propIds);
-        const gameByProp = new Map(
-          (propRows || []).filter((r: any) => r.game_id).map((r: any) => [r.id, r.game_id])
-        );
+
+        // Chunk the .in() lookup — a single 1400-id filter overflows the
+        // request URL and silently returns null (this is why the first live
+        // run reported 0/1435 backfilled).
+        const gameByProp = new Map<string, string>();
+        const CHUNK = 150;
+        for (let i = 0; i < propIds.length; i += CHUNK) {
+          const slice = propIds.slice(i, i + CHUNK);
+          const { data: propRows, error: propErr } = await supabase
+            .from('sbo_player_props')
+            .select('id, game_id')
+            .in('id', slice);
+          if (propErr) {
+            mlb.errors.push(`prop lookup chunk ${i}-${i + slice.length} failed: ${propErr.message}`);
+            continue;
+          }
+          for (const r of propRows || []) {
+            if (r.game_id) gameByProp.set(r.id, r.game_id);
+          }
+        }
+
         for (const o of orphans) {
           const gid = gameByProp.get(o.prop_id);
           if (!gid) continue;
