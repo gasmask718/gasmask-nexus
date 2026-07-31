@@ -601,6 +601,47 @@ Deno.serve(async (req) => {
 
       await supabase.from("brandaro_qualified_leads").update({ demo_status: "generated" }).eq("id", lead_id);
 
+      // ---- AUTO-SEND (Step 10): fire the demo SMS as soon as the demo is ready.
+      // NON-FATAL: any failure here is logged and reported, never fails generation.
+      // Suppression (DNC) is enforced inside brandaro-send-demo via isSuppressed().
+      const sms: {
+        status: "sent" | "blocked" | "failed" | "skipped";
+        reason?: string;
+        provider_message_id?: string;
+      } = { status: "skipped", reason: "no_phone_number" };
+
+      try {
+        const destination = (lead as any).phone_number?.trim();
+        if (!destination) {
+          console.warn(`[auto-send] lead ${lead_id} has no phone_number — skipping SMS`);
+        } else {
+          const { data: sendData, error: sendErr } = await supabase.functions.invoke("brandaro-send-demo", {
+            body: { demo_id: demo.id, lead_id, channel: "sms", destination },
+          });
+          if (sendErr) {
+            sms.status = "failed";
+            sms.reason = sendErr.message || "invoke_error";
+          } else if ((sendData as any)?.suppressed) {
+            sms.status = "blocked";
+            sms.reason = (sendData as any).reason || "suppressed";
+          } else if ((sendData as any)?.ok) {
+            sms.status = "sent";
+            sms.provider_message_id = (sendData as any).provider_message_id;
+          } else {
+            sms.status = "failed";
+            sms.reason = (sendData as any)?.error || "unknown_send_error";
+          }
+        }
+      } catch (e) {
+        sms.status = "failed";
+        sms.reason = e instanceof Error ? e.message : "unknown";
+      }
+      if (sms.status === "failed") {
+        console.error(`[auto-send] SMS failed for demo ${demo.id}: ${sms.reason} — demo is live, VA can send manually`);
+      } else {
+        console.log(`[auto-send] demo ${demo.id} sms status=${sms.status}${sms.reason ? ` (${sms.reason})` : ""}`);
+      }
+
       // Trigger a rebuild of this industry's Vercel project.
       const vercel = await tryVercelHook(supabase, industry, {
         demo_id: demo.id,
