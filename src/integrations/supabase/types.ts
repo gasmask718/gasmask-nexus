@@ -92471,6 +92471,90 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_clamp_readiness: {
+        Row: {
+          all_gates_pass: boolean
+          blocking_gates: string[]
+          ci_lower: number
+          coverage_full: number
+          coverage_pct: number
+          coverage_total: number
+          created_at: string
+          evaluated_at: string
+          gate_accuracy: boolean
+          gate_calibration: boolean
+          gate_ci: boolean
+          gate_coverage: boolean
+          gate_volume: boolean
+          gates_passed: number
+          graded_n: number
+          hi_bucket_n: number
+          hi_bucket_rate: number | null
+          id: string
+          lo_bucket_n: number
+          lo_bucket_rate: number | null
+          notes: Json
+          sport: string
+          win_rate: number
+          window_days: number
+          wins: number
+        }
+        Insert: {
+          all_gates_pass?: boolean
+          blocking_gates?: string[]
+          ci_lower?: number
+          coverage_full?: number
+          coverage_pct?: number
+          coverage_total?: number
+          created_at?: string
+          evaluated_at?: string
+          gate_accuracy?: boolean
+          gate_calibration?: boolean
+          gate_ci?: boolean
+          gate_coverage?: boolean
+          gate_volume?: boolean
+          gates_passed?: number
+          graded_n?: number
+          hi_bucket_n?: number
+          hi_bucket_rate?: number | null
+          id?: string
+          lo_bucket_n?: number
+          lo_bucket_rate?: number | null
+          notes?: Json
+          sport: string
+          win_rate?: number
+          window_days?: number
+          wins?: number
+        }
+        Update: {
+          all_gates_pass?: boolean
+          blocking_gates?: string[]
+          ci_lower?: number
+          coverage_full?: number
+          coverage_pct?: number
+          coverage_total?: number
+          created_at?: string
+          evaluated_at?: string
+          gate_accuracy?: boolean
+          gate_calibration?: boolean
+          gate_ci?: boolean
+          gate_coverage?: boolean
+          gate_volume?: boolean
+          gates_passed?: number
+          graded_n?: number
+          hi_bucket_n?: number
+          hi_bucket_rate?: number | null
+          id?: string
+          lo_bucket_n?: number
+          lo_bucket_rate?: number | null
+          notes?: Json
+          sport?: string
+          win_rate?: number
+          window_days?: number
+          wins?: number
+        }
+        Relationships: []
+      }
       sbo_clv_tracker: {
         Row: {
           closing_odds: string | null
@@ -138935,6 +139019,21 @@ export type Database = {
       }
       revoke_va_invite: { Args: { p_invite_id: string }; Returns: Json }
       route_order_to_supplier: { Args: { p_order_id: string }; Returns: Json }
+      sbo_evaluate_clamp_gates: {
+        Args: { p_days?: number; p_sport: string }
+        Returns: {
+          ci_low: number
+          cov_full: number
+          cov_total: number
+          hi_n: number
+          hi_rate: number
+          lo_n: number
+          lo_rate: number
+          n: number
+          p: number
+          wins: number
+        }[]
+      }
       sbo_rebuild_season_splits: {
         Args: { _season?: string; _sport?: string }
         Returns: number
