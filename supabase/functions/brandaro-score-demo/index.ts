@@ -115,14 +115,42 @@ const json = (payload: unknown, status = 200) =>
 // ---------------------------------------------------------------------------
 
 /**
+ * Connection-level failures that will never resolve by waiting: TLS handshake
+ * errors, DNS resolution failures, refused/unreachable hosts, bad certs.
+ * These indicate a domain/Vercel misconfiguration, not a build still in flight.
+ */
+function isPermanentFetchError(msg: string): boolean {
+  const m = msg.toLowerCase();
+  return [
+    "tls handshake",
+    "invalid peer certificate",
+    "certificate",
+    "unknown issuer",
+    "dns error",
+    "failed to lookup address",
+    "name or service not known",
+    "nodename nor servname",
+    "getaddrinfo",
+    "connection refused",
+    "network is unreachable",
+    "no route to host",
+    "unknownhostexception",
+  ].some((needle) => m.includes(needle));
+}
+
+/**
  * Poll the deployed demo URL. Vercel builds take ~1-3 minutes, so the first
  * attempts can legitimately 404 or serve the previous build. Non-fatal: the
  * caller falls back to the stored HTML and records which source was scored.
+ *
+ * Retries/backoff are reserved for genuinely transient failures (timeouts,
+ * 5xx, 404 during build). Connection-level failures (TLS/DNS/refused) bail
+ * after a single attempt — waiting cannot fix a misconfigured domain.
  */
 async function fetchLiveHtml(
   url: string,
   opts: { attempts?: number; delayMs?: number } = {},
-): Promise<{ html: string | null; attempts: number; error?: string }> {
+): Promise<{ html: string | null; attempts: number; error?: string; permanent?: boolean }> {
   const attempts = opts.attempts ?? LIVE_FETCH_ATTEMPTS;
   const delayMs = opts.delayMs ?? LIVE_FETCH_DELAY_MS;
   let lastError = "not attempted";
@@ -146,6 +174,12 @@ async function fetchLiveHtml(
       }
     } catch (e) {
       lastError = e instanceof Error ? e.message : "fetch failed";
+      if (isPermanentFetchError(lastError)) {
+        console.warn(
+          `[audit] live fetch permanent config error on attempt ${i} for ${url}: ${lastError} — bailing without retry`,
+        );
+        return { html: null, attempts: i, error: `permanent: ${lastError}`, permanent: true };
+      }
     }
     console.log(`[audit] live fetch attempt ${i}/${attempts} failed for ${url}: ${lastError}`);
     if (i < attempts) await new Promise((r) => setTimeout(r, delayMs));
@@ -153,6 +187,7 @@ async function fetchLiveHtml(
 
   return { html: null, attempts, error: lastError };
 }
+
 
 // ---------------------------------------------------------------------------
 // Scoring
