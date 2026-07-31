@@ -302,9 +302,13 @@ serve(async (req) => {
 
         console.log(`[match] ${unmatched.length} unmatched, ${allProps.length} candidate props`);
 
+        const propIndex = buildPropIndex(allProps);
+        allProps = [];
+        const toLink: { id: string; propId: string }[] = [];
+
         for (const pick of unmatched) {
           if (!pick.player_name) continue;
-          const result = matchPick(pick, allProps);
+          const result = matchPick(pick, propIndex);
 
           if (result && result.score >= 70) {
             const status = result.score >= 85 ? 'matched' : 'needs_review';
@@ -320,17 +324,25 @@ serve(async (req) => {
             });
 
             if (status === 'matched') {
-              await supabase.from('sbo_capper_picks')
-                .update({ matched_prop_id: result.propId })
-                .eq('id', pick.id);
+              toLink.push({ id: pick.id, propId: result.propId });
               matched++;
             }
           }
         }
 
+        // Persist links in bounded batches rather than one round trip per pick.
+        for (let i = 0; i < toLink.length; i += 25) {
+          const chunk = toLink.slice(i, i + 25);
+          await Promise.all(chunk.map((l) =>
+            supabase.from('sbo_capper_picks')
+              .update({ matched_prop_id: l.propId })
+              .eq('id', l.id)
+          ));
+        }
+
         // Batch insert match logs
-        if (matchLogs.length > 0) {
-          await supabase.from('sbo_external_match_logs').insert(matchLogs);
+        for (let i = 0; i < matchLogs.length; i += 200) {
+          await supabase.from('sbo_external_match_logs').insert(matchLogs.slice(i, i + 200));
         }
         console.log(`[match] ${matched} auto-matched, ${matchLogs.length} total logged`);
       }
