@@ -23,6 +23,8 @@ interface PickRow {
   bet_type: string | null;
   direction: string | null;
   stake: number | null;
+  team: string | null;
+  opponent: string | null;
 }
 
 interface SignalRow {
