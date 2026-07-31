@@ -1,17 +1,181 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { MLB_GRADING } from '../_shared/espnGrading.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ═══════════════════════════════════════════════════════════════
+// MLB BRANCH (Stage 2c) — real stats brain off sbo_player_game_stats
+// / sbo_player_season_splits. NBA path below is untouched.
+// ═══════════════════════════════════════════════════════════════
+
+const MLB_SEASON = String(new Date().getUTCFullYear());
+
+function avg(vals: number[]): number | null {
+  if (!vals.length) return null;
+  return Number((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(3));
+}
+
+function teamMatchesHint(team: string | null, hint: string): boolean {
+  if (!team || !hint) return false;
+  const t = team.toLowerCase();
+  const h = hint.toLowerCase();
+  if (h.includes(t) || t.includes(h)) return true;
+  // last word of team name (e.g. "Dodgers") appearing in the matchup string
+  const last = t.split(/\s+/).pop() || '';
+  return last.length > 3 && h.includes(last);
+}
+
+async function handleMlb(req_body: any, supabase: any) {
+  const { player_name, player_id, team, prop_type, opponent, game_date } = req_body;
+  const teamHint = [team, opponent].filter(Boolean).join(' ');
+
+  // ── 1. Resolve player identity ────────────────────────────────
+  let resolution: 'player_id' | 'name_team' | 'name_unique' | 'ambiguous' | 'no_match' = 'no_match';
+  let split: any = null;
+
+  if (player_id) {
+    const { data } = await supabase
+      .from('sbo_player_season_splits')
+      .select('*')
+      .eq('sport', 'mlb')
+      .eq('player_key', String(player_id))
+      .maybeSingle();
+    if (data) { split = data; resolution = 'player_id'; }
+  }
+
+  let candidates: any[] = [];
+  if (!split && player_name) {
+    const { data } = await supabase
+      .from('sbo_player_season_splits')
+      .select('*')
+      .eq('sport', 'mlb')
+      .ilike('player_name', player_name.trim());
+    candidates = data || [];
+    if (candidates.length === 1) {
+      split = candidates[0];
+      resolution = 'name_unique';
+    } else if (candidates.length > 1) {
+      const narrowed = candidates.filter((c) => teamMatchesHint(c.team, teamHint));
+      if (narrowed.length === 1) {
+        split = narrowed[0];
+        resolution = 'name_team';
+      } else {
+        resolution = 'ambiguous';
+      }
+    }
+  }
+
+  if (!split) {
+    // Never guess. Ambiguous or unmatched → odds_only.
+    console.log('MLB context unresolved:', { player_name, player_id, teamHint, resolution, candidates: candidates.length });
+    return {
+      success: true,
+      sport: 'mlb',
+      data_quality: 'odds_only',
+      resolution,
+      context_text: `PLAYER: ${player_name} (${team || 'unknown team'})
+No verified MLB stat history could be resolved for this player (${resolution}). No statistical basis — treat as odds-only and cap confidence.`,
+      raw: { season_split: null, recent_values: [], games_with_stat: 0 },
+    };
+  }
+
+  // ── 2. Game log ───────────────────────────────────────────────
+  const { data: games } = await supabase
+    .from('sbo_player_game_stats')
+    .select('game_date, opponent, is_home, stat_line')
+    .eq('sport', 'mlb')
+    .eq('player_key', split.player_key)
+    .order('game_date', { ascending: false })
+    .limit(200);
+
+  const rows = games || [];
+  const getVal = (statLine: any) => MLB_GRADING.getPropValue(statLine as any, prop_type || '');
+
+  const allValues = rows.map((g: any) => getVal(g.stat_line)).filter((v: any) => v !== null && v !== undefined) as number[];
+  const recentValues = rows.slice(0, 10).map((g: any) => getVal(g.stat_line)).filter((v: any) => v !== null) as number[];
+  const vsOppRows = opponent
+    ? rows.filter((g: any) => teamMatchesHint(g.opponent, opponent)).slice(0, 5)
+    : [];
+  const vsOppValues = vsOppRows.map((g: any) => getVal(g.stat_line)).filter((v: any) => v !== null) as number[];
+
+  // ── 3. data_quality: per-player, per-prop-type sample size ────
+  const n = allValues.length;
+  const data_quality = n >= 5 ? 'full' : n >= 1 ? 'partial' : 'odds_only';
+
+  const seasonAvgForProp = avg(allValues);
+  const l5 = avg(allValues.slice(0, 5));
+  const l10 = avg(allValues.slice(0, 10));
+
+  const contextText = `
+PLAYER: ${split.player_name} (${split.team}) — MLB
+IDENTITY: resolved via ${resolution} (player_key ${split.player_key})
+SEASON (${split.season}): ${split.games_played} games played
+SEASON AVERAGES (all tracked stats): ${JSON.stringify(split.season_averages ?? {})}
+LAST 5 AVERAGES: ${JSON.stringify(split.last_5_averages ?? {})}
+LAST 10 AVERAGES: ${JSON.stringify(split.last_10_averages ?? {})}
+HOME AVERAGES: ${JSON.stringify(split.home_averages ?? {})}
+AWAY AVERAGES: ${JSON.stringify(split.away_averages ?? {})}
+
+PROP TYPE: ${prop_type || 'n/a'}
+GAMES WITH THIS STAT RECORDED: ${n}
+LAST ${recentValues.length} GAMES (${prop_type}): ${recentValues.join(', ') || 'none'}
+SEASON AVERAGE FOR THIS PROP: ${seasonAvgForProp ?? 'N/A'}
+L5 AVERAGE: ${l5 ?? 'N/A'} | L10 AVERAGE: ${l10 ?? 'N/A'}
+
+VS ${opponent || 'opponent'} (${vsOppValues.length} games): ${vsOppValues.join(', ') || 'NO GAMES VS THIS OPPONENT YET'}
+VS OPPONENT AVERAGE: ${avg(vsOppValues) ?? 'N/A'}
+
+DATA QUALITY: ${data_quality} (n=${n} games with this stat)
+${data_quality === 'odds_only' ? 'WARNING: no games with this stat recorded — no statistical basis.' : ''}
+${data_quality === 'partial' ? 'CAUTION: small sample (1-4 games) — weight lightly.' : ''}
+LAST GAME: ${split.last_game_date || 'unknown'} | REQUESTED GAME DATE: ${game_date || 'n/a'}
+  `.trim();
+
+  return {
+    success: true,
+    sport: 'mlb',
+    data_quality,
+    resolution,
+    context_text: contextText,
+    raw: {
+      season_split: split,
+      player_key: split.player_key,
+      games_with_stat: n,
+      recent_values: recentValues,
+      recent_avg: l10,
+      l5_avg: l5,
+      season_avg: seasonAvgForProp,
+      vs_opp_values: vsOppValues,
+      vs_opp_avg: avg(vsOppValues),
+    },
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { player_name, team, game_date, prop_type, opponent } = await req.json();
+    const body = await req.json();
+    const { player_name, team, game_date, prop_type, opponent } = body;
+    const sport = String(body.sport || 'nba').toLowerCase();
 
+    const supabaseMulti = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    if (sport === 'mlb') {
+      const result = await handleMlb(body, supabaseMulti);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ═══ NBA path below — unchanged ═══
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
