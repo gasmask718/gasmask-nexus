@@ -711,6 +711,8 @@ async function handleScoreAndFix(supabase: any, body: any) {
     passed: (lastResult?.overall_score ?? 0) >= PASS_THRESHOLD,
     scored_by: lastResult?.scored_by ?? null,
     source: lastSource,
+    live_fetch_error: liveFetchPermanentError,
+
     passes,
     dimension_scores: lastResult?.dimension_scores ?? null,
     issues: lastResult?.issues ?? [],
