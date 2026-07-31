@@ -607,10 +607,19 @@ CRITICAL RULES FROM CALIBRATION DATA:
     ctx.sport_key = sport_key;
     console.log(`Prediction sport_key resolved: ${sport_key}`);
 
+    // ═══ OPTION A: DERIVE THE MONEYLINE SIDE FROM DE-VIGGED MARKET CONSENSUS ═══
+    // Replaces any caller-supplied (historically hardcoded 'home') side. Runs
+    // BEFORE the brains so every prompt reasons about the real derived side.
+    let derivedFromMarket = false;
+    if (prediction_type === 'moneyline' && ctx.devig) {
+      derivedFromMarket = true;
+      ctx.predicted_outcome = ctx.devig.predicted_outcome;
+    }
+
     // Run stats brain first for props to get AI recommendation
     const statsResult = await runStatsBrain(ctx, supabase, calibrationText);
 
-    let finalOutcome = predicted_outcome;
+    let finalOutcome = ctx.predicted_outcome ?? predicted_outcome;
     if (prediction_type === 'player_prop' && statsResult.ai_recommendation) {
       finalOutcome = statsResult.ai_recommendation;
       ctx.predicted_outcome = finalOutcome;
@@ -625,7 +634,10 @@ CRITICAL RULES FROM CALIBRATION DATA:
     ]);
 
     const stats = { score: statsResult.score, reasoning: statsResult.reasoning };
-    const dataQuality = statsResult.data_quality;
+    // Market-derived moneyline sides are, by construction, backed by odds only —
+    // no stats feed selected the side. Label them 'odds_only' so the existing
+    // 54-point clamp (unmodified) applies.
+    const dataQuality = derivedFromMarket ? 'odds_only' : statsResult.data_quality;
 
     // ═══ WEIGHTS: prefer sbo_sports (learned_X ?? base_X), fallback to sbo_model_performance ═══
     let weights = { stats: 0.40, market: 0.35, context: 0.25, polymarket: 0.00 };
