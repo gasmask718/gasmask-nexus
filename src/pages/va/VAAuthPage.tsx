@@ -188,6 +188,9 @@ export default function VAAuthPage() {
           if (authData.user && !(await verifyVAAccessOrSignOut(authData.user.id))) {
             return;
           }
+          if (authData.user && !(await selectHubBusinessOrSignOut(authData.user.id))) {
+            return;
+          }
 
           try { sessionStorage.removeItem('va_invite_token'); } catch {}
           toast.success(`Welcome${companyName ? ` to ${companyName}` : ''}!`);
