@@ -577,6 +577,8 @@ serve(async (req) => {
         if (page.length < 1000) break;
       }
 
+      mlb.backfill_orphans_scanned = orphans.length;
+
       if (orphans.length) {
         const propIds = [...new Set(orphans.map((o: any) => o.prop_id))];
 
@@ -599,12 +601,18 @@ serve(async (req) => {
             if (r.game_id) gameByProp.set(r.id, r.game_id);
           }
         }
+        mlb.backfill_props_resolved = gameByProp.size;
 
         for (const o of orphans) {
           const gid = gameByProp.get(o.prop_id);
           if (!gid) continue;
           const { error } = await supabase.from('sbo_predictions').update({ game_id: gid }).eq('id', o.id);
-          if (!error) mlb.game_id_backfilled++;
+          if (error) {
+            mlb.backfill_update_errors++;
+            if (mlb.errors.length < 5) mlb.errors.push(`backfill update failed: ${error.message}`);
+          } else {
+            mlb.game_id_backfilled++;
+          }
         }
         console.log(`MLB game_id backfill: ${mlb.game_id_backfilled}/${orphans.length} orphaned prop predictions linked`);
       }
