@@ -5,6 +5,8 @@
 **Scope:** Supabase project `qalaaroashbggynpvqct` — all `sbo_*` tables, all `sbo-*` edge functions, all SBO cron jobs, full SBO frontend route tree.
 **Method:** Every claim below was re-verified against live database rows, live cron definitions, and current source files. No finding was carried forward from the original document.
 
+> **⚠️ READ FIRST:** The combined-confidence core loop (Section 7.3, Check 5) does not currently run on its own — every real result in this document was produced by manual invocation, not the live system. This is the single highest-priority open item.
+
 ---
 
 ## 7.1 Database Pre-Flight
