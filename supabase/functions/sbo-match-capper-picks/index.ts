@@ -277,6 +277,9 @@ serve(async (req) => {
         .select('id, player_name, prop_type, line, game_date, sport, direction')
         .is('matched_prop_id', null)
         .not('player_name', 'is', null)
+        // Newest first: props only exist for recent dates, so an unordered
+        // slice wastes the budget on picks that can never match.
+        .order('game_date', { ascending: false })
         .limit(500);
 
       if (unmatched && unmatched.length > 0) {
@@ -292,12 +295,19 @@ serve(async (req) => {
 
         let allProps: any[] = [];
         for (const d of expandedDates) {
-          const { data: props } = await supabase
-            .from('sbo_player_props')
-            .select('id, player_name, prop_type, line, game_date, sport_key')
-            .eq('game_date', d)
-            .limit(1000);
-          if (props) allProps.push(...props);
+          // Busy slates exceed a single PostgREST page — paginate or candidates
+          // get silently truncated.
+          for (let from = 0; from < 5000; from += 1000) {
+            const { data: props } = await supabase
+              .from('sbo_player_props')
+              .select('id, player_name, prop_type, line, game_date, sport_key')
+              .eq('game_date', d)
+              .order('id', { ascending: true })
+              .range(from, from + 999);
+            if (!props || props.length === 0) break;
+            allProps.push(...props);
+            if (props.length < 1000) break;
+          }
         }
 
         console.log(`[match] ${unmatched.length} unmatched, ${allProps.length} candidate props`);
