@@ -82,6 +82,8 @@ import { UnifiedInteractionModal } from "@/components/store/UnifiedInteractionMo
 import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceModal";
 import { RouteIntelligence } from "@/components/store/RouteIntelligence";
 import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
+import { StoreCallHistoryPanel } from "@/components/store/StoreCallHistoryPanel";
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
