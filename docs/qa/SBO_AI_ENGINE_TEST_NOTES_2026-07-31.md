@@ -86,26 +86,65 @@ DO NOT redesign the intake pipeline. Retry + replay only.
 ### 7.3.1 Prompt Fix 7.3-A
 
 ```
-FIX TASK — SCHEDULE THE CORE LOOP (sbo-run-predictions →
-sbo-signal-combiner)
+FIX TASK — SCHEDULE THE CORE LOOP AGAINST ITS REAL DEPENDENCY CHAIN
+(sbo-run-predictions -> sbo-signal-combiner)
 
 CONTEXT: The combined-confidence loop was built and verified working
 end-to-end this session, but neither half is on cron. sbo_signals only
 has rows because both functions were invoked manually.
 
+An earlier version of this fix proposed 23:15 / 23:30 — two adjacent
+timestamps chosen for proximity, not for the actual data dependencies.
+That is wrong for two reasons:
+  - sbo-signal-combiner scores signals using capper win-rate weights,
+    which are refreshed by sbo-match-capper-picks-daily at 04:00 UTC.
+    A 23:30 combiner pass runs against weights that are ~19.5 hours
+    stale — it never sees the same day's grading.
+  - sbo-run-predictions depends on the odds sync. If odds/signals can
+    be produced more than once a day as lines move, a single 23:30
+    combiner pass leaves everything generated after it uncombined.
+
 Existing SBO cron pattern to follow (from cron.job):
   SELECT private.cron_post('<fn-name>', '{}'::jsonb) AS request_id;
 
-DO:
-1. Add cron job 'sbo-run-predictions-daily' — run after the pregame
-   odds sync. sbo-pregame-sync runs at 23:00 UTC, so schedule
-   '15 23 * * *'.
-2. Add cron job 'sbo-signal-combiner-daily' at '30 23 * * *' so it
-   always runs against freshly-written signals.
-3. Verify ordering by checking that the run at 23:30 leaves zero
-   sbo_signals rows with combined_confidence = 0 for that game_date.
+DO — INVESTIGATE BEFORE SCHEDULING:
+1. Confirm the real cadence of the upstream jobs before proposing any
+   time. Specifically:
+   a. sbo-pregame-sync and sbo-morning-sync — how often do odds
+      actually land, and does sbo-run-predictions produce new signals
+      on more than one sync per day? Check created_at spread on
+      sbo_signals / sbo_predictions across several days, not one.
+   b. sbo-match-capper-picks-daily (30 4 * * *) — confirm it is what
+      writes sbo_cappers.win_rate / capper_weight, and confirm the
+      timestamp at which those weights actually change each day.
+2. Report the observed cadence and the proposed times BEFORE creating
+   any cron job.
 
-DO NOT change function logic. Scheduling only.
+THEN SCHEDULE, subject to these constraints:
+3. sbo-signal-combiner must run AFTER the 04:00 capper-grading job
+   completes, so it scores against that day's freshest weights — not
+   the previous day's.
+4. If step 1 shows signals are generated more than once a day, add a
+   SECOND combiner pass later in the day to sweep same-day signal and
+   capper-pick activity. Do not rely on one nightly pass.
+5. sbo-run-predictions is scheduled relative to its own dependency
+   (odds sync completion), not relative to the combiner.
+
+VERIFICATION — the old check ("zero rows with combined_confidence = 0")
+is insufficient: it only proves the combiner ran at all, and would pass
+even if it scored every signal against stale or incomplete capper data.
+Replace it with:
+6. For a given game_date, confirm the combiner run consumed capper
+   weight data from the SAME DAY's grading. Concretely: compare the
+   combiner run timestamp against the latest sbo_cappers /
+   sbo_capper_performance update timestamp for that date, and assert
+   the combiner ran after it. A combiner run whose newest input weight
+   predates that day's 04:00 grading is a FAILED verification, even if
+   every signal has a non-zero combined_confidence.
+7. Additionally confirm no signal for that game_date was written after
+   the last combiner pass (i.e. nothing left uncombined by timing).
+
+DO NOT change function logic. Scheduling and verification only.
 ```
 
 ---
