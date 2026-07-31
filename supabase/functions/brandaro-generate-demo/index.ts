@@ -594,6 +594,14 @@ Deno.serve(async (req) => {
         cta_text: aiRes.content.cta_text,
         color_primary: aiRes.content.color_primary,
         color_secondary: aiRes.content.color_secondary,
+        services: aiRes.content.services,
+        about_text: aiRes.content.about_paragraph,
+        // Not collected by the current pipeline — passed through so the vars
+        // light up automatically once these sources exist.
+        reviews: (lead as any).reviews ?? null,
+        photos: (lead as any).photos ?? null,
+        logo_url: (demo as any).logo_url ?? null,
+
       });
       if (!vercel.ok) console.warn("Vercel deploy hook not fired:", vercel.error);
 
