@@ -1,4 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { sideMatchesTeam, resetNylaSkipped, getNylaSkipped } from '../_shared/teamMatcher.ts';
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
