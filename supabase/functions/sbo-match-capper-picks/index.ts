@@ -165,7 +165,7 @@ function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchResult | 
     }
 
     // ── STEP 2: Normalized Match ──
-    const normProp = normalizePlayer(propName);
+    const normProp = prop.normName;
     if (normPick === normProp) {
       const score = 95;
       if (!bestMatch || score > bestMatch.score) {
@@ -186,8 +186,7 @@ function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchResult | 
 
     // ── STEP 4: Context Match (composite) ──
     // Last name match + first initial
-    const pickWords = normPick.split(' ');
-    const propWords = normProp.split(' ');
+    const propWords = normProp.split(' ').filter(Boolean);
     if (pickWords.length >= 2 && propWords.length >= 2) {
       const lastMatch = pickWords[pickWords.length - 1] === propWords[propWords.length - 1];
       const firstInitial = pickWords[0][0] === propWords[0][0];
