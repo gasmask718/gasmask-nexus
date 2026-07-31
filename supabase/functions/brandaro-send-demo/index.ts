@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
+import { isSuppressed } from "../_shared/dnc.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
