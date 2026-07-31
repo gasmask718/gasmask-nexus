@@ -476,20 +476,20 @@ async function tryVercelHook(
         ok: false, status: res.status,
         error: `Vercel hook ${res.status}: ${text.slice(0, 300)}`,
         repo: tpl.vercel_template_repo, project_id: tpl.vercel_project_id,
-        env_vars: envResults, env_failed: envFailed,
+        env_vars: envResults, env_failed: envFailed, env_skipped: envSkipped,
       };
     }
     return {
       ok: true, status: res.status,
       repo: tpl.vercel_template_repo, project_id: tpl.vercel_project_id,
-      env_vars: envResults, env_failed: envFailed,
+      env_vars: envResults, env_failed: envFailed, env_skipped: envSkipped,
     };
   } catch (e) {
     return {
       ok: false,
       error: e instanceof Error ? e.message : "Vercel hook request failed",
       repo: tpl.vercel_template_repo, project_id: tpl.vercel_project_id,
-      env_vars: envResults, env_failed: envFailed,
+      env_vars: envResults, env_failed: envFailed, env_skipped: envSkipped,
     };
   }
 }
