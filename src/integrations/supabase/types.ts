@@ -138902,6 +138902,10 @@ export type Database = {
       }
       revoke_va_invite: { Args: { p_invite_id: string }; Returns: Json }
       route_order_to_supplier: { Args: { p_order_id: string }; Returns: Json }
+      sbo_rebuild_season_splits: {
+        Args: { _season?: string; _sport?: string }
+        Returns: number
+      }
       schedule_ambassador_visit: {
         Args: { p_notes?: string; p_scheduled_for: string; p_store_id: string }
         Returns: string
