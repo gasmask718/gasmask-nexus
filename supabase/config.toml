@@ -588,3 +588,7 @@ verify_jwt = false
 
 [functions.demo-stripe-checkout]
 verify_jwt = false
+
+[functions.demo-stripe-webhook]
+verify_jwt = false
+
