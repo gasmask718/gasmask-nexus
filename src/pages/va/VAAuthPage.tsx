@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useMarkManualSignIn } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,11 @@ import { toast } from 'sonner';
 export default function VAAuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const params = useParams();
   const markManualSignIn = useMarkManualSignIn();
+
+  // Optional hub scoping: /va/auth/:businessSlug or /va/auth?business=slug
+  const hubSlug = (params.businessSlug || searchParams.get('business') || '').trim().toLowerCase();
 
   // Pull invite token from query string or sessionStorage (set by VAAcceptInvitePage)
   const inviteToken =
@@ -28,6 +32,7 @@ export default function VAAuthPage() {
   const [lookupLoading, setLookupLoading] = useState(hasInvite);
   const [companyName, setCompanyName] = useState<string | null>(null);
   const [form, setForm] = useState({ email: '', password: '', fullName: '' });
+
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
