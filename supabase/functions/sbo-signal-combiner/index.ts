@@ -78,13 +78,20 @@ function sportWinRate(capper: CapperRow, sport: string | null): number {
 async function combineSignal(supabase: any, signal: SignalRow) {
   const { data: picks, error: picksErr } = await supabase
     .from('sbo_capper_picks')
-    .select('id, capper_id, sport, game_date, bet_type, direction, stake')
+    .select('id, capper_id, sport, game_date, bet_type, direction, stake, team, opponent')
     .eq('sport', signal.sport)
     .eq('game_date', signal.game_date)
     .eq('bet_type', signal.pick_type);
   if (picksErr) throw picksErr;
 
-  const capperIds = Array.from(new Set((picks ?? []).map((p: PickRow) => p.capper_id).filter(Boolean)));
+  // Require real game identity — sport + date + bet_type alone lumps an entire
+  // slate together. No identity on the signal => confirm nothing.
+  const sideKeys = [signal.home_team, signal.away_team]
+    .map(normalizeTeam)
+    .filter((s) => s.length > 0);
+  const gamePicks = ((picks ?? []) as PickRow[]).filter((p) => isSameGame(p, sideKeys));
+
+  const capperIds = Array.from(new Set(gamePicks.map((p: PickRow) => p.capper_id).filter(Boolean)));
   let cappers: CapperRow[] = [];
   if (capperIds.length > 0) {
     const { data: cData, error: cErr } = await supabase
@@ -100,7 +107,7 @@ async function combineSignal(supabase: any, signal: SignalRow) {
   const confirming: any[] = [];
   const fading: any[] = [];
 
-  for (const pick of (picks ?? []) as PickRow[]) {
+  for (const pick of gamePicks) {
     if (!pick.capper_id || !pick.direction || !signal.side) continue;
     const capper = capperById.get(pick.capper_id);
     if (!capper) continue;
