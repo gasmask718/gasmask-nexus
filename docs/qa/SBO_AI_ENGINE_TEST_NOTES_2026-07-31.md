@@ -384,11 +384,15 @@ read the legacy props_master table. Their output tables are empty:
 sbo_top_plays = 0 rows, sbo_actual_bets = 0 rows. The rest of the
 engine reads sbo_player_props / sbo_unified_props.
 
+PREREQUISITE: Prompt Fix 7.10-B (the sbo-auto-bet live-betting safety
+confirmation) must be completed and reported before any decision is
+made about sbo-auto-bet here.
+
 DECIDE FIRST, THEN BUILD — report the recommendation before editing:
 1. For each of the three functions, determine whether it is wanted at
-   all. sbo-auto-bet places real bets and has never written a row;
-   confirm with the owner before reviving it rather than migrating it
-   silently.
+   all. Do not decide anything about sbo-auto-bet until 7.10-B has
+   reported; confirm with the owner before reviving it rather than
+   migrating it silently.
 2. For the ones that are wanted, repoint reads to sbo_player_props
    with the same field contract, and confirm the outbound contract
    (TopPlayCard reads ai_confidence / ai_recommendation) is preserved.
