@@ -94123,6 +94123,54 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_player_game_stats: {
+        Row: {
+          created_at: string
+          game_date: string
+          game_id: string
+          id: string
+          is_home: boolean | null
+          opponent: string | null
+          player_id: string | null
+          player_name: string
+          source: string
+          sport: string
+          stat_line: Json
+          team: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          game_date: string
+          game_id: string
+          id?: string
+          is_home?: boolean | null
+          opponent?: string | null
+          player_id?: string | null
+          player_name: string
+          source?: string
+          sport: string
+          stat_line?: Json
+          team?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          game_date?: string
+          game_id?: string
+          id?: string
+          is_home?: boolean | null
+          opponent?: string | null
+          player_id?: string | null
+          player_name?: string
+          source?: string
+          sport?: string
+          stat_line?: Json
+          team?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sbo_player_projections: {
         Row: {
           draftkings_salary: number | null
@@ -94268,6 +94316,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sbo_player_season_splits: {
+        Row: {
+          away_averages: Json
+          computed_at: string
+          created_at: string
+          games_played: number
+          home_averages: Json
+          id: string
+          last_10_averages: Json
+          last_5_averages: Json
+          last_game_date: string | null
+          player_id: string | null
+          player_name: string
+          season: string
+          season_averages: Json
+          sport: string
+          team: string | null
+          updated_at: string
+        }
+        Insert: {
+          away_averages?: Json
+          computed_at?: string
+          created_at?: string
+          games_played?: number
+          home_averages?: Json
+          id?: string
+          last_10_averages?: Json
+          last_5_averages?: Json
+          last_game_date?: string | null
+          player_id?: string | null
+          player_name: string
+          season: string
+          season_averages?: Json
+          sport: string
+          team?: string | null
+          updated_at?: string
+        }
+        Update: {
+          away_averages?: Json
+          computed_at?: string
+          created_at?: string
+          games_played?: number
+          home_averages?: Json
+          id?: string
+          last_10_averages?: Json
+          last_5_averages?: Json
+          last_game_date?: string | null
+          player_id?: string | null
+          player_name?: string
+          season?: string
+          season_averages?: Json
+          sport?: string
+          team?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       sbo_player_season_stats: {
         Row: {
