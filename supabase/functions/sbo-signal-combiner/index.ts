@@ -40,7 +40,8 @@ interface SignalRow {
   away_team: string | null;
 }
 
-// Game identity: teams are free text on both sides, so normalize before compare.
+// Game identity: teams are free text on both sides, so reuse the shared SBO
+// team matcher (alias map + normalization) rather than a local string compare.
 export function normalizeTeam(t: string | null | undefined): string {
   if (!t) return '';
   return String(t).toLowerCase()
@@ -53,13 +54,54 @@ export function normalizeTeam(t: string | null | undefined): string {
 // A pick belongs to a signal's game only if one of its teams is a side of that game.
 export function isSameGame(
   pick: { team: string | null; opponent: string | null },
-  sideKeys: string[],
+  sideTeams: (string | null)[],
+  sport?: string | null,
 ): boolean {
-  if (sideKeys.length === 0) return false;
-  const t = normalizeTeam(pick.team);
-  const o = normalizeTeam(pick.opponent);
-  return (!!t && sideKeys.includes(t)) || (!!o && sideKeys.includes(o));
+  const sides = sideTeams.filter((s): s is string => !!s && s.trim().length > 0);
+  if (sides.length === 0) return false;
+  for (const side of sides) {
+    if (pick.team && sideMatchesTeam(pick.team, side, sport ?? undefined)) return true;
+    if (pick.opponent && sideMatchesTeam(pick.opponent, side, sport ?? undefined)) return true;
+  }
+  return false;
 }
+
+// Which real team does the signal's side refer to?
+// side is 'home' | 'away' (moneyline signals), else already a team name.
+export function resolveSignalTeam(signal: {
+  side: string | null; home_team: string | null; away_team: string | null;
+}): string | null {
+  const s = (signal.side ?? '').trim().toLowerCase();
+  if (s === 'home') return signal.home_team;
+  if (s === 'away') return signal.away_team;
+  return signal.side && signal.side.trim() ? signal.side : null;
+}
+
+/**
+ * Does this capper pick agree with the signal?
+ * - moneyline: capper picks store the team in `team` and 'WIN'/'LOSS' in
+ *   `direction`, so the side comparison MUST be pick.team vs the signal's
+ *   resolved team. Returns null when the pick names neither side (unrelated).
+ * - everything else (spread/total/props): unchanged direction comparison.
+ */
+export function pickAgrees(
+  pick: { bet_type: string | null; direction: string | null; team: string | null },
+  signal: { pick_type: string | null; side: string | null; home_team: string | null; away_team: string | null; sport: string | null },
+): boolean | null {
+  const type = (pick.bet_type ?? signal.pick_type ?? '').toLowerCase();
+  if (type === 'moneyline') {
+    const target = resolveSignalTeam(signal);
+    if (!target || !pick.team) return null;
+    if (sideMatchesTeam(pick.team, target, signal.sport ?? undefined)) return true;
+    const other = normalizeTeam(target) === normalizeTeam(signal.home_team ?? '')
+      ? signal.away_team : signal.home_team;
+    if (other && sideMatchesTeam(pick.team, other, signal.sport ?? undefined)) return false;
+    return null; // names neither side — not a real opinion on this game
+  }
+  if (!pick.direction || !signal.side) return null;
+  return pick.direction.toLowerCase() === signal.side.toLowerCase();
+}
+
 
 function gradeFor(c: number): string {
   if (c >= 90) return 'LOCK';
