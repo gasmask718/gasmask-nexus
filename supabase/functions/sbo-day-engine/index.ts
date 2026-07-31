@@ -132,6 +132,23 @@ serve(async (req) => {
       else sportsSkippedUnsupported.push(s.sport_key);
     }
 
+    // Resolve the ESPN grading step's label + required flag from the sports
+    // actually running tonight that have a grading config. Required only when
+    // at least one of them does — otherwise a clean zero is honest, not a warning.
+    const gradedRunning = sportsToRun.filter(s => GRADED_SPORT_KEYS.includes(s));
+    postgameSteps = postgameSteps.map(s =>
+      s.fn === 'sbo-verify-results'
+        ? {
+            ...s,
+            required: gradedRunning.length > 0,
+            label: gradedRunning.length > 0
+              ? `Result Grading — ESPN (${gradedRunning.map(x => x.toUpperCase()).join(', ')})`
+              : 'Result Grading — ESPN (no graded sport active)',
+          }
+        : s
+    );
+
+
     const { data: runRecord } = await supabase
       .from('sbo_day_engine_runs')
       .insert({
@@ -209,16 +226,17 @@ serve(async (req) => {
       for (const step of perSportSteps) {
         const stepStart = Date.now();
 
-        // NBA-only gate
-        if (NBA_ONLY_STEPS.has(step.fn) && sport !== 'nba') {
+        // Sport-support gate (declarative, per-step)
+        if (step.sports && !step.sports.includes(sport)) {
           await recordStep(step, {
             sport,
             status: 'skipped',
             duration_ms: 0,
-            note: `Skipped: ${step.fn} is NBA-only (SDIO/NBA-hardcoded), not supported for ${sport}`,
+            note: `Skipped: ${step.fn} supports [${step.sports.join(', ')}] only${step.sportsNote ? ` — ${step.sportsNote}` : ''}, not ${sport}`,
           });
           continue;
         }
+
 
         try {
           console.log(`[${sport}] Running step: ${step.fn}`);
