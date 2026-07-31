@@ -582,3 +582,6 @@ verify_jwt = false
 # user to resolve their assigned stores), so the platform default applies.
 [functions.field-portal-comms]
 verify_jwt = false
+
+[functions.sbo-ingest-player-stats]
+verify_jwt = false
