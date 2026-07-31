@@ -75,13 +75,32 @@ serve(async (req) => {
     const normalizedFrom = normalizePhone(fromNumber);
     const last10 = normalizedFrom.replace(/\D/g, "").slice(-10);
 
-    // Find matching GasMask store by phone
-    const { data: store } = await supabase
-      .from("stores")
-      .select("*")
+    // Find matching GasMask store — contact number first, then store number.
+    const { data: contact } = await supabase
+      .from("store_contacts")
+      .select("id, store_id")
       .ilike("phone", `%${last10}`)
       .limit(1)
       .maybeSingle();
+
+    let store: { id: string; name?: string | null; address_city?: string | null; address_state?: string | null; phone?: string | null; address_street?: string | null } | null = null;
+    if (contact?.store_id) {
+      const { data } = await supabase
+        .from("stores")
+        .select("*")
+        .eq("id", contact.store_id)
+        .maybeSingle();
+      store = data as any;
+    }
+    if (!store) {
+      const { data } = await supabase
+        .from("stores")
+        .select("*")
+        .ilike("phone", `%${last10}`)
+        .limit(1)
+        .maybeSingle();
+      store = data as any;
+    }
 
     // Log to communication_messages (GasMask's messaging table)
     await supabase.from("communication_messages").insert({
@@ -93,6 +112,8 @@ serve(async (req) => {
       to_number: toNumber,
       status: "received",
       provider: "twilio",
+      store_id: store?.id ?? null,
+      contact_id: contact?.id ?? null,
       metadata: {
         store_id: store?.id,
         store_name: store?.name,
@@ -100,6 +121,45 @@ serve(async (req) => {
         source: "gasmask_inbound",
       },
     });
+
+    // ── INBOUND THREADING ──
+    // Mirror into communication_logs (the canonical per-store phone log) so
+    // the reply lands on the store profile timeline next to the outbound call
+    // that prompted it. Without this, replies were invisible on the profile.
+    const { error: threadErr } = await supabase.from("communication_logs").insert({
+      channel: "sms",
+      direction: "inbound",
+      store_id: store?.id ?? null,
+      contact_id: contact?.id ?? null,
+      sender_phone: normalizedFrom,
+      recipient_phone: toNumber || null,
+      message_content: messageBody.trim(),
+      summary: messageBody.trim().substring(0, 180),
+      status: "received",
+      delivery_status: "received",
+      sent_at: new Date().toISOString(),
+      twilio_sid: messageSid,
+      source_table: store?.id ? "stores" : null,
+      source_id: store?.id ?? null,
+      source_business: "gasmask",
+    });
+    if (threadErr) {
+      console.error("[GASMASK-SMS] communication_logs insert failed:", threadErr);
+    }
+
+    // Unmatched inbound → triage queue instead of disappearing.
+    if (!store) {
+      const { error: unmatchedErr } = await supabase.from("unmatched_messages").insert({
+        channel: "sms",
+        sender_phone: normalizedFrom,
+        message_content: messageBody.trim(),
+        status: "unmatched",
+      });
+      if (unmatchedErr) {
+        console.error("[GASMASK-SMS] unmatched_messages insert failed:", unmatchedErr);
+      }
+    }
+
     // NOTE: Number-verification YES detection moved to twilio-sms-webhook
     // (the canonical inbound handler) so it fires regardless of which Twilio
     // number receives the reply. Do NOT re-add the duplicate block here.
