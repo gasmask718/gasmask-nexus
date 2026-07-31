@@ -35889,6 +35889,36 @@ export type Database = {
           },
         ]
       }
+      comms_health_alerts: {
+        Row: {
+          alert_count: number
+          alert_key: string
+          created_at: string
+          last_alert_at: string
+          last_message: string | null
+          last_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          alert_count?: number
+          alert_key: string
+          created_at?: string
+          last_alert_at?: string
+          last_message?: string | null
+          last_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alert_count?: number
+          alert_key?: string
+          created_at?: string
+          last_alert_at?: string
+          last_message?: string | null
+          last_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       comms_health_checks: {
         Row: {
           created_at: string
@@ -134583,6 +134613,23 @@ export type Database = {
           currency: string | null
           liability_amount: number | null
           pending_items: number | null
+        }
+        Relationships: []
+      }
+      v_phone_directory: {
+        Row: {
+          assigned_agent_id: string | null
+          assigned_va_id: string | null
+          business: string | null
+          business_id: string | null
+          is_active: boolean | null
+          label: string | null
+          last10: string | null
+          number_type: string | null
+          phone_e164: string | null
+          sms_webhook_url: string | null
+          source: string | null
+          voice_webhook_url: string | null
         }
         Relationships: []
       }
