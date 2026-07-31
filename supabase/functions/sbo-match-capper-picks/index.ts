@@ -252,8 +252,8 @@ serve(async (req) => {
         let allProps: any[] = [];
         for (const d of expandedDates) {
           const { data: props } = await supabase
-            .from('props_master')
-            .select('id, player_name, stat_type, line, game_date, sport')
+            .from('sbo_player_props')
+            .select('id, player_name, prop_type, line, game_date, sport_key')
             .eq('game_date', d)
             .limit(1000);
           if (props) allProps.push(...props);
