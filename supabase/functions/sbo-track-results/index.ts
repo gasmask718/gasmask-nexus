@@ -24,6 +24,8 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const date = body.date || new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    // Default 'nba' keeps the existing cron behavior byte-for-byte unchanged.
+    const sport: string = (body.sport || body.sport_key || 'nba').toLowerCase();
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -34,7 +36,7 @@ serve(async (req) => {
     const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     const sdioDate = `${parts[0]}-${months[parseInt(parts[1])-1]}-${parts[2]}`;
 
-    const results: Record<string, any> = { date };
+    const results: Record<string, any> = { date, sport };
     let gamesUpdated = 0;
     let predictionsGraded = 0;
     let propsGraded = 0;
