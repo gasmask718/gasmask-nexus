@@ -896,6 +896,7 @@ CRITICAL RULES FROM CALIBRATION DATA:
       data_quality: dataQuality,
       predicted_outcome: finalOutcome,
       outcome_source: derivedFromMarket ? 'devig_consensus' : 'caller',
+      signal: signalResult,
       devig: ctx.devig ? {
         books_used: ctx.devig.books_used,
         home_prob: Number((ctx.devig.home_prob * 100).toFixed(2)),
