@@ -1,57 +1,151 @@
-## Context (verified facts this plan is built on)
+# Stage 2d — Clamp-Lifting Readiness Evaluator (proposal)
 
-- `brandaro-score-demo` today: 3 dimensions, threshold 70, scores raw HTML truncated to 8k, no fixes, no callers, 0 rows written.
-- `brandaro_demo_quality_scores` already has `pass_number`, `dimension_scores`, `issues`, `fixes_applied` — all unused.
-- `brandaro_demo_sites.audit_score` / `audit_breakdown` exist, unused, and `BuilderHubPage.tsx` already renders `audit_score`.
-- `brandaro-generate-demo` currently fires SMS at L604 **before** the Vercel hook at L646. Spec order is deploy → audit → SMS, so this ordering gets corrected as part of the change.
-- Vercel env vars are per-industry-project, so only one demo is live per industry at a time; the live URL always reflects the most recent deploy for that industry.
+Strictly measurement + visibility. The 54/Weak clamp in `sbo-run-predictions` is **not touched**.
 
-## Two decisions I need to flag before building
+## 1. The six gates — re-confirmed, unchanged
 
-**A. "Fetch the live site" has a real timing problem.** After the deploy hook fires, Vercel takes roughly 1–3 minutes to build. Fetching `demo_url` immediately returns stale content or a 404 (and the `<slug>.<industry>.demo.brandarodigital.com` DNS may not be wired at all — unverified). Proposal: poll the live URL with backoff (6 attempts, ~15s apart, ~90s cap) and treat a fetch failure as non-fatal — fall back to scoring the full untruncated `generated_html` already stored on the row, and record `source: "live" | "stored_html"` in the breakdown so you always know which was scored. No headless browser (not available in edge runtime), so "live" means the fetched HTML response, not a rendered screenshot.
+| # | Gate | Threshold |
+|---|------|-----------|
+| 1 | Volume | ≥ 150 graded, non-push predictions for that sport |
+| 2 | Accuracy | win rate ≥ 52.4% (break-even at -110) |
+| 3 | Statistical floor | 95% CI lower bound (Wilson) ≥ 50.0% |
+| 4 | Coverage | ≥ 60% of that sport's props resolve to `data_quality = 'full'` |
+| 5 | Calibration | high-confidence bucket (final_confidence ≥ 70) win rate > low-confidence bucket (< 70) |
+| 6 | Recency | all of the above measured over the trailing 60 days |
 
-**B. Auto-fix regenerates copy, not layout.** The only things the pipeline actually controls are the AI content fields and the env vars derived from them. So a fix pass = re-run `callLovableAi` with the auditor's issue list appended as corrective instructions → re-sync env vars → re-fire the deploy hook → wait → re-score. Structural/perf/accessibility issues in `brandaro-base` itself cannot be auto-fixed; those get recorded in `issues` as `fixable: false` and reported, never silently retried.
+Building exactly these. No modified thresholds.
 
-## Implementation
+## 2. Exact computation against the real current schema
 
-### 1. `brandaro-score-demo` rewrite
-- Threshold constant `PASS_THRESHOLD = 88`, `MAX_PASSES = 2`.
-- Model updated to `google/gemini-3.6-flash` (current generation; `google/gemini-2.5-flash` is prior-gen). Forced tool call, unchanged pattern.
-- 8 dimensions, each 0–100: `design`, `content`, `mobile`, `speed`, `trust`, `seo`, `conversion`, `accuracy`. `accuracy` = does the copy match the real business data (name/city/phone/services) passed alongside the HTML — this is the one that catches hallucinated content. `uniqueness` folded into `design`; the legacy `design_score` / `uniqueness_score` / `conversion_score` columns stay populated for backwards compat.
-- `overall_score` = equal-weight mean of the 8, rounded. All 8 also stored in `dimension_scores` jsonb.
-- AI also returns `issues[]` (`{dimension, severity, description, fixable}`), stored in `issues`.
-- Input: full HTML, no 8k truncation (cap at a safe ~120k chars for context limits), plus a structured block of the real business facts for the accuracy check.
-- Heuristic fallback retained but extended to 8 dims, and the response/row now explicitly records `scored_by: "ai" | "heuristic"` so a silent fallback is visible.
+Verified schema facts:
+- `sbo_predictions`: `sport_key`, `prop_id`, `prediction_type`, `final_confidence`, `data_quality`, `was_correct`, `verdict`, `verified`, `created_at`.
+- `sbo_results_verification`: 1,372 rows, keyed by `prediction_id`, with `verdict`, `was_correct`.
+- `sbo_player_props`: `sport_key`, `game_date` (no `data_quality` column — quality lives on the prediction row, written by 2c).
+- Push detection: `verdict` values seen are `correct` / `incorrect` / null; a push would be `verdict = 'push'`. Non-push = `was_correct IS NOT NULL AND coalesce(verdict,'') <> 'push'`.
 
-### 2. Auto-fix loop
-New action `score_and_fix` on `brandaro-score-demo`:
-```text
-pass 1: fetch live (or stored html) -> score -> write row (pass_number=1)
-        if overall >= 88 -> done
-        else: regenerate copy with issue feedback -> env sync -> deploy hook -> wait
-pass 2: re-fetch -> re-score -> write row (pass_number=2, fixes_applied populated)
-        stop regardless of score; final row is authoritative
+Single evaluation CTE per sport (`p_sport`, `p_days = 60`):
+
+```sql
+WITH graded AS (
+  SELECT pr.id, pr.final_confidence, pr.was_correct, pr.data_quality
+  FROM sbo_predictions pr
+  WHERE pr.sport_key = p_sport
+    AND pr.created_at >= now() - (p_days || ' days')::interval
+    AND pr.prediction_type = 'player_prop'
+    AND pr.was_correct IS NOT NULL
+    AND coalesce(pr.verdict,'') <> 'push'
+),
+vol AS (                                   -- Gate 1 + 2 + 3
+  SELECT count(*)::int AS n,
+         count(*) FILTER (WHERE was_correct)::int AS wins
+  FROM graded
+),
+wilson AS (
+  SELECT n, wins,
+         CASE WHEN n = 0 THEN 0 ELSE wins::numeric / n END AS p,
+         CASE WHEN n = 0 THEN 0 ELSE
+           (( wins::numeric/n + 1.96^2/(2*n)
+              - 1.96 * sqrt( (wins::numeric/n)*(1 - wins::numeric/n)/n + 1.96^2/(4*n^2) ) )
+            / (1 + 1.96^2/n))
+         END AS ci_low
+  FROM vol
+),
+coverage AS (                              -- Gate 4 (all predictions, graded or not)
+  SELECT count(*)::int AS total,
+         count(*) FILTER (WHERE data_quality = 'full')::int AS full_n
+  FROM sbo_predictions
+  WHERE sport_key = p_sport
+    AND prediction_type = 'player_prop'
+    AND created_at >= now() - (p_days || ' days')::interval
+),
+calib AS (                                 -- Gate 5
+  SELECT
+    count(*) FILTER (WHERE final_confidence >= 70)::int AS hi_n,
+    avg((was_correct)::int) FILTER (WHERE final_confidence >= 70) AS hi_rate,
+    count(*) FILTER (WHERE final_confidence <  70)::int AS lo_n,
+    avg((was_correct)::int) FILTER (WHERE final_confidence <  70) AS lo_rate
+  FROM graded
+)
+SELECT * FROM wilson, coverage, calib;
 ```
-- Each pass writes its own `brandaro_demo_quality_scores` row (audit history preserved).
-- `fixes_applied` on the pass-2 row records what was changed and the deploy result.
-- The env-sync + hook logic is extracted from `brandaro-generate-demo` into `_shared/vercelDeploy.ts` so both functions use one implementation — no copy-paste divergence.
 
-### 3. Writeback to `brandaro_demo_sites`
-Final pass writes `audit_score` (integer) and `audit_breakdown` (jsonb: all 8 dims, pass count, issues, scored_by, source, timestamp) onto the demo row. `BuilderHubPage` starts showing real numbers with no UI change.
+Gate verdicts computed in the edge function from that row:
 
-### 4. Wiring into `brandaro-generate-demo`
-- Move the SMS block to run **after** the Vercel hook, and insert the audit between them: deploy hook → audit (`score_and_fix`) → SMS.
-- Audit is fully non-fatal: any error, timeout, or AI failure is caught, logged, and generation continues to SMS as normal.
-- Response gains an `audit` object: `{ score, passes, threshold, passed, scored_by, source, issues_count, error? }`.
-- A low score does **not** block the SMS — the spec asks for audit-before-text ordering, not a send gate. If you want a hard gate (don't text below 88), say so and I'll add it as an opt-in flag rather than default behavior.
+- G1 `n >= 150`
+- G2 `p >= 0.524`
+- G3 `ci_low >= 0.50`
+- G4 `total > 0 AND full_n::float/total >= 0.60`
+- G5 `hi_n >= 20 AND lo_n >= 20 AND hi_rate > lo_rate` (buckets need minimum mass; if either bucket is under 20 the gate is `insufficient_data`, which counts as **not passed**)
+- G6 implicit — every window above is 60 days; stored as `window_days = 60` so it is auditable rather than assumed.
 
-### 5. Cost/latency note
-Audit adds one AI call plus up to ~90s of deploy-wait per pass, so a worst-case generation goes from a few seconds to ~3–4 minutes end to end. The SMS is delayed by that same amount. Acceptable? If not, the alternative is auditing asynchronously after the SMS, which breaks the spec's ordering.
+`all_gates_pass = G1..G5 all true`.
 
-## Technical details
+## 3. `sbo_clamp_readiness` table
 
-- Files: rewrite `supabase/functions/brandaro-score-demo/index.ts`; new `supabase/functions/_shared/vercelDeploy.ts`; edit `supabase/functions/brandaro-generate-demo/index.ts`.
-- No schema migration needed — every column required already exists.
-- No UI changes needed.
-- `batch_score` and `get_design_insights` actions preserved; `batch_score` upgraded to the 8-dim heuristic.
-- Verification: deno check on all three files, then a live invoke against test lead `18e032b2-006a-4ee9-82a2-0a5b763b4729` and a report of the actual rows written.
+One row per sport per evaluation run (append-only history, no upsert — trend matters).
+
+```
+id                uuid pk
+sport             text not null            -- 'mlb', 'nba'
+evaluated_at      timestamptz not null default now()
+window_days       int not null default 60
+graded_n          int      -- gate 1 live number
+wins              int
+win_rate          numeric  -- gate 2
+ci_lower          numeric  -- gate 3
+coverage_total    int
+coverage_full     int
+coverage_pct      numeric  -- gate 4
+hi_bucket_n       int
+hi_bucket_rate    numeric
+lo_bucket_n       int
+lo_bucket_rate    numeric  -- gate 5
+gate_volume       bool
+gate_accuracy     bool
+gate_ci           bool
+gate_coverage     bool
+gate_calibration  bool
+gates_passed      int      -- 0..5
+all_gates_pass    bool
+blocking_gates    text[]   -- names of failing gates, for the UI
+notes             jsonb    -- raw numbers snapshot
+created_at        timestamptz default now()
+```
+
+Grants: `SELECT` to `authenticated`, `ALL` to `service_role`. RLS on; read policy for authenticated (internal ops tool), writes service-role only.
+
+## 4. Trigger
+
+- **Weekly cron** (`sbo-clamp-readiness`, Mondays 09:00 UTC) — volume accumulates at ~20 graded MLB props/day, so daily rows would be noise.
+- **Manual invocation** from the UI ("Re-evaluate now" button) and via direct function call, same code path.
+- Registered in `public.health_checks` as `kind='cron'` with `cadence_expected_minutes = 10080`, per the standing health-check rule.
+
+## 5. Visibility (no new page)
+
+A small `ClampReadinessCard` added to the existing **SBO Health** page (`src/pages/sports-betting/pages/HealthPage.tsx` → `SBOHealthDashboard`):
+
+- Per sport: `3 / 5 gates passed` with a checklist row per gate showing the live number vs threshold (e.g. `Volume 36 / 150`).
+- When `all_gates_pass = true`: a prominent green banner — "MLB clamp-lift criteria met (n=163, 54.6%, CI 50.8%) — review and lift manually" — plus the same row flagged in the table. Explicitly worded as a recommendation; no button that lifts anything.
+- Last-evaluated timestamp + manual re-evaluate button.
+
+## 6. Honest timeline estimate (real numbers, 2026-07-31)
+
+Current MLB reality:
+- MLB predictions ever written: **52**; graded: **36**.
+- Prediction volume last 3 active days: 14 (today), 27 (7/30), 11 (7/21).
+- `data_quality` on MLB predictions: **all of today's 14 and 7/30's 27 are still `odds_only`** — the 2c stats brain shipped after those runs. Only 5 rows (7/21) ever recorded `full`.
+- MLB props on the board: 306 today, 395 yesterday — so prediction volume is a deliberate subset (~20/day), not a data ceiling.
+
+At the current ~20 predictions/day, all resolving `full` from the next run onward and grading a day later:
+
+- **Volume gate (150 graded non-push `full`-era props): ~8–10 days** of continuous daily runs, so realistically **mid-August 2026**, and only if the day engine runs every day and grading keeps up (currently 36/52 graded = ~70% grade-through, which stretches it to ~11–14 days).
+- Coverage gate will flip to passing on the **first post-2c run** (2c measured 300/306 = 98% `full`).
+- Accuracy / CI / calibration gates are meaningless until volume lands; expect the first genuinely informative evaluation around **week of 2026-08-11**.
+
+So: this evaluator will report `0–2 / 5 gates` for roughly the next two weeks. It is infrastructure that starts producing a real verdict in ~2 weeks, and its main near-term value is proving volume is actually accumulating (and catching it if the day engine silently stops).
+
+## Technical notes
+
+- Nothing in `sbo-run-predictions` changes — no import, no shared module edit, no clamp constant touched.
+- Evaluator is read-only against `sbo_predictions` + writes only to `sbo_clamp_readiness`.
+- Sports evaluated: `mlb` and `nba` (same code path, per-sport rows).
