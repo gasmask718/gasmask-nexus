@@ -368,6 +368,11 @@ async function tryVercelHook(
     cta_text?: string;
     color_primary?: string;
     color_secondary?: string;
+    services?: unknown;
+    about_text?: string | null;
+    reviews?: unknown;
+    photos?: unknown;
+    logo_url?: string | null;
   },
 ): Promise<{
   ok: boolean;
@@ -378,6 +383,7 @@ async function tryVercelHook(
   project_id?: string;
   env_vars?: EnvVarResult[];
   env_failed?: string[];
+  env_skipped?: string[];
 }> {
   const { data: tpl, error } = await supabase
     .from("brandaro_demo_templates")
@@ -390,6 +396,18 @@ async function tryVercelHook(
   if (!tpl?.vercel_deploy_hook_url) {
     return { ok: false, skipped: true, error: `No deploy hook configured for industry "${industry}"` };
   }
+
+  // Vercel env vars are always strings — objects/arrays must be serialized.
+  const asJson = (v: unknown): string | null => {
+    if (v === null || v === undefined) return null;
+    if (Array.isArray(v) && v.length === 0) return null;
+    if (typeof v === "string") return v.trim() ? v : null;
+    try {
+      return JSON.stringify(v);
+    } catch {
+      return null;
+    }
+  };
 
   // ---- Step 1: push personalization into the project's production env vars ----
   const token = Deno.env.get("VERCEL_API_TOKEN");
@@ -404,6 +422,25 @@ async function tryVercelHook(
     VITE_COLOR_SECONDARY: payload.color_secondary ?? tpl.secondary_color ?? "",
     VITE_DEMO_SLUG: payload.slug ?? "",
   };
+
+  // Optional vars: only sync when we actually have data, so brandaro-base's
+  // fallbacks (typographic logo, generic services, hidden reviews/photos) apply.
+  const envSkipped: string[] = [];
+  const optional: Record<string, string | null> = {
+    VITE_SERVICES_JSON: asJson(payload.services),
+    VITE_ABOUT_TEXT: asJson(payload.about_text),
+    VITE_REVIEWS_JSON: asJson(payload.reviews),
+    VITE_PHOTOS_JSON: asJson(payload.photos),
+    VITE_LOGO_URL: asJson(payload.logo_url),
+  };
+  for (const [key, value] of Object.entries(optional)) {
+    if (value) envVars[key] = value;
+    else {
+      envSkipped.push(key);
+      console.log(`[vercel] optional env var "${key}" omitted — no data at generation time`);
+    }
+  }
+
 
   let envResults: EnvVarResult[] = [];
   if (!token) {
@@ -439,20 +476,20 @@ async function tryVercelHook(
         ok: false, status: res.status,
         error: `Vercel hook ${res.status}: ${text.slice(0, 300)}`,
         repo: tpl.vercel_template_repo, project_id: tpl.vercel_project_id,
-        env_vars: envResults, env_failed: envFailed,
+        env_vars: envResults, env_failed: envFailed, env_skipped: envSkipped,
       };
     }
     return {
       ok: true, status: res.status,
       repo: tpl.vercel_template_repo, project_id: tpl.vercel_project_id,
-      env_vars: envResults, env_failed: envFailed,
+      env_vars: envResults, env_failed: envFailed, env_skipped: envSkipped,
     };
   } catch (e) {
     return {
       ok: false,
       error: e instanceof Error ? e.message : "Vercel hook request failed",
       repo: tpl.vercel_template_repo, project_id: tpl.vercel_project_id,
-      env_vars: envResults, env_failed: envFailed,
+      env_vars: envResults, env_failed: envFailed, env_skipped: envSkipped,
     };
   }
 }
@@ -557,6 +594,14 @@ Deno.serve(async (req) => {
         cta_text: aiRes.content.cta_text,
         color_primary: aiRes.content.color_primary,
         color_secondary: aiRes.content.color_secondary,
+        services: aiRes.content.services,
+        about_text: aiRes.content.about_paragraph,
+        // Not collected by the current pipeline — passed through so the vars
+        // light up automatically once these sources exist.
+        reviews: (lead as any).reviews ?? null,
+        photos: (lead as any).photos ?? null,
+        logo_url: (demo as any).logo_url ?? null,
+
       });
       if (!vercel.ok) console.warn("Vercel deploy hook not fired:", vercel.error);
 
