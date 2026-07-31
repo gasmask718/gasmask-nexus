@@ -85,20 +85,62 @@ interface MatchResult {
   method: 'exact' | 'normalized' | 'fuzzy' | 'context';
 }
 
-function matchPick(pick: any, props: any[]): MatchResult | null {
+// Props are pre-normalized once at fetch time and bucketed by normalized last
+// name. Scanning all candidates per pick is O(picks x props) and exhausts the
+// worker's CPU/memory budget at real volumes (500 x 5,000+).
+export interface IndexedProp {
+  id: string;
+  rawName: string;
+  normName: string;
+  lastName: string;
+  stat: string;
+  line: number | null;
+  date: string | null;
+}
+
+export function buildPropIndex(props: any[]): Map<string, IndexedProp[]> {
+  const index = new Map<string, IndexedProp[]>();
+  for (const prop of props) {
+    const rawName = (prop.player_name || '').trim();
+    if (!rawName) continue;
+    const normName = normalizePlayer(rawName);
+    const words = normName.split(' ').filter(Boolean);
+    if (words.length === 0) continue;
+    const lastName = words[words.length - 1];
+    const entry: IndexedProp = {
+      id: prop.id,
+      rawName,
+      normName,
+      lastName,
+      stat: normalizeStat(prop.prop_type || prop.stat_type || ''),
+      line: prop.line == null ? null : Number(prop.line),
+      date: prop.game_date ?? null,
+    };
+    if (!index.has(lastName)) index.set(lastName, []);
+    index.get(lastName)!.push(entry);
+  }
+  return index;
+}
+
+function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchResult | null {
   const pickName = (pick.player_name || '').trim();
   const pickStat = normalizeStat(pick.prop_type || '');
-  const pickLine = pick.line;
+  const pickLine = pick.line == null ? null : Number(pick.line);
   const pickDate = pick.game_date;
   const normPick = normalizePlayer(pickName);
+  const pickWords = normPick.split(' ').filter(Boolean);
+  if (pickWords.length === 0) return null;
+
+  // Only props sharing the pick's normalized last name are plausible candidates.
+  const candidates = index.get(pickWords[pickWords.length - 1]) ?? [];
 
   let bestMatch: MatchResult | null = null;
 
-  for (const prop of props) {
-    const propName = (prop.player_name || '').trim();
-    const propStat = normalizeStat(prop.prop_type || prop.stat_type || '');
+  for (const prop of candidates) {
+    const propName = prop.rawName;
+    const propStat = prop.stat;
     const propLine = prop.line;
-    const propDate = prop.game_date;
+    const propDate = prop.date;
 
     // Date check: must be within ±1 day
     if (pickDate && propDate) {
