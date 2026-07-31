@@ -157,24 +157,43 @@ export default function DemoEnginePage() {
 
   const sendDemo = async (demo: DemoSite) => {
     try {
-      // Get lead phone for real sending
-      const { data: lead } = await (supabase as any)
+      // Get lead phone for real sending (column is `phone_number`, not `phone`)
+      const { data: lead, error: leadErr } = await (supabase as any)
         .from('brandaro_qualified_leads')
-        .select('phone')
+        .select('phone_number')
         .eq('id', demo.lead_id)
         .single();
 
-      if (lead?.phone) {
-        // Use real send function
-        await supabase.functions.invoke('brandaro-send-demo', {
-          body: {
-            demo_id: demo.id,
-            lead_id: demo.lead_id,
-            channel: 'sms',
-            destination: lead.phone,
-          },
-        });
+      if (leadErr) throw leadErr;
+
+      const phone = lead?.phone_number?.trim();
+      if (!phone) {
+        toast.error(`No phone number on file for ${demo.business_name} — cannot send SMS. Add a phone number to the lead first.`);
+        return;
       }
+
+      // Use real send function
+      const { data: sendData, error: sendErr } = await supabase.functions.invoke('brandaro-send-demo', {
+        body: {
+          demo_id: demo.id,
+          lead_id: demo.lead_id,
+          channel: 'sms',
+          destination: phone,
+        },
+      });
+
+      if (sendErr) throw sendErr;
+
+      if ((sendData as any)?.suppressed) {
+        toast.error(`${demo.business_name} is on the do-not-contact list (${(sendData as any).reason}). Nothing sent, no follow-ups scheduled.`);
+        return;
+      }
+
+      if (!(sendData as any)?.ok) {
+        toast.error(`SMS failed: ${(sendData as any)?.error || 'unknown error'}`);
+        return;
+      }
+
 
       // Schedule follow-ups
       const followupTimes = [6, 24, 72];
