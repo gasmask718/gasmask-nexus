@@ -17,27 +17,38 @@ const STAT_MAP: Record<string, string> = {
   'stl': 'steals', 'steal': 'steals',
   'blk': 'blocks', 'block': 'blocks',
   'tov': 'turnovers', 'turnover': 'turnovers',
-  'pra': 'pts+reb+ast', 'pts+rebs+asts': 'pts+reb+ast',
-  '3pm': '3-pointers', '3pt': '3-pointers', 'threes': '3-pointers',
+  // Combo props — target vocabulary is sbo_player_props.prop_type
+  'pts+reb+ast': 'pts_reb_ast', 'pra': 'pts_reb_ast', 'pts+rebs+asts': 'pts_reb_ast',
+  'pts+reb': 'pts_reb', 'pts+rebs': 'pts_reb', 'pr': 'pts_reb',
+  'pts+ast': 'pts_ast', 'pts+asts': 'pts_ast', 'pa': 'pts_ast',
+  'reb+ast': 'reb_ast', 'rebs+asts': 'reb_ast', 'ra': 'reb_ast',
+  '3pm': 'threes', '3pt': 'threes', '3-pointers': 'threes', 'threes': 'threes',
   'passing_yards': 'passing_yards', 'pass_yds': 'passing_yards',
   'rushing_yards': 'rushing_yards', 'rush_yds': 'rushing_yards',
   'receiving_yards': 'receiving_yards', 'rec_yds': 'receiving_yards',
   'td': 'touchdowns', 'touchdown': 'touchdowns',
   'hr': 'home_runs', 'home_run': 'home_runs',
+  'strikeouts_pitched': 'strikeouts_p', 'pitcher_strikeouts': 'strikeouts_p',
   'so': 'strikeouts', 'strikeout': 'strikeouts', 'k': 'strikeouts',
   'rbi': 'rbis',
   'total_bases': 'total_bases', 'tb': 'total_bases',
 };
 
-function normalizeStat(s: string): string {
+// Every value STAT_MAP can produce. A string already in this set is canonical
+// and must be returned untouched — the substring fallback below would otherwise
+// corrupt it ('strikeouts_p' contains 'k', 'pts_reb_ast' contains 'pts').
+const CANONICAL_STATS = new Set(Object.values(STAT_MAP));
+
+export function normalizeStat(s: string): string {
   if (!s) return '';
-  let lower = s.toLowerCase().trim().replace(/[_\-\s]+/g, '_');
+  const lower = s.toLowerCase().trim().replace(/[_\-\s]+/g, '_');
+  if (CANONICAL_STATS.has(lower)) return lower;
   // Check direct map first
   if (STAT_MAP[lower]) return STAT_MAP[lower];
-  // Try partial replacements
-  for (const [k, v] of Object.entries(STAT_MAP)) {
-    if (lower.includes(k)) { lower = lower.replace(k, v); break; }
-  }
+  // Try token-level replacement — substring matching corrupts longer stats.
+  const tokens = lower.split('_');
+  const mapped = tokens.map((t) => STAT_MAP[t] ?? t);
+  if (mapped.some((t, i) => t !== tokens[i])) return mapped.join('_');
   return lower;
 }
 
@@ -80,20 +91,62 @@ interface MatchResult {
   method: 'exact' | 'normalized' | 'fuzzy' | 'context';
 }
 
-function matchPick(pick: any, props: any[]): MatchResult | null {
+// Props are pre-normalized once at fetch time and bucketed by normalized last
+// name. Scanning all candidates per pick is O(picks x props) and exhausts the
+// worker's CPU/memory budget at real volumes (500 x 5,000+).
+export interface IndexedProp {
+  id: string;
+  rawName: string;
+  normName: string;
+  lastName: string;
+  stat: string;
+  line: number | null;
+  date: string | null;
+}
+
+export function buildPropIndex(props: any[]): Map<string, IndexedProp[]> {
+  const index = new Map<string, IndexedProp[]>();
+  for (const prop of props) {
+    const rawName = (prop.player_name || '').trim();
+    if (!rawName) continue;
+    const normName = normalizePlayer(rawName);
+    const words = normName.split(' ').filter(Boolean);
+    if (words.length === 0) continue;
+    const lastName = words[words.length - 1];
+    const entry: IndexedProp = {
+      id: prop.id,
+      rawName,
+      normName,
+      lastName,
+      stat: normalizeStat(prop.prop_type || prop.stat_type || ''),
+      line: prop.line == null ? null : Number(prop.line),
+      date: prop.game_date ?? null,
+    };
+    if (!index.has(lastName)) index.set(lastName, []);
+    index.get(lastName)!.push(entry);
+  }
+  return index;
+}
+
+function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchResult | null {
   const pickName = (pick.player_name || '').trim();
   const pickStat = normalizeStat(pick.prop_type || '');
-  const pickLine = pick.line;
+  const pickLine = pick.line == null ? null : Number(pick.line);
   const pickDate = pick.game_date;
   const normPick = normalizePlayer(pickName);
+  const pickWords = normPick.split(' ').filter(Boolean);
+  if (pickWords.length === 0) return null;
+
+  // Only props sharing the pick's normalized last name are plausible candidates.
+  const candidates = index.get(pickWords[pickWords.length - 1]) ?? [];
 
   let bestMatch: MatchResult | null = null;
 
-  for (const prop of props) {
-    const propName = (prop.player_name || '').trim();
-    const propStat = normalizeStat(prop.stat_type || '');
+  for (const prop of candidates) {
+    const propName = prop.rawName;
+    const propStat = prop.stat;
     const propLine = prop.line;
-    const propDate = prop.game_date;
+    const propDate = prop.date;
 
     // Date check: must be within ±1 day
     if (pickDate && propDate) {
@@ -118,7 +171,7 @@ function matchPick(pick: any, props: any[]): MatchResult | null {
     }
 
     // ── STEP 2: Normalized Match ──
-    const normProp = normalizePlayer(propName);
+    const normProp = prop.normName;
     if (normPick === normProp) {
       const score = 95;
       if (!bestMatch || score > bestMatch.score) {
@@ -139,8 +192,7 @@ function matchPick(pick: any, props: any[]): MatchResult | null {
 
     // ── STEP 4: Context Match (composite) ──
     // Last name match + first initial
-    const pickWords = normPick.split(' ');
-    const propWords = normProp.split(' ');
+    const propWords = normProp.split(' ').filter(Boolean);
     if (pickWords.length >= 2 && propWords.length >= 2) {
       const lastMatch = pickWords[pickWords.length - 1] === propWords[propWords.length - 1];
       const firstInitial = pickWords[0][0] === propWords[0][0];
@@ -231,7 +283,10 @@ serve(async (req) => {
         .select('id, player_name, prop_type, line, game_date, sport, direction')
         .is('matched_prop_id', null)
         .not('player_name', 'is', null)
-        .limit(500);
+        // Newest first: props only exist for recent dates, so an unordered
+        // slice wastes the budget on picks that can never match.
+        .order('game_date', { ascending: false })
+        .limit(1000);
 
       if (unmatched && unmatched.length > 0) {
         const dates = [...new Set(unmatched.map(p => p.game_date).filter(Boolean))];
@@ -246,19 +301,30 @@ serve(async (req) => {
 
         let allProps: any[] = [];
         for (const d of expandedDates) {
-          const { data: props } = await supabase
-            .from('props_master')
-            .select('id, player_name, stat_type, line, game_date, sport')
-            .eq('game_date', d)
-            .limit(1000);
-          if (props) allProps.push(...props);
+          // Busy slates exceed a single PostgREST page — paginate or candidates
+          // get silently truncated.
+          for (let from = 0; from < 5000; from += 1000) {
+            const { data: props } = await supabase
+              .from('sbo_player_props')
+              .select('id, player_name, prop_type, line, game_date, sport_key')
+              .eq('game_date', d)
+              .order('id', { ascending: true })
+              .range(from, from + 999);
+            if (!props || props.length === 0) break;
+            allProps.push(...props);
+            if (props.length < 1000) break;
+          }
         }
 
         console.log(`[match] ${unmatched.length} unmatched, ${allProps.length} candidate props`);
 
+        const propIndex = buildPropIndex(allProps);
+        allProps = [];
+        const toLink: { id: string; propId: string }[] = [];
+
         for (const pick of unmatched) {
           if (!pick.player_name) continue;
-          const result = matchPick(pick, allProps);
+          const result = matchPick(pick, propIndex);
 
           if (result && result.score >= 70) {
             const status = result.score >= 85 ? 'matched' : 'needs_review';
@@ -274,17 +340,25 @@ serve(async (req) => {
             });
 
             if (status === 'matched') {
-              await supabase.from('sbo_capper_picks')
-                .update({ matched_prop_id: result.propId })
-                .eq('id', pick.id);
+              toLink.push({ id: pick.id, propId: result.propId });
               matched++;
             }
           }
         }
 
+        // Persist links in bounded batches rather than one round trip per pick.
+        for (let i = 0; i < toLink.length; i += 25) {
+          const chunk = toLink.slice(i, i + 25);
+          await Promise.all(chunk.map((l) =>
+            supabase.from('sbo_capper_picks')
+              .update({ matched_prop_id: l.propId })
+              .eq('id', l.id)
+          ));
+        }
+
         // Batch insert match logs
-        if (matchLogs.length > 0) {
-          await supabase.from('sbo_external_match_logs').insert(matchLogs);
+        for (let i = 0; i < matchLogs.length; i += 200) {
+          await supabase.from('sbo_external_match_logs').insert(matchLogs.slice(i, i + 200));
         }
         console.log(`[match] ${matched} auto-matched, ${matchLogs.length} total logged`);
       }
@@ -304,24 +378,24 @@ serve(async (req) => {
         let resolvedProps: any[] = [];
         for (let i = 0; i < propIds.length; i += 50) {
           const chunk = propIds.slice(i, i + 50);
-          const { data: props } = await supabase.from('props_master')
-            .select('id, actual_result, result, line').in('id', chunk);
+          const { data: props } = await supabase.from('sbo_player_props')
+            .select('id, actual_value, verdict, line').in('id', chunk);
           if (props) resolvedProps.push(...props);
         }
         const propMap = new Map(resolvedProps.map(p => [p.id, p]));
 
         for (const pick of pending) {
           const prop = propMap.get(pick.matched_prop_id);
-          if (!prop || prop.actual_result == null) continue;
+          if (!prop || prop.actual_value == null) continue;
 
           const pickLine = pick.line ?? prop.line;
           const dir = (pick.direction || '').toUpperCase();
           let result: string;
 
-          if (prop.actual_result === pickLine) result = 'push';
-          else if (['OVER', 'MORE', 'YES'].includes(dir)) result = prop.actual_result > pickLine ? 'won' : 'lost';
-          else if (['UNDER', 'LESS', 'NO'].includes(dir)) result = prop.actual_result < pickLine ? 'won' : 'lost';
-          else result = prop.result === 'won' || prop.result === 'W' ? 'won' : 'lost';
+          if (prop.actual_value === pickLine) result = 'push';
+          else if (['OVER', 'MORE', 'YES'].includes(dir)) result = prop.actual_value > pickLine ? 'won' : 'lost';
+          else if (['UNDER', 'LESS', 'NO'].includes(dir)) result = prop.actual_value < pickLine ? 'won' : 'lost';
+          else result = prop.verdict === 'hit' ? 'won' : 'lost';
 
           const { error } = await supabase.from('sbo_capper_picks').update({ result }).eq('id', pick.id);
           if (!error) resolved++;

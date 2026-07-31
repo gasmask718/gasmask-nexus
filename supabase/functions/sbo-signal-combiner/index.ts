@@ -23,6 +23,8 @@ interface PickRow {
   bet_type: string | null;
   direction: string | null;
   stake: number | null;
+  team: string | null;
+  opponent: string | null;
 }
 
 interface SignalRow {
@@ -32,6 +34,29 @@ interface SignalRow {
   pick_type: string | null;
   side: string | null;
   internal_confidence: number | null;
+  home_team: string | null;
+  away_team: string | null;
+}
+
+// Game identity: teams are free text on both sides, so normalize before compare.
+export function normalizeTeam(t: string | null | undefined): string {
+  if (!t) return '';
+  return String(t).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// A pick belongs to a signal's game only if one of its teams is a side of that game.
+export function isSameGame(
+  pick: { team: string | null; opponent: string | null },
+  sideKeys: string[],
+): boolean {
+  if (sideKeys.length === 0) return false;
+  const t = normalizeTeam(pick.team);
+  const o = normalizeTeam(pick.opponent);
+  return (!!t && sideKeys.includes(t)) || (!!o && sideKeys.includes(o));
 }
 
 function gradeFor(c: number): string {
@@ -53,13 +78,20 @@ function sportWinRate(capper: CapperRow, sport: string | null): number {
 async function combineSignal(supabase: any, signal: SignalRow) {
   const { data: picks, error: picksErr } = await supabase
     .from('sbo_capper_picks')
-    .select('id, capper_id, sport, game_date, bet_type, direction, stake')
+    .select('id, capper_id, sport, game_date, bet_type, direction, stake, team, opponent')
     .eq('sport', signal.sport)
     .eq('game_date', signal.game_date)
     .eq('bet_type', signal.pick_type);
   if (picksErr) throw picksErr;
 
-  const capperIds = Array.from(new Set((picks ?? []).map((p: PickRow) => p.capper_id).filter(Boolean)));
+  // Require real game identity — sport + date + bet_type alone lumps an entire
+  // slate together. No identity on the signal => confirm nothing.
+  const sideKeys = [signal.home_team, signal.away_team]
+    .map(normalizeTeam)
+    .filter((s) => s.length > 0);
+  const gamePicks = ((picks ?? []) as PickRow[]).filter((p) => isSameGame(p, sideKeys));
+
+  const capperIds = Array.from(new Set(gamePicks.map((p: PickRow) => p.capper_id).filter(Boolean)));
   let cappers: CapperRow[] = [];
   if (capperIds.length > 0) {
     const { data: cData, error: cErr } = await supabase
@@ -75,7 +107,7 @@ async function combineSignal(supabase: any, signal: SignalRow) {
   const confirming: any[] = [];
   const fading: any[] = [];
 
-  for (const pick of (picks ?? []) as PickRow[]) {
+  for (const pick of gamePicks) {
     if (!pick.capper_id || !pick.direction || !signal.side) continue;
     const capper = capperById.get(pick.capper_id);
     if (!capper) continue;
@@ -148,7 +180,7 @@ Deno.serve(async (req) => {
     let signals: SignalRow[] = [];
     const base = () => supabase
       .from('sbo_signals')
-      .select('id, sport, game_date, pick_type, side, internal_confidence');
+      .select('id, sport, game_date, pick_type, side, internal_confidence, home_team, away_team');
 
     if (signal_id) {
       const { data, error } = await base().eq('id', signal_id);
