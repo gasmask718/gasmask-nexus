@@ -18819,6 +18819,7 @@ export type Database = {
           durable_site_id: string | null
           engine_status: string
           error_message: string | null
+          expires_at: string | null
           extracted_structure: Json | null
           generated_colors: Json | null
           generated_html: string | null
@@ -18884,6 +18885,7 @@ export type Database = {
           durable_site_id?: string | null
           engine_status?: string
           error_message?: string | null
+          expires_at?: string | null
           extracted_structure?: Json | null
           generated_colors?: Json | null
           generated_html?: string | null
@@ -18949,6 +18951,7 @@ export type Database = {
           durable_site_id?: string | null
           engine_status?: string
           error_message?: string | null
+          expires_at?: string | null
           extracted_structure?: Json | null
           generated_colors?: Json | null
           generated_html?: string | null
