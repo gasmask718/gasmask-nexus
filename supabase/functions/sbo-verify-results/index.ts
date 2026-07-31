@@ -242,6 +242,9 @@ serve(async (req) => {
       props_pending_no_stats: 0,
       props_pending_unmapped: 0,
       game_id_backfilled: 0,
+      backfill_orphans_scanned: 0,
+      backfill_props_resolved: 0,
+      backfill_update_errors: 0,
       errors: [] as string[],
     };
 
