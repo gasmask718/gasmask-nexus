@@ -94132,6 +94132,7 @@ export type Database = {
           is_home: boolean | null
           opponent: string | null
           player_id: string | null
+          player_key: string | null
           player_name: string
           source: string
           sport: string
@@ -94147,6 +94148,7 @@ export type Database = {
           is_home?: boolean | null
           opponent?: string | null
           player_id?: string | null
+          player_key?: string | null
           player_name: string
           source?: string
           sport: string
@@ -94162,6 +94164,7 @@ export type Database = {
           is_home?: boolean | null
           opponent?: string | null
           player_id?: string | null
+          player_key?: string | null
           player_name?: string
           source?: string
           sport?: string
@@ -94329,6 +94332,7 @@ export type Database = {
           last_5_averages: Json
           last_game_date: string | null
           player_id: string | null
+          player_key: string | null
           player_name: string
           season: string
           season_averages: Json
@@ -94347,6 +94351,7 @@ export type Database = {
           last_5_averages?: Json
           last_game_date?: string | null
           player_id?: string | null
+          player_key?: string | null
           player_name: string
           season: string
           season_averages?: Json
@@ -94365,6 +94370,7 @@ export type Database = {
           last_5_averages?: Json
           last_game_date?: string | null
           player_id?: string | null
+          player_key?: string | null
           player_name?: string
           season?: string
           season_averages?: Json
