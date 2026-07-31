@@ -216,9 +216,119 @@ serve(async (req) => {
       return updated;
     };
 
-    if (force_yesterday) scoresUpdated += await fetchAndUpdateScores(yesterdayET);
-    scoresUpdated += await fetchAndUpdateScores(yesterdayET);
-    scoresUpdated += await fetchAndUpdateScores(todayET);
+    if (force_yesterday) scoresUpdated += await fetchNbaScores(yesterdayET);
+    scoresUpdated += await fetchNbaScores(yesterdayET);
+    scoresUpdated += await fetchNbaScores(todayET);
+
+    // ═══════════════════════════════════════
+    // PHASE 1B — MLB SCORES VIA FREE ESPN SCOREBOARD
+    // (additive; the NBA/SportsDataIO path above is unchanged)
+    // ═══════════════════════════════════════
+    const mlb = {
+      days_checked: 0,
+      espn_events: 0,
+      espn_finals: 0,
+      games_matched: 0,
+      games_updated: 0,
+      unmatched_finals: 0,
+      props_seen: 0,
+      props_graded: 0,
+      props_correct: 0,
+      props_incorrect: 0,
+      props_push: 0,
+      props_pending_no_stats: 0,
+      props_pending_unmapped: 0,
+      game_id_backfilled: 0,
+      errors: [] as string[],
+    };
+
+    // our sbo_games.id → ESPN eventId, for the prop resolver below
+    const mlbEventMap = new Map<string, string>();
+
+    const fetchMlbScoresEspn = async (dateStr: string): Promise<number> => {
+      mlb.days_checked++;
+      let updated = 0;
+
+      const sb = await fetchEspnMlbFinals(dateStr);
+      if (!sb.ok) {
+        const msg = sb.error || `ESPN scoreboard failed for ${dateStr}`;
+        mlb.errors.push(msg);
+        console.error(msg);
+        return 0;
+      }
+      mlb.espn_events += sb.totalEvents;
+      mlb.espn_finals += sb.finals.length;
+
+      const start = `${dateStr}T00:00:00${etOffset}`;
+      const end = `${dateStr}T23:59:59${etOffset}`;
+
+      const { data: ourGames } = await supabase
+        .from('sbo_games')
+        .select('id, home_team, away_team, status')
+        .eq('sport_key', 'mlb')
+        .gte('game_date', start)
+        .lte('game_date', end);
+
+      const pending = (ourGames || []).filter(
+        (g: any) => !['closed', 'completed', 'final'].includes(String(g.status))
+      ).length;
+
+      // Explicit error, NOT a clean zero: if we hold pending games for a day
+      // and ESPN reports no completed events, that is a feed problem.
+      if (sb.finals.length === 0 && pending > 0) {
+        const msg = `ESPN returned 0 completed MLB events for ${dateStr} while ${pending} pending games are on our board — treating as feed error, not a clean zero`;
+        mlb.errors.push(msg);
+        console.error(msg);
+        return 0;
+      }
+
+      if (!ourGames?.length) return 0;
+
+      for (const f of sb.finals) {
+        const matched = ourGames.find((g: any) =>
+          mlbTeamMatches(g.home_team, f.homeName) && mlbTeamMatches(g.away_team, f.awayName)
+        );
+        if (!matched) { mlb.unmatched_finals++; continue; }
+
+        mlb.games_matched++;
+        mlbEventMap.set(matched.id, f.eventId);
+
+        const { error } = await supabase
+          .from('sbo_games')
+          .update({
+            home_score: f.homeScore,
+            away_score: f.awayScore,
+            status: 'closed',
+            winner: f.homeScore > f.awayScore ? matched.home_team : matched.away_team,
+          })
+          .eq('id', matched.id);
+
+        if (!error) {
+          updated++;
+          mlb.games_updated++;
+          console.log(`MLB score: ${matched.away_team} ${f.awayScore} @ ${matched.home_team} ${f.homeScore}`);
+        }
+      }
+      return updated;
+    };
+
+    const mlbDates: string[] = specific_date
+      ? [specific_date]
+      : (() => {
+          const out: string[] = [];
+          const back = Math.max(0, Number(mlb_days_back));
+          for (let i = back; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(d.getDate() - i);
+            out.push(d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }));
+          }
+          return out;
+        })();
+
+    for (const d of mlbDates) {
+      scoresUpdated += await fetchMlbScoresEspn(d);
+    }
+
 
     // ═══════════════════════════════════════
     // PHASE 2 — VERIFY MONEYLINE PREDICTIONS
