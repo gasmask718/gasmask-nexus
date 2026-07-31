@@ -30,7 +30,9 @@ function ok(body: unknown = { received: true }) {
 
 Deno.serve(async (req) => {
   // ---------- 1. Signature verification (the ONLY hard failure) ----------
-  const secret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+  // Dedicated signing secret for the demo endpoint; falls back to the shared one.
+  const secret =
+    Deno.env.get("DEMO_STRIPE_WEBHOOK_SECRET") || Deno.env.get("STRIPE_WEBHOOK_SECRET");
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
   const sig = req.headers.get("stripe-signature");
   const raw = await req.text();
