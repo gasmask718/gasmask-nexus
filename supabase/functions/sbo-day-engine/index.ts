@@ -46,6 +46,10 @@ const GLOBAL_STEPS = [
 ];
 
 const POSTGAME_STEPS = [
+  // Required: MLB grading runs on free ESPN feeds. Registering it as required
+  // means the existing warning-on-zero-records logic covers it automatically —
+  // a silent zero on a night with pending games surfaces as a warning.
+  { fn: 'sbo-verify-results', label: 'MLB Grading (ESPN scores + player props)', icon: '⚾', required: true },
   { fn: 'sbo-track-results', label: 'Grade Predictions + Update Accuracy', icon: '📋', required: false },
   { fn: 'sbo-analyze-model', label: 'Model Self-Analysis + Weight Adjustment', icon: '🧬', required: false },
 ];
