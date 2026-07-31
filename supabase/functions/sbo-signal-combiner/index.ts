@@ -206,11 +206,17 @@ async function combineSignal(supabase: any, signal: SignalRow) {
 
   return {
     signal_id: signal.id,
+    game: `${signal.away_team} @ ${signal.home_team}`,
+    side_team: resolveSignalTeam(signal),
     combined_confidence: combined,
     signal_grade: grade,
     confirming_count: confirming.length,
     fading_count: fading.length,
+    confirming,
+    fading,
+    ambiguous_ny_la_skipped: getNylaSkipped(),
   };
+
 }
 
 Deno.serve(async (req) => {
