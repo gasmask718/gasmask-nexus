@@ -36461,7 +36461,7 @@ export type Database = {
           bland_ai_handled: boolean
           bland_call_id: string | null
           brand: string | null
-          business_id: string | null
+          business_id: string
           call_duration: number | null
           call_objective: string | null
           call_type: string | null
@@ -36534,7 +36534,7 @@ export type Database = {
           bland_ai_handled?: boolean
           bland_call_id?: string | null
           brand?: string | null
-          business_id?: string | null
+          business_id?: string
           call_duration?: number | null
           call_objective?: string | null
           call_type?: string | null
@@ -36607,7 +36607,7 @@ export type Database = {
           bland_ai_handled?: boolean
           bland_call_id?: string | null
           brand?: string | null
-          business_id?: string | null
+          business_id?: string
           call_duration?: number | null
           call_objective?: string | null
           call_type?: string | null
@@ -47071,7 +47071,7 @@ export type Database = {
         Insert: {
           assigned_driver_id?: string | null
           brand?: string | null
-          business_id: string
+          business_id?: string
           completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
@@ -47994,7 +47994,7 @@ export type Database = {
           active_calls_count: number | null
           ai_agent_id: string | null
           base_max_concurrent: number | null
-          business_id: string | null
+          business_id: string
           created_at: string
           current_session_id: string | null
           efficiency_score: number | null
@@ -48015,7 +48015,7 @@ export type Database = {
           active_calls_count?: number | null
           ai_agent_id?: string | null
           base_max_concurrent?: number | null
-          business_id?: string | null
+          business_id?: string
           created_at?: string
           current_session_id?: string | null
           efficiency_score?: number | null
@@ -48036,7 +48036,7 @@ export type Database = {
           active_calls_count?: number | null
           ai_agent_id?: string | null
           base_max_concurrent?: number | null
-          business_id?: string | null
+          business_id?: string
           created_at?: string
           current_session_id?: string | null
           efficiency_score?: number | null
@@ -48282,7 +48282,7 @@ export type Database = {
           bland_agent_id?: string | null
           bridge_mode?: string
           bridge_timeout_seconds?: number
-          business_id: string
+          business_id?: string
           campaign_weight?: number | null
           completed_calls?: number | null
           confirmation_prompt?: string | null
@@ -48487,7 +48487,7 @@ export type Database = {
       dialer_disposition_config: {
         Row: {
           active: boolean | null
-          business_id: string | null
+          business_id: string
           category: string
           created_at: string | null
           creates_follow_up: boolean | null
@@ -48499,7 +48499,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
-          business_id?: string | null
+          business_id?: string
           category?: string
           created_at?: string | null
           creates_follow_up?: boolean | null
@@ -48511,7 +48511,7 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
-          business_id?: string | null
+          business_id?: string
           category?: string
           created_at?: string | null
           creates_follow_up?: boolean | null
@@ -48534,7 +48534,7 @@ export type Database = {
       dialer_engine_cycle_logs: {
         Row: {
           agents_claimed: number | null
-          business_id: string | null
+          business_id: string
           campaign_id: string | null
           claimed_count: number | null
           created_at: string
@@ -48547,7 +48547,7 @@ export type Database = {
         }
         Insert: {
           agents_claimed?: number | null
-          business_id?: string | null
+          business_id?: string
           campaign_id?: string | null
           claimed_count?: number | null
           created_at?: string
@@ -48560,7 +48560,7 @@ export type Database = {
         }
         Update: {
           agents_claimed?: number | null
-          business_id?: string | null
+          business_id?: string
           campaign_id?: string | null
           claimed_count?: number | null
           created_at?: string
@@ -48589,7 +48589,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          business_id: string
+          business_id?: string
           locked_by?: string | null
           locked_until?: string
           updated_at?: string
@@ -48612,7 +48612,7 @@ export type Database = {
       }
       dialer_followups: {
         Row: {
-          business_id: string | null
+          business_id: string
           created_at: string | null
           id: string
           reason: string | null
@@ -48623,7 +48623,7 @@ export type Database = {
           store_id: string | null
         }
         Insert: {
-          business_id?: string | null
+          business_id?: string
           created_at?: string | null
           id?: string
           reason?: string | null
@@ -48634,7 +48634,7 @@ export type Database = {
           store_id?: string | null
         }
         Update: {
-          business_id?: string | null
+          business_id?: string
           created_at?: string | null
           id?: string
           reason?: string | null
@@ -49052,7 +49052,7 @@ export type Database = {
           business_hours_end_min?: number | null
           business_hours_start?: string | null
           business_hours_start_min?: number | null
-          business_id: string
+          business_id?: string
           business_timezone?: string | null
           connect_rate_target?: number | null
           created_at?: string
@@ -67659,6 +67659,7 @@ export type Database = {
           amount_paid: number
           brand: string | null
           business_date: string
+          business_id: string
           company_id: string | null
           created_at: string
           created_by: string | null
@@ -67712,6 +67713,7 @@ export type Database = {
           amount_paid?: number
           brand?: string | null
           business_date?: string
+          business_id?: string
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -67765,6 +67767,7 @@ export type Database = {
           amount_paid?: number
           brand?: string | null
           business_date?: string
+          business_id?: string
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -67815,6 +67818,13 @@ export type Database = {
           voided_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "invoices_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_company_id_fkey"
             columns: ["company_id"]
@@ -76225,7 +76235,7 @@ export type Database = {
           bridge_attempted_at: string | null
           bridge_failed_reason: string | null
           bridged_at: string | null
-          business_id: string | null
+          business_id: string
           call_session_id: string | null
           call_summary: string | null
           campaign_id: string | null
@@ -76277,7 +76287,7 @@ export type Database = {
           bridge_attempted_at?: string | null
           bridge_failed_reason?: string | null
           bridged_at?: string | null
-          business_id?: string | null
+          business_id?: string
           call_session_id?: string | null
           call_summary?: string | null
           campaign_id?: string | null
@@ -76329,7 +76339,7 @@ export type Database = {
           bridge_attempted_at?: string | null
           bridge_failed_reason?: string | null
           bridged_at?: string | null
-          business_id?: string | null
+          business_id?: string
           call_session_id?: string | null
           call_summary?: string | null
           campaign_id?: string | null
@@ -87684,6 +87694,7 @@ export type Database = {
         Row: {
           arv_percentage: number | null
           avg_close_days: number | null
+          business_id: string
           buy_box_max: number | null
           buy_box_min: number | null
           buyer_type: string | null
@@ -87704,6 +87715,7 @@ export type Database = {
         Insert: {
           arv_percentage?: number | null
           avg_close_days?: number | null
+          business_id?: string
           buy_box_max?: number | null
           buy_box_min?: number | null
           buyer_type?: string | null
@@ -87724,6 +87736,7 @@ export type Database = {
         Update: {
           arv_percentage?: number | null
           avg_close_days?: number | null
+          business_id?: string
           buy_box_max?: number | null
           buy_box_min?: number | null
           buyer_type?: string | null
@@ -87741,7 +87754,15 @@ export type Database = {
           states?: string[] | null
           status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "re_buyers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       re_contracts: {
         Row: {
@@ -87817,6 +87838,7 @@ export type Database = {
           arv: number
           assignment_fee_actual: number | null
           assignment_fee_target: number | null
+          business_id: string
           buyer_email: string | null
           buyer_id: string | null
           buyer_name: string | null
@@ -87851,6 +87873,7 @@ export type Database = {
           arv: number
           assignment_fee_actual?: number | null
           assignment_fee_target?: number | null
+          business_id?: string
           buyer_email?: string | null
           buyer_id?: string | null
           buyer_name?: string | null
@@ -87885,6 +87908,7 @@ export type Database = {
           arv?: number
           assignment_fee_actual?: number | null
           assignment_fee_target?: number | null
+          business_id?: string
           buyer_email?: string | null
           buyer_id?: string | null
           buyer_name?: string | null
@@ -87917,6 +87941,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "re_deals_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "re_deals_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
@@ -87936,6 +87967,7 @@ export type Database = {
           bedrooms: number | null
           bland_call_id: string | null
           bland_campaign_id: string | null
+          business_id: string
           call_count: number | null
           call_outcome: string | null
           call_recording_url: string | null
@@ -88007,6 +88039,7 @@ export type Database = {
           bedrooms?: number | null
           bland_call_id?: string | null
           bland_campaign_id?: string | null
+          business_id?: string
           call_count?: number | null
           call_outcome?: string | null
           call_recording_url?: string | null
@@ -88078,6 +88111,7 @@ export type Database = {
           bedrooms?: number | null
           bland_call_id?: string | null
           bland_campaign_id?: string | null
+          business_id?: string
           call_count?: number | null
           call_outcome?: string | null
           call_recording_url?: string | null
@@ -88139,7 +88173,15 @@ export type Database = {
           year_built?: number | null
           zip?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "re_leads_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       re_offers: {
         Row: {
@@ -101482,6 +101524,7 @@ export type Database = {
       }
       store_communication_preferences: {
         Row: {
+          business_id: string
           call_opt_in: boolean
           created_at: string
           email_opt_in: boolean
@@ -101497,6 +101540,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          business_id?: string
           call_opt_in?: boolean
           created_at?: string
           email_opt_in?: boolean
@@ -101512,6 +101556,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          business_id?: string
           call_opt_in?: boolean
           created_at?: string
           email_opt_in?: boolean
@@ -101527,6 +101572,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "store_communication_preferences_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "store_communication_preferences_store_id_fkey"
             columns: ["store_id"]
@@ -102721,6 +102773,7 @@ export type Database = {
       store_opportunities: {
         Row: {
           assignee: string | null
+          business_id: string
           completed_at: string | null
           completed_by: string | null
           created_at: string
@@ -102738,6 +102791,7 @@ export type Database = {
         }
         Insert: {
           assignee?: string | null
+          business_id?: string
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
@@ -102755,6 +102809,7 @@ export type Database = {
         }
         Update: {
           assignee?: string | null
+          business_id?: string
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
@@ -102771,6 +102826,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "store_opportunities_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "store_opportunities_completed_by_fkey"
             columns: ["completed_by"]
@@ -104720,6 +104782,7 @@ export type Database = {
           brand_name: string
           bring_samples: boolean
           bring_starter_kit: boolean
+          business_id: string
           created_at: string
           current_tubes_left: number | null
           has_ever_ordered: boolean
@@ -104749,6 +104812,7 @@ export type Database = {
           brand_name: string
           bring_samples?: boolean
           bring_starter_kit?: boolean
+          business_id?: string
           created_at?: string
           current_tubes_left?: number | null
           has_ever_ordered?: boolean
@@ -104778,6 +104842,7 @@ export type Database = {
           brand_name?: string
           bring_samples?: boolean
           bring_starter_kit?: boolean
+          business_id?: string
           created_at?: string
           current_tubes_left?: number | null
           has_ever_ordered?: boolean
@@ -104803,6 +104868,13 @@ export type Database = {
           tubes_updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "store_tube_inventory_status_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "store_tube_inventory_status_store_id_fkey"
             columns: ["store_id"]
@@ -106261,6 +106333,7 @@ export type Database = {
           assigned_at: string | null
           attorney_fee_percentage: number | null
           attorney_id: string | null
+          business_id: string
           case_id: string | null
           created_at: string | null
           id: string
@@ -106272,6 +106345,7 @@ export type Database = {
           assigned_at?: string | null
           attorney_fee_percentage?: number | null
           attorney_id?: string | null
+          business_id?: string
           case_id?: string | null
           created_at?: string | null
           id?: string
@@ -106283,6 +106357,7 @@ export type Database = {
           assigned_at?: string | null
           attorney_fee_percentage?: number | null
           attorney_id?: string | null
+          business_id?: string
           case_id?: string | null
           created_at?: string | null
           id?: string
@@ -106295,6 +106370,13 @@ export type Database = {
             columns: ["attorney_id"]
             isOneToOne: false
             referencedRelation: "surplus_funds_attorneys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surplus_funds_attorney_assignments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
           {
@@ -106312,6 +106394,7 @@ export type Database = {
           application_status: string | null
           bar_number: string | null
           bar_verified: boolean | null
+          business_id: string
           cases_total: number | null
           cases_won: number | null
           created_at: string | null
@@ -106338,6 +106421,7 @@ export type Database = {
           application_status?: string | null
           bar_number?: string | null
           bar_verified?: boolean | null
+          business_id?: string
           cases_total?: number | null
           cases_won?: number | null
           created_at?: string | null
@@ -106364,6 +106448,7 @@ export type Database = {
           application_status?: string | null
           bar_number?: string | null
           bar_verified?: boolean | null
+          business_id?: string
           cases_total?: number | null
           cases_won?: number | null
           created_at?: string | null
@@ -106385,7 +106470,15 @@ export type Database = {
           status?: string | null
           years_practice?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "surplus_funds_attorneys_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       surplus_funds_cases: {
         Row: {
@@ -106394,6 +106487,7 @@ export type Database = {
           approved_at: string | null
           attorney_id: string | null
           attorney_name: string | null
+          business_id: string
           client_email: string | null
           client_name: string
           client_phone: string | null
@@ -106421,6 +106515,7 @@ export type Database = {
           approved_at?: string | null
           attorney_id?: string | null
           attorney_name?: string | null
+          business_id?: string
           client_email?: string | null
           client_name: string
           client_phone?: string | null
@@ -106448,6 +106543,7 @@ export type Database = {
           approved_at?: string | null
           attorney_id?: string | null
           attorney_name?: string | null
+          business_id?: string
           client_email?: string | null
           client_name?: string
           client_phone?: string | null
@@ -106471,6 +106567,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "surplus_funds_cases_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "surplus_funds_cases_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
@@ -106481,6 +106584,7 @@ export type Database = {
       }
       surplus_funds_contracts: {
         Row: {
+          business_id: string
           case_id: string | null
           claimant_email: string | null
           claimant_name: string
@@ -106501,6 +106605,7 @@ export type Database = {
           surplus_amount: number | null
         }
         Insert: {
+          business_id?: string
           case_id?: string | null
           claimant_email?: string | null
           claimant_name: string
@@ -106521,6 +106626,7 @@ export type Database = {
           surplus_amount?: number | null
         }
         Update: {
+          business_id?: string
           case_id?: string | null
           claimant_email?: string | null
           claimant_name?: string
@@ -106542,6 +106648,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "surplus_funds_contracts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "surplus_funds_contracts_case_id_fkey"
             columns: ["case_id"]
             isOneToOne: false
@@ -106559,6 +106672,7 @@ export type Database = {
       }
       surplus_funds_inquiries: {
         Row: {
+          business_id: string
           created_at: string | null
           email: string
           email_notification_sent: boolean | null
@@ -106580,6 +106694,7 @@ export type Database = {
           utm_source: string | null
         }
         Insert: {
+          business_id?: string
           created_at?: string | null
           email: string
           email_notification_sent?: boolean | null
@@ -106601,6 +106716,7 @@ export type Database = {
           utm_source?: string | null
         }
         Update: {
+          business_id?: string
           created_at?: string | null
           email?: string
           email_notification_sent?: boolean | null
@@ -106621,7 +106737,15 @@ export type Database = {
           utm_medium?: string | null
           utm_source?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "surplus_funds_inquiries_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       surplus_funds_leads: {
         Row: {
@@ -106632,6 +106756,7 @@ export type Database = {
           bland_call_id: string | null
           bland_call_triggered: boolean | null
           bland_call_triggered_at: string | null
+          business_id: string
           call_count: number | null
           call_outcome: string | null
           call_recording_url: string | null
@@ -106692,6 +106817,7 @@ export type Database = {
           bland_call_id?: string | null
           bland_call_triggered?: boolean | null
           bland_call_triggered_at?: string | null
+          business_id?: string
           call_count?: number | null
           call_outcome?: string | null
           call_recording_url?: string | null
@@ -106752,6 +106878,7 @@ export type Database = {
           bland_call_id?: string | null
           bland_call_triggered?: boolean | null
           bland_call_triggered_at?: string | null
+          business_id?: string
           call_count?: number | null
           call_outcome?: string | null
           call_recording_url?: string | null
@@ -106804,11 +106931,20 @@ export type Database = {
           website_sale_type?: string | null
           zip?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "surplus_funds_leads_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       surplus_funds_payments: {
         Row: {
           attorney_fee_amount: number | null
+          business_id: string
           case_id: string | null
           claimant_name: string | null
           claimant_net_amount: number | null
@@ -106827,6 +106963,7 @@ export type Database = {
         }
         Insert: {
           attorney_fee_amount?: number | null
+          business_id?: string
           case_id?: string | null
           claimant_name?: string | null
           claimant_net_amount?: number | null
@@ -106845,6 +106982,7 @@ export type Database = {
         }
         Update: {
           attorney_fee_amount?: number | null
+          business_id?: string
           case_id?: string | null
           claimant_name?: string | null
           claimant_net_amount?: number | null
@@ -106862,6 +107000,13 @@ export type Database = {
           total_surplus_amount?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "surplus_funds_payments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "surplus_funds_payments_case_id_fkey"
             columns: ["case_id"]
@@ -115798,6 +115943,13 @@ export type Database = {
             referencedRelation: "ut_verified_event_halls"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ut_outreach_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ut_outreach_sequences: {
@@ -116905,6 +117057,13 @@ export type Database = {
             referencedRelation: "ut_verified_event_halls"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ut_partner_media: {
@@ -117161,6 +117320,13 @@ export type Database = {
             referencedRelation: "ut_verified_event_halls"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ut_partner_onboarding_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ut_partner_packages: {
@@ -117330,6 +117496,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ut_partner_profiles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ut_partner_profiles_source_lead_id_fkey"
             columns: ["source_lead_id"]
             isOneToOne: false
@@ -117341,6 +117514,13 @@ export type Database = {
             columns: ["source_lead_id"]
             isOneToOne: false
             referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_profiles_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -121009,6 +121189,13 @@ export type Database = {
             referencedRelation: "ut_verified_event_halls"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ut_va_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ut_vendor_blocked_dates: {
@@ -124318,7 +124505,7 @@ export type Database = {
           ai_suggested_action: string | null
           ai_summary: string | null
           assigned_to: string | null
-          business_id: string | null
+          business_id: string
           call_log_id: string | null
           caller_name: string | null
           caller_number: string
@@ -124346,7 +124533,7 @@ export type Database = {
           ai_suggested_action?: string | null
           ai_summary?: string | null
           assigned_to?: string | null
-          business_id?: string | null
+          business_id?: string
           call_log_id?: string | null
           caller_name?: string | null
           caller_number: string
@@ -124374,7 +124561,7 @@ export type Database = {
           ai_suggested_action?: string | null
           ai_summary?: string | null
           assigned_to?: string | null
-          business_id?: string | null
+          business_id?: string
           call_log_id?: string | null
           caller_name?: string | null
           caller_number?: string
@@ -129650,14 +129837,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -131946,6 +132133,218 @@ export type Database = {
             columns: ["duplicate_of"]
             isOneToOne: false
             referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_verified_rental_companies: {
+        Row: {
+          ai_call_eligible: boolean | null
+          ai_call_last_attempt_at: string | null
+          ai_call_result: string | null
+          ai_handoff_reason: string | null
+          ai_score: number | null
+          ai_score_post_call: number | null
+          ai_score_reasons: Json | null
+          assigned_to: string | null
+          assigned_va: string | null
+          automation_state: string | null
+          best_time_to_call: string | null
+          business_name: string | null
+          callback_due_at: string | null
+          category: string | null
+          category_confidence: number | null
+          category_group: string | null
+          category_original: string | null
+          city: string | null
+          contact_name: string | null
+          created_at: string | null
+          duplicate_of: string | null
+          duplicate_reason: string | null
+          email: string | null
+          external_place_id: string | null
+          external_source: string | null
+          follow_up_at: string | null
+          full_address: string | null
+          geocode_source: string | null
+          geocoded_at: string | null
+          google_rating: number | null
+          google_types: string[] | null
+          id: string | null
+          last_contacted_at: string | null
+          last_outcome: string | null
+          last_sms_template: string | null
+          latitude: number | null
+          longitude: number | null
+          maps_url: string | null
+          metro: string | null
+          next_step: string | null
+          notes: string | null
+          onboarded_at: string | null
+          onboarding_link_sent_at: string | null
+          outreach_count: number | null
+          owner_verified: boolean | null
+          partner_id: string | null
+          phone: string | null
+          priority_bucket: string | null
+          priority_score: number | null
+          recommended_ai_agent: string | null
+          review_count: number | null
+          sms_count: number | null
+          source: string | null
+          state: string | null
+          status: string | null
+          times_seen: number | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          ai_call_eligible?: boolean | null
+          ai_call_last_attempt_at?: string | null
+          ai_call_result?: string | null
+          ai_handoff_reason?: string | null
+          ai_score?: number | null
+          ai_score_post_call?: number | null
+          ai_score_reasons?: Json | null
+          assigned_to?: string | null
+          assigned_va?: string | null
+          automation_state?: string | null
+          best_time_to_call?: string | null
+          business_name?: string | null
+          callback_due_at?: string | null
+          category?: string | null
+          category_confidence?: number | null
+          category_group?: string | null
+          category_original?: string | null
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          duplicate_of?: string | null
+          duplicate_reason?: string | null
+          email?: string | null
+          external_place_id?: string | null
+          external_source?: string | null
+          follow_up_at?: string | null
+          full_address?: string | null
+          geocode_source?: string | null
+          geocoded_at?: string | null
+          google_rating?: number | null
+          google_types?: string[] | null
+          id?: string | null
+          last_contacted_at?: string | null
+          last_outcome?: string | null
+          last_sms_template?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          maps_url?: string | null
+          metro?: string | null
+          next_step?: string | null
+          notes?: string | null
+          onboarded_at?: string | null
+          onboarding_link_sent_at?: string | null
+          outreach_count?: number | null
+          owner_verified?: boolean | null
+          partner_id?: string | null
+          phone?: string | null
+          priority_bucket?: string | null
+          priority_score?: number | null
+          recommended_ai_agent?: string | null
+          review_count?: number | null
+          sms_count?: number | null
+          source?: string | null
+          state?: string | null
+          status?: string | null
+          times_seen?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          ai_call_eligible?: boolean | null
+          ai_call_last_attempt_at?: string | null
+          ai_call_result?: string | null
+          ai_handoff_reason?: string | null
+          ai_score?: number | null
+          ai_score_post_call?: number | null
+          ai_score_reasons?: Json | null
+          assigned_to?: string | null
+          assigned_va?: string | null
+          automation_state?: string | null
+          best_time_to_call?: string | null
+          business_name?: string | null
+          callback_due_at?: string | null
+          category?: string | null
+          category_confidence?: number | null
+          category_group?: string | null
+          category_original?: string | null
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          duplicate_of?: string | null
+          duplicate_reason?: string | null
+          email?: string | null
+          external_place_id?: string | null
+          external_source?: string | null
+          follow_up_at?: string | null
+          full_address?: string | null
+          geocode_source?: string | null
+          geocoded_at?: string | null
+          google_rating?: number | null
+          google_types?: string[] | null
+          id?: string | null
+          last_contacted_at?: string | null
+          last_outcome?: string | null
+          last_sms_template?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          maps_url?: string | null
+          metro?: string | null
+          next_step?: string | null
+          notes?: string | null
+          onboarded_at?: string | null
+          onboarding_link_sent_at?: string | null
+          outreach_count?: number | null
+          owner_verified?: boolean | null
+          partner_id?: string | null
+          phone?: string | null
+          priority_bucket?: string | null
+          priority_score?: number | null
+          recommended_ai_agent?: string | null
+          review_count?: number | null
+          sms_count?: number | null
+          source?: string | null
+          state?: string | null
+          status?: string | null
+          times_seen?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -137346,7 +137745,7 @@ export type Database = {
           active_calls_count: number | null
           ai_agent_id: string | null
           base_max_concurrent: number | null
-          business_id: string | null
+          business_id: string
           created_at: string
           current_session_id: string | null
           efficiency_score: number | null
@@ -137386,7 +137785,7 @@ export type Database = {
           bridge_attempted_at: string | null
           bridge_failed_reason: string | null
           bridged_at: string | null
-          business_id: string | null
+          business_id: string
           call_session_id: string | null
           call_summary: string | null
           campaign_id: string | null
@@ -137453,7 +137852,7 @@ export type Database = {
               bridge_attempted_at: string | null
               bridge_failed_reason: string | null
               bridged_at: string | null
-              business_id: string | null
+              business_id: string
               call_session_id: string | null
               call_summary: string | null
               campaign_id: string | null
@@ -137520,7 +137919,7 @@ export type Database = {
               bridge_attempted_at: string | null
               bridge_failed_reason: string | null
               bridged_at: string | null
-              business_id: string | null
+              business_id: string
               call_session_id: string | null
               call_summary: string | null
               campaign_id: string | null
