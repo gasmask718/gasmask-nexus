@@ -114,6 +114,37 @@ export default function VAAuthPage() {
     return true;
   };
 
+  // Hub-scoped login: pre-selects the business_id the VA is a member of.
+  // When a hub slug is present, membership in that business is required.
+  const selectHubBusinessOrSignOut = async (userId: string): Promise<boolean> => {
+    const { data } = await supabase
+      .from('business_members')
+      .select('business_id, role, businesses:business_id ( slug, name )')
+      .eq('user_id', userId);
+
+    const memberships = (data || []) as any[];
+
+    if (hubSlug) {
+      const match = memberships.find(
+        (m) => (m.businesses?.slug as string)?.trim().toLowerCase() === hubSlug,
+      );
+      if (!match) {
+        await supabase.auth.signOut();
+        toast.error(`You are not a member of the ${hubSlug} hub.`);
+        return false;
+      }
+      localStorage.setItem('currentBusinessId', match.business_id);
+      return true;
+    }
+
+    if (memberships.length > 0) {
+      const saved = localStorage.getItem('currentBusinessId');
+      const stillValid = memberships.some((m) => m.business_id === saved);
+      if (!stillValid) localStorage.setItem('currentBusinessId', memberships[0].business_id);
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -130,7 +161,11 @@ export default function VAAuthPage() {
           return;
         }
         await acceptInviteIfNeeded();
+        if (authData.user && !(await selectHubBusinessOrSignOut(authData.user.id))) {
+          return;
+        }
         navigate('/va/dashboard');
+
       } else {
         if (hasInvite) {
           const { data, error } = await supabase.functions.invoke('accept-va-invite', {
