@@ -8,7 +8,7 @@
 // grader therefore can never disagree about what a stat means.
 //
 // Idempotent by construction: every write is an upsert on the
-// (sport, player_name, game_id) unique constraint, so re-running any
+// (sport, player_key, game_id) unique constraint, so re-running any
 // date is safe and produces no duplicates.
 //
 // Params (POST JSON, all optional):
