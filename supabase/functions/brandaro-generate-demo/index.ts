@@ -1,5 +1,7 @@
 import { fetchPlaceContent } from "../_shared/places-client.ts";
 import { tryVercelHook } from "../_shared/vercelDeploy.ts";
+import { resolveLogoUrl } from "../_shared/logoChain.ts";
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -377,6 +379,30 @@ Deno.serve(async (req) => {
 
       await supabase.from("brandaro_qualified_leads").update({ demo_status: "generated" }).eq("id", lead_id);
 
+      // ---- Logo chain: Places logo-like photo -> Ideogram -> null ----
+      // Never fatal. A null logo_url lets brandaro-base render its existing
+      // typographic fallback.
+      let logoUrl: string | null = (demo as any).logo_url ?? null;
+      if (!logoUrl) {
+        const logo = await resolveLogoUrl(supabase, {
+          demo_id: demo.id,
+          business_name: lead.business_name,
+          industry,
+          photos: leadPhotos,
+          color_primary: aiRes.content.color_primary,
+          color_secondary: aiRes.content.color_secondary,
+        });
+        if (logo.url) {
+          logoUrl = logo.url;
+          const { error: logoErr } = await supabase
+            .from("brandaro_demo_sites")
+            .update({ logo_url: logo.url })
+            .eq("id", demo.id);
+          if (logoErr) console.warn("[logo] persist failed:", logoErr.message);
+        }
+        console.log(`[logo] source=${logo.source}${logo.error ? ` error=${logo.error}` : ""}`);
+      }
+
       // ---- Step order (per spec): deploy -> audit -> SMS ----
 
       // 1) Trigger a rebuild of this industry's Vercel project.
@@ -398,8 +424,9 @@ Deno.serve(async (req) => {
         // Real Google Places content (reviews + resolved photo image URLs).
         reviews: leadReviews,
         photos: leadPhotos,
-        logo_url: (demo as any).logo_url ?? null,
+        logo_url: logoUrl,
       });
+
       if (!vercel.ok) console.warn("Vercel deploy hook not fired:", vercel.error);
 
       // 2) Quality audit (8 dimensions, threshold 88, up to 2 auto-fix passes).
