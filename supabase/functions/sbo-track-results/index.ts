@@ -43,27 +43,73 @@ serve(async (req) => {
 
     // 1. PULL FINAL SCORES
     let finalGames: any[] = [];
-    try {
-      const games = await sdioGet(`/scores/json/GamesByDate/${sdioDate}`);
-      finalGames = games.filter((g: any) => g.Status === 'Final');
+    if (sport === 'mlb') {
+      // ── MLB branch: free ESPN scoreboard (no SDIO key exists for baseball) ──
+      try {
+        const sb = await fetchEspnMlbFinals(date);
+        if (!sb.ok) throw new Error(sb.error || 'ESPN scoreboard failed');
 
-      for (const game of finalGames) {
-        const winner = game.HomeTeamScore > game.AwayTeamScore ? 'home' : 'away';
-        await supabase
+        const { data: ourGames } = await supabase
           .from('sbo_games')
-          .update({
-            status: 'final',
-            home_score: game.HomeTeamScore,
-            away_score: game.AwayTeamScore,
-            winner,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('external_id', game.GameID.toString());
-        gamesUpdated++;
+          .select('id, home_team, away_team, status')
+          .eq('sport_key', 'mlb')
+          .gte('game_date', `${date}T00:00:00Z`)
+          .lt('game_date', `${date}T23:59:59Z`);
+
+        if (sb.finals.length === 0 && (ourGames || []).some((g: any) => g.status !== 'final')) {
+          // Zero completed events on a day with pending games is a feed error,
+          // not a clean zero.
+          throw new Error(
+            `ESPN returned 0 completed MLB events for ${date} while pending games exist on our board`
+          );
+        }
+
+        for (const f of sb.finals) {
+          const matched = (ourGames || []).find((g: any) =>
+            mlbTeamMatches(g.home_team, f.homeName) && mlbTeamMatches(g.away_team, f.awayName)
+          );
+          if (!matched) continue;
+          await supabase
+            .from('sbo_games')
+            .update({
+              status: 'final',
+              home_score: f.homeScore,
+              away_score: f.awayScore,
+              winner: f.homeScore > f.awayScore ? 'home' : 'away',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', matched.id);
+          gamesUpdated++;
+        }
+        results.games_updated = gamesUpdated;
+        results.espn_events = sb.totalEvents;
+        results.espn_finals = sb.finals.length;
+      } catch (e: any) {
+        results.games_error = e.message;
       }
-      results.games_updated = gamesUpdated;
-    } catch (e: any) {
-      results.games_error = e.message;
+    } else {
+      try {
+        const games = await sdioGet(`/scores/json/GamesByDate/${sdioDate}`);
+        finalGames = games.filter((g: any) => g.Status === 'Final');
+
+        for (const game of finalGames) {
+          const winner = game.HomeTeamScore > game.AwayTeamScore ? 'home' : 'away';
+          await supabase
+            .from('sbo_games')
+            .update({
+              status: 'final',
+              home_score: game.HomeTeamScore,
+              away_score: game.AwayTeamScore,
+              winner,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('external_id', game.GameID.toString());
+          gamesUpdated++;
+        }
+        results.games_updated = gamesUpdated;
+      } catch (e: any) {
+        results.games_error = e.message;
+      }
     }
 
     // 2. GRADE MONEYLINE PREDICTIONS
