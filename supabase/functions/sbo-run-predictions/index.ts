@@ -141,18 +141,26 @@ async function runStatsBrain(ctx: any, supabase: any, calibrationText: string): 
           game_date: ctx.game_date?.split('T')[0] || new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }),
           prop_type: ctx.prop_type,
           opponent: ctx.home_team === ctx.team ? ctx.away_team : ctx.home_team,
+          sport: ctx.sport_key || 'nba',
+          player_id: ctx.player_id ?? null,
         },
       });
       if (data?.context_text) {
         statsContext = data.context_text;
-        // TRUTHFULNESS GUARD: sbo-get-player-context ALWAYS returns a non-empty
-        // context_text template (filled with N/A when no rows match). Only claim
-        // 'full' when there is actually real stat data behind it — otherwise a
-        // sport with no stats feed (e.g. MLB today) would be mislabeled 'full'.
-        const recentValues = data.raw?.recent_values ?? [];
-        const gamesPlayed = Number(data.raw?.season_stats?.games_played ?? 0);
-        const hasRealStats = recentValues.length > 0 || gamesPlayed > 0;
-        dataQuality = hasRealStats ? 'full' : 'odds_only';
+        if (typeof data.data_quality === 'string') {
+          // Sports with a real stats brain (MLB, Stage 2c) compute
+          // data_quality per-player-per-prop-type and report it directly.
+          dataQuality = data.data_quality;
+          console.log(`data_quality from context fn: ${dataQuality} (resolution: ${data.resolution ?? 'n/a'})`);
+        } else {
+          // TRUTHFULNESS GUARD (NBA path): sbo-get-player-context ALWAYS returns a
+          // non-empty context_text template (filled with N/A when no rows match).
+          // Only claim 'full' when there is actually real stat data behind it.
+          const recentValues = data.raw?.recent_values ?? [];
+          const gamesPlayed = Number(data.raw?.season_stats?.games_played ?? 0);
+          const hasRealStats = recentValues.length > 0 || gamesPlayed > 0;
+          dataQuality = hasRealStats ? 'full' : 'odds_only';
+        }
       }
 
     } else if (ctx.prediction_type === 'moneyline') {

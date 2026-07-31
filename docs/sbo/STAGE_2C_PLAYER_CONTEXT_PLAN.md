@@ -21,3 +21,16 @@ Jose Suarez, Christian Arroyo, et al.), so **name lookups are not safe**.
 
 Any resolution that falls back to path 3 must be logged so the ambiguity rate
 is visible before the clamp-lifting gates (2d) are evaluated.
+
+## Status: 2c SHIPPED (2026-07-31)
+
+Implemented in `sbo-get-player-context` (MLB branch behind `sport === 'mlb'`,
+NBA path untouched) and `sbo-run-predictions` (passes `sport` + `player_id`;
+honours a returned `data_quality` field, NBA guard unchanged).
+
+## Follow-up task (logged, NOT built)
+
+Plumb the ESPN `athlete_id` onto `sbo_player_props` at odds-fetch time so
+resolution path 1 (`player_id` → `player_key`) becomes live. Until then path 1
+is dormant and resolution runs on name + team narrowing, which can only narrow,
+never guess.
