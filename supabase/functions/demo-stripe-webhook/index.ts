@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
         lead_id,
         package_tier: tier,
         build_status: "pending",
-        build_engine: "durable",
+        build_engine,
         progress_stage: "awaiting_intake",
         deployed_at: null,
       })
