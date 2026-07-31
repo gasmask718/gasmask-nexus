@@ -91,16 +91,33 @@ export default function BuilderHubPage() {
   });
 
   const sendDemo = useMutation({
-    mutationFn: async (demoId: string) => {
+    mutationFn: async (demo: any) => {
+      // Column is `phone_number`, not `phone`.
+      const { data: lead, error: leadErr } = await supabase
+        .from("brandaro_qualified_leads")
+        .select("phone_number")
+        .eq("id", demo.lead_id)
+        .single();
+      if (leadErr) throw leadErr;
+      const destination = (lead as any)?.phone_number?.trim();
+      if (!destination) throw new Error("No phone number on file for this lead");
+
       const { data, error } = await supabase.functions.invoke("brandaro-send-demo", {
-        body: { demo_id: demoId },
+        body: { demo_id: demo.id, lead_id: demo.lead_id, channel: "sms", destination },
       });
       if (error) throw error;
-      return data;
+      return data as any;
     },
-    onSuccess: () => toast.success("Send queued"),
+    onSuccess: (data) => {
+      if (data?.already_sent) toast.info("Already sent — the demo link went out automatically when it was generated.");
+      else if (data?.suppressed) toast.error(`Blocked: contact is on the do-not-contact list (${data.reason}).`);
+      else if (data?.ok) toast.success("Demo SMS sent");
+      else toast.error(`SMS failed: ${data?.error || "unknown error"}`);
+      qc.invalidateQueries({ queryKey: ["builder-demos"] });
+    },
     onError: (e: any) => toast.error(e.message || "Send failed"),
   });
+
 
   const durableDemos = demos.filter(d => d.generation_engine === "durable");
 
