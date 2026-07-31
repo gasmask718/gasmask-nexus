@@ -115791,6 +115791,13 @@ export type Database = {
             referencedRelation: "ut_partner_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ut_outreach_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ut_outreach_sequences: {
@@ -116891,6 +116898,13 @@ export type Database = {
             referencedRelation: "ut_partner_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ut_partner_media: {
@@ -117140,6 +117154,13 @@ export type Database = {
             referencedRelation: "ut_partner_leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ut_partner_onboarding_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ut_partner_packages: {
@@ -117302,10 +117323,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ut_partner_profiles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ut_partner_profiles_source_lead_id_fkey"
             columns: ["source_lead_id"]
             isOneToOne: false
             referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_profiles_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
             referencedColumns: ["id"]
           },
         ]
@@ -120965,6 +121000,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_va_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
             referencedColumns: ["id"]
           },
         ]
@@ -129608,14 +129650,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -131709,6 +131751,204 @@ export type Database = {
           total_leads: number | null
         }
         Relationships: []
+      }
+      ut_verified_event_halls: {
+        Row: {
+          ai_call_eligible: boolean | null
+          ai_call_last_attempt_at: string | null
+          ai_call_result: string | null
+          ai_handoff_reason: string | null
+          ai_score: number | null
+          ai_score_post_call: number | null
+          ai_score_reasons: Json | null
+          assigned_to: string | null
+          assigned_va: string | null
+          automation_state: string | null
+          best_time_to_call: string | null
+          business_name: string | null
+          callback_due_at: string | null
+          category: string | null
+          category_confidence: number | null
+          category_group: string | null
+          category_original: string | null
+          city: string | null
+          contact_name: string | null
+          created_at: string | null
+          duplicate_of: string | null
+          duplicate_reason: string | null
+          email: string | null
+          external_place_id: string | null
+          external_source: string | null
+          follow_up_at: string | null
+          full_address: string | null
+          geocode_source: string | null
+          geocoded_at: string | null
+          google_rating: number | null
+          google_types: string[] | null
+          id: string | null
+          last_contacted_at: string | null
+          last_outcome: string | null
+          last_sms_template: string | null
+          latitude: number | null
+          longitude: number | null
+          maps_url: string | null
+          metro: string | null
+          next_step: string | null
+          notes: string | null
+          onboarded_at: string | null
+          onboarding_link_sent_at: string | null
+          outreach_count: number | null
+          owner_verified: boolean | null
+          partner_id: string | null
+          phone: string | null
+          priority_bucket: string | null
+          priority_score: number | null
+          recommended_ai_agent: string | null
+          review_count: number | null
+          sms_count: number | null
+          source: string | null
+          state: string | null
+          status: string | null
+          times_seen: number | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          ai_call_eligible?: boolean | null
+          ai_call_last_attempt_at?: string | null
+          ai_call_result?: string | null
+          ai_handoff_reason?: string | null
+          ai_score?: number | null
+          ai_score_post_call?: number | null
+          ai_score_reasons?: Json | null
+          assigned_to?: string | null
+          assigned_va?: string | null
+          automation_state?: string | null
+          best_time_to_call?: string | null
+          business_name?: string | null
+          callback_due_at?: string | null
+          category?: string | null
+          category_confidence?: number | null
+          category_group?: string | null
+          category_original?: string | null
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          duplicate_of?: string | null
+          duplicate_reason?: string | null
+          email?: string | null
+          external_place_id?: string | null
+          external_source?: string | null
+          follow_up_at?: string | null
+          full_address?: string | null
+          geocode_source?: string | null
+          geocoded_at?: string | null
+          google_rating?: number | null
+          google_types?: string[] | null
+          id?: string | null
+          last_contacted_at?: string | null
+          last_outcome?: string | null
+          last_sms_template?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          maps_url?: string | null
+          metro?: string | null
+          next_step?: string | null
+          notes?: string | null
+          onboarded_at?: string | null
+          onboarding_link_sent_at?: string | null
+          outreach_count?: number | null
+          owner_verified?: boolean | null
+          partner_id?: string | null
+          phone?: string | null
+          priority_bucket?: string | null
+          priority_score?: number | null
+          recommended_ai_agent?: string | null
+          review_count?: number | null
+          sms_count?: number | null
+          source?: string | null
+          state?: string | null
+          status?: string | null
+          times_seen?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          ai_call_eligible?: boolean | null
+          ai_call_last_attempt_at?: string | null
+          ai_call_result?: string | null
+          ai_handoff_reason?: string | null
+          ai_score?: number | null
+          ai_score_post_call?: number | null
+          ai_score_reasons?: Json | null
+          assigned_to?: string | null
+          assigned_va?: string | null
+          automation_state?: string | null
+          best_time_to_call?: string | null
+          business_name?: string | null
+          callback_due_at?: string | null
+          category?: string | null
+          category_confidence?: number | null
+          category_group?: string | null
+          category_original?: string | null
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          duplicate_of?: string | null
+          duplicate_reason?: string | null
+          email?: string | null
+          external_place_id?: string | null
+          external_source?: string | null
+          follow_up_at?: string | null
+          full_address?: string | null
+          geocode_source?: string | null
+          geocoded_at?: string | null
+          google_rating?: number | null
+          google_types?: string[] | null
+          id?: string | null
+          last_contacted_at?: string | null
+          last_outcome?: string | null
+          last_sms_template?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          maps_url?: string | null
+          metro?: string | null
+          next_step?: string | null
+          notes?: string | null
+          onboarded_at?: string | null
+          onboarding_link_sent_at?: string | null
+          outreach_count?: number | null
+          owner_verified?: boolean | null
+          partner_id?: string | null
+          phone?: string | null
+          priority_bucket?: string | null
+          priority_score?: number | null
+          recommended_ai_agent?: string | null
+          review_count?: number | null
+          sms_count?: number | null
+          source?: string | null
+          state?: string | null
+          status?: string | null
+          times_seen?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_ai_denial_summary: {
         Row: {
