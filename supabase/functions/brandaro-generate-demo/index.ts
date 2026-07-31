@@ -377,7 +377,66 @@ Deno.serve(async (req) => {
 
       await supabase.from("brandaro_qualified_leads").update({ demo_status: "generated" }).eq("id", lead_id);
 
-      // ---- AUTO-SEND (Step 10): fire the demo SMS as soon as the demo is ready.
+      // ---- Step order (per spec): deploy -> audit -> SMS ----
+
+      // 1) Trigger a rebuild of this industry's Vercel project.
+      const vercel = await tryVercelHook(supabase, industry, {
+        demo_id: demo.id,
+        slug: demoSlug,
+        industry,
+        business_name: lead.business_name,
+        demo_url: demoUrl,
+        city: lead.city,
+        phone: lead.phone,
+        hero_headline: aiRes.content.hero_headline,
+        hero_sub: aiRes.content.hero_subheadline,
+        cta_text: aiRes.content.cta_text,
+        color_primary: aiRes.content.color_primary,
+        color_secondary: aiRes.content.color_secondary,
+        services: aiRes.content.services,
+        about_text: aiRes.content.about_paragraph,
+        // Real Google Places content (reviews + resolved photo image URLs).
+        reviews: leadReviews,
+        photos: leadPhotos,
+        logo_url: (demo as any).logo_url ?? null,
+      });
+      if (!vercel.ok) console.warn("Vercel deploy hook not fired:", vercel.error);
+
+      // 2) Quality audit (8 dimensions, threshold 88, up to 2 auto-fix passes).
+      // NON-FATAL by design: a failed or low audit never blocks the SMS.
+      const audit: Record<string, unknown> = { status: "skipped" };
+      if (vercel.ok) {
+        try {
+          const { data: auditData, error: auditErr } = await supabase.functions.invoke("brandaro-score-demo", {
+            body: { action: "score_and_fix", demo_id: demo.id },
+          });
+          if (auditErr) {
+            audit.status = "failed";
+            audit.error = auditErr.message || "invoke_error";
+          } else {
+            audit.status = "completed";
+            audit.score = (auditData as any)?.overall_score ?? null;
+            audit.threshold = (auditData as any)?.threshold ?? null;
+            audit.passed = (auditData as any)?.passed ?? null;
+            audit.passes = ((auditData as any)?.passes ?? []).length;
+            audit.scored_by = (auditData as any)?.scored_by ?? null;
+            audit.source = (auditData as any)?.source ?? null;
+            audit.issues_count = ((auditData as any)?.issues ?? []).length;
+          }
+        } catch (e) {
+          audit.status = "failed";
+          audit.error = e instanceof Error ? e.message : "unknown";
+        }
+      } else {
+        audit.reason = "deploy_not_fired";
+      }
+      if (audit.status === "failed") {
+        console.error(`[audit] demo ${demo.id} audit failed: ${audit.error} — sending SMS anyway`);
+      } else {
+        console.log(`[audit] demo ${demo.id} audit status=${audit.status} score=${audit.score ?? "n/a"}`);
+      }
+
+      // 3) AUTO-SEND (Step 10): fire the demo SMS once the demo is audited.
       // NON-FATAL: any failure here is logged and reported, never fails generation.
       // Suppression (DNC) is enforced inside brandaro-send-demo via isSuppressed().
       const sms: {
@@ -418,29 +477,6 @@ Deno.serve(async (req) => {
         console.log(`[auto-send] demo ${demo.id} sms status=${sms.status}${sms.reason ? ` (${sms.reason})` : ""}`);
       }
 
-      // Trigger a rebuild of this industry's Vercel project.
-      const vercel = await tryVercelHook(supabase, industry, {
-        demo_id: demo.id,
-        slug: demoSlug,
-        industry,
-        business_name: lead.business_name,
-        demo_url: demoUrl,
-        city: lead.city,
-        phone: lead.phone,
-        hero_headline: aiRes.content.hero_headline,
-        hero_sub: aiRes.content.hero_subheadline,
-        cta_text: aiRes.content.cta_text,
-        color_primary: aiRes.content.color_primary,
-        color_secondary: aiRes.content.color_secondary,
-        services: aiRes.content.services,
-        about_text: aiRes.content.about_paragraph,
-        // Real Google Places content (reviews + resolved photo image URLs).
-        reviews: leadReviews,
-        photos: leadPhotos,
-        logo_url: (demo as any).logo_url ?? null,
-
-      });
-      if (!vercel.ok) console.warn("Vercel deploy hook not fired:", vercel.error);
 
       return new Response(JSON.stringify({ success: true, demo, engine: "native", design_md_loaded: !!designMd, vercel, sms }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
