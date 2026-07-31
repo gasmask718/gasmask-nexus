@@ -27,6 +27,33 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ---- COMPLIANCE GATE: unified suppression check (dnc_list + opt_out_events).
+    // Fails CLOSED: a lookup error blocks the send.
+    if (channel === "sms") {
+      const suppression = await isSuppressed(supabase, destination);
+      if (suppression.blocked) {
+        console.warn(`[brandaro-send-demo] BLOCKED ${destination} — ${suppression.reason} (${suppression.source})`);
+        await supabase.from("brandaro_message_log").insert({
+          lead_id: lead_id || null,
+          demo_id,
+          channel,
+          provider: "twilio",
+          destination,
+          message_body: null,
+          send_status: "blocked",
+          failure_reason: `suppressed:${suppression.reason}`,
+          sent_at: null,
+        });
+        return new Response(JSON.stringify({
+          ok: false,
+          suppressed: true,
+          reason: suppression.reason,
+          source: suppression.source,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+
     // Get demo info
     const { data: demo } = await supabase
       .from("brandaro_demo_sites")
