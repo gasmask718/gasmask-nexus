@@ -60,7 +60,8 @@ Deno.serve(async (req) => {
     if (!hasRole) return json({ error: "Operator role required" }, 403);
 
     const body = await req.json();
-    const { store_id, contact_id, to_phone } = body || {};
+    const { store_id, contact_id, to_phone, bridge_to_phone } = body || {};
+
 
     if (!store_id || !to_phone) {
       return json({ error: "store_id and to_phone are required" }, 400);
