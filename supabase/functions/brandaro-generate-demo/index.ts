@@ -1,3 +1,4 @@
+import { fetchPlaceContent } from "../_shared/places-client.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -525,6 +526,26 @@ Deno.serve(async (req) => {
 
     const industry = normalizeIndustry(lead.industry);
 
+    // Backfill Google reviews/photos for leads imported before the content
+    // pass existed. One Details call + N photo-media calls; never fatal.
+    let leadReviews = (lead as any).reviews ?? null;
+    let leadPhotos = (lead as any).photos ?? null;
+    const gKey = Deno.env.get("GOOGLE_PLACES_API_KEY") || Deno.env.get("GOOGLE_MAPS_API_KEY");
+    if ((!leadReviews || !leadPhotos) && lead.google_place_id && gKey) {
+      try {
+        const content = await fetchPlaceContent(lead.google_place_id, gKey, { maxReviews: 5, maxPhotos: 6 });
+        leadReviews = leadReviews ?? (content.reviews.length ? content.reviews : null);
+        leadPhotos = leadPhotos ?? (content.photos.length ? content.photos : null);
+        if (leadReviews || leadPhotos) {
+          await supabase.from("brandaro_qualified_leads")
+            .update({ reviews: leadReviews, photos: leadPhotos }).eq("id", lead_id);
+        }
+        console.log(`[demo] places content backfill: reviews=${content.reviews.length} photos=${content.photos.length}`);
+      } catch (e) {
+        console.warn("[demo] places content backfill failed:", e instanceof Error ? e.message : e);
+      }
+    }
+
     if (engine === "native") {
       const designMd = await loadDesignMd(supabase, industry);
       const aiRes = await callLovableAi(lead, industry, designMd);
@@ -596,10 +617,9 @@ Deno.serve(async (req) => {
         color_secondary: aiRes.content.color_secondary,
         services: aiRes.content.services,
         about_text: aiRes.content.about_paragraph,
-        // Not collected by the current pipeline — passed through so the vars
-        // light up automatically once these sources exist.
-        reviews: (lead as any).reviews ?? null,
-        photos: (lead as any).photos ?? null,
+        // Real Google Places content (reviews + resolved photo image URLs).
+        reviews: leadReviews,
+        photos: leadPhotos,
         logo_url: (demo as any).logo_url ?? null,
 
       });

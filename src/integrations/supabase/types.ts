@@ -22994,6 +22994,7 @@ export type Database = {
           name_for_emails: string | null
           next_callback_at: string | null
           phone_number: string | null
+          photos: Json | null
           pipeline_stage: string
           place_id: string | null
           postal_code: string | null
@@ -23006,6 +23007,7 @@ export type Database = {
           rating: number | null
           revenue_amount: number | null
           review_count: number | null
+          reviews: Json | null
           service_interest: string | null
           sms_count: number | null
           source_file: string | null
@@ -23070,6 +23072,7 @@ export type Database = {
           name_for_emails?: string | null
           next_callback_at?: string | null
           phone_number?: string | null
+          photos?: Json | null
           pipeline_stage?: string
           place_id?: string | null
           postal_code?: string | null
@@ -23082,6 +23085,7 @@ export type Database = {
           rating?: number | null
           revenue_amount?: number | null
           review_count?: number | null
+          reviews?: Json | null
           service_interest?: string | null
           sms_count?: number | null
           source_file?: string | null
@@ -23146,6 +23150,7 @@ export type Database = {
           name_for_emails?: string | null
           next_callback_at?: string | null
           phone_number?: string | null
+          photos?: Json | null
           pipeline_stage?: string
           place_id?: string | null
           postal_code?: string | null
@@ -23158,6 +23163,7 @@ export type Database = {
           rating?: number | null
           revenue_amount?: number | null
           review_count?: number | null
+          reviews?: Json | null
           service_interest?: string | null
           sms_count?: number | null
           source_file?: string | null
