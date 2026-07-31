@@ -558,9 +558,35 @@ CRITICAL RULES FROM CALIBRATION DATA:
 
     if (game_id) {
       const { data: game } = await supabase.from('sbo_games').select('*').eq('id', game_id).single();
-      const { data: odds } = await supabase.from('sbo_odds').select('*').eq('game_id', game_id).eq('market_type', 'moneyline').eq('sportsbook', 'draftkings').order('fetched_at', { ascending: false }).limit(1);
-      ctx = { ...ctx, ...game, home_odds: odds?.[0]?.home_odds, away_odds: odds?.[0]?.away_odds };
+      // ALL books for this game's moneyline — needed for the de-vigged consensus.
+      const { data: allOdds } = await supabase
+        .from('sbo_odds')
+        .select('sportsbook, home_odds, away_odds, fetched_at')
+        .eq('game_id', game_id)
+        .eq('market_type', 'moneyline')
+        .order('fetched_at', { ascending: false });
+
+      const devig = deriveMoneylineConsensus(allOdds || []);
+      const dk = (allOdds || []).find((o: any) => (o.sportsbook || '').toLowerCase() === 'draftkings');
+      const anyBook = dk || (allOdds || [])[0];
+
+      ctx = {
+        ...ctx,
+        ...game,
+        home_odds: anyBook?.home_odds ?? null,
+        away_odds: anyBook?.away_odds ?? null,
+        devig,
+      };
+
+      if (devig) {
+        console.log(
+          `De-vig consensus (${devig.books_used} books): home ${(devig.home_prob * 100).toFixed(1)}% / away ${(devig.away_prob * 100).toFixed(1)}% → ${devig.predicted_outcome}`,
+        );
+      } else {
+        console.log('No two-sided moneyline odds found — de-vig derivation unavailable');
+      }
     }
+
 
     if (prop_id) {
       const { data: prop } = await supabase.from('sbo_player_props').select('*, sbo_games(*)').eq('id', prop_id).single();
