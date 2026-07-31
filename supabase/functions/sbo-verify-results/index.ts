@@ -699,7 +699,11 @@ serve(async (req) => {
           propsVerified++;
           if (predictionVerdict === 'correct') { mlb.props_correct++; propsCorrect++; }
           else if (predictionVerdict === 'incorrect') { mlb.props_incorrect++; propsIncorrect++; }
-          else { mlb.props_push++; propsPush++; }
+          else if (predictionVerdict === 'push') { mlb.props_push++; propsPush++; }
+          // 'over' / 'under' means the box score resolved but no AI pick was
+          // attached — outcome recorded, nothing to score. Must not inflate
+          // the push bucket or it corrupts accuracy reporting.
+          else { mlb.props_resolved_no_pick++; }
         } catch (e: any) {
           console.error(`MLB prop verify failed for ${prop.player_name}:`, e.message);
         }
