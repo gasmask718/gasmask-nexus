@@ -331,11 +331,50 @@ DO:
       fix first.
 3. Migrate bucket (c), then (b). Report before/after counts.
 
+VERIFICATION GATE — a policy count dropping from 40 permissive to 0 is
+NOT by itself evidence that nothing broke. This system has no automated
+test coverage, and a role-scoping change can silently break a page that
+assumed broader read access (an empty table renders as "no data", not
+as an error).
+4. After bucket (c) migrates — and again after bucket (b) — load the
+   actual frontend pages that read each affected table and confirm they
+   still render real rows. Do this BEFORE starting the next bucket.
+   At minimum, for each table touched, identify the consuming route(s)
+   from src/routes/AppRoutes.tsx and the SBO page components, load
+   them signed in as a normal operator (not service_role), and confirm
+   row counts on screen match the row counts in the table.
+5. Report per-page pass/fail alongside the policy counts. If any page
+   goes empty, revert that bucket's migration before continuing.
+
 DO NOT disable RLS anywhere. DO NOT drop a policy without replacing it
 in the same migration — the frontend reads these tables live.
 ```
 
-### 7.10.2 Prompt Fix 7.10-B
+### 7.10.2 Prompt Fix 7.10-B — ⚠️ URGENT SAFETY CHECK (do this first)
+
+```
+FIX TASK — CONFIRM sbo-auto-bet HAS NO LIVE BETTING CAPABILITY
+
+CONTEXT: sbo-auto-bet reads from the dead props_master table and has
+never written a row to sbo_actual_bets. Before treating this as routine
+cleanup, confirm whether this function is connected to any real
+sportsbook API/credentials that could place a real-money bet if it ever
+DID successfully read a row.
+
+DO:
+1. Read the full function. Identify every external API call it makes
+   and whether any require live credentials/API keys that exist in the
+   vault right now.
+2. Confirm explicitly: is there ANY code path in this function that
+   could place a real bet with real money, today, if its props_master
+   read succeeded?
+3. Report findings plainly — do not bundle this into the props_master
+   migration decision. This is a standalone safety confirmation.
+
+DO NOT modify the function. Read and report only.
+```
+
+### 7.10.3 Prompt Fix 7.10-C
 
 ```
 FIX TASK — RESOLVE props_master DRIFT (3 DEAD FUNCTIONS)
