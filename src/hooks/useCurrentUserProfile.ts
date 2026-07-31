@@ -82,9 +82,12 @@ export function useUpdateUserProfile() {
 
 export function useIsAdmin() {
   const { data, isLoading } = useCurrentUserProfile();
-  
+
+  // NOTE: 'va' is NOT admin. VA scope is tenant-bound via business_members.
+  const role = data?.profile?.primary_role as string | undefined;
+
   return {
-    isAdmin: data?.profile?.primary_role === 'admin' || data?.profile?.primary_role === 'va',
+    isAdmin: role === 'admin' || role === 'owner' || role === 'ceo',
     isLoading
   };
 }

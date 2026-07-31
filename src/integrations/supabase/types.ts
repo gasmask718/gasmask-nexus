@@ -102132,6 +102132,7 @@ export type Database = {
           borough_id: string | null
           brand_id: string | null
           bring_samples: boolean | null
+          business_id: string | null
           city: string
           communication_preference: string | null
           connected_group_id: string | null
@@ -102232,6 +102233,7 @@ export type Database = {
           borough_id?: string | null
           brand_id?: string | null
           bring_samples?: boolean | null
+          business_id?: string | null
           city: string
           communication_preference?: string | null
           connected_group_id?: string | null
@@ -102332,6 +102334,7 @@ export type Database = {
           borough_id?: string | null
           brand_id?: string | null
           bring_samples?: boolean | null
+          business_id?: string | null
           city?: string
           communication_preference?: string | null
           connected_group_id?: string | null
@@ -102467,6 +102470,13 @@ export type Database = {
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_master_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
           {
@@ -122107,45 +122117,6 @@ export type Database = {
           },
         ]
       }
-      va_permissions: {
-        Row: {
-          allowed_brands: string[]
-          can_access_ai_engine: boolean | null
-          can_access_dashboard: boolean | null
-          can_access_delivery_routing: boolean | null
-          can_access_upload_engine: boolean | null
-          created_at: string | null
-          id: string
-          updated_at: string | null
-          user_id: string
-          va_role: Database["public"]["Enums"]["va_role"]
-        }
-        Insert: {
-          allowed_brands?: string[]
-          can_access_ai_engine?: boolean | null
-          can_access_dashboard?: boolean | null
-          can_access_delivery_routing?: boolean | null
-          can_access_upload_engine?: boolean | null
-          created_at?: string | null
-          id?: string
-          updated_at?: string | null
-          user_id: string
-          va_role: Database["public"]["Enums"]["va_role"]
-        }
-        Update: {
-          allowed_brands?: string[]
-          can_access_ai_engine?: boolean | null
-          can_access_dashboard?: boolean | null
-          can_access_delivery_routing?: boolean | null
-          can_access_upload_engine?: boolean | null
-          created_at?: string | null
-          id?: string
-          updated_at?: string | null
-          user_id?: string
-          va_role?: Database["public"]["Enums"]["va_role"]
-        }
-        Relationships: []
-      }
       va_profiles: {
         Row: {
           created_at: string | null
@@ -138227,7 +138198,15 @@ export type Database = {
         Args: { _action?: string; _domain: string }
         Returns: boolean
       }
+      has_any_business_role: {
+        Args: { _role: string; _user_id: string }
+        Returns: boolean
+      }
       has_audit_engine_access: { Args: { _user_id: string }; Returns: boolean }
+      has_business_role: {
+        Args: { _business_id: string; _role: string; _user_id: string }
+        Returns: boolean
+      }
       has_finance_access: { Args: { _user_id: string }; Returns: boolean }
       has_full_comms_access: { Args: { _user_id: string }; Returns: boolean }
       has_org_role: {
@@ -138794,6 +138773,7 @@ export type Database = {
           borough_id: string | null
           brand_id: string | null
           bring_samples: boolean | null
+          business_id: string | null
           city: string
           communication_preference: string | null
           connected_group_id: string | null

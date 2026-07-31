@@ -37,7 +37,6 @@ const ADMIN_ONLY_TABLES = [
   'audit_log',
   'system_checkpoints',
   'api_clients',
-  'va_permissions',
   'automation_rules',
 ];
 

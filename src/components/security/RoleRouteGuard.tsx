@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
+import { useBusinessRoles } from "@/hooks/useBusinessMembership";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { Shield } from "lucide-react";
 
@@ -181,11 +182,13 @@ interface RoleRouteGuardProps {
 export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
   const location = useLocation();
   const { currentBusiness, loading: businessLoading } = useBusiness();
-  const { roles, loading: rolesLoading } = useUserRole(businessLoading ? null : (currentBusiness?.id ?? null));
+  const activeBusinessId = businessLoading ? null : (currentBusiness?.id ?? null);
+  const { roles, loading: rolesLoading } = useUserRole(activeBusinessId);
   const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
+  const { roles: businessRoles, isLoading: membershipLoading } = useBusinessRoles(activeBusinessId);
 
   // Don't block while loading
-  if (rolesLoading || profileLoading || businessLoading) {
+  if (rolesLoading || profileLoading || businessLoading || membershipLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -205,11 +208,18 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
     allRoles.push(profileRole);
   }
 
+  // Tenancy: the global `va` role only unlocks operational paths inside the
+  // business the user is actually a member of (business_members / has_business_role).
+  const isVAScoped =
+    !activeBusinessId || businessRoles.length > 0;
+  const effectiveRoles = isVAScoped ? allRoles : allRoles.filter((r) => r !== "va");
+
   // If user has any elevated role → full access
-  const hasElevatedAccess = allRoles.some((r) => ELEVATED_ROLES.includes(r));
+  const hasElevatedAccess = effectiveRoles.some((r) => ELEVATED_ROLES.includes(r));
   if (hasElevatedAccess) {
     return <>{children}</>;
   }
+
 
   const currentPath = location.pathname;
 
@@ -225,12 +235,12 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
 
   // Authenticated users with no assigned OS role should not fall through into
   // protected workspaces. Send them to the explicit approval state instead.
-  if (allRoles.length === 0) {
+  if (effectiveRoles.length === 0) {
     return <Navigate to="/pending-approval" replace />;
   }
 
   // Check if any of the user's roles grant access to the current path
-  const hasPathAccess = allRoles.some((role) => {
+  const hasPathAccess = effectiveRoles.some((role) => {
     const allowedPaths = ROLE_ALLOWED_PATHS[role];
     if (!allowedPaths) return false;
     return allowedPaths.some((prefix) => currentPath === prefix || currentPath.startsWith(prefix + "/"));
@@ -241,11 +251,11 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
   }
 
   // Denied — redirect to the user's primary portal home
-  const primaryRole = profileRole || allRoles[0];
+  const primaryRole = profileRole || effectiveRoles[0];
   const redirectTo = ROLE_HOME[primaryRole] || "/portal";
 
   console.warn(
-    `🔐 [RoleRouteGuard] DENIED: path="${currentPath}", roles=[${allRoles.join(",")}], redirecting to "${redirectTo}"`,
+    `🔐 [RoleRouteGuard] DENIED: path="${currentPath}", roles=[${effectiveRoles.join(",")}], redirecting to "${redirectTo}"`,
   );
 
   return <Navigate to={redirectTo} replace />;
