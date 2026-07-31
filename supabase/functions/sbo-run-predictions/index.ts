@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { deriveMoneylineConsensus, americanToImplied } from '../_shared/devigMoneyline.ts';
+import { upsertMoneylineSignal } from '../_shared/sboSignals.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -515,19 +516,44 @@ CRITICAL RULES FROM CALIBRATION DATA:
     if (game_id && prediction_type === 'moneyline' && !force_rerun) {
       const { data: existingPred } = await supabase
         .from('sbo_predictions')
-        .select('id, final_confidence, confidence_tier, data_quality')
+        .select('id, final_confidence, confidence_tier, data_quality, predicted_outcome')
         .eq('game_id', game_id)
         .eq('prediction_type', 'moneyline')
         .gte('created_at', `${today}T00:00:00`)
         .maybeSingle();
 
       if (existingPred) {
+        // Signal write is idempotent — keep it in sync even on a cache hit so a
+        // game predicted before sbo_signals existed still gets its signal row.
+        let cachedSignal: any = null;
+        try {
+          const { data: g } = await supabase
+            .from('sbo_games')
+            .select('home_team, away_team, game_date, sport_key')
+            .eq('id', game_id)
+            .maybeSingle();
+          if (g) {
+            cachedSignal = await upsertMoneylineSignal(supabase, {
+              sport_key: g.sport_key,
+              home_team: g.home_team,
+              away_team: g.away_team,
+              game_date: g.game_date,
+              side: existingPred.predicted_outcome,
+              internal_confidence: existingPred.final_confidence ?? 0,
+            });
+          }
+        } catch (sigErr) {
+          console.error('Non-fatal: cached sbo_signals upsert failed:', sigErr);
+        }
+
         return new Response(JSON.stringify({
           success: true,
           prediction_id: existingPred.id,
           final_confidence: existingPred.final_confidence,
           confidence_tier: existingPred.confidence_tier,
           data_quality: existingPred.data_quality,
+          predicted_outcome: existingPred.predicted_outcome,
+          signal: cachedSignal,
           source: 'cache',
           message: 'Prediction already exists for this game today',
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -796,6 +822,28 @@ CRITICAL RULES FROM CALIBRATION DATA:
       console.error('sbo_predictions insert failed:', insertError);
     }
 
+    // ═══ GAME-LEVEL SIGNAL (sbo_signals) ═══
+    // One row per game+pick_type, idempotent via the game-identity unique index.
+    // Only moneyline game predictions produce a signal; props are prop-level.
+    let signalResult: any = null;
+    if (prediction?.id && prediction_type === 'moneyline' && game_id) {
+      try {
+        signalResult = await upsertMoneylineSignal(supabase, {
+          sport_key,
+          home_team: ctx.home_team,
+          away_team: ctx.away_team,
+          game_date: ctx.game_date,
+          side: finalOutcome,
+          internal_confidence: finalScore,
+          odds: finalOutcome === 'home' ? ctx.home_odds : ctx.away_odds,
+        });
+        console.log('sbo_signals upsert:', JSON.stringify(signalResult));
+      } catch (sigErr) {
+        console.error('Non-fatal: sbo_signals upsert failed:', sigErr);
+        signalResult = { skipped: true, reason: (sigErr as Error).message };
+      }
+    }
+
     // ═══ INCREMENT sbo_sports.total_predictions (non-fatal) ═══
     if (prediction?.id) {
       try {
@@ -873,6 +921,7 @@ CRITICAL RULES FROM CALIBRATION DATA:
       data_quality: dataQuality,
       predicted_outcome: finalOutcome,
       outcome_source: derivedFromMarket ? 'devig_consensus' : 'caller',
+      signal: signalResult,
       devig: ctx.devig ? {
         books_used: ctx.devig.books_used,
         home_prob: Number((ctx.devig.home_prob * 100).toFixed(2)),
