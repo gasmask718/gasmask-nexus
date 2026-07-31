@@ -68,6 +68,9 @@ const POSTGAME_STEPS: EngineStep[] = [
   // once WNBA/NFL configs land — and so a night with no ESPN-graded sport
   // running doesn't get flagged required-but-empty.
   { fn: 'sbo-verify-results', label: 'Result Grading (ESPN scores + player props)', icon: '⚖️', required: true },
+  // Stats Brain ingestion (2b). Runs AFTER grading so the day's finals exist,
+  // and only for sports that have an ESPN grading config (same parser).
+  { fn: 'sbo-ingest-player-stats', label: 'Player Game Stats Ingestion (ESPN)', icon: '🧾', required: false, sports: GRADED_SPORT_KEYS, sportsNote: 'Free ESPN box scores; sports with a grading config only' },
   { fn: 'sbo-track-results', label: 'Grade Predictions + Update Accuracy', icon: '📋', required: false },
   { fn: 'sbo-analyze-model', label: 'Model Self-Analysis + Weight Adjustment', icon: '🧬', required: false },
 ];
