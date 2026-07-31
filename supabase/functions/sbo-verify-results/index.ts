@@ -167,7 +167,7 @@ serve(async (req) => {
     // ═══════════════════════════════════════
     // PHASE 1 — FETCH & UPDATE GAME SCORES
     // ═══════════════════════════════════════
-    const fetchAndUpdateScores = async (dateStr: string) => {
+    const fetchNbaScores = async (dateStr: string) => {
       if (!apiKey) return 0;
       let updated = 0;
       try {
