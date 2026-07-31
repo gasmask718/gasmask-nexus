@@ -797,6 +797,28 @@ CRITICAL RULES FROM CALIBRATION DATA:
       console.error('sbo_predictions insert failed:', insertError);
     }
 
+    // ═══ GAME-LEVEL SIGNAL (sbo_signals) ═══
+    // One row per game+pick_type, idempotent via the game-identity unique index.
+    // Only moneyline game predictions produce a signal; props are prop-level.
+    let signalResult: any = null;
+    if (prediction?.id && prediction_type === 'moneyline' && game_id) {
+      try {
+        signalResult = await upsertMoneylineSignal(supabase, {
+          sport_key,
+          home_team: ctx.home_team,
+          away_team: ctx.away_team,
+          game_date: ctx.game_date,
+          side: finalOutcome,
+          internal_confidence: finalScore,
+          odds: finalOutcome === 'home' ? ctx.home_odds : ctx.away_odds,
+        });
+        console.log('sbo_signals upsert:', JSON.stringify(signalResult));
+      } catch (sigErr) {
+        console.error('Non-fatal: sbo_signals upsert failed:', sigErr);
+        signalResult = { skipped: true, reason: (sigErr as Error).message };
+      }
+    }
+
     // ═══ INCREMENT sbo_sports.total_predictions (non-fatal) ═══
     if (prediction?.id) {
       try {
