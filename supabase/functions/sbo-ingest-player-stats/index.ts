@@ -168,10 +168,12 @@ serve(async (req) => {
           };
         });
 
-        // Upsert on the unique constraint — safe to re-run any date.
+        // Upsert on the player_key-based unique constraint — safe to re-run any date.
+        // player_key is a generated column: coalesce(player_id, player_name), so two
+        // different athletes sharing a name never collide.
         const { error } = await supabase
           .from('sbo_player_game_stats')
-          .upsert(rows, { onConflict: 'sport,player_name,game_id' });
+          .upsert(rows, { onConflict: 'sport,player_key,game_id' });
 
         if (error) {
           errors.push(`${dateStr}/${final.eventId}: upsert failed — ${error.message}`);
@@ -179,7 +181,7 @@ serve(async (req) => {
         }
         rowsUpserted += rows.length;
         dayRows += rows.length;
-        for (const r of rows) affectedPlayers.add(r.player_name);
+        for (const r of rows) affectedPlayers.add(r.player_id || r.player_name);
       }
 
       dayResults.push({ date: dateStr, ok: true, finals: sb.finals.length, rows: dayRows });
@@ -188,14 +190,14 @@ serve(async (req) => {
     // ── Season splits rollup (computed, never fetched) ──────────────
     let splitsUpserted = 0;
     if (!skipSplits && affectedPlayers.size > 0) {
-      const names = [...affectedPlayers];
-      for (let i = 0; i < names.length; i += 50) {
-        const chunk = names.slice(i, i + 50);
+      const keys = [...affectedPlayers];
+      for (let i = 0; i < keys.length; i += 50) {
+        const chunk = keys.slice(i, i + 50);
         const { data: gameRows, error: readErr } = await supabase
           .from('sbo_player_game_stats')
-          .select('player_name,player_id,team,game_date,is_home,stat_line')
+          .select('player_key,player_name,player_id,team,game_date,is_home,stat_line')
           .eq('sport', sport)
-          .in('player_name', chunk)
+          .in('player_key', chunk)
           .gte('game_date', `${season}-01-01`)
           .lte('game_date', `${season}-12-31`)
           .order('game_date', { ascending: false })
@@ -208,17 +210,18 @@ serve(async (req) => {
 
         const byPlayer = new Map<string, any[]>();
         for (const g of gameRows ?? []) {
-          const arr = byPlayer.get(g.player_name) ?? [];
+          const k = g.player_key;
+          const arr = byPlayer.get(k) ?? [];
           arr.push(g);
-          byPlayer.set(g.player_name, arr);
+          byPlayer.set(k, arr);
         }
 
-        const splitRows = [...byPlayer.entries()].map(([name, games]) => {
+        const splitRows = [...byPlayer.entries()].map(([, games]) => {
           // games already sorted newest-first
           const lines = games.map((g) => g.stat_line ?? {});
           return {
             sport,
-            player_name: name,
+            player_name: games[0]?.player_name ?? null,
             player_id: games[0]?.player_id ?? null,
             team: games[0]?.team ?? null,
             season,
@@ -236,12 +239,13 @@ serve(async (req) => {
         if (splitRows.length) {
           const { error: splitErr } = await supabase
             .from('sbo_player_season_splits')
-            .upsert(splitRows, { onConflict: 'sport,player_name,season' });
+            .upsert(splitRows, { onConflict: 'sport,player_key,season' });
           if (splitErr) errors.push(`splits upsert failed: ${splitErr.message}`);
           else splitsUpserted += splitRows.length;
         }
       }
     }
+
 
     const result = {
       success: true,
