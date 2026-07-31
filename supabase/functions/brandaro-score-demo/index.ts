@@ -582,16 +582,27 @@ async function handleScoreAndFix(supabase: any, body: any) {
   let lastResult: ScoreResult | null = null;
   let lastSource = "unknown";
   let fixesApplied: unknown = null;
+  // Set once a connection-level (TLS/DNS) failure proves the domain is
+  // misconfigured — later passes skip the live fetch entirely.
+  let liveFetchPermanentError: string | null = null;
 
   for (let pass = 1; pass <= maxPasses; pass++) {
     // --- acquire content: live site first, stored HTML as the safety net ---
     let html: string | null = null;
     let source = "stored_html";
-    if (demo.demo_url) {
+    if (demo.demo_url && !liveFetchPermanentError) {
       const live = await fetchLiveHtml(demo.demo_url, { attempts: liveAttempts, delayMs: liveDelay });
       if (live.html) { html = live.html; source = "live"; }
-      else console.warn(`[audit] live fetch exhausted for ${demo.demo_url} (${live.error}) — using stored HTML`);
+      else if (live.permanent) {
+        liveFetchPermanentError = live.error ?? "permanent fetch error";
+        console.warn(`[audit] live fetch permanently unavailable for ${demo.demo_url} (${liveFetchPermanentError}) — skipping live fetch for remaining passes`);
+      } else {
+        console.warn(`[audit] live fetch exhausted for ${demo.demo_url} (${live.error}) — using stored HTML`);
+      }
+    } else if (liveFetchPermanentError) {
+      console.warn(`[audit] skipping live fetch (${liveFetchPermanentError})`);
     }
+
     if (!html) html = demo.generated_html ?? null;
     if (!html) {
       return json({ error: "No live site and no stored generated_html to audit", passes }, 422);
