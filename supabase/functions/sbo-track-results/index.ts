@@ -9,6 +9,9 @@ const corsHeaders = {
 const SDIO_KEY = () => Deno.env.get('VITE_SPORTSDATAIO_NBA_KEY')!;
 const BASE = 'https://api.sportsdata.io/v3/nba';
 
+// MLB finals come from the free ESPN scoreboard (additive; NBA path untouched).
+import { fetchEspnMlbFinals, mlbTeamMatches } from '../_shared/espnMlb.ts';
+
 async function sdioGet(endpoint: string) {
   const res = await fetch(`${BASE}${endpoint}?key=${SDIO_KEY()}`);
   if (!res.ok) throw new Error(`SDIO error: ${res.status} ${endpoint}`);
