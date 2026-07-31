@@ -82,6 +82,8 @@ import { UnifiedInteractionModal } from "@/components/store/UnifiedInteractionMo
 import { CreateStoreInvoiceModal } from "@/components/store/CreateStoreInvoiceModal";
 import { RouteIntelligence } from "@/components/store/RouteIntelligence";
 import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
+import { StoreCallHistoryPanel } from "@/components/store/StoreCallHistoryPanel";
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORE MASTER PROFILE — Unified store view within Floor 1 CRM
@@ -490,12 +492,16 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
             <StorePersonalMemoryPanel storeId={id} />
           </div>
 
+          {/* Unified call + text history (AI and human, newest first) */}
+          <StoreCallHistoryPanel storeId={id} />
+
           {/* Route Intelligence — Add to Route wired to RouteAssignmentDialog */}
           <RouteIntelligence
             storeId={id}
             storeName={store.store_name}
             onAddToRoute={() => setDispatchStore(id)}
           />
+
 
           {/* CANONICAL PERFORMANCE TABS — Auto-synced with all profiles */}
           <SharedStorePerformanceTabs storeId={id} storeName={store.store_name} />

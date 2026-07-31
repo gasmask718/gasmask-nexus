@@ -134,21 +134,33 @@ Return ONLY the script text, nothing else.`,
       }
     }
 
-    // Log the call
-    await supabase.from("communication_logs").insert({
+    // Log the call — real columns, real store linkage. The previous version
+    // wrote to `phone_number` / `content`, which do not exist on
+    // communication_logs, so every AI call insert failed silently.
+    const { error: logErr } = await supabase.from("communication_logs").insert({
       direction: "outbound",
       channel: "call",
-      phone_number: store_phone,
-      content: scriptText,
+      call_type: "ai_outbound",
+      ai_assisted: true,
+      store_id: store_id || null,
+      recipient_phone: store_phone,
+      message_content: scriptText,
+      summary: `AI call — ${purpose}`,
       status: "initiated",
+      delivery_status: "initiated",
+      started_at: new Date().toISOString(),
+      twilio_call_sid: callSid || null,
+      source_table: store_id ? "stores" : null,
+      source_id: store_id || null,
+      source_business: "gasmask",
       metadata: {
         source: "gasmask-ai-caller",
-        store_id,
         store_name,
         call_purpose: purpose,
-        twilio_call_sid: callSid,
       },
     });
+    if (logErr) console.error("[GASMASK-CALLER] log insert failed:", logErr);
+
 
     console.log(`[GASMASK-CALLER] Call initiated to ${store_name} (${store_phone}) purpose=${purpose}`);
 
