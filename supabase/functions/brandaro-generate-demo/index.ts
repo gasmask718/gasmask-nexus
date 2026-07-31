@@ -1,5 +1,7 @@
 import { fetchPlaceContent } from "../_shared/places-client.ts";
 import { tryVercelHook } from "../_shared/vercelDeploy.ts";
+import { resolveLogoUrl } from "../_shared/logoChain.ts";
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
