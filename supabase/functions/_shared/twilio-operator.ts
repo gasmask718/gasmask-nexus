@@ -99,24 +99,62 @@ export async function sendOperatorSms({
   return { sid: data.sid, actualTo, overridden, from: fromSafe };
 }
 
+const escapeXml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+
 export async function initiateOperatorCall({
   to,
   recordingCallbackUrl,
   twimlUrl,
+  bridgeToNumber,
+  announcement,
 }: {
   to: string;
   recordingCallbackUrl: string;
+  /** Explicit TwiML endpoint. When set it wins over the inline TwiML below. */
   twimlUrl?: string;
+  /** Operator/agent number to bridge the callee to once they answer. */
+  bridgeToNumber?: string;
+  /** Recording disclosure played before the bridge. */
+  announcement?: string;
 }): Promise<{ sid: string; actualTo: string; overridden: boolean }> {
   const { actualTo, overridden } = getOutboundRecipient(to);
   console.log(
     `[twilio-operator] CALL from=${TWILIO_SHARED_NUMBER} to=${actualTo} (intended=${to})`,
   );
 
-  // TODO: Replace twimlUrl with TwiML that announces "this call is recorded"
-  // and connects the operator. Phase 5 UI will remind operator to disclose
-  // verbally if TwiML isn't ready.
-  const url = twimlUrl || "http://demo.twilio.com/docs/voice.xml";
+  // No more silent demo.twilio.com fallback — a call with no real TwiML used to
+  // play Twilio's documentation demo to the recipient. We now always send real
+  // instructions: a recording disclosure, then a bridge when we have a leg to
+  // bridge to.
+  const disclosure = announcement ||
+    "This call is being recorded for quality and training purposes.";
+  const bridge = bridgeToNumber
+    ? `<Dial callerId="${escapeXml(TWILIO_SHARED_NUMBER)}" answerOnBridge="true"><Number>${escapeXml(bridgeToNumber)}</Number></Dial>`
+    : "";
+  const inlineTwiml =
+    `<?xml version="1.0" encoding="UTF-8"?><Response>` +
+    `<Say voice="Polly.Matthew">${escapeXml(disclosure)}</Say>` +
+    bridge +
+    (bridge ? "" : "<Pause length=\"1\"/><Hangup/>") +
+    `</Response>`;
+
+  if (!twimlUrl && !bridgeToNumber) {
+    console.warn(
+      "[twilio-operator] no twimlUrl and no bridgeToNumber — placing disclosure-only call",
+    );
+  }
+
+  const params: Record<string, string> = {
+    From: TWILIO_SHARED_NUMBER,
+    To: actualTo,
+    Record: "true",
+    RecordingStatusCallback: recordingCallbackUrl,
+    RecordingStatusCallbackEvent: "completed",
+  };
+  if (twimlUrl) params.Url = twimlUrl;
+  else params.Twiml = inlineTwiml;
 
   const response = await fetch(
     `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`,
@@ -126,16 +164,10 @@ export async function initiateOperatorCall({
         Authorization: authHeader(),
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({
-        From: TWILIO_SHARED_NUMBER,
-        To: actualTo,
-        Url: url,
-        Record: "true",
-        RecordingStatusCallback: recordingCallbackUrl,
-        RecordingStatusCallbackEvent: "completed",
-      }),
+      body: new URLSearchParams(params),
     },
   );
+
 
   if (!response.ok) {
     const error = await response.text();
