@@ -283,6 +283,11 @@ serve(async (req) => {
         });
 
         if (!existingQualified) {
+          // Places API (New) content pass: reviews + photos, with photo
+          // references already converted to real image URLs. Never fatal.
+          const content = await fetchPlaceContent(place.place_id, googleKey, { maxReviews: 5, maxPhotos: 6 });
+          console.log(`[DISCOVERY] CONTENT: ${p.name} | reviews: ${content.reviews.length} | photos: ${content.photos.length}`);
+
           const { data: qualifiedLead, error: insertErr } = await supabase.from('brandaro_qualified_leads').insert({
             business_name: p.name,
             phone_number: phone,
@@ -294,6 +299,8 @@ serve(async (req) => {
             category: (p.types || []).join(', '),
             rating: p.rating ? Math.min(parseFloat(p.rating), 5.0) : null,
             review_count: p.user_ratings_total || 0,
+            reviews: content.reviews.length ? content.reviews : null,
+            photos: content.photos.length ? content.photos : null,
             has_website: false,
             website_status: 'no_website',
             google_place_id: place.place_id,
