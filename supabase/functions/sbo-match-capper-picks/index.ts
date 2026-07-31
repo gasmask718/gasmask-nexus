@@ -309,24 +309,24 @@ serve(async (req) => {
         let resolvedProps: any[] = [];
         for (let i = 0; i < propIds.length; i += 50) {
           const chunk = propIds.slice(i, i + 50);
-          const { data: props } = await supabase.from('props_master')
-            .select('id, actual_result, result, line').in('id', chunk);
+          const { data: props } = await supabase.from('sbo_player_props')
+            .select('id, actual_value, verdict, line').in('id', chunk);
           if (props) resolvedProps.push(...props);
         }
         const propMap = new Map(resolvedProps.map(p => [p.id, p]));
 
         for (const pick of pending) {
           const prop = propMap.get(pick.matched_prop_id);
-          if (!prop || prop.actual_result == null) continue;
+          if (!prop || prop.actual_value == null) continue;
 
           const pickLine = pick.line ?? prop.line;
           const dir = (pick.direction || '').toUpperCase();
           let result: string;
 
-          if (prop.actual_result === pickLine) result = 'push';
-          else if (['OVER', 'MORE', 'YES'].includes(dir)) result = prop.actual_result > pickLine ? 'won' : 'lost';
-          else if (['UNDER', 'LESS', 'NO'].includes(dir)) result = prop.actual_result < pickLine ? 'won' : 'lost';
-          else result = prop.result === 'won' || prop.result === 'W' ? 'won' : 'lost';
+          if (prop.actual_value === pickLine) result = 'push';
+          else if (['OVER', 'MORE', 'YES'].includes(dir)) result = prop.actual_value > pickLine ? 'won' : 'lost';
+          else if (['UNDER', 'LESS', 'NO'].includes(dir)) result = prop.actual_value < pickLine ? 'won' : 'lost';
+          else result = prop.verdict === 'hit' ? 'won' : 'lost';
 
           const { error } = await supabase.from('sbo_capper_picks').update({ result }).eq('id', pick.id);
           if (!error) resolved++;
