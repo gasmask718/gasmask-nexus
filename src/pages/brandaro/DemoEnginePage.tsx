@@ -94,6 +94,12 @@ export default function DemoEnginePage() {
         });
         if (error) throw error;
         toast.success(`Native demo generated for ${data?.demo?.business_name || 'lead'}`);
+        // Auto-send status reported by brandaro-generate-demo (Step 10).
+        const sms = (data as any)?.sms;
+        if (sms?.status === 'sent') toast.success('Demo link texted to the lead automatically.');
+        else if (sms?.status === 'blocked') toast.error(`SMS blocked — contact is on the do-not-contact list (${sms.reason}).`);
+        else if (sms?.status === 'failed') toast.error(`Demo is live, but the automatic SMS failed (${sms.reason}). Use the Send button to retry.`);
+        else if (sms?.status === 'skipped') toast.warning('Demo is live, but no phone number is on file — nothing was texted.');
       } else {
         // Durable scaffold
         const { data: lead } = await (supabase as any)
