@@ -18,9 +18,12 @@
 | 3. Win-rate defaults | ✅ PASS | `win_rate` / `roi_pct` default 0. `sbo_capper_performance` (721 rows) populating as picks resolve. | None. |
 | 4. RLS enabled on all `sbo_*` | ⚠️ PARTIAL | Zero tables with RLS off and zero tables with no policy — that part passes. **But 40 policies across `sbo_*` are fully permissive (`USING true`) on SELECT/ALL.** Posture work from the original doc is still unstarted. | See Prompt Fix 7.10-A. |
 | 5. `sbo_sport_performance` seeded | ⚠️ PARTIAL | Table now exists with **3 rows** (MLB week of 07-20 win rate 0.1176, MLB week of 07-27 rate 0, WNBA week of 07-27 rate 0.3333). Populated by the weekly optimizer, not seeded. `sbo_sports` seeded with 8 rows. | Acceptable as a rollup, **but the MLB 07-27 `0` is a stale artifact, not a real 0% week — re-verified directly (see below). Do not act on it; fix the rollup refresh instead.** |
+| 6. Stats-brain tables | ✅ PASS | `sbo_player_game_stats` **53,595** rows, `sbo_player_season_splits` **2,477**, `sbo_prop_stat_context` **2,100**, `sbo_player_props` **13,559**, `sbo_unified_props` **8,368**. | None. |
+| 7. Dead/empty tables | ⚠️ PARTIAL | Empty-but-present: `sbo_signal_inputs`, `sbo_signal_performance`, `sbo_prop_picks`, `sbo_prop_predictions`, `sbo_polymarket_signals`, `sbo_top_plays`, `sbo_actual_bets`, `sbo_weekly_reports`, `sbo_strategy_performance`, `sbo_daily_report`, plus 20 more. | Not blocking. Flagged in 7.10 as schema noise — several are the drifted-function targets. |
 
-**Re-verification of the MLB week-of-07-27 0% figure (queried live 2026-07-31):**
-The `sbo_sport_performance` row for MLB / week_start 2026-07-27 was `created_at 2026-07-27 16:07:21` — written on the *first day* of the week and **never refreshed since**. It covers only **6 picks** (3 spread, 2 total, 1 moneyline), all graded losses, at the `min_confidence_threshold = 60` filter. That is a real 0-for-6, but on a sample of six taken on day one of a seven-day window.
+### 7.1.1 Re-verification of the MLB week-of-07-27 0% figure (queried live 2026-07-31)
+
+The `sbo_sport_performance` row for MLB / `week_start 2026-07-27` has `created_at 2026-07-27 16:07:21` — written on the *first day* of the week and **never refreshed since**. It covers only **6 picks** (3 spread, 2 total, 1 moneyline), all graded losses, under the row's `min_confidence_threshold = 60`. That is a real 0-for-6, but on a six-pick sample taken on day one of a seven-day window.
 
 The actual MLB prediction population for game dates 2026-07-27 → 2026-08-02:
 
@@ -28,11 +31,11 @@ The actual MLB prediction population for game dates 2026-07-27 → 2026-08-02:
 | :---- | ---: | ---: | ---: | ---: |
 | `player_prop` | 66 | 41 | 17 | 8 |
 | `moneyline` | 13 | 12 | 0 | 1 |
-| **Total** | **79** | **53 (67%)** | **17** | **9** |
+| **Total** | **79** | **53 (67% ungraded)** | **17** | **9** |
 
-Graded win rate for the week is therefore **17/26 = 65.4%**, not 0%. Two-thirds of the week is still ungraded, and **zero** graded MLB predictions in that week carry `final_confidence >= 60`, so the rollup's ≥60 filter matched none of them — the 6 picks it did count came from a different, earlier source population. **Conclusion: the 0% is a stale, unrefreshed rollup written against a 6-pick day-one sample, not a real losing week. The defect is that the weekly optimizer never rewrites the in-progress week's row.**
-| 6. Stats-brain tables | ✅ PASS | `sbo_player_game_stats` **53,595** rows, `sbo_player_season_splits` **2,477**, `sbo_prop_stat_context` **2,100**, `sbo_player_props` **13,559**, `sbo_unified_props` **8,368**. | None. |
-| 7. Dead/empty tables | ⚠️ PARTIAL | Empty-but-present: `sbo_signal_inputs`, `sbo_signal_performance`, `sbo_prop_picks`, `sbo_prop_predictions`, `sbo_polymarket_signals`, `sbo_top_plays`, `sbo_actual_bets`, `sbo_weekly_reports`, `sbo_strategy_performance`, `sbo_daily_report`, plus 20 more. | Not blocking. Flagged in 7.10 as schema noise — several are the drifted-function targets. |
+Graded win rate for the week is **17/26 = 65.4%**, not 0%. Two-thirds of the week is still ungraded, and **zero** graded MLB predictions in that week carry `final_confidence >= 60`, so the rollup's ≥60 filter matched none of the current population — the 6 picks it did count came from a different, earlier source population.
+
+**Conclusion:** the 0% is a stale, unrefreshed rollup over a 6-pick day-one sample, not a real losing week. The actual defect is that the weekly optimizer never rewrites the in-progress week's row. Do not treat the 0% as a model-accuracy signal.
 
 ---
 
