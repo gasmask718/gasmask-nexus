@@ -96,7 +96,7 @@ function matchPick(pick: any, props: any[]): MatchResult | null {
 
   for (const prop of props) {
     const propName = (prop.player_name || '').trim();
-    const propStat = normalizeStat(prop.stat_type || '');
+    const propStat = normalizeStat(prop.prop_type || prop.stat_type || '');
     const propLine = prop.line;
     const propDate = prop.game_date;
 
