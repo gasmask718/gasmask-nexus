@@ -152,14 +152,16 @@ async function combineSignal(supabase: any, signal: SignalRow) {
   const fading: any[] = [];
 
   for (const pick of gamePicks) {
-    if (!pick.capper_id || !pick.direction || !signal.side) continue;
+    if (!pick.capper_id) continue;
     const capper = capperById.get(pick.capper_id);
     if (!capper) continue;
     const sportWr = sportWinRate(capper, signal.sport);
     const weight = Number(capper.capper_weight ?? 100);
 
-    const sameSide = pick.direction.toLowerCase() === (signal.side ?? '').toLowerCase();
+    const sameSide = pickAgrees(pick, signal);
+    if (sameSide === null) continue; // pick has no readable opinion on this signal
     if (sameSide) {
+
       let bonus = 0;
       if (sportWr >= 65) bonus += 15;
       else if (sportWr >= 58) bonus += 8;
