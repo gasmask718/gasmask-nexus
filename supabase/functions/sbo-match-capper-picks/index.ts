@@ -286,7 +286,7 @@ serve(async (req) => {
         // Newest first: props only exist for recent dates, so an unordered
         // slice wastes the budget on picks that can never match.
         .order('game_date', { ascending: false })
-        .limit(500);
+        .limit(1000);
 
       if (unmatched && unmatched.length > 0) {
         const dates = [...new Set(unmatched.map(p => p.game_date).filter(Boolean))];
