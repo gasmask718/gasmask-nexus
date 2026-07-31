@@ -225,9 +225,15 @@ export default function BuilderHubPage() {
                                 </Button>
                               )}
                               {d.generation_status === "ready" && (
-                                <Button size="sm" onClick={() => sendDemo.mutate(d.id)} disabled={sendDemo.isPending}>
-                                  Send SMS
-                                </Button>
+                                (d as any).sent_at ? (
+                                  <Badge variant="secondary">
+                                    Sent {new Date((d as any).sent_at).toLocaleDateString()}
+                                  </Badge>
+                                ) : (
+                                  <Button size="sm" onClick={() => sendDemo.mutate(d)} disabled={sendDemo.isPending}>
+                                    Send SMS
+                                  </Button>
+                                )
                               )}
                             </td>
                           </tr>
