@@ -1,0 +1,28 @@
+number,brand,voice_webhook,handler_function,experience,ivr,business_hours,after_hours,fallback,logged_to,status
++12132978049,brandaro,https://qalaaroashbggynpvqct.supabase.co/functions/v1/dc-inbound-call,dc-inbound-call,Dial to Bland DID resolved from v_phone_directory (view MISSING) -> falls back to BRANDARO_BLAND_INBOUND_NUMBER env,none,none,none,"Say 'unable to connect' + Hangup",dc_call_logs,DEGRADED
++12135834490,brandaro,.../twilio-inbound-call,twilio-inbound-call,same as above,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++13055207414,brandaro,.../twilio-inbound-call,twilio-inbound-call,same,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++14048009371,brandaro,.../dc-inbound-call,dc-inbound-call,same,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++14709314883,brandaro,.../dc-inbound-call,dc-inbound-call,same,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++16027371645,brandaro,.../dc-inbound-call,dc-inbound-call,same,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++18472389630,brandaro,.../dc-inbound-call,dc-inbound-call,same,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++18483588206,brandaro,.../dc-inbound-call,dc-inbound-call,same,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++18887598857,brandaro,.../dc-inbound-call,dc-inbound-call,same (toll-free),none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++18888636609,brandaro,.../dc-inbound-call,dc-inbound-call,same (toll-free),none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++19292389353,brandaro,.../dc-inbound-call,dc-inbound-call,same,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++19295727822,brandaro,.../dc-inbound-call,dc-inbound-call,same,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++19296598565,brandaro,.../twilio-inbound-call,twilio-inbound-call,same,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++19296613201,brandaro,.../twilio-inbound-call,twilio-inbound-call,same,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++19296746727,brandaro,.../twilio-inbound-call,twilio-inbound-call,same,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++18484004179,gasmask,.../dc-inbound-call,dc-inbound-call,"Dial Bland DID; on no-answer -> gasmask-missed-call-handler (SMS text-back + voicemail)",none,"yes (voice_routing_settings, gasmask-inbound-voice path only)","owner cell","voicemail + SMS recovery",dc_call_logs + communication_logs,WORKING
++19298225712,gasmask,.../twilio-inbound-call,twilio-inbound-call,same,none,yes,owner cell,voicemail + SMS,dc_call_logs,WORKING
++18777304526,iclean,.../dc-inbound-call,dc-inbound-call,Dial ICLEAN_BLAND_INBOUND_NUMBER env,none,none,none,"Say + Hangup",dc_call_logs,DEGRADED
++18558003705,surplus_funds,.../dc-inbound-call,dc-inbound-call,Dial SF_BLAND_INBOUND_NUMBER env — env var presence UNVERIFIED,none,none,none,"Say 'not yet configured' + Hangup",dc_call_logs,AT RISK
++18442800741,top_tier,.../dc-inbound-call,dc-inbound-call,Dial TT_BLAND_INBOUND_NUMBER env — UNVERIFIED,none,none,none,"Say + Hangup",dc_call_logs,AT RISK
++19292983199,real_estate,.../twilio-inbound-call,twilio-inbound-call,inactive in dc_phone_numbers (is_active=false) but Twilio webhook live,none,none,none,"Say + Hangup",dc_call_logs,ORPHAN
++19294990837,unforgettable_times,.../twilio-inbound-call,twilio-inbound-call,inactive row; live webhook,none,none,none,"Say + Hangup",dc_call_logs,ORPHAN
++19292623850,playboxxx,.../twilio-inbound-call,twilio-inbound-call,inactive row; live webhook,none,none,none,"Say + Hangup",dc_call_logs,ORPHAN
++18776818621,UNASSIGNED (verified toll-free sender),.../twilio-inbound-call,twilio-inbound-call,no directory row -> global BLAND_INBOUND_NUMBER or 'not configured',none,none,none,"Say + Hangup",dc_call_logs,UNOWNED
++18777344875,UNASSIGNED,.../twilio-inbound-call,twilio-inbound-call,no directory row,none,none,none,"Say + Hangup",dc_call_logs,UNOWNED
++19546860097,UNASSIGNED,.../twilio-inbound-call,twilio-inbound-call,no directory row,none,none,none,"Say + Hangup",dc_call_logs,UNOWNED
++18883022514,UNKNOWN / FOREIGN PROJECT,https://clrgkreqqgmycrskcmwq.supabase.co/functions/v1/twilio-twiml,foreign-project function,"points at a DIFFERENT Supabase project; health monitor: fail (12200 class)",none,none,none,none,none,BROKEN
