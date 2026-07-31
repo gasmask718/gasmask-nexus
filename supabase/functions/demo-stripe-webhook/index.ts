@@ -123,6 +123,8 @@ Deno.serve(async (req) => {
     //   amount_paid       -> (no column; brandaro_demo_sites.paid_amount)
     //   stripe_session_id -> (no column; brandaro_demo_sites.stripe_session_id)
     //   intake_completed  -> progress_stage = 'awaiting_intake' (flips when intake lands)
+    //   build_engine      -> starter = 'durable'; pro/custom = 'native' (Vercel template clone)
+    const build_engine = tier === "starter" ? "durable" : "native";
     let build_job_id: string | null = null;
     const { data: job, error: jobErr } = await supabase
       .from("brandaro_build_jobs")
