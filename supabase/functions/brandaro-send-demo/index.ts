@@ -19,13 +19,28 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { demo_id, lead_id, channel = "sms", destination, message_override } = await req.json();
+    const { demo_id, lead_id, channel = "sms", destination, message_override, force = false } = await req.json();
 
     if (!demo_id || !destination) {
       return new Response(JSON.stringify({ error: "demo_id and destination required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // ---- DOUBLE-SEND GUARD: demos are now auto-sent by brandaro-generate-demo.
+    // If sent_at is already stamped, refuse unless explicitly forced.
+    if (!force) {
+      const { data: existing } = await supabase
+        .from("brandaro_demo_sites").select("sent_at").eq("id", demo_id).single();
+      if (existing?.sent_at) {
+        console.warn(`[brandaro-send-demo] duplicate send blocked for demo ${demo_id} (sent_at=${existing.sent_at})`);
+        return new Response(JSON.stringify({
+          ok: false, already_sent: true, sent_at: existing.sent_at,
+          error: "Demo link was already sent to this lead",
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
 
     // ---- COMPLIANCE GATE: unified suppression check (dnc_list + opt_out_events).
     // Fails CLOSED: a lookup error blocks the send.
