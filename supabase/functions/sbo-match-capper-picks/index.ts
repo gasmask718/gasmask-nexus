@@ -28,6 +28,7 @@ const STAT_MAP: Record<string, string> = {
   'receiving_yards': 'receiving_yards', 'rec_yds': 'receiving_yards',
   'td': 'touchdowns', 'touchdown': 'touchdowns',
   'hr': 'home_runs', 'home_run': 'home_runs',
+  'strikeouts_pitched': 'strikeouts_p', 'pitcher_strikeouts': 'strikeouts_p',
   'so': 'strikeouts', 'strikeout': 'strikeouts', 'k': 'strikeouts',
   'rbi': 'rbis',
   'total_bases': 'total_bases', 'tb': 'total_bases',
