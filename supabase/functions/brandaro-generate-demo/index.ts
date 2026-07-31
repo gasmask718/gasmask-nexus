@@ -271,22 +271,9 @@ async function callDurable(payload: any): Promise<{ ok: true; site_id: string; s
 // ACCEPTED TRADE-OFF: environment variables are project-scoped, so only ONE
 // demo can be live per industry at a time. Generating a new demo for the same
 // industry overwrites the previous demo's content once the build completes.
-const VERCEL_ENV_TARGET = ["production"];
+// Env-var sync + deploy hook live in ../_shared/vercelDeploy.ts so the
+// audit function's auto-fix loop redeploys through the exact same path.
 
-interface EnvVarResult {
-  key: string;
-  ok: boolean;
-  action: "created" | "updated" | "failed";
-  status?: number;
-  error?: string;
-}
-
-/**
- * Upsert a single production env var on a Vercel project.
- * POST /v10/projects/{id}/env?upsert=true handles both create and update.
- * If the deployment rejects upsert (409 / already exists), fall back to an
- * explicit lookup + PATCH on /v9/projects/{id}/env/{envId}.
- */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
