@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { deriveMoneylineConsensus } from '../_shared/devigMoneyline.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,12 +65,15 @@ serve(async (req) => {
     const gameIds = games.map(g => g.id);
     const { data: allOdds } = await supabase
       .from('sbo_odds')
-      .select('*')
-      .in('game_id', gameIds);
+      .select('game_id, sportsbook, home_odds, away_odds, fetched_at, market_type')
+      .in('game_id', gameIds)
+      .eq('market_type', 'moneyline');
 
-    const oddsMap: Record<string, any> = {};
+    // Group every book's moneyline per game so the side can be DERIVED
+    // (de-vigged consensus favorite) instead of hardcoded to 'home'.
+    const oddsByGame: Record<string, any[]> = {};
     for (const o of (allOdds || [])) {
-      oddsMap[o.game_id] = o;
+      (oddsByGame[o.game_id] ||= []).push(o);
     }
 
     // Run predictions for each game
@@ -77,8 +81,21 @@ serve(async (req) => {
     const errors: string[] = [];
 
     for (const game of games) {
-      const odds = oddsMap[game.id];
-      console.log(`Analyzing: ${game.away_team} @ ${game.home_team} (${game.id})`);
+      const gameOdds = oddsByGame[game.id] || [];
+      const devig = deriveMoneylineConsensus(gameOdds);
+      const derivedSide = devig?.predicted_outcome ?? null;
+      const anyBook = gameOdds.find(o => (o.sportsbook || '').toLowerCase() === 'draftkings') || gameOdds[0];
+      console.log(
+        `Analyzing: ${game.away_team} @ ${game.home_team} (${game.id}) — derived side: ${derivedSide ?? 'none (no two-sided odds)'}` +
+        (devig ? ` [home ${(devig.home_prob * 100).toFixed(1)}% / away ${(devig.away_prob * 100).toFixed(1)}%, ${devig.books_used} books]` : ''),
+      );
+
+      if (!derivedSide) {
+        const msg = `${game.away_team} @ ${game.home_team}: skipped — no two-sided moneyline odds to derive a side from`;
+        console.warn(msg);
+        errors.push(msg);
+        continue;
+      }
 
       try {
         const predRes = await fetch(`${supabaseUrl}/functions/v1/sbo-run-predictions`, {
@@ -90,11 +107,13 @@ serve(async (req) => {
           body: JSON.stringify({
             game_id: game.id,
             prediction_type: 'moneyline',
-            predicted_outcome: 'home',
+            // Real derivation — de-vigged multi-book consensus favorite.
+            // sbo-run-predictions re-derives authoritatively from sbo_odds;
+            // this value is the same computation, sent for traceability.
+            predicted_outcome: derivedSide,
             force_rerun: false,
-            // Pass odds context so sbo-run-predictions doesn't need to look them up
-            home_odds: odds?.home_odds ?? null,
-            away_odds: odds?.away_odds ?? null,
+            home_odds: anyBook?.home_odds ?? null,
+            away_odds: anyBook?.away_odds ?? null,
           }),
         });
 
