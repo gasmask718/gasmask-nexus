@@ -478,7 +478,7 @@ Deno.serve(async (req) => {
       }
 
 
-      return new Response(JSON.stringify({ success: true, demo, engine: "native", design_md_loaded: !!designMd, vercel, sms }), {
+      return new Response(JSON.stringify({ success: true, demo, engine: "native", design_md_loaded: !!designMd, vercel, audit, sms }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
