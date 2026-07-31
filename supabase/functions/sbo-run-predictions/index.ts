@@ -872,6 +872,20 @@ CRITICAL RULES FROM CALIBRATION DATA:
       confidence_tier: tier,
       data_quality: dataQuality,
       predicted_outcome: finalOutcome,
+      outcome_source: derivedFromMarket ? 'devig_consensus' : 'caller',
+      devig: ctx.devig ? {
+        books_used: ctx.devig.books_used,
+        home_prob: Number((ctx.devig.home_prob * 100).toFixed(2)),
+        away_prob: Number((ctx.devig.away_prob * 100).toFixed(2)),
+        books: ctx.devig.books.map((b: any) => ({
+          sportsbook: b.sportsbook,
+          home_odds: b.home_odds,
+          away_odds: b.away_odds,
+          vig: Number((b.vig * 100).toFixed(2)),
+          home_prob: Number((b.home_prob * 100).toFixed(2)),
+          away_prob: Number((b.away_prob * 100).toFixed(2)),
+        })),
+      } : null,
       weights_source: weightsSource,
       brains: { stats, market, context, polymarket: polyResult },
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
