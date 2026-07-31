@@ -616,10 +616,9 @@ Deno.serve(async (req) => {
         color_secondary: aiRes.content.color_secondary,
         services: aiRes.content.services,
         about_text: aiRes.content.about_paragraph,
-        // Not collected by the current pipeline — passed through so the vars
-        // light up automatically once these sources exist.
-        reviews: (lead as any).reviews ?? null,
-        photos: (lead as any).photos ?? null,
+        // Real Google Places content (reviews + resolved photo image URLs).
+        reviews: leadReviews,
+        photos: leadPhotos,
         logo_url: (demo as any).logo_url ?? null,
 
       });
