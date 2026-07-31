@@ -1,5 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// Sports with a working free-ESPN grading path (registry in _shared/espnGrading.ts).
+import { GRADED_SPORT_KEYS } from '../_shared/espnGrading.ts';
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,50 +25,57 @@ const API_COSTS: Record<string, { provider: string; cost_cents: number; note: st
   'sbo-send-daily-sms': { provider: 'twilio', cost_cents: 1, note: '~$0.01 per SMS' },
 };
 
+// A pipeline step. `sports` is the sport-support declaration: when
+// present, the step only runs for those sport_keys. Absent = runs for
+// every allowlisted sport. This replaces the old NBA_ONLY_STEPS set,
+// which hardcoded `sport !== 'nba'` in the loop and would have needed
+// editing again for every new sport.
+type EngineStep = {
+  fn: string;
+  label: string;
+  icon: string;
+  required: boolean;
+  sports?: string[];
+  sportsNote?: string;
+};
+
 // Per-sport step chain (order matters). fetch-odds must precede run-predictions
 // so sbo_games has today's rows for the sport when predictions fan out.
-const MORNING_STEPS = [
-  { fn: 'sbo-sync-daily', label: 'Season Stats + Injuries + Standings', icon: '📊', required: true },
+const MORNING_STEPS: EngineStep[] = [
+  { fn: 'sbo-sync-daily', label: 'Season Stats + Injuries + Standings', icon: '📊', required: true, sports: ['nba'], sportsNote: 'SportsDataIO NBA-only feed' },
 ];
 
-const PREGAME_STEPS = [
+const PREGAME_STEPS: EngineStep[] = [
   { fn: 'sbo-fetch-odds', label: 'Live Odds (DK/FD/BetMGM/Caesars)', icon: '💰', required: true },
   { fn: 'sbo-run-prop-predictions', label: 'AI Prop Predictions (per prop)', icon: '🎯', required: false },
   { fn: 'sbo-run-predictions', label: 'AI Predictions (per game, moneyline)', icon: '🧠', required: false },
 
-  { fn: 'sbo-sync-pregame', label: 'Projections + Game Logs + SDIO Props', icon: '📈', required: true },
-  { fn: 'sbo-sync-prizepicks', label: 'PrizePicks Props', icon: '🎯', required: false },
-  { fn: 'sbo-sync-polymarket-full', label: 'Polymarket Full (214 NBA Markets)', icon: '🔮', required: false },
+  { fn: 'sbo-sync-pregame', label: 'Projections + Game Logs + SDIO Props', icon: '📈', required: true, sports: ['nba'], sportsNote: 'SportsDataIO NBA-only feed' },
+  { fn: 'sbo-sync-prizepicks', label: 'PrizePicks Props', icon: '🎯', required: false, sports: ['nba'], sportsNote: 'PrizePicks sync is NBA-hardcoded' },
+  { fn: 'sbo-sync-polymarket-full', label: 'Polymarket Full (214 NBA Markets)', icon: '🔮', required: false, sports: ['nba'], sportsNote: 'Polymarket markets are NBA-hardcoded' },
 ];
 
 // Global (run once total, after per-sport loop finishes)
-const GLOBAL_STEPS = [
+const GLOBAL_STEPS: EngineStep[] = [
   { fn: 'sbo-compare-odds', label: 'Cross-Platform Odds Comparison', icon: '💎', required: false },
   { fn: 'sbo-generate-daily-briefing', label: 'Generate Daily SMS Briefing', icon: '📱', required: false },
   { fn: 'sbo-send-daily-sms', label: 'Send Daily SMS to Phone', icon: '✉️', required: false },
 ];
 
-const POSTGAME_STEPS = [
-  // Required: MLB grading runs on free ESPN feeds. Registering it as required
-  // means the existing warning-on-zero-records logic covers it automatically —
-  // a silent zero on a night with pending games surfaces as a warning.
-  { fn: 'sbo-verify-results', label: 'MLB Grading (ESPN scores + player props)', icon: '⚾', required: true },
+const POSTGAME_STEPS: EngineStep[] = [
+  // Grading runs on free ESPN feeds. Label + required flag are resolved at
+  // runtime from GRADED_SPORT_KEYS (see below) so this stops saying "MLB"
+  // once WNBA/NFL configs land — and so a night with no ESPN-graded sport
+  // running doesn't get flagged required-but-empty.
+  { fn: 'sbo-verify-results', label: 'Result Grading (ESPN scores + player props)', icon: '⚖️', required: true },
   { fn: 'sbo-track-results', label: 'Grade Predictions + Update Accuracy', icon: '📋', required: false },
   { fn: 'sbo-analyze-model', label: 'Model Self-Analysis + Weight Adjustment', icon: '🧬', required: false },
 ];
 
-// Steps that are hardcoded to NBA (SDIO endpoints / NBA-only feeds).
-// These are gated to only execute when sport === 'nba' inside the per-sport loop.
-const NBA_ONLY_STEPS = new Set<string>([
-  'sbo-sync-daily',
-  'sbo-sync-pregame',
-  'sbo-sync-prizepicks',
-  'sbo-sync-polymarket-full',
-]);
-
 // Pipeline-supported sports today. sbo_sports may mark more as active,
 // but only these actually produce meaningful output end-to-end.
 const SUPPORTED_ALLOWLIST = new Set<string>(['nba', 'mlb']);
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -124,6 +134,23 @@ serve(async (req) => {
       if (SUPPORTED_ALLOWLIST.has(s.sport_key)) sportsToRun.push(s.sport_key);
       else sportsSkippedUnsupported.push(s.sport_key);
     }
+
+    // Resolve the ESPN grading step's label + required flag from the sports
+    // actually running tonight that have a grading config. Required only when
+    // at least one of them does — otherwise a clean zero is honest, not a warning.
+    const gradedRunning = sportsToRun.filter(s => GRADED_SPORT_KEYS.includes(s));
+    postgameSteps = postgameSteps.map(s =>
+      s.fn === 'sbo-verify-results'
+        ? {
+            ...s,
+            required: gradedRunning.length > 0,
+            label: gradedRunning.length > 0
+              ? `Result Grading — ESPN (${gradedRunning.map(x => x.toUpperCase()).join(', ')})`
+              : 'Result Grading — ESPN (no graded sport active)',
+          }
+        : s
+    );
+
 
     const { data: runRecord } = await supabase
       .from('sbo_day_engine_runs')
@@ -202,16 +229,17 @@ serve(async (req) => {
       for (const step of perSportSteps) {
         const stepStart = Date.now();
 
-        // NBA-only gate
-        if (NBA_ONLY_STEPS.has(step.fn) && sport !== 'nba') {
+        // Sport-support gate (declarative, per-step)
+        if (step.sports && !step.sports.includes(sport)) {
           await recordStep(step, {
             sport,
             status: 'skipped',
             duration_ms: 0,
-            note: `Skipped: ${step.fn} is NBA-only (SDIO/NBA-hardcoded), not supported for ${sport}`,
+            note: `Skipped: ${step.fn} supports [${step.sports.join(', ')}] only${step.sportsNote ? ` — ${step.sportsNote}` : ''}, not ${sport}`,
           });
           continue;
         }
+
 
         try {
           console.log(`[${sport}] Running step: ${step.fn}`);
