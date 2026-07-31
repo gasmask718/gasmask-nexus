@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
     let signals: SignalRow[] = [];
     const base = () => supabase
       .from('sbo_signals')
-      .select('id, sport, game_date, pick_type, side, internal_confidence');
+      .select('id, sport, game_date, pick_type, side, internal_confidence, home_team, away_team');
 
     if (signal_id) {
       const { data, error } = await base().eq('id', signal_id);
