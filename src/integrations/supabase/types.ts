@@ -18806,6 +18806,7 @@ export type Database = {
           business_name: string
           city: string | null
           content_blocks: Json | null
+          converted_to_paid: boolean
           created_at: string
           cta_variant: string | null
           delivery_method: string | null
@@ -18833,7 +18834,9 @@ export type Database = {
           last_viewed_at: string | null
           lead_id: string
           logo_url: string | null
+          paid_amount: number | null
           paid_at: string | null
+          paid_tier: string | null
           phone_e164: string | null
           preview_image: string | null
           production_build_ready: boolean | null
@@ -18868,6 +18871,7 @@ export type Database = {
           business_name: string
           city?: string | null
           content_blocks?: Json | null
+          converted_to_paid?: boolean
           created_at?: string
           cta_variant?: string | null
           delivery_method?: string | null
@@ -18895,7 +18899,9 @@ export type Database = {
           last_viewed_at?: string | null
           lead_id: string
           logo_url?: string | null
+          paid_amount?: number | null
           paid_at?: string | null
+          paid_tier?: string | null
           phone_e164?: string | null
           preview_image?: string | null
           production_build_ready?: boolean | null
@@ -18930,6 +18936,7 @@ export type Database = {
           business_name?: string
           city?: string | null
           content_blocks?: Json | null
+          converted_to_paid?: boolean
           created_at?: string
           cta_variant?: string | null
           delivery_method?: string | null
@@ -18957,7 +18964,9 @@ export type Database = {
           last_viewed_at?: string | null
           lead_id?: string
           logo_url?: string | null
+          paid_amount?: number | null
           paid_at?: string | null
+          paid_tier?: string | null
           phone_e164?: string | null
           preview_image?: string | null
           production_build_ready?: boolean | null
