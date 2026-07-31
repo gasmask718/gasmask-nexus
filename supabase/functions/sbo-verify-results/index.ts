@@ -549,6 +549,138 @@ serve(async (req) => {
       }
     }
 
+    // ═══════════════════════════════════════
+    // PHASE 3B — MLB PLAYER PROPS VIA FREE ESPN /summary
+    // ═══════════════════════════════════════
+
+    // 3B.0 — backfill game_id on orphaned player_prop predictions
+    {
+      const { data: orphans } = await supabase
+        .from('sbo_predictions')
+        .select('id, prop_id')
+        .eq('prediction_type', 'player_prop')
+        .is('game_id', null)
+        .not('prop_id', 'is', null);
+
+      if (orphans?.length) {
+        const propIds = [...new Set(orphans.map((o: any) => o.prop_id))];
+        const { data: propRows } = await supabase
+          .from('sbo_player_props')
+          .select('id, game_id')
+          .in('id', propIds);
+        const gameByProp = new Map(
+          (propRows || []).filter((r: any) => r.game_id).map((r: any) => [r.id, r.game_id])
+        );
+        for (const o of orphans) {
+          const gid = gameByProp.get(o.prop_id);
+          if (!gid) continue;
+          const { error } = await supabase.from('sbo_predictions').update({ game_id: gid }).eq('id', o.id);
+          if (!error) mlb.game_id_backfilled++;
+        }
+        console.log(`MLB game_id backfill: ${mlb.game_id_backfilled}/${orphans.length} orphaned prop predictions linked`);
+      }
+    }
+
+    // 3B.1 — grade props for every MLB game we just closed out
+    for (const [gameId, eventId] of mlbEventMap) {
+      let propsQuery = supabase
+        .from('sbo_player_props')
+        .select(`*, sbo_predictions(id, predicted_outcome, final_confidence, verdict, verified)`)
+        .eq('game_id', gameId);
+      if (!force_rerun) propsQuery = propsQuery.or('verified.is.null,verified.eq.false');
+
+      const { data: mlbProps } = await propsQuery;
+      if (!mlbProps?.length) continue;
+
+      const summary = await fetchEspnMlbSummary(eventId);
+      if (!summary) {
+        const msg = `ESPN summary unavailable for event ${eventId} — ${mlbProps.length} MLB props left pending`;
+        mlb.errors.push(msg);
+        console.error(msg);
+        propsPending += mlbProps.length;
+        continue;
+      }
+
+      const statLines = buildMlbStatLines(summary);
+
+      for (const prop of mlbProps) {
+        try {
+          mlb.props_seen++;
+
+          const ps = findMlbPlayerStats(statLines, prop.player_name);
+          if (!ps) { mlb.props_pending_no_stats++; propsPending++; continue; }
+
+          const actualValue = getMlbPropValue(ps, prop.prop_type);
+          if (actualValue === null) { mlb.props_pending_unmapped++; propsPending++; continue; }
+
+          const line = parseFloat(String(prop.line));
+          const actualNum = parseFloat(String(actualValue));
+          if (isNaN(line) || isNaN(actualNum)) { mlb.props_pending_unmapped++; propsPending++; continue; }
+
+          const epsilon = 0.001;
+          const aiPick = prop.sbo_predictions?.[0]?.predicted_outcome?.toLowerCase() || null;
+
+          let predictionVerdict: string;
+          if (Math.abs(actualNum - line) < epsilon) {
+            predictionVerdict = 'push';
+          } else if (actualNum > line + epsilon) {
+            predictionVerdict = aiPick === 'over' ? 'correct' : (aiPick === 'under' ? 'incorrect' : 'over');
+          } else {
+            predictionVerdict = aiPick === 'under' ? 'correct' : (aiPick === 'over' ? 'incorrect' : 'under');
+          }
+
+          const propVerdictNote = `${prop.player_name} had ${actualNum} ${prop.prop_type} (line: ${line}). Pick: ${(aiPick || 'N/A').toUpperCase()}. ${predictionVerdict === 'correct' ? '✅ CORRECT' : predictionVerdict === 'push' ? '➖ PUSH' : '❌ INCORRECT'} [source: ESPN]`;
+
+          console.log(`VERIFY MLB: ${prop.player_name} ${prop.prop_type} line=${line} actual=${actualNum} pick=${aiPick} → ${predictionVerdict}`);
+
+          await supabase.from('sbo_player_props').update({
+            actual_value: actualNum,
+            verdict: predictionVerdict,
+            verified: true,
+            verified_at: new Date().toISOString(),
+          }).eq('id', prop.id);
+
+          if (prop.sbo_predictions?.[0]?.id) {
+            const predId = prop.sbo_predictions[0].id;
+            await supabase.from('sbo_predictions').update({
+              verified: true, verdict: predictionVerdict,
+              was_correct: predictionVerdict === 'correct',
+              actual_outcome: predictionVerdict,
+              verified_at: new Date().toISOString(),
+            }).eq('id', predId);
+
+            await supabase.from('sbo_results_verification').upsert({
+              prediction_id: predId,
+              game_id: prop.game_id || null,
+              pick_type: 'prop',
+              our_pick: aiPick || 'unknown',
+              our_confidence: prop.sbo_predictions[0].final_confidence || null,
+              actual_result: `${prop.player_name} ${prop.prop_type}: ${actualNum} (line was ${line})`,
+              actual_value: actualNum,
+              was_correct: predictionVerdict === 'correct',
+              verdict: predictionVerdict,
+              verdict_note: propVerdictNote,
+              profit_loss: predictionVerdict === 'correct' ? 100 : predictionVerdict === 'push' ? 0 : -100,
+              verified_at: new Date().toISOString(),
+            }, { onConflict: 'prediction_id' });
+
+            await supabase.from('sbo_saved_picks')
+              .update({ result: predictionVerdict === 'correct' ? 'won' : predictionVerdict === 'push' ? 'push' : 'lost' })
+              .eq('source_id', predId);
+          }
+
+          mlb.props_graded++;
+          propsVerified++;
+          if (predictionVerdict === 'correct') { mlb.props_correct++; propsCorrect++; }
+          else if (predictionVerdict === 'incorrect') { mlb.props_incorrect++; propsIncorrect++; }
+          else { mlb.props_push++; propsPush++; }
+        } catch (e: any) {
+          console.error(`MLB prop verify failed for ${prop.player_name}:`, e.message);
+        }
+      }
+    }
+
+
     verified += propsVerified;
     correct += propsCorrect;
     incorrect += propsIncorrect;
