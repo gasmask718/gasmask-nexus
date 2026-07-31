@@ -130,10 +130,10 @@ async function combineSignal(supabase: any, signal: SignalRow) {
 
   // Require real game identity — sport + date + bet_type alone lumps an entire
   // slate together. No identity on the signal => confirm nothing.
-  const sideKeys = [signal.home_team, signal.away_team]
-    .map(normalizeTeam)
-    .filter((s) => s.length > 0);
-  const gamePicks = ((picks ?? []) as PickRow[]).filter((p) => isSameGame(p, sideKeys));
+  resetNylaSkipped();
+  const gamePicks = ((picks ?? []) as PickRow[])
+    .filter((p) => isSameGame(p, [signal.home_team, signal.away_team], signal.sport));
+
 
   const capperIds = Array.from(new Set(gamePicks.map((p: PickRow) => p.capper_id).filter(Boolean)));
   let cappers: CapperRow[] = [];
