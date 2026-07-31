@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { deriveMoneylineConsensus, americanToImplied } from '../_shared/devigMoneyline.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -350,11 +351,20 @@ Statistical confidence 0-100.`;
 async function runMarketBrain(ctx: any) {
   // Market brain stays sport-neutral — reads odds signals, not sport context
   const system = `You are a professional sports betting market analyst. Read betting lines as signals: sharp money, line movement, implied probabilities, consensus across books. Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences max"}`;
-  const impliedProb = ctx.home_odds
-    ? ctx.home_odds < 0 ? Math.abs(ctx.home_odds) / (Math.abs(ctx.home_odds) + 100) * 100 : 100 / (ctx.home_odds + 100) * 100
-    : 50;
+  // ═══ IMPLIED PROBABILITY OF THE SIDE ACTUALLY PICKED ═══
+  // Previously this always computed the HOME implied probability regardless of
+  // which side was predicted. Now: prefer the de-vigged multi-book consensus for
+  // the derived side; fall back to that same side's single-book price.
+  const side: 'home' | 'away' = ctx.predicted_outcome === 'away' ? 'away' : 'home';
+  const sideOdds = Number(side === 'away' ? ctx.away_odds : ctx.home_odds);
+  const impliedProb = ctx.devig
+    ? (side === 'home' ? ctx.devig.home_prob : ctx.devig.away_prob) * 100
+    : (Number.isFinite(sideOdds) ? americanToImplied(sideOdds) * 100 : 50);
+  const consensusNote = ctx.devig
+    ? ` De-vigged consensus across ${ctx.devig.books_used} book(s): ${ctx.home_team} ${(ctx.devig.home_prob * 100).toFixed(1)}% / ${ctx.away_team} ${(ctx.devig.away_prob * 100).toFixed(1)}%.`
+    : '';
   const user = ctx.prediction_type === 'moneyline'
-    ? `${ctx.away_team} @ ${ctx.home_team}. DK odds: Home ${ctx.home_odds} / Away ${ctx.away_odds}. Implied prob of predicted winner: ${impliedProb.toFixed(1)}%. Market confidence 0-100 that ${ctx.predicted_outcome === 'home' ? ctx.home_team : ctx.away_team} wins.`
+    ? `${ctx.away_team} @ ${ctx.home_team}. Odds: Home ${ctx.home_odds} / Away ${ctx.away_odds}.${consensusNote} Implied prob of predicted winner (${side === 'home' ? ctx.home_team : ctx.away_team}): ${impliedProb.toFixed(1)}%. Market confidence 0-100 that ${side === 'home' ? ctx.home_team : ctx.away_team} wins.`
     : `${ctx.player_name} ${ctx.prop_type} ${(ctx.final_recommendation || ctx.predicted_outcome || 'OVER').toUpperCase()} ${ctx.line}. Over: ${ctx.over_odds}, Under: ${ctx.under_odds}. Market confidence 0-100.`;
   const raw = await callAI(system, user);
   try {
@@ -548,9 +558,35 @@ CRITICAL RULES FROM CALIBRATION DATA:
 
     if (game_id) {
       const { data: game } = await supabase.from('sbo_games').select('*').eq('id', game_id).single();
-      const { data: odds } = await supabase.from('sbo_odds').select('*').eq('game_id', game_id).eq('market_type', 'moneyline').eq('sportsbook', 'draftkings').order('fetched_at', { ascending: false }).limit(1);
-      ctx = { ...ctx, ...game, home_odds: odds?.[0]?.home_odds, away_odds: odds?.[0]?.away_odds };
+      // ALL books for this game's moneyline — needed for the de-vigged consensus.
+      const { data: allOdds } = await supabase
+        .from('sbo_odds')
+        .select('sportsbook, home_odds, away_odds, fetched_at')
+        .eq('game_id', game_id)
+        .eq('market_type', 'moneyline')
+        .order('fetched_at', { ascending: false });
+
+      const devig = deriveMoneylineConsensus(allOdds || []);
+      const dk = (allOdds || []).find((o: any) => (o.sportsbook || '').toLowerCase() === 'draftkings');
+      const anyBook = dk || (allOdds || [])[0];
+
+      ctx = {
+        ...ctx,
+        ...game,
+        home_odds: anyBook?.home_odds ?? null,
+        away_odds: anyBook?.away_odds ?? null,
+        devig,
+      };
+
+      if (devig) {
+        console.log(
+          `De-vig consensus (${devig.books_used} books): home ${(devig.home_prob * 100).toFixed(1)}% / away ${(devig.away_prob * 100).toFixed(1)}% → ${devig.predicted_outcome}`,
+        );
+      } else {
+        console.log('No two-sided moneyline odds found — de-vig derivation unavailable');
+      }
     }
+
 
     if (prop_id) {
       const { data: prop } = await supabase.from('sbo_player_props').select('*, sbo_games(*)').eq('id', prop_id).single();
@@ -571,10 +607,19 @@ CRITICAL RULES FROM CALIBRATION DATA:
     ctx.sport_key = sport_key;
     console.log(`Prediction sport_key resolved: ${sport_key}`);
 
+    // ═══ OPTION A: DERIVE THE MONEYLINE SIDE FROM DE-VIGGED MARKET CONSENSUS ═══
+    // Replaces any caller-supplied (historically hardcoded 'home') side. Runs
+    // BEFORE the brains so every prompt reasons about the real derived side.
+    let derivedFromMarket = false;
+    if (prediction_type === 'moneyline' && ctx.devig) {
+      derivedFromMarket = true;
+      ctx.predicted_outcome = ctx.devig.predicted_outcome;
+    }
+
     // Run stats brain first for props to get AI recommendation
     const statsResult = await runStatsBrain(ctx, supabase, calibrationText);
 
-    let finalOutcome = predicted_outcome;
+    let finalOutcome = ctx.predicted_outcome ?? predicted_outcome;
     if (prediction_type === 'player_prop' && statsResult.ai_recommendation) {
       finalOutcome = statsResult.ai_recommendation;
       ctx.predicted_outcome = finalOutcome;
@@ -589,7 +634,10 @@ CRITICAL RULES FROM CALIBRATION DATA:
     ]);
 
     const stats = { score: statsResult.score, reasoning: statsResult.reasoning };
-    const dataQuality = statsResult.data_quality;
+    // Market-derived moneyline sides are, by construction, backed by odds only —
+    // no stats feed selected the side. Label them 'odds_only' so the existing
+    // 54-point clamp (unmodified) applies.
+    const dataQuality = derivedFromMarket ? 'odds_only' : statsResult.data_quality;
 
     // ═══ WEIGHTS: prefer sbo_sports (learned_X ?? base_X), fallback to sbo_model_performance ═══
     let weights = { stats: 0.40, market: 0.35, context: 0.25, polymarket: 0.00 };
@@ -824,6 +872,20 @@ CRITICAL RULES FROM CALIBRATION DATA:
       confidence_tier: tier,
       data_quality: dataQuality,
       predicted_outcome: finalOutcome,
+      outcome_source: derivedFromMarket ? 'devig_consensus' : 'caller',
+      devig: ctx.devig ? {
+        books_used: ctx.devig.books_used,
+        home_prob: Number((ctx.devig.home_prob * 100).toFixed(2)),
+        away_prob: Number((ctx.devig.away_prob * 100).toFixed(2)),
+        books: ctx.devig.books.map((b: any) => ({
+          sportsbook: b.sportsbook,
+          home_odds: b.home_odds,
+          away_odds: b.away_odds,
+          vig: Number((b.vig * 100).toFixed(2)),
+          home_prob: Number((b.home_prob * 100).toFixed(2)),
+          away_prob: Number((b.away_prob * 100).toFixed(2)),
+        })),
+      } : null,
       weights_source: weightsSource,
       brains: { stats, market, context, polymarket: polyResult },
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
