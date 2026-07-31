@@ -236,6 +236,9 @@ serve(async (req) => {
       props_correct: 0,
       props_incorrect: 0,
       props_push: 0,
+      // Prop resolved against a real box score but no AI prediction was
+      // attached, so there is no pick to score. NOT a push.
+      props_resolved_no_pick: 0,
       props_pending_no_stats: 0,
       props_pending_unmapped: 0,
       game_id_backfilled: 0,
