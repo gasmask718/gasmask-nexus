@@ -711,8 +711,10 @@ serve(async (req) => {
       props_accuracy: propAccuracy, props_pending: propsPending,
       overall_correct: correct, overall_incorrect: incorrect,
       overall_accuracy: accuracy,
+      mlb,
       message: verified === 0 && scoresUpdated === 0 ? 'No unverified games or props with final scores found' : undefined,
     }), {
+
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
