@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 
       const { error: upErr } = await supabase
         .from('brandaro_demo_sites')
-        .update({ public_status: 'expired', updated_at: new Date().toISOString() })
+        .update({ deployment_status: 'expired', updated_at: new Date().toISOString() })
         .eq('id', demo.id)
 
       results.push({
