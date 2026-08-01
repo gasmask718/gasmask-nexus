@@ -467,6 +467,7 @@ function SettingsTab({ client }: { client: any }) {
           business_description: form.business_description,
           services_offered: form.services_offered.split(",").map((s) => s.trim()).filter(Boolean),
           timezone: form.timezone,
+          business_hours: hours,
           faqs: faqsParsed,
           call_script: form.call_script,
           appointment_booking_enabled: form.appointment_booking_enabled,
@@ -495,6 +496,7 @@ function SettingsTab({ client }: { client: any }) {
           <Label>Business Description</Label>
           <Textarea value={form.business_description} onChange={(e) => setForm({ ...form, business_description: e.target.value })} rows={3} />
         </div>
+        <BusinessHoursEditor value={hours} onChange={setHours} />
         <Field label="Services Offered (comma separated)" value={form.services_offered} onChange={(v) => setForm({ ...form, services_offered: v })} />
         <div>
           <Label>FAQs (JSON: [{`{ "question": "...", "answer": "..." }`}])</Label>
