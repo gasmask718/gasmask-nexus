@@ -24688,6 +24688,42 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_stripe_config: {
+        Row: {
+          amount_cents: number | null
+          created_at: string
+          currency: string
+          id: string
+          mode: string
+          price_id: string | null
+          product_id: string | null
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents?: number | null
+          created_at?: string
+          currency?: string
+          id?: string
+          mode: string
+          price_id?: string | null
+          product_id?: string | null
+          tier: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number | null
+          created_at?: string
+          currency?: string
+          id?: string
+          mode?: string
+          price_id?: string | null
+          product_id?: string | null
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       brandaro_style_palettes: {
         Row: {
           accent_color: string
