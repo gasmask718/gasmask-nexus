@@ -346,7 +346,7 @@ export function CapperPicksFeed({ cappers, onRefetch }: CapperPicksFeedProps) {
                 key={p.id}
                 className={`overflow-hidden transition-colors ${
                   isPending ? 'border-yellow-500/20' : ''
-                } ${isSelected ? 'border-primary/50 bg-primary/5' : 'hover:border-primary/20'}`}
+                } ${isFeedBlocked ? 'border-slate-500/40 bg-muted/30' : ''} ${isSelected ? 'border-primary/50 bg-primary/5' : 'hover:border-primary/20'}`}
               >
                 <CardContent className="p-2.5 flex items-start gap-2">
                   <Checkbox
@@ -374,6 +374,15 @@ export function CapperPicksFeed({ cappers, onRefetch }: CapperPicksFeedProps) {
                       {isPending && (
                         <Badge variant="outline" className="text-[10px] text-yellow-500 border-yellow-500/30 bg-yellow-500/10">
                           🟡 PENDING
+                        </Badge>
+                      )}
+                      {isFeedBlocked && (
+                        <Badge
+                          variant="outline"
+                          title={p.unsupported_reason || 'Upstream results feed unavailable'}
+                          className="text-[10px] text-slate-400 border-slate-400/40 bg-slate-400/10"
+                        >
+                          ⚪ DATA UNAVAILABLE
                         </Badge>
                       )}
                       {p.parsed_by_ai && <Badge variant="outline" className="text-[8px] text-blue-400 border-blue-400/30">🤖 AI</Badge>}
