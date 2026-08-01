@@ -167,7 +167,7 @@ export default function BuilderHubPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Wand2 className="h-7 w-7" /> Website Builder Engine
+            <Wand2 className="h-7 w-7" /> Website Builder
           </h1>
           <p className="text-muted-foreground">Generate, monitor, and dispatch demo sites for qualified leads.</p>
         </div>
@@ -176,13 +176,18 @@ export default function BuilderHubPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard label="Today" value={stats.todayCount} />
-        <StatCard label="Ready" value={stats.ready} tone="success" />
-        <StatCard label="Generating" value={stats.generating} tone="warn" />
-        <StatCard label="Errored" value={stats.errored} tone="error" />
-        <StatCard label="Total (last 50)" value={stats.total} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Today's Demos" value={stats?.todayCount ?? 0} loading={statsLoading} />
+        <StatCard label="Live Right Now" value={stats?.liveCount ?? 0} tone="success" loading={statsLoading} />
+        <StatCard label="Converted to Paid" value={stats?.convertedCount ?? 0} tone="warn" loading={statsLoading} />
+        <StatCard
+          label="Avg Audit Score (7d)"
+          value={stats?.avgAudit ?? "—"}
+          hint={stats?.auditSample ? `${stats.auditSample} scored` : "no scores yet"}
+          loading={statsLoading}
+        />
       </div>
+
 
       <Card>
         <CardHeader><CardTitle>Generate Demo</CardTitle></CardHeader>
