@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
     }
 
     // --- create checkout session ---------------------------------------
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2025-08-27.basil",
     });
 
@@ -161,6 +161,7 @@ Deno.serve(async (req) => {
         demo_id,
         tier,
         business_name: demo.business_name,
+        stripe_mode: mode,
         ...(customer_name ? { customer_name } : {}),
       },
       success_url: successUrl,
@@ -168,10 +169,11 @@ Deno.serve(async (req) => {
     });
 
     console.log(
-      `[demo-stripe-checkout] demo=${demo_id} tier=${tier} session=${session.id}`,
+      `[demo-stripe-checkout] mode=${mode} demo=${demo_id} tier=${tier} session=${session.id}`,
     );
 
-    return json({ checkout_url: session.url });
+    return json({ checkout_url: session.url, mode });
+
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("[demo-stripe-checkout] error", message);
