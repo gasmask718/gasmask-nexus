@@ -238,7 +238,15 @@ serve(async (req) => {
       : null;
     const activeSports = requested ? ALL_SPORTS.filter(s => requested.includes(s)) : ALL_SPORTS;
 
-    const W = makeWriter(supabase, !!report_only);
+    // Dry-run reporting affordances. `sample_limit` / `sample_tables` only
+    // affect what the response echoes back; they never affect grading.
+    const W = makeWriter(
+      supabase,
+      !!report_only,
+      Math.min(Number(body.sample_limit ?? 50), 5000),
+      Array.isArray(body.sample_tables) && body.sample_tables.length ? body.sample_tables : null,
+    );
+
 
     const now = new Date();
     const yesterday = new Date(now);
