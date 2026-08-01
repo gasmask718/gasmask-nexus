@@ -139148,6 +139148,7 @@ export type Database = {
         Returns: boolean
       }
       is_funding_staff: { Args: { _user_id: string }; Returns: boolean }
+      is_grants_staff: { Args: { _user_id?: string }; Returns: boolean }
       is_live_mode_authorized: {
         Args: { p_business_id: string; p_route_id?: string }
         Returns: boolean
