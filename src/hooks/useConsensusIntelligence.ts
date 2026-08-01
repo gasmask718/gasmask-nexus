@@ -56,6 +56,8 @@ export interface ConsensusStats {
   mediumConsensusWinRate: number;
 }
 
+import { normalizeStat, marketPropCandidates } from '@/lib/sbo/statNormalize';
+
 function impliedFromAmerican(odds: number | null): number | null {
   if (odds === null || odds === undefined || !Number.isFinite(odds) || odds === 0) return null;
   return odds < 0 ? -odds / (-odds + 100) : 100 / (odds + 100);
