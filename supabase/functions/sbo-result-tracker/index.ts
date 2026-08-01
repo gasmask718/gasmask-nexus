@@ -89,8 +89,9 @@ function winPnl(stake: number, oddsIn: number | null): number {
   return stake * (100 / Math.abs(odds));
 }
 function resolveSpread(game: Game, side: string, line: number, stake: number, odds: number | null): Resolution {
-  const takingHome = sideMatchesTeam(side, game.home_team, game.sport);
+  const takingHome = sideTakes(game, side).takingHome;
   const margin = takingHome ? game.home_score - game.away_score : game.away_score - game.home_score;
+
   const spreadLine = takingHome ? line : Math.abs(line);
   if (margin === spreadLine) return { result: "push", pnl: 0 };
   const won = margin > spreadLine;
