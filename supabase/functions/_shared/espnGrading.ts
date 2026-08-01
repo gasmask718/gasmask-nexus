@@ -319,6 +319,139 @@ export const MLB_GRADING: SportGradingConfig<MlbStatLine> = {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// CONFIG 2 — WNBA (Stage 3)
+// ═══════════════════════════════════════════════════════════════
+// WNBA and NBA share the SAME ESPN box-score shape:
+//   boxscore.players[].statistics[0].keys =
+//     ['minutes','points','fieldGoalsMade-fieldGoalsAttempted',
+//      'threePointFieldGoalsMade-threePointFieldGoalsAttempted',
+//      'freeThrowsMade-freeThrowsAttempted','rebounds','assists',
+//      'turnovers','steals','blocks','offensiveRebounds',
+//      'defensiveRebounds','fouls','plusMinus']
+// (verified live against event 401857102, 2026-07-31).
+// Made/attempted pairs arrive as "8-10" strings and are split here so
+// downstream consumers only ever see numbers.
+
+export type WnbaStatLine = StatLine & {
+  played: boolean;
+  MIN: number | null; PTS: number | null; REB: number | null; AST: number | null;
+  STL: number | null; BLK: number | null; TOV: number | null; PF: number | null;
+  FGM: number | null; FGA: number | null;
+  TPM: number | null; TPA: number | null;
+  FTM: number | null; FTA: number | null;
+  OREB: number | null; DREB: number | null;
+};
+
+/** "8-10" → [8, 10]; anything unparseable → [null, null]. */
+function madeAtt(v: any): [number | null, number | null] {
+  const s = String(v ?? '').trim();
+  const m = s.match(/^(-?\d+)\s*-\s*(-?\d+)$/);
+  if (!m) return [null, null];
+  return [num(m[1]), num(m[2])];
+}
+
+export function buildWnbaStatLines(summary: any): WnbaStatLine[] {
+  const byId = new Map<string, WnbaStatLine>();
+
+  for (const teamBlock of summary?.boxscore?.players ?? []) {
+    for (const group of teamBlock?.statistics ?? []) {
+      const keys: string[] = group?.keys ?? [];
+      for (const a of group?.athletes ?? []) {
+        const name = a?.athlete?.displayName ?? '';
+        if (!name) continue;
+        const id = a?.athlete?.id ? String(a.athlete.id) : null;
+        const stats: string[] = a?.stats ?? [];
+        // DNPs come through with an empty stats array — skip, don't zero-fill.
+        if (!stats.length) continue;
+        const get = (k: string) => {
+          const i = keys.indexOf(k);
+          return i >= 0 ? stats[i] : undefined;
+        };
+        const [FGM, FGA] = madeAtt(get('fieldGoalsMade-fieldGoalsAttempted'));
+        const [TPM, TPA] = madeAtt(get('threePointFieldGoalsMade-threePointFieldGoalsAttempted'));
+        const [FTM, FTA] = madeAtt(get('freeThrowsMade-freeThrowsAttempted'));
+        const key = id ?? `name:${name.toLowerCase()}`;
+        byId.set(key, {
+          Name: name,
+          athleteId: id,
+          played: true,
+          MIN: num(get('minutes')),
+          PTS: num(get('points')),
+          REB: num(get('rebounds')),
+          AST: num(get('assists')),
+          STL: num(get('steals')),
+          BLK: num(get('blocks')),
+          TOV: num(get('turnovers')),
+          PF: num(get('fouls')),
+          FGM, FGA, TPM, TPA, FTM, FTA,
+          OREB: num(get('offensiveRebounds')),
+          DREB: num(get('defensiveRebounds')),
+        });
+      }
+    }
+  }
+
+  return [...byId.values()];
+}
+
+/** Sum helper — null if ANY component is missing (pending, never a loss). */
+function sumOrNull(...vals: (number | null)[]): number | null {
+  if (vals.some((v) => v === null || v === undefined)) return null;
+  return (vals as number[]).reduce((a, b) => a + b, 0);
+}
+
+export function getWnbaPropValue(ps: WnbaStatLine, propType: string): number | null {
+  const pt = (propType || '').toLowerCase().trim().replace(/[\s-]/g, '_');
+  if (!ps.played) return null;
+
+  switch (pt) {
+    case 'points': case 'player_points': return ps.PTS;
+    case 'rebounds': case 'player_rebounds': return ps.REB;
+    case 'assists': case 'player_assists': return ps.AST;
+    case 'threes': case 'player_threes': case 'three_pointers': return ps.TPM;
+    case 'steals': case 'player_steals': return ps.STL;
+    case 'blocks': case 'player_blocks': return ps.BLK;
+    case 'turnovers': case 'player_turnovers': return ps.TOV;
+    case 'pts_reb_ast': case 'pra': return sumOrNull(ps.PTS, ps.REB, ps.AST);
+    case 'pts_reb': return sumOrNull(ps.PTS, ps.REB);
+    case 'pts_ast': return sumOrNull(ps.PTS, ps.AST);
+    case 'reb_ast': return sumOrNull(ps.REB, ps.AST);
+    case 'blocks_steals': case 'stl_blk': return sumOrNull(ps.BLK, ps.STL);
+    default:
+      console.warn('UNMAPPED WNBA PROP TYPE:', propType, '→ cleaned:', pt);
+      return null;
+  }
+}
+
+/** Canonical WNBA team aliases (ESPN displayName is the canonical form). */
+export const WNBA_ALIASES: Record<string, string> = {
+  'atl': 'Atlanta Dream', 'dream': 'Atlanta Dream', 'atlanta': 'Atlanta Dream',
+  'chi': 'Chicago Sky', 'sky': 'Chicago Sky', 'chicago': 'Chicago Sky',
+  'con': 'Connecticut Sun', 'conn': 'Connecticut Sun', 'sun': 'Connecticut Sun', 'connecticut': 'Connecticut Sun',
+  'dal': 'Dallas Wings', 'wings': 'Dallas Wings', 'dallas': 'Dallas Wings',
+  'gs': 'Golden State Valkyries', 'gsv': 'Golden State Valkyries', 'valkyries': 'Golden State Valkyries', 'golden state': 'Golden State Valkyries',
+  'ind': 'Indiana Fever', 'fever': 'Indiana Fever', 'indiana': 'Indiana Fever',
+  'lv': 'Las Vegas Aces', 'lva': 'Las Vegas Aces', 'aces': 'Las Vegas Aces', 'las vegas': 'Las Vegas Aces',
+  'la': 'Los Angeles Sparks', 'las': 'Los Angeles Sparks', 'sparks': 'Los Angeles Sparks', 'los angeles': 'Los Angeles Sparks',
+  'min': 'Minnesota Lynx', 'lynx': 'Minnesota Lynx', 'minnesota': 'Minnesota Lynx',
+  'ny': 'New York Liberty', 'nyl': 'New York Liberty', 'liberty': 'New York Liberty', 'new york': 'New York Liberty',
+  'phx': 'Phoenix Mercury', 'phoenix': 'Phoenix Mercury', 'mercury': 'Phoenix Mercury',
+  'por': 'Portland Fire', 'fire': 'Portland Fire', 'portland': 'Portland Fire',
+  'sea': 'Seattle Storm', 'storm': 'Seattle Storm', 'seattle': 'Seattle Storm',
+  'tor': 'Toronto Tempo', 'tempo': 'Toronto Tempo', 'toronto': 'Toronto Tempo',
+  'wsh': 'Washington Mystics', 'was': 'Washington Mystics', 'mystics': 'Washington Mystics', 'washington': 'Washington Mystics',
+};
+
+export const WNBA_GRADING: SportGradingConfig<WnbaStatLine> = {
+  sportKey: 'wnba',
+  espnPath: 'basketball/wnba',
+  aliases: WNBA_ALIASES,
+  buildStatLines: buildWnbaStatLines,
+  getPropValue: getWnbaPropValue,
+};
+
+
+// ═══════════════════════════════════════════════════════════════
 // REGISTRY
 // ═══════════════════════════════════════════════════════════════
 // Stage 3 (WNBA) and Stage 4 (NFL) append here. Nothing else in the
