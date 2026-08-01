@@ -24,7 +24,7 @@ const PROP_MARKETS: Record<string, string[]> = {
   nba: ['player_points','player_rebounds','player_assists','player_threes','player_blocks','player_steals'],
   nfl: ['player_pass_yds','player_rush_yds','player_reception_yds','player_pass_tds','player_anytime_td'],
   mlb: ['batter_strikeouts','pitcher_strikeouts','batter_hits','batter_home_runs','batter_total_bases'],
-  nhl: ['player_goals','player_assists','player_shots_on_goal','goalie_saves'],
+  nhl: ['player_goals','player_assists','player_shots_on_goal','player_total_saves'],
   mma: ['fighter_to_win_by_ko_tko_dq','fight_goes_to_decision','fight_total_rounds'],
 };
 
@@ -36,7 +36,8 @@ const PROP_TYPE_MAP: Record<string, string> = {
   player_anytime_td: 'anytime_td', player_receptions: 'receptions',
   batter_strikeouts: 'strikeouts_b', pitcher_strikeouts: 'strikeouts_p',
   batter_hits: 'hits', batter_home_runs: 'home_runs', batter_total_bases: 'total_bases',
-  player_goals: 'goals', player_shots_on_goal: 'shots', goalie_saves: 'saves',
+  player_goals: 'goals', player_shots_on_goal: 'shots', player_total_saves: 'saves',
+  goalie_saves: 'saves',
   fighter_to_win_by_ko_tko_dq: 'ko_win', fight_goes_to_decision: 'decision',
   fight_total_rounds: 'rounds',
 };
