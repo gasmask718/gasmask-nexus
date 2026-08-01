@@ -223,6 +223,18 @@ export function PaidBuildsPipeline() {
                           {pendingId === j.id && (
                             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                           )}
+                          {(j.preview_url || j.deployed_url) && (
+                            <Button asChild variant="outline" size="sm" className="h-8">
+                              <a
+                                href={(j.preview_url || j.deployed_url) as string}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {j.preview_url && status !== "live" ? "Preview" : "Visit"}
+                                <ExternalLink className="h-3 w-3 ml-1" />
+                              </a>
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
