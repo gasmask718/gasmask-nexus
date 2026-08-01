@@ -335,12 +335,18 @@ serve(async (req) => {
           // Special handling: run-predictions fans out per game
 
           if (step.fn === 'sbo-run-predictions') {
-            // DISABLED 2026-07-22: sbo-run-predictions has no derivation
-            // for `predicted_outcome` on moneyline predictions — every
-            // insert fails the NOT NULL constraint. Skipping honestly
-            // rather than logging silent failures. Structure preserved
-            // so re-enabling is just restoring the fanout body once a
-            // real derivation exists.
+            // RE-ENABLED 2026-08-01. The 2026-07-22 disable existed because
+            // moneyline had no `predicted_outcome` derivation. It now does:
+            // sbo-run-predictions derives the side from de-vigged market
+            // consensus. We deliberately DO NOT pass `predicted_outcome` —
+            // the de-vig path must be the only source of the side.
+            // Guardrails mirror the prop fanout: hard cap, wall-clock budget,
+            // and idempotency via the function's own same-day cache check,
+            // which makes the step resumable across the 13:00 / 23:00 runs.
+            const MAX_GAMES_PER_RUN = 30;
+            const TIME_BUDGET_MS = 60_000;
+            const CONCURRENCY = 3;
+
             const dayStart = `${date}T00:00:00Z`;
             const _next = new Date(`${date}T00:00:00Z`);
             _next.setUTCDate(_next.getUTCDate() + 1);
@@ -353,16 +359,53 @@ serve(async (req) => {
               .lt('game_date', dayEnd);
             if (gamesErr) throw gamesErr;
 
+            const queue = (games ?? []).slice(0, MAX_GAMES_PER_RUN);
             const gamesQueried = (games ?? []).length;
+            let saved = 0, skipped = 0, failedGames = 0, invoked = 0;
+            let stopReason: string | null = null;
+
+            for (let i = 0; i < queue.length; i += CONCURRENCY) {
+              if (Date.now() - stepStart > TIME_BUDGET_MS) {
+                stopReason = `time budget ${TIME_BUDGET_MS / 1000}s reached`;
+                break;
+              }
+              const batch = queue.slice(i, i + CONCURRENCY);
+              invoked += batch.length;
+
+              await Promise.all(batch.map(async (game: any) => {
+                try {
+                  const { data: res, error: invErr } = await supabase.functions.invoke('sbo-run-predictions', {
+                    body: { game_id: game.id, prediction_type: 'moneyline' },
+                  });
+                  if (invErr) { failedGames += 1; return; }
+                  if (res?.insert_error) { failedGames += 1; return; }
+                  if (res?.saved === true && res?.prediction_id) saved += 1;
+                  else if (res?.skipped === true || res?.source === 'cache') skipped += 1;
+                  else failedGames += 1;
+                } catch (gameErr: any) {
+                  console.error(`[${sport}] game ${game.id} moneyline failed:`, gameErr?.message);
+                  failedGames += 1;
+                }
+              }));
+
+              await new Promise(r => setTimeout(r, 400));
+            }
+
+            if (!stopReason && gamesQueried > MAX_GAMES_PER_RUN) {
+              stopReason = `cap ${MAX_GAMES_PER_RUN} reached`;
+            }
+            const remaining = Math.max(gamesQueried - invoked, 0);
+
             await recordStep(step, {
               sport,
-              status: 'success',
-              records: 0,
+              status: failedGames > 0 && saved === 0 && invoked > 0 ? 'warning' : 'success',
+              records: saved,
               duration_ms: Date.now() - stepStart,
-              note: `${gamesQueried} games queried, 0 invoked — skipped: moneyline predicted_outcome derivation not yet implemented (disabled 2026-07-22)`,
+              note: `${gamesQueried} games · ${invoked} invoked · ${saved} saved · ${skipped} skipped · ${failedGames} failed · ${remaining} remaining${stopReason ? ` — stopped: ${stopReason}` : ''}${gamesQueried === 0 ? ' — no games for this sport today' : ''}`,
             });
             continue;
           }
+
 
           // Standard per-sport step — pass sport_key through
           const { data, error } = await supabase.functions.invoke(step.fn, {
