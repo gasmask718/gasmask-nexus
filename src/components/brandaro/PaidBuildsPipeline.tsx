@@ -151,7 +151,14 @@ export function PaidBuildsPipeline() {
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
-        <CardTitle className="text-base">Paid Builds Pipeline ({jobs.length})</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-base">Paid Builds Pipeline ({jobs.length})</CardTitle>
+          {reviewCount > 0 && (
+            <Badge variant="secondary" className={STATUS_TONE.review}>
+              Needs Review ({reviewCount})
+            </Badge>
+          )}
+        </div>
         <Button asChild variant="ghost" size="sm">
           <Link to="/brandaro/build-pipeline">
             Full build pipeline <ExternalLink className="h-3 w-3 ml-1" />
