@@ -26,6 +26,8 @@ import {
   GRADED_SPORT_KEYS,
   fetchEspnFinals,
   fetchEspnSummary,
+  seasonForDate,
+  seasonWindow,
   type StatLine,
   type EspnFinal,
 } from '../_shared/espnGrading.ts';
@@ -98,7 +100,10 @@ serve(async (req) => {
     yesterday.setUTCDate(yesterday.getUTCDate() - 1);
     const endDate = String(body.date ?? ymd(yesterday));
     const daysBack = Math.max(1, Math.min(Number(body.days_back ?? 1), 400));
-    const season = String(body.season ?? endDate.slice(0, 4));
+    // Season label: for sports whose season crosses a calendar year
+    // (NFL/NHL/NBA), a January game belongs to the PRIOR year's season.
+    const season = String(body.season ?? seasonForDate(sport, endDate));
+    const window = seasonWindow(sport, season);
     const skipSplits = body.skip_splits === true;
 
     const dates = dateRange(endDate, daysBack);
@@ -198,8 +203,8 @@ serve(async (req) => {
           .select('player_key,player_name,player_id,team,game_date,is_home,stat_line')
           .eq('sport', sport)
           .in('player_key', chunk)
-          .gte('game_date', `${season}-01-01`)
-          .lte('game_date', `${season}-12-31`)
+          .gte('game_date', window.from)
+          .lte('game_date', window.to)
           .order('game_date', { ascending: false })
           .limit(10000);
 
@@ -251,6 +256,7 @@ serve(async (req) => {
       success: true,
       sport,
       season,
+      season_window: window,
       dates_processed: dates.length,
       date_range: { from: dates[0], to: dates[dates.length - 1] },
       games_seen: gamesSeen,
