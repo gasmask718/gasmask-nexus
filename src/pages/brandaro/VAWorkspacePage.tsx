@@ -682,6 +682,19 @@ export default function VAWorkspacePage() {
           </CardContent>
         </Card>
       </div>
+
+      <SendDemoModal
+        lead={currentLead ? {
+          id: currentLead.id,
+          business_name: currentLead.business_name,
+          city: currentLead.city,
+          phone_number: currentLead.phone_number,
+          google_place_id: currentLead.google_place_id ?? null,
+        } : null}
+        open={sendDemoOpen}
+        onClose={() => setSendDemoOpen(false)}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["brandaro-va-queue"] })}
+      />
     </div>
   );
 }
