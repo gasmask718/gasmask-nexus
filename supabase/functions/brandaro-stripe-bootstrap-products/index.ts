@@ -105,6 +105,52 @@ Deno.serve(async (req) => {
       results.push({ tier: t.tier, status: "created", product_id: product.id, price_id: price.id });
     }
 
+    // --- recurring hosting price (Step 16) -------------------------------
+    // ONE flat rate for all tiers ($99/mo), stored as a single config row
+    // under tier "hosting". Same idempotency rule as the one-time prices.
+    const priorHosting = existing.get(HOSTING.tier);
+    if (priorHosting?.price_id && priorHosting?.amount_cents === HOSTING.amount_cents) {
+      results.push({ tier: HOSTING.tier, status: "reused", price_id: priorHosting.price_id });
+    } else {
+      const hostingProduct = priorHosting?.product_id
+        ? await stripe.products.retrieve(priorHosting.product_id)
+        : await stripe.products.create({
+            name: HOSTING.name,
+            description: "Brandaro monthly website hosting & maintenance",
+            metadata: { brandaro_tier: HOSTING.tier, mode },
+          });
+
+      const hostingPrice = await stripe.prices.create({
+        product: hostingProduct.id,
+        unit_amount: HOSTING.amount_cents,
+        currency: "usd",
+        recurring: { interval: "month" },
+        metadata: { brandaro_tier: HOSTING.tier, mode },
+      });
+
+      const { error: hostErr } = await supabase
+        .from("brandaro_stripe_config")
+        .upsert(
+          {
+            mode,
+            tier: HOSTING.tier,
+            product_id: hostingProduct.id,
+            price_id: hostingPrice.id,
+            amount_cents: HOSTING.amount_cents,
+            currency: "usd",
+          },
+          { onConflict: "mode,tier" },
+        );
+      if (hostErr) return json({ error: `Config write failed for hosting: ${hostErr.message}` }, 500);
+
+      results.push({
+        tier: HOSTING.tier,
+        status: "created",
+        product_id: hostingProduct.id,
+        price_id: hostingPrice.id,
+      });
+    }
+
     return json({ mode, results });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
