@@ -1,0 +1,2 @@
+ALTER TABLE public.sbo_capper_picks ADD COLUMN IF NOT EXISTS unsupported_reason text;
+COMMENT ON COLUMN public.sbo_capper_picks.unsupported_reason IS 'Human-readable reason a pick cannot be graded (e.g. upstream data feed unavailable). Only meaningful when unsupported = true.';

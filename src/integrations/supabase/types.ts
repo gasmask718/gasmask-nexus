@@ -92316,6 +92316,7 @@ export type Database = {
           stake: number | null
           team: string | null
           unsupported: boolean
+          unsupported_reason: string | null
         }
         Insert: {
           alignment_score?: number | null
@@ -92358,6 +92359,7 @@ export type Database = {
           stake?: number | null
           team?: string | null
           unsupported?: boolean
+          unsupported_reason?: string | null
         }
         Update: {
           alignment_score?: number | null
@@ -92400,6 +92402,7 @@ export type Database = {
           stake?: number | null
           team?: string | null
           unsupported?: boolean
+          unsupported_reason?: string | null
         }
         Relationships: [
           {

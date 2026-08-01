@@ -147,14 +147,17 @@ serve(async (req) => {
     }
 
     const updates: { id: string; result: 'won' | 'lost' | 'push'; units: number }[] = [];
+    // Labeling only (never a result value): picks we could not grade because the
+    // upstream ESPN feed returned nothing usable for that sport/date.
+    const feedBlocked: { id: string; reason: string }[] = [];
     const feedNotes: string[] = [];
-    const bySport: Record<string, { considered: number; graded: number; unmatched: number }> = {};
+    const bySport: Record<string, { considered: number; graded: number; unmatched: number; feed_blocked: number }> = {};
 
     for (const [key, group] of buckets) {
       const [, gameDate] = key.split('|');
       const cfg = altConfigForPickSport(group[0].sport)!;
       const sportLabel = cfg.pickSports[0];
-      bySport[sportLabel] ??= { considered: 0, graded: 0, unmatched: 0 };
+      bySport[sportLabel] ??= { considered: 0, graded: 0, unmatched: 0, feed_blocked: 0 };
       bySport[sportLabel].considered += group.length;
 
       if (cfg.kind === 'team') {
@@ -167,9 +170,20 @@ serve(async (req) => {
           else feedNotes.push(`${sportLabel} ${d}: ${r.error}`);
         }
         if (feedOk && finals.length === 0) feedNotes.push(`${sportLabel} ${gameDate}: ESPN returned no completed events`);
+        const feedDead = finals.length === 0;
         for (const p of group) {
           const v = gradeTeamPick(p, finals, cfg);
-          if (!v) { bySport[sportLabel].unmatched++; continue; }
+          if (!v) {
+            bySport[sportLabel].unmatched++;
+            if (feedDead) {
+              bySport[sportLabel].feed_blocked++;
+              feedBlocked.push({
+                id: p.id,
+                reason: `ESPN ${sportLabel} feed returned no completed events for ${gameDate} (checked ${new Date().toISOString().split('T')[0]}) — will auto-grade if the feed resumes`,
+              });
+            }
+            continue;
+          }
           updates.push({ id: p.id, result: v.result, units: unitsFor(v.result, p.odds) });
           bySport[sportLabel].graded++;
         }
@@ -192,6 +206,7 @@ serve(async (req) => {
     }
 
     let written = 0;
+    let labeled = 0;
     if (!dryRun) {
       for (const u of updates) {
         const { error } = await supabase
@@ -201,9 +216,20 @@ serve(async (req) => {
             pnl_units: u.units,
             profit_loss: u.units,
             resolved_at: new Date().toISOString(),
+            // A pick that just graded is by definition no longer feed-blocked.
+            unsupported: false,
+            unsupported_reason: null,
           })
           .eq('id', u.id);
         if (!error) written++;
+      }
+      // Labeling pass — result stays 'pending' so these auto-grade if the feed returns.
+      for (const b of feedBlocked) {
+        const { error } = await supabase
+          .from('sbo_capper_picks')
+          .update({ unsupported: true, unsupported_reason: b.reason })
+          .eq('id', b.id);
+        if (!error) labeled++;
       }
     }
 
@@ -215,6 +241,8 @@ serve(async (req) => {
       pending_considered: pending.length,
       graded: updates.length,
       records_synced: written,
+      feed_blocked: feedBlocked.length,
+      feed_blocked_labeled: labeled,
       by_sport: bySport,
       feed_notes: feedNotes.slice(0, 20),
       scope: 'capper picks only — no props, predictions, stats brain, clamp gates, or market lines',
