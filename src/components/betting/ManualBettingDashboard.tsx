@@ -9,12 +9,55 @@ import { useConsensusIntelligence, ConsensusPick, CapperKPI } from '@/hooks/useC
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 // ── Confidence Score Calculation ──
-function calcConfidence(pick: ConsensusPick): number {
-  const consensusWeight = Math.min(pick.capperCount / 5, 1) * 40;
-  const roiWeight = Math.min(Math.max(pick.avgCapperROI + 20, 0) / 40, 1) * 40;
-  const wrWeight = Math.min(pick.avgCapperWinRate / 100, 1) * 20;
-  return Math.round(consensusWeight + roiWeight + wrWeight);
+// 25 pts: WHO backed it (consensus size + real capper ROI/win-rate)
+// 75 pts: THE PICK ITSELF (recent player form vs the line, direction agreement,
+//         price, line edge vs live market, market difficulty)
+const clamp01 = (n: number) => Math.min(Math.max(n, 0), 1);
+
+export function calcConfidenceBreakdown(pick: ConsensusPick) {
+  // Capper-quality component (max 25)
+  const consensusWeight = Math.min(pick.capperCount / 5, 1) * 12;
+  const roiWeight = clamp01((pick.avgCapperROI + 20) / 40) * 8;
+  const wrWeight = clamp01(pick.avgCapperWinRate / 100) * 5;
+
+  // Per-pick component (max 75)
+  // Recent player form: share of the player's last 15 games clearing this exact
+  // line in the pick's direction, mapped 20% → 70%. The strongest per-pick signal.
+  const formWeight = pick.formHitRate === null
+    ? 15
+    : clamp01((pick.formHitRate - 20) / 50) * 30;
+
+  // Directional agreement: 50/50 split = 0, unanimous = full credit
+  const dirWeight = clamp01((pick.directionAgreement - 0.5) * 2) * 10;
+
+  // Price quality: implied probability of the taken odds, mapped 40% → 60%
+  const priceWeight = pick.impliedProb === null
+    ? 8
+    : clamp01((pick.impliedProb - 0.40) / 0.20) * 16;
+
+  // Line edge vs live market line, in the pick's direction: -5% → +5%
+  const lineWeight = pick.lineEdgePct === null
+    ? 6
+    : clamp01((pick.lineEdgePct + 0.05) / 0.10) * 12;
+
+  // Market difficulty: historical hit rate for this sport + prop type, 35% → 65%
+  const marketWeight = pick.marketWinRate === null
+    ? 3.5
+    : clamp01((pick.marketWinRate - 35) / 30) * 7;
+
+  const total = consensusWeight + roiWeight + wrWeight + formWeight + dirWeight + priceWeight + lineWeight + marketWeight;
+  return {
+    consensusWeight, roiWeight, wrWeight, formWeight, dirWeight, priceWeight, lineWeight, marketWeight,
+    total: Math.round(total),
+  };
 }
+
+function calcConfidence(pick: ConsensusPick): number {
+  return calcConfidenceBreakdown(pick).total;
+}
+
+
+
 
 function getConfidenceLevel(score: number): { label: string; icon: React.ReactNode; color: string } {
   if (score >= 65) return { label: 'High', icon: <Flame className="h-3.5 w-3.5" />, color: 'text-amber-400 border-amber-400/30 bg-amber-400/10' };
@@ -98,13 +141,21 @@ export function ManualBettingDashboard() {
   const { consensusPicks, consensusStats, capperKPIs, todayConsensusPicks, isLoading } = useConsensusIntelligence();
   const [riskFilter, setRiskFilter] = useState<'all' | 'high_only' | 'exclude_risky'>('all');
 
-  // Score & sort today's picks
-  const scoredPicks = useMemo(() => {
+  // Score & sort today's picks (falls back to older unresolved picks when today is empty)
+  const { scoredPicks, isStaleFallback, fallbackDates } = useMemo(() => {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-    const picks = todayConsensusPicks.length > 0 ? todayConsensusPicks : consensusPicks.filter(p => !p.result);
-    return picks.map(p => ({ ...p, confidence: calcConfidence(p) }))
+    const usingToday = todayConsensusPicks.length > 0;
+    const picks = usingToday ? todayConsensusPicks : consensusPicks.filter(p => !p.result);
+    const scored = picks.map(p => ({ ...p, confidence: calcConfidence(p) }))
       .sort((a, b) => b.confidence - a.confidence);
+    const dates = [...new Set(scored.map(p => p.game_date).filter(Boolean))].sort().reverse();
+    return {
+      scoredPicks: scored,
+      isStaleFallback: !usingToday && scored.length > 0 && !dates.includes(today),
+      fallbackDates: dates,
+    };
   }, [todayConsensusPicks, consensusPicks]);
+
 
   // Filtered picks
   const filteredPicks = useMemo(() => {
@@ -175,11 +226,30 @@ export function ManualBettingDashboard() {
         </CardContent></Card>
       </div>
 
+      {/* Stale fallback notice */}
+      {isStaleFallback && (
+        <Card className="border-amber-500/40 bg-amber-500/10">
+          <CardContent className="p-3 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-300">
+              <span className="font-bold">No consensus picks today.</span>{' '}
+              Showing unresolved picks from {fallbackDates.slice(0, 3).join(', ')}
+              {fallbackDates.length > 3 ? ` +${fallbackDates.length - 3} more dates` : ''} — these are not current.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Risk Filter */}
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-bold flex items-center gap-2">
-          <Flame className="h-4 w-4 text-amber-400" /> Best Picks Today
+          <Flame className="h-4 w-4 text-amber-400" /> {isStaleFallback ? 'Best Picks' : 'Best Picks Today'}
           <Badge variant="outline" className="text-[10px]">{filteredPicks.length} picks</Badge>
+          {isStaleFallback && (
+            <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-400/40 bg-amber-400/10">
+              stale · {fallbackDates[0]}
+            </Badge>
+          )}
         </h3>
         <Select value={riskFilter} onValueChange={v => setRiskFilter(v as any)}>
           <SelectTrigger className="w-40 h-7 text-xs"><SelectValue /></SelectTrigger>
@@ -190,6 +260,7 @@ export function ManualBettingDashboard() {
           </SelectContent>
         </Select>
       </div>
+
 
       {/* Top Picks with Confidence */}
       {filteredPicks.length === 0 ? (
@@ -233,6 +304,25 @@ export function ManualBettingDashboard() {
                         <span>👥 {pick.capperNames.join(', ')}</span>
                         <span>· Avg ROI: <span className={pick.avgCapperROI > 0 ? 'text-emerald-400' : 'text-destructive'}>{pick.avgCapperROI > 0 ? '+' : ''}{pick.avgCapperROI}%</span></span>
                       </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground flex-wrap">
+                        {pick.formHitRate !== null ? (
+                          <span>
+                            📈 Form: <span className={pick.formHitRate >= 50 ? 'text-emerald-400' : 'text-amber-400'}>
+                              {pick.formHitRate}%
+                            </span> hit rate in last {pick.formGames} ({pick.formAvgStat} avg)
+                          </span>
+                        ) : (
+                          <span className="opacity-60">📈 Form: no recent box scores</span>
+                        )}
+                        {pick.impliedProb !== null && <span>· Price: {pick.avgOdds! > 0 ? '+' : ''}{Math.round(pick.avgOdds!)}</span>}
+                        {pick.lineEdgePct !== null && (
+                          <span>· Line edge: <span className={pick.lineEdgePct >= 0 ? 'text-emerald-400' : 'text-destructive'}>
+                            {(pick.lineEdgePct * 100).toFixed(1)}%
+                          </span></span>
+                        )}
+                        <span>· Agreement: {Math.round(pick.directionAgreement * 100)}%</span>
+                      </div>
+
                     </div>
                     <div className="flex flex-col items-center gap-1.5 shrink-0">
                       <div className="text-center">
