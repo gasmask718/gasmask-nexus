@@ -44,7 +44,7 @@ Deno.serve(async () => {
     // seed a temp funding client owned by the "self" email
     const { data: fc, error: fcErr } = await admin
       .from("funding_clients")
-      .insert({ email: selfEmail, first_name: "Probe", last_name: "Self", status: "active" })
+      .insert({ email: selfEmail, first_name: "Probe", last_name: "Self", status: "active", user_id: "00000000-0000-0000-0000-0000000000aa" })
       .select("id").single();
     if (fcErr) throw new Error(`seed client: ${fcErr.message}`);
     tempClientId = fc.id;
@@ -74,7 +74,7 @@ Deno.serve(async () => {
       const clients = await c.from("funding_clients").select("id,email");
       const faps = await c.from("funding_application_profile").select("id,client_id");
       const docs = await c.from("funding_client_documents").select("id,client_id");
-      const ins = await c.from("funding_clients").insert({ email: `x-${label}-${stamp}@example.com`, first_name: "X" }).select("id");
+      const ins = await c.from("funding_clients").insert({ email: `x-${label}-${stamp}@example.com`, first_name: "X", user_id: "00000000-0000-0000-0000-0000000000aa" }).select("id");
       if (ins.data?.[0]?.id) await admin.from("funding_clients").delete().eq("id", ins.data[0].id);
       const upd = await c.from("funding_clients").update({ notes: `probe-${label}` }).eq("id", tempClientId).select("id");
       results[label] = {
