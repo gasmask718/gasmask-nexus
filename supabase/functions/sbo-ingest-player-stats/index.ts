@@ -203,8 +203,8 @@ serve(async (req) => {
           .select('player_key,player_name,player_id,team,game_date,is_home,stat_line')
           .eq('sport', sport)
           .in('player_key', chunk)
-          .gte('game_date', `${season}-01-01`)
-          .lte('game_date', `${season}-12-31`)
+          .gte('game_date', window.from)
+          .lte('game_date', window.to)
           .order('game_date', { ascending: false })
           .limit(10000);
 
