@@ -194,6 +194,19 @@ Deno.serve(async (req) => {
         return json({ error: "Could not save your details. Please try again." }, 500);
       }
 
+      // Pipeline Step 15: pro/custom builds start once we have the intake
+      // answers. Fire-and-forget — the client's confirmation must never wait on
+      // Vercel, and the job row carries all state (including failures).
+      const tier = (job.package_tier ?? "").toLowerCase();
+      if (tier === "pro" || tier === "custom") {
+        supabase.functions
+          .invoke("brandaro-provision-client-site", { body: { build_job_id: job.id } })
+          .then(({ error }: { error: unknown }) => {
+            if (error) console.error("[brandaro-intake] provision invoke failed:", error);
+          })
+          .catch((err: unknown) => console.error("[brandaro-intake] provision invoke threw:", err));
+      }
+
       return json({ success: true, tier: job.package_tier ?? "starter" });
     }
 
