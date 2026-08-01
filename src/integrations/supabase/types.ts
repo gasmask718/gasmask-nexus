@@ -129852,14 +129852,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -135694,6 +135694,21 @@ export type Database = {
             referencedColumns: ["campaign_id"]
           },
         ]
+      }
+      v_sbo_automation_daily_check: {
+        Row: {
+          a_job104_fired: boolean | null
+          a_pass: boolean | null
+          a_weights_updated_today: number | null
+          b_auto_predictions: number | null
+          b_pass: boolean | null
+          c_auto_signals: number | null
+          c_pass: boolean | null
+          check_date: string | null
+          d_combiner_finished_at: string | null
+          d_pass: boolean | null
+        }
+        Relationships: []
       }
       v_sell_through_usage_audit: {
         Row: {
