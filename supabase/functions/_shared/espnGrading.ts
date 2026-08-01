@@ -36,6 +36,23 @@ export type StatLine = {
   [key: string]: any;
 };
 
+/**
+ * A pre-ESPN scoring/stats provider that a sport is still allowed to use.
+ * Declared as data so no sport can reach a legacy vendor path by accident:
+ * if a sport has no entry in LEGACY_SCORE_SOURCES, the branch is unreachable
+ * for it. Today NBA is the only such sport (SportsDataIO).
+ */
+export type LegacyScoreSource = {
+  provider: 'sportsdataio';
+  /** Env var holding the API key. Absent key ⇒ branch is skipped entirely. */
+  apiKeyEnv: string;
+  /** `${dateStr}` is substituted; `${key}` is the api key. */
+  scoresUrl: (dateStr: string, key: string) => string;
+  playerStatsUrl: (dateStr: string, key: string) => string;
+  /** Sanity floor on a final score; guards against bogus/forfeit rows. */
+  minScore: number;
+};
+
 export type SportGradingConfig<L extends StatLine = StatLine> = {
   /** Our internal sport_key (matches sbo_sports.sport_key). */
   sportKey: string;
@@ -48,6 +65,8 @@ export type SportGradingConfig<L extends StatLine = StatLine> = {
   /** prop_type → numeric stat value. null MUST be treated as pending. */
   getPropValue: (line: L, propType: string) => number | null;
 };
+
+
 
 export type EspnFinal = {
   eventId: string;
@@ -960,6 +979,34 @@ export const GRADED_SPORT_KEYS: string[] = Object.keys(GRADING_CONFIGS);
 export function getGradingConfig(sportKey: string): SportGradingConfig<any> | null {
   return GRADING_CONFIGS[(sportKey || '').toLowerCase()] ?? null;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// LEGACY (PRE-ESPN) SCORE/STAT SOURCES
+// ═══════════════════════════════════════════════════════════════
+// Deliberately a SEPARATE registry from GRADING_CONFIGS: NBA has no
+// free-ESPN grading path yet, and adding it to GRADING_CONFIGS would
+// silently enrol NBA in the GRADED_SPORT_KEYS fanout used by
+// sbo-ingest-player-stats and sbo-day-engine. Keeping it here declares
+// the vendor path as data without changing any other system's behavior.
+//
+// A sport absent from this map CANNOT reach a vendor endpoint.
+export const LEGACY_SCORE_SOURCES: Record<string, LegacyScoreSource> = {
+  nba: {
+    provider: 'sportsdataio',
+    apiKeyEnv: 'SPORTSDATAIO_API_KEY',
+    scoresUrl: (dateStr, key) =>
+      `https://api.sportsdata.io/v3/nba/scores/json/GamesByDate/${dateStr}?key=${key}`,
+    playerStatsUrl: (dateStr, key) =>
+      `https://api.sportsdata.io/v3/nba/stats/json/PlayerGameStatsByDate/${dateStr}?key=${key}`,
+    minScore: 60,
+  },
+};
+
+export function getLegacyScoreSource(sportKey: string): LegacyScoreSource | null {
+  return LEGACY_SCORE_SOURCES[(sportKey || '').toLowerCase()] ?? null;
+}
+
+
 
 // ═══════════════════════════════════════
 // SEASON CALENDAR (cross-calendar-year aware)
