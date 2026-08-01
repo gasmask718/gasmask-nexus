@@ -47,10 +47,47 @@ export interface VercelDeployResult {
   error?: string;
   repo?: string;
   project_id?: string;
+  /** Vercel deployment id (dpl_...) captured after the hook fires, when resolvable. */
+  deployment_id?: string | null;
+  /** Deploy-hook job id, always available when the hook returns 200. */
+  job_id?: string | null;
   env_vars?: EnvVarResult[];
   env_failed?: string[];
   env_skipped?: string[];
 }
+
+/**
+ * Deploy hooks return a job id, not a deployment id. The deployment appears in
+ * the project's deployment list a moment later, so we poll briefly for the
+ * newest deployment created after the hook fired. Non-fatal: returns null if
+ * the id can't be resolved in time.
+ */
+export async function resolveDeploymentId(
+  token: string,
+  projectId: string,
+  firedAt: number,
+  attempts = 5,
+): Promise<string | null> {
+  for (let i = 0; i < attempts; i++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      const res = await fetch(
+        `https://api.vercel.com/v6/deployments?projectId=${projectId}&limit=5`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!res.ok) continue;
+      const json = await res.json();
+      const list = (json?.deployments ?? []) as Array<{ uid?: string; id?: string; created?: number; createdAt?: number }>;
+      const match = list.find((d) => (d.created ?? d.createdAt ?? 0) >= firedAt - 15_000);
+      const id = match?.uid ?? match?.id ?? null;
+      if (id) return id;
+    } catch (e) {
+      console.warn("[vercel] deployment id lookup failed:", e instanceof Error ? e.message : e);
+    }
+  }
+  return null;
+}
+
 
 export async function upsertVercelEnvVar(
   token: string,
