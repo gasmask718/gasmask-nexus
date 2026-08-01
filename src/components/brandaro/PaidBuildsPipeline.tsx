@@ -39,6 +39,8 @@ type JobRow = {
   demo_id: string | null;
   lead_id: string | null;
   deployed_url: string | null;
+  preview_url: string | null;
+  review_requested_at: string | null;
   created_at: string;
   business_name: string | null;
   paid_amount: number | null;
@@ -59,7 +61,7 @@ export function PaidBuildsPipeline() {
     queryFn: async (): Promise<JobRow[]> => {
       const { data, error } = await (supabase as any)
         .from("brandaro_build_jobs")
-        .select("id, build_status, package_tier, demo_id, lead_id, deployed_url, created_at")
+        .select("id, build_status, package_tier, demo_id, lead_id, deployed_url, preview_url, review_requested_at, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       const rows = (data || []) as any[];
@@ -88,7 +90,7 @@ export function PaidBuildsPipeline() {
       const demoMap = new Map((demosRes.data || []).map((d: any) => [d.id, d]));
       const leadMap = new Map((leadsRes.data || []).map((l: any) => [l.id, l]));
 
-      return rows.map((r) => {
+      const mapped = rows.map((r) => {
         const demo: any = r.demo_id ? demoMap.get(r.demo_id) : null;
         const lead: any = r.lead_id ? leadMap.get(r.lead_id) : null;
         return {
@@ -98,21 +100,42 @@ export function PaidBuildsPipeline() {
           demo_id: r.demo_id,
           lead_id: r.lead_id,
           deployed_url: r.deployed_url,
+          preview_url: r.preview_url ?? null,
+          review_requested_at: r.review_requested_at ?? null,
           created_at: r.created_at,
           business_name: demo?.business_name ?? lead?.business_name ?? null,
           paid_amount: demo?.paid_amount ?? null,
           paid_tier: demo?.paid_tier ?? null,
         };
       });
+
+      // Builds waiting on a human check float to the top so they can't be missed.
+      return mapped.sort((a, b) => {
+        const aReview = a.build_status === "review" ? 0 : 1;
+        const bReview = b.build_status === "review" ? 0 : 1;
+        return aReview - bReview;
+      });
     },
     refetchInterval: 30000,
   });
 
+  const reviewCount = jobs.filter((j) => j.build_status === "review").length;
+
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const patch: Record<string, unknown> = { build_status: status };
+      // Moving to 'live' IS the dev approval: stamp the reviewer and promote the
+      // preview build to the live URL.
+      if (status === "live") {
+        const job = jobs.find((j) => j.id === id);
+        const { data: auth } = await supabase.auth.getUser();
+        patch.reviewed_by = auth?.user?.id ?? null;
+        patch.reviewed_at = new Date().toISOString();
+        if (!job?.deployed_url && job?.preview_url) patch.deployed_url = job.preview_url;
+      }
       const { error } = await (supabase as any)
         .from("brandaro_build_jobs")
-        .update({ build_status: status })
+        .update(patch)
         .eq("id", id);
       if (error) throw error;
     },
@@ -128,7 +151,14 @@ export function PaidBuildsPipeline() {
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
-        <CardTitle className="text-base">Paid Builds Pipeline ({jobs.length})</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-base">Paid Builds Pipeline ({jobs.length})</CardTitle>
+          {reviewCount > 0 && (
+            <Badge variant="secondary" className={STATUS_TONE.review}>
+              Needs Review ({reviewCount})
+            </Badge>
+          )}
+        </div>
         <Button asChild variant="ghost" size="sm">
           <Link to="/brandaro/build-pipeline">
             Full build pipeline <ExternalLink className="h-3 w-3 ml-1" />
@@ -155,8 +185,12 @@ export function PaidBuildsPipeline() {
               <tbody>
                 {jobs.map((j) => {
                   const status = j.build_status ?? "";
+                  const needsReview = status === "review";
                   return (
-                    <tr key={j.id} className="border-b last:border-0">
+                    <tr
+                      key={j.id}
+                      className={`border-b last:border-0 ${needsReview ? "bg-blue-500/5" : ""}`}
+                    >
                       <td className="px-4 py-2 font-medium">
                         {j.business_name || `Build #${j.id.slice(0, 8)}`}
                       </td>
@@ -188,6 +222,18 @@ export function PaidBuildsPipeline() {
                           </Select>
                           {pendingId === j.id && (
                             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          )}
+                          {(j.preview_url || j.deployed_url) && (
+                            <Button asChild variant="outline" size="sm" className="h-8">
+                              <a
+                                href={(j.preview_url || j.deployed_url) as string}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {j.preview_url && status !== "live" ? "Preview" : "Visit"}
+                                <ExternalLink className="h-3 w-3 ml-1" />
+                              </a>
+                            </Button>
                           )}
                         </div>
                       </td>

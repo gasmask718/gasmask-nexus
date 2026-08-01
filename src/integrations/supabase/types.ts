@@ -16142,17 +16142,23 @@ export type Database = {
           max_retries: number | null
           package_tier: string | null
           pages_built: number | null
+          preview_url: string | null
           progress_stage: string | null
           project_id: string | null
           quality_breakdown: Json | null
           quality_score: number | null
           retry_count: number | null
+          review_requested_at: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           standardization_applied: boolean | null
           started_at: string | null
           style_palette_id: string | null
           template_performance_id: string | null
           total_pages: number | null
           updated_at: string | null
+          vercel_deployment_id: string | null
+          vercel_project_id: string | null
         }
         Insert: {
           auto_retry_count?: number | null
@@ -16187,17 +16193,23 @@ export type Database = {
           max_retries?: number | null
           package_tier?: string | null
           pages_built?: number | null
+          preview_url?: string | null
           progress_stage?: string | null
           project_id?: string | null
           quality_breakdown?: Json | null
           quality_score?: number | null
           retry_count?: number | null
+          review_requested_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           standardization_applied?: boolean | null
           started_at?: string | null
           style_palette_id?: string | null
           template_performance_id?: string | null
           total_pages?: number | null
           updated_at?: string | null
+          vercel_deployment_id?: string | null
+          vercel_project_id?: string | null
         }
         Update: {
           auto_retry_count?: number | null
@@ -16232,17 +16244,23 @@ export type Database = {
           max_retries?: number | null
           package_tier?: string | null
           pages_built?: number | null
+          preview_url?: string | null
           progress_stage?: string | null
           project_id?: string | null
           quality_breakdown?: Json | null
           quality_score?: number | null
           retry_count?: number | null
+          review_requested_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           standardization_applied?: boolean | null
           started_at?: string | null
           style_palette_id?: string | null
           template_performance_id?: string | null
           total_pages?: number | null
           updated_at?: string | null
+          vercel_deployment_id?: string | null
+          vercel_project_id?: string | null
         }
         Relationships: [
           {
