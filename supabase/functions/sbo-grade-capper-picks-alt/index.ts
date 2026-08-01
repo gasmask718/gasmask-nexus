@@ -215,9 +215,20 @@ serve(async (req) => {
             pnl_units: u.units,
             profit_loss: u.units,
             resolved_at: new Date().toISOString(),
+            // A pick that just graded is by definition no longer feed-blocked.
+            unsupported: false,
+            unsupported_reason: null,
           })
           .eq('id', u.id);
         if (!error) written++;
+      }
+      // Labeling pass — result stays 'pending' so these auto-grade if the feed returns.
+      for (const b of feedBlocked) {
+        const { error } = await supabase
+          .from('sbo_capper_picks')
+          .update({ unsupported: true, unsupported_reason: b.reason })
+          .eq('id', b.id);
+        if (!error) labeled++;
       }
     }
 
@@ -229,6 +240,8 @@ serve(async (req) => {
       pending_considered: pending.length,
       graded: updates.length,
       records_synced: written,
+      feed_blocked: feedBlocked.length,
+      feed_blocked_labeled: labeled,
       by_sport: bySport,
       feed_notes: feedNotes.slice(0, 20),
       scope: 'capper picks only — no props, predictions, stats brain, clamp gates, or market lines',
