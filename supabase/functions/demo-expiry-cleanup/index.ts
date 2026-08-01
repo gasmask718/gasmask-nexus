@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
       .from('brandaro_demo_sites')
       .select('id, slug, business_name, vercel_deployment_id, expires_at')
       .lt('expires_at', new Date().toISOString())
-      .eq('public_status', 'live')
+      .eq('deployment_status', 'live')
       .eq('converted_to_paid', false)
 
     if (error) throw error
