@@ -5,6 +5,14 @@
 **Method:** Every claim below was re-verified against live database/live code in this session. No claim was carried forward from the prior document without a fresh check.
 **Scope:** all `sbo_*` tables, all `sbo-*` edge functions, cron schedule, SBO frontend hooks.
 
+> ### ⚠️ Post-publication corrections — 2026-08-01 (later same day)
+> The fix-pass investigation (`docs/qa/SBO_FIX_PASS_PROPOSAL_2026-08-01.md`) found two conclusions in this document to be **factually wrong**, not merely under-detailed. Both have been corrected in place, and one timing note was added. Documentation-only changes; no code, table, or cron was touched.
+>
+> 1. **§5 item 2 (`props_master`)** — this document called the table "dead legacy surface". It is **live and actively synced** (600 rows written today with real current MLB data). The real defect is a hardcoded `'NBA'` literal at the write site mislabeling every row's sport. Verdict corrected; **do not retire this table** — 10 live consumers depend on it.
+> 2. **§5 item 6 (ambiguous props)** — this document reported the ambiguous population as **671**. That overstates it: only **41** of those 671 have genuinely opposing `predicted_outcome` values; the remaining 630 are duplicate predictions on the *same* side and were never at risk of a coin-flip grade.
+> 3. **§3 (`sbo_signals` never settles)** — accurate at time of writing, now **stale**: settlement has since run and produced *incorrect* results. See the timing note in §3.
+
+
 ---
 
 ## 1. Multi-sport coverage status
