@@ -5,6 +5,14 @@
 **Method:** Every claim below was re-verified against live database/live code in this session. No claim was carried forward from the prior document without a fresh check.
 **Scope:** all `sbo_*` tables, all `sbo-*` edge functions, cron schedule, SBO frontend hooks.
 
+> ### ⚠️ Post-publication corrections — 2026-08-01 (later same day)
+> The fix-pass investigation (`docs/qa/SBO_FIX_PASS_PROPOSAL_2026-08-01.md`) found two conclusions in this document to be **factually wrong**, not merely under-detailed. Both have been corrected in place, and one timing note was added. Documentation-only changes; no code, table, or cron was touched.
+>
+> 1. **§5 item 2 (`props_master`)** — this document called the table "dead legacy surface". It is **live and actively synced** (600 rows written today with real current MLB data). The real defect is a hardcoded `'NBA'` literal at the write site mislabeling every row's sport. Verdict corrected; **do not retire this table** — 10 live consumers depend on it.
+> 2. **§5 item 6 (ambiguous props)** — this document reported the ambiguous population as **671**. That overstates it: only **41** of those 671 have genuinely opposing `predicted_outcome` values; the remaining 630 are duplicate predictions on the *same* side and were never at risk of a coin-flip grade.
+> 3. **§3 (`sbo_signals` never settles)** — accurate at time of writing, now **stale**: settlement has since run and produced *incorrect* results. See the timing note in §3.
+
+
 ---
 
 ## 1. Multi-sport coverage status
@@ -88,6 +96,9 @@ Observations that matter:
 
 > **Prompt Fix — `sbo_signals` never settles**
 > 22/22 signals are `pending`; `result`, `pnl_units` and `resolved_at` have never been written. Until a settlement job runs against `sbo_signals`, the combined-confidence system produces no measurable track record and the confirm/fade weighting cannot be validated or tuned.
+>
+> **STALE AS OF 2026-08-01 18:00 UTC (this audit's snapshot time).** Settlement has since run and settled 14 rows — but produced **INCORRECT** results: the settler compares literal `'home'`/`'away'` side tokens against team names, so every settlement fabricated a `loss` regardless of the actual outcome. See `SBO_FIX_PASS_PROPOSAL_2026-08-01.md` item 2. This is now a **data-integrity issue, not just a missing-feature gap.**
+
 
 ---
 
@@ -112,11 +123,11 @@ Data reality check: `sbo_capper_picks` = 4,521 rows, 1,754 in the last 3 days, s
 | # | Item (from 2026-07-31) | Status | Evidence |
 |---|---|---|---|
 | 1 | **RLS posture on `sbo_*`** | **CLOSED (1 residual)** | Scan of `pg_policy` across all `sbo_*` tables: exactly **one** table still carries a fully-permissive (`USING true`) policy — `sbo_analysis_jobs` (1 of its 2 policies). Every other `sbo_*` table is scoped. `sbo_signals` is admin/owner-only. |
-| 2 | **`props_master` drift** | **OPEN — worse than described** | `props_master` = 13,910 rows, **100% `sport = 'NBA'`**, i.e. frozen at the April NBA archive. Meanwhile `sbo-props-master-sync-daily` (job 101) still runs twice a day. The sync job is either no-op'ing or writing nothing new; the table is a dead legacy surface. |
+| 2 | **`props_master` drift** | **OPEN — live table, mislabeling bug at write time** *(corrected 2026-08-01, post-publication)* | **CORRECTION:** this row previously read "worse than described… dead legacy surface". That was wrong. `props_master` is **live and actively synced** — the fix-pass investigation found **600 rows written today** carrying real current MLB data (e.g. Corey Seager, `stat_type='hits'`). The 100%-`sport='NBA'` reading is not staleness, it is a **hardcoded `'NBA'` string literal at the write site (`sbo-sync-props-master`, line 99)** that mislabels every row's sport regardless of the sport it actually belongs to. **10 confirmed live consumers depend on this table. Do not retire it** — fix the label at the write site. |
 | 3 | **`athlete_id` gap** | **CHANGED — column does not exist** | Neither `sbo_player_game_stats` nor `sbo_player_season_splits` has an `athlete_id` column. Identity is carried by `player_id` + `player_key`. The prior document's framing is stale; the ESPN-id collision fix landed under different column names. Re-file as "verify `player_key` uniqueness" rather than "athlete_id gap". |
 | 4 | **Telegram dispatch outage** | **CLOSED** | `sbo_telegram_posts` = 1,312 rows, most recent `updated_at` **2026-08-01 17:57 UTC** (≈5 min before this audit). Intake is flowing; 1,754 capper picks landed in the last 3 days. |
-| 5 | **`sbo_signals` grading** | **OPEN** | 22/22 rows `pending`, no `resolved_at` ever written. Unchanged from prior doc. |
-| 6 | **35 ambiguous historical props** | **OPEN / larger than stated** | Props with more than one non-null `predicted_outcome` prediction attached: **671**. The determinism fix makes future grading of these reproducible (newest-wins), but the historical verdicts written under the old coin-flip were never re-graded. The "35 already-graded" figure was the subset graded at the time; the ambiguous population is 671. |
+| 5 | **`sbo_signals` grading** | **OPEN — now a data-integrity issue** *(timing note added post-publication)* | 22/22 rows were `pending` at audit time. **Stale as of 2026-08-01 18:00 UTC:** settlement has since run and settled 14 rows with incorrect `loss` verdicts (side vs. team-name mismatch). See §3 and `SBO_FIX_PASS_PROPOSAL_2026-08-01.md` item 2. |
+| 6 | **35 ambiguous historical props** | **OPEN — real population is 41** *(corrected 2026-08-01, post-publication)* | **CORRECTION:** this row previously stated "the ambiguous population is 671". That overstates it. **671 props have more than one prediction attached, but only 41 have genuinely opposing `predicted_outcome` values** — that **41 is the real ambiguous population requiring a re-grade decision.** The other **630 are harmless duplicates** (multiple predictions on the *same* side) and were never at risk of a coin-flip grade. The determinism fix (newest-wins) makes future grading of all of them reproducible; the historical verdicts on the 41 were never re-graded. |
 | 7 | **NHL rows mislabeled season `2026`** | **OPEN — unchanged** | `sbo_player_season_splits`: 534 NHL rows still carry `season = '2026'` for games played 2025-10 → 2026-04, which belong to season `2025`. Held pending instruction, as agreed — these are not duplicates, so a blind delete is wrong; they need a relabel. |
 
 ---
@@ -151,9 +162,10 @@ Data reality check: `sbo_capper_picks` = 4,521 rows, 1,754 in the last 3 days, s
 2. **The confidence-band inversion the prior doc flagged is gone** — it was NBA contamination, and the sport-scoped grader eliminated it.
 3. **`sbo-verify-results` is genuinely sport-scoped and deterministic in the deployed source**, and real grading output since 2026-07-30 is 100% MLB with zero cross-sport writes.
 4. **Telegram dispatch outage is closed** — intake was live 5 minutes before this audit.
-5. **The ambiguous-props population is 671, not 35.** The prior number counted only the already-graded subset.
+5. **The ambiguous-props population is 41, not 35 and not 671.** *(corrected post-publication)* 671 props carry more than one prediction, but only 41 have genuinely opposing outcomes; the other 630 are same-side duplicates.
 6. **New headline gap the prior doc did not have:** props ingestion was generalized to WNBA/NFL but *prediction generation was not* — WNBA has 364 props and 2 predictions; NFL has 139 props and 0.
-7. **`props_master` is confirmed dead** (100% NBA, 13,910 stale rows) while its sync cron still runs twice daily.
+7. **`props_master` is live, not dead.** *(corrected post-publication)* 600 rows written today with real MLB data; the 100%-NBA reading is a hardcoded `'NBA'` literal at the write site. 10 live consumers — do not retire.
+
 8. **RLS is effectively closed** — one residual permissive policy on `sbo_analysis_jobs`, down from 65 fully-permissive policies.
 9. **`athlete_id` gap is a stale framing** — the column does not exist; identity lives in `player_key`.
 10. **NHL season-2026 mislabel (534 rows) is still open**, unchanged.
