@@ -63,14 +63,55 @@ export default function BuilderHubPage() {
     [mdFiles]
   );
 
-  const stats = useMemo(() => {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const todayCount = demos.filter(d => new Date(d.created_at) >= today).length;
-    const ready = demos.filter(d => d.generation_status === "ready").length;
-    const generating = demos.filter(d => d.generation_status === "generating").length;
-    const errored = demos.filter(d => d.generation_status === "error").length;
-    return { todayCount, ready, generating, errored, total: demos.length };
-  }, [demos]);
+  // Real aggregate stats — full-table counts, not scoped to the 50-row demo list.
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["builder-stats"],
+    refetchInterval: 30000,
+    queryFn: async () => {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      const [todayRes, liveRes, paidRes, auditRes] = await Promise.all([
+        supabase
+          .from("brandaro_demo_sites")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", startOfToday.toISOString()),
+        supabase
+          .from("brandaro_demo_sites")
+          .select("id", { count: "exact", head: true })
+          .eq("deployment_status", "live"),
+        supabase
+          .from("brandaro_demo_sites")
+          .select("id", { count: "exact", head: true })
+          .eq("converted_to_paid", true),
+        supabase
+          .from("brandaro_demo_sites")
+          .select("audit_score")
+          .gte("created_at", sevenDaysAgo.toISOString())
+          .not("audit_score", "is", null),
+      ]);
+
+      if (todayRes.error) throw todayRes.error;
+      if (liveRes.error) throw liveRes.error;
+      if (paidRes.error) throw paidRes.error;
+      if (auditRes.error) throw auditRes.error;
+
+      const scores = (auditRes.data || []).map((r: any) => Number(r.audit_score));
+      const avgAudit = scores.length
+        ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
+        : null;
+
+      return {
+        todayCount: todayRes.count ?? 0,
+        liveCount: liveRes.count ?? 0,
+        convertedCount: paidRes.count ?? 0,
+        avgAudit,
+        auditSample: scores.length,
+      };
+    },
+  });
+
 
   const generate = useMutation({
     mutationFn: async () => {
