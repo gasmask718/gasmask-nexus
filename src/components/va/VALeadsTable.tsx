@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { isSpanishLead } from '@/lib/spanishLeadDetector';
 import { SendReceptionistLinkModal } from '@/components/brandaro/SendReceptionistLinkModal';
+import { SendDemoModal } from '@/components/brandaro/SendDemoModal';
 
 interface Lead {
   id: string;
@@ -26,6 +27,8 @@ interface Lead {
   industry?: string | null;
   category?: string | null;
   subtypes?: string | null;
+  city?: string | null;
+  google_place_id?: string | null;
 }
 
 interface CampaignLead {
@@ -60,13 +63,14 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
   const [quickName, setQuickName] = useState('');
   const [languageFilter, setLanguageFilter] = useState<'all' | 'spanish'>('all');
   const [receptionistLead, setReceptionistLead] = useState<Lead | null>(null);
+  const [demoLead, setDemoLead] = useState<Lead | null>(null);
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['va-leads', user?.id],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('brandaro_qualified_leads')
-        .select('id, business_name, phone_number, email, lead_status, created_at, assigned_va, industry, category, subtypes')
+        .select('id, business_name, phone_number, email, lead_status, created_at, assigned_va, industry, category, subtypes, city, google_place_id')
         .eq('assigned_va', user!.id)
         .order('created_at', { ascending: false })
         .limit(200);
@@ -333,6 +337,15 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
                         >
                           <Sparkles className="h-3 w-3" /> Receptionist
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs hover:bg-accent/50 gap-1"
+                          style={{ color: "hsl(var(--hud-amber))" }}
+                          onClick={() => setDemoLead(lead)}
+                        >
+                          <Zap className="h-3 w-3" /> Send Demo
+                        </Button>
                       </div>
                     </td>
                   </motion.tr>
@@ -347,6 +360,18 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
         lead={receptionistLead ? { id: receptionistLead.id, business_name: receptionistLead.business_name, phone_number: receptionistLead.phone } : null}
         open={!!receptionistLead}
         onOpenChange={(o) => { if (!o) setReceptionistLead(null); }}
+      />
+
+      <SendDemoModal
+        lead={demoLead ? {
+          id: demoLead.id,
+          business_name: demoLead.business_name,
+          city: demoLead.city ?? null,
+          phone_number: demoLead.phone,
+          google_place_id: demoLead.google_place_id ?? null,
+        } : null}
+        open={!!demoLead}
+        onClose={() => setDemoLead(null)}
       />
     </div>
   );
