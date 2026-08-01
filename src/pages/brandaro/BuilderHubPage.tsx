@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, ExternalLink, Wand2, RefreshCw, CheckCircle2, XCircle, Clock, FileText } from "lucide-react";
+import { ManualDemoGenerator } from "@/components/brandaro/ManualDemoGenerator";
+
 
 const EXPECTED_MDS = [
   "cleaning", "landscaping", "restaurant", "plumbing", "electrician",
