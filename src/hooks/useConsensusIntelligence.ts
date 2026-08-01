@@ -56,6 +56,8 @@ export interface ConsensusStats {
   mediumConsensusWinRate: number;
 }
 
+import { normalizeStat, marketPropCandidates } from '@/lib/sbo/statNormalize';
+
 function impliedFromAmerican(odds: number | null): number | null {
   if (odds === null || odds === undefined || !Number.isFinite(odds) || odds === 0) return null;
   return odds < 0 ? -odds / (-odds + 100) : 100 / (odds + 100);
@@ -141,10 +143,13 @@ export function useConsensusIntelligence() {
 
   // Build consensus groups
   const { consensusPicks, consensusStats, capperKPIs, todayConsensusPicks } = useMemo(() => {
-    // Market line lookup: player|prop|date -> market row
+    // Market line lookup: player|NORMALIZED prop|date -> market row.
+    // sbo_capper_picks and sbo_player_props use different prop vocabularies
+    // ("strikeouts" vs "strikeouts_p", "pts+reb+ast" vs "pts_reb_ast"), so both
+    // sides go through the shared normalizeStat() layer before keying.
     const marketMapByKey = new Map<string, any>();
     for (const m of marketProps as any[]) {
-      const k = `${(m.player_name || '').toLowerCase().trim()}|${(m.prop_type || '').toLowerCase()}|${m.game_date}`;
+      const k = `${(m.player_name || '').toLowerCase().trim()}|${normalizeStat(m.prop_type || '')}|${m.game_date}`;
       if (!marketMapByKey.has(k)) marketMapByKey.set(k, m);
     }
 
@@ -234,10 +239,15 @@ export function useConsensusIntelligence() {
         : null;
       const impliedProb = impliedFromAmerican(avgOdds);
 
-      // 3) Line edge vs the live market line for this player+prop+date
-      const marketRow = marketMapByKey.get(
-        `${(first.player_name || '').toLowerCase().trim()}|${(first.prop_type || '').toLowerCase()}|${first.game_date}`
-      );
+      // 3) Line edge vs the live market line for this player+prop+date.
+      // Try each plausible market spelling of the pick's prop (e.g. a capper's
+      // "strikeouts" is either strikeouts_p or strikeouts_b in the market table).
+      const mPlayer = (first.player_name || '').toLowerCase().trim();
+      let marketRow: any = null;
+      for (const cand of marketPropCandidates(first.prop_type || '')) {
+        marketRow = marketMapByKey.get(`${mPlayer}|${cand}|${first.game_date}`);
+        if (marketRow) break;
+      }
       const marketLine = marketRow && marketRow.line !== null ? Number(marketRow.line) : null;
       let lineEdgePct: number | null = null;
       if (marketLine !== null && Number.isFinite(Number(first.line)) && Math.abs(marketLine) > 0) {
