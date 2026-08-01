@@ -458,7 +458,19 @@ export default function BuilderHubPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="templates">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Template Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TemplateStatusTable />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
 
       <PaidBuildsPipeline />
 
