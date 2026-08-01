@@ -239,10 +239,15 @@ export function useConsensusIntelligence() {
         : null;
       const impliedProb = impliedFromAmerican(avgOdds);
 
-      // 3) Line edge vs the live market line for this player+prop+date
-      const marketRow = marketMapByKey.get(
-        `${(first.player_name || '').toLowerCase().trim()}|${(first.prop_type || '').toLowerCase()}|${first.game_date}`
-      );
+      // 3) Line edge vs the live market line for this player+prop+date.
+      // Try each plausible market spelling of the pick's prop (e.g. a capper's
+      // "strikeouts" is either strikeouts_p or strikeouts_b in the market table).
+      const mPlayer = (first.player_name || '').toLowerCase().trim();
+      let marketRow: any = null;
+      for (const cand of marketPropCandidates(first.prop_type || '')) {
+        marketRow = marketMapByKey.get(`${mPlayer}|${cand}|${first.game_date}`);
+        if (marketRow) break;
+      }
       const marketLine = marketRow && marketRow.line !== null ? Number(marketRow.line) : null;
       let lineEdgePct: number | null = null;
       if (marketLine !== null && Number.isFinite(Number(first.line)) && Math.abs(marketLine) > 0) {
