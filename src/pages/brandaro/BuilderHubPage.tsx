@@ -63,14 +63,55 @@ export default function BuilderHubPage() {
     [mdFiles]
   );
 
-  const stats = useMemo(() => {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const todayCount = demos.filter(d => new Date(d.created_at) >= today).length;
-    const ready = demos.filter(d => d.generation_status === "ready").length;
-    const generating = demos.filter(d => d.generation_status === "generating").length;
-    const errored = demos.filter(d => d.generation_status === "error").length;
-    return { todayCount, ready, generating, errored, total: demos.length };
-  }, [demos]);
+  // Real aggregate stats — full-table counts, not scoped to the 50-row demo list.
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["builder-stats"],
+    refetchInterval: 30000,
+    queryFn: async () => {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      const [todayRes, liveRes, paidRes, auditRes] = await Promise.all([
+        supabase
+          .from("brandaro_demo_sites")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", startOfToday.toISOString()),
+        supabase
+          .from("brandaro_demo_sites")
+          .select("id", { count: "exact", head: true })
+          .eq("deployment_status", "live"),
+        supabase
+          .from("brandaro_demo_sites")
+          .select("id", { count: "exact", head: true })
+          .eq("converted_to_paid", true),
+        supabase
+          .from("brandaro_demo_sites")
+          .select("audit_score")
+          .gte("created_at", sevenDaysAgo.toISOString())
+          .not("audit_score", "is", null),
+      ]);
+
+      if (todayRes.error) throw todayRes.error;
+      if (liveRes.error) throw liveRes.error;
+      if (paidRes.error) throw paidRes.error;
+      if (auditRes.error) throw auditRes.error;
+
+      const scores = (auditRes.data || []).map((r: any) => Number(r.audit_score));
+      const avgAudit = scores.length
+        ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
+        : null;
+
+      return {
+        todayCount: todayRes.count ?? 0,
+        liveCount: liveRes.count ?? 0,
+        convertedCount: paidRes.count ?? 0,
+        avgAudit,
+        auditSample: scores.length,
+      };
+    },
+  });
+
 
   const generate = useMutation({
     mutationFn: async () => {
@@ -126,7 +167,7 @@ export default function BuilderHubPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Wand2 className="h-7 w-7" /> Website Builder Engine
+            <Wand2 className="h-7 w-7" /> Website Builder
           </h1>
           <p className="text-muted-foreground">Generate, monitor, and dispatch demo sites for qualified leads.</p>
         </div>
@@ -135,13 +176,18 @@ export default function BuilderHubPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard label="Today" value={stats.todayCount} />
-        <StatCard label="Ready" value={stats.ready} tone="success" />
-        <StatCard label="Generating" value={stats.generating} tone="warn" />
-        <StatCard label="Errored" value={stats.errored} tone="error" />
-        <StatCard label="Total (last 50)" value={stats.total} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Today's Demos" value={stats?.todayCount ?? 0} loading={statsLoading} />
+        <StatCard label="Live Right Now" value={stats?.liveCount ?? 0} tone="success" loading={statsLoading} />
+        <StatCard label="Converted to Paid" value={stats?.convertedCount ?? 0} tone="warn" loading={statsLoading} />
+        <StatCard
+          label="Avg Audit Score (7d)"
+          value={stats?.avgAudit ?? "—"}
+          hint={stats?.auditSample ? `${stats.auditSample} scored` : "no scores yet"}
+          loading={statsLoading}
+        />
       </div>
+
 
       <Card>
         <CardHeader><CardTitle>Generate Demo</CardTitle></CardHeader>
@@ -326,15 +372,19 @@ export default function BuilderHubPage() {
   );
 }
 
-function StatCard({ label, value, tone }: { label: string; value: number; tone?: "success" | "warn" | "error" }) {
+function StatCard({ label, value, tone, hint, loading }: { label: string; value: number | string; tone?: "success" | "warn" | "error"; hint?: string; loading?: boolean }) {
   const color = tone === "success" ? "text-green-600" : tone === "warn" ? "text-amber-600" : tone === "error" ? "text-destructive" : "";
   return (
     <Card><CardContent className="p-4">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={`text-2xl font-bold ${color}`}>{value}</div>
+      <div className={`text-2xl font-bold ${color}`}>
+        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : value}
+      </div>
+      {hint && <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>}
     </CardContent></Card>
   );
 }
+
 
 function StatusBadge({ status, error }: { status: string; error?: string | null }) {
   if (status === "ready") return <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="h-3 w-3 mr-1" />ready</Badge>;
