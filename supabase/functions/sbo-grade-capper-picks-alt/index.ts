@@ -206,6 +206,7 @@ serve(async (req) => {
     }
 
     let written = 0;
+    let labeled = 0;
     if (!dryRun) {
       for (const u of updates) {
         const { error } = await supabase

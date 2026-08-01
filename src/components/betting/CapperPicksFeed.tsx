@@ -338,7 +338,8 @@ export function CapperPicksFeed({ cappers, onRefetch }: CapperPicksFeedProps) {
       ) : (
         <div className="space-y-1.5">
           {filteredPicks.map((p: any) => {
-            const isPending = !p.result || p.result === 'pending';
+            const isFeedBlocked = !!p.unsupported;
+            const isPending = (!p.result || p.result === 'pending') && !isFeedBlocked;
             const isSelected = selectedIds.has(p.id);
             return (
               <Card
