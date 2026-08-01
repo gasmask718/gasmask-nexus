@@ -279,8 +279,11 @@ serve(async (req) => {
             // Cap raised 25 -> 40 per sport: with up to 4 sports in the
             // allowlist the old cap under-served busy MLB slates while the
             // shared run budget (not the cap) is now the real limiter.
-            const MAX_PROPS_PER_RUN = Number(prop_fanout_limit ?? 40);
-            const TIME_BUDGET_MS = Math.min(60_000, Math.max(15_000, remainingRunMs()));
+            const MAX_PROPS_PER_RUN = Number(prop_fanout_limit ?? 60);
+            // 70% of this sport's fair share to props, 30% left for moneyline.
+            const TIME_BUDGET_MS = Math.max(8_000, Math.floor(sportRemainingMs() * 0.7));
+            const PROP_CONCURRENCY = 3;
+
 
             const dayStart = `${date}T00:00:00Z`;
             const _next = new Date(`${date}T00:00:00Z`);
