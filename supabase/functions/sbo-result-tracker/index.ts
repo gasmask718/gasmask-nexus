@@ -105,13 +105,27 @@ function resolveTotal(game: Game, side: string, line: number, stake: number, odd
   const won = isOver ? game.final_total > line : game.final_total < line;
   return { result: won ? "win" : "loss", pnl: won ? winPnl(stake, odds) : -stake };
 }
+// `side` may be a team name (capper picks) OR the literal 'home'/'away'
+// (sbo_signals, written by _shared/sboSignals.ts). Handle both explicitly —
+// previously 'home'/'away' matched no team and fell through to the loss
+// fallback, marking every AI signal a fabricated loss.
+function sideTakes(game: Game, side: string): { takingHome: boolean; takingAway: boolean } {
+  const s = String(side ?? "").trim().toLowerCase();
+  if (s === "home") return { takingHome: true, takingAway: false };
+  if (s === "away") return { takingHome: false, takingAway: true };
+  return {
+    takingHome: sideMatchesTeam(side, game.home_team, game.sport),
+    takingAway: sideMatchesTeam(side, game.away_team, game.sport),
+  };
+}
 function resolveMoneyline(game: Game, side: string, stake: number, odds: number | null): Resolution {
-  const takingHome = sideMatchesTeam(side, game.home_team, game.sport);
-  const takingAway = sideMatchesTeam(side, game.away_team, game.sport);
+  const { takingHome, takingAway } = sideTakes(game, side);
   if (!takingHome && !takingAway) return { result: "loss", pnl: -stake };
+  if (game.home_score === game.away_score) return { result: "push", pnl: 0 };
   const won = takingHome ? game.home_score > game.away_score : game.away_score > game.home_score;
   return { result: won ? "win" : "loss", pnl: won ? winPnl(stake, odds) : -stake };
 }
+
 function classifyBetType(betType: string | null, pickType?: string | null): "spread" | "total" | "moneyline" | "prop" | "unknown" {
   const s = (betType || pickType || "").toLowerCase();
   if (s.includes("spread") || s === "ats") return "spread";
