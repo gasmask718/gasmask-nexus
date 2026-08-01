@@ -47,11 +47,12 @@ export function normalizeStat(s: string): string {
 // Some capper vocabularies are ambiguous against the market vocabulary: a capper writing
 // "strikeouts" may mean a pitcher's (strikeouts_p) or a batter's (strikeouts_b) line.
 // Return the canonical form first, then the plausible market spellings to try in order.
+// Only spellings of the SAME underlying stat belong here — never a different stat,
+// since the line-edge math compares the two lines directly.
 const AMBIGUOUS: Record<string, string[]> = {
   strikeouts: ['strikeouts_p', 'strikeouts_b'],
   hits: ['hits', 'total_hits'],
-  hits_allowed: ['hits_allowed', 'hits'],
-  home_runs: ['home_runs', 'total_bases'],
+  hits_allowed: ['hits_allowed'],
 };
 
 export function marketPropCandidates(propType: string): string[] {
