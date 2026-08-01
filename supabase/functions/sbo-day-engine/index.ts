@@ -476,26 +476,38 @@ serve(async (req) => {
       }
     }
 
-    // ---------- Postgame (unchanged semantics — run once globally) ----------
+    // ---------- Postgame ----------
+    // Steps WITHOUT a `sports` list run once globally (unchanged semantics).
+    // Steps WITH one (e.g. sbo-ingest-player-stats, gated on GRADED_SPORT_KEYS)
+    // fan out over the graded sports actually running, passing `sport` — without
+    // this they silently ran once on their own default sport only.
     for (const step of postgameSteps) {
-      const stepStart = Date.now();
-      try {
-        const { data, error } = await supabase.functions.invoke(step.fn, { body: { date } });
-        if (error && step.required) throw error;
-        const records = data?.records_synced || data?.games_processed || data?.inserted || data?.props || 0;
-        await recordStep(step, {
-          sport: 'global',
-          status: error ? 'warning' : 'success',
-          records,
-          duration_ms: Date.now() - stepStart,
-        });
-      } catch (e: any) {
-        await recordStep(step, {
-          sport: 'global',
-          status: 'error',
-          duration_ms: Date.now() - stepStart,
-          error: e.message,
-        });
+      const targets = step.sports
+        ? sportsToRun.filter(s => step.sports!.includes(s))
+        : [null];
+
+      for (const target of targets) {
+        const stepStart = Date.now();
+        try {
+          const { data, error } = await supabase.functions.invoke(step.fn, {
+            body: target ? { date, sport: target } : { date },
+          });
+          if (error && step.required) throw error;
+          const records = data?.records_synced || data?.games_processed || data?.inserted || data?.props || 0;
+          await recordStep(step, {
+            sport: target ?? 'global',
+            status: error ? 'warning' : 'success',
+            records,
+            duration_ms: Date.now() - stepStart,
+          });
+        } catch (e: any) {
+          await recordStep(step, {
+            sport: target ?? 'global',
+            status: 'error',
+            duration_ms: Date.now() - stepStart,
+            error: e.message,
+          });
+        }
       }
     }
 
