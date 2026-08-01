@@ -238,9 +238,22 @@ serve(async (req) => {
     };
 
     // ---------- Per-sport loop ----------
+    // Fair-share: each sport gets (remaining loop budget / sports left), so a
+    // busy MLB slate can no longer consume the entire window and starve the
+    // sports behind it. A sport with no work returns instantly and hands its
+    // unused share back to the ones still queued.
+    const PER_SPORT_LOOP_BUDGET_MS = 90_000;
+    const LOOP_START = Date.now();
+    const loopRemainingMs = () => Math.max(0, PER_SPORT_LOOP_BUDGET_MS - (Date.now() - LOOP_START));
+    let sportsLeft = sportsToRun.length;
     for (const sport of sportsToRun) {
+      const sportBudgetMs = Math.max(10_000, Math.floor(loopRemainingMs() / Math.max(1, sportsLeft)));
+      const sportStart = Date.now();
+      const sportRemainingMs = () => Math.max(0, sportBudgetMs - (Date.now() - sportStart));
+      sportsLeft -= 1;
       for (const step of perSportSteps) {
         const stepStart = Date.now();
+
 
         // Sport-support gate (declarative, per-step)
         if (step.sports && !step.sports.includes(sport)) {
