@@ -379,7 +379,7 @@ serve(async (req) => {
             // and idempotency via the function's own same-day cache check,
             // which makes the step resumable across the 13:00 / 23:00 runs.
             const MAX_GAMES_PER_RUN = 30;
-            const TIME_BUDGET_MS = Math.min(60_000, Math.max(15_000, remainingRunMs()));
+            const TIME_BUDGET_MS = Math.max(8_000, sportRemainingMs());
             const CONCURRENCY = 3;
 
             const dayStart = `${date}T00:00:00Z`;
