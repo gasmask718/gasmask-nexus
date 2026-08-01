@@ -132,6 +132,37 @@ function findSdioPlayerStats(allStats: any[], playerName: string): any | null {
 }
 
 // ═══════════════════════════════════════
+// PREDICTION TIEBREAK — deterministic, documented
+// ═══════════════════════════════════════
+// A prop can carry more than one row in sbo_predictions (re-runs of the
+// day engine, model revisions, opposing over/under calls). Previously the
+// code took prop.sbo_predictions[0] straight off an UNORDERED PostgREST
+// embed, so which pick graded the prop was whatever order Postgres
+// happened to return — a coin flip on props with opposing picks.
+//
+// RULE (explicit, applies everywhere): MOST RECENT PREDICTION WINS.
+//   1. Newest created_at wins — the latest model output supersedes
+//      earlier ones; it is the pick the product surfaced last.
+//   2. Ties on created_at (same-batch inserts) break on the larger id
+//      (lexicographic on uuid text) — arbitrary but STABLE and repeatable.
+// Rejected alternative: "prefer the row with a non-null verdict". That is
+// self-referential — the verdict is written BY this grader, so it would
+// make grading depend on prior grading runs and re-runs would not be
+// reproducible. created_at is external to the grader, so it is stable.
+function pickPrediction(prop: any): any | null {
+  const preds = prop?.sbo_predictions;
+  if (!Array.isArray(preds) || preds.length === 0) return null;
+  if (preds.length === 1) return preds[0];
+  return [...preds].sort((a, b) => {
+    const ta = a?.created_at ? Date.parse(a.created_at) : 0;
+    const tb = b?.created_at ? Date.parse(b.created_at) : 0;
+    if (tb !== ta) return tb - ta;
+    return String(b?.id ?? '').localeCompare(String(a?.id ?? ''));
+  })[0];
+}
+
+
+// ═══════════════════════════════════════
 // WRITE GATE — report_only support
 // ═══════════════════════════════════════
 // Every mutation goes through this. In report_only mode nothing is sent
@@ -549,7 +580,7 @@ serve(async (req) => {
           .select(`
             *,
             sbo_predictions(
-              id, predicted_outcome, final_confidence, verdict, verified
+              id, created_at, predicted_outcome, final_confidence, verdict, verified
             )
           `)
           .eq('sport_key', sportKey)
@@ -585,7 +616,8 @@ serve(async (req) => {
             c.props_seen++;
 
             const epsilon = 0.001;
-            const aiPick = prop.sbo_predictions?.[0]?.predicted_outcome?.toLowerCase() || null;
+            const chosenPred = pickPrediction(prop);
+            const aiPick = chosenPred?.predicted_outcome?.toLowerCase() || null;
 
             let predictionVerdict: string;
             if (Math.abs(actualNum - line) < epsilon) {
@@ -609,8 +641,8 @@ serve(async (req) => {
               verified_at: new Date().toISOString(),
             });
 
-            if (prop.sbo_predictions?.[0]?.id) {
-              await W.updateBy('sbo_predictions', 'id', prop.sbo_predictions[0].id, {
+            if (chosenPred?.id) {
+              await W.updateBy('sbo_predictions', 'id', chosenPred.id, {
                 verified: true, verdict: predictionVerdict,
                 was_correct: predictionVerdict === 'correct',
                 actual_outcome: predictionVerdict,
@@ -618,11 +650,11 @@ serve(async (req) => {
               });
 
               await W.upsert('sbo_results_verification', {
-                prediction_id: prop.sbo_predictions[0].id,
+                prediction_id: chosenPred.id,
                 game_id: prop.game_id || null,
                 pick_type: 'prop',
                 our_pick: aiPick || 'unknown',
-                our_confidence: prop.sbo_predictions[0].final_confidence || null,
+                our_confidence: chosenPred.final_confidence || null,
                 actual_result: `${prop.player_name} ${prop.prop_type}: ${actualNum} (line was ${line})`,
                 actual_value: actualNum,
                 was_correct: predictionVerdict === 'correct',
@@ -632,7 +664,7 @@ serve(async (req) => {
                 verified_at: new Date().toISOString(),
               }, { onConflict: 'prediction_id' });
 
-              await W.updateBy('sbo_saved_picks', 'source_id', prop.sbo_predictions[0].id, {
+              await W.updateBy('sbo_saved_picks', 'source_id', chosenPred.id, {
                 result: predictionVerdict === 'correct' ? 'won' : predictionVerdict === 'push' ? 'push' : 'lost',
               });
             }
@@ -736,7 +768,7 @@ serve(async (req) => {
       for (const [gameId, eventId] of eventMaps[sportKey]) {
         let propsQuery = supabase
           .from('sbo_player_props')
-          .select(`*, sbo_predictions(id, predicted_outcome, final_confidence, verdict, verified)`)
+          .select(`*, sbo_predictions(id, created_at, predicted_outcome, final_confidence, verdict, verified)`)
           .eq('sport_key', sportKey)
           .eq('game_id', gameId);
         if (!force_rerun) propsQuery = propsQuery.or('verified.is.null,verified.eq.false');
@@ -770,7 +802,8 @@ serve(async (req) => {
             if (isNaN(line) || isNaN(actualNum)) { c.props_pending_unmapped++; propsPending++; continue; }
 
             const epsilon = 0.001;
-            const aiPick = prop.sbo_predictions?.[0]?.predicted_outcome?.toLowerCase() || null;
+            const chosenPred = pickPrediction(prop);
+            const aiPick = chosenPred?.predicted_outcome?.toLowerCase() || null;
 
             let predictionVerdict: string;
             if (Math.abs(actualNum - line) < epsilon) {
@@ -792,8 +825,8 @@ serve(async (req) => {
               verified_at: new Date().toISOString(),
             });
 
-            if (prop.sbo_predictions?.[0]?.id) {
-              const predId = prop.sbo_predictions[0].id;
+            if (chosenPred?.id) {
+              const predId = chosenPred.id;
               await W.updateBy('sbo_predictions', 'id', predId, {
                 verified: true, verdict: predictionVerdict,
                 was_correct: predictionVerdict === 'correct',
@@ -806,7 +839,7 @@ serve(async (req) => {
                 game_id: prop.game_id || null,
                 pick_type: 'prop',
                 our_pick: aiPick || 'unknown',
-                our_confidence: prop.sbo_predictions[0].final_confidence || null,
+                our_confidence: chosenPred.final_confidence || null,
                 actual_result: `${prop.player_name} ${prop.prop_type}: ${actualNum} (line was ${line})`,
                 actual_value: actualNum,
                 was_correct: predictionVerdict === 'correct',
