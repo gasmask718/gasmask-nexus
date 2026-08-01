@@ -855,6 +855,7 @@ const PartnerClaim = lazy(() => import('@/pages/partner/PartnerClaim'));
 const PartnerPortal = lazy(() => import('@/pages/partner/PartnerPortal'));
 const PartnersImport = lazy(() => import('@/pages/admin/PartnersImport'));
 const BeautyProviderSignup = lazy(() => import('@/pages/public/BeautyProviderSignup'));
+const BrandaroIntakePage = lazy(() => import('@/pages/public/BrandaroIntakePage'));
 const ThingsToDoExperiences = lazy(() => import('@/pages/os/toptier/ThingsToDoExperiences'));
 const ThingsToDoBookings = lazy(() => import('@/pages/os/toptier/ThingsToDoBookings'));
 const ThingsToDoAnalytics = lazy(() => import('@/pages/os/toptier/ThingsToDoAnalytics'));
