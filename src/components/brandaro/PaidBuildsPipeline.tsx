@@ -194,9 +194,6 @@ export function PaidBuildsPipeline() {
                       <td className="px-4 py-2 font-medium">
                         {j.business_name || `Build #${j.id.slice(0, 8)}`}
                       </td>
-                      <td className="px-4 py-2 font-medium">
-                        {j.business_name || `Build #${j.id.slice(0, 8)}`}
-                      </td>
                       <td className="px-4 py-2 capitalize">{j.package_tier || "—"}</td>
                       <td className="px-4 py-2 tabular-nums">{money(j.paid_amount)}</td>
                       <td className="px-4 py-2">
