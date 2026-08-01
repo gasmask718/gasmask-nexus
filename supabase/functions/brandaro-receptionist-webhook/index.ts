@@ -14,15 +14,13 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-  const webhookSecret =
+  const liveSecret =
     Deno.env.get("RECEPTIONIST_STRIPE_WEBHOOK_SECRET") ||
     Deno.env.get("STRIPE_WEBHOOK_SECRET");
-  if (!stripeKey || !webhookSecret) {
-    return json({ error: "Stripe not configured" }, 500);
+  const testSecret = Deno.env.get("RECEPTIONIST_STRIPE_WEBHOOK_SECRET_TEST");
+  if (!liveSecret && !testSecret) {
+    return json({ error: "Stripe webhook not configured" }, 500);
   }
-
-  const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -31,13 +29,27 @@ Deno.serve(async (req) => {
   const signature = req.headers.get("stripe-signature");
   const rawBody = await req.text();
 
-  let event: Stripe.Event;
-  try {
-    event = await stripe.webhooks.constructEventAsync(rawBody, signature!, webhookSecret);
-  } catch (err) {
-    console.error("[receptionist-webhook] signature verification failed", err);
+  // Verify against whichever endpoint secret matches (live or test).
+  const verifier = new Stripe("sk_placeholder", { apiVersion: "2025-08-27.basil" });
+  let event: Stripe.Event | null = null;
+  for (const secret of [liveSecret, testSecret]) {
+    if (!secret) continue;
+    try {
+      event = await verifier.webhooks.constructEventAsync(rawBody, signature!, secret);
+      break;
+    } catch { /* try next secret */ }
+  }
+  if (!event) {
+    console.error("[receptionist-webhook] signature verification failed");
     return json({ error: "Invalid signature" }, 400);
   }
+
+  const stripeKey = event.livemode
+    ? Deno.env.get("STRIPE_SECRET_KEY")
+    : (Deno.env.get("STRIPE_SECRET_KEY_TEST") ?? Deno.env.get("STRIPE_SECRET_KEY"));
+  if (!stripeKey) return json({ error: "Stripe key missing" }, 500);
+  const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+  console.log(`[receptionist-webhook] event=${event.type} livemode=${event.livemode}`);
 
   try {
     if (event.type === "checkout.session.completed") {
