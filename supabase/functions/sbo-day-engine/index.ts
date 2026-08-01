@@ -80,7 +80,7 @@ const POSTGAME_STEPS: EngineStep[] = [
 // nfl/nhl are fully scaffolded in sbo-fetch-odds (SPORT_MAP + PROP_MARKETS +
 // PROP_TYPE_MAP) — they ingest odds/props, but have no ESPN GRADING_CONFIG yet,
 // so grading + stats ingestion stay MLB-only by design.
-const SUPPORTED_ALLOWLIST = new Set<string>(['nba', 'mlb', 'nfl', 'nhl']);
+const SUPPORTED_ALLOWLIST = new Set<string>(['nba', 'mlb', 'nfl', 'nhl', 'wnba']);
 
 // Whole-invocation wall clock. Each fanout step used to claim its own fixed 60s
 // budget, which was safe at 2 sports and would blow the ~150s edge limit at 4.

@@ -11,6 +11,7 @@ const corsHeaders = {
 
 const SPORT_MAP: Record<string, string> = {
   nba: 'basketball_nba',
+  wnba: 'basketball_wnba',
   nfl: 'americanfootball_nfl',
   mlb: 'baseball_mlb',
   nhl: 'icehockey_nhl',
@@ -22,6 +23,8 @@ const SPORT_MAP: Record<string, string> = {
 
 const PROP_MARKETS: Record<string, string[]> = {
   nba: ['player_points','player_rebounds','player_assists','player_threes','player_blocks','player_steals'],
+  // WNBA — same market vocabulary as NBA on The Odds API (basketball_wnba)
+  wnba: ['player_points','player_rebounds','player_assists','player_threes','player_blocks','player_steals'],
   nfl: ['player_pass_yds','player_rush_yds','player_reception_yds','player_pass_tds','player_anytime_td'],
   mlb: ['batter_strikeouts','pitcher_strikeouts','batter_hits','batter_home_runs','batter_total_bases'],
   nhl: ['player_goals','player_assists','player_shots_on_goal','player_total_saves'],
@@ -31,6 +34,9 @@ const PROP_MARKETS: Record<string, string[]> = {
 const PROP_TYPE_MAP: Record<string, string> = {
   player_points: 'points', player_rebounds: 'rebounds', player_assists: 'assists',
   player_threes: 'threes', player_blocks: 'blocks', player_steals: 'steals',
+  player_turnovers: 'turnovers',
+  player_points_rebounds_assists: 'pts_reb_ast', player_points_rebounds: 'pts_reb',
+  player_points_assists: 'pts_ast', player_rebounds_assists: 'reb_ast',
   player_pass_yds: 'pass_yards', player_rush_yds: 'rush_yards',
   player_reception_yds: 'rec_yards', player_pass_tds: 'pass_tds',
   player_anytime_td: 'anytime_td', player_receptions: 'receptions',

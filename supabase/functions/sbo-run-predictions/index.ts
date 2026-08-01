@@ -22,6 +22,16 @@ Steals are 83% predictive.
 UNDER bets hit 68% of the time.
 Consider: back-to-back schedule, home/away rest, pace matchup, injury impact on rotations.`,
   },
+  wnba: {
+    stats_role: "You are an elite WNBA statistical analyst.",
+    context_role: "You are a WNBA insider analyst.",
+    key_signals: `Key accuracy signals:
+Usage rate and minutes load drive scoring props more than talent alone.
+Short 12-player rotations mean injuries swing usage dramatically.
+Back-to-backs and heavy travel legs suppress efficiency.
+Pace matchup matters — the league's pace spread is wide.
+Three-point volume is streaky; weight attempts over makes.`,
+  },
   nfl: {
     stats_role: "You are an elite NFL statistical analyst.",
     context_role: "You are an NFL insider analyst.",
