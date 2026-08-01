@@ -1076,8 +1076,8 @@ export default function LeadDatabasePage() {
                                         <Phone className="h-3 w-3 mr-2" /> Manual Call
                                       </DropdownMenuItem>
                                     )}
-                                    <DropdownMenuItem onClick={() => handleSendDemo(lead)} disabled={loadingAction === `demo-${lead.id}`}>
-                                      {loadingAction === `demo-${lead.id}` ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <Zap className="h-3 w-3 mr-2" />}
+                                    <DropdownMenuItem onClick={() => setSendDemoLead(lead)}>
+                                      <Zap className="h-3 w-3 mr-2" />
                                       Send Demo (Auto-Generate)
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setReceptionistLead(lead)}>
