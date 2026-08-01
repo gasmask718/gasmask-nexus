@@ -352,8 +352,96 @@ function CallsTable({ calls }: { calls: any[] }) {
   );
 }
 
+const DAYS = [
+  { key: "monday", label: "Monday" },
+  { key: "tuesday", label: "Tuesday" },
+  { key: "wednesday", label: "Wednesday" },
+  { key: "thursday", label: "Thursday" },
+  { key: "friday", label: "Friday" },
+  { key: "saturday", label: "Saturday" },
+  { key: "sunday", label: "Sunday" },
+] as const;
+
+type DayHours = { open: boolean; start: string; end: string };
+type BusinessHours = Record<string, DayHours>;
+
+function normalizeHours(raw: any): BusinessHours {
+  const out: BusinessHours = {};
+  for (const d of DAYS) {
+    const v = raw?.[d.key] ?? {};
+    const weekend = d.key === "saturday" || d.key === "sunday";
+    out[d.key] = {
+      open: typeof v.open === "boolean" ? v.open : !weekend,
+      start: typeof v.start === "string" ? v.start : "09:00",
+      end: typeof v.end === "string" ? v.end : "17:00",
+    };
+  }
+  return out;
+}
+
+function BusinessHoursEditor({
+  value,
+  onChange,
+}: {
+  value: BusinessHours;
+  onChange: (v: BusinessHours) => void;
+}) {
+  const set = (day: string, patch: Partial<DayHours>) =>
+    onChange({ ...value, [day]: { ...value[day], ...patch } });
+
+  const copyToAll = () => {
+    const mon = value.monday;
+    const next: BusinessHours = { ...value };
+    for (const d of DAYS) {
+      if (d.key === "monday") continue;
+      next[d.key] = { ...next[d.key], start: mon.start, end: mon.end };
+    }
+    onChange(next);
+  };
+
+  return (
+    <div className="border rounded p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <Label>Business Hours</Label>
+        <Button type="button" size="sm" variant="ghost" onClick={copyToAll}>
+          Copy Monday times to all
+        </Button>
+      </div>
+      {DAYS.map((d) => {
+        const h = value[d.key];
+        return (
+          <div key={d.key} className="grid grid-cols-[110px_auto_1fr_auto_1fr] items-center gap-2">
+            <span className="text-sm">{d.label}</span>
+            <Switch checked={h.open} onCheckedChange={(v) => set(d.key, { open: v })} />
+            {h.open ? (
+              <>
+                <input
+                  type="time"
+                  value={h.start}
+                  onChange={(e) => set(d.key, { start: e.target.value })}
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                />
+                <span className="text-xs text-muted-foreground text-center">to</span>
+                <input
+                  type="time"
+                  value={h.end}
+                  onChange={(e) => set(d.key, { end: e.target.value })}
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                />
+              </>
+            ) : (
+              <span className="col-span-3 text-xs text-muted-foreground">Closed</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function SettingsTab({ client }: { client: any }) {
   const qc = useQueryClient();
+  const [hours, setHours] = useState<BusinessHours>(() => normalizeHours(client.business_hours));
   const [form, setForm] = useState({
     receptionist_name: client.receptionist_name ?? "Sara",
     business_description: client.business_description ?? "",
@@ -366,6 +454,7 @@ function SettingsTab({ client }: { client: any }) {
     sms_followup_enabled: !!client.sms_followup_enabled,
     escalation_phone: client.escalation_phone ?? "",
   });
+
 
   const save = useMutation({
     mutationFn: async () => {
