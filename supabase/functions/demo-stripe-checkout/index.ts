@@ -20,11 +20,27 @@ const corsHeaders = {
  * which serve the rep-driven pipeline close. Do not merge them.
  */
 
+const VALID_TIERS = ["starter", "pro", "custom"] as const;
+
+// Legacy live-mode fallback: price IDs that used to live in secret slots.
 const TIER_SECRET: Record<string, string> = {
   starter: "STRIPE_PRICE_STARTER",
   pro: "STRIPE_PRICE_PRO",
   custom: "STRIPE_PRICE_CUSTOM",
 };
+
+/**
+ * Mode resolution (SAFE BY DEFAULT):
+ *   1. explicit body.mode ("test" | "live")
+ *   2. env STRIPE_MODE ("live" to go live)
+ *   3. fallback → "test"
+ * Nothing charges a real card unless mode resolves to "live".
+ */
+function resolveMode(bodyMode: unknown): "test" | "live" {
+  if (bodyMode === "live" || bodyMode === "test") return bodyMode;
+  return Deno.env.get("STRIPE_MODE") === "live" ? "live" : "test";
+}
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
