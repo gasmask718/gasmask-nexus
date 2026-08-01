@@ -455,7 +455,10 @@ export default function BuilderHubPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <PaidBuildsPipeline />
     </div>
+
   );
 }
 
