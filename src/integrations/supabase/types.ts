@@ -16124,7 +16124,11 @@ export type Database = {
           design_profile_id: string | null
           design_variant_seed: number | null
           domain_connected: boolean | null
+          durable_generated_url: string | null
+          durable_job_status: string | null
+          durable_last_error: string | null
           durable_raw_html: string | null
+          durable_site_id: string | null
           engine_switched: boolean | null
           error_log: Json | null
           final_engine: string | null
@@ -16161,7 +16165,11 @@ export type Database = {
           design_profile_id?: string | null
           design_variant_seed?: number | null
           domain_connected?: boolean | null
+          durable_generated_url?: string | null
+          durable_job_status?: string | null
+          durable_last_error?: string | null
           durable_raw_html?: string | null
+          durable_site_id?: string | null
           engine_switched?: boolean | null
           error_log?: Json | null
           final_engine?: string | null
@@ -16198,7 +16206,11 @@ export type Database = {
           design_profile_id?: string | null
           design_variant_seed?: number | null
           domain_connected?: boolean | null
+          durable_generated_url?: string | null
+          durable_job_status?: string | null
+          durable_last_error?: string | null
           durable_raw_html?: string | null
+          durable_site_id?: string | null
           engine_switched?: boolean | null
           error_log?: Json | null
           final_engine?: string | null
