@@ -4,7 +4,8 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 // Daily demo expiry cleanup (cron: 0 9 * * *)
 // Real table: public.brandaro_demo_sites
 //   expires_at            (added for this job, default now() + 14 days)
-//   public_status         (spec called it deployment_status) — 'draft' | 'live' | 'expired'
+//   deployment_status     'pending' | 'deploying' | 'live' | 'failed' | 'expired'
+
 //   converted_to_paid     (matches spec)
 //   vercel_deployment_id  (deployment to delete)
 
