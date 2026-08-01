@@ -2209,19 +2209,19 @@ export default function AppRoutes() {
         <Route path="/os/playboxxx" element={<PlayboxxxDashboard />} />
         <Route path="/os/special-needs" element={<SpecialNeedsDashboard />} />
         {/* /os/funding removed — orphan mock page, real system is /funding-machine */}
-        <Route path="/os/grants" element={<GrantsDashboard />} />
-        <Route path="/os/grants/dashboard" element={<GrantsDashboard />} />
-        <Route path="/os/grants/opportunities" element={<GrantOpportunities />} />
-        <Route path="/os/grants/applications" element={<GrantApplicationsPage />} />
-        <Route path="/os/grants/approved" element={<GrantApplicationsPage />} />
-        <Route path="/os/grants/pending" element={<GrantApplicationsPage />} />
-        <Route path="/os/grants/funder-crm" element={<GrantFunderCRMPage />} />
-        <Route path="/os/grants/businesses" element={<GrantBusinessProfiles />} />
-        <Route path="/os/grants/businesses/:id" element={<GrantBusinessProfileDetail />} />
-        <Route path="/os/grants/eligibility" element={<GrantEligibilityMatrix />} />
-        <Route path="/os/grants/eligibility-matrix" element={<GrantEligibilityMatrix />} />
-        <Route path="/os/grants/apply/:packageId" element={<GrantApplicationPackage />} />
-        <Route path="/os/grants/:id" element={<GrantApplicationDetail />} />
+        <Route path="/os/grants" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantsDashboard /></RequireRole>} />
+        <Route path="/os/grants/dashboard" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantsDashboard /></RequireRole>} />
+        <Route path="/os/grants/opportunities" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantOpportunities /></RequireRole>} />
+        <Route path="/os/grants/applications" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantApplicationsPage /></RequireRole>} />
+        <Route path="/os/grants/approved" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantApplicationsPage /></RequireRole>} />
+        <Route path="/os/grants/pending" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantApplicationsPage /></RequireRole>} />
+        <Route path="/os/grants/funder-crm" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantFunderCRMPage /></RequireRole>} />
+        <Route path="/os/grants/businesses" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantBusinessProfiles /></RequireRole>} />
+        <Route path="/os/grants/businesses/:id" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantBusinessProfileDetail /></RequireRole>} />
+        <Route path="/os/grants/eligibility" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantEligibilityMatrix /></RequireRole>} />
+        <Route path="/os/grants/eligibility-matrix" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantEligibilityMatrix /></RequireRole>} />
+        <Route path="/os/grants/apply/:packageId" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantApplicationPackage /></RequireRole>} />
+        <Route path="/os/grants/:id" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantApplicationDetail /></RequireRole>} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
         {/* Floor 10 — Dynasty Funding Machine */}
         <Route path="/funding-machine" element={<FundingMachineDashboard />} />
