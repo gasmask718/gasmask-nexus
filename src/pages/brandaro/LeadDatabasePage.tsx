@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { CsvLeadImporter } from "@/components/brandaro/CsvLeadImporter";
 import { SendReceptionistLinkModal } from "@/components/brandaro/SendReceptionistLinkModal";
 import { BuildDemoModal } from "@/components/brandaro/BuildDemoModal";
+import { SendDemoModal } from "@/components/brandaro/SendDemoModal";
 import { BrandaroLeadAssignmentButtons } from "@/components/brandaro/BrandaroLeadAssignmentButtons";
 import { VAReassignControl } from "@/components/brandaro/VAReassignControl";
 
