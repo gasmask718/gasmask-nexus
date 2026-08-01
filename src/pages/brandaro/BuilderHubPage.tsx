@@ -279,62 +279,87 @@ export default function BuilderHubPage() {
 
       <Tabs defaultValue="demos">
         <TabsList>
-          <TabsTrigger value="demos">Recent Demos</TabsTrigger>
+          <TabsTrigger value="demos">Demos (48h)</TabsTrigger>
           <TabsTrigger value="durable">Durable Jobs ({durableDemos.length})</TabsTrigger>
           <TabsTrigger value="design">DESIGN.md System</TabsTrigger>
         </TabsList>
 
         <TabsContent value="demos">
           <Card>
+            <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
+              <CardTitle className="text-base">Demos — last 48 hours ({demos.length})</CardTitle>
+              <RowColorLegend />
+            </CardHeader>
             <CardContent className="p-0">
               {demosLoading ? (
                 <div className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
               ) : demos.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">No demos yet.</div>
+                <div className="p-8 text-center text-muted-foreground">No demos in the last 48 hours.</div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50 text-left">
                       <tr>
+                        <th className="p-3">Time</th>
                         <th className="p-3">Business</th>
+                        <th className="p-3">City</th>
                         <th className="p-3">Industry</th>
-                        <th className="p-3">Engine</th>
+                        <th className="p-3">Audit Score</th>
                         <th className="p-3">Status</th>
-                        <th className="p-3">Audit</th>
-                        <th className="p-3">Actions</th>
+                        <th className="p-3">SMS</th>
+                        <th className="p-3">Converted</th>
                       </tr>
                     </thead>
                     <tbody>
                       {demos.map(d => {
                         const url = d.durable_generated_url || d.demo_url;
+                        const smsAt = d.sms_sent_at || d.sent_at;
+                        const viewed = (d.view_count ?? 0) > 0 || Boolean(d.last_viewed_at);
                         return (
-                          <tr key={d.id} className="border-t hover:bg-muted/30">
-                            <td className="p-3">
-                              <div className="font-medium">{d.business_name}</div>
-                              <div className="text-xs text-muted-foreground">{d.city}, {d.state}</div>
+                          <tr
+                            key={d.id}
+                            className={`border-t transition-colors ${ROW_TINT[rowState(d)]} ${url ? "cursor-pointer" : "cursor-default"}`}
+                            title={url ? "Open demo in a new tab" : "No demo URL yet"}
+                            onClick={() => { if (url) window.open(url, "_blank", "noopener,noreferrer"); }}
+                          >
+                            <td className="p-3 whitespace-nowrap">
+                              <div>{new Date(d.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(d.created_at).toLocaleDateString([], { month: "short", day: "numeric" })}
+                              </div>
                             </td>
+                            <td className="p-3 font-medium">{d.business_name || "—"}</td>
+                            <td className="p-3 whitespace-nowrap">{d.city ? `${d.city}${d.state ? `, ${d.state}` : ""}` : "—"}</td>
                             <td className="p-3">{d.industry || "—"}</td>
-                            <td className="p-3"><Badge variant="outline">{d.generation_engine}</Badge></td>
-                            <td className="p-3"><StatusBadge status={d.generation_status} error={d.error_message} /></td>
                             <td className="p-3">{d.audit_score ?? "—"}</td>
-                            <td className="p-3 space-x-2">
-                              {url && (
-                                <Button size="sm" variant="outline" asChild>
-                                  <a href={url} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-3 w-3 mr-1" /> Open
-                                  </a>
-                                </Button>
+                            <td className="p-3">
+                              <StatusBadge status={d.generation_status || "unknown"} error={d.error_message} />
+                              {d.deployment_status && (
+                                <div className="text-xs text-muted-foreground mt-1">{d.deployment_status}</div>
                               )}
-                              {d.generation_status === "ready" && (
-                                (d as any).sent_at ? (
-                                  <Badge variant="secondary">
-                                    Sent {new Date((d as any).sent_at).toLocaleDateString()}
-                                  </Badge>
-                                ) : (
-                                  <Button size="sm" onClick={() => sendDemo.mutate(d)} disabled={sendDemo.isPending}>
-                                    Send SMS
-                                  </Button>
-                                )
+                            </td>
+                            <td className="p-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                              {smsAt ? (
+                                <Badge variant="secondary">
+                                  {viewed ? "Viewed" : "Sent"} {new Date(smsAt).toLocaleDateString([], { month: "short", day: "numeric" })}
+                                </Badge>
+                              ) : d.generation_status === "ready" ? (
+                                <Button size="sm" onClick={() => sendDemo.mutate(d)} disabled={sendDemo.isPending}>
+                                  {sendDemo.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Send SMS"}
+                                </Button>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </td>
+                            <td className="p-3">
+                              {d.converted_to_paid ? (
+                                <Badge className="bg-green-100 text-green-800">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" /> Paid
+                                </Badge>
+                              ) : d.cta_clicked ? (
+                                <Badge className="bg-amber-100 text-amber-800">CTA clicked</Badge>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
                               )}
                             </td>
                           </tr>
@@ -343,6 +368,7 @@ export default function BuilderHubPage() {
                     </tbody>
                   </table>
                 </div>
+
               )}
             </CardContent>
           </Card>
