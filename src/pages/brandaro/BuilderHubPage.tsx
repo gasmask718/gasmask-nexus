@@ -372,15 +372,19 @@ export default function BuilderHubPage() {
   );
 }
 
-function StatCard({ label, value, tone }: { label: string; value: number; tone?: "success" | "warn" | "error" }) {
+function StatCard({ label, value, tone, hint, loading }: { label: string; value: number | string; tone?: "success" | "warn" | "error"; hint?: string; loading?: boolean }) {
   const color = tone === "success" ? "text-green-600" : tone === "warn" ? "text-amber-600" : tone === "error" ? "text-destructive" : "";
   return (
     <Card><CardContent className="p-4">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={`text-2xl font-bold ${color}`}>{value}</div>
+      <div className={`text-2xl font-bold ${color}`}>
+        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : value}
+      </div>
+      {hint && <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>}
     </CardContent></Card>
   );
 }
+
 
 function StatusBadge({ status, error }: { status: string; error?: string | null }) {
   if (status === "ready") return <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="h-3 w-3 mr-1" />ready</Badge>;
