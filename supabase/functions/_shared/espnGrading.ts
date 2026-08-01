@@ -980,6 +980,34 @@ export function getGradingConfig(sportKey: string): SportGradingConfig<any> | nu
   return GRADING_CONFIGS[(sportKey || '').toLowerCase()] ?? null;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// LEGACY (PRE-ESPN) SCORE/STAT SOURCES
+// ═══════════════════════════════════════════════════════════════
+// Deliberately a SEPARATE registry from GRADING_CONFIGS: NBA has no
+// free-ESPN grading path yet, and adding it to GRADING_CONFIGS would
+// silently enrol NBA in the GRADED_SPORT_KEYS fanout used by
+// sbo-ingest-player-stats and sbo-day-engine. Keeping it here declares
+// the vendor path as data without changing any other system's behavior.
+//
+// A sport absent from this map CANNOT reach a vendor endpoint.
+export const LEGACY_SCORE_SOURCES: Record<string, LegacyScoreSource> = {
+  nba: {
+    provider: 'sportsdataio',
+    apiKeyEnv: 'SPORTSDATAIO_API_KEY',
+    scoresUrl: (dateStr, key) =>
+      `https://api.sportsdata.io/v3/nba/scores/json/GamesByDate/${dateStr}?key=${key}`,
+    playerStatsUrl: (dateStr, key) =>
+      `https://api.sportsdata.io/v3/nba/stats/json/PlayerGameStatsByDate/${dateStr}?key=${key}`,
+    minScore: 60,
+  },
+};
+
+export function getLegacyScoreSource(sportKey: string): LegacyScoreSource | null {
+  return LEGACY_SCORE_SOURCES[(sportKey || '').toLowerCase()] ?? null;
+}
+
+
+
 // ═══════════════════════════════════════
 // SEASON CALENDAR (cross-calendar-year aware)
 // ═══════════════════════════════════════
