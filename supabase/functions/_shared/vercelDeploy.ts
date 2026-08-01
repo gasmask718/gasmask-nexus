@@ -245,6 +245,7 @@ export async function tryVercelHook(
 
   // ---- Step 2: fire the deploy hook so the build picks up the new env vars ----
   try {
+    const firedAt = Date.now();
     const res = await fetch(tpl.vercel_deploy_hook_url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -260,11 +261,26 @@ export async function tryVercelHook(
         env_vars: envResults, env_failed: envFailed, env_skipped: envSkipped,
       };
     }
+
+    let jobId: string | null = null;
+    try {
+      jobId = JSON.parse(text)?.job?.id ?? null;
+    } catch { /* hook may return non-JSON */ }
+
+    // Capture the resulting deployment id so expiry cleanup can delete it later.
+    let deploymentId: string | null = null;
+    if (token && tpl.vercel_project_id) {
+      deploymentId = await resolveDeploymentId(token, tpl.vercel_project_id, firedAt);
+      if (!deploymentId) console.warn(`[vercel] deployment id unresolved for project ${tpl.vercel_project_id}`);
+    }
+
     return {
       ok: true, status: res.status,
       repo: tpl.vercel_template_repo, project_id: tpl.vercel_project_id,
+      deployment_id: deploymentId, job_id: jobId,
       env_vars: envResults, env_failed: envFailed, env_skipped: envSkipped,
     };
+
   } catch (e) {
     return {
       ok: false,
