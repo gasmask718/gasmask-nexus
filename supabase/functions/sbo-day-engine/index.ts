@@ -71,6 +71,12 @@ const POSTGAME_STEPS: EngineStep[] = [
   // Stats Brain ingestion (2b). Runs AFTER grading so the day's finals exist,
   // and only for sports that have an ESPN grading config (same parser).
   { fn: 'sbo-ingest-player-stats', label: 'Player Game Stats Ingestion (ESPN)', icon: '🧾', required: false, sports: GRADED_SPORT_KEYS, sportsNote: 'Free ESPN box scores; sports with a grading config only' },
+  // Alt-sport CAPPER-PICK grading (CFL + MMA). Game/match level only —
+  // no props, no sbo_predictions, no stats brain, no clamp gates, no
+  // market lines. Runs once globally (no `sports` fanout) inside the
+  // existing daily cadence; deliberately not `required` because these
+  // feeds are third-party and may be empty on any given night.
+  { fn: 'sbo-grade-capper-picks-alt', label: 'Capper Pick Grading — Alt Sports (CFL, MMA)', icon: '🥊', required: false },
   { fn: 'sbo-track-results', label: 'Grade Predictions + Update Accuracy', icon: '📋', required: false },
   { fn: 'sbo-analyze-model', label: 'Model Self-Analysis + Weight Adjustment', icon: '🧬', required: false },
 ];
