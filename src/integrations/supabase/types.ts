@@ -139070,6 +139070,7 @@ export type Database = {
       }
       is_production_admin: { Args: { _user_id: string }; Returns: boolean }
       is_production_worker: { Args: { _user_id: string }; Returns: boolean }
+      is_sbo_operator: { Args: { _user_id?: string }; Returns: boolean }
       is_simulation_mode: { Args: never; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       is_va: { Args: { _user_id: string }; Returns: boolean }
