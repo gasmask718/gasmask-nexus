@@ -17,6 +17,56 @@ const EXPECTED_MDS = [
 
 type Engine = "native" | "durable";
 
+type DemoRow = {
+  id: string;
+  lead_id: string | null;
+  sent_at: string | null;
+  sms_sent_at: string | null;
+  business_name: string | null;
+  industry: string | null;
+  city: string | null;
+  state: string | null;
+  generation_engine: string | null;
+  generation_status: string | null;
+  engine_status: string | null;
+  demo_url: string | null;
+  durable_generated_url: string | null;
+  durable_job_status: string | null;
+  durable_last_error: string | null;
+  audit_score: number | null;
+  created_at: string;
+  error_message: string | null;
+  deployment_status: string | null;
+  converted_to_paid: boolean | null;
+  cta_clicked: boolean | null;
+  view_count: number | null;
+  last_viewed_at: string | null;
+};
+
+/** Spec row-color states, evaluated in priority order. */
+type RowState = "converted" | "cta" | "sms_unviewed" | "deployed_idle" | "failed" | "none";
+
+function rowState(d: DemoRow): RowState {
+  if (d.deployment_status === "failed") return "failed";
+  if (d.converted_to_paid) return "converted";
+  if (d.cta_clicked) return "cta";
+  const smsSent = Boolean(d.sms_sent_at || d.sent_at);
+  const viewed = (d.view_count ?? 0) > 0 || Boolean(d.last_viewed_at);
+  if (smsSent && !viewed) return "sms_unviewed";
+  if (d.deployment_status === "live" && !smsSent && !viewed) return "deployed_idle";
+  return "none";
+}
+
+const ROW_TINT: Record<RowState, string> = {
+  converted: "bg-green-500/10 hover:bg-green-500/20",
+  cta: "bg-amber-500/10 hover:bg-amber-500/20",
+  sms_unviewed: "bg-blue-500/10 hover:bg-blue-500/20",
+  deployed_idle: "bg-muted/40 hover:bg-muted/60",
+  failed: "bg-destructive/10 hover:bg-destructive/20",
+  none: "hover:bg-muted/30",
+};
+
+
 export default function BuilderHubPage() {
   const qc = useQueryClient();
   const [leadId, setLeadId] = useState<string>("");
