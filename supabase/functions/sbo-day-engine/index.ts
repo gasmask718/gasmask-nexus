@@ -238,9 +238,22 @@ serve(async (req) => {
     };
 
     // ---------- Per-sport loop ----------
+    // Fair-share: each sport gets (remaining loop budget / sports left), so a
+    // busy MLB slate can no longer consume the entire window and starve the
+    // sports behind it. A sport with no work returns instantly and hands its
+    // unused share back to the ones still queued.
+    const PER_SPORT_LOOP_BUDGET_MS = 90_000;
+    const LOOP_START = Date.now();
+    const loopRemainingMs = () => Math.max(0, PER_SPORT_LOOP_BUDGET_MS - (Date.now() - LOOP_START));
+    let sportsLeft = sportsToRun.length;
     for (const sport of sportsToRun) {
+      const sportBudgetMs = Math.max(10_000, Math.floor(loopRemainingMs() / Math.max(1, sportsLeft)));
+      const sportStart = Date.now();
+      const sportRemainingMs = () => Math.max(0, sportBudgetMs - (Date.now() - sportStart));
+      sportsLeft -= 1;
       for (const step of perSportSteps) {
         const stepStart = Date.now();
+
 
         // Sport-support gate (declarative, per-step)
         if (step.sports && !step.sports.includes(sport)) {
@@ -266,8 +279,11 @@ serve(async (req) => {
             // Cap raised 25 -> 40 per sport: with up to 4 sports in the
             // allowlist the old cap under-served busy MLB slates while the
             // shared run budget (not the cap) is now the real limiter.
-            const MAX_PROPS_PER_RUN = Number(prop_fanout_limit ?? 40);
-            const TIME_BUDGET_MS = Math.min(60_000, Math.max(15_000, remainingRunMs()));
+            const MAX_PROPS_PER_RUN = Number(prop_fanout_limit ?? 60);
+            // 70% of this sport's fair share to props, 30% left for moneyline.
+            const TIME_BUDGET_MS = Math.max(8_000, Math.floor(sportRemainingMs() * 0.7));
+            const PROP_CONCURRENCY = 3;
+
 
             const dayStart = `${date}T00:00:00Z`;
             const _next = new Date(`${date}T00:00:00Z`);
@@ -313,26 +329,32 @@ serve(async (req) => {
             let saved = 0, skipped = 0, failedProps = 0, invoked = 0;
             let stopReason: string | null = null;
 
-            for (const prop of queue) {
-              if (invoked >= MAX_PROPS_PER_RUN) { stopReason = `cap ${MAX_PROPS_PER_RUN} reached`; break; }
-              if (Date.now() - stepStart > TIME_BUDGET_MS) { stopReason = `time budget ${TIME_BUDGET_MS / 1000}s reached`; break; }
-
-              invoked += 1;
-              try {
-                const { data: res, error: invErr } = await supabase.functions.invoke('sbo-run-predictions', {
-                  body: { prop_id: prop.id, prediction_type: 'player_prop' },
-                });
-                if (invErr) { failedProps += 1; continue; }
-                if (res?.insert_error) { failedProps += 1; continue; }
-                if (res?.saved === true && res?.prediction_id) saved += 1;
-                else if (res?.skipped === true || res?.source === 'cache') skipped += 1;
-                else failedProps += 1;
-              } catch (propErr: any) {
-                console.error(`[${sport}] prop ${prop.id} failed:`, propErr?.message);
-                failedProps += 1;
+            const capped = queue.slice(0, MAX_PROPS_PER_RUN);
+            if (queue.length > MAX_PROPS_PER_RUN) stopReason = `cap ${MAX_PROPS_PER_RUN} reached`;
+            for (let i = 0; i < capped.length; i += PROP_CONCURRENCY) {
+              if (Date.now() - stepStart > TIME_BUDGET_MS) {
+                stopReason = `time budget ${Math.round(TIME_BUDGET_MS / 1000)}s reached`;
+                break;
               }
-              await new Promise(r => setTimeout(r, 400));
+              const batch = capped.slice(i, i + PROP_CONCURRENCY);
+              invoked += batch.length;
+              await Promise.all(batch.map(async (prop: any) => {
+                try {
+                  const { data: res, error: invErr } = await supabase.functions.invoke('sbo-run-predictions', {
+                    body: { prop_id: prop.id, prediction_type: 'player_prop' },
+                  });
+                  if (invErr || res?.insert_error) { failedProps += 1; return; }
+                  if (res?.saved === true && res?.prediction_id) saved += 1;
+                  else if (res?.skipped === true || res?.source === 'cache') skipped += 1;
+                  else failedProps += 1;
+                } catch (propErr: any) {
+                  console.error(`[${sport}] prop ${prop.id} failed:`, propErr?.message);
+                  failedProps += 1;
+                }
+              }));
+              await new Promise(r => setTimeout(r, 150));
             }
+
 
             const remaining = Math.max(pending - invoked, 0);
             await recordStep(step, {
@@ -357,7 +379,7 @@ serve(async (req) => {
             // and idempotency via the function's own same-day cache check,
             // which makes the step resumable across the 13:00 / 23:00 runs.
             const MAX_GAMES_PER_RUN = 30;
-            const TIME_BUDGET_MS = Math.min(60_000, Math.max(15_000, remainingRunMs()));
+            const TIME_BUDGET_MS = Math.max(8_000, sportRemainingMs());
             const CONCURRENCY = 3;
 
             const dayStart = `${date}T00:00:00Z`;

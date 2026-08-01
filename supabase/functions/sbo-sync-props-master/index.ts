@@ -5,6 +5,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// props_master predates multi-sport support and stored a hardcoded 'NBA'.
+// sbo_player_props carries the real sport_key — map it to the short label
+// props_master consumers already use.
+const SPORT_LABEL: Record<string, string> = {
+  mlb: 'MLB', nba: 'NBA', wnba: 'WNBA', nfl: 'NFL', nhl: 'NHL',
+  ncaab: 'NCAAB', ncaaf: 'NCAAF',
+};
+
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
@@ -96,7 +105,9 @@ Deno.serve(async (req) => {
         player_name: p.player_name,
         team: p.team || null,
         opponent: null,
-        sport: 'NBA',
+        sport: SPORT_LABEL[String(p.sport_key ?? '').toLowerCase()]
+          ?? String(p.sport_key ?? 'NBA').toUpperCase(),
+
         stat_type: p.prop_type,
         line: p.line,
         platform: p.source,

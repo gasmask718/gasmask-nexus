@@ -89,8 +89,9 @@ function winPnl(stake: number, oddsIn: number | null): number {
   return stake * (100 / Math.abs(odds));
 }
 function resolveSpread(game: Game, side: string, line: number, stake: number, odds: number | null): Resolution {
-  const takingHome = sideMatchesTeam(side, game.home_team, game.sport);
+  const takingHome = sideTakes(game, side).takingHome;
   const margin = takingHome ? game.home_score - game.away_score : game.away_score - game.home_score;
+
   const spreadLine = takingHome ? line : Math.abs(line);
   if (margin === spreadLine) return { result: "push", pnl: 0 };
   const won = margin > spreadLine;
@@ -105,13 +106,27 @@ function resolveTotal(game: Game, side: string, line: number, stake: number, odd
   const won = isOver ? game.final_total > line : game.final_total < line;
   return { result: won ? "win" : "loss", pnl: won ? winPnl(stake, odds) : -stake };
 }
+// `side` may be a team name (capper picks) OR the literal 'home'/'away'
+// (sbo_signals, written by _shared/sboSignals.ts). Handle both explicitly —
+// previously 'home'/'away' matched no team and fell through to the loss
+// fallback, marking every AI signal a fabricated loss.
+function sideTakes(game: Game, side: string): { takingHome: boolean; takingAway: boolean } {
+  const s = String(side ?? "").trim().toLowerCase();
+  if (s === "home") return { takingHome: true, takingAway: false };
+  if (s === "away") return { takingHome: false, takingAway: true };
+  return {
+    takingHome: sideMatchesTeam(side, game.home_team, game.sport),
+    takingAway: sideMatchesTeam(side, game.away_team, game.sport),
+  };
+}
 function resolveMoneyline(game: Game, side: string, stake: number, odds: number | null): Resolution {
-  const takingHome = sideMatchesTeam(side, game.home_team, game.sport);
-  const takingAway = sideMatchesTeam(side, game.away_team, game.sport);
+  const { takingHome, takingAway } = sideTakes(game, side);
   if (!takingHome && !takingAway) return { result: "loss", pnl: -stake };
+  if (game.home_score === game.away_score) return { result: "push", pnl: 0 };
   const won = takingHome ? game.home_score > game.away_score : game.away_score > game.home_score;
   return { result: won ? "win" : "loss", pnl: won ? winPnl(stake, odds) : -stake };
 }
+
 function classifyBetType(betType: string | null, pickType?: string | null): "spread" | "total" | "moneyline" | "prop" | "unknown" {
   const s = (betType || pickType || "").toLowerCase();
   if (s.includes("spread") || s === "ats") return "spread";
@@ -241,15 +256,21 @@ Deno.serve(async (req) => {
   try {
     const { data: signals, error } = await supabase
       .from("sbo_signals")
-      .select("id, sport, game, game_date, pick_type, side, line, odds")
+      .select("id, sport, game, game_date, home_team, away_team, pick_type, side, line, odds")
       .eq("result", "pending")
       .in("sport", Object.keys(ESPN_ENDPOINTS))
       .limit(2000);
     if (error) throw error;
 
     for (const s of signals ?? []) {
-      const game = findGameForRow(allGames, s.sport, s.game_date, s.side, s.game);
+      // Match on real team names, never on the 'home'/'away' token.
+      const sideTok = String(s.side ?? "").trim().toLowerCase();
+      const teamHint = sideTok === "home" ? (s.home_team ?? "")
+        : sideTok === "away" ? (s.away_team ?? "")
+        : String(s.side ?? "");
+      const game = findGameForRow(allGames, s.sport, s.game_date, teamHint, s.game);
       if (!game) continue;
+
       const kind = classifyBetType(s.pick_type);
       if (kind === "unknown" || kind === "prop") continue;
       const stake = 1;
