@@ -100,7 +100,10 @@ serve(async (req) => {
     yesterday.setUTCDate(yesterday.getUTCDate() - 1);
     const endDate = String(body.date ?? ymd(yesterday));
     const daysBack = Math.max(1, Math.min(Number(body.days_back ?? 1), 400));
-    const season = String(body.season ?? endDate.slice(0, 4));
+    // Season label: for sports whose season crosses a calendar year
+    // (NFL/NHL/NBA), a January game belongs to the PRIOR year's season.
+    const season = String(body.season ?? seasonForDate(sport, endDate));
+    const window = seasonWindow(sport, season);
     const skipSplits = body.skip_splits === true;
 
     const dates = dateRange(endDate, daysBack);
