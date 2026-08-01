@@ -58,10 +58,65 @@ Deno.serve(async (req) => {
       update.durable_job_status = event || "processing";
     }
 
+    // Routing: paid starter builds pass external_reference = "build_job:<uuid>" and
+    // live on brandaro_build_jobs. Everything else is a pre-sale demo site.
+    const siteUrl = payload.site_url || payload.data?.url || null;
+    const isBuildJob = typeof extRef === "string" && extRef.startsWith("build_job:");
+
+    let data: any[] | null = null;
+    let error: any = null;
+
+    if (isBuildJob || (!extRef && siteId)) {
+      const jobUpdate: Record<string, any> = {
+        durable_job_status: update.durable_job_status,
+        durable_last_error: update.durable_last_error ?? null,
+      };
+      if (isReady) {
+        jobUpdate.build_status = "completed";
+        jobUpdate.progress_stage = "deployed";
+        jobUpdate.completed_at = new Date().toISOString();
+        if (siteUrl) {
+          jobUpdate.durable_generated_url = siteUrl;
+          jobUpdate.deployed_url = siteUrl;
+          jobUpdate.deployed_at = new Date().toISOString();
+        }
+      } else if (isFailed) {
+        jobUpdate.build_status = "failed";
+        jobUpdate.error_log = { stage: "durable_callback", error: update.durable_last_error };
+      } else {
+        jobUpdate.build_status = "building";
+      }
+
+      const jobQuery = supabase.from("brandaro_build_jobs").update(jobUpdate);
+      const res = isBuildJob
+        ? await jobQuery.eq("id", extRef.slice("build_job:".length)).select()
+        : await jobQuery.eq("durable_site_id", siteId).select();
+      data = res.data;
+      error = res.error;
+
+      // Explicit build_job reference: never fall through to demo sites.
+      if (isBuildJob) {
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({ success: true, target: "build_job", updated: data?.length || 0 }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // site_id-only callback that matched a build job — done.
+      if (!error && (data?.length ?? 0) > 0) {
+        return new Response(JSON.stringify({ success: true, target: "build_job", updated: data!.length }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const query = supabase.from("brandaro_demo_sites").update(update);
-    const { data, error } = extRef
+    ({ data, error } = extRef
       ? await query.eq("id", extRef).select()
-      : await query.eq("durable_site_id", siteId).select();
+      : await query.eq("durable_site_id", siteId).select());
 
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), {
