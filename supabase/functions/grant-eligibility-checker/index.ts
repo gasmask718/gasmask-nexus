@@ -14,6 +14,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { requireGrantsStaff, grantsAuthResponse } from "../_shared/grantsAuth.ts";
+
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -154,6 +156,9 @@ function computeResult(reqs: Requirement[], profile: Record<string, unknown>) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+
+  const auth = await requireGrantsStaff(req);
+  if (!auth.ok) return grantsAuthResponse(auth, corsHeaders);
 
   try {
     const raw = req.method === "POST" ? await req.json().catch(() => ({})) : {};

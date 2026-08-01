@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireGrantsStaff, grantsAuthResponse } from "../_shared/grantsAuth.ts";
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,6 +30,9 @@ interface SubmitPayload {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  const auth = await requireGrantsStaff(req);
+  if (!auth.ok) return grantsAuthResponse(auth, corsHeaders);
 
   try {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
