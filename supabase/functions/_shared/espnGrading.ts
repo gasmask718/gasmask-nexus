@@ -458,6 +458,7 @@ export const WNBA_GRADING: SportGradingConfig<WnbaStatLine> = {
 // grading path needs to change to add a sport.
 export const GRADING_CONFIGS: Record<string, SportGradingConfig<any>> = {
   mlb: MLB_GRADING,
+  wnba: WNBA_GRADING,
 };
 
 /** Sports that currently have a working free-ESPN grading path. */
