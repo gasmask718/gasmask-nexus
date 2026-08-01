@@ -36,6 +36,23 @@ export type StatLine = {
   [key: string]: any;
 };
 
+/**
+ * A pre-ESPN scoring/stats provider that a sport is still allowed to use.
+ * Declared as data so no sport can reach a legacy vendor path by accident:
+ * if a sport has no entry in LEGACY_SCORE_SOURCES, the branch is unreachable
+ * for it. Today NBA is the only such sport (SportsDataIO).
+ */
+export type LegacyScoreSource = {
+  provider: 'sportsdataio';
+  /** Env var holding the API key. Absent key ⇒ branch is skipped entirely. */
+  apiKeyEnv: string;
+  /** `${dateStr}` is substituted; `${key}` is the api key. */
+  scoresUrl: (dateStr: string, key: string) => string;
+  playerStatsUrl: (dateStr: string, key: string) => string;
+  /** Sanity floor on a final score; guards against bogus/forfeit rows. */
+  minScore: number;
+};
+
 export type SportGradingConfig<L extends StatLine = StatLine> = {
   /** Our internal sport_key (matches sbo_sports.sport_key). */
   sportKey: string;
@@ -48,6 +65,8 @@ export type SportGradingConfig<L extends StatLine = StatLine> = {
   /** prop_type → numeric stat value. null MUST be treated as pending. */
   getPropValue: (line: L, propType: string) => number | null;
 };
+
+
 
 export type EspnFinal = {
   eventId: string;
