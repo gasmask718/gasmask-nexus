@@ -693,7 +693,7 @@ export default function VAWorkspacePage() {
         } : null}
         open={sendDemoOpen}
         onClose={() => setSendDemoOpen(false)}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["brandaro-va-queue"] })}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["brandaro-next-queue"] })}
       />
     </div>
   );
