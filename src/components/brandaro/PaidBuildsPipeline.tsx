@@ -185,8 +185,15 @@ export function PaidBuildsPipeline() {
               <tbody>
                 {jobs.map((j) => {
                   const status = j.build_status ?? "";
+                  const needsReview = status === "review";
                   return (
-                    <tr key={j.id} className="border-b last:border-0">
+                    <tr
+                      key={j.id}
+                      className={`border-b last:border-0 ${needsReview ? "bg-blue-500/5" : ""}`}
+                    >
+                      <td className="px-4 py-2 font-medium">
+                        {j.business_name || `Build #${j.id.slice(0, 8)}`}
+                      </td>
                       <td className="px-4 py-2 font-medium">
                         {j.business_name || `Build #${j.id.slice(0, 8)}`}
                       </td>
