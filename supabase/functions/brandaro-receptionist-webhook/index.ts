@@ -15,7 +15,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+  const webhookSecret =
+    Deno.env.get("RECEPTIONIST_STRIPE_WEBHOOK_SECRET") ||
+    Deno.env.get("STRIPE_WEBHOOK_SECRET");
   if (!stripeKey || !webhookSecret) {
     return json({ error: "Stripe not configured" }, 500);
   }
