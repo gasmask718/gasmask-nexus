@@ -277,6 +277,10 @@ export default function BuilderHubPage() {
         </CardContent>
       </Card>
 
+      <ManualDemoGenerator onGenerated={() => qc.invalidateQueries()} />
+
+
+
       <Tabs defaultValue="demos">
         <TabsList>
           <TabsTrigger value="demos">Demos (48h)</TabsTrigger>
