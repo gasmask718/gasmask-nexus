@@ -69,7 +69,7 @@ export function AuditLogCard() {
 
       const demoMap = new Map<string, string | null>((demosRes.data || []).map((d: any) => [d.id, d.business_name]));
       const leadMap = new Map<string, string | null>((leadsRes.data || []).map((l: any) => [l.id, l.business_name]));
-      const leadMap = new Map((leadsRes.data || []).map((l: any) => [l.id, l.business_name]));
+      
 
       return scores.map((s) => ({
         id: s.id,
