@@ -96,7 +96,9 @@ Deno.serve(async (req) => {
         player_name: p.player_name,
         team: p.team || null,
         opponent: null,
-        sport: 'NBA',
+        sport: SPORT_LABEL[String(p.sport_key ?? '').toLowerCase()]
+          ?? String(p.sport_key ?? 'NBA').toUpperCase(),
+
         stat_type: p.prop_type,
         line: p.line,
         platform: p.source,
