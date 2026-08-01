@@ -1168,6 +1168,17 @@ export default function LeadDatabasePage() {
         {/* ── Build Demo Modal ── */}
         <BuildDemoModal lead={demoLead} open={!!demoLead} onClose={() => setDemoLead(null)} />
 
+        {/* ── Send Demo (Auto-Generate) Modal ── */}
+        <SendDemoModal
+          lead={sendDemoLead}
+          open={!!sendDemoLead}
+          onClose={() => setSendDemoLead(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["brandaro-leads-table"] });
+            if (sendDemoLead) addLog(`Demo generated for ${sendDemoLead.business_name}`);
+          }}
+        />
+
         {/* ── Lead Detail Sheet ── */}
         <Sheet open={!!detailLead} onOpenChange={(open) => { if (!open) setDetailLead(null); }}>
           <SheetContent className="w-[420px] sm:w-[480px] overflow-y-auto">
