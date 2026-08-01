@@ -256,15 +256,21 @@ Deno.serve(async (req) => {
   try {
     const { data: signals, error } = await supabase
       .from("sbo_signals")
-      .select("id, sport, game, game_date, pick_type, side, line, odds")
+      .select("id, sport, game, game_date, home_team, away_team, pick_type, side, line, odds")
       .eq("result", "pending")
       .in("sport", Object.keys(ESPN_ENDPOINTS))
       .limit(2000);
     if (error) throw error;
 
     for (const s of signals ?? []) {
-      const game = findGameForRow(allGames, s.sport, s.game_date, s.side, s.game);
+      // Match on real team names, never on the 'home'/'away' token.
+      const sideTok = String(s.side ?? "").trim().toLowerCase();
+      const teamHint = sideTok === "home" ? (s.home_team ?? "")
+        : sideTok === "away" ? (s.away_team ?? "")
+        : String(s.side ?? "");
+      const game = findGameForRow(allGames, s.sport, s.game_date, teamHint, s.game);
       if (!game) continue;
+
       const kind = classifyBetType(s.pick_type);
       if (kind === "unknown" || kind === "prop") continue;
       const stake = 1;
