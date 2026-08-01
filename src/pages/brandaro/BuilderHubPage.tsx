@@ -17,6 +17,56 @@ const EXPECTED_MDS = [
 
 type Engine = "native" | "durable";
 
+type DemoRow = {
+  id: string;
+  lead_id: string | null;
+  sent_at: string | null;
+  sms_sent_at: string | null;
+  business_name: string | null;
+  industry: string | null;
+  city: string | null;
+  state: string | null;
+  generation_engine: string | null;
+  generation_status: string | null;
+  engine_status: string | null;
+  demo_url: string | null;
+  durable_generated_url: string | null;
+  durable_job_status: string | null;
+  durable_last_error: string | null;
+  audit_score: number | null;
+  created_at: string;
+  error_message: string | null;
+  deployment_status: string | null;
+  converted_to_paid: boolean | null;
+  cta_clicked: boolean | null;
+  view_count: number | null;
+  last_viewed_at: string | null;
+};
+
+/** Spec row-color states, evaluated in priority order. */
+type RowState = "converted" | "cta" | "sms_unviewed" | "deployed_idle" | "failed" | "none";
+
+function rowState(d: DemoRow): RowState {
+  if (d.deployment_status === "failed") return "failed";
+  if (d.converted_to_paid) return "converted";
+  if (d.cta_clicked) return "cta";
+  const smsSent = Boolean(d.sms_sent_at || d.sent_at);
+  const viewed = (d.view_count ?? 0) > 0 || Boolean(d.last_viewed_at);
+  if (smsSent && !viewed) return "sms_unviewed";
+  if (d.deployment_status === "live" && !smsSent && !viewed) return "deployed_idle";
+  return "none";
+}
+
+const ROW_TINT: Record<RowState, string> = {
+  converted: "bg-green-500/10 hover:bg-green-500/20",
+  cta: "bg-amber-500/10 hover:bg-amber-500/20",
+  sms_unviewed: "bg-blue-500/10 hover:bg-blue-500/20",
+  deployed_idle: "bg-muted/40 hover:bg-muted/60",
+  failed: "bg-destructive/10 hover:bg-destructive/20",
+  none: "hover:bg-muted/30",
+};
+
+
 export default function BuilderHubPage() {
   const qc = useQueryClient();
   const [leadId, setLeadId] = useState<string>("");
@@ -35,19 +85,24 @@ export default function BuilderHubPage() {
     },
   });
 
-  const { data: demos = [], isLoading: demosLoading } = useQuery({
-    queryKey: ["builder-demos"],
+  // Spec: demos table shows only the last 48 hours.
+  const { data: demos = [], isLoading: demosLoading } = useQuery<DemoRow[]>({
+    queryKey: ["builder-demos-48h"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("brandaro_demo_sites")
-        .select("id,lead_id,sent_at,business_name,industry,city,state,generation_engine,generation_status,engine_status,demo_url,durable_generated_url,durable_job_status,durable_last_error,audit_score,created_at,error_message")
+      const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await (supabase.from("brandaro_demo_sites") as any)
+        .select(
+          "id,lead_id,sent_at,sms_sent_at,business_name,industry,city,state,generation_engine,generation_status,engine_status,demo_url,durable_generated_url,durable_job_status,durable_last_error,audit_score,created_at,error_message,deployment_status,converted_to_paid,cta_clicked,view_count,last_viewed_at"
+        )
+        .gte("created_at", since)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(500);
       if (error) throw error;
-      return data || [];
+      return (data || []) as DemoRow[];
     },
     refetchInterval: 15000,
   });
+
 
   const { data: mdFiles = [] } = useQuery({
     queryKey: ["design-mds"],
@@ -224,62 +279,87 @@ export default function BuilderHubPage() {
 
       <Tabs defaultValue="demos">
         <TabsList>
-          <TabsTrigger value="demos">Recent Demos</TabsTrigger>
+          <TabsTrigger value="demos">Demos (48h)</TabsTrigger>
           <TabsTrigger value="durable">Durable Jobs ({durableDemos.length})</TabsTrigger>
           <TabsTrigger value="design">DESIGN.md System</TabsTrigger>
         </TabsList>
 
         <TabsContent value="demos">
           <Card>
+            <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
+              <CardTitle className="text-base">Demos — last 48 hours ({demos.length})</CardTitle>
+              <RowColorLegend />
+            </CardHeader>
             <CardContent className="p-0">
               {demosLoading ? (
                 <div className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
               ) : demos.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">No demos yet.</div>
+                <div className="p-8 text-center text-muted-foreground">No demos in the last 48 hours.</div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50 text-left">
                       <tr>
+                        <th className="p-3">Time</th>
                         <th className="p-3">Business</th>
+                        <th className="p-3">City</th>
                         <th className="p-3">Industry</th>
-                        <th className="p-3">Engine</th>
+                        <th className="p-3">Audit Score</th>
                         <th className="p-3">Status</th>
-                        <th className="p-3">Audit</th>
-                        <th className="p-3">Actions</th>
+                        <th className="p-3">SMS</th>
+                        <th className="p-3">Converted</th>
                       </tr>
                     </thead>
                     <tbody>
                       {demos.map(d => {
                         const url = d.durable_generated_url || d.demo_url;
+                        const smsAt = d.sms_sent_at || d.sent_at;
+                        const viewed = (d.view_count ?? 0) > 0 || Boolean(d.last_viewed_at);
                         return (
-                          <tr key={d.id} className="border-t hover:bg-muted/30">
-                            <td className="p-3">
-                              <div className="font-medium">{d.business_name}</div>
-                              <div className="text-xs text-muted-foreground">{d.city}, {d.state}</div>
+                          <tr
+                            key={d.id}
+                            className={`border-t transition-colors ${ROW_TINT[rowState(d)]} ${url ? "cursor-pointer" : "cursor-default"}`}
+                            title={url ? "Open demo in a new tab" : "No demo URL yet"}
+                            onClick={() => { if (url) window.open(url, "_blank", "noopener,noreferrer"); }}
+                          >
+                            <td className="p-3 whitespace-nowrap">
+                              <div>{new Date(d.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(d.created_at).toLocaleDateString([], { month: "short", day: "numeric" })}
+                              </div>
                             </td>
+                            <td className="p-3 font-medium">{d.business_name || "—"}</td>
+                            <td className="p-3 whitespace-nowrap">{d.city ? `${d.city}${d.state ? `, ${d.state}` : ""}` : "—"}</td>
                             <td className="p-3">{d.industry || "—"}</td>
-                            <td className="p-3"><Badge variant="outline">{d.generation_engine}</Badge></td>
-                            <td className="p-3"><StatusBadge status={d.generation_status} error={d.error_message} /></td>
                             <td className="p-3">{d.audit_score ?? "—"}</td>
-                            <td className="p-3 space-x-2">
-                              {url && (
-                                <Button size="sm" variant="outline" asChild>
-                                  <a href={url} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-3 w-3 mr-1" /> Open
-                                  </a>
-                                </Button>
+                            <td className="p-3">
+                              <StatusBadge status={d.generation_status || "unknown"} error={d.error_message} />
+                              {d.deployment_status && (
+                                <div className="text-xs text-muted-foreground mt-1">{d.deployment_status}</div>
                               )}
-                              {d.generation_status === "ready" && (
-                                (d as any).sent_at ? (
-                                  <Badge variant="secondary">
-                                    Sent {new Date((d as any).sent_at).toLocaleDateString()}
-                                  </Badge>
-                                ) : (
-                                  <Button size="sm" onClick={() => sendDemo.mutate(d)} disabled={sendDemo.isPending}>
-                                    Send SMS
-                                  </Button>
-                                )
+                            </td>
+                            <td className="p-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                              {smsAt ? (
+                                <Badge variant="secondary">
+                                  {viewed ? "Viewed" : "Sent"} {new Date(smsAt).toLocaleDateString([], { month: "short", day: "numeric" })}
+                                </Badge>
+                              ) : d.generation_status === "ready" ? (
+                                <Button size="sm" onClick={() => sendDemo.mutate(d)} disabled={sendDemo.isPending}>
+                                  {sendDemo.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Send SMS"}
+                                </Button>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </td>
+                            <td className="p-3">
+                              {d.converted_to_paid ? (
+                                <Badge className="bg-green-100 text-green-800">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" /> Paid
+                                </Badge>
+                              ) : d.cta_clicked ? (
+                                <Badge className="bg-amber-100 text-amber-800">CTA clicked</Badge>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
                               )}
                             </td>
                           </tr>
@@ -288,6 +368,7 @@ export default function BuilderHubPage() {
                     </tbody>
                   </table>
                 </div>
+
               )}
             </CardContent>
           </Card>
@@ -391,4 +472,24 @@ function StatusBadge({ status, error }: { status: string; error?: string | null 
   if (status === "generating") return <Badge className="bg-amber-100 text-amber-800"><Clock className="h-3 w-3 mr-1" />generating</Badge>;
   if (status === "error") return <Badge variant="destructive" title={error || ""}><XCircle className="h-3 w-3 mr-1" />error</Badge>;
   return <Badge variant="outline">{status}</Badge>;
+}
+
+function RowColorLegend() {
+  const items: { state: RowState; label: string }[] = [
+    { state: "converted", label: "Converted" },
+    { state: "cta", label: "CTA clicked" },
+    { state: "sms_unviewed", label: "SMS sent, not viewed" },
+    { state: "deployed_idle", label: "Deployed, no activity" },
+    { state: "failed", label: "Failed" },
+  ];
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+      {items.map(i => (
+        <span key={i.state} className="inline-flex items-center gap-1.5">
+          <span className={`inline-block h-3 w-3 rounded-sm border ${ROW_TINT[i.state].split(" ")[0]}`} />
+          {i.label}
+        </span>
+      ))}
+    </div>
+  );
 }
