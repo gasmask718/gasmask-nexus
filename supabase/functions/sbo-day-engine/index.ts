@@ -280,8 +280,13 @@ serve(async (req) => {
             // allowlist the old cap under-served busy MLB slates while the
             // shared run budget (not the cap) is now the real limiter.
             const MAX_PROPS_PER_RUN = Number(prop_fanout_limit ?? 60);
-            // 70% of this sport's fair share to props, 30% left for moneyline.
-            const TIME_BUDGET_MS = Math.max(8_000, Math.floor(sportRemainingMs() * 0.7));
+            // If the moneyline step is also scheduled in this run, reserve 30%
+            // of the sport's fair share for it. On step-filtered runs that
+            // exclude moneyline (e.g. the prop-fanout catch-up cron), props
+            // get the full 100% of the share instead of idling 30%.
+            const moneylineScheduled = perSportSteps.some(s => s.fn === 'sbo-run-predictions');
+            const propShare = moneylineScheduled ? 0.7 : 1.0;
+            const TIME_BUDGET_MS = Math.max(8_000, Math.floor(sportRemainingMs() * propShare));
             const PROP_CONCURRENCY = 3;
 
 
