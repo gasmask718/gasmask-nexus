@@ -96,6 +96,9 @@ Observations that matter:
 
 > **Prompt Fix — `sbo_signals` never settles**
 > 22/22 signals are `pending`; `result`, `pnl_units` and `resolved_at` have never been written. Until a settlement job runs against `sbo_signals`, the combined-confidence system produces no measurable track record and the confirm/fade weighting cannot be validated or tuned.
+>
+> **STALE AS OF 2026-08-01 18:00 UTC (this audit's snapshot time).** Settlement has since run and settled 14 rows — but produced **INCORRECT** results: the settler compares literal `'home'`/`'away'` side tokens against team names, so every settlement fabricated a `loss` regardless of the actual outcome. See `SBO_FIX_PASS_PROPOSAL_2026-08-01.md` item 2. This is now a **data-integrity issue, not just a missing-feature gap.**
+
 
 ---
 
