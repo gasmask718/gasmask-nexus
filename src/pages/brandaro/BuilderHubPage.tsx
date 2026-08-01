@@ -35,19 +35,24 @@ export default function BuilderHubPage() {
     },
   });
 
-  const { data: demos = [], isLoading: demosLoading } = useQuery({
-    queryKey: ["builder-demos"],
+  // Spec: demos table shows only the last 48 hours.
+  const { data: demos = [], isLoading: demosLoading } = useQuery<DemoRow[]>({
+    queryKey: ["builder-demos-48h"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("brandaro_demo_sites")
-        .select("id,lead_id,sent_at,business_name,industry,city,state,generation_engine,generation_status,engine_status,demo_url,durable_generated_url,durable_job_status,durable_last_error,audit_score,created_at,error_message")
+      const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await (supabase.from("brandaro_demo_sites") as any)
+        .select(
+          "id,lead_id,sent_at,sms_sent_at,business_name,industry,city,state,generation_engine,generation_status,engine_status,demo_url,durable_generated_url,durable_job_status,durable_last_error,audit_score,created_at,error_message,deployment_status,converted_to_paid,cta_clicked,view_count,last_viewed_at"
+        )
+        .gte("created_at", since)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(500);
       if (error) throw error;
-      return data || [];
+      return (data || []) as DemoRow[];
     },
     refetchInterval: 15000,
   });
+
 
   const { data: mdFiles = [] } = useQuery({
     queryKey: ["design-mds"],
