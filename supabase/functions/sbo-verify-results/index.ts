@@ -132,6 +132,37 @@ function findSdioPlayerStats(allStats: any[], playerName: string): any | null {
 }
 
 // ═══════════════════════════════════════
+// PREDICTION TIEBREAK — deterministic, documented
+// ═══════════════════════════════════════
+// A prop can carry more than one row in sbo_predictions (re-runs of the
+// day engine, model revisions, opposing over/under calls). Previously the
+// code took prop.sbo_predictions[0] straight off an UNORDERED PostgREST
+// embed, so which pick graded the prop was whatever order Postgres
+// happened to return — a coin flip on props with opposing picks.
+//
+// RULE (explicit, applies everywhere): MOST RECENT PREDICTION WINS.
+//   1. Newest created_at wins — the latest model output supersedes
+//      earlier ones; it is the pick the product surfaced last.
+//   2. Ties on created_at (same-batch inserts) break on the larger id
+//      (lexicographic on uuid text) — arbitrary but STABLE and repeatable.
+// Rejected alternative: "prefer the row with a non-null verdict". That is
+// self-referential — the verdict is written BY this grader, so it would
+// make grading depend on prior grading runs and re-runs would not be
+// reproducible. created_at is external to the grader, so it is stable.
+function pickPrediction(prop: any): any | null {
+  const preds = prop?.sbo_predictions;
+  if (!Array.isArray(preds) || preds.length === 0) return null;
+  if (preds.length === 1) return preds[0];
+  return [...preds].sort((a, b) => {
+    const ta = a?.created_at ? Date.parse(a.created_at) : 0;
+    const tb = b?.created_at ? Date.parse(b.created_at) : 0;
+    if (tb !== ta) return tb - ta;
+    return String(b?.id ?? '').localeCompare(String(a?.id ?? ''));
+  })[0];
+}
+
+
+// ═══════════════════════════════════════
 // WRITE GATE — report_only support
 // ═══════════════════════════════════════
 // Every mutation goes through this. In report_only mode nothing is sent
