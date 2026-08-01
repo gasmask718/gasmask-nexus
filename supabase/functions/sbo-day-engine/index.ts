@@ -101,6 +101,8 @@ serve(async (req) => {
 
     } = body;
 
+    const RUN_START = Date.now();
+    const remainingRunMs = () => Math.max(0, RUN_BUDGET_MS - (Date.now() - RUN_START));
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -261,8 +263,11 @@ serve(async (req) => {
           // and bounded by a wall-clock budget so it can never eat the whole
           // 150s edge-function limit. Resumable across pregame runs.
           if (step.fn === 'sbo-run-prop-predictions') {
-            const MAX_PROPS_PER_RUN = Number(prop_fanout_limit ?? 25);
-            const TIME_BUDGET_MS = 60_000;
+            // Cap raised 25 -> 40 per sport: with up to 4 sports in the
+            // allowlist the old cap under-served busy MLB slates while the
+            // shared run budget (not the cap) is now the real limiter.
+            const MAX_PROPS_PER_RUN = Number(prop_fanout_limit ?? 40);
+            const TIME_BUDGET_MS = Math.min(60_000, Math.max(15_000, remainingRunMs()));
 
             const dayStart = `${date}T00:00:00Z`;
             const _next = new Date(`${date}T00:00:00Z`);
@@ -352,7 +357,7 @@ serve(async (req) => {
             // and idempotency via the function's own same-day cache check,
             // which makes the step resumable across the 13:00 / 23:00 runs.
             const MAX_GAMES_PER_RUN = 30;
-            const TIME_BUDGET_MS = 60_000;
+            const TIME_BUDGET_MS = Math.min(60_000, Math.max(15_000, remainingRunMs()));
             const CONCURRENCY = 3;
 
             const dayStart = `${date}T00:00:00Z`;
