@@ -20,15 +20,21 @@ const PLAN_PRICING: Record<string, { setup: number; monthly: number; label: stri
 
 const APP_ORIGIN = Deno.env.get("BRANDARO_PUBLIC_ORIGIN") ?? "https://brandarodigital.com";
 
+/**
+ * Mode resolution (safety default = test):
+ *   1. explicit body.mode ("test" | "live")
+ *   2. STRIPE_MODE env var
+ *   3. fallback -> "test"
+ */
+function resolveMode(bodyMode: unknown): "test" | "live" {
+  if (bodyMode === "live" || bodyMode === "test") return bodyMode;
+  return Deno.env.get("STRIPE_MODE") === "live" ? "live" : "test";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) {
-      return json({ error: "Stripe not configured (STRIPE_SECRET_KEY missing)" }, 500);
-    }
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -36,6 +42,18 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json().catch(() => ({}));
+    const mode = resolveMode((body ?? {}).mode);
+    const stripeKey = mode === "live"
+      ? Deno.env.get("STRIPE_SECRET_KEY")
+      : Deno.env.get("STRIPE_SECRET_KEY_TEST");
+    if (!stripeKey) {
+      return json({ error: `Stripe not configured for ${mode} mode` }, 500);
+    }
+    if (mode === "test" && !stripeKey.startsWith("sk_test_")) {
+      return json({ error: "Test mode requires a sk_test_ key" }, 500);
+    }
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    console.log(`[receptionist-checkout] mode=${mode}`);
     const {
       lead_id,
       plan = "starter",
