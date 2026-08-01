@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { MLB_GRADING } from '../_shared/espnGrading.ts';
+import { getGradingConfig, type SportGradingConfig } from '../_shared/espnGrading.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,11 +8,11 @@ const corsHeaders = {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// MLB BRANCH (Stage 2c) — real stats brain off sbo_player_game_stats
-// / sbo_player_season_splits. NBA path below is untouched.
+// STATS-BRAIN BRANCH (Stage 2c: MLB, Stage 3: WNBA)
+// Real stats brain off sbo_player_game_stats / sbo_player_season_splits,
+// driven entirely by the sport's grading config so the brain and the
+// grader can never disagree. Legacy NBA path below is untouched.
 // ═══════════════════════════════════════════════════════════════
-
-const MLB_SEASON = String(new Date().getUTCFullYear());
 
 function avg(vals: number[]): number | null {
   if (!vals.length) return null;
@@ -29,7 +29,9 @@ function teamMatchesHint(team: string | null, hint: string): boolean {
   return last.length > 3 && h.includes(last);
 }
 
-async function handleMlb(req_body: any, supabase: any) {
+async function handleStatsBrain(req_body: any, supabase: any, config: SportGradingConfig<any>) {
+  const SPORT = config.sportKey;
+  const SPORT_LABEL = SPORT.toUpperCase();
   const { player_name, player_id, team, prop_type, opponent, game_date } = req_body;
   const teamHint = [team, opponent].filter(Boolean).join(' ');
 
@@ -41,7 +43,7 @@ async function handleMlb(req_body: any, supabase: any) {
     const { data } = await supabase
       .from('sbo_player_season_splits')
       .select('*')
-      .eq('sport', 'mlb')
+      .eq('sport', SPORT)
       .eq('player_key', String(player_id))
       .maybeSingle();
     if (data) { split = data; resolution = 'player_id'; }
@@ -52,7 +54,7 @@ async function handleMlb(req_body: any, supabase: any) {
     const { data } = await supabase
       .from('sbo_player_season_splits')
       .select('*')
-      .eq('sport', 'mlb')
+      .eq('sport', SPORT)
       .ilike('player_name', player_name.trim());
     candidates = data || [];
     if (candidates.length === 1) {
@@ -71,14 +73,14 @@ async function handleMlb(req_body: any, supabase: any) {
 
   if (!split) {
     // Never guess. Ambiguous or unmatched → odds_only.
-    console.log('MLB context unresolved:', { player_name, player_id, teamHint, resolution, candidates: candidates.length });
+    console.log(`${SPORT_LABEL} context unresolved:`, { player_name, player_id, teamHint, resolution, candidates: candidates.length });
     return {
       success: true,
-      sport: 'mlb',
+      sport: SPORT,
       data_quality: 'odds_only',
       resolution,
       context_text: `PLAYER: ${player_name} (${team || 'unknown team'})
-No verified MLB stat history could be resolved for this player (${resolution}). No statistical basis — treat as odds-only and cap confidence.`,
+No verified ${SPORT_LABEL} stat history could be resolved for this player (${resolution}). No statistical basis — treat as odds-only and cap confidence.`,
       raw: { season_split: null, recent_values: [], games_with_stat: 0 },
     };
   }
@@ -87,13 +89,13 @@ No verified MLB stat history could be resolved for this player (${resolution}). 
   const { data: games } = await supabase
     .from('sbo_player_game_stats')
     .select('game_date, opponent, is_home, stat_line')
-    .eq('sport', 'mlb')
+    .eq('sport', SPORT)
     .eq('player_key', split.player_key)
     .order('game_date', { ascending: false })
     .limit(200);
 
   const rows = games || [];
-  const getVal = (statLine: any) => MLB_GRADING.getPropValue(statLine as any, prop_type || '');
+  const getVal = (statLine: any) => config.getPropValue(statLine as any, prop_type || '');
 
   const allValues = rows.map((g: any) => getVal(g.stat_line)).filter((v: any) => v !== null && v !== undefined) as number[];
   const recentValues = rows.slice(0, 10).map((g: any) => getVal(g.stat_line)).filter((v: any) => v !== null) as number[];
@@ -111,7 +113,7 @@ No verified MLB stat history could be resolved for this player (${resolution}). 
   const l10 = avg(allValues.slice(0, 10));
 
   const contextText = `
-PLAYER: ${split.player_name} (${split.team}) — MLB
+PLAYER: ${split.player_name} (${split.team}) — ${SPORT_LABEL}
 IDENTITY: resolved via ${resolution} (player_key ${split.player_key})
 SEASON (${split.season}): ${split.games_played} games played
 SEASON AVERAGES (all tracked stats): ${JSON.stringify(split.season_averages ?? {})}
@@ -137,7 +139,7 @@ LAST GAME: ${split.last_game_date || 'unknown'} | REQUESTED GAME DATE: ${game_da
 
   return {
     success: true,
-    sport: 'mlb',
+    sport: SPORT,
     data_quality,
     resolution,
     context_text: contextText,
@@ -168,8 +170,11 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    if (sport === 'mlb') {
-      const result = await handleMlb(body, supabaseMulti);
+    // Sports with a real stats brain dispatch off their grading config.
+    // Everything else falls through to the legacy NBA path below.
+    const gradingConfig = getGradingConfig(sport);
+    if (gradingConfig) {
+      const result = await handleStatsBrain(body, supabaseMulti, gradingConfig);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
