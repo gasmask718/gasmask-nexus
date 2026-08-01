@@ -855,6 +855,7 @@ const PartnerClaim = lazy(() => import('@/pages/partner/PartnerClaim'));
 const PartnerPortal = lazy(() => import('@/pages/partner/PartnerPortal'));
 const PartnersImport = lazy(() => import('@/pages/admin/PartnersImport'));
 const BeautyProviderSignup = lazy(() => import('@/pages/public/BeautyProviderSignup'));
+const BrandaroIntakePage = lazy(() => import('@/pages/public/BrandaroIntakePage'));
 const ThingsToDoExperiences = lazy(() => import('@/pages/os/toptier/ThingsToDoExperiences'));
 const ThingsToDoBookings = lazy(() => import('@/pages/os/toptier/ThingsToDoBookings'));
 const ThingsToDoAnalytics = lazy(() => import('@/pages/os/toptier/ThingsToDoAnalytics'));
@@ -1349,6 +1350,8 @@ export default function AppRoutes() {
       {/* Public Ambassador Application Form */}
       <Route path="/apply/ambassador" element={<AmbassadorApplication />} />
       <Route path="/apply/beauty-specialist" element={<BeautyProviderSignup />} />
+      {/* Brandaro paid-client intake (public, no login) */}
+      <Route path="/intake" element={<BrandaroIntakePage />} />
       <Route path="/ambassador/login" element={<AmbassadorLogin />} />
       <Route path="/ambassador/set-password" element={<AmbassadorSetPassword />} />
       <Route path="/ut/ambassador/dashboard" element={<UTAmbassadorDashboard />} />

@@ -16134,7 +16134,11 @@ export type Database = {
           final_engine: string | null
           id: string
           initial_engine: string | null
+          intake_completed: boolean
+          intake_completed_at: string | null
+          intake_data: Json | null
           lead_id: string | null
+          logo_storage_path: string | null
           max_retries: number | null
           package_tier: string | null
           pages_built: number | null
@@ -16175,7 +16179,11 @@ export type Database = {
           final_engine?: string | null
           id?: string
           initial_engine?: string | null
+          intake_completed?: boolean
+          intake_completed_at?: string | null
+          intake_data?: Json | null
           lead_id?: string | null
+          logo_storage_path?: string | null
           max_retries?: number | null
           package_tier?: string | null
           pages_built?: number | null
@@ -16216,7 +16224,11 @@ export type Database = {
           final_engine?: string | null
           id?: string
           initial_engine?: string | null
+          intake_completed?: boolean
+          intake_completed_at?: string | null
+          intake_data?: Json | null
           lead_id?: string | null
+          logo_storage_path?: string | null
           max_retries?: number | null
           package_tier?: string | null
           pages_built?: number | null
