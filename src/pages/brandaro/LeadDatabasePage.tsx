@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { CsvLeadImporter } from "@/components/brandaro/CsvLeadImporter";
 import { SendReceptionistLinkModal } from "@/components/brandaro/SendReceptionistLinkModal";
 import { BuildDemoModal } from "@/components/brandaro/BuildDemoModal";
+import { SendDemoModal } from "@/components/brandaro/SendDemoModal";
 import { BrandaroLeadAssignmentButtons } from "@/components/brandaro/BrandaroLeadAssignmentButtons";
 import { VAReassignControl } from "@/components/brandaro/VAReassignControl";
 
@@ -137,6 +138,7 @@ export default function LeadDatabasePage() {
   const [exporting, setExporting] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [receptionistLead, setReceptionistLead] = useState<Lead | null>(null);
+  const [sendDemoLead, setSendDemoLead] = useState<Lead | null>(null);
   const lastShiftIdx = useRef<number | null>(null);
 
   // Debounced search
@@ -1074,8 +1076,8 @@ export default function LeadDatabasePage() {
                                         <Phone className="h-3 w-3 mr-2" /> Manual Call
                                       </DropdownMenuItem>
                                     )}
-                                    <DropdownMenuItem onClick={() => handleSendDemo(lead)} disabled={loadingAction === `demo-${lead.id}`}>
-                                      {loadingAction === `demo-${lead.id}` ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <Zap className="h-3 w-3 mr-2" />}
+                                    <DropdownMenuItem onClick={() => setSendDemoLead(lead)}>
+                                      <Zap className="h-3 w-3 mr-2" />
                                       Send Demo (Auto-Generate)
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setReceptionistLead(lead)}>
@@ -1165,6 +1167,17 @@ export default function LeadDatabasePage() {
 
         {/* ── Build Demo Modal ── */}
         <BuildDemoModal lead={demoLead} open={!!demoLead} onClose={() => setDemoLead(null)} />
+
+        {/* ── Send Demo (Auto-Generate) Modal ── */}
+        <SendDemoModal
+          lead={sendDemoLead}
+          open={!!sendDemoLead}
+          onClose={() => setSendDemoLead(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["brandaro-leads-table"] });
+            if (sendDemoLead) addLog(`Demo generated for ${sendDemoLead.business_name}`);
+          }}
+        />
 
         {/* ── Lead Detail Sheet ── */}
         <Sheet open={!!detailLead} onOpenChange={(open) => { if (!open) setDetailLead(null); }}>
