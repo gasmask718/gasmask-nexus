@@ -141,10 +141,13 @@ export function useConsensusIntelligence() {
 
   // Build consensus groups
   const { consensusPicks, consensusStats, capperKPIs, todayConsensusPicks } = useMemo(() => {
-    // Market line lookup: player|prop|date -> market row
+    // Market line lookup: player|NORMALIZED prop|date -> market row.
+    // sbo_capper_picks and sbo_player_props use different prop vocabularies
+    // ("strikeouts" vs "strikeouts_p", "pts+reb+ast" vs "pts_reb_ast"), so both
+    // sides go through the shared normalizeStat() layer before keying.
     const marketMapByKey = new Map<string, any>();
     for (const m of marketProps as any[]) {
-      const k = `${(m.player_name || '').toLowerCase().trim()}|${(m.prop_type || '').toLowerCase()}|${m.game_date}`;
+      const k = `${(m.player_name || '').toLowerCase().trim()}|${normalizeStat(m.prop_type || '')}|${m.game_date}`;
       if (!marketMapByKey.has(k)) marketMapByKey.set(k, m);
     }
 
