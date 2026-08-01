@@ -162,9 +162,10 @@ Data reality check: `sbo_capper_picks` = 4,521 rows, 1,754 in the last 3 days, s
 2. **The confidence-band inversion the prior doc flagged is gone** — it was NBA contamination, and the sport-scoped grader eliminated it.
 3. **`sbo-verify-results` is genuinely sport-scoped and deterministic in the deployed source**, and real grading output since 2026-07-30 is 100% MLB with zero cross-sport writes.
 4. **Telegram dispatch outage is closed** — intake was live 5 minutes before this audit.
-5. **The ambiguous-props population is 671, not 35.** The prior number counted only the already-graded subset.
+5. **The ambiguous-props population is 41, not 35 and not 671.** *(corrected post-publication)* 671 props carry more than one prediction, but only 41 have genuinely opposing outcomes; the other 630 are same-side duplicates.
 6. **New headline gap the prior doc did not have:** props ingestion was generalized to WNBA/NFL but *prediction generation was not* — WNBA has 364 props and 2 predictions; NFL has 139 props and 0.
-7. **`props_master` is confirmed dead** (100% NBA, 13,910 stale rows) while its sync cron still runs twice daily.
+7. **`props_master` is live, not dead.** *(corrected post-publication)* 600 rows written today with real MLB data; the 100%-NBA reading is a hardcoded `'NBA'` literal at the write site. 10 live consumers — do not retire.
+
 8. **RLS is effectively closed** — one residual permissive policy on `sbo_analysis_jobs`, down from 65 fully-permissive policies.
 9. **`athlete_id` gap is a stale framing** — the column does not exist; identity lives in `player_key`.
 10. **NHL season-2026 mislabel (534 rows) is still open**, unchanged.
