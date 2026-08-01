@@ -123,11 +123,12 @@ export function PaidBuildsPipeline() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const job = jobs.find((j) => j.id === id);
+      const wasLive = job?.build_status === "live";
       const patch: Record<string, unknown> = { build_status: status };
       // Moving to 'live' IS the dev approval: stamp the reviewer and promote the
       // preview build to the live URL.
       if (status === "live") {
-        const job = jobs.find((j) => j.id === id);
         const { data: auth } = await supabase.auth.getUser();
         patch.reviewed_by = auth?.user?.id ?? null;
         patch.reviewed_at = new Date().toISOString();
@@ -138,15 +139,31 @@ export function PaidBuildsPipeline() {
         .update(patch)
         .eq("id", id);
       if (error) throw error;
+
+      // Step 16: monthly hosting billing starts on the transition INTO live only.
+      // The function itself is idempotent, so flip-flopping never double-bills.
+      if (status === "live" && !wasLive) {
+        const { data, error: subErr } = await supabase.functions.invoke(
+          "brandaro-start-hosting-subscription",
+          { body: { build_job_id: id } },
+        );
+        return { billing: subErr ? { error: subErr.message } : data };
+      }
+      return {} as any;
     },
     onMutate: ({ id }) => setPendingId(id),
-    onSuccess: (_d, { status }) => {
+    onSuccess: (res: any, { status }) => {
       toast.success(`Status updated to ${STATUS_LABELS[status] ?? status}`);
+      const billing = res?.billing;
+      if (billing?.error) toast.error(`Hosting billing failed: ${billing.error}`);
+      else if (billing?.already) toast.info("Hosting subscription already active");
+      else if (billing?.created) toast.success("Hosting subscription started ($99/mo)");
       qc.invalidateQueries({ queryKey: ["brandaro-paid-builds"] });
     },
     onError: (err: any) => toast.error(err?.message || "Failed to update status"),
     onSettled: () => setPendingId(null),
   });
+
 
   return (
     <Card>
