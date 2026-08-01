@@ -256,6 +256,7 @@ serve(async (req) => {
       success: true,
       sport,
       season,
+      season_window: window,
       dates_processed: dates.length,
       date_range: { from: dates[0], to: dates[dates.length - 1] },
       games_seen: gamesSeen,
