@@ -592,3 +592,6 @@ verify_jwt = false
 [functions.demo-stripe-webhook]
 verify_jwt = false
 
+
+[functions.sbo-grade-capper-picks-alt]
+verify_jwt = false
