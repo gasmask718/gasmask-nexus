@@ -138,14 +138,22 @@ function findSdioPlayerStats(allStats: any[], playerName: string): any | null {
 // to the database; the intended write is recorded instead. Reads are
 // always real, and control flow is IDENTICAL in both modes, so a dry run
 // exercises the same matching / parsing / verdict code a live run would.
-function makeWriter(supabase: any, reportOnly: boolean) {
+function makeWriter(
+  supabase: any,
+  reportOnly: boolean,
+  sampleLimit = 50,
+  sampleTables: string[] | null = null,
+) {
   const counts: Record<string, number> = {};
   const samples: any[] = [];
   const record = (table: string, op: string, key: any, fields: any) => {
     const k = `${table}.${op}`;
     counts[k] = (counts[k] ?? 0) + 1;
-    if (samples.length < 50) samples.push({ table, op, key, fields });
+    if (samples.length < sampleLimit && (!sampleTables || sampleTables.includes(table))) {
+      samples.push({ table, op, key, fields });
+    }
   };
+
   return {
     counts,
     samples,
