@@ -11,6 +11,7 @@ import { Loader2, ExternalLink, Wand2, RefreshCw, CheckCircle2, XCircle, Clock, 
 import { ManualDemoGenerator } from "@/components/brandaro/ManualDemoGenerator";
 import { PaidBuildsPipeline } from "@/components/brandaro/PaidBuildsPipeline";
 import { AuditLogCard } from "@/components/brandaro/AuditLogCard";
+import { TemplateStatusTable } from "@/components/brandaro/TemplateStatusTable";
 
 
 
