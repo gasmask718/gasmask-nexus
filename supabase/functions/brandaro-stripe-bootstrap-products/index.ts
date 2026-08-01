@@ -28,6 +28,13 @@ const TIERS = [
   { tier: "custom", name: "Brandaro Website — Custom", amount_cents: 249900 },
 ] as const;
 
+// Step 16: a SINGLE flat monthly hosting price shared by every tier.
+export const HOSTING = {
+  tier: "hosting",
+  name: "Brandaro Hosting & Maintenance",
+  amount_cents: 9900,
+} as const;
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
