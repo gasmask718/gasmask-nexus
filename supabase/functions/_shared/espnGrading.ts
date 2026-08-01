@@ -962,6 +962,45 @@ export function getGradingConfig(sportKey: string): SportGradingConfig<any> | nu
 }
 
 // ═══════════════════════════════════════
+// SEASON CALENDAR (cross-calendar-year aware)
+// ═══════════════════════════════════════
+// Sports whose season spans two calendar years, keyed by the month
+// (1-12) the season starts in. The season LABEL is the year it starts:
+// NFL "2025" = Sep 2025 → Feb 2026.
+const SEASON_START_MONTH: Record<string, number> = {
+  nfl: 8,   // Aug (preseason) → Feb
+  nhl: 9,   // Sep → Jun
+  nba: 9,   // Sep → Jun
+};
+
+export function seasonSpansCalendarYear(sportKey: string): boolean {
+  return SEASON_START_MONTH[(sportKey || '').toLowerCase()] !== undefined;
+}
+
+/** The season label a given YYYY-MM-DD game belongs to, for this sport. */
+export function seasonForDate(sportKey: string, dateStr: string): string {
+  const start = SEASON_START_MONTH[(sportKey || '').toLowerCase()];
+  const year = Number(dateStr.slice(0, 4));
+  const month = Number(dateStr.slice(5, 7));
+  if (!start) return String(year);
+  return String(month >= start ? year : year - 1);
+}
+
+/** Inclusive [from, to] game_date window covering a whole season. */
+export function seasonWindow(
+  sportKey: string,
+  season: string,
+): { from: string; to: string } {
+  const start = SEASON_START_MONTH[(sportKey || '').toLowerCase()];
+  const y = Number(season);
+  if (!start) return { from: `${y}-01-01`, to: `${y}-12-31` };
+  const mm = String(start).padStart(2, '0');
+  const endMm = String(start - 1).padStart(2, '0');
+  const endDay = start - 1 === 2 ? '28' : '31'; // never lands on Feb in practice
+  return { from: `${y}-${mm}-01`, to: `${y + 1}-${endMm}-${endDay}` };
+}
+
+// ═══════════════════════════════════════
 // FUZZY PLAYER NAME MATCHING (sport-agnostic)
 // (verbatim copy of sbo-verify-results' 4-pass matcher)
 // ═══════════════════════════════════════
