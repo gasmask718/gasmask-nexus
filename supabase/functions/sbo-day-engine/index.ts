@@ -329,26 +329,32 @@ serve(async (req) => {
             let saved = 0, skipped = 0, failedProps = 0, invoked = 0;
             let stopReason: string | null = null;
 
-            for (const prop of queue) {
-              if (invoked >= MAX_PROPS_PER_RUN) { stopReason = `cap ${MAX_PROPS_PER_RUN} reached`; break; }
-              if (Date.now() - stepStart > TIME_BUDGET_MS) { stopReason = `time budget ${TIME_BUDGET_MS / 1000}s reached`; break; }
-
-              invoked += 1;
-              try {
-                const { data: res, error: invErr } = await supabase.functions.invoke('sbo-run-predictions', {
-                  body: { prop_id: prop.id, prediction_type: 'player_prop' },
-                });
-                if (invErr) { failedProps += 1; continue; }
-                if (res?.insert_error) { failedProps += 1; continue; }
-                if (res?.saved === true && res?.prediction_id) saved += 1;
-                else if (res?.skipped === true || res?.source === 'cache') skipped += 1;
-                else failedProps += 1;
-              } catch (propErr: any) {
-                console.error(`[${sport}] prop ${prop.id} failed:`, propErr?.message);
-                failedProps += 1;
+            const capped = queue.slice(0, MAX_PROPS_PER_RUN);
+            if (queue.length > MAX_PROPS_PER_RUN) stopReason = `cap ${MAX_PROPS_PER_RUN} reached`;
+            for (let i = 0; i < capped.length; i += PROP_CONCURRENCY) {
+              if (Date.now() - stepStart > TIME_BUDGET_MS) {
+                stopReason = `time budget ${Math.round(TIME_BUDGET_MS / 1000)}s reached`;
+                break;
               }
-              await new Promise(r => setTimeout(r, 400));
+              const batch = capped.slice(i, i + PROP_CONCURRENCY);
+              invoked += batch.length;
+              await Promise.all(batch.map(async (prop: any) => {
+                try {
+                  const { data: res, error: invErr } = await supabase.functions.invoke('sbo-run-predictions', {
+                    body: { prop_id: prop.id, prediction_type: 'player_prop' },
+                  });
+                  if (invErr || res?.insert_error) { failedProps += 1; return; }
+                  if (res?.saved === true && res?.prediction_id) saved += 1;
+                  else if (res?.skipped === true || res?.source === 'cache') skipped += 1;
+                  else failedProps += 1;
+                } catch (propErr: any) {
+                  console.error(`[${sport}] prop ${prop.id} failed:`, propErr?.message);
+                  failedProps += 1;
+                }
+              }));
+              await new Promise(r => setTimeout(r, 150));
             }
+
 
             const remaining = Math.max(pending - invoked, 0);
             await recordStep(step, {
