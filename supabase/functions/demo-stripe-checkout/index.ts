@@ -20,11 +20,27 @@ const corsHeaders = {
  * which serve the rep-driven pipeline close. Do not merge them.
  */
 
+const VALID_TIERS = ["starter", "pro", "custom"] as const;
+
+// Legacy live-mode fallback: price IDs that used to live in secret slots.
 const TIER_SECRET: Record<string, string> = {
   starter: "STRIPE_PRICE_STARTER",
   pro: "STRIPE_PRICE_PRO",
   custom: "STRIPE_PRICE_CUSTOM",
 };
+
+/**
+ * Mode resolution (SAFE BY DEFAULT):
+ *   1. explicit body.mode ("test" | "live")
+ *   2. env STRIPE_MODE ("live" to go live)
+ *   3. fallback → "test"
+ * Nothing charges a real card unless mode resolves to "live".
+ */
+function resolveMode(bodyMode: unknown): "test" | "live" {
+  if (bodyMode === "live" || bodyMode === "test") return bodyMode;
+  return Deno.env.get("STRIPE_MODE") === "live" ? "live" : "test";
+}
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -62,24 +78,47 @@ Deno.serve(async (req) => {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(demo_id)) {
       return json({ error: "demo_id must be a valid UUID" }, 400);
     }
-    if (!TIER_SECRET[tier]) {
+    if (!VALID_TIERS.includes(tier as any)) {
       return json(
         { error: `tier must be one of: starter, pro, custom (received: ${tier || "none"})` },
         400,
       );
     }
 
-    const priceId = Deno.env.get(TIER_SECRET[tier]);
-    if (!priceId) {
-      console.error(`[demo-stripe-checkout] missing secret ${TIER_SECRET[tier]}`);
-      return json({ error: `Pricing not configured for tier "${tier}"` }, 500);
+    const mode = resolveMode(body.mode);
+    const stripeKey = mode === "live"
+      ? Deno.env.get("STRIPE_SECRET_KEY")
+      : Deno.env.get("STRIPE_SECRET_KEY_TEST");
+    if (!stripeKey) {
+      return json({ error: `Stripe key not configured for ${mode} mode` }, 500);
+    }
+    if (mode === "test" && !stripeKey.startsWith("sk_test_")) {
+      return json({ error: "Test mode requires a sk_test_ key" }, 500);
     }
 
-    // --- look up the demo ----------------------------------------------
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
+
+    // Price IDs come from brandaro_stripe_config (per mode), with the legacy
+    // live-mode secret slots kept as a fallback.
+    const { data: priceRow } = await supabase
+      .from("brandaro_stripe_config")
+      .select("price_id")
+      .eq("mode", mode)
+      .eq("tier", tier)
+      .maybeSingle();
+
+    const priceId = priceRow?.price_id
+      || (mode === "live" ? Deno.env.get(TIER_SECRET[tier]) : undefined);
+    if (!priceId) {
+      console.error(`[demo-stripe-checkout] no price_id for ${mode}/${tier}`);
+      return json({ error: `Pricing not configured for tier "${tier}" in ${mode} mode` }, 500);
+    }
+
+    // --- look up the demo ----------------------------------------------
+
 
     const { data: demo, error: demoError } = await supabase
       .from("brandaro_demo_sites")
@@ -105,7 +144,7 @@ Deno.serve(async (req) => {
     }
 
     // --- create checkout session ---------------------------------------
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2025-08-27.basil",
     });
 
@@ -122,6 +161,7 @@ Deno.serve(async (req) => {
         demo_id,
         tier,
         business_name: demo.business_name,
+        stripe_mode: mode,
         ...(customer_name ? { customer_name } : {}),
       },
       success_url: successUrl,
@@ -129,10 +169,11 @@ Deno.serve(async (req) => {
     });
 
     console.log(
-      `[demo-stripe-checkout] demo=${demo_id} tier=${tier} session=${session.id}`,
+      `[demo-stripe-checkout] mode=${mode} demo=${demo_id} tier=${tier} session=${session.id}`,
     );
 
-    return json({ checkout_url: session.url });
+    return json({ checkout_url: session.url, mode });
+
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("[demo-stripe-checkout] error", message);

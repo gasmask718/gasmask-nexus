@@ -31,13 +31,22 @@ function ok(body: unknown = { received: true }) {
 Deno.serve(async (req) => {
   // ---------- 1. Signature verification (the ONLY hard failure) ----------
   // Dedicated signing secret for the demo endpoint; falls back to the shared one.
-  const secret =
+  // A separate TEST-mode endpoint in Stripe signs with its own secret, so we try
+  // both and accept whichever verifies.
+  const liveSecret =
     Deno.env.get("DEMO_STRIPE_WEBHOOK_SECRET") || Deno.env.get("STRIPE_WEBHOOK_SECRET");
-  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  const testSecret = Deno.env.get("DEMO_STRIPE_WEBHOOK_SECRET_TEST");
+  const liveKey = Deno.env.get("STRIPE_SECRET_KEY");
+  const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
   const sig = req.headers.get("stripe-signature");
   const raw = await req.text();
 
-  if (!secret || !stripeKey) {
+  const candidates = [
+    { mode: "live", secret: liveSecret, key: liveKey },
+    { mode: "test", secret: testSecret, key: testKey },
+  ].filter((c) => c.secret && c.key) as { mode: string; secret: string; key: string }[];
+
+  if (candidates.length === 0) {
     console.error("[demo-stripe-webhook] missing STRIPE_WEBHOOK_SECRET / STRIPE_SECRET_KEY");
     return new Response(JSON.stringify({ error: "webhook not configured" }), { status: 500 });
   }
@@ -45,15 +54,24 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "missing stripe-signature" }), { status: 400 });
   }
 
-  const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+  let event: Stripe.Event | null = null;
+  let lastErr = "";
+  for (const c of candidates) {
+    try {
+      const stripe = new Stripe(c.key, { apiVersion: "2025-08-27.basil" });
+      event = await stripe.webhooks.constructEventAsync(raw, sig, c.secret);
+      console.log(`[demo-stripe-webhook] signature verified in ${c.mode} mode`);
+      break;
+    } catch (err: any) {
+      lastErr = err?.message ?? String(err);
+    }
+  }
 
-  let event: Stripe.Event;
-  try {
-    event = await stripe.webhooks.constructEventAsync(raw, sig, secret);
-  } catch (err: any) {
-    console.error("[demo-stripe-webhook] signature verification failed:", err?.message);
+  if (!event) {
+    console.error("[demo-stripe-webhook] signature verification failed:", lastErr);
     return new Response(JSON.stringify({ error: "invalid signature" }), { status: 400 });
   }
+
 
   if (event.type !== "checkout.session.completed") {
     return ok({ received: true, ignored: event.type });
