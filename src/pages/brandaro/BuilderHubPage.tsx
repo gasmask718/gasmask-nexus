@@ -291,6 +291,7 @@ export default function BuilderHubPage() {
           <TabsTrigger value="demos">Demos (48h)</TabsTrigger>
           <TabsTrigger value="durable">Durable Jobs ({durableDemos.length})</TabsTrigger>
           <TabsTrigger value="design">DESIGN.md System</TabsTrigger>
+          <TabsTrigger value="templates">Templates (16)</TabsTrigger>
         </TabsList>
 
         <TabsContent value="demos">
