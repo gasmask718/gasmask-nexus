@@ -67,7 +67,8 @@ export function AuditLogCard() {
       if (demosRes.error) throw demosRes.error;
       if (leadsRes.error) throw leadsRes.error;
 
-      const demoMap = new Map((demosRes.data || []).map((d: any) => [d.id, d.business_name]));
+      const demoMap = new Map<string, string | null>((demosRes.data || []).map((d: any) => [d.id, d.business_name]));
+      const leadMap = new Map<string, string | null>((leadsRes.data || []).map((l: any) => [l.id, l.business_name]));
       const leadMap = new Map((leadsRes.data || []).map((l: any) => [l.id, l.business_name]));
 
       return scores.map((s) => ({
