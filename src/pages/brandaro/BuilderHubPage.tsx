@@ -11,6 +11,7 @@ import { Loader2, ExternalLink, Wand2, RefreshCw, CheckCircle2, XCircle, Clock, 
 import { ManualDemoGenerator } from "@/components/brandaro/ManualDemoGenerator";
 import { PaidBuildsPipeline } from "@/components/brandaro/PaidBuildsPipeline";
 import { AuditLogCard } from "@/components/brandaro/AuditLogCard";
+import { TemplateStatusTable } from "@/components/brandaro/TemplateStatusTable";
 
 
 
@@ -291,6 +292,7 @@ export default function BuilderHubPage() {
           <TabsTrigger value="demos">Demos (48h)</TabsTrigger>
           <TabsTrigger value="durable">Durable Jobs ({durableDemos.length})</TabsTrigger>
           <TabsTrigger value="design">DESIGN.md System</TabsTrigger>
+          <TabsTrigger value="templates">Templates (16)</TabsTrigger>
         </TabsList>
 
         <TabsContent value="demos">
@@ -457,7 +459,19 @@ export default function BuilderHubPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="templates">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Template Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TemplateStatusTable />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
 
       <PaidBuildsPipeline />
 
