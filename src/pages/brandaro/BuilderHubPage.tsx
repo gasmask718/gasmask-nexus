@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Loader2, ExternalLink, Wand2, RefreshCw, CheckCircle2, XCircle, Clock, FileText } from "lucide-react";
 import { ManualDemoGenerator } from "@/components/brandaro/ManualDemoGenerator";
+import { PaidBuildsPipeline } from "@/components/brandaro/PaidBuildsPipeline";
+
 
 
 const EXPECTED_MDS = [
