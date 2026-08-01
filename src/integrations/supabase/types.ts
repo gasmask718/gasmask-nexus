@@ -18812,6 +18812,7 @@ export type Database = {
           delivery_method: string | null
           demo_ready_for_conversion: boolean | null
           demo_url: string | null
+          deployment_status: string
           durable_generated_url: string | null
           durable_job_status: string | null
           durable_last_error: string | null
@@ -18878,6 +18879,7 @@ export type Database = {
           delivery_method?: string | null
           demo_ready_for_conversion?: boolean | null
           demo_url?: string | null
+          deployment_status?: string
           durable_generated_url?: string | null
           durable_job_status?: string | null
           durable_last_error?: string | null
@@ -18944,6 +18946,7 @@ export type Database = {
           delivery_method?: string | null
           demo_ready_for_conversion?: boolean | null
           demo_url?: string | null
+          deployment_status?: string
           durable_generated_url?: string | null
           durable_job_status?: string | null
           durable_last_error?: string | null

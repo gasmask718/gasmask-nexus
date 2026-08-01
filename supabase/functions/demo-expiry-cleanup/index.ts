@@ -4,7 +4,8 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 // Daily demo expiry cleanup (cron: 0 9 * * *)
 // Real table: public.brandaro_demo_sites
 //   expires_at            (added for this job, default now() + 14 days)
-//   public_status         (spec called it deployment_status) — 'draft' | 'live' | 'expired'
+//   deployment_status     'pending' | 'deploying' | 'live' | 'failed' | 'expired'
+
 //   converted_to_paid     (matches spec)
 //   vercel_deployment_id  (deployment to delete)
 
@@ -23,7 +24,7 @@ Deno.serve(async (req) => {
       .from('brandaro_demo_sites')
       .select('id, slug, business_name, vercel_deployment_id, expires_at')
       .lt('expires_at', new Date().toISOString())
-      .eq('public_status', 'live')
+      .eq('deployment_status', 'live')
       .eq('converted_to_paid', false)
 
     if (error) throw error
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
 
       const { error: upErr } = await supabase
         .from('brandaro_demo_sites')
-        .update({ public_status: 'expired', updated_at: new Date().toISOString() })
+        .update({ deployment_status: 'expired', updated_at: new Date().toISOString() })
         .eq('id', demo.id)
 
       results.push({

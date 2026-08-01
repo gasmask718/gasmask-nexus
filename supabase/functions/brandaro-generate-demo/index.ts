@@ -368,7 +368,10 @@ Deno.serve(async (req) => {
         generated_colors: { primary: aiRes.content.color_primary, secondary: aiRes.content.color_secondary, font: aiRes.content.font_recommendation },
         published_at: nowIso,
         public_status: "live",
+        // Spec lifecycle: pending -> deploying -> live | failed (-> expired).
+        deployment_status: "pending",
         demo_ready_for_conversion: true,
+
       }).select().single();
 
       if (insertErr) {
@@ -406,6 +409,9 @@ Deno.serve(async (req) => {
       // ---- Step order (per spec): deploy -> audit -> SMS ----
 
       // 1) Trigger a rebuild of this industry's Vercel project.
+      await supabase.from("brandaro_demo_sites")
+        .update({ deployment_status: "deploying" }).eq("id", demo.id);
+
       const vercel = await tryVercelHook(supabase, industry, {
         demo_id: demo.id,
         slug: demoSlug,
@@ -428,6 +434,20 @@ Deno.serve(async (req) => {
       });
 
       if (!vercel.ok) console.warn("Vercel deploy hook not fired:", vercel.error);
+
+      // Persist lifecycle state + the deployment id (used by demo-expiry-cleanup).
+      {
+        const patch: Record<string, unknown> = {
+          deployment_status: vercel.ok ? "live" : "failed",
+        };
+        if (vercel.ok && vercel.deployment_id) patch.vercel_deployment_id = vercel.deployment_id;
+        if (vercel.project_id) patch.vercel_project_id = vercel.project_id;
+        if (!vercel.ok) patch.error_message = (vercel.error ?? "vercel deploy failed").slice(0, 500);
+        const { error: statusErr } = await supabase.from("brandaro_demo_sites")
+          .update(patch).eq("id", demo.id);
+        if (statusErr) console.warn("[vercel] status persist failed:", statusErr.message);
+      }
+
 
       // 2) Quality audit (8 dimensions, threshold 88, up to 2 auto-fix passes).
       // NON-FATAL by design: a failed or low audit never blocks the SMS.

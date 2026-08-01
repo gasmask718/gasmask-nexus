@@ -47,10 +47,47 @@ export interface VercelDeployResult {
   error?: string;
   repo?: string;
   project_id?: string;
+  /** Vercel deployment id (dpl_...) captured after the hook fires, when resolvable. */
+  deployment_id?: string | null;
+  /** Deploy-hook job id, always available when the hook returns 200. */
+  job_id?: string | null;
   env_vars?: EnvVarResult[];
   env_failed?: string[];
   env_skipped?: string[];
 }
+
+/**
+ * Deploy hooks return a job id, not a deployment id. The deployment appears in
+ * the project's deployment list a moment later, so we poll briefly for the
+ * newest deployment created after the hook fired. Non-fatal: returns null if
+ * the id can't be resolved in time.
+ */
+export async function resolveDeploymentId(
+  token: string,
+  projectId: string,
+  firedAt: number,
+  attempts = 5,
+): Promise<string | null> {
+  for (let i = 0; i < attempts; i++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      const res = await fetch(
+        `https://api.vercel.com/v6/deployments?projectId=${projectId}&limit=5`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!res.ok) continue;
+      const json = await res.json();
+      const list = (json?.deployments ?? []) as Array<{ uid?: string; id?: string; created?: number; createdAt?: number }>;
+      const match = list.find((d) => (d.created ?? d.createdAt ?? 0) >= firedAt - 15_000);
+      const id = match?.uid ?? match?.id ?? null;
+      if (id) return id;
+    } catch (e) {
+      console.warn("[vercel] deployment id lookup failed:", e instanceof Error ? e.message : e);
+    }
+  }
+  return null;
+}
+
 
 export async function upsertVercelEnvVar(
   token: string,
@@ -208,6 +245,7 @@ export async function tryVercelHook(
 
   // ---- Step 2: fire the deploy hook so the build picks up the new env vars ----
   try {
+    const firedAt = Date.now();
     const res = await fetch(tpl.vercel_deploy_hook_url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -223,11 +261,26 @@ export async function tryVercelHook(
         env_vars: envResults, env_failed: envFailed, env_skipped: envSkipped,
       };
     }
+
+    let jobId: string | null = null;
+    try {
+      jobId = JSON.parse(text)?.job?.id ?? null;
+    } catch { /* hook may return non-JSON */ }
+
+    // Capture the resulting deployment id so expiry cleanup can delete it later.
+    let deploymentId: string | null = null;
+    if (token && tpl.vercel_project_id) {
+      deploymentId = await resolveDeploymentId(token, tpl.vercel_project_id, firedAt);
+      if (!deploymentId) console.warn(`[vercel] deployment id unresolved for project ${tpl.vercel_project_id}`);
+    }
+
     return {
       ok: true, status: res.status,
       repo: tpl.vercel_template_repo, project_id: tpl.vercel_project_id,
+      deployment_id: deploymentId, job_id: jobId,
       env_vars: envResults, env_failed: envFailed, env_skipped: envSkipped,
     };
+
   } catch (e) {
     return {
       ok: false,
