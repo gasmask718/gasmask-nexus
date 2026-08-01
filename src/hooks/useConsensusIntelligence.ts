@@ -249,7 +249,7 @@ export function useConsensusIntelligence() {
       let formHitRate: number | null = null;
       let formAvgStat: number | null = null;
       let formGames = 0;
-      const statKey = PROP_STAT_KEY[(first.prop_type || '').toLowerCase()];
+      const statKey = PROP_STAT_KEY[(first.prop_type || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '_')];
       const pickLineNum = Number(first.line);
       if (statKey && Number.isFinite(pickLineNum)) {
         const games = (formIndex.get((first.player_name || '').toLowerCase().trim()) || [])
