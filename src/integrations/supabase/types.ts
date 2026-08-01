@@ -18811,6 +18811,7 @@ export type Database = {
           content_blocks: Json | null
           converted_to_paid: boolean
           created_at: string
+          cta_clicked: boolean
           cta_variant: string | null
           delivery_method: string | null
           demo_ready_for_conversion: boolean | null
@@ -18878,6 +18879,7 @@ export type Database = {
           content_blocks?: Json | null
           converted_to_paid?: boolean
           created_at?: string
+          cta_clicked?: boolean
           cta_variant?: string | null
           delivery_method?: string | null
           demo_ready_for_conversion?: boolean | null
@@ -18945,6 +18947,7 @@ export type Database = {
           content_blocks?: Json | null
           converted_to_paid?: boolean
           created_at?: string
+          cta_clicked?: boolean
           cta_variant?: string | null
           delivery_method?: string | null
           demo_ready_for_conversion?: boolean | null
