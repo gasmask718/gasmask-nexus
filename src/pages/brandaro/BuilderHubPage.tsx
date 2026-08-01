@@ -473,3 +473,23 @@ function StatusBadge({ status, error }: { status: string; error?: string | null 
   if (status === "error") return <Badge variant="destructive" title={error || ""}><XCircle className="h-3 w-3 mr-1" />error</Badge>;
   return <Badge variant="outline">{status}</Badge>;
 }
+
+function RowColorLegend() {
+  const items: { state: RowState; label: string }[] = [
+    { state: "converted", label: "Converted" },
+    { state: "cta", label: "CTA clicked" },
+    { state: "sms_unviewed", label: "SMS sent, not viewed" },
+    { state: "deployed_idle", label: "Deployed, no activity" },
+    { state: "failed", label: "Failed" },
+  ];
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+      {items.map(i => (
+        <span key={i.state} className="inline-flex items-center gap-1.5">
+          <span className={`inline-block h-3 w-3 rounded-sm border ${ROW_TINT[i.state].split(" ")[0]}`} />
+          {i.label}
+        </span>
+      ))}
+    </div>
+  );
+}
