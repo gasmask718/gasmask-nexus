@@ -4,25 +4,11 @@ When a dev flips a paid build job to **live** on `/brandaro/builder`, the client
 hosting subscription is created in Stripe and recorded in `brandaro_subscriptions`. Domain
 connection stays manual (out of scope).
 
-## 1. Hosting price — needs to be created
+## 1. Hosting price — created
 
-`brandaro_stripe_config` currently holds only the three **one-time** build prices in test mode
-(`starter`, `pro`, `custom`). There is no recurring price anywhere. So the bootstrap function
-gets extended rather than a new mechanism invented:
-
-`brandaro-stripe-bootstrap-products` gains a second block that creates a **"Brandaro Hosting &
-Maintenance"** product with three monthly recurring prices, stored in the same config table
-under tiers `hosting_starter`, `hosting_pro`, `hosting_custom`:
-
-| tier | monthly |
-| --- | --- |
-| hosting_starter | $97 |
-| hosting_pro | $197 |
-| hosting_custom | $397 |
-
-Same idempotency rule already in that function: a config row with a matching `price_id` and
-`amount_cents` is reused, never re-created. If those amounts are wrong, tell me the real ones
-before I run it.
+A SINGLE flat recurring price of **$99/month** (`Brandaro Hosting & Maintenance`), stored as one
+config row in `brandaro_stripe_config` under tier `hosting` — not tiered by starter/pro/custom.
+Created by the extended `brandaro-stripe-bootstrap-products` (idempotent, test mode).
 
 ## 2. New edge function: `brandaro-start-hosting-subscription`
 
