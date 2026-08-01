@@ -460,6 +460,9 @@ export default function BuilderHubPage() {
       </Tabs>
 
       <PaidBuildsPipeline />
+
+      <AuditLogCard />
+
     </div>
 
   );
