@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { isSuppressed } from "../_shared/dnc.ts";
+import { callDurable, BUILD_JOB_REF_PREFIX } from "../_shared/durable.ts";
 
 /**
  * demo-stripe-webhook
@@ -162,6 +163,67 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (jobErr) console.error("[demo-stripe-webhook] build job insert failed:", jobErr.message);
     build_job_id = job?.id ?? null;
+
+    // ---------- 4b. STARTER TIER: Durable builds the full site automatically ----------
+    // Pipeline Step 14 (Section 1.1): "For starter tier: Durable API builds the full
+    // site automatically" — no dev review, fully automated. Pro/custom are handled by
+    // a separate (not-yet-built) path and intentionally do nothing here.
+    if (tier === "starter" && build_job_id) {
+      try {
+        const { data: demoFull } = await supabase
+          .from("brandaro_demo_sites")
+          .select(
+            "id, business_name, industry, city, state, services_inferred, phone_e164, seo_text",
+          )
+          .eq("id", demo_id)
+          .maybeSingle();
+
+        const durableRes = await callDurable({
+          business_name: demoFull?.business_name || business_name || lead?.business_name,
+          industry: demoFull?.industry ?? null,
+          location: { city: demoFull?.city ?? null, state: demoFull?.state ?? null },
+          phone: demoFull?.phone_e164 || phone,
+          email: customer_email,
+          services: demoFull?.services_inferred || [],
+          description: demoFull?.seo_text ?? null,
+          // REAL paid build, not a demo.
+          purpose: "paid_build",
+          webhook_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/brandaro-durable-webhook`,
+          external_reference: `${BUILD_JOB_REF_PREFIX}${build_job_id}`,
+        });
+
+        if (durableRes.ok) {
+          const { error: upErr } = await supabase
+            .from("brandaro_build_jobs")
+            .update({
+              durable_site_id: durableRes.site_id,
+              durable_generated_url: durableRes.site_url ?? null,
+              durable_job_status: "processing",
+              durable_last_error: null,
+              build_status: "building",
+              progress_stage: "durable_generating",
+              started_at: new Date().toISOString(),
+            })
+            .eq("id", build_job_id);
+          if (upErr) {
+            console.error("[demo-stripe-webhook] build job durable update failed:", upErr.message);
+          }
+        } else {
+          console.error("[demo-stripe-webhook] Durable call failed:", durableRes.error);
+          await supabase
+            .from("brandaro_build_jobs")
+            .update({
+              durable_job_status: "error",
+              durable_last_error: durableRes.error,
+              build_status: "failed",
+              error_log: { stage: "durable_start", error: durableRes.error },
+            })
+            .eq("id", build_job_id);
+        }
+      } catch (e: any) {
+        console.error("[demo-stripe-webhook] starter auto-build step threw:", e?.message);
+      }
+    }
 
     // ---------- 5. Client SMS (DNC-gated) ----------
     if (phone) {
