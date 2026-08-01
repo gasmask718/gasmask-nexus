@@ -39,6 +39,8 @@ type JobRow = {
   demo_id: string | null;
   lead_id: string | null;
   deployed_url: string | null;
+  preview_url: string | null;
+  review_requested_at: string | null;
   created_at: string;
   business_name: string | null;
   paid_amount: number | null;
