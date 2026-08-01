@@ -368,7 +368,10 @@ Deno.serve(async (req) => {
         generated_colors: { primary: aiRes.content.color_primary, secondary: aiRes.content.color_secondary, font: aiRes.content.font_recommendation },
         published_at: nowIso,
         public_status: "live",
+        // Spec lifecycle: pending -> deploying -> live | failed (-> expired).
+        deployment_status: "pending",
         demo_ready_for_conversion: true,
+
       }).select().single();
 
       if (insertErr) {
