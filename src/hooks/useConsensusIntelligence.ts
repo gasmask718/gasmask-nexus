@@ -154,7 +154,9 @@ export function useConsensusIntelligence() {
       runs: 'R', runs_scored: 'R', walks: 'BB', strikeouts: 'K_p', pitcher_strikeouts: 'K_p',
       strikeouts_thrown: 'K_p', batter_strikeouts: 'K_b', hits_allowed: 'H_allowed',
       earned_runs: 'ER', home_runs_allowed: 'HR_allowed', walks_allowed: 'BB_allowed',
-      outs_recorded: 'OUTS', innings_pitched: 'IP',
+      outs_recorded: 'OUTS', pitcher_outs: 'OUTS', innings_pitched: 'IP',
+      strikeouts_pitched: 'K_p', pitching_strikeouts: 'K_p', total_hits: 'H',
+
     };
     const formIndex = new Map<string, any[]>();
     for (const g of playerGameStats as any[]) {
