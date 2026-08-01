@@ -78,24 +78,47 @@ Deno.serve(async (req) => {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(demo_id)) {
       return json({ error: "demo_id must be a valid UUID" }, 400);
     }
-    if (!TIER_SECRET[tier]) {
+    if (!VALID_TIERS.includes(tier as any)) {
       return json(
         { error: `tier must be one of: starter, pro, custom (received: ${tier || "none"})` },
         400,
       );
     }
 
-    const priceId = Deno.env.get(TIER_SECRET[tier]);
-    if (!priceId) {
-      console.error(`[demo-stripe-checkout] missing secret ${TIER_SECRET[tier]}`);
-      return json({ error: `Pricing not configured for tier "${tier}"` }, 500);
+    const mode = resolveMode(body.mode);
+    const stripeKey = mode === "live"
+      ? Deno.env.get("STRIPE_SECRET_KEY")
+      : Deno.env.get("STRIPE_SECRET_KEY_TEST");
+    if (!stripeKey) {
+      return json({ error: `Stripe key not configured for ${mode} mode` }, 500);
+    }
+    if (mode === "test" && !stripeKey.startsWith("sk_test_")) {
+      return json({ error: "Test mode requires a sk_test_ key" }, 500);
     }
 
-    // --- look up the demo ----------------------------------------------
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
+
+    // Price IDs come from brandaro_stripe_config (per mode), with the legacy
+    // live-mode secret slots kept as a fallback.
+    const { data: priceRow } = await supabase
+      .from("brandaro_stripe_config")
+      .select("price_id")
+      .eq("mode", mode)
+      .eq("tier", tier)
+      .maybeSingle();
+
+    const priceId = priceRow?.price_id
+      || (mode === "live" ? Deno.env.get(TIER_SECRET[tier]) : undefined);
+    if (!priceId) {
+      console.error(`[demo-stripe-checkout] no price_id for ${mode}/${tier}`);
+      return json({ error: `Pricing not configured for tier "${tier}" in ${mode} mode` }, 500);
+    }
+
+    // --- look up the demo ----------------------------------------------
+
 
     const { data: demo, error: demoError } = await supabase
       .from("brandaro_demo_sites")
