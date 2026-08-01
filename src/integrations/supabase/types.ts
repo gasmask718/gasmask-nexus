@@ -16726,6 +16726,7 @@ export type Database = {
       }
       brandaro_campaigns: {
         Row: {
+          business_id: string
           city_filter: string | null
           contacted_leads: number | null
           conversion_rate: number | null
@@ -16743,6 +16744,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          business_id?: string
           city_filter?: string | null
           contacted_leads?: number | null
           conversion_rate?: number | null
@@ -16760,6 +16762,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          business_id?: string
           city_filter?: string | null
           contacted_leads?: number | null
           conversion_rate?: number | null
@@ -34803,6 +34806,7 @@ export type Database = {
       }
       comm_threads: {
         Row: {
+          business_id: string | null
           created_at: string | null
           created_by: string | null
           entity_id: string | null
@@ -34816,6 +34820,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          business_id?: string | null
           created_at?: string | null
           created_by?: string | null
           entity_id?: string | null
@@ -34829,6 +34834,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          business_id?: string | null
           created_at?: string | null
           created_by?: string | null
           entity_id?: string | null
@@ -75449,6 +75455,7 @@ export type Database = {
       }
       ops_inbox_threads: {
         Row: {
+          business_id: string | null
           closed_at: string | null
           created_at: string
           created_by: string
@@ -75463,6 +75470,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          business_id?: string | null
           closed_at?: string | null
           created_at?: string
           created_by: string
@@ -75477,6 +75485,7 @@ export type Database = {
           type?: string
         }
         Update: {
+          business_id?: string | null
           closed_at?: string | null
           created_at?: string
           created_by?: string
@@ -102245,6 +102254,7 @@ export type Database = {
       }
       store_inventory_leads: {
         Row: {
+          business_id: string
           created_at: string
           id: string
           inventory_status: string
@@ -102255,6 +102265,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          business_id?: string
           created_at?: string
           id?: string
           inventory_status?: string
@@ -102265,6 +102276,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          business_id?: string
           created_at?: string
           id?: string
           inventory_status?: string
@@ -138958,6 +138970,10 @@ export type Database = {
       has_audit_engine_access: { Args: { _user_id: string }; Returns: boolean }
       has_business_role: {
         Args: { _business_id: string; _role: string; _user_id: string }
+        Returns: boolean
+      }
+      has_business_role_for_store: {
+        Args: { _role: string; _store_id: string; _user_id: string }
         Returns: boolean
       }
       has_finance_access: { Args: { _user_id: string }; Returns: boolean }
