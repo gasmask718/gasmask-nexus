@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { SendDemoModal } from "@/components/brandaro/SendDemoModal";
 import {
   Phone, PhoneForwarded, Send, Clock, Star, MapPin,
   MessageSquare, ChevronRight, ChevronLeft, SkipForward,
@@ -46,6 +47,7 @@ const LEAD_TAGS = [
 export default function VAWorkspacePage() {
   const queryClient = useQueryClient();
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
+  const [sendDemoOpen, setSendDemoOpen] = useState(false);
   const [outcome, setOutcome] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [callbackTime, setCallbackTime] = useState("");
@@ -392,7 +394,7 @@ export default function VAWorkspacePage() {
 
             {(outcome === "interested" || outcome === "hot_lead") && (
               <div className="flex gap-2 pt-2 border-t">
-                <Button variant="secondary" size="sm" className="flex-1 text-xs">
+                <Button variant="secondary" size="sm" className="flex-1 text-xs" onClick={() => setSendDemoOpen(true)}>
                   <Send className="h-3 w-3 mr-1" /> Send Demo
                 </Button>
                 <Button variant="secondary" size="sm" className="flex-1 text-xs">
