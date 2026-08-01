@@ -138,6 +138,7 @@ export default function LeadDatabasePage() {
   const [exporting, setExporting] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [receptionistLead, setReceptionistLead] = useState<Lead | null>(null);
+  const [sendDemoLead, setSendDemoLead] = useState<Lead | null>(null);
   const lastShiftIdx = useRef<number | null>(null);
 
   // Debounced search
