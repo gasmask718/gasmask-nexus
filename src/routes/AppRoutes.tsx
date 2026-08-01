@@ -1349,6 +1349,8 @@ export default function AppRoutes() {
       {/* Public Ambassador Application Form */}
       <Route path="/apply/ambassador" element={<AmbassadorApplication />} />
       <Route path="/apply/beauty-specialist" element={<BeautyProviderSignup />} />
+      {/* Brandaro paid-client intake (public, no login) */}
+      <Route path="/intake" element={<BrandaroIntakePage />} />
       <Route path="/ambassador/login" element={<AmbassadorLogin />} />
       <Route path="/ambassador/set-password" element={<AmbassadorSetPassword />} />
       <Route path="/ut/ambassador/dashboard" element={<UTAmbassadorDashboard />} />
