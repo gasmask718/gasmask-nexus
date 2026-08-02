@@ -87573,6 +87573,42 @@ export type Database = {
         }
         Relationships: []
       }
+      public_view_security_probes: {
+        Row: {
+          created_at: string
+          grant_violations: Json
+          id: string
+          message: string | null
+          probe_results: Json
+          ran_at: string
+          status: string
+          updated_at: string
+          views_checked: string[]
+        }
+        Insert: {
+          created_at?: string
+          grant_violations?: Json
+          id?: string
+          message?: string | null
+          probe_results?: Json
+          ran_at?: string
+          status?: string
+          updated_at?: string
+          views_checked?: string[]
+        }
+        Update: {
+          created_at?: string
+          grant_violations?: Json
+          id?: string
+          message?: string | null
+          probe_results?: Json
+          ran_at?: string
+          status?: string
+          updated_at?: string
+          views_checked?: string[]
+        }
+        Relationships: []
+      }
       purchase_order_items: {
         Row: {
           computed_units_total: number | null
