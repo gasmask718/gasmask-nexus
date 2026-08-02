@@ -51,7 +51,7 @@ export function usePricing() {
     // Fallback to product's direct pricing.
     // Prefer authoritative DD columns (dtc_price_b / store_price_a) over legacy.
     const { data: product } = await supabase
-      .from('products_all')
+      .from('products_public')
       .select('retail_price, store_price, wholesale_price, dtc_price_b, store_price_a')
       .eq('id', productId)
       .single();

@@ -59,7 +59,7 @@ export default function Checkout() {
     if (ids.length === 0) { setHasRestrictedItems(false); return; }
     let cancelled = false;
     supabase
-      .from('products_all')
+      .from('products_public')
       .select('id, is_age_restricted')
       .in('id', ids)
       .then(({ data }) => {
