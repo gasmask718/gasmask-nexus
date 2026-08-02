@@ -884,6 +884,9 @@ const Layout = ({ children }: LayoutProps) => {
   ]);
   
   const currentPath = location.pathname;
+
+  // Close the mobile nav sheet whenever the route changes
+  useEffect(() => { setMobileNavOpen(false); }, [currentPath]);
   const isFloor9Route = currentPath.startsWith('/grabba/floor9') || currentPath.startsWith('/gasmask/note-cleaner');
 
   const isPathActive = (path: string) => {
