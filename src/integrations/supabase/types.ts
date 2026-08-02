@@ -70815,7 +70815,7 @@ export type Database = {
           gross_amount: number
           id: string
           order_id: string | null
-          order_item_id: string | null
+          order_item_id: string
           payout_status: string
           processor_fee_share_cents: number | null
           product_id: string | null
@@ -70842,7 +70842,7 @@ export type Database = {
           gross_amount?: number
           id?: string
           order_id?: string | null
-          order_item_id?: string | null
+          order_item_id: string
           payout_status?: string
           processor_fee_share_cents?: number | null
           product_id?: string | null
@@ -70869,7 +70869,7 @@ export type Database = {
           gross_amount?: number
           id?: string
           order_id?: string | null
-          order_item_id?: string | null
+          order_item_id?: string
           payout_status?: string
           processor_fee_share_cents?: number | null
           product_id?: string | null
