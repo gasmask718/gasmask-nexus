@@ -70806,32 +70806,83 @@ export type Database = {
       marketplace_commissions: {
         Row: {
           commission_amount: number
-          commission_rate: number
+          commission_rate: number | null
+          cost_snapshot_at: string | null
+          cost_source: string | null
           created_at: string | null
+          dynasty_gross_cents: number | null
+          dynasty_net_cents: number | null
           gross_amount: number
           id: string
           order_id: string | null
-          wholesaler_id: string
+          order_item_id: string
+          payout_status: string
+          processor_fee_share_cents: number | null
+          product_id: string | null
+          quantity: number | null
+          rate_source: string | null
+          sale_amount_cents: number | null
+          shipping_attributed_cents: number | null
+          shipping_paid_by: string | null
+          supplier_id: string | null
+          supplier_payable_cents: number | null
+          unit_supplier_cost_cents: number | null
+          updated_at: string
+          wholesaler_id: string | null
           wholesaler_net: number
         }
         Insert: {
           commission_amount?: number
-          commission_rate?: number
+          commission_rate?: number | null
+          cost_snapshot_at?: string | null
+          cost_source?: string | null
           created_at?: string | null
+          dynasty_gross_cents?: number | null
+          dynasty_net_cents?: number | null
           gross_amount?: number
           id?: string
           order_id?: string | null
-          wholesaler_id: string
+          order_item_id: string
+          payout_status?: string
+          processor_fee_share_cents?: number | null
+          product_id?: string | null
+          quantity?: number | null
+          rate_source?: string | null
+          sale_amount_cents?: number | null
+          shipping_attributed_cents?: number | null
+          shipping_paid_by?: string | null
+          supplier_id?: string | null
+          supplier_payable_cents?: number | null
+          unit_supplier_cost_cents?: number | null
+          updated_at?: string
+          wholesaler_id?: string | null
           wholesaler_net?: number
         }
         Update: {
           commission_amount?: number
-          commission_rate?: number
+          commission_rate?: number | null
+          cost_snapshot_at?: string | null
+          cost_source?: string | null
           created_at?: string | null
+          dynasty_gross_cents?: number | null
+          dynasty_net_cents?: number | null
           gross_amount?: number
           id?: string
           order_id?: string | null
-          wholesaler_id?: string
+          order_item_id?: string
+          payout_status?: string
+          processor_fee_share_cents?: number | null
+          product_id?: string | null
+          quantity?: number | null
+          rate_source?: string | null
+          sale_amount_cents?: number | null
+          shipping_attributed_cents?: number | null
+          shipping_paid_by?: string | null
+          supplier_id?: string | null
+          supplier_payable_cents?: number | null
+          unit_supplier_cost_cents?: number | null
+          updated_at?: string
+          wholesaler_id?: string | null
           wholesaler_net?: number
         }
         Relationships: [
@@ -70839,7 +70890,28 @@ export type Database = {
             foreignKeyName: "marketplace_commissions_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "wholesale_orders_platform"
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_commissions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "marketplace_commissions_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_commissions_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_order_items_view"
             referencedColumns: ["id"]
           },
           {
@@ -71165,10 +71237,12 @@ export type Database = {
           notification_log: Json
           order_type: string | null
           ordering_store_id: string | null
+          paid_at: string | null
           payment_status: string | null
           shipping_address: Json | null
           shipping_cost: number | null
           shipping_funded_by_customer: boolean | null
+          shipping_paid_by: string | null
           stripe_payment_intent_id: string | null
           stripe_risk_level: string | null
           stripe_risk_score: number | null
@@ -71212,10 +71286,12 @@ export type Database = {
           notification_log?: Json
           order_type?: string | null
           ordering_store_id?: string | null
+          paid_at?: string | null
           payment_status?: string | null
           shipping_address?: Json | null
           shipping_cost?: number | null
           shipping_funded_by_customer?: boolean | null
+          shipping_paid_by?: string | null
           stripe_payment_intent_id?: string | null
           stripe_risk_level?: string | null
           stripe_risk_score?: number | null
@@ -71259,10 +71335,12 @@ export type Database = {
           notification_log?: Json
           order_type?: string | null
           ordering_store_id?: string | null
+          paid_at?: string | null
           payment_status?: string | null
           shipping_address?: Json | null
           shipping_cost?: number | null
           shipping_funded_by_customer?: boolean | null
+          shipping_paid_by?: string | null
           stripe_payment_intent_id?: string | null
           stripe_risk_level?: string | null
           stripe_risk_score?: number | null
@@ -138988,6 +139066,7 @@ export type Database = {
         Args: { p_referral_code: string; p_store_account_id: string }
         Returns: Json
       }
+      dd_backfill_order_economics: { Args: never; Returns: Json }
       dd_calculate_order_profit: {
         Args: { p_order_id: string }
         Returns: number
@@ -139252,6 +139331,13 @@ export type Database = {
         Args: { p_store_id: string }
         Returns: Json
       }
+      dd_supplier_cost_cents_at: {
+        Args: { p_at: string; p_product_id: string }
+        Returns: {
+          cost_cents: number
+          cost_source: string
+        }[]
+      }
       dd_target_b2b: { Args: never; Returns: number }
       dd_target_d2c: { Args: never; Returns: number }
       dd_update_product_pricing: {
@@ -139350,6 +139436,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      dd_write_order_economics: {
+        Args: { p_order_id: string; p_rate_source?: string }
+        Returns: Json
       }
       debug_auth: { Args: never; Returns: Json }
       decay_risk_scores: { Args: never; Returns: undefined }
