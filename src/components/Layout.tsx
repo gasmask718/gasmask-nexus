@@ -1521,7 +1521,7 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-card/95 backdrop-blur-sm supports-[backdrop-filter]:bg-card/90 safe-area-top">
         <div className="flex h-14 items-center px-3 sm:px-4 gap-2 sm:gap-4">
-          <Sheet>
+          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden touch-target">
                 <Menu className="h-5 w-5" />
