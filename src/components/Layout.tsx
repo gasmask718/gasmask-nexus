@@ -863,6 +863,7 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [brandaroPendingCount, setBrandaroPendingCount] = useState(0);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
