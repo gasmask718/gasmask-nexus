@@ -70890,7 +70890,28 @@ export type Database = {
             foreignKeyName: "marketplace_commissions_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "wholesale_orders_platform"
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_commissions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "marketplace_commissions_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_commissions_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_order_items_view"
             referencedColumns: ["id"]
           },
           {
