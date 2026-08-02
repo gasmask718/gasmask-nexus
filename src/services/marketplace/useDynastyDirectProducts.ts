@@ -32,7 +32,7 @@ export function useDynastyDirectProducts(filters?: { search?: string }) {
     queryKey: ['dynasty-direct-products', filters],
     queryFn: async () => {
       let query = supabase
-        .from('products_all')
+        .from('products_public')
         .select(`
           *,
           brand:brands(name, color)

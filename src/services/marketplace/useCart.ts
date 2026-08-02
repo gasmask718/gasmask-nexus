@@ -115,7 +115,7 @@ export function useCart() {
       const productIds = items.map((i) => i.product_id).filter(Boolean);
 
       const { data: productsAll } = await supabase
-        .from("products_all")
+        .from("products_public")
         .select(
           "id, product_name, images, retail_price, store_price, wholesale_price, dtc_price_b, store_price_a, wholesaler_id, inventory_qty, weight_oz",
         )
@@ -186,7 +186,7 @@ export function useCart() {
       let price = priceLocked;
       if (price == null) {
         const { data: productAll } = await supabase
-          .from("products_all")
+          .from("products_public")
           .select("retail_price, store_price, wholesale_price, dtc_price_b, store_price_a")
           .eq("id", productId)
           .single();

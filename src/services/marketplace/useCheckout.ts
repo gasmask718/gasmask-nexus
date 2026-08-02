@@ -121,7 +121,7 @@ export function useCheckout() {
       let hasRestricted = false;
       if (productIds.length > 0) {
         const { data: rows, error: restrictedErr } = await supabase
-          .from('products_all')
+          .from('products_public')
           .select('id, is_age_restricted')
           .in('id', productIds);
         if (restrictedErr) throw restrictedErr;

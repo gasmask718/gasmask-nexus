@@ -12,7 +12,7 @@ export async function enrichOrderItems(items: any[]): Promise<any[]> {
 
   // Try products_all first
   const { data: productsAll } = await supabase
-    .from('products_all')
+    .from('products_public')
     .select('id, product_name, images')
     .in('id', productIds);
 
