@@ -741,6 +741,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/brandaro/leads', label: 'Lead Database', icon: Target },
       { path: '/brandaro/calling', label: 'Calling Ops', icon: PhoneCall },
       { path: '/brandaro/demo-engine', label: 'Demo Engine', icon: Zap },
+      { path: '/brandaro/builder', label: 'Website Builder', icon: Wrench },
       { path: '/brandaro/closer-ai', label: 'Closer AI', icon: Brain },
       { path: '/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
       { path: '/brandaro/competitors', label: 'Competitor Takeover', icon: Swords },
