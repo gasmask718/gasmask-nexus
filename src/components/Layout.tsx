@@ -641,6 +641,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-direct/fulfillment', label: '🚚 Fulfillment', icon: Truck },
       { path: '/dynasty-direct/shipping', label: '🚚 Shipping', icon: Truck },
       { path: '/dynasty-direct/splits', label: '💵 Splits & Reserves', icon: DollarSign },
+      { path: '/dynasty-direct/commission-rates', label: '％ Commission Rates', icon: DollarSign },
       { path: '/dynasty-direct/suppliers/network', label: '🗺️ Supplier Network', icon: Map },
       { path: '/dynasty-direct/suppliers/portal', label: '👥 Supplier Onboarding', icon: Users },
       { path: '/dynasty-direct/suppliers/instructions', label: '📦 Supplier Instructions', icon: FileText },

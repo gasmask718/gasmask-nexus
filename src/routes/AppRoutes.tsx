@@ -775,6 +775,7 @@ const DDStoreAccounts = lazy(() => import('@/pages/dynasty-direct/DDStoreAccount
 const DDOrderDetail = lazy(() => import('@/pages/dynasty-direct/DDOrderDetail'));
 const DDAnalytics = lazy(() => import('@/pages/dynasty-direct/DDAnalytics'));
 const DDSettings = lazy(() => import('@/pages/dynasty-direct/DDSettings'));
+const DDCommissionRates = lazy(() => import('@/pages/dynasty-direct/DDCommissionRates'));
 const DDSupplierPerformance = lazy(() => import('@/pages/dynasty-direct/DDSupplierPerformance'));
 const DDPurchaseOrders = lazy(() => import('@/pages/dynasty-direct/DDPurchaseOrders'));
 const DDProductQA = lazy(() => import('@/pages/dynasty-direct/DDProductQA'));
@@ -2110,6 +2111,7 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/analytics" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDAnalytics /></RequireRole>} />
         <Route path="/dynasty-direct/stores" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDStoreAccounts /></RequireRole>} />
         <Route path="/dynasty-direct/settings" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDSettings /></RequireRole>} />
+        <Route path="/dynasty-direct/commission-rates" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDCommissionRates /></RequireRole>} />
         <Route path="/dynasty-direct/orders/:orderId" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDOrderDetail /></RequireRole>} />
 
         {/* Marketplace Connection Pack - Dev Only, Admin/Owner */}

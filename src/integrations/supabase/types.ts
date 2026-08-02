@@ -35950,6 +35950,84 @@ export type Database = {
         }
         Relationships: []
       }
+      commission_rate_audit: {
+        Row: {
+          action: string
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          rate_id: string | null
+          scope: string | null
+          scope_id: string | null
+        }
+        Insert: {
+          action: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          rate_id?: string | null
+          scope?: string | null
+          scope_id?: string | null
+        }
+        Update: {
+          action?: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          rate_id?: string | null
+          scope?: string | null
+          scope_id?: string | null
+        }
+        Relationships: []
+      }
+      commission_rates: {
+        Row: {
+          active: boolean
+          created_at: string
+          effective_from: string
+          id: string
+          needs_confirmation: boolean
+          note: string | null
+          rate_pct: number
+          scope: string
+          scope_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          effective_from?: string
+          id?: string
+          needs_confirmation?: boolean
+          note?: string | null
+          rate_pct: number
+          scope: string
+          scope_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          effective_from?: string
+          id?: string
+          needs_confirmation?: boolean
+          note?: string | null
+          rate_pct?: number
+          scope?: string
+          scope_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       commission_rules: {
         Row: {
           commission_plan_id: string | null
@@ -138922,6 +139000,15 @@ export type Database = {
       get_best_rep_for_store: {
         Args: { p_business_id: string; p_store_id: string }
         Returns: Json
+      }
+      get_commission_rate: {
+        Args: {
+          p_at?: string
+          p_category_id?: string
+          p_order_id?: string
+          p_seller_id?: string
+        }
+        Returns: number
       }
       get_creator_dashboard_summary: { Args: never; Returns: Json }
       get_creator_profile_completion: { Args: never; Returns: Json }
