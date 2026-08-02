@@ -33,7 +33,7 @@ export function useProducts(filters?: {
     queryKey: ['marketplace-products', filters],
     queryFn: async () => {
       let query = supabase
-        .from('products_all')
+        .from('products_public')
         .select(`
           *,
           brand:brands(name, color),
@@ -72,7 +72,7 @@ export function useProduct(productId: string) {
     queryKey: ['marketplace-product', productId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products_all')
+        .from('products_public')
         .select(`
           *,
           brand:brands(name, color),
