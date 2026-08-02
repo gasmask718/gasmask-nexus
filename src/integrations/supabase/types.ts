@@ -87540,6 +87540,75 @@ export type Database = {
           },
         ]
       }
+      public_view_contracts: {
+        Row: {
+          allowed_privileges: string[]
+          created_at: string
+          forbidden_columns: string[]
+          id: string
+          notes: string | null
+          public_roles: string[]
+          updated_at: string
+          view_name: string
+        }
+        Insert: {
+          allowed_privileges?: string[]
+          created_at?: string
+          forbidden_columns?: string[]
+          id?: string
+          notes?: string | null
+          public_roles?: string[]
+          updated_at?: string
+          view_name: string
+        }
+        Update: {
+          allowed_privileges?: string[]
+          created_at?: string
+          forbidden_columns?: string[]
+          id?: string
+          notes?: string | null
+          public_roles?: string[]
+          updated_at?: string
+          view_name?: string
+        }
+        Relationships: []
+      }
+      public_view_security_probes: {
+        Row: {
+          created_at: string
+          grant_violations: Json
+          id: string
+          message: string | null
+          probe_results: Json
+          ran_at: string
+          status: string
+          updated_at: string
+          views_checked: string[]
+        }
+        Insert: {
+          created_at?: string
+          grant_violations?: Json
+          id?: string
+          message?: string | null
+          probe_results?: Json
+          ran_at?: string
+          status?: string
+          updated_at?: string
+          views_checked?: string[]
+        }
+        Update: {
+          created_at?: string
+          grant_violations?: Json
+          id?: string
+          message?: string | null
+          probe_results?: Json
+          ran_at?: string
+          status?: string
+          updated_at?: string
+          views_checked?: string[]
+        }
+        Relationships: []
+      }
       purchase_order_items: {
         Row: {
           computed_units_total: number | null
@@ -138285,6 +138354,15 @@ export type Database = {
       approve_store_promotion: {
         Args: { p_promotion_id: string }
         Returns: string
+      }
+      assert_public_view_grants: {
+        Args: never
+        Returns: {
+          detail: string
+          role_name: string
+          view_name: string
+          violation: string
+        }[]
       }
       assign_best_number: {
         Args: {
