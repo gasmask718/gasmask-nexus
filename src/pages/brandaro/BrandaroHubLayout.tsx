@@ -44,6 +44,7 @@ const hubNav = [
     { title: "Follow-Ups", path: "/brandaro/follow-ups", icon: ListTodo },
     { title: "Proposals", path: "/brandaro/proposals", icon: FileText },
     { title: "Build Pipeline", path: "/brandaro/build-pipeline", icon: Wrench },
+    { title: "Website Builder", path: "/brandaro/builder", icon: Wrench },
     { title: "Demo Engine", path: "/brandaro/demo-engine", icon: Presentation },
   ]},
   { section: "Execution", items: [

@@ -741,6 +741,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/brandaro/leads', label: 'Lead Database', icon: Target },
       { path: '/brandaro/calling', label: 'Calling Ops', icon: PhoneCall },
       { path: '/brandaro/demo-engine', label: 'Demo Engine', icon: Zap },
+      { path: '/brandaro/builder', label: 'Website Builder', icon: Wrench },
       { path: '/brandaro/closer-ai', label: 'Closer AI', icon: Brain },
       { path: '/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
       { path: '/brandaro/competitors', label: 'Competitor Takeover', icon: Swords },
@@ -863,6 +864,7 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [brandaroPendingCount, setBrandaroPendingCount] = useState(0);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
@@ -883,6 +885,9 @@ const Layout = ({ children }: LayoutProps) => {
   ]);
   
   const currentPath = location.pathname;
+
+  // Close the mobile nav sheet whenever the route changes
+  useEffect(() => { setMobileNavOpen(false); }, [currentPath]);
   const isFloor9Route = currentPath.startsWith('/grabba/floor9') || currentPath.startsWith('/gasmask/note-cleaner');
 
   const isPathActive = (path: string) => {
@@ -1516,7 +1521,7 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-card/95 backdrop-blur-sm supports-[backdrop-filter]:bg-card/90 safe-area-top">
         <div className="flex h-14 items-center px-3 sm:px-4 gap-2 sm:gap-4">
-          <Sheet>
+          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden touch-target">
                 <Menu className="h-5 w-5" />
