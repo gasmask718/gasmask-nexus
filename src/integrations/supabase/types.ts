@@ -132096,6 +132096,7 @@ export type Database = {
           category: string | null
           created_at: string | null
           description: string | null
+          dtc_price_b: number | null
           flavor_or_variant: string | null
           geo_blocked_states: string[] | null
           has_variants: boolean | null
@@ -132129,14 +132130,17 @@ export type Database = {
           stackable: boolean | null
           status: string | null
           store_price: number | null
+          store_price_a: number | null
           store_price_cents: number | null
           street_price: number | null
+          supplier_ships: boolean | null
           track_inventory: boolean | null
           unit_type: string | null
           units_per_case: number | null
           updated_at: string | null
           variant_types: string[] | null
           weight_oz: number | null
+          wholesale_price: number | null
           wholesaler_id: string | null
           width_in: number | null
         }
@@ -132152,6 +132156,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           description?: string | null
+          dtc_price_b?: number | null
           flavor_or_variant?: string | null
           geo_blocked_states?: string[] | null
           has_variants?: boolean | null
@@ -132185,14 +132190,17 @@ export type Database = {
           stackable?: boolean | null
           status?: string | null
           store_price?: number | null
+          store_price_a?: number | null
           store_price_cents?: number | null
           street_price?: number | null
+          supplier_ships?: boolean | null
           track_inventory?: boolean | null
           unit_type?: string | null
           units_per_case?: number | null
           updated_at?: string | null
           variant_types?: string[] | null
           weight_oz?: number | null
+          wholesale_price?: number | null
           wholesaler_id?: string | null
           width_in?: number | null
         }
@@ -132208,6 +132216,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           description?: string | null
+          dtc_price_b?: number | null
           flavor_or_variant?: string | null
           geo_blocked_states?: string[] | null
           has_variants?: boolean | null
@@ -132241,14 +132250,17 @@ export type Database = {
           stackable?: boolean | null
           status?: string | null
           store_price?: number | null
+          store_price_a?: number | null
           store_price_cents?: number | null
           street_price?: number | null
+          supplier_ships?: boolean | null
           track_inventory?: boolean | null
           unit_type?: string | null
           units_per_case?: number | null
           updated_at?: string | null
           variant_types?: string[] | null
           weight_oz?: number | null
+          wholesale_price?: number | null
           wholesaler_id?: string | null
           width_in?: number | null
         }
