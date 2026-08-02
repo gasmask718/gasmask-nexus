@@ -138952,6 +138952,8 @@ export type Database = {
       dd_create_marketplace_order: {
         Args: {
           p_affiliate_code?: string
+          p_age_confirmed_at?: string
+          p_age_confirmed_ip?: string
           p_ambassador_id?: string
           p_customer_id?: string
           p_discount_code?: string
