@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "check:sidebar": "node scripts/check-sidebar-routes.mjs",
-    "prebuild": "node scripts/check-sidebar-routes.mjs"
+    "check:view-grants": "node scripts/check-public-view-grants.mjs",
+    "prebuild": "node scripts/check-sidebar-routes.mjs && node scripts/check-public-view-grants.mjs"
   },
   "dependencies": {
     "@elevenlabs/react": "^0.14.1",
