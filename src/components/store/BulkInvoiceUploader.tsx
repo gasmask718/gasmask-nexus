@@ -396,13 +396,20 @@ export function BulkInvoiceUploader({ storeId, storeName, onClose }: BulkInvoice
       for (const invoice of validInvoices) {
         try {
           let createdAt = new Date().toISOString();
+          let businessDate: string | null = null;
           if (invoice.invoice_date) {
             const parsed = parseISO(invoice.invoice_date);
             if (isValid(parsed)) {
               createdAt = parsed.toISOString();
+              businessDate = format(parsed, 'yyyy-MM-dd');
             }
           }
-          
+
+          if (!businessDate) {
+            results.errors.push(`Row ${invoice.row}: missing or invalid invoice date — refusing to import without a business date`);
+            continue;
+          }
+
           const { error } = await supabase
             .from('invoices')
             .insert({
@@ -417,6 +424,10 @@ export function BulkInvoiceUploader({ storeId, storeName, onClose }: BulkInvoice
               due_date: invoice.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
               notes: invoice.description || null,
               created_at: createdAt,
+              business_date: businessDate,
+              entry_mode: entryMode,
+              business_date_source: 'bulk_uploader_v1',
+              business_date_source_note: `parsed from ${entryMode} mode row ${invoice.row}`,
             });
           
           if (error) {
@@ -424,6 +435,7 @@ export function BulkInvoiceUploader({ storeId, storeName, onClose }: BulkInvoice
           } else {
             results.inserted++;
           }
+
         } catch (err: any) {
           results.errors.push(`Row ${invoice.row}: ${err.message}`);
         }
