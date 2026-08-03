@@ -94,10 +94,37 @@ serve(async (req: Request) => {
       });
 
       const responseText = await response.text();
-      result = JSON.parse(responseText);
+      try { result = responseText ? JSON.parse(responseText) : {}; } catch { result = { raw: responseText }; }
 
-      if (!response.ok || result?.error_code) {
-        throw new Error(`Call failed: ${result?.message || "unknown"}`);
+      // FIX (c): a dial only counts as success when Twilio returns 2xx, no
+      // error_code, AND a call SID. Anything else is written to
+      // communication_logs as a real `failed` row (previously failures were
+      // never logged at all, so the true failure rate was invisible) and then
+      // surfaced to the caller with the provider's own error text.
+      const callFailed = !response.ok || Boolean(result?.error_code) || !result?.sid;
+      if (callFailed) {
+        const providerError =
+          result?.message || result?.detail || result?.raw || `HTTP ${response.status}`;
+        console.error(`❌ Twilio call failed to ${e164} [${response.status}]:`, responseText);
+        await supabase.from("communication_logs").insert({
+          direction: "outbound",
+          channel: "call",
+          phone_number: e164,
+          status: "failed",
+          provider: "twilio",
+          provider_message_id: result?.sid ?? null,
+          metadata: {
+            source: "brandaro_closer_desk",
+            lead_id,
+            session_id,
+            error: providerError,
+            twilio_status: response.status,
+            twilio_code: result?.code ?? result?.error_code ?? null,
+          },
+        });
+        throw new Error(
+          `Call failed (Twilio ${result?.code ?? result?.error_code ?? response.status}): ${providerError}`,
+        );
       }
 
       // Log call
@@ -111,7 +138,8 @@ serve(async (req: Request) => {
         metadata: { source: "brandaro_closer_desk", lead_id, session_id },
       });
 
-      console.log(`✅ Call initiated to ${e164}`);
+      console.log(`✅ Call initiated to ${e164} sid=${result?.sid}`);
+
 
     } else if (action === "payment_link") {
       // Shorten the payment URL so the SMS body stays compact and trackable.
