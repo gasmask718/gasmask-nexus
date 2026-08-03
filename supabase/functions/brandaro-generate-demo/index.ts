@@ -594,6 +594,15 @@ Deno.serve(async (req) => {
         engine_status: "processing",
       }).eq("id", demo.id).select().single();
 
+      // Same writeback for the durable engine so the lead reflects the URL.
+      if (durableRes.site_url) {
+        const { error: durLeadErr } = await supabase
+          .from("brandaro_qualified_leads")
+          .update({ demo_url: durableRes.site_url, updated_at: new Date().toISOString() })
+          .eq("id", lead_id);
+        if (durLeadErr) console.error("[demo] durable lead demo_url writeback failed:", durLeadErr.message);
+      }
+
       return new Response(JSON.stringify({ success: true, demo: updated, engine: "durable" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
