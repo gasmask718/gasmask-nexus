@@ -233,24 +233,24 @@ export default function IdeaDashboard() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="min-w-[1120px] table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Idea</TableHead>
-                    <TableHead>From</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Page</TableHead>
-                    <TableHead>Photos</TableHead>
-                    <TableHead>Submitted</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-10" />
+                    <TableHead className="w-[300px]">Idea</TableHead>
+                    <TableHead className="w-[140px]">From</TableHead>
+                    <TableHead className="w-[110px]">Type</TableHead>
+                    <TableHead className="w-[100px]">Priority</TableHead>
+                    <TableHead className="w-[160px]">Page</TableHead>
+                    <TableHead className="w-[90px]">Photos</TableHead>
+                    <TableHead className="w-[130px]">Submitted</TableHead>
+                    <TableHead className="w-[140px]">Status</TableHead>
+                    <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell className="max-w-[280px] align-top">
+                      <TableCell className="align-top">
                         <button
                           type="button"
                           onClick={() => setDetailIdea(r)}
@@ -275,7 +275,7 @@ export default function IdeaDashboard() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm capitalize">
+                      <TableCell className="align-top text-sm capitalize">
                         {r.category.replace('_', ' ')}
                       </TableCell>
                       <TableCell>
@@ -290,12 +290,12 @@ export default function IdeaDashboard() {
                           {r.priority}
                         </Badge>
                       </TableCell>
-                      <TableCell className="max-w-[160px]">
+                      <TableCell className="max-w-[160px] align-top">
                         {r.route_path ? (
                           <button
                             type="button"
                             onClick={() => navigate(r.route_path as string)}
-                            className="inline-flex items-center gap-1 truncate font-mono text-xs text-primary hover:underline"
+                            className="flex w-full items-center gap-1 overflow-hidden font-mono text-xs text-primary hover:underline"
                           >
                             <ExternalLink className="h-3 w-3 shrink-0" />
                             <span className="truncate">{r.route_path}</span>
@@ -331,7 +331,9 @@ export default function IdeaDashboard() {
                           <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs">{fieldStamp(r.created_at)}</TableCell>
+                      <TableCell className="align-top text-xs leading-relaxed">
+                        {fieldStamp(r.created_at)}
+                      </TableCell>
                       <TableCell>
                         <Select
                           value={r.status}
