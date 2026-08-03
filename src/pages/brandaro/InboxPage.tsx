@@ -227,6 +227,7 @@ export default function InboxPage() {
     sent: 'bg-green-500/10 text-green-500 border-green-500/20',
     rejected: 'bg-red-500/10 text-red-500 border-red-500/20',
     edited: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+    failed: 'bg-destructive/10 text-destructive border-destructive/20',
   };
 
   return (
