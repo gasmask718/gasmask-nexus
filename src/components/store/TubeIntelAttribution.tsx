@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { MapPin, Phone, MessageSquare, Monitor, AlertTriangle, Clock } from 'lucide-react';
 import { formatDistanceToNow, differenceInDays, format } from 'date-fns';
-import { dynastyDate } from '@/lib/dates';
+import { dynastyDate, fieldStamp, fieldRelative } from '@/lib/dates';
 import type { TubeIntelSummary, UpdateMethod } from '@/hooks/useStoreTubeIntelSummary';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -127,9 +127,9 @@ export function TubeIntelAttribution({ summary, compact = false, className }: Tu
   const methodCfg = singleMethod ? METHOD_CONFIG[singleMethod] : null;
   const MethodIcon = methodCfg?.icon || Clock;
   const dateLabel = compact
-    ? dynastyDate(mostRecent)
-    : dynastyDate(mostRecent);
-  const relativeLabel = formatDistanceToNow(mostRecent, { addSuffix: false });
+    ? fieldStamp(mostRecent)
+    : fieldStamp(mostRecent);
+  const relativeLabel = fieldRelative(mostRecent);
 
   return (
     <div className={cn(
@@ -138,7 +138,7 @@ export function TubeIntelAttribution({ summary, compact = false, className }: Tu
     )}>
       <Clock className="h-2.5 w-2.5 flex-shrink-0" />
       <span>Tube Intel: {dateLabel}</span>
-      <span className="text-muted-foreground/60">({relativeLabel} ago)</span>
+      <span className="text-muted-foreground/60">({relativeLabel})</span>
       {methodCfg && (
         <span
           className={cn(

@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Boxes, RefreshCw, Calendar } from 'lucide-react';
 import { useStoreVisitInventory } from '@/hooks/useVisitProducts';
-import { formatDistanceToNow } from 'date-fns';
+import { fieldStamp, fieldRelative } from '@/lib/dates';
 import { normalizeBrandId, getBrandPrimaryColor } from '@/config/brands';
 
 interface StoreVisitInventoryCardProps {
@@ -76,7 +76,7 @@ export function StoreVisitInventoryCard({ storeId }: StoreVisitInventoryCardProp
                     </Badge>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Calendar className="h-3 w-3" />
-                      <span>{formatDistanceToNow(new Date(item.last_visit_date), { addSuffix: true })}</span>
+                      <span title={fieldRelative(item.last_visit_date)}>{fieldStamp(item.last_visit_date)}</span>
                     </div>
                   </div>
                 </div>

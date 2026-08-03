@@ -61,7 +61,7 @@ import { SharedStorePerformanceTabs } from "@/components/store/SharedStorePerfor
 
 // Components still used directly in page-specific layout
 import { StoreHealthBadge } from "@/components/delivery/StoreHealthBadge";
-import { BrandStickersCard } from "@/components/store/BrandStickersCard";
+import { StickerStatusPanel } from "@/components/store/StickerStatusPanel";
 import { StoreTransactionsCard } from "@/components/store/StoreTransactionsCard";
 
 // CRM-specific components (unique to StoreMaster)
@@ -374,7 +374,7 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
           </div>
 
           {/* Brand Stickers — CANONICAL */}
-          <BrandStickersCard storeId={id} role="admin" />
+          <StickerStatusPanel storeId={id} mode="view" role="admin" />
 
           {/* Store Contacts — CANONICAL */}
           <StoreContactsSection storeId={id} storeName={store.store_name} />
