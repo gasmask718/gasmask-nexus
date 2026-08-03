@@ -22,12 +22,6 @@ const corsHeaders = {
 
 const VALID_TIERS = ["starter", "pro", "custom"] as const;
 
-// Legacy live-mode fallback: price IDs that used to live in secret slots.
-const TIER_SECRET: Record<string, string> = {
-  starter: "STRIPE_PRICE_STARTER",
-  pro: "STRIPE_PRICE_PRO",
-  custom: "STRIPE_PRICE_CUSTOM",
-};
 
 /**
  * Mode resolution (SAFE BY DEFAULT):
@@ -101,8 +95,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    // Price IDs come from brandaro_stripe_config (per mode), with the legacy
-    // live-mode secret slots kept as a fallback.
+    // Price IDs are stored per (mode, tier) in brandaro_stripe_config.
     const { data: priceRow } = await supabase
       .from("brandaro_stripe_config")
       .select("price_id")
@@ -110,8 +103,8 @@ Deno.serve(async (req) => {
       .eq("tier", tier)
       .maybeSingle();
 
-    const priceId = priceRow?.price_id
-      || (mode === "live" ? Deno.env.get(TIER_SECRET[tier]) : undefined);
+    const priceId = priceRow?.price_id;
+
     if (!priceId) {
       console.error(`[demo-stripe-checkout] no price_id for ${mode}/${tier}`);
       return json({ error: `Pricing not configured for tier "${tier}" in ${mode} mode` }, 500);
