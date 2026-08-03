@@ -262,13 +262,25 @@ export default function BrandaroWarRoom() {
         <KPICard label="Pending Messages" value={pendingMessages.toLocaleString()} icon={MailCheck} color="text-indigo-500" subtitle="Awaiting approval" to="/brandaro/inbox" />
         <Card>
           <CardContent className="p-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Pipeline Funnel</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Pipeline Funnel</p>
+              <span className="text-[10px] text-muted-foreground tabular-nums">{funnelTotal.toLocaleString()} leads</span>
+            </div>
             <div className="space-y-1">
-              {pipelineFunnel.map((s: any) => (
-                <div key={s.stage} className="flex items-center justify-between text-xs">
-                  <span className="capitalize text-muted-foreground">{s.stage.replace(/_/g, " ")}</span>
-                  <span className="font-semibold tabular-nums">{s.count.toLocaleString()}</span>
-                </div>
+              {pipelineFunnel.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2">No leads yet</p>
+              ) : pipelineFunnel.map((s: any) => (
+                <Link
+                  key={s.stage}
+                  to={`/brandaro/leads?stage=${encodeURIComponent(s.stage)}`}
+                  className="flex items-center justify-between text-xs rounded px-1 py-0.5 -mx-1 hover:bg-muted/60 transition-colors group"
+                >
+                  <span className="capitalize text-muted-foreground group-hover:text-foreground">{s.stage.replace(/_/g, " ")}</span>
+                  <span className="font-semibold tabular-nums flex items-center gap-1">
+                    {s.count.toLocaleString()}
+                    <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-60" />
+                  </span>
+                </Link>
               ))}
             </div>
           </CardContent>
