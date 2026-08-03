@@ -569,10 +569,10 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
 
           // Create line items
           if (invoice) {
-            const lineItems = order.line_items.map(item => ({
-              ...toLineItemRow(item, invoice.id, { lineSource: 'field_visit' }),
-              unit_type: item.unit_type,
-            }));
+            // unit_type is derived server-side from sale_unit — do not override.
+            const lineItems = order.line_items.map(item =>
+              toLineItemRow(item, invoice.id, { lineSource: 'field_visit' }),
+            );
 
             await supabase
               .from('invoice_line_items')

@@ -28,6 +28,7 @@ import { Plus, X, Package, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   availableUnitKinds,
+  halfBoxBlockReason,
   buildLine,
   listPriceForUnit,
   summarize,
@@ -281,6 +282,11 @@ export function InvoiceLineBuilder({
                 );
               })}
             </div>
+            {halfBoxBlockReason(selectedProduct) && (
+              <p className="text-[11px] text-destructive">
+                {halfBoxBlockReason(selectedProduct)}
+              </p>
+            )}
             <p className="text-[11px] text-muted-foreground">
               {tubesPerBox(selectedProduct)} {selectedProduct.unit_type || 'tubes'} per box
               {(selectedProduct.pack_size || 1) > 1
