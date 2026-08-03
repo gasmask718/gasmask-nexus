@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
  * Source map (Phase 0 verified):
  *  - Total / assigned leads  -> brandaro_qualified_leads
  *  - AI dials today          -> brandaro_ai_calls (created_at)
- *  - Human dials today       -> va_call_logs       (created_at)
+ *  - Human dials today       -> va_call_logs       (called_at)
  *  - Leads worked today      -> DISTINCT lead_id of the two above
  *  - Texts today             -> brandaro_pending_messages where sent_at >= today
  *  - Closes today            -> brandaro_qualified_leads.converted=true AND conversion_date::date = today
@@ -46,9 +46,9 @@ export function useCEODashboard() {
         sb.from('brandaro_qualified_leads').select('*', { count: 'exact', head: true }),
         sb.from('brandaro_qualified_leads').select('*', { count: 'exact', head: true }).not('assigned_va', 'is', null),
         sb.from('brandaro_ai_calls').select('*', { count: 'exact', head: true }).gte('created_at', startOfDayISO),
-        sb.from('va_call_logs').select('*', { count: 'exact', head: true }).gte('created_at', startOfDayISO),
+        sb.from('va_call_logs').select('*', { count: 'exact', head: true }).gte('called_at', startOfDayISO),
         sb.from('brandaro_ai_calls').select('lead_id').gte('created_at', startOfDayISO),
-        sb.from('va_call_logs').select('lead_id').gte('created_at', startOfDayISO),
+        sb.from('va_call_logs').select('lead_id').gte('called_at', startOfDayISO),
         sb.from('brandaro_pending_messages').select('*', { count: 'exact', head: true }).gte('sent_at', startOfDayISO),
         sb.from('brandaro_qualified_leads').select('*', { count: 'exact', head: true })
           .eq('converted', true).gte('conversion_date', startOfDayISO),

@@ -121,17 +121,17 @@ function useSaraTodaySnapshot() {
       const since = startOfToday();
       const { data, error } = await (supabase as any)
         .from("brandaro_ai_calls")
-        .select("id, call_status, outcome, duration_seconds, created_at")
+        .select("id, status, outcome, duration_seconds, created_at")
         .gte("created_at", since);
       if (error) throw error;
       const rows = (data || []) as {
-        call_status: string | null;
+        status: string | null;
         outcome: string | null;
         duration_seconds: number | null;
       }[];
       const total = rows.length;
       const connected = rows.filter(r =>
-        ["completed", "connected", "answered"].includes((r.call_status || "").toLowerCase()),
+        ["completed", "connected", "answered"].includes((r.status || "").toLowerCase()),
       ).length;
       const positive = rows.filter(r =>
         ["interested", "booked", "callback", "hot"].includes((r.outcome || "").toLowerCase()),
@@ -159,7 +159,7 @@ function useActivityFeed() {
       const [calls, leads] = await Promise.all([
         (supabase as any)
           .from("brandaro_ai_calls")
-          .select("id, lead_id, call_status, outcome, created_at")
+          .select("id, lead_id, status, outcome, created_at")
           .order("created_at", { ascending: false })
           .limit(8),
         (supabase as any)
@@ -174,7 +174,7 @@ function useActivityFeed() {
         items.push({
           key: `c:${c.id}`,
           kind: "call",
-          title: `Sara call · ${c.outcome || c.call_status || "in progress"}`,
+          title: `Sara call · ${c.outcome || c.status || "in progress"}`,
           subtitle: c.lead_id ? `Lead ${String(c.lead_id).slice(0, 8)}` : "unassigned",
           ts: c.created_at,
         });
