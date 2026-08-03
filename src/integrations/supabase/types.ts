@@ -68666,6 +68666,72 @@ export type Database = {
           },
         ]
       }
+      invoice_line_sku_reassignment_log: {
+        Row: {
+          applied_at: string | null
+          committed_line_item_id: string | null
+          created_at: string
+          evidence: string | null
+          id: string
+          invoice_id: string | null
+          new_list_unit_price: number | null
+          new_price_ratio: number | null
+          new_product_id: string
+          new_product_name: string
+          previous_list_unit_price: number | null
+          previous_price_ratio: number | null
+          previous_product_id: string | null
+          previous_product_name: string | null
+          previous_unit_price: number | null
+          raw_note: string | null
+          reverted_at: string | null
+          run_id: string
+          staging_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          committed_line_item_id?: string | null
+          created_at?: string
+          evidence?: string | null
+          id?: string
+          invoice_id?: string | null
+          new_list_unit_price?: number | null
+          new_price_ratio?: number | null
+          new_product_id: string
+          new_product_name: string
+          previous_list_unit_price?: number | null
+          previous_price_ratio?: number | null
+          previous_product_id?: string | null
+          previous_product_name?: string | null
+          previous_unit_price?: number | null
+          raw_note?: string | null
+          reverted_at?: string | null
+          run_id: string
+          staging_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          committed_line_item_id?: string | null
+          created_at?: string
+          evidence?: string | null
+          id?: string
+          invoice_id?: string | null
+          new_list_unit_price?: number | null
+          new_price_ratio?: number | null
+          new_product_id?: string
+          new_product_name?: string
+          previous_list_unit_price?: number | null
+          previous_price_ratio?: number | null
+          previous_product_id?: string | null
+          previous_product_name?: string | null
+          previous_unit_price?: number | null
+          raw_note?: string | null
+          reverted_at?: string | null
+          run_id?: string
+          staging_id?: string
+        }
+        Relationships: []
+      }
       invoice_receipt_log: {
         Row: {
           created_at: string | null
@@ -102513,6 +102579,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      store_archive_log: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          id: string
+          previous_deleted_at: string | null
+          previous_status: string | null
+          reason: string
+          reverted_at: string | null
+          run_id: string
+          source_summary: string | null
+          store_id: string
+          store_name: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          id?: string
+          previous_deleted_at?: string | null
+          previous_status?: string | null
+          reason: string
+          reverted_at?: string | null
+          run_id: string
+          source_summary?: string | null
+          store_id: string
+          store_name?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          id?: string
+          previous_deleted_at?: string | null
+          previous_status?: string | null
+          reason?: string
+          reverted_at?: string | null
+          run_id?: string
+          source_summary?: string | null
+          store_id?: string
+          store_name?: string | null
+        }
+        Relationships: []
       }
       store_brand_accounts: {
         Row: {
