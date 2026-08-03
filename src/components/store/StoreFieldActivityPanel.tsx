@@ -16,7 +16,7 @@ import {
   ExternalLink,
   FileText
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { fieldStamp, fieldRelative } from '@/lib/dates';
 import { Link } from 'react-router-dom';
 import { 
   useStoreFieldSubmissions,
@@ -124,8 +124,13 @@ export function StoreFieldActivityPanel({ storeId }: StoreFieldActivityPanelProp
                         ({sub.submitted_by_role})
                       </span>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {formatDistanceToNow(new Date(sub.created_at), { addSuffix: true })}
+                    <div className="mt-1" title={fieldRelative(sub.created_at)}>
+                      <div className="text-xs font-medium text-foreground">
+                        {fieldStamp(sub.created_at)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {fieldRelative(sub.created_at)}
+                      </div>
                     </div>
                     {sub.rejection_reason && (
                       <div className="mt-2 text-xs text-destructive bg-destructive/10 p-2 rounded">

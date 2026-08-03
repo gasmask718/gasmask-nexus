@@ -1,3 +1,4 @@
+import { fieldStamp } from '@/lib/dates';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -152,7 +153,7 @@ export function VisitHistoryTab({ storeId }: VisitHistoryTabProps) {
                 {visits.map((visit) => (
                   <TableRow key={visit.id}>
                     <TableCell>
-                      {new Date(visit.visited_at).toLocaleDateString()}
+                      {fieldStamp(visit.visited_at)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -214,7 +215,7 @@ export function VisitHistoryTab({ storeId }: VisitHistoryTabProps) {
                 {changeLists.map((cl) => (
                   <TableRow key={cl.id}>
                     <TableCell>
-                      {new Date(cl.created_at).toLocaleDateString()}
+                      {fieldStamp(cl.created_at)}
                     </TableCell>
                     <TableCell>{cl.submitted_by_name || 'Unknown'}</TableCell>
                     <TableCell>

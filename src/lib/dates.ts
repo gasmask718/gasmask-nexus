@@ -126,3 +126,61 @@ export function dynastyDateWithWeekday(
   return format(date, 'EEE, MMM d, yyyy');
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// FIELD ACTIVITY TIMESTAMPS — absolute-first, America/New_York
+// Operator rule: never show a relative-only timestamp on field activity.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const FIELD_TIME_ZONE = 'America/New_York';
+
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** True when the raw value carries no time component (a `date` column). */
+export function isDateOnly(value: Date | string | null | undefined): boolean {
+  return typeof value === 'string' && DATE_ONLY_RE.test(value.trim());
+}
+
+/**
+ * Absolute field-activity timestamp in America/New_York.
+ * "Jan 14, 2026 · 3:42 PM" — or "Jan 14, 2026" for date-only columns
+ * (never fakes a time that the database does not have).
+ */
+export function fieldStamp(
+  value: Date | string | null | undefined,
+  options?: { fallback?: string }
+): string {
+  const dateOnly = isDateOnly(value);
+  const date = dateOnly
+    ? toDate(`${(value as string).trim()}T12:00:00`)
+    : toDate(value);
+  if (!date) return options?.fallback ?? '—';
+
+  const datePart = new Intl.DateTimeFormat('en-US', {
+    timeZone: FIELD_TIME_ZONE,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+
+  if (dateOnly) return datePart;
+
+  const timePart = new Intl.DateTimeFormat('en-US', {
+    timeZone: FIELD_TIME_ZONE,
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+
+  return `${datePart} · ${timePart}`;
+}
+
+/** Secondary muted hint, e.g. "6 months ago". Never used on its own. */
+export function fieldRelative(
+  value: Date | string | null | undefined,
+  options?: { fallback?: string }
+): string {
+  const date = isDateOnly(value)
+    ? toDate(`${(value as string).trim()}T12:00:00`)
+    : toDate(value);
+  if (!date) return options?.fallback ?? '';
+  return formatDistanceToNowStrict(date, { addSuffix: true });
+}
