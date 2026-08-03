@@ -395,15 +395,15 @@ export default function BrandaroWarRoom() {
                 {topVAs.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-4">No VA data yet</p>
                 ) : topVAs.map((va: any, i: number) => (
-                  <div key={va.va_user_id} className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
+                  <div key={va.id || va.va_id} className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-muted-foreground">#{i + 1}</span>
                       <div>
-                        <p className="text-xs font-medium">{va.va_user_id?.slice(0, 8)}…</p>
-                        <p className="text-[10px] text-muted-foreground">{va.calls_today || 0} calls</p>
+                        <p className="text-xs font-medium">{va.va_id?.slice(0, 8)}…</p>
+                        <p className="text-[10px] text-muted-foreground">{va.calls_made || 0} calls · {va.interested_count || 0} interested</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-[10px]">{va.daily_score || 0} pts</Badge>
+                    <Badge variant="outline" className="text-[10px]">{va.deals_closed || 0} closed</Badge>
                   </div>
                 ))}
               </div>
