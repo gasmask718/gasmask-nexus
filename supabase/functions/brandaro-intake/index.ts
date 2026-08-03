@@ -11,6 +11,7 @@
 //  - every field is validated & length-capped server-side
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { applyIntakeToClient, ensureClientForJob } from "../_shared/brandaroClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
