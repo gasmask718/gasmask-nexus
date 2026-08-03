@@ -56,7 +56,8 @@ export function useProfitByChannel(startDate?: string, endDate?: string) {
       // Query invoice line items with profit data
       let query = supabase
         .from('invoice_line_items')
-        .select('sale_channel, total, profit_at_sale, invoice_id');
+        .select('sale_channel, total, profit_at_sale, invoice_id')
+        .is('deleted_at', null);
 
       // Add date filtering if provided (would need to join with invoices)
       // For now, get all data
@@ -133,6 +134,7 @@ export function useProductProfitByChannel(productId: string) {
       const { data, error } = await supabase
         .from('invoice_line_items')
         .select('sale_channel, quantity, total, profit_at_sale')
+        .is('deleted_at', null)
         .eq('product_id', productId);
 
       if (error) throw error;

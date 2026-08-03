@@ -57,6 +57,7 @@ function useLastOrderLineItems(storeId: string) {
       const { data: lines, error: lErr } = await supabase
         .from('invoice_line_items')
         .select('product_id, product_name, product_name_snapshot, quantity, unit_price, total, computed_tubes_total')
+        .is('deleted_at', null)
         .eq('invoice_id', inv.id);
       if (lErr) throw lErr;
 
