@@ -164,7 +164,7 @@ export default function CallingOpsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("brandaro_callbacks")
-        .select(`*, brandaro_qualified_leads(business_name, phone)`)
+        .select(`*, brandaro_qualified_leads(business_name, phone_number)`)
         .eq("status", "pending")
         .order("scheduled_time", { ascending: true })
         .limit(20);
