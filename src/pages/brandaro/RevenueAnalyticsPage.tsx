@@ -37,24 +37,37 @@ function startOfWeek(d: Date) {
 function startOfMonth(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
-function isRecurring(type: string) {
-  const t = (type || '').toLowerCase();
-  return t.includes('monthly') || t.includes('recurring') || t.includes('subscription');
-}
+
+/** Subscription states that count toward the live monthly run-rate. */
+const ACTIVE_SUB_STATUSES = ['active', 'trialing', 'past_due'];
 
 export default function RevenueAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<RevenueRow[]>([]);
   const [range, setRange] = useState<RangeKey>('all');
+  const [mrr, setMrr] = useState(0);
+  const [activeSubs, setActiveSubs] = useState(0);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data } = await (supabase as any)
-        .from('brandaro_revenue_tracking')
-        .select('*')
-        .order('created_at', { ascending: false });
-      setRows((data as RevenueRow[]) || []);
+      const [ledger, subs] = await Promise.all([
+        (supabase as any)
+          .from('brandaro_revenue_tracking')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        // TRUE run-rate: sum of currently active subscriptions, the same source
+        // brandaro_clients.monthly_recurring is computed from. Never sum
+        // historical "recurring-typed" ledger rows — those are cash collected.
+        (supabase as any)
+          .from('brandaro_subscriptions')
+          .select('monthly_fee, status')
+          .in('status', ACTIVE_SUB_STATUSES),
+      ]);
+      setRows((ledger.data as RevenueRow[]) || []);
+      const subRows = (subs.data as { monthly_fee: number | null }[]) || [];
+      setMrr(subRows.reduce((sum, s) => sum + (Number(s.monthly_fee) || 0), 0));
+      setActiveSubs(subRows.length);
       setLoading(false);
     })();
   }, []);
@@ -63,17 +76,17 @@ export default function RevenueAnalyticsPage() {
     const now = new Date();
     const monthStart = startOfMonth(now);
     const weekStart = startOfWeek(now);
-    let total = 0, month = 0, week = 0, mrr = 0;
+    let total = 0, month = 0, week = 0;
     for (const r of rows) {
       const amt = Number(r.revenue_amount) || 0;
       total += amt;
       const created = new Date(r.created_at);
       if (created >= monthStart) month += amt;
       if (created >= weekStart) week += amt;
-      if (isRecurring(r.revenue_type)) mrr += amt;
     }
-    return { total, month, week, mrr };
+    return { total, month, week };
   }, [rows]);
+
 
   const filtered = useMemo(() => {
     if (range === 'all') return rows;
