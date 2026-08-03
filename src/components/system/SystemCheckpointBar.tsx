@@ -72,7 +72,7 @@ export default function SystemCheckpointBar() {
     <div
       className={cn(
         'w-full border-b border-amber-500/20 bg-amber-950/40',
-        'backdrop-blur-sm px-3 py-1.5 flex items-center justify-between gap-3',
+        'backdrop-blur-sm px-3 py-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1',
         'text-xs text-amber-100 z-40'
       )}
     >
