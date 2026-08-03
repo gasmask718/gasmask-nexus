@@ -681,22 +681,17 @@ function AddClientDialog({
                 placeholder="Notes — comma-separated add-ons or free-form"
               />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Project deadline">
-                <Input
-                  type="date"
-                  value={form.project_deadline}
-                  onChange={(e) => update('project_deadline', e.target.value)}
-                />
-              </Field>
-              <Field label="Assigned builder">
-                <Input
-                  value={form.assigned_builder}
-                  placeholder="Builder uuid"
-                  onChange={(e) => update('assigned_builder', e.target.value)}
-                />
-              </Field>
-            </div>
+            <Field label="Project deadline">
+              <Input
+                type="date"
+                value={form.project_deadline}
+                onChange={(e) => update('project_deadline', e.target.value)}
+              />
+            </Field>
+            <p className="text-xs text-muted-foreground">
+              Assign a builder after creating the client, from the client card or Manage panel.
+            </p>
+
           </div>
         )}
 
