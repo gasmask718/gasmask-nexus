@@ -57,6 +57,7 @@ export default function InboxPage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<'pending' | 'inbound'>('pending');
   const [pendingFilter, setPendingFilter] = useState<PendingFilter>('pending');
+  const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
   const [expandedInbound, setExpandedInbound] = useState<string | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
