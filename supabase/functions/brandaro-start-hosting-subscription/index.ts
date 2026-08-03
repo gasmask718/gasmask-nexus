@@ -183,18 +183,24 @@ Deno.serve(async (req) => {
       tier: job.package_tier ?? null,
     });
 
-    const { error: insErr } = await admin.from("brandaro_subscriptions").insert({
-      client_id: clientId ?? job.client_id,
-      project_id: job.id,
-      service_type: "hosting",
-      tier: job.package_tier ?? null,
-      monthly_fee: (priceRow.amount_cents ?? 9900) / 100,
-      stripe_subscription_id: subscription.id,
-      stripe_customer_id: customerId,
-      status: subscription.status,
-      started_at: new Date().toISOString(),
-      next_billing_at: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-    });
+    const monthlyFee = (priceRow.amount_cents ?? 9900) / 100;
+
+    const { data: subRow, error: insErr } = await admin
+      .from("brandaro_subscriptions")
+      .insert({
+        client_id: clientId ?? job.client_id,
+        project_id: job.id,
+        service_type: "hosting",
+        tier: job.package_tier ?? null,
+        monthly_fee: monthlyFee,
+        stripe_subscription_id: subscription.id,
+        stripe_customer_id: customerId,
+        status: subscription.status,
+        started_at: new Date().toISOString(),
+        next_billing_at: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+      })
+      .select("id")
+      .maybeSingle();
     if (insErr) {
       // Don't leave an untracked live subscription behind.
       try { await stripe.subscriptions.cancel(subscription.id); } catch (_) { /* noop */ }
@@ -205,7 +211,37 @@ Deno.serve(async (req) => {
     let mrr: number | null = null;
     if (clientId) mrr = await syncClientMRR(admin, clientId);
 
+    // Cash ledger: first hosting charge. Keyed on the Stripe *invoice* id when
+    // Stripe has already billed the first period, so brandaro-billing-webhook's
+    // invoice.payment_succeeded delivery for that same invoice is a no-op and
+    // month 1 is never counted twice. Falls back to the subscription id when the
+    // subscription starts on a trial / no invoice yet.
+    try {
+      const firstInvoice =
+        typeof (subscription as unknown as { latest_invoice?: unknown }).latest_invoice === "string"
+          ? (subscription as unknown as { latest_invoice: string }).latest_invoice
+          : ((subscription as unknown as { latest_invoice?: { id?: string } }).latest_invoice?.id ??
+            null);
+
+      if (subscription.status === "active" || subscription.status === "past_due") {
+        await recordRevenue(admin, {
+          amount: monthlyFee,
+          revenue_type: "hosting_monthly",
+          stripe_reference: firstInvoice ?? subscription.id,
+          source: "hosting_start",
+          client_id: clientId ?? job.client_id ?? null,
+          subscription_id: subRow?.id ?? null,
+          lead_id: (job as { lead_id?: string | null }).lead_id ?? null,
+          description: businessName ? `${businessName} — hosting` : "Hosting (month 1)",
+          industry: null,
+        });
+      }
+    } catch (e) {
+      console.error("[hosting-sub] revenue ledger step failed:", (e as Error).message);
+    }
+
     console.log(`[hosting-sub] mode=${mode} job=${job.id} sub=${subscription.id} mrr=${mrr}`);
+
 
     return json({
       created: true,
