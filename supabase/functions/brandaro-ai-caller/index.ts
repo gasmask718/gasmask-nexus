@@ -26,12 +26,17 @@ serve(async (req) => {
     // Session 3 from-number cascade (select_best_number_for_business + bookkeeping)
     // preserved below unchanged; only the outbound-dial layer is replaced.
     const BLAND_API_KEY = Deno.env.get("BLAND_API_KEY");
-    const BRANDARO_SALES_AGENT_ID = Deno.env.get("BRANDARO_SALES_AGENT_ID");
+    // FIX (b): the UUID stored in BRANDARO_SALES_AGENT_ID is a Bland *pathway* id,
+    // not an agent id. Sending it as `agent_id` made every call fail with
+    // "Agent not found". We now send it as `pathway_id` (new-style secret name
+    // BRANDARO_SALES_PATHWAY_ID is preferred, legacy name kept as fallback).
+    const BRANDARO_SALES_PATHWAY_ID =
+      Deno.env.get("BRANDARO_SALES_PATHWAY_ID") || Deno.env.get("BRANDARO_SALES_AGENT_ID");
     if (!BLAND_API_KEY) {
       throw new Error("BLAND_API_KEY not configured");
     }
-    if (!BRANDARO_SALES_AGENT_ID) {
-      throw new Error("BRANDARO_SALES_AGENT_ID not configured");
+    if (!BRANDARO_SALES_PATHWAY_ID) {
+      throw new Error("BRANDARO_SALES_PATHWAY_ID (or legacy BRANDARO_SALES_AGENT_ID) not configured");
     }
 
     // Fetch leads that haven't been AI-called recently
