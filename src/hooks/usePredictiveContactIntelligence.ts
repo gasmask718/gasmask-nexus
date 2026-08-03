@@ -67,6 +67,7 @@ export function usePredictiveContactIntelligence(storeId: string | undefined) {
           total_texts_sent, total_texts_received,
           is_primary
         `)
+        .is('deleted_at', null)
         .eq('store_id', storeId)
         .eq('is_simulation', false);
       if (error) throw error;

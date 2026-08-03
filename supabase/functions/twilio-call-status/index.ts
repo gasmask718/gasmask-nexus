@@ -21,6 +21,7 @@ async function resolveStore(admin: any, phone: string) {
   const { data: contact } = await admin
     .from('store_contacts')
     .select('id, store_id')
+    .is('deleted_at', null)
     .ilike('phone', `%${p10}`)
     .limit(1)
     .maybeSingle();

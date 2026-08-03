@@ -51,6 +51,7 @@ export function usePrimaryResponsiveContact(storeId: string | undefined) {
           total_texts_sent, total_texts_received,
           is_primary
         `)
+        .is('deleted_at', null)
         .eq('store_id', storeId)
         .eq('is_simulation', false);
 
@@ -98,6 +99,7 @@ export function usePrimaryResponsiveContactBatch(storeIds: string[]) {
               total_texts_sent, total_texts_received,
               is_primary
             `)
+            .is('deleted_at', null)
             .in('store_id', chunk)
             .eq('is_simulation', false)
         )

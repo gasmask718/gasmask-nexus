@@ -116,6 +116,7 @@ serve(async (req) => {
     const { data: contacts } = await supabase
       .from('store_contacts')
       .select('id, store_id, name, phone, email, role')
+      .is('deleted_at', null)
       .in('store_id', storeIds);
 
     const storeMap = new Map((stores || []).map(s => [s.id, s]));

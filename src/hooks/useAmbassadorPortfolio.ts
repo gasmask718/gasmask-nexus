@@ -340,6 +340,7 @@ export function useAmbassadorStoreProfile(storeId: string | null) {
       const { data, error } = await supabase
         .from('store_contacts')
         .select('*')
+        .is('deleted_at', null)
         .eq('store_id', storeId)
         .order('created_at', { ascending: false });
 

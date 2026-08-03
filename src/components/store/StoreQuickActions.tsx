@@ -43,6 +43,7 @@ export function StoreQuickActions({
       const { data, error } = await supabase
         .from('store_contacts')
         .select('id, name, phone, email')
+        .is('deleted_at', null)
         .eq('store_id', storeId)
         .order('is_primary', { ascending: false });
       if (error) throw error;

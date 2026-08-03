@@ -32,6 +32,7 @@ export function useStoreContactGlance(storeIds: string[]) {
           supabase
             .from('store_contacts')
             .select('store_id, phone, is_homie, owner_confirmed, responsiveness_status')
+            .is('deleted_at', null)
             .in('store_id', chunk)
         )
       );
