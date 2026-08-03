@@ -97,14 +97,14 @@ export default function BrandaroWarRoom() {
     refetchInterval: 15000,
   });
 
-  // Recent alerts
+  // Recent alerts (column is is_read, not dismissed)
   const { data: alerts = [] } = useQuery({
     queryKey: ["brandaro-war-alerts"],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("brandaro_va_alerts")
         .select("*")
-        .eq("dismissed", false)
+        .eq("is_read", false)
         .order("created_at", { ascending: false })
         .limit(5);
       return data || [];
@@ -112,14 +112,15 @@ export default function BrandaroWarRoom() {
     refetchInterval: 10000,
   });
 
-  // VA leaderboard top 3
+  // VA leaderboard top 3 (real columns: va_id, calls_made, interested_count, deals_closed)
   const { data: topVAs = [] } = useQuery({
     queryKey: ["brandaro-war-top-vas"],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("brandaro_va_performance")
-        .select("va_user_id, daily_score, calls_today, interested_today")
-        .order("daily_score", { ascending: false })
+        .select("id, va_id, calls_made, interested_count, deals_closed, period_start")
+        .order("deals_closed", { ascending: false })
+        .order("calls_made", { ascending: false })
         .limit(3);
       return data || [];
     },
@@ -197,23 +198,41 @@ export default function BrandaroWarRoom() {
     refetchInterval: 15000,
   });
 
+  // Pipeline funnel — stages derived from ACTUAL data (no hardcoded list),
+  // so any future stage shows up automatically and no lead is ever hidden.
+  const STAGE_ORDER = ["new", "prospect", "contacted", "responded", "interested", "demo_sent", "proposal", "booked", "won", "closed", "lost"];
   const { data: pipelineFunnel = [] } = useQuery({
     queryKey: ["brandaro-war-pipeline-funnel"],
     queryFn: async () => {
-      const stages = ["prospect", "contacted", "interested", "demo_sent", "proposal", "won"];
-      const results = await Promise.all(
-        stages.map(async (stage) => {
-          const { count } = await (supabase as any)
-            .from("brandaro_qualified_leads")
-            .select("id", { count: "exact", head: true })
-            .eq("pipeline_stage", stage);
-          return { stage, count: count || 0 };
-        })
-      );
-      return results;
+      // Paginate to avoid the 1,000-row PostgREST cap
+      const counts: Record<string, number> = {};
+      let from = 0;
+      const PAGE = 1000;
+      for (;;) {
+        const { data, error } = await (supabase as any)
+          .from("brandaro_qualified_leads")
+          .select("pipeline_stage")
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const rows = data || [];
+        for (const r of rows) {
+          const k = r.pipeline_stage || "unassigned";
+          counts[k] = (counts[k] || 0) + 1;
+        }
+        if (rows.length < PAGE) break;
+        from += PAGE;
+      }
+      return Object.entries(counts)
+        .map(([stage, count]) => ({ stage, count: count as number }))
+        .sort((a, b) => {
+          const ai = STAGE_ORDER.indexOf(a.stage);
+          const bi = STAGE_ORDER.indexOf(b.stage);
+          return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+        });
     },
     refetchInterval: 60000,
   });
+  const funnelTotal = pipelineFunnel.reduce((s: number, r: any) => s + r.count, 0);
 
   return (
     <div className="space-y-6">
@@ -243,13 +262,25 @@ export default function BrandaroWarRoom() {
         <KPICard label="Pending Messages" value={pendingMessages.toLocaleString()} icon={MailCheck} color="text-indigo-500" subtitle="Awaiting approval" to="/brandaro/inbox" />
         <Card>
           <CardContent className="p-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Pipeline Funnel</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Pipeline Funnel</p>
+              <span className="text-[10px] text-muted-foreground tabular-nums">{funnelTotal.toLocaleString()} leads</span>
+            </div>
             <div className="space-y-1">
-              {pipelineFunnel.map((s: any) => (
-                <div key={s.stage} className="flex items-center justify-between text-xs">
-                  <span className="capitalize text-muted-foreground">{s.stage.replace(/_/g, " ")}</span>
-                  <span className="font-semibold tabular-nums">{s.count.toLocaleString()}</span>
-                </div>
+              {pipelineFunnel.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2">No leads yet</p>
+              ) : pipelineFunnel.map((s: any) => (
+                <Link
+                  key={s.stage}
+                  to={`/brandaro/leads?stage=${encodeURIComponent(s.stage)}`}
+                  className="flex items-center justify-between text-xs rounded px-1 py-0.5 -mx-1 hover:bg-muted/60 transition-colors group"
+                >
+                  <span className="capitalize text-muted-foreground group-hover:text-foreground">{s.stage.replace(/_/g, " ")}</span>
+                  <span className="font-semibold tabular-nums flex items-center gap-1">
+                    {s.count.toLocaleString()}
+                    <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-60" />
+                  </span>
+                </Link>
               ))}
             </div>
           </CardContent>
@@ -394,15 +425,15 @@ export default function BrandaroWarRoom() {
                 {topVAs.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-4">No VA data yet</p>
                 ) : topVAs.map((va: any, i: number) => (
-                  <div key={va.va_user_id} className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
+                  <div key={va.id || va.va_id} className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-muted-foreground">#{i + 1}</span>
                       <div>
-                        <p className="text-xs font-medium">{va.va_user_id?.slice(0, 8)}…</p>
-                        <p className="text-[10px] text-muted-foreground">{va.calls_today || 0} calls</p>
+                        <p className="text-xs font-medium">{va.va_id?.slice(0, 8)}…</p>
+                        <p className="text-[10px] text-muted-foreground">{va.calls_made || 0} calls · {va.interested_count || 0} interested</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-[10px]">{va.daily_score || 0} pts</Badge>
+                    <Badge variant="outline" className="text-[10px]">{va.deals_closed || 0} closed</Badge>
                   </div>
                 ))}
               </div>
