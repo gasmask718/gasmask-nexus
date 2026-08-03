@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AIApprovalDrawer } from "@/components/brandaro/AIApprovalDrawer";
 import brandaroLogo from "@/assets/brandaro-logo.png";
 
