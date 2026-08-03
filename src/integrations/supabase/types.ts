@@ -18879,6 +18879,8 @@ export type Database = {
           id: string
           industry: string | null
           industry_confidence: number | null
+          last_send_error: string | null
+          last_send_status: string | null
           last_viewed_at: string | null
           lead_id: string
           logo_url: string | null
@@ -18894,6 +18896,7 @@ export type Database = {
           reviews: Json | null
           reviews_variant: string | null
           screenshot_url: string | null
+          send_attempted_at: string | null
           sent_at: string | null
           seo_text: string | null
           services_inferred: string[] | null
@@ -18947,6 +18950,8 @@ export type Database = {
           id?: string
           industry?: string | null
           industry_confidence?: number | null
+          last_send_error?: string | null
+          last_send_status?: string | null
           last_viewed_at?: string | null
           lead_id: string
           logo_url?: string | null
@@ -18962,6 +18967,7 @@ export type Database = {
           reviews?: Json | null
           reviews_variant?: string | null
           screenshot_url?: string | null
+          send_attempted_at?: string | null
           sent_at?: string | null
           seo_text?: string | null
           services_inferred?: string[] | null
@@ -19015,6 +19021,8 @@ export type Database = {
           id?: string
           industry?: string | null
           industry_confidence?: number | null
+          last_send_error?: string | null
+          last_send_status?: string | null
           last_viewed_at?: string | null
           lead_id?: string
           logo_url?: string | null
@@ -19030,6 +19038,7 @@ export type Database = {
           reviews?: Json | null
           reviews_variant?: string | null
           screenshot_url?: string | null
+          send_attempted_at?: string | null
           sent_at?: string | null
           seo_text?: string | null
           services_inferred?: string[] | null
