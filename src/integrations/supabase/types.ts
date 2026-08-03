@@ -68886,6 +68886,8 @@ export type Database = {
       invoices: {
         Row: {
           amount_paid: number
+          amount_source: string | null
+          amount_writeback_run_id: string | null
           brand: string | null
           business_date: string
           business_date_source: string | null
@@ -68947,6 +68949,8 @@ export type Database = {
         }
         Insert: {
           amount_paid?: number
+          amount_source?: string | null
+          amount_writeback_run_id?: string | null
           brand?: string | null
           business_date?: string
           business_date_source?: string | null
@@ -69008,6 +69012,8 @@ export type Database = {
         }
         Update: {
           amount_paid?: number
+          amount_source?: string | null
+          amount_writeback_run_id?: string | null
           brand?: string | null
           business_date?: string
           business_date_source?: string | null
