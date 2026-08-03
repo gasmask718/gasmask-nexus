@@ -68309,6 +68309,9 @@ export type Database = {
           computed_units_total: number | null
           cost_per_unit_at_sale: number | null
           created_at: string
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           discount_reason: string | null
           discount_type: string
           discount_value: number
@@ -68349,6 +68352,9 @@ export type Database = {
           computed_units_total?: number | null
           cost_per_unit_at_sale?: number | null
           created_at?: string
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           discount_reason?: string | null
           discount_type?: string
           discount_value?: number
@@ -68389,6 +68395,9 @@ export type Database = {
           computed_units_total?: number | null
           cost_per_unit_at_sale?: number | null
           created_at?: string
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           discount_reason?: string | null
           discount_type?: string
           discount_value?: number
