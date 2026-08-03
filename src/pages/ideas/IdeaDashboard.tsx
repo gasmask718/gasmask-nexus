@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lightbulb, Search, Trash2, Loader2, ExternalLink } from 'lucide-react';
+import { Lightbulb, Search, Trash2, Loader2, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,9 @@ import { fieldStamp } from '@/lib/dates';
 import { mutationErrorMessage } from '@/lib/verifiedMutation';
 import { IdeaSubmitDialog } from '@/components/idea/IdeaSubmitDialog';
 import { IdeaInternalNotes } from '@/components/idea/IdeaInternalNotes';
+import { IdeaAttachmentLightbox } from '@/components/idea/IdeaAttachmentLightbox';
+import { IdeaDetailSheet } from '@/components/idea/IdeaDetailSheet';
+import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import {
   DEFAULT_IDEA_FILTERS,
   IDEA_CATEGORIES,
@@ -35,9 +38,10 @@ import {
   useDeleteIdea,
   useIdeaSubmissions,
   useUpdateIdea,
-  getIdeaAttachmentUrl,
+  type IdeaAttachment,
   type IdeaFilters,
   type IdeaStatus,
+  type IdeaSubmission,
 } from '@/hooks/useIdeaBox';
 
 const ALL = '__all__';
@@ -57,6 +61,13 @@ export default function IdeaDashboard() {
   const [filters, setFilters] = useState<IdeaFilters>(DEFAULT_IDEA_FILTERS);
   const [searchDraft, setSearchDraft] = useState('');
   const [submitOpen, setSubmitOpen] = useState(false);
+  const [detailIdea, setDetailIdea] = useState<IdeaSubmission | null>(null);
+  const [lightbox, setLightbox] = useState<{
+    attachments: IdeaAttachment[];
+    index: number;
+    title: string;
+  } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<IdeaSubmission | null>(null);
 
   const { data, isLoading, error } = useIdeaSubmissions(filters);
   const updateIdea = useUpdateIdea();
@@ -94,18 +105,7 @@ export default function IdeaDashboard() {
         variant: 'destructive',
         duration: 8000,
       });
-    }
-  };
-
-  const openAttachment = async (path: string) => {
-    try {
-      window.open(await getIdeaAttachmentUrl(path), '_blank', 'noopener');
-    } catch (e) {
-      toast({
-        title: 'Could not open photo',
-        description: e instanceof Error ? e.message : 'Unknown error',
-        variant: 'destructive',
-      });
+      throw e;
     }
   };
 
@@ -250,13 +250,24 @@ export default function IdeaDashboard() {
                 <TableBody>
                   {rows.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell className="max-w-[280px]">
-                        <div className="font-medium">{r.title}</div>
-                        <div className="line-clamp-2 text-xs text-muted-foreground">
-                          {r.body}
-                        </div>
+                      <TableCell className="max-w-[280px] align-top">
+                        <button
+                          type="button"
+                          onClick={() => setDetailIdea(r)}
+                          className="w-full text-left"
+                        >
+                          <div className="break-words font-medium leading-snug [overflow-wrap:anywhere]">
+                            {r.title}
+                          </div>
+                          <div className="line-clamp-2 break-words text-xs leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+                            {r.body}
+                          </div>
+                          <span className="mt-1 inline-block text-[11px] text-primary hover:underline">
+                            View full idea
+                          </span>
+                        </button>
                       </TableCell>
-                      <TableCell className="text-sm">
+                      <TableCell className="align-top text-sm break-words [overflow-wrap:anywhere]">
                         {r.submitter_name || r.submitter_email || 'Unknown'}
                         {r.submitter_role && (
                           <div className="text-xs capitalize text-muted-foreground">
@@ -295,15 +306,23 @@ export default function IdeaDashboard() {
                       </TableCell>
                       <TableCell>
                         {r.attachments?.length ? (
-                          <div className="flex gap-1">
+                          <div className="flex flex-wrap gap-1">
                             {r.attachments.map((a, i) => (
                               <Button
                                 key={a.path}
                                 size="sm"
                                 variant="outline"
-                                className="h-6 px-2 text-xs"
-                                onClick={() => openAttachment(a.path)}
+                                aria-label={`View photo ${i + 1}`}
+                                className="h-6 gap-1 px-2 text-xs"
+                                onClick={() =>
+                                  setLightbox({
+                                    attachments: r.attachments,
+                                    index: i,
+                                    title: r.title,
+                                  })
+                                }
                               >
+                                <ImageIcon className="h-3 w-3" />
                                 {i + 1}
                               </Button>
                             ))}
@@ -343,7 +362,7 @@ export default function IdeaDashboard() {
                           variant="ghost"
                           aria-label="Delete idea"
                           disabled={deleteIdea.isPending}
-                          onClick={() => remove(r.id)}
+                          onClick={() => setPendingDelete(r)}
                         >
                           {deleteIdea.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -392,6 +411,30 @@ export default function IdeaDashboard() {
       )}
 
       <IdeaSubmitDialog open={submitOpen} onOpenChange={setSubmitOpen} />
+
+      <IdeaDetailSheet
+        idea={detailIdea}
+        open={!!detailIdea}
+        onOpenChange={(o) => !o && setDetailIdea(null)}
+      />
+
+      <IdeaAttachmentLightbox
+        open={!!lightbox}
+        onOpenChange={(o) => !o && setLightbox(null)}
+        attachments={lightbox?.attachments ?? []}
+        startIndex={lightbox?.index ?? 0}
+        title={lightbox?.title}
+      />
+
+      <DeleteConfirmModal
+        open={!!pendingDelete}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        title="Delete idea"
+        itemName={pendingDelete?.title}
+        onConfirm={async () => {
+          if (pendingDelete) await remove(pendingDelete.id);
+        }}
+      />
     </div>
   );
 }
