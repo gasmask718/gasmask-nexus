@@ -154,17 +154,19 @@ export async function createInvitation(params: CreateInvitationParams): Promise<
  * Validate an invitation token
  */
 export async function validateInviteToken(token: string): Promise<{ invitation: Invitation | null; error: string | null }> {
-  const { data, error } = await supabase
-    .from('user_invitations')
-    .select('*')
-    .eq('invite_token', token)
-    .single();
+  // Token-scoped lookup (security definer RPC) — the table itself is not
+  // readable by anonymous visitors.
+  const { data, error } = await (supabase as any)
+    .rpc('validate_invite_token_public', { _token: token });
 
-  if (error || !data) {
+  const row = Array.isArray(data) ? data[0] : data;
+
+  if (error || !row) {
     return { invitation: null, error: 'Invite not found' };
   }
 
-  const invitation = data as unknown as Invitation;
+  const invitation = row as unknown as Invitation;
+
 
   // Check if revoked
   if (invitation.invite_status === 'revoked') {
