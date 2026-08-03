@@ -68070,6 +68070,54 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_amount_writeback_staging: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          id: string
+          invoice_id: string
+          new_total_amount: number
+          previous_subtotal: number | null
+          previous_total: number | null
+          previous_total_amount: number | null
+          reverted_at: string | null
+          run_id: string
+          source_note: string | null
+          store_id: string | null
+          tier: string
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          id?: string
+          invoice_id: string
+          new_total_amount: number
+          previous_subtotal?: number | null
+          previous_total?: number | null
+          previous_total_amount?: number | null
+          reverted_at?: string | null
+          run_id: string
+          source_note?: string | null
+          store_id?: string | null
+          tier: string
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          new_total_amount?: number
+          previous_subtotal?: number | null
+          previous_total?: number | null
+          previous_total_amount?: number | null
+          reverted_at?: string | null
+          run_id?: string
+          source_note?: string | null
+          store_id?: string | null
+          tier?: string
+        }
+        Relationships: []
+      }
       invoice_business_date_staging: {
         Row: {
           applied: boolean
@@ -68309,6 +68357,9 @@ export type Database = {
           computed_units_total: number | null
           cost_per_unit_at_sale: number | null
           created_at: string
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           discount_reason: string | null
           discount_type: string
           discount_value: number
@@ -68349,6 +68400,9 @@ export type Database = {
           computed_units_total?: number | null
           cost_per_unit_at_sale?: number | null
           created_at?: string
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           discount_reason?: string | null
           discount_type?: string
           discount_value?: number
@@ -68389,6 +68443,9 @@ export type Database = {
           computed_units_total?: number | null
           cost_per_unit_at_sale?: number | null
           created_at?: string
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           discount_reason?: string | null
           discount_type?: string
           discount_value?: number
@@ -68829,6 +68886,8 @@ export type Database = {
       invoices: {
         Row: {
           amount_paid: number
+          amount_source: string | null
+          amount_writeback_run_id: string | null
           brand: string | null
           business_date: string
           business_date_source: string | null
@@ -68890,6 +68949,8 @@ export type Database = {
         }
         Insert: {
           amount_paid?: number
+          amount_source?: string | null
+          amount_writeback_run_id?: string | null
           brand?: string | null
           business_date?: string
           business_date_source?: string | null
@@ -68951,6 +69012,8 @@ export type Database = {
         }
         Update: {
           amount_paid?: number
+          amount_source?: string | null
+          amount_writeback_run_id?: string | null
           brand?: string | null
           business_date?: string
           business_date_source?: string | null
@@ -103199,6 +103262,9 @@ export type Database = {
           can_receive_sms: boolean | null
           created_at: string | null
           created_via_session: string | null
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           email: string | null
           escalation_flag: boolean | null
           homie_set_at: string | null
@@ -103260,6 +103326,9 @@ export type Database = {
           can_receive_sms?: boolean | null
           created_at?: string | null
           created_via_session?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           email?: string | null
           escalation_flag?: boolean | null
           homie_set_at?: string | null
@@ -103321,6 +103390,9 @@ export type Database = {
           can_receive_sms?: boolean | null
           created_at?: string | null
           created_via_session?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           email?: string | null
           escalation_flag?: boolean | null
           homie_set_at?: string | null

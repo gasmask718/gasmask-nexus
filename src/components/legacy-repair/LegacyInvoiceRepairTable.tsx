@@ -80,6 +80,7 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
       const { data: liveLines } = await supabase
         .from('invoice_line_items')
         .select('invoice_id')
+        .is('deleted_at', null)
         .in('invoice_id', invoiceIds);
       const liveSet = new Set(liveLines?.map(l => l.invoice_id) ?? []);
 

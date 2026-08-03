@@ -144,19 +144,27 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
   const confirmDeleteContact = async () => {
     if (!deletingContact) return;
     
-    const { error } = await supabase
+    // Soft delete: contacts carry call/SMS history, never hard-delete them.
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: removed, error } = await supabase
       .from('store_contacts')
-      .delete()
-      .eq('id', deletingContact.id);
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: user?.id ?? null,
+        delete_reason: 'removed_via_store_contacts',
+      })
+      .eq('id', deletingContact.id)
+      .is('deleted_at', null)
+      .select('id');
 
-    if (error) {
-      toast.error('Failed to delete contact');
-      throw error;
+    if (error || !removed || removed.length === 0) {
+      toast.error(error ? `Failed to remove contact: ${error.message}` : 'Removal blocked by permissions');
+      throw error ?? new Error('Contact removal returned no rows (RLS)');
     }
 
     queryClient.invalidateQueries({ queryKey: ['store-contacts-responsiveness', storeId] });
     queryClient.invalidateQueries({ queryKey: ['store-owner', storeId] });
-    toast.success(`${deletingContact.name} deleted`);
+    toast.success(`${deletingContact.name} removed`);
     setDeletingContact(null);
   };
 

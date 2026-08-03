@@ -105,6 +105,7 @@ export function useExecutionReadiness({ executionTargets, voiceEngine }: Executi
         const { data, error } = await supabase
           .from('store_contacts')
           .select('store_id, phone')
+          .is('deleted_at', null)
           .in('store_id', chunk)
           .not('phone', 'is', null)
           .limit(50);

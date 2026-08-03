@@ -64,6 +64,7 @@ export function ContactUpdateSection({
       const { data } = await supabase
         .from('store_contacts')
         .select('*')
+        .is('deleted_at', null)
         .eq('store_id', storeId);
 
       if (data) {

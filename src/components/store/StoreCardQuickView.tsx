@@ -389,6 +389,7 @@ function useTextableRecipient(storeId: string) {
       const { data: contacts } = await supabase
         .from('store_contacts')
         .select('id, name, phone, is_primary, opted_out, can_receive_sms, responsive_by_text, last_text_received_at, role')
+        .is('deleted_at', null)
         .eq('store_id', storeId)
         .order('is_primary', { ascending: false })
         .order('created_at', { ascending: true });

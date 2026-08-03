@@ -40,6 +40,7 @@ export default function ContactProfile() {
       const { data: contact, error } = await supabase
         .from('store_contacts')
         .select('*')
+        .is('deleted_at', null)
         .eq('id', id)
         .single();
 

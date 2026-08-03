@@ -70,6 +70,7 @@ export function useStoreSoldByBrandWindow(
         const { data: lineItems, error: liErr } = await supabase
           .from('invoice_line_items')
           .select('product_id, computed_tubes_total')
+          .is('deleted_at', null)
           .in('invoice_id', invoiceIds);
         if (liErr) throw liErr;
         lineItems?.forEach((li) => {

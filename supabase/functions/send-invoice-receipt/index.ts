@@ -96,6 +96,7 @@ Deno.serve(async (req) => {
       const { data: contacts } = await supabase
         .from('store_contacts')
         .select('phone, name, role')
+        .is('deleted_at', null)
         .eq('store_id', request.store_id)
         .not('phone', 'is', null)
         .order('created_at', { ascending: true })

@@ -95,6 +95,7 @@ export function FieldOutcomeCaptureModal({
       const { data, error } = await supabase
         .from('store_contacts')
         .select('id, name, role, is_primary')
+        .is('deleted_at', null)
         .eq('store_id', storeId)
         .order('is_primary', { ascending: false })
         .order('name');
