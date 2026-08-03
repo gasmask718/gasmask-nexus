@@ -40,16 +40,15 @@ export default function PayInvoicePage() {
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['pay-invoice', invoiceId],
     queryFn: async () => {
+      // Invoice-id-scoped lookup; the table is not readable anonymously.
       const { data } = await (supabase as any)
-        .from('va_invoices')
-        .select('*')
-        .eq('id', invoiceId)
-        .single();
-      return data;
+        .rpc('get_public_invoice', { _invoice_id: invoiceId });
+      return Array.isArray(data) ? data[0] ?? null : data;
     },
     enabled: !!invoiceId,
     refetchInterval: 10_000,
   });
+
 
   // Auto-redirect straight to Stripe for full-payment unpaid invoices
   useEffect(() => {
