@@ -162,19 +162,16 @@ export default function InboxPage() {
     return phone ? leadByPhone.get(phone) : undefined;
   };
 
-  // ── Filtering ──────────────────────────────────────────────────────
+  // ── Filtering (status is server-side; search filters the current page) ──
   const filteredPending = useMemo(() => {
     const s = search.trim().toLowerCase();
-    return pending.filter(p => {
-      if (pendingFilter !== 'all' && p.status !== pendingFilter) return false;
-      if (!s) return true;
-      return (
-        (p.phone_number || '').toLowerCase().includes(s) ||
-        (p.message_body || '').toLowerCase().includes(s) ||
-        (p.lead_name || '').toLowerCase().includes(s)
-      );
-    });
-  }, [pending, pendingFilter, search]);
+    if (!s) return pending;
+    return pending.filter(p => (
+      (p.phone_number || '').toLowerCase().includes(s) ||
+      (p.message_body || '').toLowerCase().includes(s) ||
+      (p.lead_name || '').toLowerCase().includes(s)
+    ));
+  }, [pending, search]);
 
   // ── Actions ────────────────────────────────────────────────────────
   const setStatus = async (id: string, next: 'approved' | 'rejected') => {
