@@ -53,6 +53,7 @@ export function OpportunitiesSection({ storeId, storeName }: OpportunitiesSectio
         .from('store_opportunities')
         .select('*')
         .eq('store_id', storeMasterId)
+        .is('deleted_at', null)
         .order('is_completed', { ascending: true })
         .order('due_date', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false });
