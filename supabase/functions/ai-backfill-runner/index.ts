@@ -117,7 +117,7 @@ serve(async (req) => {
 
     if (jobType === 'invoices') {
       const { data: deliveredOrders } = await supabase
-        .from('orders').select('id, store_id, total_amount').eq('order_status', 'delivered').limit(500);
+        .from('orders').select('id, store_id, total_amount, placed_at, created_at').eq('order_status', 'delivered').limit(500);
       const orderIds = (deliveredOrders || []).map((o: any) => o.id);
       const { data: existing } = await supabase.from('invoices').select('order_id').in('order_id', orderIds);
       const covered = new Set((existing || []).map((i: any) => i.order_id));
@@ -127,9 +127,16 @@ serve(async (req) => {
         scanned++;
         try {
           const total = o.total_amount ?? 0;
+          // Inherit the order's real date — never let the invoice land on "today".
+          const src = o.placed_at || o.created_at;
+          const businessDate = src ? new Date(src).toISOString().split('T')[0] : null;
+          if (!businessDate) throw new Error('order has no placed_at/created_at; cannot derive business_date');
           const { data: inv, error } = await supabase.from('invoices').insert({
             order_id: o.id, store_id: o.store_id,
             total, total_amount: total, subtotal: total,
+            business_date: businessDate,
+            business_date_source: o.placed_at ? 'order_placed_at' : 'order_created_at',
+            entry_mode: 'backfill',
             status: 'draft_ai',
           }).select('id').single();
           if (error) throw error;
