@@ -65,10 +65,10 @@ export function SellsFlowersToggle({
     (async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, email')
+        .select('name, email')
         .eq('id', stamp.by as string)
         .maybeSingle();
-      if (!cancelled) setFlaggerName(data?.full_name || data?.email || null);
+      if (!cancelled) setFlaggerName(data?.name || data?.email || null);
     })();
     return () => {
       cancelled = true;
