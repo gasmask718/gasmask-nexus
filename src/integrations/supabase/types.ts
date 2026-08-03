@@ -104238,6 +104238,8 @@ export type Database = {
           cleaning_status: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           enrichment_run_id: string | null
           id: string
           is_legacy: boolean | null
@@ -104255,6 +104257,8 @@ export type Database = {
           cleaning_status?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           enrichment_run_id?: string | null
           id?: string
           is_legacy?: boolean | null
@@ -104272,6 +104276,8 @@ export type Database = {
           cleaning_status?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           enrichment_run_id?: string | null
           id?: string
           is_legacy?: boolean | null
@@ -104362,6 +104368,9 @@ export type Database = {
           completed_at: string | null
           completed_by: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           detected_from_interaction_id: string | null
           detected_from_note_id: string | null
           due_date: string | null
@@ -104380,6 +104389,9 @@ export type Database = {
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           detected_from_interaction_id?: string | null
           detected_from_note_id?: string | null
           due_date?: string | null
@@ -104398,6 +104410,9 @@ export type Database = {
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           detected_from_interaction_id?: string | null
           detected_from_note_id?: string | null
           due_date?: string | null
@@ -141139,6 +141154,7 @@ export type Database = {
       is_elevated_user:
         | { Args: never; Returns: boolean }
         | { Args: { _user_id: string }; Returns: boolean }
+      is_field_or_staff: { Args: { _user_id?: string }; Returns: boolean }
       is_field_role:
         | { Args: { _user_id: string }; Returns: boolean }
         | { Args: { p_role: string }; Returns: boolean }
