@@ -303,7 +303,7 @@ export function useStoresServerData(args: UseStoresServerDataArgs) {
       // Hydrate aux data for the visible page only.
       const [tagsRes, contactsRes, tubesRes, legacyRes] = await Promise.all([
         (supabase as any).from('tag_attachments').select(sel('entity_id, global_tags(id, name)')).eq('entity_type', 'store').in('entity_id', ids),
-        (supabase as any).from('store_contacts').select(sel('id, store_id, name, role, phone, can_receive_sms, is_primary')).in('store_id', ids),
+        (supabase as any).from('store_contacts').select(sel('id, store_id, name, role, phone, can_receive_sms, is_primary')).is('deleted_at', null).in('store_id', ids),
         (supabase as any).from('store_tube_inventory').select(sel('id, store_id, brand, current_tubes_left')).in('store_id', ids).neq('brand', 'hotscolatti'),
         (supabase as any).from('stores').select(sel('id, phone, alt_phone, status, last_active_date, reactivation_priority')).in('id', ids),
       ]);
