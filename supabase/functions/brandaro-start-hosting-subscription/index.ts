@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { ensureClientForJob, syncClientMRR } from "../_shared/brandaroClient.ts";
+import { recordRevenue } from "../_shared/brandaroRevenue.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
