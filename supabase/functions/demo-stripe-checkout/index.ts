@@ -22,12 +22,6 @@ const corsHeaders = {
 
 const VALID_TIERS = ["starter", "pro", "custom"] as const;
 
-// Legacy live-mode fallback: price IDs that used to live in secret slots.
-const TIER_SECRET: Record<string, string> = {
-  starter: "STRIPE_PRICE_STARTER",
-  pro: "STRIPE_PRICE_PRO",
-  custom: "STRIPE_PRICE_CUSTOM",
-};
 
 /**
  * Mode resolution (SAFE BY DEFAULT):
