@@ -28,7 +28,7 @@ import { VAReassignControl } from "@/components/brandaro/VAReassignControl";
 
 import { BrandaroUnifiedCallHistory } from "@/components/brandaro/BrandaroUnifiedCallHistory";
 import { exportData } from "@/utils/exportUtils";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCall } from "@/components/communication/CallProvider";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -125,7 +125,11 @@ export default function LeadDatabasePage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [extraCols, setExtraCols] = useState<string[]>(getInitialCols);
   const [executionOpen, setExecutionOpen] = useState(true);
-  const [filterStages, setFilterStages] = useState<string[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filterStages, setFilterStages] = useState<string[]>(() => {
+    const s = searchParams.get("stage");
+    return s ? s.split(",").filter(Boolean) : [];
+  });
   const [filterHasPhone, setFilterHasPhone] = useState(false);
   const [filterNoDemo, setFilterNoDemo] = useState(false);
   const [filterScout, setFilterScout] = useState(false);
@@ -140,6 +144,14 @@ export default function LeadDatabasePage() {
   const [receptionistLead, setReceptionistLead] = useState<Lead | null>(null);
   const [sendDemoLead, setSendDemoLead] = useState<Lead | null>(null);
   const lastShiftIdx = useRef<number | null>(null);
+
+  // Keep stage filter in sync with ?stage= (War Room funnel click-through)
+  useEffect(() => {
+    const s = searchParams.get("stage");
+    const next = s ? s.split(",").filter(Boolean) : [];
+    setFilterStages((prev) => (prev.join(",") === next.join(",") ? prev : next));
+    setPage(0);
+  }, [searchParams]);
 
   // Debounced search
   useEffect(() => {
