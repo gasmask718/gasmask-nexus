@@ -435,12 +435,14 @@ async function runPublish(body: any) {
     throw new Error(`publish failed exactness gate: row landed as status=${(prod as any).status}`);
   }
 
-  await sb.from('marketplace_inventory').insert({
-    product_id: prod.id,
-    wholesaler_id: draft.supplier_id,
-    quantity_on_hand: typeof draft.inventory_qty === 'number' ? draft.inventory_qty : 0,
-    quantity_reserved: 0,
-  }).select().maybeSingle().catch(() => null);
+  try {
+    await sb.from('marketplace_inventory').insert({
+      product_id: prod.id,
+      wholesaler_id: draft.supplier_id,
+      quantity_on_hand: typeof draft.inventory_qty === 'number' ? draft.inventory_qty : 0,
+      quantity_reserved: 0,
+    }).select().maybeSingle();
+  } catch (_e) { /* inventory row is best-effort — never fail a successful publish */ }
 
   await sb.from('dd_catalog_drafts').update({
     status: 'published',
