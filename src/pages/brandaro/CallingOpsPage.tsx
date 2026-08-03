@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { readEdgeError } from "@/lib/edgeError";
 import {
   Phone, PhoneOff, Users, Clock, TrendingUp, RefreshCw,
   AlertTriangle, BarChart3, Shield, MapPin, Zap, CheckCircle2,
@@ -262,17 +263,22 @@ export default function CallingOpsPage() {
           lead_id: item.lead_id || item.id,
         },
       });
-      if (error || !data?.success) throw new Error(data?.error || error?.message || 'Call failed');
+      // Surface the provider's real failure instead of the generic non-2xx text.
+      if (error) throw new Error(await readEdgeError(error, 'Call failed'));
+      if (!data?.success) throw new Error(data?.error || 'Call failed');
+      if (!data?.result?.sid) throw new Error('Call was not accepted by the carrier (no call SID returned)');
       toast.success(`📞 Call initiated to ${lead.business_name}`);
       // Update queue item status
       await (supabase as any).from("brandaro_call_queue").update({ updated_at: new Date().toISOString() }).eq("id", item.id);
       queryClient.invalidateQueries({ queryKey: ["brandaro-call-queue"] });
     } catch (err: any) {
-      toast.error(`Call failed: ${err.message}`);
+      console.error('[CallingOps] live dial failed:', err);
+      toast.error(`Call failed: ${err.message}`, { duration: 8000 });
     } finally {
       setDialingId(null);
     }
   };
+
 
   // ── QUICK SMS from queue ──
   const handleQuickSms = async (item: any) => {

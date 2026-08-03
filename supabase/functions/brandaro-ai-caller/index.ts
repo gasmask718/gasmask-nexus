@@ -26,12 +26,17 @@ serve(async (req) => {
     // Session 3 from-number cascade (select_best_number_for_business + bookkeeping)
     // preserved below unchanged; only the outbound-dial layer is replaced.
     const BLAND_API_KEY = Deno.env.get("BLAND_API_KEY");
-    const BRANDARO_SALES_AGENT_ID = Deno.env.get("BRANDARO_SALES_AGENT_ID");
+    // FIX (b): the UUID stored in BRANDARO_SALES_AGENT_ID is a Bland *pathway* id,
+    // not an agent id. Sending it as `agent_id` made every call fail with
+    // "Agent not found". We now send it as `pathway_id` (new-style secret name
+    // BRANDARO_SALES_PATHWAY_ID is preferred, legacy name kept as fallback).
+    const BRANDARO_SALES_PATHWAY_ID =
+      Deno.env.get("BRANDARO_SALES_PATHWAY_ID") || Deno.env.get("BRANDARO_SALES_AGENT_ID");
     if (!BLAND_API_KEY) {
       throw new Error("BLAND_API_KEY not configured");
     }
-    if (!BRANDARO_SALES_AGENT_ID) {
-      throw new Error("BRANDARO_SALES_AGENT_ID not configured");
+    if (!BRANDARO_SALES_PATHWAY_ID) {
+      throw new Error("BRANDARO_SALES_PATHWAY_ID (or legacy BRANDARO_SALES_AGENT_ID) not configured");
     }
 
     // Fetch leads that haven't been AI-called recently
@@ -184,7 +189,7 @@ serve(async (req) => {
         const blandPayload: Record<string, unknown> = {
           phone_number: lead.phone,
           from: fromNumber!,
-          agent_id: BRANDARO_SALES_AGENT_ID,
+          pathway_id: BRANDARO_SALES_PATHWAY_ID,
           webhook: `${supabaseUrl}/functions/v1/bland-agent-webhook`,
           metadata: {
             lead_id: lead.id,
@@ -205,25 +210,46 @@ serve(async (req) => {
           body: JSON.stringify(blandPayload),
         });
 
-        const blandData = await blandRes.json().catch(() => ({}));
+        const blandText = await blandRes.text();
+        let blandData: any = {};
+        try { blandData = blandText ? JSON.parse(blandText) : {}; } catch { blandData = { raw: blandText }; }
 
-        if (!blandRes.ok) {
+        // FIX (c): Bland frequently returns HTTP 200 with { status: "error" } and no
+        // call_id. Treating that as success is what produced the false "200 OK"
+        // rate. A dispatch only counts as success when the provider both returns
+        // 2xx AND hands back a call id with a non-error status.
+        const blandCallId = blandData.call_id || blandData.callId || null;
+        const providerErrored =
+          !blandRes.ok ||
+          String(blandData?.status || "").toLowerCase() === "error" ||
+          Boolean(blandData?.errors) ||
+          !blandCallId;
+
+        if (providerErrored) {
+          const reason =
+            blandData?.message || blandData?.error || blandData?.errors ||
+            (!blandCallId ? "provider returned no call_id" : "unknown provider error");
           console.error(`[brandaro-ai-caller] Bland dispatch failed lead=${lead.id} status=${blandRes.status}:`, blandData);
           const { error: failUpdErr } = await supabase
             .from("brandaro_ai_calls")
             .update({
               status: "failed",
-              outcome: JSON.stringify({ bland_status: blandRes.status, bland_response: blandData }),
+              outcome: JSON.stringify({ bland_status: blandRes.status, reason, bland_response: blandData }),
             })
             .eq("id", callRecord.id);
           if (failUpdErr) {
             console.error(`[brandaro-ai-caller] failed-status UPDATE failed for ${callRecord.id}:`, failUpdErr);
           }
-          results.push({ lead_id: lead.id, status: "failed", bland_status: blandRes.status, error: blandData });
+          results.push({
+            lead_id: lead.id,
+            status: "failed",
+            bland_status: blandRes.status,
+            error: typeof reason === "string" ? reason : JSON.stringify(reason),
+          });
           continue;
         }
 
-        const blandCallId = blandData.call_id || blandData.callId || null;
+
         const { error: successUpdErr } = await supabase
           .from("brandaro_ai_calls")
           .update({ call_sid: blandCallId, status: "initiated" })
@@ -252,12 +278,20 @@ serve(async (req) => {
       }
     }
 
+    const called = results.filter((r) => r.status === "initiated").length;
+    const failed = results.filter((r) => r.status === "failed" || r.status === "error").length;
+
     return new Response(
       JSON.stringify({
+        // FIX (c): the batch reports honest counts. `success` is false when the
+        // batch attempted dials and none of them actually reached the provider.
+        success: !(failed > 0 && called === 0),
         total_eligible: eligibleLeads.length,
         results,
         gate_blocked: gateBlocked,
-        called: results.filter((r) => r.status === "initiated").length,
+        called,
+        failed,
+        first_error: results.find((r) => r.status === "failed" || r.status === "error")?.error ?? null,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
