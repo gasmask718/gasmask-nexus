@@ -68070,6 +68070,236 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_business_date_staging: {
+        Row: {
+          applied: boolean
+          created_at: string
+          id: string
+          invoice_id: string
+          lane: string
+          parse_outcome: string
+          parsed_business_date: string | null
+          prior_business_date: string | null
+          raw_note: string
+          reverted_at: string | null
+          run_id: string
+          store_id: string | null
+        }
+        Insert: {
+          applied?: boolean
+          created_at?: string
+          id?: string
+          invoice_id: string
+          lane: string
+          parse_outcome: string
+          parsed_business_date?: string | null
+          prior_business_date?: string | null
+          raw_note: string
+          reverted_at?: string | null
+          run_id: string
+          store_id?: string | null
+        }
+        Update: {
+          applied?: boolean
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          lane?: string
+          parse_outcome?: string
+          parsed_business_date?: string | null
+          prior_business_date?: string | null
+          raw_note?: string
+          reverted_at?: string | null
+          run_id?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_business_date_staging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_business_date_staging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_business_date_staging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_business_date_staging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_business_date_staging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_business_date_staging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
+          },
+        ]
+      }
+      invoice_duplicate_candidates: {
+        Row: {
+          amount_a: number | null
+          amount_at_risk: number | null
+          amount_b: number | null
+          business_date: string | null
+          confidence: string
+          created_at: string
+          id: string
+          invoice_id_a: string
+          invoice_id_b: string
+          lane: string
+          match_reason: string
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          run_id: string
+          store_id: string | null
+        }
+        Insert: {
+          amount_a?: number | null
+          amount_at_risk?: number | null
+          amount_b?: number | null
+          business_date?: string | null
+          confidence?: string
+          created_at?: string
+          id?: string
+          invoice_id_a: string
+          invoice_id_b: string
+          lane: string
+          match_reason: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          run_id: string
+          store_id?: string | null
+        }
+        Update: {
+          amount_a?: number | null
+          amount_at_risk?: number | null
+          amount_b?: number | null
+          business_date?: string | null
+          confidence?: string
+          created_at?: string
+          id?: string
+          invoice_id_a?: string
+          invoice_id_b?: string
+          lane?: string
+          match_reason?: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          run_id?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_duplicate_candidates_invoice_id_a_fkey"
+            columns: ["invoice_id_a"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_duplicate_candidates_invoice_id_a_fkey"
+            columns: ["invoice_id_a"]
+            isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_duplicate_candidates_invoice_id_a_fkey"
+            columns: ["invoice_id_a"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_duplicate_candidates_invoice_id_a_fkey"
+            columns: ["invoice_id_a"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_duplicate_candidates_invoice_id_a_fkey"
+            columns: ["invoice_id_a"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_duplicate_candidates_invoice_id_a_fkey"
+            columns: ["invoice_id_a"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_duplicate_candidates_invoice_id_b_fkey"
+            columns: ["invoice_id_b"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_duplicate_candidates_invoice_id_b_fkey"
+            columns: ["invoice_id_b"]
+            isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_duplicate_candidates_invoice_id_b_fkey"
+            columns: ["invoice_id_b"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_duplicate_candidates_invoice_id_b_fkey"
+            columns: ["invoice_id_b"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_duplicate_candidates_invoice_id_b_fkey"
+            columns: ["invoice_id_b"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_duplicate_candidates_invoice_id_b_fkey"
+            columns: ["invoice_id_b"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
+          },
+        ]
+      }
       invoice_line_items: {
         Row: {
           brand: string | null
@@ -68425,6 +68655,8 @@ export type Database = {
           amount_paid: number
           brand: string | null
           business_date: string
+          business_date_source: string | null
+          business_date_source_note: string | null
           business_id: string
           company_id: string | null
           created_at: string
@@ -68481,6 +68713,8 @@ export type Database = {
           amount_paid?: number
           brand?: string | null
           business_date?: string
+          business_date_source?: string | null
+          business_date_source_note?: string | null
           business_id?: string
           company_id?: string | null
           created_at?: string
@@ -68537,6 +68771,8 @@ export type Database = {
           amount_paid?: number
           brand?: string | null
           business_date?: string
+          business_date_source?: string | null
+          business_date_source_note?: string | null
           business_id?: string
           company_id?: string | null
           created_at?: string
