@@ -14,8 +14,10 @@ import { toast } from 'sonner';
 import { dynastyDateTime } from '@/lib/dates';
 
 // Pending message statuses that exist in the check constraint
-type PendingStatus = 'pending' | 'approved' | 'sent' | 'rejected' | 'edited';
-type PendingFilter = 'all' | 'pending' | 'approved' | 'rejected';
+type PendingStatus = 'pending' | 'approved' | 'sent' | 'rejected' | 'edited' | 'failed';
+type PendingFilter = 'all' | 'pending' | 'approved' | 'rejected' | 'failed' | 'sent';
+
+const PAGE_SIZE = 100;
 
 interface PendingRow {
   id: string;
@@ -55,6 +57,7 @@ export default function InboxPage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<'pending' | 'inbound'>('pending');
   const [pendingFilter, setPendingFilter] = useState<PendingFilter>('pending');
+  const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
   const [expandedInbound, setExpandedInbound] = useState<string | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
@@ -72,15 +75,41 @@ export default function InboxPage() {
     refetchInterval: 30_000,
   });
 
-  // ── Pending messages ───────────────────────────────────────────────
-  const { data: pending = [], isLoading: pendingLoading } = useQuery({
-    queryKey: ['brandaro-pending-messages'],
+  // ── Per-status counts (server-side, exact) ─────────────────────────
+  const { data: statusCounts = {} as Record<string, number> } = useQuery({
+    queryKey: ['brandaro-pending-status-counts'],
+    refetchInterval: 30_000,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const statuses: PendingStatus[] = ['pending', 'approved', 'rejected', 'failed', 'sent'];
+      const out: Record<string, number> = {};
+      const { count: allCount } = await (supabase as any)
+        .from('brandaro_pending_messages')
+        .select('id', { count: 'exact', head: true });
+      out.all = allCount || 0;
+      await Promise.all(statuses.map(async (s) => {
+        const { count } = await (supabase as any)
+          .from('brandaro_pending_messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', s);
+        out[s] = count || 0;
+      }));
+      return out;
+    },
+  });
+
+  const filterTotal = statusCounts[pendingFilter] ?? 0;
+
+  // ── Pending messages (server-side status filter + pagination) ──────
+  const { data: pending = [], isLoading: pendingLoading } = useQuery({
+    queryKey: ['brandaro-pending-messages', pendingFilter, page],
+    queryFn: async () => {
+      let q = (supabase as any)
         .from('brandaro_pending_messages')
         .select('id, lead_id, lead_name, phone_number, message_body, message_type, status, created_at')
         .order('created_at', { ascending: false })
-        .limit(500);
+        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+      if (pendingFilter !== 'all') q = q.eq('status', pendingFilter);
+      const { data, error } = await q;
       if (error) throw error;
       return (data || []) as PendingRow[];
     },
@@ -162,19 +191,16 @@ export default function InboxPage() {
     return phone ? leadByPhone.get(phone) : undefined;
   };
 
-  // ── Filtering ──────────────────────────────────────────────────────
+  // ── Filtering (status is server-side; search filters the current page) ──
   const filteredPending = useMemo(() => {
     const s = search.trim().toLowerCase();
-    return pending.filter(p => {
-      if (pendingFilter !== 'all' && p.status !== pendingFilter) return false;
-      if (!s) return true;
-      return (
-        (p.phone_number || '').toLowerCase().includes(s) ||
-        (p.message_body || '').toLowerCase().includes(s) ||
-        (p.lead_name || '').toLowerCase().includes(s)
-      );
-    });
-  }, [pending, pendingFilter, search]);
+    if (!s) return pending;
+    return pending.filter(p => (
+      (p.phone_number || '').toLowerCase().includes(s) ||
+      (p.message_body || '').toLowerCase().includes(s) ||
+      (p.lead_name || '').toLowerCase().includes(s)
+    ));
+  }, [pending, search]);
 
   // ── Actions ────────────────────────────────────────────────────────
   const setStatus = async (id: string, next: 'approved' | 'rejected') => {
@@ -193,6 +219,7 @@ export default function InboxPage() {
     toast.success(next === 'approved' ? 'Message approved' : 'Message skipped');
     qc.invalidateQueries({ queryKey: ['brandaro-pending-messages'] });
     qc.invalidateQueries({ queryKey: ['brandaro-pending-count'] });
+    qc.invalidateQueries({ queryKey: ['brandaro-pending-status-counts'] });
   };
 
   const statusColor: Record<string, string> = {
@@ -201,6 +228,7 @@ export default function InboxPage() {
     sent: 'bg-green-500/10 text-green-500 border-green-500/20',
     rejected: 'bg-red-500/10 text-red-500 border-red-500/20',
     edited: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+    failed: 'bg-destructive/10 text-destructive border-destructive/20',
   };
 
   return (
@@ -222,7 +250,7 @@ export default function InboxPage() {
         <TabsList>
           <TabsTrigger value="pending">
             Pending Queue
-            <Badge variant="secondary" className="ml-2">{pending.length}</Badge>
+            <Badge variant="secondary" className="ml-2">{(statusCounts.all ?? 0).toLocaleString()}</Badge>
           </TabsTrigger>
           <TabsTrigger value="inbound">
             Inbound
@@ -236,15 +264,16 @@ export default function InboxPage() {
             <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <CardTitle className="text-base">Outbound Message Queue</CardTitle>
               <div className="flex flex-wrap items-center gap-2">
-                {(['all', 'pending', 'approved', 'rejected'] as PendingFilter[]).map(f => (
+                {(['all', 'pending', 'approved', 'rejected', 'failed', 'sent'] as PendingFilter[]).map(f => (
                   <Button
                     key={f}
                     size="sm"
                     variant={pendingFilter === f ? 'default' : 'outline'}
-                    onClick={() => setPendingFilter(f)}
+                    onClick={() => { setPendingFilter(f); setPage(0); }}
                     className="capitalize"
                   >
                     {f === 'rejected' ? 'Skipped' : f}
+                    <Badge variant="secondary" className="ml-2">{(statusCounts[f] ?? 0).toLocaleString()}</Badge>
                   </Button>
                 ))}
                 <div className="relative">
@@ -282,7 +311,7 @@ export default function InboxPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredPending.slice(0, 200).map(row => {
+                      {filteredPending.map(row => {
                         const lead = lookupLead(row);
                         const preview = (row.message_body || '').slice(0, 100);
                         const isPending = row.status === 'pending';
@@ -330,11 +359,16 @@ export default function InboxPage() {
                       })}
                     </TableBody>
                   </Table>
-                  {filteredPending.length > 200 && (
-                    <p className="text-xs text-muted-foreground text-center mt-3">
-                      Showing 200 of {filteredPending.length} — refine your filter to see more.
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-xs text-muted-foreground">
+                      Showing {filterTotal === 0 ? 0 : page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filterTotal)} of {filterTotal.toLocaleString()}
+                      {search.trim() && ' (search applies to this page)'}
                     </p>
-                  )}
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>Previous</Button>
+                      <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= filterTotal} onClick={() => setPage(p => p + 1)}>Next</Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>
