@@ -331,7 +331,7 @@ function ClientDetailSheet({
     const { error } = await (supabase as any)
       .from('brandaro_clients')
       .update({
-        assigned_builder: form.assigned_builder || null,
+        // assigned_builder is saved directly by BuilderAssignControl
         project_deadline: form.project_deadline || null,
         maintenance_status: form.maintenance_status || null,
         portal_access_enabled: form.portal_access_enabled,
