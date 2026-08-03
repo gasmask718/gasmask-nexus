@@ -102580,6 +102580,48 @@ export type Database = {
           },
         ]
       }
+      store_archive_log: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          id: string
+          previous_deleted_at: string | null
+          previous_status: string | null
+          reason: string
+          reverted_at: string | null
+          run_id: string
+          source_summary: string | null
+          store_id: string
+          store_name: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          id?: string
+          previous_deleted_at?: string | null
+          previous_status?: string | null
+          reason: string
+          reverted_at?: string | null
+          run_id: string
+          source_summary?: string | null
+          store_id: string
+          store_name?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          id?: string
+          previous_deleted_at?: string | null
+          previous_status?: string | null
+          reason?: string
+          reverted_at?: string | null
+          run_id?: string
+          source_summary?: string | null
+          store_id?: string
+          store_name?: string | null
+        }
+        Relationships: []
+      }
       store_brand_accounts: {
         Row: {
           active_status: boolean | null
