@@ -17,6 +17,7 @@ import { dynastyStampWithRelative } from '@/lib/dates';
 import { AddNoteModal } from './AddNoteModal';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 import { toast } from 'sonner';
+import { verifiedUpdate, mutationErrorMessage } from '@/lib/verifiedMutation';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -90,6 +91,7 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
           profile:profiles(name, role)
         `)
         .eq('store_id', storeMasterId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as StoreNote[];
@@ -100,8 +102,15 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
   // Delete mutation
   const deleteNoteMutation = useMutation({
     mutationFn: async (noteId: string) => {
-      const { error } = await supabase.from('store_notes').delete().eq('id', noteId);
-      if (error) throw error;
+      // Soft delete — the row is retained for audit, only hidden from readers.
+      await verifiedUpdate('Delete note', () =>
+        supabase
+          .from('store_notes')
+          .update({ deleted_at: new Date().toISOString() } as never)
+          .eq('id', noteId)
+          .is('deleted_at', null)
+          .select('id') as never,
+      );
     },
     onSuccess: () => {
       toast.success('Note deleted');
@@ -110,7 +119,7 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
       setNoteToDelete(null);
     },
     onError: (error: Error) => {
-      toast.error(`Failed to delete note: ${error.message}`);
+      toast.error(mutationErrorMessage(error));
     },
   });
 
