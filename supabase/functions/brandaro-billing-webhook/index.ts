@@ -137,11 +137,10 @@ Deno.serve(async (req) => {
       if (sub.client_id) {
         const { data: c } = await admin
           .from("brandaro_clients")
-          .select("business_name, industry")
+          .select("business_name")
           .eq("id", sub.client_id)
           .maybeSingle();
         clientName = c?.business_name ?? null;
-        var clientIndustry: string | null = c?.industry ?? null;
       }
 
       const res = await recordRevenue(admin, {
@@ -152,7 +151,7 @@ Deno.serve(async (req) => {
         client_id: sub.client_id,
         subscription_id: sub.id,
         description: clientName ? `${clientName} — ${revenueType.replace(/_/g, " ")}` : revenueType,
-        industry: typeof clientIndustry === "undefined" ? null : clientIndustry,
+        industry: sub.service_type ?? null,
         occurred_at: invoice.created ? new Date(invoice.created * 1000).toISOString() : null,
       });
 
