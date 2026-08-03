@@ -102746,6 +102746,10 @@ export type Database = {
           reviewed_by_va_at: string | null
           reviewed_by_va_by: string | null
           risk_score: string | null
+          sells_flowers: boolean
+          sells_flowers_flagged_at: string | null
+          sells_flowers_flagged_by: string | null
+          sells_flowers_note: string | null
           show_on_public_site: boolean
           sms_capable: boolean | null
           sourced_at: string | null
@@ -102847,6 +102851,10 @@ export type Database = {
           reviewed_by_va_at?: string | null
           reviewed_by_va_by?: string | null
           risk_score?: string | null
+          sells_flowers?: boolean
+          sells_flowers_flagged_at?: string | null
+          sells_flowers_flagged_by?: string | null
+          sells_flowers_note?: string | null
           show_on_public_site?: boolean
           sms_capable?: boolean | null
           sourced_at?: string | null
@@ -102948,6 +102956,10 @@ export type Database = {
           reviewed_by_va_at?: string | null
           reviewed_by_va_by?: string | null
           risk_score?: string | null
+          sells_flowers?: boolean
+          sells_flowers_flagged_at?: string | null
+          sells_flowers_flagged_by?: string | null
+          sells_flowers_note?: string | null
           show_on_public_site?: boolean
           sms_capable?: boolean | null
           sourced_at?: string | null
@@ -140244,6 +140256,10 @@ export type Database = {
           reviewed_by_va_at: string | null
           reviewed_by_va_by: string | null
           risk_score: string | null
+          sells_flowers: boolean
+          sells_flowers_flagged_at: string | null
+          sells_flowers_flagged_by: string | null
+          sells_flowers_note: string | null
           show_on_public_site: boolean
           sms_capable: boolean | null
           sourced_at: string | null
