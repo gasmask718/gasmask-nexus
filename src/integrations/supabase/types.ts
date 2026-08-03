@@ -11792,6 +11792,115 @@ export type Database = {
           },
         ]
       }
+      ar_phantom_paid_staging: {
+        Row: {
+          applied: boolean
+          created_at: string
+          dollar_figure_count: number | null
+          id: string
+          invoice_id: string
+          parsed_amount: number | null
+          parsed_date_confidence: string
+          parsed_paid_at: string | null
+          parsed_qty: number | null
+          parsed_unit: string | null
+          prior_amount_paid: number | null
+          prior_business_date: string | null
+          prior_paid_at: string | null
+          prior_payment_status: string | null
+          raw_note: string
+          reverted_at: string | null
+          run_id: string
+          store_id: string | null
+          total_amount: number | null
+        }
+        Insert: {
+          applied?: boolean
+          created_at?: string
+          dollar_figure_count?: number | null
+          id?: string
+          invoice_id: string
+          parsed_amount?: number | null
+          parsed_date_confidence: string
+          parsed_paid_at?: string | null
+          parsed_qty?: number | null
+          parsed_unit?: string | null
+          prior_amount_paid?: number | null
+          prior_business_date?: string | null
+          prior_paid_at?: string | null
+          prior_payment_status?: string | null
+          raw_note: string
+          reverted_at?: string | null
+          run_id: string
+          store_id?: string | null
+          total_amount?: number | null
+        }
+        Update: {
+          applied?: boolean
+          created_at?: string
+          dollar_figure_count?: number | null
+          id?: string
+          invoice_id?: string
+          parsed_amount?: number | null
+          parsed_date_confidence?: string
+          parsed_paid_at?: string | null
+          parsed_qty?: number | null
+          parsed_unit?: string | null
+          prior_amount_paid?: number | null
+          prior_business_date?: string | null
+          prior_paid_at?: string | null
+          prior_payment_status?: string | null
+          raw_note?: string
+          reverted_at?: string | null
+          run_id?: string
+          store_id?: string | null
+          total_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ar_phantom_paid_staging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ar_phantom_paid_staging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "ar_phantom_paid_staging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "ar_phantom_paid_staging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "ar_phantom_paid_staging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "ar_phantom_paid_staging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
+          },
+        ]
+      }
       assigned_closing_partner: {
         Row: {
           acquisition_id: string
@@ -68342,6 +68451,8 @@ export type Database = {
           partial_amount: number | null
           payment_method: string | null
           payment_status: string
+          payment_status_source: string
+          payment_status_source_note: string | null
           pricing_mode: string | null
           receipt_delivered_at: string | null
           receipt_failure_reason: string | null
@@ -68396,6 +68507,8 @@ export type Database = {
           partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
+          payment_status_source?: string
+          payment_status_source_note?: string | null
           pricing_mode?: string | null
           receipt_delivered_at?: string | null
           receipt_failure_reason?: string | null
@@ -68450,6 +68563,8 @@ export type Database = {
           partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
+          payment_status_source?: string
+          payment_status_source_note?: string | null
           pricing_mode?: string | null
           receipt_delivered_at?: string | null
           receipt_failure_reason?: string | null
