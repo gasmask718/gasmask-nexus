@@ -119,7 +119,8 @@ export function EditStoreInvoiceModal({
         const { data, error } = await (supabase as any)
           .from('invoice_line_items')
           .select('*')
-          .eq('invoice_id', invoice.id);
+          .eq('invoice_id', invoice.id)
+          .is('deleted_at', null);
         if (error) throw error;
         return data || [];
       } catch {
@@ -128,6 +129,7 @@ export function EditStoreInvoiceModal({
     },
     enabled: open && !!invoice.id,
   });
+
 
   // Load line items when modal opens
   useEffect(() => {
