@@ -21,7 +21,9 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Route as RouteIcon } from 'lucide-react';
+import { Loader2, Route as RouteIcon, Trash2 } from 'lucide-react';
+import { verifiedInsert, verifiedUpdate, mutationErrorMessage } from '@/lib/verifiedMutation';
+import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -58,6 +60,7 @@ export function StoreFollowUpsPanel({ storeId, storeName, compact = false }: Pro
   const [routeFlag, setRouteFlag] = useState(false);
   const [priority, setPriority] = useState<string>('normal');
   const [storeSearch, setStoreSearch] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<StoreFollowUpTask | null>(null);
 
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ['store-opportunities', storeId],
@@ -67,6 +70,7 @@ export function StoreFollowUpsPanel({ storeId, storeName, compact = false }: Pro
         .select('id,opportunity_text,due_date,priority,is_completed,route_flag,store_id,created_at')
         .eq('store_id', storeId)
         .eq('is_completed', false)
+        .is('deleted_at', null)
         .order('due_date', { ascending: true, nullsFirst: false })
         .limit(50);
       if (error) throw error;
@@ -108,17 +112,23 @@ export function StoreFollowUpsPanel({ storeId, storeName, compact = false }: Pro
       if (!trimmed) throw new Error('Please enter follow-up text');
       const dueIso = dueDate ? new Date(`${dueDate}T12:00:00`).toISOString() : null;
 
-      const { error } = await supabase.from('store_opportunities').insert({
-        store_id: targetStoreId,
-        opportunity_text: trimmed,
-        source: 'follow_up',
-        is_completed: false,
-        due_date: dueIso,
-        priority,
-        route_flag: routeFlag,
-        assignee: user?.id ?? null,
-      } as any);
-      if (error) throw error;
+      // business_id + created_by are stamped server-side by
+      // trg_stamp_store_opportunity from auth.uid() — never sent by the client.
+      await verifiedInsert('Add follow-up', () =>
+        supabase
+          .from('store_opportunities')
+          .insert({
+            store_id: targetStoreId,
+            opportunity_text: trimmed,
+            source: 'follow_up',
+            is_completed: false,
+            due_date: dueIso,
+            priority,
+            route_flag: routeFlag,
+            assignee: user?.id ?? null,
+          } as any)
+          .select('id') as never,
+      );
 
       await supabase
         .from('store_master')
@@ -132,41 +142,67 @@ export function StoreFollowUpsPanel({ storeId, storeName, compact = false }: Pro
       setPriority('normal');
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message || 'Failed to save follow-up'),
+    onError: (e: any) => toast.error(mutationErrorMessage(e)),
   });
 
   const completeTask = useMutation({
     mutationFn: async (taskId: string) => {
       const nowIso = new Date().toISOString();
-      const { error } = await supabase
-        .from('store_opportunities')
-        .update({
-          is_completed: true,
-          completed_at: nowIso,
-          completed_by: user?.id ?? null,
-        } as any)
-        .eq('id', taskId);
-      if (error) throw error;
+      await verifiedUpdate('Complete follow-up', () =>
+        supabase
+          .from('store_opportunities')
+          .update({
+            is_completed: true,
+            completed_at: nowIso,
+            completed_by: user?.id ?? null,
+          } as any)
+          .eq('id', taskId)
+          .select('id') as never,
+      );
       await supabase
         .from('store_master')
         .update({ updated_at: nowIso } as any)
         .eq('id', storeId);
     },
     onSuccess: invalidate,
-    onError: (e: any) => toast.error(e?.message || 'Failed to complete task'),
+    onError: (e: any) => toast.error(mutationErrorMessage(e)),
   });
 
   /** Inline edit of URGENT / ROUTE on an existing follow-up. */
   const patchTask = useMutation({
     mutationFn: async (vars: { id: string; patch: Record<string, any> }) => {
-      const { error } = await supabase
-        .from('store_opportunities')
-        .update(vars.patch as any)
-        .eq('id', vars.id);
-      if (error) throw error;
+      await verifiedUpdate('Update follow-up', () =>
+        supabase
+          .from('store_opportunities')
+          .update(vars.patch as any)
+          .eq('id', vars.id)
+          .select('id') as never,
+      );
     },
     onSuccess: invalidate,
-    onError: (e: any) => toast.error(e?.message || 'Failed to update follow-up'),
+    onError: (e: any) => toast.error(mutationErrorMessage(e)),
+  });
+
+  /** Soft delete — row kept, hidden everywhere. RLS: author/assignee or admin. */
+  const deleteTask = useMutation({
+    mutationFn: async (id: string) => {
+      await verifiedUpdate('Delete follow-up', () =>
+        supabase
+          .from('store_opportunities')
+          .update({
+            deleted_at: new Date().toISOString(),
+            deleted_by: user?.id ?? null,
+          } as any)
+          .eq('id', id)
+          .is('deleted_at', null)
+          .select('id') as never,
+      );
+    },
+    onSuccess: () => {
+      toast.success('Follow-up deleted');
+      invalidate();
+    },
+    onError: (e: any) => toast.error(mutationErrorMessage(e)),
   });
 
   const labelClass = compact ? 'text-[10px]' : 'text-xs';
@@ -200,7 +236,12 @@ export function StoreFollowUpsPanel({ storeId, storeName, compact = false }: Pro
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className={cn('font-medium text-foreground', bodyText)}>
+                      <span
+                        className={cn(
+                          'min-w-0 break-words font-medium leading-relaxed text-foreground [overflow-wrap:anywhere]',
+                          bodyText,
+                        )}
+                      >
                         {t.opportunity_text}
                       </span>
                       {t.route_flag && (
@@ -255,6 +296,17 @@ export function StoreFollowUpsPanel({ storeId, storeName, compact = false }: Pro
                       >
                         <RouteIcon className="mr-1 h-2.5 w-2.5" />
                         {t.route_flag ? 'On route' : 'Add to route'}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        aria-label="Delete follow-up"
+                        className="h-6 px-2 text-[10px] text-destructive"
+                        onClick={() => setPendingDelete(t)}
+                      >
+                        <Trash2 className="mr-1 h-2.5 w-2.5" />
+                        Delete
                       </Button>
                     </div>
                   </div>
@@ -364,6 +416,17 @@ export function StoreFollowUpsPanel({ storeId, storeName, compact = false }: Pro
           )}
         </Button>
       </div>
+
+      <DeleteConfirmModal
+        open={!!pendingDelete}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        title="Delete follow-up"
+        description="This follow-up will be removed from the store profile. The record is kept for audit and can be restored by an admin."
+        itemName={pendingDelete?.opportunity_text?.slice(0, 60)}
+        onConfirm={async () => {
+          if (pendingDelete) await deleteTask.mutateAsync(pendingDelete.id);
+        }}
+      />
     </div>
   );
 }
