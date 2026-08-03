@@ -57,6 +57,7 @@ async function calculateHealthFromData(storeId: string) {
     supabase
       .from('store_contacts')
       .select('id, name, phone, responsiveness')
+      .is('deleted_at', null)
       .eq('store_id', storeId)
       .limit(10),
     supabase

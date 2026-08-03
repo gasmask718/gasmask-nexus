@@ -61,6 +61,7 @@ export function useConnectedStores(
         supabase
           .from('store_contacts')
           .select('id, store_id, name, role, phone')
+          .is('deleted_at', null)
           .in('store_id', storeIds),
         supabase
           .from('store_tube_inventory')

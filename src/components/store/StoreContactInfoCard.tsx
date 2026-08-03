@@ -135,6 +135,7 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
       const { data, error } = await supabase
         .from('store_contacts')
         .select('id, name, role, is_primary, phone, can_receive_sms, email')
+        .is('deleted_at', null)
         .eq('store_id', store.id)
         .order('is_primary', { ascending: false })
         .order('created_at', { ascending: true });

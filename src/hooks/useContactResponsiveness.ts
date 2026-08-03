@@ -54,6 +54,7 @@ export function useContactResponsiveness(storeId?: string) {
           last_responded_at,
           stores!inner(name)
         `)
+        .is('deleted_at', null)
         .eq('is_simulation', false);
 
       if (storeId) {
@@ -105,6 +106,7 @@ export function useContactResponsivenessSummary() {
       const { data, error } = await supabase
         .from('store_contacts')
         .select('responsiveness_status, total_calls_attempted, total_texts_sent')
+        .is('deleted_at', null)
         .eq('is_simulation', false);
 
       if (error) throw error;
@@ -169,6 +171,7 @@ export function useStoreContactsWithResponsiveness(storeId: string) {
           homie_set_at,
           homie_set_by
         `)
+        .is('deleted_at', null)
         .eq('store_id', storeId)
         .eq('is_simulation', false)
         .order('is_primary', { ascending: false })

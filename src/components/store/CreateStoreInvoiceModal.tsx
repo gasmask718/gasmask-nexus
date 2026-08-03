@@ -442,6 +442,7 @@ export function CreateStoreInvoiceModal({
       const { data } = await supabase
         .from('store_contacts')
         .select('id')
+        .is('deleted_at', null)
         .eq('store_id', storeId)
         .limit(1);
       return data?.[0]?.id || null;

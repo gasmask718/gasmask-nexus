@@ -208,6 +208,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
         const { data: contactsData } = await supabase
           .from('store_contacts')
           .select('*')
+          .is('deleted_at', null)
           .eq('store_id', storeId);
 
         if (contactsData && contactsData.length > 0) {
