@@ -110,7 +110,8 @@ export function IdeaSubmitDialog({ open, onOpenChange }: Props) {
         submitterName: (user?.user_metadata?.full_name as string) ?? null,
         submitterEmail: user?.email ?? null,
         submitterRole: userRole ?? null,
-ästhet      });
+      });
+
       toast({
         title: 'Idea submitted',
         description: 'Thanks — it landed in the Idea Box for review.',
