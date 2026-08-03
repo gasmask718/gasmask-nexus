@@ -28,6 +28,7 @@ import { Plus, X, Package, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   availableUnitKinds,
+  halfBoxBlockReason,
   buildLine,
   listPriceForUnit,
   summarize,
