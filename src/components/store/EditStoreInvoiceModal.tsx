@@ -282,17 +282,30 @@ export function EditStoreInvoiceModal({
 
       if (invoiceError) throw invoiceError;
 
-      // Delete old line items and insert new ones
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
-          .from('invoice_line_items')
-          .delete()
-          .eq('invoice_id', invoice.id);
+      // DIFF-BASED line item sync.
+      // NEVER wipe-and-replace: reconstructed lines carry line_source /
+      // reconstruction_run_id provenance that a delete+insert would destroy.
+      // Untouched rows are left completely alone.
+      const existingById = new Map<string, any>(
+        (existingLineItems as any[]).map((r) => [r.id as string, r])
+      );
+      const keptIds = new Set(lineItems.map((i) => i.id).filter((id) => existingById.has(id)));
 
-        if (lineItems.length > 0) {
-          const lineItemsData = lineItems.map(item => ({
-            invoice_id: invoice.id,
+      // 1. UPDATE rows that exist and actually changed
+      for (const item of lineItems) {
+        const prev = existingById.get(item.id);
+        if (!prev) continue;
+        const changed =
+          Number(prev.quantity) !== Number(item.quantity) ||
+          Number(prev.unit_price) !== Number(item.unit_price) ||
+          Number(prev.total) !== Number(item.total) ||
+          prev.product_id !== item.product_id ||
+          prev.brand_id !== item.brand_id;
+        if (!changed) continue; // preserve provenance untouched
+
+        const { error } = await (supabase as any)
+          .from('invoice_line_items')
+          .update({
             brand_id: item.brand_id,
             brand_name: item.brand_name,
             product_id: item.product_id,
@@ -300,16 +313,53 @@ export function EditStoreInvoiceModal({
             quantity: item.quantity,
             unit_price: item.unit_price,
             total: item.total,
-          }));
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any)
-            .from('invoice_line_items')
-            .insert(lineItemsData);
-        }
-      } catch (err) {
-        console.error('Error updating line items:', err);
+          })
+          .eq('id', item.id)
+          .select('id');
+        if (error) throw new Error(`Line update failed: ${error.message}`);
       }
+
+      // 2. INSERT genuinely new rows
+      const newRows = lineItems.filter((i) => !existingById.has(i.id));
+      if (newRows.length > 0) {
+        const { error } = await (supabase as any)
+          .from('invoice_line_items')
+          .insert(
+            newRows.map((item) => ({
+              invoice_id: invoice.id,
+              brand_id: item.brand_id,
+              brand_name: item.brand_name,
+              product_id: item.product_id,
+              product_name: item.product_name,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              total: item.total,
+              line_source: 'manual_edit',
+            }))
+          )
+          .select('id');
+        if (error) throw new Error(`Line insert failed: ${error.message}`);
+      }
+
+      // 3. SOFT-DELETE removed rows (recoverable, provenance intact)
+      const removedIds = (existingLineItems as any[])
+        .map((r) => r.id as string)
+        .filter((id) => !keptIds.has(id));
+      if (removedIds.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { error } = await (supabase as any)
+          .from('invoice_line_items')
+          .update({
+            deleted_at: new Date().toISOString(),
+            deleted_by: user?.id ?? null,
+            delete_reason: 'removed_via_invoice_edit',
+          })
+          .in('id', removedIds)
+          .select('id');
+        if (error) throw new Error(`Line removal failed: ${error.message}`);
+      }
+
+
 
       return invoice.id;
     },
