@@ -236,15 +236,16 @@ export default function InboxPage() {
             <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <CardTitle className="text-base">Outbound Message Queue</CardTitle>
               <div className="flex flex-wrap items-center gap-2">
-                {(['all', 'pending', 'approved', 'rejected'] as PendingFilter[]).map(f => (
+                {(['all', 'pending', 'approved', 'rejected', 'failed', 'sent'] as PendingFilter[]).map(f => (
                   <Button
                     key={f}
                     size="sm"
                     variant={pendingFilter === f ? 'default' : 'outline'}
-                    onClick={() => setPendingFilter(f)}
+                    onClick={() => { setPendingFilter(f); setPage(0); }}
                     className="capitalize"
                   >
                     {f === 'rejected' ? 'Skipped' : f}
+                    <Badge variant="secondary" className="ml-2">{(statusCounts[f] ?? 0).toLocaleString()}</Badge>
                   </Button>
                 ))}
                 <div className="relative">
