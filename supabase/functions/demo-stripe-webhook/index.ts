@@ -151,6 +151,32 @@ Deno.serve(async (req) => {
     if (clientErr) console.error("[demo-stripe-webhook] client ensure failed:", clientErr);
     else console.log(`[demo-stripe-webhook] client ${client_id} (created=${clientCreated})`);
 
+    // ---------- 3c. Cash ledger ----------
+    // brandaro_revenue_tracking is the only source /brandaro/revenue reads.
+    // Keyed on the checkout session id, so Stripe retries cannot double-count.
+    try {
+      const { data: demoIndustry } = await supabase
+        .from("brandaro_demo_sites")
+        .select("industry")
+        .eq("id", demo_id)
+        .maybeSingle();
+
+      await recordRevenue(supabase, {
+        amount,
+        revenue_type: buildRevenueType(tier),
+        stripe_reference: session.id,
+        source: "stripe_checkout",
+        client_id,
+        lead_id,
+        description:
+          business_name || demo?.business_name || lead?.business_name || "Website build",
+        industry: demoIndustry?.industry ?? null,
+      });
+    } catch (e: any) {
+      console.error("[demo-stripe-webhook] revenue ledger step failed:", e?.message);
+    }
+
+
     // ---------- 4. Queue the build job ----------
     // Field mapping (spec -> brandaro_build_jobs):
     //   demo_id           -> demo_id
