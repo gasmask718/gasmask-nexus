@@ -330,11 +330,16 @@ export default function InboxPage() {
                       })}
                     </TableBody>
                   </Table>
-                  {filteredPending.length > 200 && (
-                    <p className="text-xs text-muted-foreground text-center mt-3">
-                      Showing 200 of {filteredPending.length} — refine your filter to see more.
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-xs text-muted-foreground">
+                      Showing {filterTotal === 0 ? 0 : page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filterTotal)} of {filterTotal.toLocaleString()}
+                      {search.trim() && ' (search applies to this page)'}
                     </p>
-                  )}
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>Previous</Button>
+                      <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= filterTotal} onClick={() => setPage(p => p + 1)}>Next</Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>
