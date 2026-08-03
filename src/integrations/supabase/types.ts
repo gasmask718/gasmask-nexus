@@ -43122,6 +43122,53 @@ export type Database = {
           },
         ]
       }
+      dd_chargeback_liability_log: {
+        Row: {
+          absorbed_by_dynasty_cents: number
+          chargeback_cents: number
+          clawback_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          order_id: string | null
+          passed_to_supplier_cents: number
+          supplier_id: string | null
+          vamp_tracked: boolean
+        }
+        Insert: {
+          absorbed_by_dynasty_cents?: number
+          chargeback_cents?: number
+          clawback_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          passed_to_supplier_cents?: number
+          supplier_id?: string | null
+          vamp_tracked?: boolean
+        }
+        Update: {
+          absorbed_by_dynasty_cents?: number
+          chargeback_cents?: number
+          clawback_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          passed_to_supplier_cents?: number
+          supplier_id?: string | null
+          vamp_tracked?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_chargeback_liability_log_clawback_id_fkey"
+            columns: ["clawback_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_clawbacks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_config: {
         Row: {
           ai_catalog_engine_enabled: boolean | null
@@ -70645,24 +70692,36 @@ export type Database = {
           cost_snapshot_at: string | null
           cost_source: string | null
           created_at: string | null
+          delivered_at: string | null
           dynasty_gross_cents: number | null
           dynasty_net_cents: number | null
+          escalated_at: string | null
+          escalation_reason: string | null
+          fulfillment_id: string | null
           gross_amount: number
+          hold_days: number
           id: string
           order_id: string | null
           order_item_id: string
+          payout_batch_id: string | null
           payout_status: string
           processor_fee_share_cents: number | null
           product_id: string | null
           quantity: number | null
           rate_source: string | null
+          release_eligible_at: string | null
+          released_at: string | null
+          routed_at: string | null
           sale_amount_cents: number | null
+          sales_channel: string | null
+          shipped_at: string | null
           shipping_attributed_cents: number | null
           shipping_paid_by: string | null
           supplier_id: string | null
           supplier_payable_cents: number | null
           unit_supplier_cost_cents: number | null
           updated_at: string
+          void_reason: string | null
           wholesaler_id: string | null
           wholesaler_net: number
         }
@@ -70672,24 +70731,36 @@ export type Database = {
           cost_snapshot_at?: string | null
           cost_source?: string | null
           created_at?: string | null
+          delivered_at?: string | null
           dynasty_gross_cents?: number | null
           dynasty_net_cents?: number | null
+          escalated_at?: string | null
+          escalation_reason?: string | null
+          fulfillment_id?: string | null
           gross_amount?: number
+          hold_days?: number
           id?: string
           order_id?: string | null
           order_item_id: string
+          payout_batch_id?: string | null
           payout_status?: string
           processor_fee_share_cents?: number | null
           product_id?: string | null
           quantity?: number | null
           rate_source?: string | null
+          release_eligible_at?: string | null
+          released_at?: string | null
+          routed_at?: string | null
           sale_amount_cents?: number | null
+          sales_channel?: string | null
+          shipped_at?: string | null
           shipping_attributed_cents?: number | null
           shipping_paid_by?: string | null
           supplier_id?: string | null
           supplier_payable_cents?: number | null
           unit_supplier_cost_cents?: number | null
           updated_at?: string
+          void_reason?: string | null
           wholesaler_id?: string | null
           wholesaler_net?: number
         }
@@ -70699,24 +70770,36 @@ export type Database = {
           cost_snapshot_at?: string | null
           cost_source?: string | null
           created_at?: string | null
+          delivered_at?: string | null
           dynasty_gross_cents?: number | null
           dynasty_net_cents?: number | null
+          escalated_at?: string | null
+          escalation_reason?: string | null
+          fulfillment_id?: string | null
           gross_amount?: number
+          hold_days?: number
           id?: string
           order_id?: string | null
           order_item_id?: string
+          payout_batch_id?: string | null
           payout_status?: string
           processor_fee_share_cents?: number | null
           product_id?: string | null
           quantity?: number | null
           rate_source?: string | null
+          release_eligible_at?: string | null
+          released_at?: string | null
+          routed_at?: string | null
           sale_amount_cents?: number | null
+          sales_channel?: string | null
+          shipped_at?: string | null
           shipping_attributed_cents?: number | null
           shipping_paid_by?: string | null
           supplier_id?: string | null
           supplier_payable_cents?: number | null
           unit_supplier_cost_cents?: number | null
           updated_at?: string
+          void_reason?: string | null
           wholesaler_id?: string | null
           wholesaler_net?: number
         }
@@ -106379,6 +106462,66 @@ export type Database = {
           },
         ]
       }
+      supplier_clawbacks: {
+        Row: {
+          amount_cents: number
+          applied_at: string | null
+          applied_batch_id: string | null
+          commission_id: string | null
+          created_at: string
+          id: string
+          order_id: string | null
+          reason: string
+          remaining_cents: number
+          status: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents?: number
+          applied_at?: string | null
+          applied_batch_id?: string | null
+          commission_id?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          reason: string
+          remaining_cents?: number
+          status?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          applied_at?: string | null
+          applied_batch_id?: string | null
+          commission_id?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          reason?: string
+          remaining_cents?: number
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_clawbacks_applied_batch_id_fkey"
+            columns: ["applied_batch_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payout_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_clawbacks_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_commissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_compliance_scores: {
         Row: {
           complaint_count: number | null
@@ -106514,6 +106657,93 @@ export type Database = {
           },
         ]
       }
+      supplier_payout_batch_items: {
+        Row: {
+          amount_cents: number
+          batch_id: string
+          commission_id: string
+          created_at: string
+          id: string
+          order_id: string | null
+        }
+        Insert: {
+          amount_cents?: number
+          batch_id: string
+          commission_id: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          batch_id?: string
+          commission_id?: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_payout_batch_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payout_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payout_batch_items_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_commissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_payout_batches: {
+        Row: {
+          batch_date: string
+          clawback_applied_cents: number
+          created_at: string
+          gross_payable_cents: number
+          id: string
+          item_count: number
+          net_payable_cents: number
+          notes: string | null
+          paid_at: string | null
+          status: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          batch_date?: string
+          clawback_applied_cents?: number
+          created_at?: string
+          gross_payable_cents?: number
+          id?: string
+          item_count?: number
+          net_payable_cents?: number
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          batch_date?: string
+          clawback_applied_cents?: number
+          created_at?: string
+          gross_payable_cents?: number
+          id?: string
+          item_count?: number
+          net_payable_cents?: number
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       supplier_products: {
         Row: {
           bulk_cost: number | null
@@ -106569,6 +106799,77 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supplier_sla_flags: {
+        Row: {
+          commission_id: string | null
+          created_at: string
+          flag_type: string
+          hours_elapsed: number | null
+          id: string
+          order_id: string | null
+          resolved_at: string | null
+          supplier_id: string
+        }
+        Insert: {
+          commission_id?: string | null
+          created_at?: string
+          flag_type?: string
+          hours_elapsed?: number | null
+          id?: string
+          order_id?: string | null
+          resolved_at?: string | null
+          supplier_id: string
+        }
+        Update: {
+          commission_id?: string | null
+          created_at?: string
+          flag_type?: string
+          hours_elapsed?: number | null
+          id?: string
+          order_id?: string | null
+          resolved_at?: string | null
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_sla_flags_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_commissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_sla_records: {
+        Row: {
+          created_at: string
+          last_flag_at: string | null
+          late_shipment_count: number
+          open_flag_count: number
+          sla_status: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          last_flag_at?: string | null
+          late_shipment_count?: number
+          open_flag_count?: number
+          sla_status?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          last_flag_at?: string | null
+          late_shipment_count?: number
+          open_flag_count?: number
+          sla_status?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       suppliers: {
         Row: {
@@ -138535,6 +138836,10 @@ export type Database = {
         Args: { p_order_id: string; p_order_total: number; p_user_id: string }
         Returns: undefined
       }
+      dd_flag_unshipped_commissions: {
+        Args: { p_hours?: number }
+        Returns: Json
+      }
       dd_generate_po_number: { Args: never; Returns: string }
       dd_get_effective_margin_pct: {
         Args: { p_product_id: string; p_wholesaler_id: string }
@@ -138547,6 +138852,14 @@ export type Database = {
       dd_get_store_price: {
         Args: { p_product_id: string; p_quantity?: number; p_user_id: string }
         Returns: number
+      }
+      dd_handle_order_chargeback: {
+        Args: { p_amount_cents?: number; p_order_id: string }
+        Returns: Json
+      }
+      dd_handle_order_refund: {
+        Args: { p_order_id: string; p_reason?: string }
+        Returns: Json
       }
       dd_inventory_forecast: {
         Args: { p_days_ahead?: number }
@@ -138703,9 +139016,17 @@ export type Database = {
         Args: { p_customer_email: string; p_user_id: string }
         Returns: string
       }
+      dd_resolve_sales_channel: {
+        Args: { p_order_id: string }
+        Returns: string
+      }
       dd_restock_inventory: {
         Args: { p_order_id: string; p_product_id: string; p_quantity: number }
         Returns: undefined
+      }
+      dd_run_supplier_payout_batch: {
+        Args: { p_batch_date?: string }
+        Returns: Json
       }
       dd_set_inventory_threshold: {
         Args: {
