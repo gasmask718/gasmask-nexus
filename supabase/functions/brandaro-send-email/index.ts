@@ -11,7 +11,7 @@ const corsHeaders = {
 
 const FROM = Deno.env.get("BRANDARO_EMAIL_FROM") || "Brandaro <onboarding@resend.dev>";
 
-type TemplateName = "paid-conversion-alert" | "client-welcome";
+type TemplateName = "paid-conversion-alert" | "client-welcome" | "receptionist-portal-welcome";
 
 const wrap = (title: string, inner: string) => `<!doctype html>
 <html><body style="margin:0;padding:0;background:#0b0f14;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#e6edf3">
