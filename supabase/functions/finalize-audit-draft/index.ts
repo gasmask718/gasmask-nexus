@@ -125,6 +125,7 @@ serve(async (req) => {
         line_subtotal: lineTotal,
         unit_type: "tube",
         computed_tubes_total: qty,
+        line_source: "audit_draft_finalize",
       });
     }
 
@@ -141,7 +142,12 @@ serve(async (req) => {
 
     if (updateError) {
       // Attempt rollback: delete the invoice we just created
-      await supabase.from("invoice_line_items").delete().eq("invoice_id", newInvoice.id);
+      // Compensating rollback, scoped to the lines this call just created.
+      await supabase
+        .from("invoice_line_items")
+        .delete()
+        .eq("invoice_id", newInvoice.id)
+        .eq("line_source", "audit_draft_finalize");
       await supabase.from("invoices").delete().eq("id", newInvoice.id);
       throw new Error(`Draft update failed after invoice creation: ${updateError.message}`);
     }
