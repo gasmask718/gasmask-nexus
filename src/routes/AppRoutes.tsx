@@ -178,6 +178,7 @@ const DemoEnginePage = lazy(() => import('@/pages/brandaro/DemoEnginePage'));
 const ScoutAgentPage = lazy(() => import('@/pages/brandaro/ScoutAgentPage'));
 const ProductionPipelinePage = lazy(() => import('@/pages/brandaro/ProductionPipelinePage'));
 const ClientPortalPage = lazy(() => import('@/pages/brandaro/ClientPortalPage'));
+const ReceptionistClientPortal = lazy(() => import('@/pages/client-portal/ClientPortalPage'));
 const CanvaAssetsPage = lazy(() => import('@/pages/brandaro/CanvaAssetsPage'));
 const CanvaTemplatesPage = lazy(() => import('@/pages/brandaro/CanvaTemplatesPage'));
 
