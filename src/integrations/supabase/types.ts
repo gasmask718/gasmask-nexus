@@ -68314,6 +68314,7 @@ export type Database = {
           discount_value: number
           id: string
           invoice_id: string
+          line_source: string
           line_subtotal: number
           list_unit_price: number
           pack_size_snapshot: number
@@ -68329,6 +68330,7 @@ export type Database = {
           quantity: number
           quantity_boxes: number | null
           quantity_tubes: number | null
+          reconstruction_run_id: string | null
           sale_channel: string | null
           sale_unit: string | null
           total: number
@@ -68352,6 +68354,7 @@ export type Database = {
           discount_value?: number
           id?: string
           invoice_id: string
+          line_source?: string
           line_subtotal?: number
           list_unit_price?: number
           pack_size_snapshot?: number
@@ -68367,6 +68370,7 @@ export type Database = {
           quantity?: number
           quantity_boxes?: number | null
           quantity_tubes?: number | null
+          reconstruction_run_id?: string | null
           sale_channel?: string | null
           sale_unit?: string | null
           total: number
@@ -68390,6 +68394,7 @@ export type Database = {
           discount_value?: number
           id?: string
           invoice_id?: string
+          line_source?: string
           line_subtotal?: number
           list_unit_price?: number
           pack_size_snapshot?: number
@@ -68405,6 +68410,7 @@ export type Database = {
           quantity?: number
           quantity_boxes?: number | null
           quantity_tubes?: number | null
+          reconstruction_run_id?: string | null
           sale_channel?: string | null
           sale_unit?: string | null
           total?: number
@@ -140625,6 +140631,14 @@ export type Database = {
       decay_risk_scores: { Args: never; Returns: undefined }
       default_cadence_days: { Args: { status: string }; Returns: number }
       delete_invoice_cascade: { Args: { p_invoice_id: string }; Returns: Json }
+      derive_borough_id: {
+        Args: { _address: string; _city: string; _zip: string }
+        Returns: string
+      }
+      derive_borough_name: {
+        Args: { _address: string; _city: string; _zip: string }
+        Returns: string
+      }
       detect_data_duplicates_in_group: {
         Args: { p_group_id: number }
         Returns: {
