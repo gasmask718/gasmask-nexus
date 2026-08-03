@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
+import { ensureClientForJob, syncClientMRR } from "../_shared/brandaroClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,7 +63,7 @@ Deno.serve(async (req) => {
     // --- load the build job ---------------------------------------------
     const { data: job, error: jobErr } = await admin
       .from("brandaro_build_jobs")
-      .select("id, client_id, demo_id, package_tier, build_status, intake_data")
+      .select("id, client_id, lead_id, demo_id, package_tier, build_status, intake_data")
       .eq("id", buildJobId)
       .maybeSingle();
     if (jobErr) return json({ error: `Job lookup failed: ${jobErr.message}` }, 500);
@@ -172,8 +173,18 @@ Deno.serve(async (req) => {
     const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end
       ?? (subscription.items?.data?.[0] as unknown as { current_period_end?: number })?.current_period_end;
 
+    // Make sure the subscription is attached to the canonical client record so
+    // MRR rolls up into the War Room / Revenue Analytics.
+    const { client_id: clientId } = await ensureClientForJob(admin, {
+      build_job_id: job.id,
+      lead_id: (job as { lead_id?: string | null }).lead_id ?? null,
+      business_name: businessName,
+      email: email || null,
+      tier: job.package_tier ?? null,
+    });
+
     const { error: insErr } = await admin.from("brandaro_subscriptions").insert({
-      client_id: job.client_id,
+      client_id: clientId ?? job.client_id,
       project_id: job.id,
       service_type: "hosting",
       tier: job.package_tier ?? null,
@@ -190,7 +201,11 @@ Deno.serve(async (req) => {
       return json({ error: `Subscription recorded failed (rolled back): ${insErr.message}` }, 500);
     }
 
-    console.log(`[hosting-sub] mode=${mode} job=${job.id} sub=${subscription.id}`);
+    // Recompute monthly_recurring from live subscriptions (never typed by hand).
+    let mrr: number | null = null;
+    if (clientId) mrr = await syncClientMRR(admin, clientId);
+
+    console.log(`[hosting-sub] mode=${mode} job=${job.id} sub=${subscription.id} mrr=${mrr}`);
 
     return json({
       created: true,
@@ -199,6 +214,8 @@ Deno.serve(async (req) => {
       customer_id: customerId,
       status: subscription.status,
       monthly_fee: (priceRow.amount_cents ?? 9900) / 100,
+      client_id: clientId,
+      monthly_recurring: mrr,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
