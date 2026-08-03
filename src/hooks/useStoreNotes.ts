@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { verifiedUpdate, mutationErrorMessage } from "@/lib/verifiedMutation";
 
 export interface StoreNote {
   id: string;
@@ -19,6 +20,7 @@ export function useStoreNotes(storeId: string | undefined) {
         .from("store_notes")
         .select("*")
         .eq("store_id", storeId)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as StoreNote[];
@@ -55,15 +57,22 @@ export function useDeleteStoreNote() {
 
   return useMutation({
     mutationFn: async ({ noteId, storeId }: { noteId: string; storeId: string }) => {
-      const { error } = await supabase.from("store_notes").delete().eq("id", noteId);
-      if (error) throw error;
+      // Soft delete — the row is retained for audit, only hidden from readers.
+      await verifiedUpdate("Delete note", () =>
+        supabase
+          .from("store_notes")
+          .update({ deleted_at: new Date().toISOString() } as never)
+          .eq("id", noteId)
+          .is("deleted_at", null)
+          .select("id") as never,
+      );
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["store-notes", variables.storeId] });
       toast.success("Note deleted");
     },
     onError: (error: Error) => {
-      toast.error(`Failed to delete note: ${error.message}`);
+      toast.error(mutationErrorMessage(error));
     },
   });
 }
