@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
+import { getStoredReferralCode, getStoredCampaignCode } from '@/lib/dynastyDirect/referralCapture';
+
 import { 
   ShoppingCart, ArrowLeft, CreditCard, Truck, Store, 
   Package, Loader2, CheckCircle, MapPin, ShieldAlert 
@@ -113,8 +115,12 @@ export default function Checkout() {
           body: {
             order_id: result.orderId,
             customer_email: user.email,
+            // Affiliate attribution — stored from the inbound ?ref= link.
+            ref_code: getStoredReferralCode(),
+            campaign_code: getStoredCampaignCode(),
           },
         });
+
 
         if (error) throw error;
         if (data?.mode !== 'live' || !data?.url) {
