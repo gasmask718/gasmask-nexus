@@ -420,8 +420,9 @@ export function toLineItemRow(
     unit_price: line.unit_price_used,
     total: line.line_subtotal,
     sale_channel: line.sale_channel,
+    // sale_unit is canonical; unit_type is derived server-side by
+    // trg_derive_unit_type. Never write unit_type from the client.
     sale_unit: line.sale_unit,
-    unit_kind: line.unit_kind,
     cost_per_unit_at_sale: line.cost_per_unit,
     profit_at_sale: line.profit,
     units_per_box_snapshot: line.units_per_box,
