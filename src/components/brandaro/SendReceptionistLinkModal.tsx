@@ -15,8 +15,9 @@ type Lead = {
 };
 
 const PLANS = {
-  starter: { label: "Starter — $197/mo", monthly: 197, setup: 497 },
-  pro:     { label: "Pro — $297/mo",     monthly: 297, setup: 497 },
+  starter:    { label: "Starter — $497 setup + $197/mo",    monthly: 197, setup: 497 },
+  pro:        { label: "Pro — $497 setup + $297/mo",        monthly: 297, setup: 497 },
+  enterprise: { label: "Enterprise — $997 setup + $497/mo", monthly: 497, setup: 997 },
 } as const;
 type PlanKey = keyof typeof PLANS;
 
