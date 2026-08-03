@@ -165,12 +165,28 @@ export function listPriceForUnit(
   }
 }
 
+/**
+ * Half box is only sellable when the box splits into a whole number of tubes.
+ * Returns a human message naming the product when it is blocked, else null.
+ */
+export function halfBoxBlockReason(product: BuilderProduct): string | null {
+  const upb = tubesPerBox(product);
+  if (!upb || upb <= 1) {
+    return `${product.name} has no box size configured — half box unavailable. Set units per box first.`;
+  }
+  if (upb % 2 !== 0) {
+    return `${product.name} has an odd box size (${upb}) — half box would split a tube. Fix units per box first.`;
+  }
+  return null;
+}
+
 /** Which units this product can actually be sold in. */
 export function availableUnitKinds(product: BuilderProduct): SaleUnitKind[] {
   const kinds: SaleUnitKind[] = [];
   const upb = tubesPerBox(product);
   if (upb > 1) {
-    kinds.push('full_box', 'half_box');
+    kinds.push('full_box');
+    if (!halfBoxBlockReason(product)) kinds.push('half_box');
   }
   if ((product.pack_size || 1) > 1) kinds.push('pack');
   kinds.push('loose_tube');
