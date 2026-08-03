@@ -189,7 +189,7 @@ serve(async (req) => {
         const blandPayload: Record<string, unknown> = {
           phone_number: lead.phone,
           from: fromNumber!,
-          agent_id: BRANDARO_SALES_AGENT_ID,
+          pathway_id: BRANDARO_SALES_PATHWAY_ID,
           webhook: `${supabaseUrl}/functions/v1/bland-agent-webhook`,
           metadata: {
             lead_id: lead.id,
