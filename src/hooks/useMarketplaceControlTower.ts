@@ -137,7 +137,7 @@ export function useOrderLifecycle() {
         orderIds.length > 0
           ? supabase.from('marketplace_fulfillments').select('order_id, wholesaler_id').in('order_id', orderIds)
           : Promise.resolve({ data: [] }),
-        supabase.from('vendor_performance_summary' as any).select('*'),
+        supabase.from('v_vendor_performance_summary' as any).select('*'),
       ]);
 
       const vendorCounts: Record<string, number> = {};
@@ -285,7 +285,7 @@ export function useVendorPerformance() {
     queryKey: ['vendor-performance-summary'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('vendor_performance_summary' as any)
+        .from('v_vendor_performance_summary' as any)
         .select('*')
         .order('risk_score', { ascending: false });
 
