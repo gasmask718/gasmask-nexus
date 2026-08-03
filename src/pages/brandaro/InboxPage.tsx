@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -408,9 +408,9 @@ export default function InboxPage() {
                         const lead = lookupLead(row);
                         const isOpen = expandedInbound === row.id;
                         return (
-                          <>
+                          <Fragment key={row.id}>
                             <TableRow
-                              key={row.id}
+
                               className="cursor-pointer hover:bg-muted/50"
                               onClick={() => setExpandedInbound(isOpen ? null : row.id)}
                             >
@@ -464,7 +464,8 @@ export default function InboxPage() {
                                 </TableCell>
                               </TableRow>
                             )}
-                          </>
+                          </Fragment>
+
                         );
                       })}
                     </TableBody>

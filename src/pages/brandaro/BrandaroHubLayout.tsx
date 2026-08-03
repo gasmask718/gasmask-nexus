@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AIApprovalDrawer } from "@/components/brandaro/AIApprovalDrawer";
 import brandaroLogo from "@/assets/brandaro-logo.png";
 
@@ -91,11 +92,18 @@ const hubNav = [
 
 export default function BrandaroHubLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Auto-collapse the sub-nav on small screens so content keeps usable width
+  useEffect(() => {
+    if (isMobile) setCollapsed(true);
+  }, [isMobile]);
+
   return (
-    <div className="flex h-[calc(100vh-4rem)] -m-4 md:-m-6">
+    <div className="flex h-[calc(100vh-4rem)] max-w-full overflow-hidden -m-4 md:-m-6">
+
       {/* Internal sub-navigation panel — NOT a competing sidebar */}
       <div
         className={cn(

@@ -72,7 +72,7 @@ export default function SystemCheckpointBar() {
     <div
       className={cn(
         'w-full border-b border-amber-500/20 bg-amber-950/40',
-        'backdrop-blur-sm px-3 py-1.5 flex items-center justify-between gap-3',
+        'backdrop-blur-sm px-3 py-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1',
         'text-xs text-amber-100 z-40'
       )}
     >
@@ -86,7 +86,8 @@ export default function SystemCheckpointBar() {
         </span>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+
         <div className="hidden sm:flex items-center gap-1 text-amber-200/80">
           <Clock className="h-3 w-3" />
           <span>Last checkpoint:</span>

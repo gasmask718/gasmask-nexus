@@ -439,15 +439,18 @@ export default function CallingOpsPage() {
       )}
 
       <Tabs defaultValue="execution" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="execution">⚔️ Execution</TabsTrigger>
-          <TabsTrigger value="history">📜 Call History</TabsTrigger>
-          <TabsTrigger value="desk">VA Calling Desk</TabsTrigger>
-          <TabsTrigger value="predictive">🔮 Predictive</TabsTrigger>
-          <TabsTrigger value="intelligence">🧠 Intelligence</TabsTrigger>
-          <TabsTrigger value="numbers">Number Pool</TabsTrigger>
-          <TabsTrigger value="analytics">Number Analytics</TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto">
+          <TabsList className="w-max">
+            <TabsTrigger value="execution">⚔️ Execution</TabsTrigger>
+            <TabsTrigger value="history">📜 Call History</TabsTrigger>
+            <TabsTrigger value="desk">VA Calling Desk</TabsTrigger>
+            <TabsTrigger value="predictive">🔮 Predictive</TabsTrigger>
+            <TabsTrigger value="intelligence">🧠 Intelligence</TabsTrigger>
+            <TabsTrigger value="numbers">Number Pool</TabsTrigger>
+            <TabsTrigger value="analytics">Number Analytics</TabsTrigger>
+          </TabsList>
+        </div>
+
 
 
         {/* ── AUTO EXECUTION ENGINE ── */}
