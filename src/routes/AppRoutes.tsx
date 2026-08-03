@@ -178,6 +178,7 @@ const DemoEnginePage = lazy(() => import('@/pages/brandaro/DemoEnginePage'));
 const ScoutAgentPage = lazy(() => import('@/pages/brandaro/ScoutAgentPage'));
 const ProductionPipelinePage = lazy(() => import('@/pages/brandaro/ProductionPipelinePage'));
 const ClientPortalPage = lazy(() => import('@/pages/brandaro/ClientPortalPage'));
+const ReceptionistClientPortal = lazy(() => import('@/pages/client-portal/ClientPortalPage'));
 const CanvaAssetsPage = lazy(() => import('@/pages/brandaro/CanvaAssetsPage'));
 const CanvaTemplatesPage = lazy(() => import('@/pages/brandaro/CanvaTemplatesPage'));
 
@@ -1318,6 +1319,9 @@ export default function AppRoutes() {
       {/* Standalone public routes (own layouts) */}
       {/* Developer Portal - standalone, self-authenticated */}
       <Route path="/developer" element={<DeveloperPortal />} />
+
+      {/* Brandaro AI Receptionist client portal - standalone, self-authenticated */}
+      <Route path="/client-portal" element={<ReceptionistClientPortal />} />
 
       <Route path="/install" element={<InstallPwa />} />
       <Route path="/system-health" element={<ProtectedRoute><SystemHealthPage /></ProtectedRoute>} />

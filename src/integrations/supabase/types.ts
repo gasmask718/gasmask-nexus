@@ -23463,6 +23463,7 @@ export type Database = {
           appointment_calendar_url: string | null
           appointments_booked_this_month: number
           appointments_booked_total: number
+          auth_user_id: string | null
           avg_call_duration_seconds: number
           brandaro_client_id: string | null
           business_address: string | null
@@ -23520,6 +23521,7 @@ export type Database = {
           appointment_calendar_url?: string | null
           appointments_booked_this_month?: number
           appointments_booked_total?: number
+          auth_user_id?: string | null
           avg_call_duration_seconds?: number
           brandaro_client_id?: string | null
           business_address?: string | null
@@ -23577,6 +23579,7 @@ export type Database = {
           appointment_calendar_url?: string | null
           appointments_booked_this_month?: number
           appointments_booked_total?: number
+          auth_user_id?: string | null
           avg_call_duration_seconds?: number
           brandaro_client_id?: string | null
           business_address?: string | null
@@ -138889,6 +138892,7 @@ export type Database = {
               isSetofReturn: true
             }
           }
+      claim_receptionist_client_account: { Args: never; Returns: string }
       cleanup_old_recalc_items: {
         Args: { p_days_old?: number }
         Returns: number
@@ -140289,6 +140293,10 @@ export type Database = {
         }
         Returns: Json
       }
+      owns_receptionist_client: {
+        Args: { _client_id: string }
+        Returns: boolean
+      }
       preview_address_extractions: {
         Args: never
         Returns: {
@@ -141187,6 +141195,7 @@ export type Database = {
         | "va"
         | "production"
         | "pending"
+        | "receptionist_client"
       bet_result: "pending" | "win" | "loss" | "push" | "void"
       bet_status: "simulated" | "approved" | "rejected" | "executed"
       brand_contact_role:
@@ -141823,6 +141832,7 @@ export const Constants = {
         "va",
         "production",
         "pending",
+        "receptionist_client",
       ],
       bet_result: ["pending", "win", "loss", "push", "void"],
       bet_status: ["simulated", "approved", "rejected", "executed"],
