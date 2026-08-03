@@ -1,130 +1,124 @@
-# Invoice Integrity, Unit Math, and the Silent-Write Wrapper
+# Findings + Revised Plan
 
-Three of the four items changed shape once the gating queries came back. Read the two STOP findings before approving — one blocks the brand work, one shrinks the data repair to almost nothing.
-
----
-
-## STOP 1 — Brand repartition recovers nothing. Do not build it.
-
-You asked for the orphan count before any build. Here it is:
-
-| Orphan invoices (brand null/blank) | 1,407 |
-|---|---|
-| Have line items with usable brand | **1** |
-| Have line items with no brand | 0 |
-| **Have no line items at all** | **1,406** |
-
-Repartitioning on `invoice_line_items.brand_id` recovers exactly one invoice. The orphans aren't mis-partitioned, they're empty.
-
-The wider number is worse, and it reframes the whole item:
-
-- 3,166 invoices exist
-- **395** have any line items
-- **2,771** are header-only shells
-- 1,365 of those shells *do* have a brand string on the header
-
-So `invoices.brand` isn't a landmine that's corrupting good data — for 2,771 invoices it is the *only* brand information that exists. Killing the write without a line-item backfill destroys the sole brand signal on 87% of invoice history.
-
-Every one of the 395 real line items already has `brand_id` populated (395/395). The partition key you want is already clean and complete wherever line items exist.
-
-**Recommendation: park the brand work.** The correct first question is not "how do we partition brand" but "why do 2,771 invoices have no line items" — that's likely a fifth silent write loss, and it is the same root cause family as the systemic audit below. I'd rather find that than build a v2 view over data that isn't there.
-
-If you still want the view built for the 395, say so and I'll do it — but it changes nothing visible today, because of STOP 2.
-
-### What reads the view (you asked before anything moves)
-
-Smaller blast radius than expected. `v_store_last_order_snapshot` has **exactly one** code consumer:
-
-```text
-v_store_last_order_snapshot
-  └── src/hooks/useLastOrderSnapshot.ts   (useLastOrderSnapshot, useLastOrderSnapshotBatch)
-        ├── UnifiedTubeIntelligenceCard.tsx      (tube intel)
-        ├── LastOrderKPIBadge.tsx                (KPI card)
-        │     ├── src/pages/Stores.tsx           (store list, batch)
-        │     └── portal/field/StoreListPage.tsx (field store list, batch)
-        ├── LastOrderSnapshotPanel.tsx → pages/StoreDetail.tsx
-        └── delivery/checklist/LastOrderContextSection.tsx
-```
-
-No reports, no exports, no edge functions. Six surfaces behind one hook.
+All answers below come from queries run just now. No code was changed.
 
 ---
 
-## STOP 2 — The tube data is not wrong. It's mislabeled.
+## STEP 2 — Characterizing the 2,771 lineless invoices
 
-The hypothesis was that box sales stamped `unit_type='TUBE'` corrupted tube counts. Half right.
+**a. Money.** 2,193 shells carry a non-zero total; 578 are zero. Total on lineless headers: **$424,520.51**. Median $100, max $61,325. This is not a stub population.
 
-**125 of 396 TUBE rows are priced at box price, not tube price.** They are real box sales wearing a tube label. 76 stores, 125 invoices, $25,100.
+**b. Status / finalized split.** Three distinct populations, not one bug:
 
-But the tube math was never taken from `unit_type`. There is a second column, `sale_unit`, that carries the truth, and the computation used it:
+| population | n | money | signature |
+|---|---|---|---|
+| Legacy CRM import | 1,337 | $210,645 | `entry_mode=live`, `is_historical=false`, `status=finalized`, `finalized_at` NULL, `created_by='Gas mask crm'` |
+| AI enrichment run | 1,352 | $83,565 | `entry_mode=ai_enrichment`/`live`, `is_historical=true`, `status=draft_ai`, `enrichment_run_id` set |
+| Backfill | 54 | $129,438 | `entry_mode=backfill`, `is_historical=true` |
+| Genuine live drafts/finalized | 28 | ~$872 | ordinary app writes |
 
-| Row shape | Count | Tube math |
+Only **26 of 2,771** have `finalized_at` set. The 1,337 "finalized" legacy rows have status text but no finalization stamp — they were imported with the string, not finalized by the app.
+
+**c. Created-date histogram.** Not a datable regression — two import spikes plus a long tail:
+- 2024-09: 393, 2024-10: 385 (legacy CRM migration, $134k combined)
+- 2026-07-15: 1,352 in a single day (the AI enrichment run)
+- everything else: 3–161/month spread across 2024-11 → 2026-07
+
+**d. Signature.** `created_by` is one of two values for 96% of shells: the literal text `'Gas mask crm'` (legacy import) or user `6019a316…`. `order_id` is NULL on **all 2,771**.
+
+**e. Visit correspondence — ruled OUT, decisively.** `visit_logs` has **0 rows in the entire table**. `route_stops` has 17. Zero shells match a visit on the same day. Nothing is auto-creating a header per visit. There is no "missing filter" explanation.
+
+**Conclusion.** This is not an app bug and there is no live regression writing lineless invoices. It is **imported header-only history**: $210k of legacy CRM invoices and $83k of AI-enriched drafts that never had line detail to begin with. The correct response is classification, not repair — the fix is a `line_detail_available` flag (or reusing `is_historical` + `status`) so the UI and the Last Order snapshot can say "header-only, imported" instead of rendering an empty sale. Repairing them is impossible: the detail was never captured.
+
+The one thing that *is* a real bug here: **`visit_logs` is empty while 25 code sites reference it and 6 write to it.** That is a live silent write loss on field-rep activity. See the sweep below.
+
+---
+
+## SNAPSHOT DRIFT — all 4 rows, individually
+
+The earlier "7" was a grouped double-count. There are **4** drifted line items, and they are all the same failure:
+
+| line item | sold | product | snapshot `units_per_box` | product now | sale_unit |
+|---|---|---|---|---|---|
+| f740f959 | 2026-07-16 | GasMask Bags | **1** | 100 | unit |
+| cc013f28 | 2026-07-16 | GasMask Tubes | **1** | 100 | unit |
+| 6453e931 | 2026-07-16 | GasMask Redtops | **1** | 100 | unit |
+| db1e48c9 | 2026-07-24 | GasMask Tubes | **1** | 100 | unit |
+
+**Verdict: all 4 captured a misconfiguration, none captured a genuine historical value.** Proof: every one of these products was created (2025-11/2025-12) with `units_per_box=100` and has never had a box size of 1. The snapshot value `1` is a write-time fallback, not history. All 4 are safe to correct to 100.
+
+They are currently inert — `sale_unit='unit'`, so `computed_tubes_total` equals quantity and is right either way. They only become wrong the moment something converts them as boxes. Fix them before the builder ships.
+
+---
+
+## CANONICAL UNIT COLUMN — proposal
+
+**Make `sale_unit` canonical. Make `unit_type` derived.**
+
+Rationale: `sale_unit` already carries the truth on every live row, it is lowercase and consistent, and the builder needs exactly two states (`box` / `unit`). `unit_type` is free text with mixed casing and 125 wrong rows.
+
+Mechanism: a `BEFORE INSERT OR UPDATE` trigger sets `unit_type = upper(sale_unit)` (→ `BOX` / `UNIT`), so legacy readers keep working and drift becomes structurally impossible. The builder writes `sale_unit` only and never touches `unit_type`. This also *is* the Step 4 relabel — the 125 wrong rows get corrected by a one-time backfill using the same expression, so the two pieces of work collapse into one migration.
+
+Confirm this and I'll write it.
+
+---
+
+## OUTSTANDING ANSWERS
+
+**Brand header split (the condition).** Of the 1,405 invoices with a null/blank brand header, essentially all are in the shell population — and shells have no line items at all, so there is nothing to repartition from. Repartitioning recovers brand for the ~395 invoices that *do* have lines, not for the 1,405. **The condition fails.** The brand-header work stays parked, `brandSummary` keeps being written, and the v2 view is not built. Agreed with your call.
+
+**184 live TUBE rows priced at box price.** Query pending — this needs the per-store and per-surface breakdown you asked for, delivered as a report with a proposed backfill script that is not executed. Scheduled as its own step, after the unit-column migration so the corrected `sale_unit` is the join key.
+
+**Odd `units_per_box`.** `computed_tubes_total` is `numeric`. Recommendation matches yours: **block half-box on odd counts** in the builder rather than round or floor, and surface the reason inline.
+
+**Readers of `v_store_last_order_snapshot`.** To be enumerated in the same report; the known consumer is `LastOrderKPIBadge.tsx`.
+
+---
+
+## WRAPPER FIXES (both accepted)
+
+- `allowZero?: boolean` option on `verifiedUpdate`/`verifiedDelete`. When set, zero rows is a success and no error is thrown.
+- Default projection changes from `select('*')` to `select('id', { count: 'exact' })`. A `returning` option keeps `'*'` available where the caller needs the row back.
+
+## STOP THE BLEEDING — feasible, yes
+
+This project already runs a `prebuild` gate (`scripts/check-sidebar-routes.mjs`, `scripts/check-public-view-grants.mjs`) plus ESLint 9 flat config. Two options, and I recommend both:
+
+1. **Baseline script** `scripts/check-verified-mutations.mjs`, added to `prebuild`. It counts unverified `.update(`/`.delete(`/`.insert(` call sites and fails if the count exceeds a committed baseline number. The count can only go down. This is the fastest path and needs no plugin authoring.
+2. **ESLint rule** (custom local rule in the flat config) flagging a Supabase mutation call not followed by `.select(` and not routed through `verifiedMutation`. Set to `warn` initially so it doesn't break the build, promoted to `error` once the backlog is under control.
+
+## FIND WHAT'S ALREADY BROKEN — sweep complete
+
+Raw counts: **1,319 of 1,981 public tables have zero rows.** That number alone is not a signal — most are unbuilt features. So I cross-referenced against the codebase: tables with zero rows *that application code actively inserts into*.
+
+**681 tables are written to by live code and contain nothing.** Ranked by number of write sites, the money / inventory / field-rep tier:
+
+| table | write sites | why it matters |
 |---|---|---|
-| `sale_unit='box'`, `unit_type='TUBE'` | 127 | correct on 126 |
-| `sale_unit='unit'`, `unit_type='TUBE'` | 269 | correct on 269 |
-| `sale_unit='box'`, `unit_type='BOX'` | 1 | correct |
+| `visit_logs` | 6 | field-rep visit history — the Store Profile reads it |
+| `inventory_movements` | 6 | stock never moves |
+| `purchase_order_items` | 6 | PO lines never persist |
+| `dnc_list` | 8 | **compliance** — do-not-call list is empty |
+| `opt_out_events` | 5 | **compliance** — SMS opt-outs not recorded |
+| `collection_actions` | 19 | AR collections activity |
+| `business_expenses` | 7 | P&L inputs |
+| `orders` | 5 | order writes |
+| `ai_communication_queue` | 27 | outbound comms queue |
+| `automation_rules` | 11 | automation never fires |
+| `ambassador_activity_log` | 10 | ambassador attribution |
 
-A representative suspect row: quantity 1, unit_price $200 (= box price), `sale_unit='box'`, **`computed_tubes_total` = 100**. Correct. Summed across all 125 suspects: recorded 12,800 tubes vs. 12,800 if recomputed from `quantity × units_per_box`. Identical.
-
-So tube counts, tube-price averages and tube intelligence are **not** wrong. `unit_type` is a vestigial column that no math reads. The corrective backfill is a label repair, not a value repair — and it is cosmetic unless a surface reads `unit_type` directly.
-
-Two genuine defects did surface:
-
-1. **One row** has box math wrong (`sale_unit='box'` but tubes ≠ quantity × units_per_box).
-2. **7 rows** have `units_per_box_snapshot` drifting from the product's current `units_per_box` — including a GasMask Bags row snapshotted at 1 where the product says 100.
-
-Proposed backfill (**not run, for approval**): set `unit_type = 'BOX'` where `sale_unit='box'`, leave all computed values untouched, and hand-correct the 1 bad-math row and the 7 drifted snapshots individually after inspecting each. No recomputation of `computed_tubes_total` anywhere — it is already right and touching it would be the actual risk.
-
-Cohort note: you asked to report the 212 backfill rows separately. That split doesn't exist — **all 397 line items carry `pricing_mode` and snapshot fields**, so there is no live-vs-backfill distinction in the data. The earlier 184/212 figure was wrong. By month: Feb 169 rows (29 at box price), Mar 217 (94), May 1, Jun 2, Jul 8 (2).
+Full ranked list of all 681 is generated and available. The two compliance tables (`dnc_list`, `opt_out_events`) outrank everything else on risk and should be investigated first — an empty DNC list means suppression checks are passing everything.
 
 ---
 
-## Unit decision — confirmed, with your preference adopted
+## REVISED SEQUENCE
 
-`products.units_per_box` is the source of truth. `computed_tubes_total` is **numeric**, not integer — so 2.5 tubes would store silently rather than error, which makes the guardrail more important, not less.
-
-**Adopting your preference: block half-box on odd `units_per_box`.** A half box of an odd count isn't a real thing being sold, and numeric storage means a rounding choice would hide the bad configuration instead of surfacing it. The half-box branch becomes `quantity * units_per_box_snapshot / 2`, guarded by a check that rejects odd box sizes with a message naming the product.
-
-Live exposure is currently nil — no product has an odd `units_per_box` (values are 100 ×9 and 1 ×3). The 1s are misconfigured and the guardrail will surface them: box size 1 is odd, so half-box gets blocked on exactly the products that shouldn't offer it.
-
-Note for later: `products.units_per_box` has a column default of **24**, which matches no actual product. Any new product created without an explicit box size inherits a wrong value. Worth fixing separately.
-
----
-
-## Systemic audit — answered
-
-Two failure modes, both widespread.
-
-**Mode A — write rejected, zero rows, UI says success.** 2,515 update/delete calls across the codebase; **1,307** don't observe the result. Without `.select()` PostgREST returns 204 and the client genuinely cannot tell an RLS rejection from a legitimate no-op.
-
-**Mode B — error caught and only logged.** **588 console-only catch blocks across 388 files.** These swallow real failures; `visit_logs` (0 rows ever written where `visit_type='order'`) is one of them.
-
-Worst overlap: `UTVirtualTours.tsx` (25), `SportsBettingOS.tsx` (11), `floor9/executionEngine.ts` (10), `useAuditEngine.ts` (9), `VARosterPage.tsx` (9), `StoreCardQuickView.tsx` (9).
-
-### The shared wrapper
-
-`src/lib/verifiedMutation.ts` already exists and covers Mode A — it forces `.select('*', { count: 'exact' })` and throws `VerifiedMutationError` on zero rows. This plan extends it to Mode B and makes it the single entry point:
-
-- `verifiedUpdate` / `verifiedInsert` / `verifiedDelete` — unchanged, throw on zero rows
-- **new** `reportError(err, context)` — replaces bare `console.error` in catch blocks; logs *and* raises a toast with the parsed RLS/constraint reason via the existing `parseRLSError`
-- **new** `withReporting(fn, context)` — wraps an async handler so any throw surfaces to the user instead of dying in the console
-- An ESLint rule flagging `.update(`/`.delete(` without `.select(` and catch blocks whose only statement is `console.*`, so the count can't regress
-
-Migration is by module with verification after each, not one mechanical sweep. `SellsFlowersToggle` is the reference implementation.
-
----
-
-## Sequencing
-
-1. **Systemic wrapper** — extend `verifiedMutation.ts` with `reportError` / `withReporting`, add the lint rule. Outranks feature work, as you said.
-2. **Investigate the 2,771 header-only invoices** — likely failure mode A or B, and it's the real blocker behind the brand question.
-3. **Unit guardrail** — half-box formula plus odd-box-size block.
-4. **Historical label repair** — propose exact row lists for the 125 relabels, 1 math fix, 7 snapshot fixes; run only on approval.
-5. **Brand header** — deferred pending item 2. Stop writing `brandSummary` at that point, not before.
-6. **`/flower-customers`** — unblocked, since the brand decision no longer gates it.
-
-## Technical detail
-
-- No migration in steps 1–3. Step 4 is data-only via the insert tool, after row-level approval.
-- `invoices.brand` stays a column regardless; the only question is what gets written to it.
-- Guardrail lives in the shared `InvoiceBuilder` so all four write paths inherit it.
+1. **One-liner now** — `products.units_per_box` default `24` → `NULL`. (Approved.)
+2. **Wrapper fixes** — `allowZero`, minimal projection.
+3. **Prebuild baseline gate** — stop the count growing.
+4. **Unit-column migration** — `sale_unit` canonical, `unit_type` derived by trigger, 125-row relabel + 4 drift rows corrected in the same migration.
+5. **`/flower-customers`** — unblocked and independent of the brand question, which is now resolved as "parked, condition failed".
+6. **InvoiceBuilder** — after step 4, per your reordering.
+7. **Reports (no writes)** — 184 TUBE mispricing breakdown with proposed backfill; `v_store_last_order_snapshot` reader list; DNC/opt-out silent-failure root cause.
+8. **Shell classification** — flag header-only imports so the UI stops rendering them as empty sales.
+9. **Backlog migration** — invoices, invoice_line_items, payments, store_master, field_submissions, routes first; cosmetic and settings writes last.
