@@ -75,6 +75,8 @@ import {
   AlertTriangle,
   Calendar,
   Database,
+  Lightbulb,
+
   Map,
   Route,
   Bell,
