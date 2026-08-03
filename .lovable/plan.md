@@ -1,124 +1,110 @@
-# Findings + Revised Plan
+# Import Pipeline Findings + Revised Plan
 
-All answers below come from queries run just now. No code was changed.
-
----
-
-## STEP 2 — Characterizing the 2,771 lineless invoices
-
-**a. Money.** 2,193 shells carry a non-zero total; 578 are zero. Total on lineless headers: **$424,520.51**. Median $100, max $61,325. This is not a stub population.
-
-**b. Status / finalized split.** Three distinct populations, not one bug:
-
-| population | n | money | signature |
-|---|---|---|---|
-| Legacy CRM import | 1,337 | $210,645 | `entry_mode=live`, `is_historical=false`, `status=finalized`, `finalized_at` NULL, `created_by='Gas mask crm'` |
-| AI enrichment run | 1,352 | $83,565 | `entry_mode=ai_enrichment`/`live`, `is_historical=true`, `status=draft_ai`, `enrichment_run_id` set |
-| Backfill | 54 | $129,438 | `entry_mode=backfill`, `is_historical=true` |
-| Genuine live drafts/finalized | 28 | ~$872 | ordinary app writes |
-
-Only **26 of 2,771** have `finalized_at` set. The 1,337 "finalized" legacy rows have status text but no finalization stamp — they were imported with the string, not finalized by the app.
-
-**c. Created-date histogram.** Not a datable regression — two import spikes plus a long tail:
-- 2024-09: 393, 2024-10: 385 (legacy CRM migration, $134k combined)
-- 2026-07-15: 1,352 in a single day (the AI enrichment run)
-- everything else: 3–161/month spread across 2024-11 → 2026-07
-
-**d. Signature.** `created_by` is one of two values for 96% of shells: the literal text `'Gas mask crm'` (legacy import) or user `6019a316…`. `order_id` is NULL on **all 2,771**.
-
-**e. Visit correspondence — ruled OUT, decisively.** `visit_logs` has **0 rows in the entire table**. `route_stops` has 17. Zero shells match a visit on the same day. Nothing is auto-creating a header per visit. There is no "missing filter" explanation.
-
-**Conclusion.** This is not an app bug and there is no live regression writing lineless invoices. It is **imported header-only history**: $210k of legacy CRM invoices and $83k of AI-enriched drafts that never had line detail to begin with. The correct response is classification, not repair — the fix is a `line_detail_available` flag (or reusing `is_historical` + `status`) so the UI and the Last Order snapshot can say "header-only, imported" instead of rendering an empty sale. Repairing them is impossible: the detail was never captured.
-
-The one thing that *is* a real bug here: **`visit_logs` is empty while 25 code sites reference it and 6 write to it.** That is a live silent write loss on field-rep activity. See the sweep below.
+Context correction accepted: invoices are an **import-first** system. 3,166 invoices, of which 28 were written by the live app. The 2,771 lineless headers are expected business history, not a bug. Everything below is re-framed around that.
 
 ---
 
-## SNAPSHOT DRIFT — all 4 rows, individually
+## 0. COMPLIANCE CHECK (first, as directed) — clean, with one caveat
 
-The earlier "7" was a grouped double-count. There are **4** drifted line items, and they are all the same failure:
+`dnc_list` = 0 rows. `opt_out_events` = 0 rows. Both read gates are wired and **fail closed** (`_shared/dnc.ts` returns `blocked: true` with reason `suppression_lookup_failed` on lookup error), so an empty table is not silently permissive.
 
-| line item | sold | product | snapshot `units_per_box` | product now | sale_unit |
-|---|---|---|---|---|---|
-| f740f959 | 2026-07-16 | GasMask Bags | **1** | 100 | unit |
-| cc013f28 | 2026-07-16 | GasMask Tubes | **1** | 100 | unit |
-| 6453e931 | 2026-07-16 | GasMask Redtops | **1** | 100 | unit |
-| db1e48c9 | 2026-07-24 | GasMask Tubes | **1** | 100 | unit |
+The question was whether they're empty because nobody opted out or because writes are lost. Evidence:
 
-**Verdict: all 4 captured a misconfiguration, none captured a genuine historical value.** Proof: every one of these products was created (2025-11/2025-12) with `units_per_box=100` and has never had a box size of 1. The snapshot value `1` is a write-time fallback, not history. All 4 are safe to correct to 100.
+- Inbound message corpus scanned for STOP / UNSUBSCRIBE / QUIT / CANCEL: **0 matches** across `brandaro_inbound_messages` (47 rows) and `messaging_messages` (0 inbound rows).
+- Writers are present and plausible: `dc-bland-webhook` (4 upsert sites), `sms-inbound-webhook`, `brandaro-handle-inbound`.
 
-They are currently inert — `sale_unit='unit'`, so `computed_tubes_total` equals quantity and is right either way. They only become wrong the moment something converts them as boxes. Fix them before the builder ships.
+**Verdict: not a silent write loss. Nobody has opted out yet.** The gates are correct. One real gap remains: no writer path has ever executed, so the write side is untested in production. Action is a synthetic end-to-end test (send a STOP through the inbound webhook against a test number, confirm a row lands and the next send is blocked), not a code fix.
 
 ---
 
-## CANONICAL UNIT COLUMN — proposal
+## 1. THE IMPORT PIPELINE — every invoice-creating path
 
-**Make `sale_unit` canonical. Make `unit_type` derived.**
+| # | Path | Type | Creates line items? | Source has line detail? |
+|---|---|---|---|---|
+| 1 | `src/hooks/useBulkUpload.ts` (2 insert sites, lines 1053 + 1560) | spreadsheet upload | **No — header only** | **Yes, discarded** |
+| 2 | `src/components/store/BulkInvoiceUploader.tsx` (line 407) | paste / CSV, line + block mode | **No — header only** | **Yes, discarded** |
+| 3 | `public.commit_import_batch` RPC | staged historical batch | **No — header only** | Yes, in `raw_payload` |
+| 4 | `ai-backfill-runner` edge function (`job_type='invoices'`) | AI backfill from orders | **No — header only** | Partially |
+| 5 | `finalize-audit-draft` edge function | audit draft → invoice | **Yes** | Yes |
+| 6 | `ut-generate-invoice` edge function | UT bookings | header + UT lines | n/a |
+| 7 | `CreateStoreInvoiceModal`, `StoreCardQuickView`, `StoreVisitEngine`, `EditStoreInvoiceModal`, `useCheckout` | live app | **Yes** | n/a |
 
-Rationale: `sale_unit` already carries the truth on every live row, it is lowercase and consistent, and the builder needs exactly two states (`box` / `unit`). `unit_type` is free text with mixed casing and 125 wrong rows.
+**Four import paths could capture line detail and don't: #1, #2, #3, #4.** They account for essentially all 2,771 lineless headers. This is the actual finding — not that the shells are corrupt, but that the import writers were built header-only while their sources carried detail.
 
-Mechanism: a `BEFORE INSERT OR UPDATE` trigger sets `unit_type = upper(sale_unit)` (→ `BOX` / `UNIT`), so legacy readers keep working and drift becomes structurally impossible. The builder writes `sale_unit` only and never touches `unit_type`. This also *is* the Step 4 relabel — the 125 wrong rows get corrected by a one-time backfill using the same expression, so the two pieces of work collapse into one migration.
+`BulkInvoiceUploader` is the sharpest case: it already has a "line mode" parser that reads structured rows, and it still collapses everything into one header.
 
-Confirm this and I'll write it.
+## 2. IS THE DETAIL IN THE SOURCE? — Yes, and it is already in the database
 
----
+The enrichment run wrote the source text verbatim into `invoices.notes`. Actual values:
 
-## OUTSTANDING ANSWERS
+```
+"0/1/25  1 BOX $200 PAID"
+"0/1/25 - 0/1/25- 50 paid 25 tubes"
+"0/27/25 - 20 tubes -40$ paid"
+"03/21/2025 1 box -200 $ paid 100 dollars owe 100 unpaid come back on Monday for the rest of the payment"
+```
 
-**Brand header split (the condition).** Of the 1,405 invoices with a null/blank brand header, essentially all are in the shell population — and shells have no line items at all, so there is nothing to repartition from. Repartitioning recovers brand for the ~395 invoices that *do* have lines, not for the 1,405. **The condition fails.** The brand-header work stays parked, `brandSummary` keeps being written, and the v2 view is not built. Agreed with your call.
+Coverage across all 1,352 enrichment invoices:
 
-**184 live TUBE rows priced at box price.** Query pending — this needs the per-store and per-surface breakdown you asked for, delivered as a report with a proposed backfill script that is not executed. Scheduled as its own step, after the unit-column migration so the corrected `sale_unit` is the join key.
+- **1,352 / 1,352** contain numeric detail
+- **619** explicitly say "box" / "boxes"
+- **436** explicitly say "tube" / "tubes"
 
-**Odd `units_per_box`.** `computed_tubes_total` is `numeric`. Recommendation matches yours: **block half-box on odd counts** in the builder rather than round or floor, and surface the reason inline.
+**The detail was not header-level to begin with — it was captured and then discarded into a text blob.** Re-import with line capture is not just on the table, it needs no new source documents: the notes field is the source. A parser over `invoices.notes` can reconstruct product, quantity, unit and payment state for the large majority of the enrichment population, and the same approach applies to the legacy CRM lane.
 
-**Readers of `v_store_last_order_snapshot`.** To be enumerated in the same report; the known consumer is `LastOrderKPIBadge.tsx`.
+This changes the Last Order card decision: don't build it against 395 invoices. Reconstruct lines first, then build it against ~1,700+.
 
----
+## 3. DUPLICATE CHECK — smaller than it looks, and the enrichment number is an artifact
 
-## WRAPPER FIXES (both accepted)
+Exact same store + same `business_date` + same amount:
 
-- `allowZero?: boolean` option on `verifiedUpdate`/`verifiedDelete`. When set, zero rows is a success and no error is thrown.
-- Default projection changes from `select('*')` to `select('id', { count: 'exact' })`. A `returning` option keeps `'*'` available where the caller needs the row back.
+| lane mix | duplicate groups | invoices involved | redundant copies | dollars at risk |
+|---|---|---|---|---|
+| legacy_crm internal | 172 | 471 | 299 | **$51,955** |
+| enrich internal | 160 | 417 | 257 | $26,383 |
+| backfill internal | 17 | 34 | 17 | $2,590 |
+| app internal | 4 | 15 | 11 | $1,056 |
+| **app + backfill (cross-lane)** | 10 | 20 | 10 | **$920** |
 
-## STOP THE BLEEDING — feasible, yes
+**Cross-lane duplication is negligible — $920 across 10 groups.** The imports did not overlap each other meaningfully. That was the main risk and it is ruled out.
 
-This project already runs a `prebuild` gate (`scripts/check-sidebar-routes.mjs`, `scripts/check-public-view-grants.mjs`) plus ESLint 9 flat config. Two options, and I recommend both:
+**The $26,383 enrichment figure is largely a false positive.** All 1,275 enrichment invoices were written with `business_date = 2026-07-15` (the import date), not the real sale date sitting in the note text. Every enrichment sale collapsed onto one date, so "same store, same date, same amount" catches genuinely distinct recurring sales. Once dates are parsed out of the notes, most of these separate.
 
-1. **Baseline script** `scripts/check-verified-mutations.mjs`, added to `prebuild`. It counts unverified `.update(`/`.delete(`/`.insert(` call sites and fails if the count exceeds a committed baseline number. The count can only go down. This is the fastest path and needs no plugin authoring.
-2. **ESLint rule** (custom local rule in the flat config) flagging a Supabase mutation call not followed by `.select(` and not routed through `verifiedMutation`. Set to `warn` initially so it doesn't break the build, promoted to `error` once the backlog is under control.
+**The legacy CRM $51,955 across 172 groups is the real exposure** and needs manual review, not an automated de-dup.
 
-## FIND WHAT'S ALREADY BROKEN — sweep complete
+## 4. ENRICHMENT RUN TRACE
 
-Raw counts: **1,319 of 1,981 public tables have zero rows.** That number alone is not a signal — most are unbuilt features. So I cross-referenced against the codebase: tables with zero rows *that application code actively inserts into*.
+Five runs, all executed 2026-07-15:
 
-**681 tables are written to by live code and contain nothing.** Ranked by number of write sites, the money / inventory / field-rep tier:
+| run | invoices | dollars | stores | notes present |
+|---|---|---|---|---|
+| `76316034…` | 713 | $49,471 | 206 | 713 |
+| `bb220002…` | 483 | $24,021 | 100 | 483 |
+| `a1c99333…` | 78 | $5,226 | 30 | 78 |
+| `a17ec099…000b` | 68 | $4,322 | 12 | 68 |
+| `a17ec099…000c` | 10 | $525 | 3 | 10 |
 
-| table | write sites | why it matters |
-|---|---|---|
-| `visit_logs` | 6 | field-rep visit history — the Store Profile reads it |
-| `inventory_movements` | 6 | stock never moves |
-| `purchase_order_items` | 6 | PO lines never persist |
-| `dnc_list` | 8 | **compliance** — do-not-call list is empty |
-| `opt_out_events` | 5 | **compliance** — SMS opt-outs not recorded |
-| `collection_actions` | 19 | AR collections activity |
-| `business_expenses` | 7 | P&L inputs |
-| `orders` | 5 | order writes |
-| `ai_communication_queue` | 27 | outbound comms queue |
-| `automation_rules` | 11 | automation never fires |
-| `ambassador_activity_log` | 10 | ambassador attribution |
+**Transcribed, not estimated.** Every row carries the raw source string in `notes`, and the amounts match the figures written in those strings ("1 BOX $200 PAID" → total_amount 200). The run copied handwritten/notepad content faithfully into a header. Two defects, both mechanical:
 
-Full ranked list of all 681 is generated and available. The two compliance tables (`dnc_list`, `opt_out_events`) outrank everything else on risk and should be investigated first — an empty DNC list means suppression checks are passing everything.
+- **Dates dropped** — 1,275 of 1,352 got the import date instead of the date written in the note.
+- **Line detail dropped** — parsed nothing out of the note into `invoice_line_items`.
+
+Neither is a fabrication problem. Both are recoverable from data already stored.
 
 ---
 
 ## REVISED SEQUENCE
 
-1. **One-liner now** — `products.units_per_box` default `24` → `NULL`. (Approved.)
-2. **Wrapper fixes** — `allowZero`, minimal projection.
-3. **Prebuild baseline gate** — stop the count growing.
-4. **Unit-column migration** — `sale_unit` canonical, `unit_type` derived by trigger, 125-row relabel + 4 drift rows corrected in the same migration.
-5. **`/flower-customers`** — unblocked and independent of the brand question, which is now resolved as "parked, condition failed".
-6. **InvoiceBuilder** — after step 4, per your reordering.
-7. **Reports (no writes)** — 184 TUBE mispricing breakdown with proposed backfill; `v_store_last_order_snapshot` reader list; DNC/opt-out silent-failure root cause.
-8. **Shell classification** — flag header-only imports so the UI stops rendering them as empty sales.
-9. **Backlog migration** — invoices, invoice_line_items, payments, store_master, field_submissions, routes first; cosmetic and settings writes last.
+1. **`products.units_per_box` default 24 → NULL.** One line. (Approved.)
+2. **DNC end-to-end test** — synthetic STOP through the inbound webhook, confirm suppression row + subsequent block. No code change unless it fails.
+3. **Wrapper fixes** — `allowZero` option; default projection `select('id')` instead of `'*'`, with `'*'` opt-in.
+4. **Prebuild baseline gate** (`scripts/check-verified-mutations.mjs`, joins the existing `prebuild` chain) so the unverified-mutation count can only go down. Feasible — the project already runs two such gates.
+5. **Notes parser, dry run, report only.** Parse `invoices.notes` into candidate `(date, product, qty, unit, amount, paid_state)` for all 1,352 enrichment + legacy CRM rows. Output a coverage report and a confidence split. Nothing written.
+6. **Unit-column migration** — `sale_unit` canonical, `unit_type` derived by trigger, 125-row relabel and the 4 drift rows corrected in the same migration. Must land before any line reconstruction writes rows.
+7. **Line reconstruction**, gated on the step 5 report: backfill `invoice_line_items` and corrected `business_date` for the high-confidence subset; queue the rest for review.
+8. **Fix the four import writers** (#1–#4 above) to emit line items, so the next import doesn't recreate the problem.
+9. **Legacy CRM duplicate review** — 172 groups / $51,955, surfaced as a review queue, no automated deletion.
+10. **Last Order card, `/flower-customers`, InvoiceBuilder** — after lines exist.
+11. **Backlog migration** — invoices, invoice_line_items, payments, store_master, field_submissions, routes first; cosmetic last.
+
+Brand-header work stays parked; `brandSummary` keeps being written.
