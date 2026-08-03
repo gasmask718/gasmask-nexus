@@ -410,6 +410,10 @@ async function runPublish(body: any) {
     retail_price: pricing.suggested_retail || 0,
     store_price: pricing.suggested_store || 0,
     wholesale_price: pricing.suggested_wholesale || 0,
+    // MARGIN GUARD FEED: without supplier cost the dd_margin_guard trigger short-circuits (v_cost <= 0)
+    // and every wizard-published product bypasses the margin floor. Always pass the draft's real cost.
+    supplier_cost: draft.cost ?? null,
+    supplier_cost_cents: draft.cost != null ? Math.round(Number(draft.cost) * 100) : null,
     street_price: pricing.suggested_street || null,
     inventory_qty: typeof draft.inventory_qty === 'number' ? draft.inventory_qty : 0,
     weight_oz: draft.weight_oz ?? null,
@@ -431,12 +435,14 @@ async function runPublish(body: any) {
     throw new Error(`publish failed exactness gate: row landed as status=${(prod as any).status}`);
   }
 
-  await sb.from('marketplace_inventory').insert({
-    product_id: prod.id,
-    wholesaler_id: draft.supplier_id,
-    quantity_on_hand: typeof draft.inventory_qty === 'number' ? draft.inventory_qty : 0,
-    quantity_reserved: 0,
-  }).select().maybeSingle().catch(() => null);
+  try {
+    await sb.from('marketplace_inventory').insert({
+      product_id: prod.id,
+      wholesaler_id: draft.supplier_id,
+      quantity_on_hand: typeof draft.inventory_qty === 'number' ? draft.inventory_qty : 0,
+      quantity_reserved: 0,
+    }).select().maybeSingle();
+  } catch (_e) { /* inventory row is best-effort — never fail a successful publish */ }
 
   await sb.from('dd_catalog_drafts').update({
     status: 'published',
