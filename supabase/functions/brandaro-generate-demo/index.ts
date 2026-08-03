@@ -535,6 +535,27 @@ Deno.serve(async (req) => {
         sms.status = "failed";
         sms.reason = e instanceof Error ? e.message : "unknown";
       }
+      // Record the send attempt on the demo row. sent_at is stamped ONLY when the
+      // provider genuinely accepted the message (status "sent" + provider_message_id).
+      // A Twilio 401/geo failure leaves sent_at NULL so the "Sent" stat card and the
+      // Send button stay truthful instead of reflecting the old always-200 behaviour.
+      {
+        const nowIso = new Date().toISOString();
+        const genuine = sms.status === "sent" && !!sms.provider_message_id;
+        const patch: Record<string, unknown> = {
+          send_attempted_at: sms.status === "skipped" ? null : nowIso,
+          last_send_status: sms.status,
+          last_send_error: genuine ? null : (sms.reason ?? null),
+        };
+        if (genuine) {
+          patch.sent_at = nowIso;
+          patch.sms_sent_at = nowIso;
+        }
+        const { error: stampErr } = await supabase
+          .from("brandaro_demo_sites").update(patch).eq("id", demo.id);
+        if (stampErr) console.warn("[auto-send] sent_at stamp failed:", stampErr.message);
+      }
+
       if (sms.status === "failed") {
         console.error(`[auto-send] SMS failed for demo ${demo.id}: ${sms.reason} — demo is live, VA can send manually`);
       } else {
