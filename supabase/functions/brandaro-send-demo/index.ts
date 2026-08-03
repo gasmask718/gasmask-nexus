@@ -107,12 +107,20 @@ Deno.serve(async (req) => {
             Body: message,
           }),
         });
-        const data = await resp.json();
-        if (resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        // Genuine success = Twilio 2xx AND a real message SID AND a non-failed status.
+        const badStatus = data?.status === "failed" || data?.status === "undelivered";
+        if (resp.ok && data?.sid && !badStatus) {
           sendResult = { success: true, provider_message_id: data.sid };
         } else {
-          sendResult = { success: false, error: data.message || "Twilio error" };
+          sendResult = {
+            success: false,
+            error: data?.message || (resp.ok ? `twilio_status_${data?.status || "no_sid"}` : `twilio_http_${resp.status}`),
+            twilio_code: data?.code ?? null,
+          };
         }
+      } else {
+        sendResult = { success: false, error: "twilio_credentials_missing" };
       }
     }
 
