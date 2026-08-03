@@ -86,7 +86,8 @@ export default function SystemCheckpointBar() {
         </span>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+
         <div className="hidden sm:flex items-center gap-1 text-amber-200/80">
           <Clock className="h-3 w-3" />
           <span>Last checkpoint:</span>
