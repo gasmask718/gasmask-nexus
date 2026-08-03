@@ -97,14 +97,14 @@ export default function BrandaroWarRoom() {
     refetchInterval: 15000,
   });
 
-  // Recent alerts
+  // Recent alerts (column is is_read, not dismissed)
   const { data: alerts = [] } = useQuery({
     queryKey: ["brandaro-war-alerts"],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("brandaro_va_alerts")
         .select("*")
-        .eq("dismissed", false)
+        .eq("is_read", false)
         .order("created_at", { ascending: false })
         .limit(5);
       return data || [];
@@ -112,14 +112,15 @@ export default function BrandaroWarRoom() {
     refetchInterval: 10000,
   });
 
-  // VA leaderboard top 3
+  // VA leaderboard top 3 (real columns: va_id, calls_made, interested_count, deals_closed)
   const { data: topVAs = [] } = useQuery({
     queryKey: ["brandaro-war-top-vas"],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("brandaro_va_performance")
-        .select("va_user_id, daily_score, calls_today, interested_today")
-        .order("daily_score", { ascending: false })
+        .select("id, va_id, calls_made, interested_count, deals_closed, period_start")
+        .order("deals_closed", { ascending: false })
+        .order("calls_made", { ascending: false })
         .limit(3);
       return data || [];
     },
