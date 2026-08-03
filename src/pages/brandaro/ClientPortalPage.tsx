@@ -407,12 +407,17 @@ function ClientDetailSheet({
 
             <div className="space-y-1.5">
               <Label>Assigned builder</Label>
-              <Input
-                value={form.assigned_builder}
-                placeholder="Builder user id (uuid)"
-                onChange={(e) => setForm(f => ({ ...f, assigned_builder: e.target.value }))}
+              <BuilderAssignControl
+                rowId={client.id}
+                rowLabel={client.business_name}
+                table="brandaro_clients"
+                currentAssignedBuilder={form.assigned_builder || null}
+                onChanged={() => {
+                  onSaved?.();
+                }}
               />
             </div>
+
 
             <div className="space-y-1.5">
               <Label>Project deadline</Label>
