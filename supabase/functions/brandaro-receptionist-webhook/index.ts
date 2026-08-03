@@ -177,19 +177,21 @@ Deno.serve(async (req) => {
               invited = true;
               const actionLink = (linkData as any)?.properties?.action_link ?? portalUrl;
               try {
-                await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-transactional-email`, {
+                await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/brandaro-send-email`, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
                   },
                   body: JSON.stringify({
+                    template: "receptionist-portal-welcome",
                     to: email,
-                    subject: `Your AI Receptionist portal is ready — ${client.business_name}`,
-                    html: `<p>Hi ${client.owner_name ?? "there"},</p>
-<p>Your AI Receptionist for <strong>${client.business_name}</strong> is being set up.</p>
-<p><a href="${actionLink}">Click here to sign in to your client portal</a> — no password needed.</p>
-<p>You can view call logs, transcripts, and your receptionist settings any time at ${portalUrl}.</p>`,
+                    data: {
+                      business_name: client.business_name,
+                      owner_name: client.owner_name,
+                      login_url: actionLink,
+                      portal_url: portalUrl,
+                    },
                   }),
                 });
               } catch (e) {
