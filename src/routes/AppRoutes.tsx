@@ -1319,6 +1319,9 @@ export default function AppRoutes() {
       {/* Developer Portal - standalone, self-authenticated */}
       <Route path="/developer" element={<DeveloperPortal />} />
 
+      {/* Brandaro AI Receptionist client portal - standalone, self-authenticated */}
+      <Route path="/client-portal" element={<ReceptionistClientPortal />} />
+
       <Route path="/install" element={<InstallPwa />} />
       <Route path="/system-health" element={<ProtectedRoute><SystemHealthPage /></ProtectedRoute>} />
       <Route path="/admin/training" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><TrainingAdminPage /></RequireRole></ProtectedRoute>} />
