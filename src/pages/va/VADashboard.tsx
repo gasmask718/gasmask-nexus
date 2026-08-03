@@ -293,6 +293,11 @@ function VADashboardInner() {
                 <VAAICoachingHub />
               </div>
             )}
+            {view === 'messages' && (
+              <div className="max-w-6xl">
+                <VAMessages />
+              </div>
+            )}
             {view === 'history' && (
               <div className="max-w-5xl">
                 <div className="mb-4">
