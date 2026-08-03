@@ -103208,6 +103208,9 @@ export type Database = {
           can_receive_sms: boolean | null
           created_at: string | null
           created_via_session: string | null
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           email: string | null
           escalation_flag: boolean | null
           homie_set_at: string | null
@@ -103269,6 +103272,9 @@ export type Database = {
           can_receive_sms?: boolean | null
           created_at?: string | null
           created_via_session?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           email?: string | null
           escalation_flag?: boolean | null
           homie_set_at?: string | null
@@ -103330,6 +103336,9 @@ export type Database = {
           can_receive_sms?: boolean | null
           created_at?: string | null
           created_via_session?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           email?: string | null
           escalation_flag?: boolean | null
           homie_set_at?: string | null
