@@ -14,6 +14,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { upsertVercelEnvVar } from "../_shared/vercelDeploy.ts";
+import { advanceClientStatus } from "../_shared/brandaroClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -104,7 +105,7 @@ Deno.serve(async (req) => {
 
     const { data: job, error: jobErr } = await supabase
       .from("brandaro_build_jobs")
-      .select("id, demo_id, package_tier, intake_data, logo_storage_path, vercel_project_id, build_status")
+      .select("id, demo_id, client_id, package_tier, intake_data, logo_storage_path, vercel_project_id, build_status")
       .eq("id", jobId)
       .maybeSingle();
     if (jobErr) throw new Error(jobErr.message);
@@ -210,6 +211,10 @@ Deno.serve(async (req) => {
       updated_at: nowIso,
     }).eq("id", job.id);
     if (finalErr) console.error("[provision] final persist failed:", finalErr.message);
+
+    // Canonical client record follows the build: a deployed draft awaiting dev
+    // review is 'draft_ready'. Never regresses a further-along client.
+    if (job.client_id) await advanceClientStatus(supabase, job.client_id, "draft_ready");
 
     console.log(`[provision] job ${job.id} -> project ${project.id}, deployment ${deployment.id}, awaiting review`);
 

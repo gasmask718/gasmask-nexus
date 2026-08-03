@@ -11,6 +11,7 @@
 //  - every field is validated & length-capped server-side
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { applyIntakeToClient, ensureClientForJob } from "../_shared/brandaroClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,7 +51,7 @@ async function findJob(supabase: ReturnType<typeof svc>, demoId: string) {
   const { data, error } = await supabase
     .from("brandaro_build_jobs")
     .select(
-      "id, demo_id, package_tier, intake_completed, intake_completed_at, logo_storage_path, created_at",
+      "id, demo_id, lead_id, client_id, package_tier, intake_completed, intake_completed_at, logo_storage_path, created_at",
     )
     .eq("demo_id", demoId)
     .order("created_at", { ascending: false })
@@ -193,6 +194,33 @@ Deno.serve(async (req) => {
         console.error("[brandaro-intake] job update failed:", updErr.message);
         return json({ error: "Could not save your details. Please try again." }, 500);
       }
+
+      // Enrich the canonical client record with the real business details.
+      // The row normally already exists (created at payment by
+      // demo-stripe-webhook); ensure covers jobs paid before that wiring.
+      try {
+        const { client_id } = await ensureClientForJob(supabase, {
+          build_job_id: job.id,
+          lead_id: job.lead_id ?? null,
+          business_name: businessName,
+          email: contactEmail,
+          tier: job.package_tier ?? null,
+        });
+        if (client_id) {
+          await applyIntakeToClient(supabase, client_id, {
+            business_name: businessName,
+            contact_email: contactEmail,
+            preferred_domain: preferredDomain || null,
+            content_notes: contentNotes || null,
+            colors,
+          });
+        }
+      } catch (e) {
+        // Never fail the client's submission on a CRM-side write.
+        console.error("[brandaro-intake] client sync failed:", e instanceof Error ? e.message : e);
+      }
+
+
 
       // Pipeline Step 15: pro/custom builds start once we have the intake
       // answers. Fire-and-forget — the client's confirmation must never wait on
