@@ -40,6 +40,7 @@ export function useStoreOpportunities(storeId?: string) {
             city
           )
         `)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (storeId) {
@@ -59,7 +60,8 @@ export function useOpportunitiesSummary() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('store_opportunities')
-        .select('id, is_completed');
+        .select('id, is_completed')
+        .is('deleted_at', null);
       
       if (error) throw error;
 

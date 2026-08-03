@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { verifiedInsert, mutationErrorMessage } from '@/lib/verifiedMutation';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 
 interface AddOpportunityModalProps {
@@ -62,14 +63,18 @@ export function AddOpportunityModal({
   const saveOpportunity = async (masterId: string) => {
     setSaving(true);
     try {
-      const { error } = await supabase.from('store_opportunities').insert({
-        store_id: masterId,
-        opportunity_text: opportunityText.trim(),
-        source: 'manual',
-        is_completed: false,
-      });
-
-      if (error) throw error;
+      // business_id + created_by stamped server-side from auth.uid().
+      await verifiedInsert('Add opportunity', () =>
+        supabase
+          .from('store_opportunities')
+          .insert({
+            store_id: masterId,
+            opportunity_text: opportunityText.trim(),
+            source: 'manual',
+            is_completed: false,
+          })
+          .select('id') as never,
+      );
 
       toast.success('Opportunity added successfully');
       setOpportunityText('');
@@ -77,7 +82,7 @@ export function AddOpportunityModal({
       onSuccess();
     } catch (error: any) {
       console.error('Error adding opportunity:', error);
-      toast.error('Failed to add opportunity: ' + error.message);
+      toast.error(mutationErrorMessage(error));
     } finally {
       setSaving(false);
     }

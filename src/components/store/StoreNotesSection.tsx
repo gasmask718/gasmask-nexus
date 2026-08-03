@@ -11,6 +11,7 @@ import { AddNoteModal } from './AddNoteModal';
 import { NoteContentDisplay } from './NoteContentDisplay';
 import { useStoreMasterResolver } from '@/hooks/useStoreMasterResolver';
 import { toast } from 'sonner';
+import { verifiedUpdate, mutationErrorMessage } from '@/lib/verifiedMutation';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -84,6 +85,7 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
           profile:profiles(name, role)
         `)
         .eq('store_id', storeMasterId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -95,11 +97,15 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
   // Delete note mutation
   const deleteNoteMutation = useMutation({
     mutationFn: async (noteId: string) => {
-      const { error } = await supabase
-        .from('store_notes')
-        .delete()
-        .eq('id', noteId);
-      if (error) throw error;
+      // Soft delete — never destroy the row.
+      await verifiedUpdate('Delete note', () =>
+        supabase
+          .from('store_notes')
+          .update({ deleted_at: new Date().toISOString() } as any)
+          .eq('id', noteId)
+          .is('deleted_at', null)
+          .select('id') as never,
+      );
     },
     onSuccess: () => {
       toast.success('Note deleted');
@@ -108,7 +114,7 @@ export function StoreNotesSection({ storeId, storeName }: StoreNotesSectionProps
       setNoteToDelete(null);
     },
     onError: (error: Error) => {
-      toast.error(`Failed to delete note: ${error.message}`);
+      toast.error(mutationErrorMessage(error));
     },
   });
 
