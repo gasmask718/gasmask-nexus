@@ -222,7 +222,7 @@ export default function InboxPage() {
         <TabsList>
           <TabsTrigger value="pending">
             Pending Queue
-            <Badge variant="secondary" className="ml-2">{pending.length}</Badge>
+            <Badge variant="secondary" className="ml-2">{(statusCounts.all ?? 0).toLocaleString()}</Badge>
           </TabsTrigger>
           <TabsTrigger value="inbound">
             Inbound
