@@ -45,8 +45,11 @@ export interface SharedStoreCoreIntelligenceProps {
   onConnectionChange?: () => void;
   onLogInteraction?: (storeMasterId?: string) => void;
   onCreateInvoice?: () => void;
-  /** Initial sells-flowers value (legacy) */
+  /** Sells-flowers prospecting attribute (store_master) */
   sellsFlowers?: boolean;
+  sellsFlowersNote?: string | null;
+  sellsFlowersFlaggedAt?: string | null;
+  sellsFlowersFlaggedBy?: string | null;
   onSellsFlowersUpdate?: () => void;
 }
 
