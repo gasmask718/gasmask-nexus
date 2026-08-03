@@ -479,6 +479,10 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
             role="admin"
             storeGroupId={store.connected_group_id}
             storeOwnerName={store.owner_name}
+            sellsFlowers={(store as any).sells_flowers ?? false}
+            sellsFlowersNote={(store as any).sells_flowers_note ?? null}
+            sellsFlowersFlaggedAt={(store as any).sells_flowers_flagged_at ?? null}
+            sellsFlowersFlaggedBy={(store as any).sells_flowers_flagged_by ?? null}
             onLogInteraction={() => setUnifiedInteractionModalOpen(true)}
             onCreateInvoice={() => setCreateInvoiceModalOpen(true)}
           />

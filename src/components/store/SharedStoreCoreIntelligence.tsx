@@ -45,8 +45,11 @@ export interface SharedStoreCoreIntelligenceProps {
   onConnectionChange?: () => void;
   onLogInteraction?: (storeMasterId?: string) => void;
   onCreateInvoice?: () => void;
-  /** Initial sells-flowers value (legacy) */
+  /** Sells-flowers prospecting attribute (store_master) */
   sellsFlowers?: boolean;
+  sellsFlowersNote?: string | null;
+  sellsFlowersFlaggedAt?: string | null;
+  sellsFlowersFlaggedBy?: string | null;
   onSellsFlowersUpdate?: () => void;
 }
 
@@ -60,6 +63,9 @@ export function SharedStoreCoreIntelligence({
   onLogInteraction,
   onCreateInvoice,
   sellsFlowers = false,
+  sellsFlowersNote = null,
+  sellsFlowersFlaggedAt = null,
+  sellsFlowersFlaggedBy = null,
   onSellsFlowersUpdate,
 }: SharedStoreCoreIntelligenceProps) {
   return (
@@ -105,6 +111,10 @@ export function SharedStoreCoreIntelligence({
       <SellsFlowersToggle
         storeId={storeId}
         initialValue={sellsFlowers}
+        initialNote={sellsFlowersNote}
+        flaggedAt={sellsFlowersFlaggedAt}
+        flaggedBy={sellsFlowersFlaggedBy}
+        readOnly={role === 'driver'}
         onUpdate={onSellsFlowersUpdate}
       />
 
