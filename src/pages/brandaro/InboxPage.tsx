@@ -72,15 +72,41 @@ export default function InboxPage() {
     refetchInterval: 30_000,
   });
 
-  // ── Pending messages ───────────────────────────────────────────────
-  const { data: pending = [], isLoading: pendingLoading } = useQuery({
-    queryKey: ['brandaro-pending-messages'],
+  // ── Per-status counts (server-side, exact) ─────────────────────────
+  const { data: statusCounts = {} as Record<string, number> } = useQuery({
+    queryKey: ['brandaro-pending-status-counts'],
+    refetchInterval: 30_000,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const statuses: PendingStatus[] = ['pending', 'approved', 'rejected', 'failed', 'sent'];
+      const out: Record<string, number> = {};
+      const { count: allCount } = await (supabase as any)
+        .from('brandaro_pending_messages')
+        .select('id', { count: 'exact', head: true });
+      out.all = allCount || 0;
+      await Promise.all(statuses.map(async (s) => {
+        const { count } = await (supabase as any)
+          .from('brandaro_pending_messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', s);
+        out[s] = count || 0;
+      }));
+      return out;
+    },
+  });
+
+  const filterTotal = statusCounts[pendingFilter] ?? 0;
+
+  // ── Pending messages (server-side status filter + pagination) ──────
+  const { data: pending = [], isLoading: pendingLoading } = useQuery({
+    queryKey: ['brandaro-pending-messages', pendingFilter, page],
+    queryFn: async () => {
+      let q = (supabase as any)
         .from('brandaro_pending_messages')
         .select('id, lead_id, lead_name, phone_number, message_body, message_type, status, created_at')
         .order('created_at', { ascending: false })
-        .limit(500);
+        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+      if (pendingFilter !== 'all') q = q.eq('status', pendingFilter);
+      const { data, error } = await q;
       if (error) throw error;
       return (data || []) as PendingRow[];
     },
