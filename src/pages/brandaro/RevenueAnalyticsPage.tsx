@@ -15,6 +15,7 @@ type RevenueRow = {
   revenue_type: string;
   attributed_script_variant: string | null;
   attributed_industry: string | null;
+  source: string | null;
   attributed_campaign: string | null;
   created_at: string;
 };
@@ -197,7 +198,7 @@ export default function RevenueAnalyticsPage() {
                       {r.attributed_campaign || '—'}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {r.attributed_industry || r.attributed_script_variant || '—'}
+                      {(r.source || r.attributed_industry || r.attributed_script_variant || '—').replace(/_/g, ' ')}
                     </TableCell>
                   </TableRow>
                 ))}
