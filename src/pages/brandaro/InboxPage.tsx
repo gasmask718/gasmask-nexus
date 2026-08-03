@@ -219,6 +219,7 @@ export default function InboxPage() {
     toast.success(next === 'approved' ? 'Message approved' : 'Message skipped');
     qc.invalidateQueries({ queryKey: ['brandaro-pending-messages'] });
     qc.invalidateQueries({ queryKey: ['brandaro-pending-count'] });
+    qc.invalidateQueries({ queryKey: ['brandaro-pending-status-counts'] });
   };
 
   const statusColor: Record<string, string> = {
