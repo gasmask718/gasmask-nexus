@@ -138,7 +138,7 @@ export default function StoreIntelligencePage() {
     const step = 1000;
     while (true) {
       const { data, error } = await supabase
-        .from('store_intelligence_v' as never)
+        .from('v_store_intelligence' as never)
         .select('*')
         .range(from, from + step - 1);
       if (error) {

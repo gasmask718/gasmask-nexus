@@ -270,7 +270,7 @@ const Stores = () => {
     queryKey: ['stores-active-ids-invoiced'],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
-        .from('store_invoice_activity')
+        .from('v_store_invoice_activity' as never)
         .select('store_id');
       if (error) throw error;
       const ids = new Set<string>();
