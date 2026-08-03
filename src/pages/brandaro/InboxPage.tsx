@@ -282,7 +282,7 @@ export default function InboxPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredPending.slice(0, 200).map(row => {
+                      {filteredPending.map(row => {
                         const lead = lookupLead(row);
                         const preview = (row.message_body || '').slice(0, 100);
                         const isPending = row.status === 'pending';
