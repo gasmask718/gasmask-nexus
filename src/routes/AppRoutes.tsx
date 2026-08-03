@@ -179,6 +179,10 @@ const ScoutAgentPage = lazy(() => import('@/pages/brandaro/ScoutAgentPage'));
 const ProductionPipelinePage = lazy(() => import('@/pages/brandaro/ProductionPipelinePage'));
 const ClientPortalPage = lazy(() => import('@/pages/brandaro/ClientPortalPage'));
 const ReceptionistClientPortal = lazy(() => import('@/pages/client-portal/ClientPortalPage'));
+const ClientPortalDashboard = lazy(() => import('@/pages/client-portal/ClientDashboard'));
+const ClientPortalCalls = lazy(() => import('@/pages/client-portal/ClientCalls'));
+const ClientPortalSettings = lazy(() => import('@/pages/client-portal/ClientSettings'));
+const ClientPortalBilling = lazy(() => import('@/pages/client-portal/ClientBilling'));
 const CanvaAssetsPage = lazy(() => import('@/pages/brandaro/CanvaAssetsPage'));
 const CanvaTemplatesPage = lazy(() => import('@/pages/brandaro/CanvaTemplatesPage'));
 
@@ -1321,7 +1325,12 @@ export default function AppRoutes() {
       <Route path="/developer" element={<DeveloperPortal />} />
 
       {/* Brandaro AI Receptionist client portal - standalone, self-authenticated */}
-      <Route path="/client-portal" element={<ReceptionistClientPortal />} />
+      <Route path="/client-portal" element={<ReceptionistClientPortal />}>
+        <Route index element={<ClientPortalDashboard />} />
+        <Route path="calls" element={<ClientPortalCalls />} />
+        <Route path="settings" element={<ClientPortalSettings />} />
+        <Route path="billing" element={<ClientPortalBilling />} />
+      </Route>
 
       <Route path="/install" element={<InstallPwa />} />
       <Route path="/system-health" element={<ProtectedRoute><SystemHealthPage /></ProtectedRoute>} />

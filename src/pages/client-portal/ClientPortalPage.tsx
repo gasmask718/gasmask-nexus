@@ -1,32 +1,73 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { NavLink, Outlet, useOutletContext } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import ClientPortalLogin from "./ClientPortalLogin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Headset, LogOut, Phone } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Loader2, Headset, LogOut, LayoutDashboard, PhoneCall, Settings, CreditCard } from "lucide-react";
 
-type ClientRow = {
+export type ReceptionistClient = {
   id: string;
   business_name: string;
+  owner_name: string | null;
   email: string;
+  phone: string;
   plan: string;
   status: string;
+  monthly_amount: number;
+  setup_fee_amount: number;
+  next_billing_date: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
   twilio_phone_number: string | null;
   receptionist_name: string;
+  business_hours: any;
+  faqs: any;
+  appointment_calendar_url: string | null;
+  escalation_phone: string | null;
   total_calls_handled: number;
   calls_this_month: number;
+  appointments_booked_this_month: number;
+  appointments_booked_total: number;
+  agent_provisioned: boolean;
+  retell_agent_id: string | null;
 };
 
+const SELECT_COLS =
+  "id,business_name,owner_name,email,phone,plan,status,monthly_amount,setup_fee_amount,next_billing_date," +
+  "stripe_customer_id,stripe_subscription_id,twilio_phone_number,receptionist_name,business_hours,faqs," +
+  "appointment_calendar_url,escalation_phone,total_calls_handled,calls_this_month," +
+  "appointments_booked_this_month,appointments_booked_total,agent_provisioned,retell_agent_id";
+
+type Ctx = { client: ReceptionistClient; refresh: () => Promise<void> };
+export const useClientPortal = () => useOutletContext<Ctx>();
+
+const TABS = [
+  { to: "/client-portal", end: true, label: "Dashboard", icon: LayoutDashboard },
+  { to: "/client-portal/calls", end: false, label: "Call History", icon: PhoneCall },
+  { to: "/client-portal/settings", end: false, label: "Settings", icon: Settings },
+  { to: "/client-portal/billing", end: false, label: "Billing", icon: CreditCard },
+];
+
 /**
- * CLIENT-1: auth shell for the receptionist client portal.
- * Signed-in users are matched to their paid client record via
- * claim_receptionist_client_account(); dashboard tabs land in CLIENT-2.
+ * CLIENT-3: portal shell — auth gate, account claim, role guard and tab nav.
+ * Child pages read the client record via useClientPortal().
  */
 export default function ClientPortalPage() {
   const { user, loading: authLoading, signOut } = useAuth();
   const [checking, setChecking] = useState(true);
-  const [client, setClient] = useState<ClientRow | null>(null);
+  const [client, setClient] = useState<ReceptionistClient | null>(null);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase
+      .from("brandaro_receptionist_clients")
+      .select(SELECT_COLS)
+      .eq("auth_user_id", user!.id)
+      .maybeSingle();
+    setClient((data as unknown as ReceptionistClient) ?? null);
+  }, [user]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -42,13 +83,11 @@ export default function ClientPortalPage() {
       await (supabase as any).rpc("claim_receptionist_client_account");
       const { data } = await supabase
         .from("brandaro_receptionist_clients")
-        .select(
-          "id,business_name,email,plan,status,twilio_phone_number,receptionist_name,total_calls_handled,calls_this_month"
-        )
+        .select(SELECT_COLS)
         .eq("auth_user_id", user.id)
         .maybeSingle();
       if (!cancelled) {
-        setClient((data as ClientRow) ?? null);
+        setClient((data as unknown as ReceptionistClient) ?? null);
         setChecking(false);
       }
     })();
@@ -107,28 +146,30 @@ export default function ClientPortalPage() {
             <LogOut className="h-4 w-4 mr-1" /> Sign out
           </Button>
         </div>
+        <nav className="max-w-5xl mx-auto flex gap-1 overflow-x-auto px-2">
+          {TABS.map((t) => (
+            <NavLink
+              key={t.to}
+              to={t.to}
+              end={t.end}
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm",
+                  isActive
+                    ? "border-primary text-foreground font-medium"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )
+              }
+            >
+              <t.icon className="h-4 w-4" />
+              {t.label}
+            </NavLink>
+          ))}
+        </nav>
       </header>
 
-      <main className="max-w-5xl mx-auto p-4 space-y-4">
-        <Card className="border-border">
-          <CardContent className="p-4 flex flex-wrap gap-6">
-            <div>
-              <p className="text-xs text-muted-foreground">Your receptionist number</p>
-              <p className="text-lg font-semibold flex items-center gap-2">
-                <Phone className="h-4 w-4 text-primary" />
-                {client.twilio_phone_number || "Provisioning…"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Calls this month</p>
-              <p className="text-lg font-semibold">{client.calls_this_month}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Calls handled (total)</p>
-              <p className="text-lg font-semibold">{client.total_calls_handled}</p>
-            </div>
-          </CardContent>
-        </Card>
+      <main className="max-w-5xl mx-auto p-4">
+        <Outlet context={{ client, refresh: load } satisfies Ctx} />
       </main>
     </div>
   );
