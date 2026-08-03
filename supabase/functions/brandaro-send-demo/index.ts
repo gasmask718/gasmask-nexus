@@ -107,12 +107,20 @@ Deno.serve(async (req) => {
             Body: message,
           }),
         });
-        const data = await resp.json();
-        if (resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        // Genuine success = Twilio 2xx AND a real message SID AND a non-failed status.
+        const badStatus = data?.status === "failed" || data?.status === "undelivered";
+        if (resp.ok && data?.sid && !badStatus) {
           sendResult = { success: true, provider_message_id: data.sid };
         } else {
-          sendResult = { success: false, error: data.message || "Twilio error" };
+          sendResult = {
+            success: false,
+            error: data?.message || (resp.ok ? `twilio_status_${data?.status || "no_sid"}` : `twilio_http_${resp.status}`),
+            twilio_code: data?.code ?? null,
+          };
         }
+      } else {
+        sendResult = { success: false, error: "twilio_credentials_missing" };
       }
     }
 
@@ -141,11 +149,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update demo sent_at
-    if (sendResult.success) {
-      await supabase.from("brandaro_demo_sites")
-        .update({ sent_at: new Date().toISOString() })
-        .eq("id", demo_id);
+    // Update demo delivery state.
+    // sent_at / sms_sent_at are stamped ONLY on a genuine provider acceptance
+    // (Twilio returned 2xx with a message SID). Failures record the attempt and
+    // the real provider error so the UI can never show a false "Sent".
+    {
+      const nowIso = new Date().toISOString();
+      const patch: Record<string, unknown> = {
+        send_attempted_at: nowIso,
+        last_send_status: sendResult.success ? "sent" : "failed",
+        last_send_error: sendResult.success ? null : String(sendResult.error || "unknown_send_error").slice(0, 500),
+      };
+      if (sendResult.success && sendResult.provider_message_id) {
+        patch.sent_at = nowIso;
+        if (channel === "sms") patch.sms_sent_at = nowIso;
+      }
+      const { error: stampErr } = await supabase.from("brandaro_demo_sites")
+        .update(patch).eq("id", demo_id);
+      if (stampErr) console.warn("[send-demo] sent_at stamp failed:", stampErr.message);
     }
 
     return new Response(JSON.stringify({ ok: sendResult.success, ...sendResult }), {
