@@ -198,23 +198,41 @@ export default function BrandaroWarRoom() {
     refetchInterval: 15000,
   });
 
+  // Pipeline funnel — stages derived from ACTUAL data (no hardcoded list),
+  // so any future stage shows up automatically and no lead is ever hidden.
+  const STAGE_ORDER = ["new", "prospect", "contacted", "responded", "interested", "demo_sent", "proposal", "booked", "won", "closed", "lost"];
   const { data: pipelineFunnel = [] } = useQuery({
     queryKey: ["brandaro-war-pipeline-funnel"],
     queryFn: async () => {
-      const stages = ["prospect", "contacted", "interested", "demo_sent", "proposal", "won"];
-      const results = await Promise.all(
-        stages.map(async (stage) => {
-          const { count } = await (supabase as any)
-            .from("brandaro_qualified_leads")
-            .select("id", { count: "exact", head: true })
-            .eq("pipeline_stage", stage);
-          return { stage, count: count || 0 };
-        })
-      );
-      return results;
+      // Paginate to avoid the 1,000-row PostgREST cap
+      const counts: Record<string, number> = {};
+      let from = 0;
+      const PAGE = 1000;
+      for (;;) {
+        const { data, error } = await (supabase as any)
+          .from("brandaro_qualified_leads")
+          .select("pipeline_stage")
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const rows = data || [];
+        for (const r of rows) {
+          const k = r.pipeline_stage || "unassigned";
+          counts[k] = (counts[k] || 0) + 1;
+        }
+        if (rows.length < PAGE) break;
+        from += PAGE;
+      }
+      return Object.entries(counts)
+        .map(([stage, count]) => ({ stage, count: count as number }))
+        .sort((a, b) => {
+          const ai = STAGE_ORDER.indexOf(a.stage);
+          const bi = STAGE_ORDER.indexOf(b.stage);
+          return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+        });
     },
     refetchInterval: 60000,
   });
+  const funnelTotal = pipelineFunnel.reduce((s: number, r: any) => s + r.count, 0);
 
   return (
     <div className="space-y-6">
