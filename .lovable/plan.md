@@ -1,112 +1,112 @@
-# AR Recovery + Date Correction — Revised Plan
+# Build Order Locked — Flower Page, Idea Box, then Phantom AR
 
-Approved sequence, amended per Move 1 and Move 2. AR findings below are report-only, run read-only.
+Sequencing accepted as non-negotiable. Items 1 and 2 are build tasks and neither is blocked. Answers to the two AR questions are below; **no further discovery is proposed ahead of the build items.**
 
 ---
 
-## MOVE 2 — AR RECOVERY REPORT (this is the headline)
+## OPEN — upload timing came through blank
 
-### a. Current payment state: every one of the 1,352 enrichment invoices is at raw default
+The UPLOAD TIMING line arrived as the unfilled placeholder `[answer here: yes or no, upload in the next two weeks]`. Default assumption unless corrected: **no upload in the next two weeks**, so the four import-writer fixes stay at their existing position rather than jumping ahead of reconstruction. Say the word if that's wrong — it only affects ordering deep in the tail, not items 1–4.
 
-| field | value across all 1,352 |
+---
+
+## AR ANSWER 1 — the parser trap, quantified
+
+You were right to call it, and the gap is larger than expected. Counts across all 1,352 enrichment invoices:
+
+| match method | rows |
 |---|---|
-| `payment_status` | `'unpaid'` — 1,352 / 1,352 (column default) |
-| `amount_paid` | `0` — 1,352 / 1,352 (column default) |
-| `partial_amount` | `NULL` — 1,352 / 1,352 |
-| `paid_at` | `NULL` — 1,352 / 1,352 |
+| `ILIKE '%paid%'` (naive) | **1,151** |
+| `~* '\mpaid\M'` (word boundary) | **800** |
+| `~* '\munpaid\M'` | 436 |
+| word `paid` present AND `unpaid` absent | **710** |
+| `~* '\mowes?d?\M'` | 89 |
+| `~* '\mbalance\M'` | 11 |
+| `the rest` / `remaining` / `still` | 16 |
 
-The enrichment run never wrote a single payment field. Total face value: **$83,565**, all of it sitting in AR as unpaid.
+**The naive match overcounts by 351 rows.** Word-boundary matching is confirmed as the only correct method and is baked into the parser spec. Note the phantom-AR candidate set tightens from 659 to a stricter figure once every outstanding-signal token is excluded, not just `unpaid` — the 50-row sample will show these four counts broken out separately before anything runs.
 
-**The AR is wrong in both directions, and the larger error is the overstatement:**
+## AR ANSWER 2 — the NULL-amount invoices: revenue IS recoverable
 
-- **659 invoices, $30,210** have notes saying PAID with no outstanding language. This is **phantom AR** — money already collected, still showing as owed. Any aging report or collections list is chasing it.
-- **508 invoices, $32,943** have notes indicating a partial or unpaid balance. Genuinely outstanding, but flagged by accident rather than by record.
-- **177 invoices, $19,862** have no payment language at all. Unknown state.
+Correction to the earlier figure: **403 enrichment invoices have `total_amount IS NULL`**, not 144. The 144 was only the subset that also carried outstanding language.
 
-So of $83,565 in apparent AR, roughly **36% is already collected** and the "unpaid" status is meaningless as a signal today — it's the default value, not a fact.
+Of those 403: **0 contain a `$` symbol.** That initially reads as unrecoverable — it isn't. The amounts are written as bare numbers:
 
-### b. Outstanding balance
+```
+"6/25/25- 200 paid"
+"12/18/2024 - 1 box 200 fully paid"
+"12/23/2024 - [form] 560 Remsen ave 1 box 200 fully paid"
+"10/20/2024 - Updated | 2 boxes - 150 each = 300 total paid"
+"9/13/2024 - 1 box -150 fully paid sold out in a week"
+"8/20/2024 - [form] 2 boxes premium -300 paid up front"
+```
 
-| measure | count | dollars |
-|---|---|---|
-| Invoices with unpaid/owe/balance language | **508** | **$32,943** invoice face value |
-| — of those, with an explicit figure in the note (`owe 100`) | 62 | parseable to an exact balance |
-| — of those, outstanding but no figure given | 446 | balance must be inferred or field-verified |
-| — of those, `total_amount` is NULL entirely | 144 | no invoice value recorded at all |
-| Distinct stores affected | **234** | |
+Payment language is present on most of them — 292 say `paid`, 130 say `unpaid`, 20 say `owe`. **This is real revenue currently counted nowhere**, recoverable by a bare-number parser rather than a currency-symbol parser. The parser spec is amended accordingly: match unsigned integers adjacent to unit words (`box`, `boxes`, `tubes`) and to payment verbs, not `\$[0-9]+`.
 
-Important caveat: **$32,943 is invoice face value, not the balance owed.** Notes like "1 box -200 $ paid 100 dollars owe 100 unpaid" mean the invoice is $200 but only $100 is outstanding. The true recoverable figure is lower than $32,943 and can only be pinned down for the 62 rows with explicit figures until the rest are parsed or field-verified. Treat $32,943 as the upper bound.
+## AR ANSWER 3 — CSV export: blocked by plan mode, queued as first action on approval
 
-### c. Stores ranked by outstanding exposure
+The export writes to `/mnt/documents`, which plan mode blocks. It runs the moment you approve — it is a single read-only query, no dependency on any build item. Columns: store name, address, borough, phone, outstanding invoice count, face value, count missing amount, count with an explicit owe figure, and the **full raw note text** per store, ranked by face value descending.
 
-| store | invoices | face value | rows w/ NULL amount | explicit owe figure |
-|---|---|---|---|---|
-| US Quick Mart | 4 | $5,400 | 1 | 0 |
-| Seven Express Deli inc | 19 | $1,500 | 6 | 2 |
-| EBB Pitkin Express Deli Grill | 14 | $1,360 | 3 | 4 |
-| happy land convenience | 11 | $930 | 2 | 1 |
-| Blake Express Deli | 9 | $880 | 0 | 1 |
-| Abdula two deli Ang grill burgers | 5 | $701 | 0 | 2 |
-| Beans (165 9th Ave) | 2 | $700 | 0 | 1 |
-| Mike's Finest deli grocery corp | 8 | $700 | 4 | 2 |
-| Fetty KJ | 9 | $700 | 3 | 2 |
-| Polanco Anthony | 9 | $652 | 3 | 4 |
-| Ave L superette inc | 8 | $650 | 0 | 0 |
-| snack station | 5 | $600 | 0 | 0 |
+Top of the ranking, so collections can start before the file lands:
 
-Long tail: 234 stores total, so the top 12 are a small slice. US Quick Mart is the standout — $5,400 across 4 invoices, four times the next account.
+| store | invoices | face value | rows missing amount |
+|---|---|---|---|
+| US Quick Mart | 4 | $5,400 | 1 |
+| Seven Express Deli inc | 19 | $1,500 | 6 |
+| EBB Pitkin Express Deli Grill | 14 | $1,360 | 3 |
+| happy land convenience | 11 | $930 | 2 |
+| Blake Express Deli | 9 | $880 | 0 |
+| Abdula two deli Ang grill burgers | 5 | $701 | 0 |
+| Beans (165 9th Ave) | 2 | $700 | 0 |
+| Mike's Finest deli grocery corp | 8 | $700 | 4 |
+| Fetty KJ | 9 | $700 | 3 |
+| Polanco Anthony | 9 | $652 | 3 |
 
-**Assessment:** there is real uncollected money here, but the more urgent defect is the $30,210 of phantom AR. Chasing stores for invoices their notes say were already paid is an active relationship risk for the field team. Both directions get fixed by the same parse.
-
----
-
-## MOVE 1 — STEP 5 SPLIT: DATES FIRST
-
-**5a. Date parse and report.** Extract the date written in `invoices.notes` for all 1,352 enrichment rows (plus the legacy CRM lane). Report coverage split three ways: clean parse, ambiguous, malformed.
-
-**Malformed dates get no guess.** "0/1/25" and "0/27/25" carry month zero. Those rows keep their current `business_date` untouched and are flagged for review. Same for any date that parses to a future date or predates the business. A known-unknown beats a wrong date.
-
-**5b. Ship the date correction** on the high-confidence subset only, after the coverage report is reviewed. This unblocks the Last Order card, stale-account logic and aging — 1,275 invoices currently claim 2026-07-15 while their notes say early 2025, so bikers are seeing dormant stores as recently active.
-
-**5c. Line reconstruction parse** — separate pass, after dates land, and after the AR pass below.
-
-### Ordering inside step 5
-
-Because the AR report shows payment state is fully defaulted, the payment parse rides with the date parse rather than waiting for line items. Sequence: **dates → payment state → line items.** Payment state is a per-invoice scalar like the date; it does not need line items to exist.
-
-## PARSER GUARDRAILS (apply to 5a, 5b and 5c)
-
-- Parse into a **staging table** with the raw note stored in the same row beside every parsed field. Nothing writes directly to `invoices` or `invoice_line_items` from the parser.
-- **Confidence tiers** on every parsed field independently — a row can have a high-confidence date and a low-confidence quantity. Anything ambiguous goes to a review queue, never to the backfill.
-- **50-row eyeball gate before any full run.** Side-by-side output: raw note next to parsed date, product, qty, unit, amount, paid state, plus the confidence tier for each. No run over the full 1,352 until that sample is approved.
-- **`invoices.notes` is never modified or cleared.** It is the only source and it stays intact permanently, including after reconstruction succeeds.
-
-## LEGACY CRM DUPLICATE QUEUE
-
-172 groups / $51,955, **ranked by dollar amount descending** so the largest get reviewed first. No automated deletion.
-
-The queue treats "not a duplicate" as a first-class outcome, not an exception — same store + same date + same amount is legitimately common here (two sales in a day, a recurring $100 account). One click to dismiss, the dismissal persists so the group never resurfaces, and the reviewer sees both invoices' notes side by side to make the call.
-
-## STEP 8 TIMING — open question
-
-Fixing the four header-only import writers (`useBulkUpload`, `BulkInvoiceUploader`, `commit_import_batch`, `ai-backfill-runner`) sits at step 8 as written. **If a bulk upload is planned in the next two weeks, it moves ahead of reconstruction** — otherwise the next upload writes a fresh batch of lineless, default-payment, wrong-date headers into a set we're mid-repair on, and the parser has to run twice.
-
-Tell me if an upload is coming and I'll reorder; otherwise it stays at 8.
+234 stores total, $32,943 upper-bound face value.
 
 ---
 
-## FULL SEQUENCE
+## BUILD ORDER
 
-1. `products.units_per_box` default 24 → NULL
-2. DNC end-to-end synthetic STOP test
-3. Wrapper: `allowZero` + `select('id')` default projection
-4. Prebuild gate on unverified mutations
-5. **5a** date parse + coverage report → **5b** date correction on high-confidence subset → **5c** payment-state parse and correction (phantom AR first)
-6. Unit-column migration (`sale_unit` canonical, 125-row relabel, 4 drift rows)
-7. Line reconstruction from staging, high-confidence only, remainder queued
-8. Fix the four import writers *(moves ahead of 7 if an upload is scheduled)*
-9. Legacy CRM duplicate review queue, ranked by dollars
-10. Last Order card, `/flower-customers`, InvoiceBuilder
-11. Backlog mutation migration — money and field-rep tables first
+### 1. `/flower-customers` — demand list
+
+Not blocked. The toggle fix shipped: `store_master.sells_flowers`, `sells_flowers_note`, `sells_flowers_flagged_by`, `sells_flowers_flagged_at` all exist and are being written through `verifiedUpdate`.
+
+Columns: store name, address, borough, primary `store_contacts` contact, phone, flagged by, flagged date (absolute — `fieldStamp()`, America/New_York), note, last visit date.
+
+Filters: borough, flagged-by, date range. Plus search, sortable columns, server-side pagination, CSV export, row click → store profile.
+
+Shows flagged stores including those with zero sales — this answers "who would buy," which is the targeting list. It stays permanently after flower launches; invoices will answer "who bought."
+
+### 2. Idea & Improvement box + `/ideas`
+
+Not blocked. Needs one table and one bucket.
+
+- `idea_submissions` — submitter, role, title, body, page/route context, browser + viewport context, store or record context where applicable, status, priority, assignee, resolution note, timestamps. RLS: any authenticated role submits; submitters read their own; admins read and manage all.
+- `idea-attachments` storage bucket with owner-scoped policies, matching the pattern already used for `funding-documents`.
+- App-wide **Submit Idea** entry point available to **all roles** — admin, VA, biker, ambassador, wholesaler, client portal.
+- Photo upload with **camera capture** (`capture="environment"` on mobile) plus file picker, multiple attachments.
+- Automatic context capture: current route, logged-in user and role, timestamp, user agent, viewport, and the active store/record id when submitted from a profile page.
+- `/ideas` management dashboard: list, filter by status/role/priority, detail view with attachments, status transitions, assignment, resolution notes.
+
+All writes go through `verifiedMutation`.
+
+### 3. Phantom AR correction
+
+659 → refined by strict word-boundary matching across all four token classes. Flip the confirmed-paid set to `payment_status='paid'`, set `amount_paid = total_amount`, stamp `paid_at`.
+
+Gates, all mandatory:
+- Staging table with the raw note stored beside the parsed output. Never a direct write.
+- Confidence tiers per field; anything ambiguous → review queue, never the backfill.
+- **50-row side-by-side sample approved before the full run**, showing raw note next to parsed date, product, qty, unit, amount, paid state — and the four separate token counts (`paid`, `unpaid`, `owe`, `balance`).
+- `invoices.notes` never modified or cleared, before or after.
+
+### 4. Date parse + correction
+
+Parse dates from notes, report coverage in three tiers, then correct only the high-confidence subset. **Month-zero and other malformed dates get no guess** — `business_date` stays as-is and the row is flagged for review. Unblocks the Last Order card, stale-account logic and aging for the 1,275 invoices currently misreporting 2026-07-15.
+
+### 5. Everything else, existing order
+
+`units_per_box` default → NULL · DNC synthetic STOP test · wrapper `allowZero` + `select('id')` · prebuild gate · unit-column migration · line reconstruction · import-writer fixes · legacy CRM duplicate queue ranked by dollars with one-click "not a duplicate" · Last Order card · InvoiceBuilder · backlog mutation migration.
 
 Brand-header work stays parked.
