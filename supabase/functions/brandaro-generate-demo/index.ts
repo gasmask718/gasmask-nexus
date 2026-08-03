@@ -380,7 +380,24 @@ Deno.serve(async (req) => {
         });
       }
 
-      await supabase.from("brandaro_qualified_leads").update({ demo_status: "generated" }).eq("id", lead_id);
+      // Write the resulting demo URL back onto the lead alongside the status so
+      // the Lead Database "Has Demo" column / demo link stay in sync with
+      // brandaro_demo_sites. Non-fatal: log and continue if it fails.
+      {
+        const { error: leadUrlErr } = await supabase
+          .from("brandaro_qualified_leads")
+          .update({
+            demo_status: "generated",
+            demo_url: demoUrl,
+            updated_at: nowIso,
+          })
+          .eq("id", lead_id);
+        if (leadUrlErr) {
+          console.error("[demo] lead demo_url writeback failed:", leadUrlErr.message);
+        } else {
+          console.log(`[demo] lead ${lead_id} demo_url set -> ${demoUrl}`);
+        }
+      }
 
       // ---- Logo chain: Places logo-like photo -> Ideogram -> null ----
       // Never fatal. A null logo_url lets brandaro-base render its existing
@@ -525,7 +542,7 @@ Deno.serve(async (req) => {
       }
 
 
-      return new Response(JSON.stringify({ success: true, demo, engine: "native", design_md_loaded: !!designMd, vercel, audit, sms }), {
+      return new Response(JSON.stringify({ success: true, demo, demo_url: demoUrl, engine: "native", design_md_loaded: !!designMd, vercel, audit, sms }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -576,6 +593,15 @@ Deno.serve(async (req) => {
         durable_job_status: "processing",
         engine_status: "processing",
       }).eq("id", demo.id).select().single();
+
+      // Same writeback for the durable engine so the lead reflects the URL.
+      if (durableRes.site_url) {
+        const { error: durLeadErr } = await supabase
+          .from("brandaro_qualified_leads")
+          .update({ demo_url: durableRes.site_url, updated_at: new Date().toISOString() })
+          .eq("id", lead_id);
+        if (durLeadErr) console.error("[demo] durable lead demo_url writeback failed:", durLeadErr.message);
+      }
 
       return new Response(JSON.stringify({ success: true, demo: updated, engine: "durable" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
