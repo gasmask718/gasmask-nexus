@@ -598,7 +598,7 @@ function AddClientDialog({
       proposal_id: form.proposal_id.trim() || null,
       portal_access_enabled: form.portal_access_enabled,
       client_status: 'onboarding',
-      onboarding_status: 'new',
+      onboarding_status: 'pending',
     };
     const { error } = await (supabase as any).from('brandaro_clients').insert(payload);
     setSaving(false);
