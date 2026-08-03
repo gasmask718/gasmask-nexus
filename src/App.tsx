@@ -37,6 +37,8 @@ const queryClient = new QueryClient({
   },
 });
 
+import { IdeaBoxLauncher } from '@/components/idea/IdeaBoxLauncher';
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -62,6 +64,7 @@ const App = () => (
                           <SimulationModeBanner />
                           <VACallWidget />
                           <GlobalTrainingHelp />
+                          <IdeaBoxLauncher />
                           <MaintenanceGuard>
                             <AppRoutes />
                           </MaintenanceGuard>
