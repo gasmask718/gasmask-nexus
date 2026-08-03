@@ -77,7 +77,9 @@ function useLastOrderLineItems(storeId: string) {
       return {
         invoice_id: inv.id,
         invoice_number: inv.invoice_number,
-        created_at: inv.created_at,
+        created_at: (inv as any).business_date
+          ? new Date(`${(inv as any).business_date}T12:00:00Z`).toISOString()
+          : inv.created_at,
         total: Number(inv.total ?? 0),
         payment_status: (inv as any).payment_status ?? null,
         lines: (lines || []).map((l) => ({
