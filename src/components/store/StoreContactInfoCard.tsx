@@ -13,6 +13,7 @@ import { MapPin, Phone, Mail, MessageSquare, Edit, Building, User } from 'lucide
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { StickerStatusPanel } from '@/components/store/StickerStatusPanel';
 import { GlobalTagSelector } from '@/components/tags/GlobalTagSelector';
 import { useEntityTags } from '@/hooks/useGlobalTags';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
@@ -613,29 +614,11 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
                 showSelectedTags={true}
               />
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <Label className="text-sm">Sticker Status</Label>
-                <Badge variant="outline" className="text-xs">
-                  {STICKER_STATUS_LABELS[formData.sticker_status]}
-                </Badge>
-              </div>
+            <div className="space-y-2 min-w-0">
+              <Label className="text-sm">Sticker Status</Label>
+              {/* Shared canonical panel — identical brand list to the store profile */}
+              <StickerStatusPanel storeId={store.id} mode="edit" />
               <div className="rounded-lg border border-border/40 p-3 space-y-3">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {stickerToggleConfigs.map(({ key, label }) => (
-                    <div
-                      key={key}
-                      className="flex items-center justify-between rounded-md bg-muted/20 px-3 py-2 text-sm"
-                    >
-                      <span>{label}</span>
-                      <Switch
-                        id={`${key}-toggle`}
-                        checked={formData[key]}
-                        onCheckedChange={(checked) => handleStickerToggle(key, checked)}
-                      />
-                    </div>
-                  ))}
-                </div>
                 <div className="flex items-center justify-between rounded-md bg-destructive/5 px-3 py-2 text-sm">
                   <span>Sticker Taken Down</span>
                   <Switch
