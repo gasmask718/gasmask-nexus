@@ -5057,6 +5057,13 @@ export type Database = {
             foreignKeyName: "agent_assignments_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "agent_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -5176,6 +5183,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_store_memory_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "agent_store_memory_store_id_fkey"
@@ -6325,6 +6339,13 @@ export type Database = {
             foreignKeyName: "ai_call_logs_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ai_call_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -6637,6 +6658,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "ai_call_sessions_store_id_fkey"
@@ -10119,6 +10147,13 @@ export type Database = {
             foreignKeyName: "fk_ambassador_assignments_store"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "fk_ambassador_assignments_store"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -13408,6 +13443,13 @@ export type Database = {
             foreignKeyName: "bag_sale_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -14302,6 +14344,13 @@ export type Database = {
             foreignKeyName: "biker_assignments_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "biker_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -14394,6 +14443,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "biker_issues_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "biker_issues_location_id_fkey"
@@ -14698,6 +14754,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "biker_routes_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "biker_routes_store_master_id_fkey"
@@ -15239,6 +15302,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_contact_store_links_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "brand_contact_store_links_store_master_id_fkey"
@@ -27693,6 +27763,13 @@ export type Database = {
             foreignKeyName: "call_analytics_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "call_analytics_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -29477,6 +29554,13 @@ export type Database = {
             foreignKeyName: "call_prediction_snapshots_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "call_prediction_snapshots_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -29712,6 +29796,13 @@ export type Database = {
             foreignKeyName: "call_quality_scores_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "call_quality_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -29803,6 +29894,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_reasons_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "call_reasons_store_id_fkey"
@@ -29933,6 +30031,13 @@ export type Database = {
             foreignKeyName: "call_recordings_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "call_recordings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -30007,6 +30112,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_revenue_attribution_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "call_revenue_attribution_store_id_fkey"
@@ -30107,6 +30219,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_revenue_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "call_revenue_events_store_id_fkey"
@@ -30702,6 +30821,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_call_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "campaign_call_queue_store_id_fkey"
@@ -32846,6 +32972,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_lists_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "change_lists_store_id_fkey"
@@ -35245,6 +35378,13 @@ export type Database = {
             foreignKeyName: "commission_disputes_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -35551,6 +35691,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -35684,6 +35831,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_override_assignments_source_store_id_fkey"
+            columns: ["source_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "commission_override_assignments_source_store_id_fkey"
@@ -36166,6 +36320,13 @@ export type Database = {
             foreignKeyName: "communication_alerts_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "communication_alerts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -36487,6 +36648,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_escalations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "communication_escalations_store_id_fkey"
@@ -37130,6 +37298,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_messages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "communication_messages_store_id_fkey"
@@ -38339,6 +38514,13 @@ export type Database = {
             foreignKeyName: "contact_enrichment_candidates_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "contact_enrichment_candidates_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -38442,6 +38624,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_interactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "contact_interactions_store_id_fkey"
@@ -38811,6 +39000,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_routing_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "conversation_routing_store_id_fkey"
@@ -46188,6 +46384,13 @@ export type Database = {
             foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
             columns: ["store_master_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -46462,6 +46665,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "deals_store_id_fkey"
@@ -48970,6 +49180,13 @@ export type Database = {
             foreignKeyName: "dialer_followups_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dialer_followups_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -49842,6 +50059,13 @@ export type Database = {
             foreignKeyName: "dispatch_triggers_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dispatch_triggers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -50288,6 +50512,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "driver_assignments_store_id_fkey"
@@ -53754,6 +53985,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "engagement_scores_store_id_fkey"
@@ -57446,6 +57684,13 @@ export type Database = {
             foreignKeyName: "field_submissions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "field_submissions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -58050,6 +58295,13 @@ export type Database = {
             foreignKeyName: "follow_up_audit_log_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "follow_up_audit_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -58126,6 +58378,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "follow_up_events_store_id_fkey"
@@ -58392,6 +58651,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "follow_up_queue_store_id_fkey"
@@ -61061,6 +61327,13 @@ export type Database = {
             foreignKeyName: "generated_assets_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "generated_assets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -61338,6 +61611,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gm_discovered_pois_matched_store_id_fkey"
+            columns: ["matched_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "gm_discovered_pois_matched_store_id_fkey"
@@ -64316,6 +64596,87 @@ export type Database = {
           },
         ]
       }
+      idea_submissions: {
+        Row: {
+          assigned_to: string | null
+          attachments: Json
+          body: string
+          business_id: string | null
+          category: string
+          created_at: string
+          id: string
+          priority: string
+          record_id: string | null
+          record_type: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          route_label: string | null
+          route_path: string | null
+          status: Database["public"]["Enums"]["idea_status"]
+          store_id: string | null
+          submitted_by: string
+          submitter_email: string | null
+          submitter_name: string | null
+          submitter_role: string | null
+          title: string
+          updated_at: string
+          user_agent: string | null
+          viewport: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          attachments?: Json
+          body: string
+          business_id?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          priority?: string
+          record_id?: string | null
+          record_type?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          route_label?: string | null
+          route_path?: string | null
+          status?: Database["public"]["Enums"]["idea_status"]
+          store_id?: string | null
+          submitted_by?: string
+          submitter_email?: string | null
+          submitter_name?: string | null
+          submitter_role?: string | null
+          title: string
+          updated_at?: string
+          user_agent?: string | null
+          viewport?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          attachments?: Json
+          body?: string
+          business_id?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          priority?: string
+          record_id?: string | null
+          record_type?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          route_label?: string | null
+          route_path?: string | null
+          status?: Database["public"]["Enums"]["idea_status"]
+          store_id?: string | null
+          submitted_by?: string
+          submitter_email?: string | null
+          submitter_name?: string | null
+          submitter_role?: string | null
+          title?: string
+          updated_at?: string
+          user_agent?: string | null
+          viewport?: string | null
+        }
+        Relationships: []
+      }
       import_contacts_staging: {
         Row: {
           candidate_ids: string[] | null
@@ -66434,6 +66795,13 @@ export type Database = {
             foreignKeyName: "inventory_audit_log_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "inventory_audit_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -67844,6 +68212,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_receipt_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "invoice_receipt_log_store_id_fkey"
@@ -69490,6 +69865,13 @@ export type Database = {
             foreignKeyName: "live_call_sessions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "live_call_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -69634,6 +70016,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_calls_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "live_calls_store_id_fkey"
@@ -70444,6 +70833,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_call_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "manual_call_logs_store_id_fkey"
@@ -73602,6 +73998,13 @@ export type Database = {
             foreignKeyName: "messaging_messages_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "messaging_messages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -73724,6 +74127,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_targets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "messaging_targets_store_id_fkey"
@@ -75188,6 +75598,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_cleaning_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "note_cleaning_log_store_id_fkey"
@@ -76750,6 +77167,13 @@ export type Database = {
             foreignKeyName: "outbound_call_queue_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "outbound_call_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -77538,6 +77962,13 @@ export type Database = {
             foreignKeyName: "outbound_personalized_scripts_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "outbound_personalized_scripts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -77628,6 +78059,13 @@ export type Database = {
             foreignKeyName: "outbound_predictions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "outbound_predictions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -77701,6 +78139,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "outbound_queue_store_id_fkey"
@@ -78084,6 +78529,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_plans_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "outreach_plans_store_id_fkey"
@@ -79328,6 +79780,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "pending_orders_store_id_fkey"
@@ -80861,6 +81320,13 @@ export type Database = {
             foreignKeyName: "pinned_notes_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "pinned_notes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -82073,6 +82539,13 @@ export type Database = {
             foreignKeyName: "portal_invites_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "portal_invites_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -82510,6 +82983,13 @@ export type Database = {
             foreignKeyName: "predictive_actions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "predictive_actions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -82581,6 +83061,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictive_autopilot_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "predictive_autopilot_log_store_id_fkey"
@@ -82699,6 +83186,13 @@ export type Database = {
             foreignKeyName: "predictive_opportunity_scores_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "predictive_opportunity_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -82763,6 +83257,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictive_risk_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "predictive_risk_scores_store_id_fkey"
@@ -82908,6 +83409,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proactive_outreach_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "proactive_outreach_log_store_id_fkey"
@@ -83291,6 +83799,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_store_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "product_store_assignments_store_id_fkey"
@@ -89053,6 +89568,13 @@ export type Database = {
             foreignKeyName: "refund_tickets_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "refund_tickets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -90867,6 +91389,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_suggestion_stops_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "route_suggestion_stops_location_id_fkey"
@@ -101097,6 +101626,13 @@ export type Database = {
             foreignKeyName: "store_ai_insights_store_master_id_fkey"
             columns: ["store_master_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_ai_insights_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -101212,6 +101748,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_answer_profile_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_answer_profile_store_id_fkey"
@@ -101389,6 +101932,13 @@ export type Database = {
             foreignKeyName: "store_brand_accounts_store_master_id_fkey"
             columns: ["store_master_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_brand_accounts_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -101464,6 +102014,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_brand_relationships_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_brand_relationships_store_id_fkey"
@@ -101604,6 +102161,13 @@ export type Database = {
             foreignKeyName: "store_brand_stickers_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_brand_stickers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -101681,6 +102245,13 @@ export type Database = {
             foreignKeyName: "store_cadence_policy_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: true
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_cadence_policy_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -101750,6 +102321,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_call_intelligence_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_call_intelligence_store_id_fkey"
@@ -102440,6 +103018,13 @@ export type Database = {
             foreignKeyName: "store_escalations_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_escalations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -102607,6 +103192,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_inventory_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_inventory_store_id_fkey"
@@ -103169,6 +103761,13 @@ export type Database = {
             foreignKeyName: "store_notes_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_notes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -103278,6 +103877,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_opportunities_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_opportunities_store_id_fkey"
@@ -103759,6 +104365,13 @@ export type Database = {
             foreignKeyName: "store_people_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_people_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -103928,6 +104541,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_product_predictions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_product_predictions_store_id_fkey"
@@ -104187,6 +104807,13 @@ export type Database = {
             foreignKeyName: "store_questionnaire_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: true
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_questionnaire_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -104282,6 +104909,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_revenue_recommendations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_revenue_recommendations_store_id_fkey"
@@ -104403,6 +105037,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_revenue_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_revenue_scores_store_id_fkey"
@@ -104571,6 +105212,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_samples_given_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_samples_given_store_id_fkey"
@@ -104768,6 +105416,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_status_history_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_status_history_store_id_fkey"
@@ -105255,6 +105910,13 @@ export type Database = {
             foreignKeyName: "store_tube_inventory_status_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_tube_inventory_status_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -105329,6 +105991,13 @@ export type Database = {
             foreignKeyName: "store_tube_switches_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_tube_switches_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -105389,6 +106058,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_vertical_permissions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_vertical_permissions_store_id_fkey"
@@ -105484,6 +106160,13 @@ export type Database = {
             foreignKeyName: "store_visits_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_visits_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -105550,6 +106233,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_voice_notes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_voice_notes_store_id_fkey"
@@ -105686,6 +106376,13 @@ export type Database = {
             foreignKeyName: "store_wholesaler_associations_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_wholesaler_associations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -105781,6 +106478,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_wholesaler_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_wholesaler_contacts_store_id_fkey"
@@ -111996,6 +112700,13 @@ export type Database = {
             foreignKeyName: "tube_sale_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -113552,6 +114263,13 @@ export type Database = {
             foreignKeyName: "user_invitations_assigned_store_id_fkey"
             columns: ["assigned_store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "user_invitations_assigned_store_id_fkey"
+            columns: ["assigned_store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -113718,6 +114436,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_store_map_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "user_store_map_store_id_fkey"
@@ -129927,6 +130652,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -130255,6 +130987,13 @@ export type Database = {
             foreignKeyName: "fk_ambassador_assignments_store"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "fk_ambassador_assignments_store"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -130513,6 +131252,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
@@ -131788,6 +132534,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -131839,6 +132592,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "commission_ledger_store_id_fkey"
@@ -132318,6 +133078,13 @@ export type Database = {
             foreignKeyName: "store_samples_given_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_samples_given_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -132407,6 +133174,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "commission_ledger_store_id_fkey"
@@ -133607,6 +134381,13 @@ export type Database = {
             foreignKeyName: "bag_sale_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -134081,6 +134862,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -134540,6 +135328,46 @@ export type Database = {
           total_paid: number | null
         }
         Relationships: []
+      }
+      v_flower_demand_list: {
+        Row: {
+          address: string | null
+          borough: string | null
+          borough_id: string | null
+          business_id: string | null
+          city: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          contact_role: string | null
+          flagged_at: string | null
+          flagged_by_id: string | null
+          flagged_by_name: string | null
+          flower_note: string | null
+          last_visit_at: string | null
+          nickname: string | null
+          state: string | null
+          store_id: string | null
+          store_name: string | null
+          store_phone: string | null
+          store_status: string | null
+          zip: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_master_borough_id_fkey"
+            columns: ["borough_id"]
+            isOneToOne: false
+            referencedRelation: "boroughs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_master_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_global_sell_through_analytics: {
         Row: {
@@ -136818,6 +137646,13 @@ export type Database = {
             foreignKeyName: "store_answer_profile_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: true
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_answer_profile_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
             referencedRelation: "v_prior_customer_segments"
             referencedColumns: ["store_id"]
           },
@@ -136879,6 +137714,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_tube_inventory_status_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "store_tube_inventory_status_store_id_fkey"
@@ -137623,6 +138465,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "store_master"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
           },
           {
             foreignKeyName: "tube_sale_ledger_store_id_fkey"
@@ -141027,6 +141876,13 @@ export type Database = {
         | "on_site_service"
         | "virtual"
         | "digital"
+      idea_status:
+        | "new"
+        | "triaged"
+        | "planned"
+        | "in_progress"
+        | "shipped"
+        | "declined"
       inbound_route_type: "user" | "role" | "voicemail"
       intelligence_run_mode: "dry_run" | "live"
       intelligence_run_status: "ok" | "warn" | "error"
@@ -141680,6 +142536,14 @@ export const Constants = {
         "on_site_service",
         "virtual",
         "digital",
+      ],
+      idea_status: [
+        "new",
+        "triaged",
+        "planned",
+        "in_progress",
+        "shipped",
+        "declined",
       ],
       inbound_route_type: ["user", "role", "voicemail"],
       intelligence_run_mode: ["dry_run", "live"],
