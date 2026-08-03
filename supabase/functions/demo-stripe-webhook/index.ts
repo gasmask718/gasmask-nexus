@@ -131,10 +131,29 @@ Deno.serve(async (req) => {
     }
     const phone = demo?.phone_e164 || lead?.phone_number || null;
 
+    // ---------- 3b. Canonical client record ----------
+    // brandaro_clients is what the War Room, Production Pipeline, Review Queue
+    // and monthly reporting all read. Create it at payment time (with Stripe
+    // identity) so revenue lands immediately; brandaro-intake enriches it with
+    // the real business details later.
+    const { client_id, created: clientCreated, error: clientErr } = await ensureClientForJob(
+      supabase,
+      {
+        lead_id,
+        business_name: business_name || demo?.business_name || lead?.business_name || null,
+        email: customer_email || lead?.email || null,
+        phone,
+        tier,
+        amount_paid: amount,
+      },
+    );
+    if (clientErr) console.error("[demo-stripe-webhook] client ensure failed:", clientErr);
+    else console.log(`[demo-stripe-webhook] client ${client_id} (created=${clientCreated})`);
+
     // ---------- 4. Queue the build job ----------
     // Field mapping (spec -> brandaro_build_jobs):
     //   demo_id           -> demo_id
-    //   client_id         -> client_id (null; no client record exists pre-intake)
+    //   client_id         -> client_id (canonical brandaro_clients row, created above)
     //   lead_id           -> lead_id
     //   business_name     -> (no column; lives on brandaro_demo_sites via demo_id)
     //   package_tier      -> package_tier
@@ -151,7 +170,7 @@ Deno.serve(async (req) => {
       .from("brandaro_build_jobs")
       .insert({
         demo_id,
-        client_id: null,
+        client_id,
         lead_id,
         package_tier: tier,
         build_status: "queued",
