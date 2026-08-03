@@ -195,6 +195,33 @@ Deno.serve(async (req) => {
         return json({ error: "Could not save your details. Please try again." }, 500);
       }
 
+      // Enrich the canonical client record with the real business details.
+      // The row normally already exists (created at payment by
+      // demo-stripe-webhook); ensure covers jobs paid before that wiring.
+      try {
+        const { client_id } = await ensureClientForJob(supabase, {
+          build_job_id: job.id,
+          lead_id: job.lead_id ?? null,
+          business_name: businessName,
+          email: contactEmail,
+          tier: job.package_tier ?? null,
+        });
+        if (client_id) {
+          await applyIntakeToClient(supabase, client_id, {
+            business_name: businessName,
+            contact_email: contactEmail,
+            preferred_domain: preferredDomain || null,
+            content_notes: contentNotes || null,
+            colors,
+          });
+        }
+      } catch (e) {
+        // Never fail the client's submission on a CRM-side write.
+        console.error("[brandaro-intake] client sync failed:", e instanceof Error ? e.message : e);
+      }
+
+
+
       // Pipeline Step 15: pro/custom builds start once we have the intake
       // answers. Fire-and-forget — the client's confirmation must never wait on
       // Vercel, and the job row carries all state (including failures).
