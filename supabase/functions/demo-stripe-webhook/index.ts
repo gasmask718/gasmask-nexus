@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { isSuppressed } from "../_shared/dnc.ts";
 import { callDurable, BUILD_JOB_REF_PREFIX } from "../_shared/durable.ts";
+import { ensureClientForJob } from "../_shared/brandaroClient.ts";
 
 /**
  * demo-stripe-webhook
