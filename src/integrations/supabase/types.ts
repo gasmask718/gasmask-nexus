@@ -141187,6 +141187,7 @@ export type Database = {
         | "va"
         | "production"
         | "pending"
+        | "receptionist_client"
       bet_result: "pending" | "win" | "loss" | "push" | "void"
       bet_status: "simulated" | "approved" | "rejected" | "executed"
       brand_contact_role:
@@ -141823,6 +141824,7 @@ export const Constants = {
         "va",
         "production",
         "pending",
+        "receptionist_client",
       ],
       bet_result: ["pending", "win", "loss", "push", "void"],
       bet_status: ["simulated", "approved", "rejected", "executed"],
