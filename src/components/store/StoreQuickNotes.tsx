@@ -10,7 +10,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, StickyNote } from 'lucide-react';
+import { Loader2, StickyNote, Trash2 } from 'lucide-react';
+import { verifiedInsert, verifiedUpdate, mutationErrorMessage } from '@/lib/verifiedMutation';
+import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
+import { Button as UIButton } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { dynastyStampWithRelative } from '@/lib/dates';
 
@@ -26,6 +29,7 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
   const qc = useQueryClient();
   const { user } = useAuth();
   const [body, setBody] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; text: string } | null>(null);
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['store-notes-quick', storeId, limit],
@@ -34,6 +38,7 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
         .from('store_notes')
         .select('id, note_text, created_by, created_at')
         .eq('store_id', storeId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(limit);
       if (error) throw error;
@@ -86,12 +91,16 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
       if (!trimmed) throw new Error('Note is empty');
       const nowIso = new Date().toISOString();
 
-      const { error } = await supabase.from('store_notes').insert({
-        store_id: storeId,
-        note_text: `${QUICK_PREFIX} ${trimmed}`,
-        created_by: user?.id ?? null,
-      } as any);
-      if (error) throw error;
+      await verifiedInsert('Add quick note', () =>
+        supabase
+          .from('store_notes')
+          .insert({
+            store_id: storeId,
+            note_text: `${QUICK_PREFIX} ${trimmed}`,
+            created_by: user?.id ?? null,
+          } as any)
+          .select('id') as never,
+      );
 
       await supabase
         .from('store_master')
@@ -105,7 +114,27 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
       // Profile "ALL NOTES" section reads store_notes keyed by store_master.id
       qc.invalidateQueries({ queryKey: ['store-notes'] });
     },
-    onError: (e: any) => toast.error(e?.message || 'Failed to add note'),
+    onError: (e: any) => toast.error(mutationErrorMessage(e)),
+  });
+
+  /** Soft delete — the row is kept, only hidden. RLS: author or admin. */
+  const deleteNote = useMutation({
+    mutationFn: async (id: string) => {
+      await verifiedUpdate('Delete note', () =>
+        supabase
+          .from('store_notes')
+          .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null } as any)
+          .eq('id', id)
+          .is('deleted_at', null)
+          .select('id') as never,
+      );
+    },
+    onSuccess: () => {
+      toast.success('Note deleted');
+      qc.invalidateQueries({ queryKey: ['store-notes-quick', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-notes'] });
+    },
+    onError: (e: any) => toast.error(mutationErrorMessage(e)),
   });
 
   const headingClass = compact
@@ -134,13 +163,25 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
               key={n.id}
               className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5"
             >
-              <p className={compact ? 'text-xs text-foreground whitespace-pre-wrap' : 'text-sm text-foreground whitespace-pre-wrap'}>
+              <p className={(compact ? 'text-xs' : 'text-sm') + ' whitespace-pre-wrap break-words leading-relaxed text-foreground [overflow-wrap:anywhere]'}>
                 {n.note_text}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                {(n.created_by && authors[n.created_by]) || n.created_by || 'unknown'} ·{' '}
-                {dynastyStampWithRelative(n.created_at)}
-              </p>
+              <div className="mt-0.5 flex items-start justify-between gap-2">
+                <p className="text-[10px] leading-relaxed text-muted-foreground break-words [overflow-wrap:anywhere]">
+                  {(n.created_by && authors[n.created_by]) || n.created_by || 'unknown'} ·{' '}
+                  {dynastyStampWithRelative(n.created_at)}
+                </p>
+                <UIButton
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Delete note"
+                  className="h-5 w-5 shrink-0"
+                  onClick={() => setPendingDelete({ id: n.id, text: n.note_text })}
+                >
+                  <Trash2 className="h-3 w-3 text-destructive" />
+                </UIButton>
+              </div>
             </li>
           ))}
         </ul>
@@ -165,6 +206,17 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
           </Button>
         </div>
       </div>
+
+      <DeleteConfirmModal
+        open={!!pendingDelete}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        title="Delete note"
+        description="This note will be removed from the store profile. The record is kept for audit and can be restored by an admin."
+        itemName={pendingDelete?.text?.slice(0, 60)}
+        onConfirm={async () => {
+          if (pendingDelete) await deleteNote.mutateAsync(pendingDelete.id);
+        }}
+      />
     </div>
   );
 }
