@@ -35,6 +35,8 @@ const LandingPage = lazy(() => import('@/pages/public/LandingPage'));
 const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
 const ContactPage = lazy(() => import('@/pages/public/ContactPage'));
 const PrivacyPolicyPage = lazy(() => import('@/pages/public/PrivacyPolicyPage'));
+const AffiliateProgramPage = lazy(() => import('@/pages/public/AffiliateProgramPage'));
+
 const Auth = lazy(() => import('@/pages/Auth'));
 const AuthCallback = lazy(() => import('@/pages/auth/AuthCallback'));
 const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
@@ -1313,6 +1315,9 @@ export default function AppRoutes() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/affiliates" element={<AffiliateProgramPage />} />
+        <Route path="/affiliates/dashboard" element={<AffiliateProgramPage />} />
+
         <Route path="/gasmask/locations" element={<GasMaskStoreLocator />} />
         <Route path="/locations" element={<GasMaskStoreLocator />} />
       </Route>

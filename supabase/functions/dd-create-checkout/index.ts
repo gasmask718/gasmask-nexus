@@ -48,6 +48,60 @@ function json(body: unknown, status = 200) {
   });
 }
 
+/** Resolve an inbound referral code (?ref= / dd_store_ref) to a live affiliate.
+ * Only 'active' affiliates earn commission; unknown/pending codes are ignored. */
+async function resolveAffiliate(
+  supabase: any,
+  rawCode: unknown,
+): Promise<{ id: string; code: string; commission_rate: number } | null> {
+  const code = typeof rawCode === "string" ? rawCode.trim() : "";
+  if (!code) return null;
+  const { data, error } = await supabase
+    .from("dd_affiliates")
+    .select("id, code, commission_rate, status")
+    .ilike("code", code)
+    .maybeSingle();
+  if (error || !data || data.status !== "active") return null;
+  return {
+    id: data.id as string,
+    code: data.code as string,
+    commission_rate: Number(data.commission_rate) || 0,
+  };
+}
+
+/** Create the pending commission event for an attributed order. The existing
+ * dd_affiliate_lifecycle trigger flips pending→earned on payment and
+ * →reversed on refund/failure, so this is the only insert needed. */
+async function recordPendingCommission(
+  supabase: any,
+  affiliate: { id: string; code: string; commission_rate: number },
+  orderId: string,
+  orderAmount: number,
+  meta: Record<string, unknown> = {},
+): Promise<void> {
+  const amount = Math.max(0, Number(orderAmount) || 0);
+  const commission = Math.round(amount * affiliate.commission_rate * 100) / 100;
+  const { data: existing } = await supabase
+    .from("dd_affiliate_events")
+    .select("id")
+    .eq("order_id", orderId)
+    .eq("kind", "order")
+    .maybeSingle();
+  if (existing) return; // idempotent — never double-credit an order
+  const { error } = await supabase.from("dd_affiliate_events").insert({
+    affiliate_id: affiliate.id,
+    kind: "order",
+    status: "pending",
+    order_id: orderId,
+    amount,
+    commission_rate: affiliate.commission_rate,
+    commission_amount: commission,
+    meta: { code: affiliate.code, ...meta },
+  });
+  if (error) console.error("[dd-create-checkout] commission_event_failed", error);
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -222,6 +276,12 @@ serve(async (req) => {
         }
       }
 
+      // Affiliate attribution — the stored ?ref= code travels with the request.
+      const expressAffiliate = await resolveAffiliate(
+        supabase,
+        body?.ref_code ?? body?.referral_code ?? body?.store_ref ?? null,
+      );
+
       // PRE-CREATE pending order (mirrors hosted path; matches connect-webhook
       // expectation that pi.metadata.order_id resolves to an existing order).
       const wholesalerIds = Array.from(new Set(picks.map((p) => p.wholesaler_id)));
@@ -240,7 +300,10 @@ serve(async (req) => {
         shipping_address: shipping ?? null,
         campaign_id: campaignId,
         campaign_wholesaler_id: campaignWholesalerId,
+        affiliate_id: expressAffiliate?.id ?? null,
+        affiliate_code: expressAffiliate?.code ?? null,
       };
+
 
 
       const { data: orderRow, error: orderErr } = await supabase
@@ -259,6 +322,19 @@ serve(async (req) => {
         throw orderErr ?? new Error("order_insert_failed");
       }
       const orderId = orderRow.id as string;
+
+      // Pending commission event — lifecycle trigger promotes it on payment.
+      if (expressAffiliate) {
+        await recordPendingCommission(
+          supabase,
+          expressAffiliate,
+          orderId,
+          amountCents / 100,
+          { channel: "express_pay" },
+        );
+      }
+
+
 
       // Item rows
       const { error: itemsErr } = await supabase.from("marketplace_order_items").insert(
@@ -407,7 +483,39 @@ serve(async (req) => {
     const threeDSTier: "new_customer" | "high_value" | "established_customer" =
       isNewCustomer ? "new_customer" : orderTotal >= 500 ? "high_value" : "established_customer";
 
+    // ── Affiliate attribution (hosted). The public site forwards the stored
+    // referral code; we resolve it to a live affiliate, stamp the order, and
+    // create the pending commission event the lifecycle trigger acts on.
+    const hostedAffiliate = await resolveAffiliate(
+      supabase,
+      body?.ref_code ?? body?.referral_code ?? body?.store_ref ?? null,
+    );
+    if (hostedAffiliate) {
+      const { data: attrRow } = await supabase
+        .from("marketplace_orders")
+        .select("affiliate_id")
+        .eq("id", order.id)
+        .maybeSingle();
+      if (!attrRow?.affiliate_id) {
+        await supabase
+          .from("marketplace_orders")
+          .update({
+            affiliate_id: hostedAffiliate.id,
+            affiliate_code: hostedAffiliate.code,
+          })
+          .eq("id", order.id);
+      }
+      await recordPendingCommission(
+        supabase,
+        hostedAffiliate,
+        order.id,
+        Number(order.total ?? 0),
+        { channel: "hosted_checkout" },
+      );
+    }
+
     // Stamp campaign on the existing order if a campaign_code was passed.
+
     const hostedCampaignCode: string | null = body?.campaign_code ?? null;
     if (hostedCampaignCode) {
       const { data: camp } = await supabase
