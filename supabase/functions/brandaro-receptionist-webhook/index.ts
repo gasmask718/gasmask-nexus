@@ -126,6 +126,86 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ---- Client portal auth: create/find auth user, grant role, email magic link
+      if (email) {
+        try {
+          const portalUrl = `${Deno.env.get("PUBLIC_SITE_URL") ?? "https://gasmask-os-nexus.lovable.app"}/client-portal`;
+          let userId: string | null = null;
+          let invited = false;
+
+          const created = await supabase.auth.admin.createUser({
+            email,
+            email_confirm: true,
+            user_metadata: {
+              business_name: client.business_name,
+              receptionist_client_id: client.id,
+            },
+          });
+
+          if (created.data?.user) {
+            userId = created.data.user.id;
+          } else {
+            // Already exists — look it up
+            const { data: list } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
+            userId =
+              list?.users?.find(
+                (u: any) => (u.email ?? "").toLowerCase() === email.toLowerCase(),
+              )?.id ?? null;
+            if (!userId) {
+              console.error("[receptionist-webhook] could not create/find auth user", created.error);
+            }
+          }
+
+          if (userId) {
+            await supabase
+              .from("user_roles")
+              .upsert({ user_id: userId, role: "receptionist_client" }, { onConflict: "user_id,role" });
+            await supabase
+              .from("brandaro_receptionist_clients")
+              .update({ auth_user_id: userId })
+              .eq("id", client.id);
+
+            // Welcome email with a passwordless login link
+            const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+              type: "magiclink",
+              email,
+              options: { redirectTo: portalUrl },
+            });
+            if (linkErr) {
+              console.error("[receptionist-webhook] magic link generation failed", linkErr);
+            } else {
+              invited = true;
+              const actionLink = (linkData as any)?.properties?.action_link ?? portalUrl;
+              try {
+                await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/brandaro-send-email`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                  },
+                  body: JSON.stringify({
+                    template: "receptionist-portal-welcome",
+                    to: email,
+                    data: {
+                      business_name: client.business_name,
+                      owner_name: client.owner_name,
+                      login_url: actionLink,
+                      portal_url: portalUrl,
+                    },
+                  }),
+                });
+              } catch (e) {
+                console.error("[receptionist-webhook] welcome email send failed", e);
+              }
+            }
+          }
+          console.log(`[receptionist-webhook] portal auth user=${userId} invited=${invited}`);
+        } catch (e) {
+          console.error("[receptionist-webhook] portal auth setup failed", e);
+        }
+      }
+
+
       // Update lead → closed_won
       if (lead_id) {
         await supabase

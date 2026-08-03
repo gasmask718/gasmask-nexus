@@ -11,7 +11,7 @@ const corsHeaders = {
 
 const FROM = Deno.env.get("BRANDARO_EMAIL_FROM") || "Brandaro <onboarding@resend.dev>";
 
-type TemplateName = "paid-conversion-alert" | "client-welcome";
+type TemplateName = "paid-conversion-alert" | "client-welcome" | "receptionist-portal-welcome";
 
 const wrap = (title: string, inner: string) => `<!doctype html>
 <html><body style="margin:0;padding:0;background:#0b0f14;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#e6edf3">
@@ -50,6 +50,16 @@ const templates: Record<TemplateName, (d: any) => { subject: string; html: strin
       <p><strong>Package:</strong> ${d.tier || "—"} · <strong>Paid:</strong> ${money(d.amount)}</p>
       <p>Next step is your intake form so we can load in your real content.</p>
       ${d.intake_url ? `<p><a href="${d.intake_url}" style="display:inline-block;padding:12px 20px;background:#4fd1c5;color:#0b0f14;text-decoration:none;border-radius:6px;font-weight:600">Complete intake</a></p>` : ""}
+    `),
+  }),
+  "receptionist-portal-welcome": (d) => ({
+    subject: `Your AI Receptionist portal is ready — ${d.business_name || "your business"}`,
+    html: wrap("Your client portal is ready", `
+      <p>Hi ${d.owner_name || "there"},</p>
+      <p>Your AI Receptionist for <strong>${d.business_name || "your business"}</strong> is being set up right now.</p>
+      <p>Use the button below to sign in — no password needed.</p>
+      ${d.login_url ? `<p><a href="${d.login_url}" style="display:inline-block;padding:12px 20px;background:#4fd1c5;color:#0b0f14;text-decoration:none;border-radius:6px;font-weight:600">Sign in to your portal</a></p>` : ""}
+      <p style="font-size:13px;color:#94a3b8">You can view call logs, transcripts, and your receptionist settings any time at ${d.portal_url || ""}.</p>
     `),
   }),
 };
