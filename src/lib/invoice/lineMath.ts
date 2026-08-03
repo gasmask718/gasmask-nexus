@@ -411,7 +411,6 @@ export function toLineItemRow(
     invoice_id: invoiceId,
     brand_id: line.brand_id,
     brand: line.brand_name,
-    brand_name: line.brand_name,
     product_id: line.product_id,
     product_name: line.product_name,
     product_name_snapshot: line.product_name,
