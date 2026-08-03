@@ -119,6 +119,10 @@ function VADashboardInner() {
     refetchInterval: 30000,
   });
 
+  // Unresolved inbound replies across this VA's assigned leads
+  const { data: unreadInbound = 0 } = useVAUnreadInbound();
+
+
   const navItems = [
     { key: 'leads' as VAView, label: t('va.nav.leads'), icon: Users },
     { key: 'intake' as VAView, label: 'New Lead Intake', icon: UserPlus },
