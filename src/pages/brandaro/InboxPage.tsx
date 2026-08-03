@@ -464,7 +464,8 @@ export default function InboxPage() {
                                 </TableCell>
                               </TableRow>
                             )}
-                          </>
+                          </Fragment>
+
                         );
                       })}
                     </TableBody>
