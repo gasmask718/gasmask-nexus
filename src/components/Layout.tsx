@@ -250,6 +250,9 @@ const DYNASTY_NAVIGATION = {
         { path: '/stores', label: 'Store Directory', icon: Store },
         { path: '/gasmask/store-intelligence', label: '🎯 Store Intelligence', icon: BarChart3 },
         { path: '/grabba/store-master', label: 'Store Master Profile', icon: Database },
+        { path: '/grabba/flower-customers', label: '🌿 Flower Customers', icon: Target },
+        { path: '/ideas', label: '💡 Idea & Improvement Box', icon: Lightbulb },
+
         { path: '/grabba/crm', label: 'Grabba CRM', icon: Users },
         { path: '/grabba/brand/grabba', label: 'Brand CRM', icon: Target },
         { path: '/sell-through-analytics', label: 'Sell-Through Analytics', icon: BarChart3 },
