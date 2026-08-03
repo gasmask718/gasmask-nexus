@@ -278,12 +278,20 @@ serve(async (req) => {
       }
     }
 
+    const called = results.filter((r) => r.status === "initiated").length;
+    const failed = results.filter((r) => r.status === "failed" || r.status === "error").length;
+
     return new Response(
       JSON.stringify({
+        // FIX (c): the batch reports honest counts. `success` is false when the
+        // batch attempted dials and none of them actually reached the provider.
+        success: !(failed > 0 && called === 0),
         total_eligible: eligibleLeads.length,
         results,
         gate_blocked: gateBlocked,
-        called: results.filter((r) => r.status === "initiated").length,
+        called,
+        failed,
+        first_error: results.find((r) => r.status === "failed" || r.status === "error")?.error ?? null,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
