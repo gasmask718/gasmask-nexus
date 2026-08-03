@@ -158,14 +158,10 @@ export function useIdeaSubmissions(filters: IdeaFilters) {
   return useQuery({
     queryKey: ['idea-submissions', filters],
     queryFn: async () => {
-      let q = supabase
+      let q: any = supabase
         .from('idea_submissions')
-        .select('*', { count: 'exact' }) as never as ReturnType<
-        typeof supabase.from
-      >['select'] extends never
-        ? never
-        : any;
-      q = supabase.from('idea_submissions').select('*', { count: 'exact' }) as any;
+        .select('*', { count: 'exact' });
+
 
       if (filters.status) q = q.eq('status', filters.status);
       if (filters.category) q = q.eq('category', filters.category);
