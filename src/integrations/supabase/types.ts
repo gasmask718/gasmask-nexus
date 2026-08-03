@@ -68481,6 +68481,128 @@ export type Database = {
           },
         ]
       }
+      invoice_line_reconstruction_staging: {
+        Row: {
+          amount_from_note: boolean
+          business_date: string | null
+          clause_text: string | null
+          committed_at: string | null
+          committed_line_item_id: string | null
+          confidence_overall: number
+          confidence_price: number
+          confidence_product: number
+          confidence_quantity: number
+          created_at: string
+          entry_index: number
+          flags: string[]
+          id: string
+          implied_unit_price: number | null
+          invoice_id: string
+          invoice_total_amount: number | null
+          line_source: string
+          line_total: number
+          list_unit_price: number
+          price_basis: string
+          price_ratio_to_list: number | null
+          product_id: string | null
+          product_name: string
+          quantity_boxes: number | null
+          quantity_tubes: number | null
+          quantity_units: number
+          raw_note: string
+          reconcile_target: number | null
+          run_id: string
+          store_id: string | null
+          tier: string
+          unit_price: number
+          unit_word: string | null
+          units_per_box: number
+          updated_at: string
+        }
+        Insert: {
+          amount_from_note?: boolean
+          business_date?: string | null
+          clause_text?: string | null
+          committed_at?: string | null
+          committed_line_item_id?: string | null
+          confidence_overall?: number
+          confidence_price?: number
+          confidence_product?: number
+          confidence_quantity?: number
+          created_at?: string
+          entry_index?: number
+          flags?: string[]
+          id?: string
+          implied_unit_price?: number | null
+          invoice_id: string
+          invoice_total_amount?: number | null
+          line_source?: string
+          line_total: number
+          list_unit_price: number
+          price_basis?: string
+          price_ratio_to_list?: number | null
+          product_id?: string | null
+          product_name: string
+          quantity_boxes?: number | null
+          quantity_tubes?: number | null
+          quantity_units: number
+          raw_note: string
+          reconcile_target?: number | null
+          run_id: string
+          store_id?: string | null
+          tier: string
+          unit_price: number
+          unit_word?: string | null
+          units_per_box?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_from_note?: boolean
+          business_date?: string | null
+          clause_text?: string | null
+          committed_at?: string | null
+          committed_line_item_id?: string | null
+          confidence_overall?: number
+          confidence_price?: number
+          confidence_product?: number
+          confidence_quantity?: number
+          created_at?: string
+          entry_index?: number
+          flags?: string[]
+          id?: string
+          implied_unit_price?: number | null
+          invoice_id?: string
+          invoice_total_amount?: number | null
+          line_source?: string
+          line_total?: number
+          list_unit_price?: number
+          price_basis?: string
+          price_ratio_to_list?: number | null
+          product_id?: string | null
+          product_name?: string
+          quantity_boxes?: number | null
+          quantity_tubes?: number | null
+          quantity_units?: number
+          raw_note?: string
+          reconcile_target?: number | null
+          run_id?: string
+          store_id?: string | null
+          tier?: string
+          unit_price?: number
+          unit_word?: string | null
+          units_per_box?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_reconstruction_staging_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_reconstruction_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_receipt_log: {
         Row: {
           created_at: string | null
@@ -68620,6 +68742,54 @@ export type Database = {
           },
         ]
       }
+      invoice_reconstruction_runs: {
+        Row: {
+          band_cleared_count: number
+          created_at: string
+          created_by: string | null
+          high_confidence_count: number
+          id: string
+          notes: string | null
+          parser_version: string
+          review_count: number
+          rollback_statement: string | null
+          rows_scanned: number
+          rows_written: number
+          run_label: string
+          updated_at: string
+        }
+        Insert: {
+          band_cleared_count?: number
+          created_at?: string
+          created_by?: string | null
+          high_confidence_count?: number
+          id?: string
+          notes?: string | null
+          parser_version: string
+          review_count?: number
+          rollback_statement?: string | null
+          rows_scanned?: number
+          rows_written?: number
+          run_label: string
+          updated_at?: string
+        }
+        Update: {
+          band_cleared_count?: number
+          created_at?: string
+          created_by?: string | null
+          high_confidence_count?: number
+          id?: string
+          notes?: string | null
+          parser_version?: string
+          review_count?: number
+          rollback_statement?: string | null
+          rows_scanned?: number
+          rows_written?: number
+          run_label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoice_repair_log: {
         Row: {
           after_state: Json
@@ -68693,10 +68863,13 @@ export type Database = {
           receipt_sent_at: string | null
           receipt_status: string | null
           received_by: string | null
+          referenced_external_number: string | null
           repair_notes: string | null
           repair_status: string
           repaired_at: string | null
           repaired_by: string | null
+          revenue_role: string
+          sale_never_imported: boolean
           status: string
           store_id: string | null
           subtotal: number | null
@@ -68751,10 +68924,13 @@ export type Database = {
           receipt_sent_at?: string | null
           receipt_status?: string | null
           received_by?: string | null
+          referenced_external_number?: string | null
           repair_notes?: string | null
           repair_status?: string
           repaired_at?: string | null
           repaired_by?: string | null
+          revenue_role?: string
+          sale_never_imported?: boolean
           status?: string
           store_id?: string | null
           subtotal?: number | null
@@ -68809,10 +68985,13 @@ export type Database = {
           receipt_sent_at?: string | null
           receipt_status?: string | null
           received_by?: string | null
+          referenced_external_number?: string | null
           repair_notes?: string | null
           repair_status?: string
           repaired_at?: string | null
           repaired_by?: string | null
+          revenue_role?: string
+          sale_never_imported?: boolean
           status?: string
           store_id?: string | null
           subtotal?: number | null
