@@ -70,6 +70,12 @@ const BillingInvoiceNew = () => {
       const subtotal = parseFloat(formData.subtotal) || 0;
       const tax = parseFloat(formData.tax) || 0;
       const total = subtotal + tax;
+      // business_date is required — refuse rather than silently landing on today.
+      if (!formData.invoice_date || Number.isNaN(new Date(formData.invoice_date).getTime())) {
+        throw new Error('Invoice Date is required and must be a valid date.');
+      }
+      const businessDate = formData.invoice_date;
+
       const dueDate = formData.due_date || (() => {
         const d = new Date(formData.invoice_date);
         d.setDate(d.getDate() + 30);
@@ -85,6 +91,8 @@ const BillingInvoiceNew = () => {
             entity_id: formData.store_id,
             store_id: formData.store_id,
             invoice_number: formData.invoice_number,
+            business_date: businessDate,
+            business_date_source: invoiceMode === 'historical' ? 'manual_backfill_entry' : 'live_entry',
             due_date: dueDate,
             subtotal,
             tax,

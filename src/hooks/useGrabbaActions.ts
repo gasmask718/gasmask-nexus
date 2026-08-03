@@ -97,14 +97,20 @@ export function useGrabbaActions() {
   });
 
   const createInvoice = useMutation({
-    mutationFn: async (data: { company_id: string; brand: string; total_amount: number; due_date?: string }) => {
+    mutationFn: async (data: { company_id: string; brand: string; total_amount: number; due_date?: string; business_date?: string }) => {
       const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+      // business_date is the operational truth date for this invoice. Never leave it
+      // null — surfaces (last_order_at, tube velocity, Last Order snapshot) key off it.
+      const businessDate = data.business_date || new Date().toISOString().split('T')[0];
       const { data: result, error } = await supabase
         .from('invoices')
         .insert({ 
           company_id: data.company_id,
           brand: data.brand,
           total_amount: data.total_amount,
+          business_date: businessDate,
+          business_date_source: data.business_date ? 'user_entry' : 'live_entry_default',
+          entry_mode: 'live',
           due_date: data.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           payment_status: 'unpaid',
         } as any)
