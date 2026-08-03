@@ -124569,6 +124569,33 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_secret_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          secret_count: number
+          secrets: Json
+          taken_at: string
+          trigger_source: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          secret_count?: number
+          secrets?: Json
+          taken_at?: string
+          trigger_source?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          secret_count?: number
+          secrets?: Json
+          taken_at?: string
+          trigger_source?: string
+        }
+        Relationships: []
+      }
       vehicle_decor_styles: {
         Row: {
           base_price: number
@@ -140459,6 +140486,15 @@ export type Database = {
       dialer_watchdog_recover: {
         Args: { p_business_id: string }
         Returns: Json
+      }
+      diff_vault_snapshots: {
+        Args: { p_from: string; p_to?: string }
+        Returns: {
+          change: string
+          from_snapshot: string
+          secret_name: string
+          to_snapshot: string
+        }[]
       }
       distribute_leads_to_vas: { Args: never; Returns: Json }
       engagement_scores_tick: { Args: never; Returns: Json }

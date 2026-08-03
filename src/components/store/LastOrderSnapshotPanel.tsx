@@ -41,11 +41,13 @@ function useLastOrderLineItems(storeId: string) {
     enabled: !!storeId,
     staleTime: 60_000,
     queryFn: async (): Promise<LastOrderResult | null> => {
+      // Order by business_date (operational truth) with created_at as tiebreaker/fallback.
       const { data: inv, error: iErr } = await supabase
         .from('invoices')
-        .select('id, invoice_number, total, created_at, payment_status')
+        .select('id, invoice_number, total, created_at, business_date, payment_status')
         .eq('store_id', storeId)
         .is('deleted_at', null)
+        .order('business_date', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -75,7 +77,9 @@ function useLastOrderLineItems(storeId: string) {
       return {
         invoice_id: inv.id,
         invoice_number: inv.invoice_number,
-        created_at: inv.created_at,
+        created_at: (inv as any).business_date
+          ? new Date(`${(inv as any).business_date}T12:00:00Z`).toISOString()
+          : inv.created_at,
         total: Number(inv.total ?? 0),
         payment_status: (inv as any).payment_status ?? null,
         lines: (lines || []).map((l) => ({
