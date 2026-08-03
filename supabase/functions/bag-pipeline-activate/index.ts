@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
     const { data: lines, error: lErr } = await supabase
       .from("invoice_line_items")
       .select("id, invoice_id, product_id, product_name, quantity, invoices!inner(store_id, created_at, payment_status)")
+      .is("deleted_at", null)
       .in("product_id", bagProductIds);
     if (lErr) throw lErr;
 

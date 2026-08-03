@@ -69,6 +69,7 @@ export function useStoreRecentInvoices(
       const { data: lineItems, error: liErr } = await supabase
         .from('invoice_line_items')
         .select('invoice_id, product_id, product_name, product_name_snapshot, computed_tubes_total')
+        .is('deleted_at', null)
         .in('invoice_id', invoiceIds);
       if (liErr) throw liErr;
 

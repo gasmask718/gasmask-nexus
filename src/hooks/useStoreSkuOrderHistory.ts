@@ -134,6 +134,7 @@ export function useStoreSkuOrderHistory(storeId: string | null) {
         .select(
           'invoice_id, product_name, product_name_snapshot, brand, brand_name_snapshot, quantity',
         )
+        .is('deleted_at', null)
         .in('invoice_id', allIds);
       if (liErr) throw liErr;
 
