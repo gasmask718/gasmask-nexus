@@ -23869,41 +23869,67 @@ export type Database = {
           attributed_campaign: string | null
           attributed_industry: string | null
           attributed_script_variant: string | null
+          client_id: string | null
           close_time_hours: number | null
           created_at: string
           id: string
           lead_id: string | null
           revenue_amount: number
           revenue_type: string
+          source: string
+          stripe_reference: string | null
+          subscription_id: string | null
         }
         Insert: {
           attributed_campaign?: string | null
           attributed_industry?: string | null
           attributed_script_variant?: string | null
+          client_id?: string | null
           close_time_hours?: number | null
           created_at?: string
           id?: string
           lead_id?: string | null
           revenue_amount?: number
           revenue_type?: string
+          source?: string
+          stripe_reference?: string | null
+          subscription_id?: string | null
         }
         Update: {
           attributed_campaign?: string | null
           attributed_industry?: string | null
           attributed_script_variant?: string | null
+          client_id?: string | null
           close_time_hours?: number | null
           created_at?: string
           id?: string
           lead_id?: string | null
           revenue_amount?: number
           revenue_type?: string
+          source?: string
+          stripe_reference?: string | null
+          subscription_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "brandaro_revenue_tracking_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "brandaro_revenue_tracking_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_revenue_tracking_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_subscriptions"
             referencedColumns: ["id"]
           },
         ]
