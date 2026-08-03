@@ -37,10 +37,13 @@ import {
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
   Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles, Building2, History, UserPlus,
+  MessageSquare,
 } from 'lucide-react';
 import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
 import { BrandaroLeadIntakeModal } from '@/components/brandaro/BrandaroLeadIntakeModal';
 import { VAIntakeInvitesPanel } from '@/components/va/VAIntakeInvitesPanel';
+import { VAMessages } from '@/components/va/VAMessages';
+import { useVAUnreadInbound } from '@/hooks/useVAMessages';
 
 type VAView = 'leads' | 'intake' | 'call' | 'messages' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'autodialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
 
