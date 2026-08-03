@@ -37,12 +37,15 @@ import {
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
   Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles, Building2, History, UserPlus,
+  MessageSquare,
 } from 'lucide-react';
 import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
 import { BrandaroLeadIntakeModal } from '@/components/brandaro/BrandaroLeadIntakeModal';
 import { VAIntakeInvitesPanel } from '@/components/va/VAIntakeInvitesPanel';
+import { VAMessages } from '@/components/va/VAMessages';
+import { useVAUnreadInbound } from '@/hooks/useVAMessages';
 
-type VAView = 'leads' | 'intake' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'autodialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
+type VAView = 'leads' | 'intake' | 'call' | 'messages' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'autodialer' | 'leaderboard' | 'callbacks' | 'coaching' | 'history';
 
 function VADashboardInner() {
   const navigate = useNavigate();
@@ -116,6 +119,10 @@ function VADashboardInner() {
     refetchInterval: 30000,
   });
 
+  // Unresolved inbound replies across this VA's assigned leads
+  const { data: unreadInbound = 0 } = useVAUnreadInbound();
+
+
   const navItems = [
     { key: 'leads' as VAView, label: t('va.nav.leads'), icon: Users },
     { key: 'intake' as VAView, label: 'New Lead Intake', icon: UserPlus },
@@ -124,6 +131,7 @@ function VADashboardInner() {
     { key: 'callbacks' as VAView, label: 'Callbacks', icon: Clock },
     { key: 'coaching' as VAView, label: 'AI Coaching', icon: Sparkles, badge: unreadCoaching },
     { key: 'history' as VAView, label: 'Call History', icon: History },
+    { key: 'messages' as VAView, label: 'Messages', icon: MessageSquare, badge: unreadInbound },
     { key: 'call' as VAView, label: t('va.nav.activeCall'), icon: Phone },
     { key: 'scripts' as VAView, label: t('va.nav.scripts'), icon: BookOpen },
     { key: 'faqs' as VAView, label: t('va.nav.faqs'), icon: HelpCircle },
@@ -283,6 +291,11 @@ function VADashboardInner() {
             {view === 'coaching' && (
               <div className="max-w-5xl">
                 <VAAICoachingHub />
+              </div>
+            )}
+            {view === 'messages' && (
+              <div className="max-w-6xl">
+                <VAMessages />
               </div>
             )}
             {view === 'history' && (

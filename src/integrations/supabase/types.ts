@@ -141083,6 +141083,7 @@ export type Database = {
           was_insert: boolean
         }[]
       }
+      va_owns_brandaro_lead: { Args: { _lead_id: string }; Returns: boolean }
       validate_agent_state_transition: {
         Args: { p_current_status: string; p_new_status: string }
         Returns: boolean
