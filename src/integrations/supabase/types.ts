@@ -68070,6 +68070,54 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_amount_writeback_staging: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          id: string
+          invoice_id: string
+          new_total_amount: number
+          previous_subtotal: number | null
+          previous_total: number | null
+          previous_total_amount: number | null
+          reverted_at: string | null
+          run_id: string
+          source_note: string | null
+          store_id: string | null
+          tier: string
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          id?: string
+          invoice_id: string
+          new_total_amount: number
+          previous_subtotal?: number | null
+          previous_total?: number | null
+          previous_total_amount?: number | null
+          reverted_at?: string | null
+          run_id: string
+          source_note?: string | null
+          store_id?: string | null
+          tier: string
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          new_total_amount?: number
+          previous_subtotal?: number | null
+          previous_total?: number | null
+          previous_total_amount?: number | null
+          reverted_at?: string | null
+          run_id?: string
+          source_note?: string | null
+          store_id?: string | null
+          tier?: string
+        }
+        Relationships: []
+      }
       invoice_business_date_staging: {
         Row: {
           applied: boolean
