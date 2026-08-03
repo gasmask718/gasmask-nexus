@@ -64596,6 +64596,44 @@ export type Database = {
           },
         ]
       }
+      idea_internal_notes: {
+        Row: {
+          author_id: string
+          author_name: string | null
+          created_at: string
+          id: string
+          idea_id: string
+          note: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string
+          author_name?: string | null
+          created_at?: string
+          id?: string
+          idea_id: string
+          note: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          author_name?: string | null
+          created_at?: string
+          id?: string
+          idea_id?: string
+          note?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "idea_internal_notes_idea_id_fkey"
+            columns: ["idea_id"]
+            isOneToOne: false
+            referencedRelation: "idea_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idea_submissions: {
         Row: {
           assigned_to: string | null

@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { fieldStamp } from '@/lib/dates';
 import { mutationErrorMessage } from '@/lib/verifiedMutation';
 import { IdeaSubmitDialog } from '@/components/idea/IdeaSubmitDialog';
+import { IdeaInternalNotes } from '@/components/idea/IdeaInternalNotes';
 import {
   DEFAULT_IDEA_FILTERS,
   IDEA_CATEGORIES,
@@ -335,7 +336,8 @@ export default function IdeaDashboard() {
                           {r.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <IdeaInternalNotes ideaId={r.id} ideaTitle={r.title} />
                         <Button
                           size="icon"
                           variant="ghost"
