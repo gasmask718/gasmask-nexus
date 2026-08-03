@@ -139785,6 +139785,27 @@ export type Database = {
           submitted_at: string
         }[]
       }
+      get_public_invoice: {
+        Args: { _invoice_id: string }
+        Returns: {
+          amount_paid: number
+          customer_name: string
+          deposit_amount: number
+          deposit_percent: number
+          deposit_status: string
+          due_date: string
+          final_amount: number
+          final_status: string
+          id: string
+          invoice_number: string
+          line_items: Json
+          notes: string
+          payment_type: string
+          service_type: string
+          status: string
+          total: number
+        }[]
+      }
       get_public_store_locator: {
         Args: never
         Returns: {
@@ -139953,6 +139974,7 @@ export type Database = {
       }
       is_funding_staff: { Args: { _user_id: string }; Returns: boolean }
       is_grants_staff: { Args: { _user_id?: string }; Returns: boolean }
+      is_internal_staff: { Args: { _user_id?: string }; Returns: boolean }
       is_live_mode_authorized: {
         Args: { p_business_id: string; p_route_id?: string }
         Returns: boolean
@@ -141032,6 +141054,17 @@ export type Database = {
         Returns: Json
       }
       validate_intent_autonomy: { Args: { p_intent_id: string }; Returns: Json }
+      validate_invite_token_public: {
+        Args: { _token: string }
+        Returns: {
+          email: string
+          expires_at: string
+          id: string
+          invite_status: string
+          metadata: Json
+          role: Database["public"]["Enums"]["app_role"]
+        }[]
+      }
       validate_portal_request: {
         Args: {
           _action_type: string
