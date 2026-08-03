@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { readEdgeError } from "@/lib/edgeError";
 import {
   Phone, PhoneOff, Users, Clock, TrendingUp, RefreshCw,
   AlertTriangle, BarChart3, Shield, MapPin, Zap, CheckCircle2,
