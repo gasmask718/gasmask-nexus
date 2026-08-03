@@ -413,7 +413,7 @@ function ClientDetailSheet({
                 table="brandaro_clients"
                 currentAssignedBuilder={form.assigned_builder || null}
                 onChanged={() => {
-                  onSaved?.();
+                  onSaved();
                 }}
               />
             </div>
