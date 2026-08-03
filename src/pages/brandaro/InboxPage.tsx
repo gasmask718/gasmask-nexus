@@ -408,9 +408,9 @@ export default function InboxPage() {
                         const lead = lookupLead(row);
                         const isOpen = expandedInbound === row.id;
                         return (
-                          <>
+                          <Fragment key={row.id}>
                             <TableRow
-                              key={row.id}
+
                               className="cursor-pointer hover:bg-muted/50"
                               onClick={() => setExpandedInbound(isOpen ? null : row.id)}
                             >
