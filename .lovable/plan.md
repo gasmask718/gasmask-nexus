@@ -1,110 +1,112 @@
-# Import Pipeline Findings + Revised Plan
+# AR Recovery + Date Correction — Revised Plan
 
-Context correction accepted: invoices are an **import-first** system. 3,166 invoices, of which 28 were written by the live app. The 2,771 lineless headers are expected business history, not a bug. Everything below is re-framed around that.
-
----
-
-## 0. COMPLIANCE CHECK (first, as directed) — clean, with one caveat
-
-`dnc_list` = 0 rows. `opt_out_events` = 0 rows. Both read gates are wired and **fail closed** (`_shared/dnc.ts` returns `blocked: true` with reason `suppression_lookup_failed` on lookup error), so an empty table is not silently permissive.
-
-The question was whether they're empty because nobody opted out or because writes are lost. Evidence:
-
-- Inbound message corpus scanned for STOP / UNSUBSCRIBE / QUIT / CANCEL: **0 matches** across `brandaro_inbound_messages` (47 rows) and `messaging_messages` (0 inbound rows).
-- Writers are present and plausible: `dc-bland-webhook` (4 upsert sites), `sms-inbound-webhook`, `brandaro-handle-inbound`.
-
-**Verdict: not a silent write loss. Nobody has opted out yet.** The gates are correct. One real gap remains: no writer path has ever executed, so the write side is untested in production. Action is a synthetic end-to-end test (send a STOP through the inbound webhook against a test number, confirm a row lands and the next send is blocked), not a code fix.
+Approved sequence, amended per Move 1 and Move 2. AR findings below are report-only, run read-only.
 
 ---
 
-## 1. THE IMPORT PIPELINE — every invoice-creating path
+## MOVE 2 — AR RECOVERY REPORT (this is the headline)
 
-| # | Path | Type | Creates line items? | Source has line detail? |
+### a. Current payment state: every one of the 1,352 enrichment invoices is at raw default
+
+| field | value across all 1,352 |
+|---|---|
+| `payment_status` | `'unpaid'` — 1,352 / 1,352 (column default) |
+| `amount_paid` | `0` — 1,352 / 1,352 (column default) |
+| `partial_amount` | `NULL` — 1,352 / 1,352 |
+| `paid_at` | `NULL` — 1,352 / 1,352 |
+
+The enrichment run never wrote a single payment field. Total face value: **$83,565**, all of it sitting in AR as unpaid.
+
+**The AR is wrong in both directions, and the larger error is the overstatement:**
+
+- **659 invoices, $30,210** have notes saying PAID with no outstanding language. This is **phantom AR** — money already collected, still showing as owed. Any aging report or collections list is chasing it.
+- **508 invoices, $32,943** have notes indicating a partial or unpaid balance. Genuinely outstanding, but flagged by accident rather than by record.
+- **177 invoices, $19,862** have no payment language at all. Unknown state.
+
+So of $83,565 in apparent AR, roughly **36% is already collected** and the "unpaid" status is meaningless as a signal today — it's the default value, not a fact.
+
+### b. Outstanding balance
+
+| measure | count | dollars |
+|---|---|---|
+| Invoices with unpaid/owe/balance language | **508** | **$32,943** invoice face value |
+| — of those, with an explicit figure in the note (`owe 100`) | 62 | parseable to an exact balance |
+| — of those, outstanding but no figure given | 446 | balance must be inferred or field-verified |
+| — of those, `total_amount` is NULL entirely | 144 | no invoice value recorded at all |
+| Distinct stores affected | **234** | |
+
+Important caveat: **$32,943 is invoice face value, not the balance owed.** Notes like "1 box -200 $ paid 100 dollars owe 100 unpaid" mean the invoice is $200 but only $100 is outstanding. The true recoverable figure is lower than $32,943 and can only be pinned down for the 62 rows with explicit figures until the rest are parsed or field-verified. Treat $32,943 as the upper bound.
+
+### c. Stores ranked by outstanding exposure
+
+| store | invoices | face value | rows w/ NULL amount | explicit owe figure |
 |---|---|---|---|---|
-| 1 | `src/hooks/useBulkUpload.ts` (2 insert sites, lines 1053 + 1560) | spreadsheet upload | **No — header only** | **Yes, discarded** |
-| 2 | `src/components/store/BulkInvoiceUploader.tsx` (line 407) | paste / CSV, line + block mode | **No — header only** | **Yes, discarded** |
-| 3 | `public.commit_import_batch` RPC | staged historical batch | **No — header only** | Yes, in `raw_payload` |
-| 4 | `ai-backfill-runner` edge function (`job_type='invoices'`) | AI backfill from orders | **No — header only** | Partially |
-| 5 | `finalize-audit-draft` edge function | audit draft → invoice | **Yes** | Yes |
-| 6 | `ut-generate-invoice` edge function | UT bookings | header + UT lines | n/a |
-| 7 | `CreateStoreInvoiceModal`, `StoreCardQuickView`, `StoreVisitEngine`, `EditStoreInvoiceModal`, `useCheckout` | live app | **Yes** | n/a |
+| US Quick Mart | 4 | $5,400 | 1 | 0 |
+| Seven Express Deli inc | 19 | $1,500 | 6 | 2 |
+| EBB Pitkin Express Deli Grill | 14 | $1,360 | 3 | 4 |
+| happy land convenience | 11 | $930 | 2 | 1 |
+| Blake Express Deli | 9 | $880 | 0 | 1 |
+| Abdula two deli Ang grill burgers | 5 | $701 | 0 | 2 |
+| Beans (165 9th Ave) | 2 | $700 | 0 | 1 |
+| Mike's Finest deli grocery corp | 8 | $700 | 4 | 2 |
+| Fetty KJ | 9 | $700 | 3 | 2 |
+| Polanco Anthony | 9 | $652 | 3 | 4 |
+| Ave L superette inc | 8 | $650 | 0 | 0 |
+| snack station | 5 | $600 | 0 | 0 |
 
-**Four import paths could capture line detail and don't: #1, #2, #3, #4.** They account for essentially all 2,771 lineless headers. This is the actual finding — not that the shells are corrupt, but that the import writers were built header-only while their sources carried detail.
+Long tail: 234 stores total, so the top 12 are a small slice. US Quick Mart is the standout — $5,400 across 4 invoices, four times the next account.
 
-`BulkInvoiceUploader` is the sharpest case: it already has a "line mode" parser that reads structured rows, and it still collapses everything into one header.
-
-## 2. IS THE DETAIL IN THE SOURCE? — Yes, and it is already in the database
-
-The enrichment run wrote the source text verbatim into `invoices.notes`. Actual values:
-
-```
-"0/1/25  1 BOX $200 PAID"
-"0/1/25 - 0/1/25- 50 paid 25 tubes"
-"0/27/25 - 20 tubes -40$ paid"
-"03/21/2025 1 box -200 $ paid 100 dollars owe 100 unpaid come back on Monday for the rest of the payment"
-```
-
-Coverage across all 1,352 enrichment invoices:
-
-- **1,352 / 1,352** contain numeric detail
-- **619** explicitly say "box" / "boxes"
-- **436** explicitly say "tube" / "tubes"
-
-**The detail was not header-level to begin with — it was captured and then discarded into a text blob.** Re-import with line capture is not just on the table, it needs no new source documents: the notes field is the source. A parser over `invoices.notes` can reconstruct product, quantity, unit and payment state for the large majority of the enrichment population, and the same approach applies to the legacy CRM lane.
-
-This changes the Last Order card decision: don't build it against 395 invoices. Reconstruct lines first, then build it against ~1,700+.
-
-## 3. DUPLICATE CHECK — smaller than it looks, and the enrichment number is an artifact
-
-Exact same store + same `business_date` + same amount:
-
-| lane mix | duplicate groups | invoices involved | redundant copies | dollars at risk |
-|---|---|---|---|---|
-| legacy_crm internal | 172 | 471 | 299 | **$51,955** |
-| enrich internal | 160 | 417 | 257 | $26,383 |
-| backfill internal | 17 | 34 | 17 | $2,590 |
-| app internal | 4 | 15 | 11 | $1,056 |
-| **app + backfill (cross-lane)** | 10 | 20 | 10 | **$920** |
-
-**Cross-lane duplication is negligible — $920 across 10 groups.** The imports did not overlap each other meaningfully. That was the main risk and it is ruled out.
-
-**The $26,383 enrichment figure is largely a false positive.** All 1,275 enrichment invoices were written with `business_date = 2026-07-15` (the import date), not the real sale date sitting in the note text. Every enrichment sale collapsed onto one date, so "same store, same date, same amount" catches genuinely distinct recurring sales. Once dates are parsed out of the notes, most of these separate.
-
-**The legacy CRM $51,955 across 172 groups is the real exposure** and needs manual review, not an automated de-dup.
-
-## 4. ENRICHMENT RUN TRACE
-
-Five runs, all executed 2026-07-15:
-
-| run | invoices | dollars | stores | notes present |
-|---|---|---|---|---|
-| `76316034…` | 713 | $49,471 | 206 | 713 |
-| `bb220002…` | 483 | $24,021 | 100 | 483 |
-| `a1c99333…` | 78 | $5,226 | 30 | 78 |
-| `a17ec099…000b` | 68 | $4,322 | 12 | 68 |
-| `a17ec099…000c` | 10 | $525 | 3 | 10 |
-
-**Transcribed, not estimated.** Every row carries the raw source string in `notes`, and the amounts match the figures written in those strings ("1 BOX $200 PAID" → total_amount 200). The run copied handwritten/notepad content faithfully into a header. Two defects, both mechanical:
-
-- **Dates dropped** — 1,275 of 1,352 got the import date instead of the date written in the note.
-- **Line detail dropped** — parsed nothing out of the note into `invoice_line_items`.
-
-Neither is a fabrication problem. Both are recoverable from data already stored.
+**Assessment:** there is real uncollected money here, but the more urgent defect is the $30,210 of phantom AR. Chasing stores for invoices their notes say were already paid is an active relationship risk for the field team. Both directions get fixed by the same parse.
 
 ---
 
-## REVISED SEQUENCE
+## MOVE 1 — STEP 5 SPLIT: DATES FIRST
 
-1. **`products.units_per_box` default 24 → NULL.** One line. (Approved.)
-2. **DNC end-to-end test** — synthetic STOP through the inbound webhook, confirm suppression row + subsequent block. No code change unless it fails.
-3. **Wrapper fixes** — `allowZero` option; default projection `select('id')` instead of `'*'`, with `'*'` opt-in.
-4. **Prebuild baseline gate** (`scripts/check-verified-mutations.mjs`, joins the existing `prebuild` chain) so the unverified-mutation count can only go down. Feasible — the project already runs two such gates.
-5. **Notes parser, dry run, report only.** Parse `invoices.notes` into candidate `(date, product, qty, unit, amount, paid_state)` for all 1,352 enrichment + legacy CRM rows. Output a coverage report and a confidence split. Nothing written.
-6. **Unit-column migration** — `sale_unit` canonical, `unit_type` derived by trigger, 125-row relabel and the 4 drift rows corrected in the same migration. Must land before any line reconstruction writes rows.
-7. **Line reconstruction**, gated on the step 5 report: backfill `invoice_line_items` and corrected `business_date` for the high-confidence subset; queue the rest for review.
-8. **Fix the four import writers** (#1–#4 above) to emit line items, so the next import doesn't recreate the problem.
-9. **Legacy CRM duplicate review** — 172 groups / $51,955, surfaced as a review queue, no automated deletion.
-10. **Last Order card, `/flower-customers`, InvoiceBuilder** — after lines exist.
-11. **Backlog migration** — invoices, invoice_line_items, payments, store_master, field_submissions, routes first; cosmetic last.
+**5a. Date parse and report.** Extract the date written in `invoices.notes` for all 1,352 enrichment rows (plus the legacy CRM lane). Report coverage split three ways: clean parse, ambiguous, malformed.
 
-Brand-header work stays parked; `brandSummary` keeps being written.
+**Malformed dates get no guess.** "0/1/25" and "0/27/25" carry month zero. Those rows keep their current `business_date` untouched and are flagged for review. Same for any date that parses to a future date or predates the business. A known-unknown beats a wrong date.
+
+**5b. Ship the date correction** on the high-confidence subset only, after the coverage report is reviewed. This unblocks the Last Order card, stale-account logic and aging — 1,275 invoices currently claim 2026-07-15 while their notes say early 2025, so bikers are seeing dormant stores as recently active.
+
+**5c. Line reconstruction parse** — separate pass, after dates land, and after the AR pass below.
+
+### Ordering inside step 5
+
+Because the AR report shows payment state is fully defaulted, the payment parse rides with the date parse rather than waiting for line items. Sequence: **dates → payment state → line items.** Payment state is a per-invoice scalar like the date; it does not need line items to exist.
+
+## PARSER GUARDRAILS (apply to 5a, 5b and 5c)
+
+- Parse into a **staging table** with the raw note stored in the same row beside every parsed field. Nothing writes directly to `invoices` or `invoice_line_items` from the parser.
+- **Confidence tiers** on every parsed field independently — a row can have a high-confidence date and a low-confidence quantity. Anything ambiguous goes to a review queue, never to the backfill.
+- **50-row eyeball gate before any full run.** Side-by-side output: raw note next to parsed date, product, qty, unit, amount, paid state, plus the confidence tier for each. No run over the full 1,352 until that sample is approved.
+- **`invoices.notes` is never modified or cleared.** It is the only source and it stays intact permanently, including after reconstruction succeeds.
+
+## LEGACY CRM DUPLICATE QUEUE
+
+172 groups / $51,955, **ranked by dollar amount descending** so the largest get reviewed first. No automated deletion.
+
+The queue treats "not a duplicate" as a first-class outcome, not an exception — same store + same date + same amount is legitimately common here (two sales in a day, a recurring $100 account). One click to dismiss, the dismissal persists so the group never resurfaces, and the reviewer sees both invoices' notes side by side to make the call.
+
+## STEP 8 TIMING — open question
+
+Fixing the four header-only import writers (`useBulkUpload`, `BulkInvoiceUploader`, `commit_import_batch`, `ai-backfill-runner`) sits at step 8 as written. **If a bulk upload is planned in the next two weeks, it moves ahead of reconstruction** — otherwise the next upload writes a fresh batch of lineless, default-payment, wrong-date headers into a set we're mid-repair on, and the parser has to run twice.
+
+Tell me if an upload is coming and I'll reorder; otherwise it stays at 8.
+
+---
+
+## FULL SEQUENCE
+
+1. `products.units_per_box` default 24 → NULL
+2. DNC end-to-end synthetic STOP test
+3. Wrapper: `allowZero` + `select('id')` default projection
+4. Prebuild gate on unverified mutations
+5. **5a** date parse + coverage report → **5b** date correction on high-confidence subset → **5c** payment-state parse and correction (phantom AR first)
+6. Unit-column migration (`sale_unit` canonical, 125-row relabel, 4 drift rows)
+7. Line reconstruction from staging, high-confidence only, remainder queued
+8. Fix the four import writers *(moves ahead of 7 if an upload is scheduled)*
+9. Legacy CRM duplicate review queue, ranked by dollars
+10. Last Order card, `/flower-customers`, InvoiceBuilder
+11. Backlog mutation migration — money and field-rep tables first
+
+Brand-header work stays parked.
