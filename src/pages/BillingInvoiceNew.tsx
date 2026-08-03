@@ -12,12 +12,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { ArrowLeft, FileText, Store, Search } from 'lucide-react';
 import { InvoiceModeSelector, InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
+import { InvoiceLineBuilder } from '@/components/invoice/InvoiceLineBuilder';
+import {
+  summarize,
+  toLineItemRow,
+  type BuilderLine,
+  type SaleChannel,
+} from '@/lib/invoice/lineMath';
 import { Badge } from '@/components/ui/badge';
 
 const BillingInvoiceNew = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [lines, setLines] = useState<BuilderLine[]>([]);
+  const [saleChannel, setSaleChannel] = useState<SaleChannel>('retail');
+  const lineTotals = summarize(lines);
   const [invoiceMode, setInvoiceMode] = useState<InvoiceMode>('live');
+
   const [storeSearch, setStoreSearch] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
   const [customMessage, setCustomMessage] = useState('');
@@ -67,7 +78,7 @@ const BillingInvoiceNew = () => {
 
   const createInvoiceMutation = useMutation({
     mutationFn: async () => {
-      const subtotal = parseFloat(formData.subtotal) || 0;
+      const subtotal = lines.length > 0 ? lineTotals.subtotal : parseFloat(formData.subtotal) || 0;
       const tax = parseFloat(formData.tax) || 0;
       const total = subtotal + tax;
       // business_date is required — refuse rather than silently landing on today.
@@ -106,6 +117,15 @@ const BillingInvoiceNew = () => {
           .single();
 
         if (error) throw error;
+
+        // Persist canonical line items when the builder was used
+        if (invoice && lines.length > 0) {
+          const { error: lineError } = await (supabase as any)
+            .from('invoice_line_items')
+            .insert(lines.map((l) => toLineItemRow(l, invoice.id, { pricingMode: saleChannel })));
+          if (lineError) throw new Error(`Line items failed: ${lineError.message}`);
+        }
+
 
         // Trigger SMS receipt via edge function (for live invoices)
         if (invoiceMode === 'live') {
@@ -192,10 +212,11 @@ const BillingInvoiceNew = () => {
       toast.error('Please enter an invoice number');
       return;
     }
-    if (!formData.subtotal) {
-      toast.error('Please enter a subtotal');
+    if (lines.length === 0 && !formData.subtotal) {
+      toast.error('Add at least one line item or enter a subtotal');
       return;
     }
+
 
     createInvoiceMutation.mutate();
   };
@@ -328,17 +349,34 @@ const BillingInvoiceNew = () => {
                 />
               </div>
 
+              <div className="space-y-2 md:col-span-2">
+                <Label>Line Items</Label>
+                <InvoiceLineBuilder
+                  lines={lines}
+                  onLinesChange={setLines}
+                  saleChannel={saleChannel}
+                  onSaleChannelChange={setSaleChannel}
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="subtotal">Subtotal *</Label>
                 <Input
                   id="subtotal"
                   type="number"
                   step="0.01"
-                  value={formData.subtotal}
+                  value={lines.length > 0 ? lineTotals.subtotal.toFixed(2) : formData.subtotal}
+                  disabled={lines.length > 0}
                   onChange={(e) => setFormData({...formData, subtotal: e.target.value})}
                   placeholder="0.00"
                 />
+                {lines.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Calculated from {lineTotals.lineCount} line item(s) · {lineTotals.totalTubes} tubes
+                  </p>
+                )}
               </div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="tax">Tax</Label>

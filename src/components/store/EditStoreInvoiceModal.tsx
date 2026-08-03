@@ -20,6 +20,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { DatePicker } from '@/components/ui/datetime-picker';
 import { dynastyDateWithWeekday, dynastyRelative } from '@/lib/dates';
 import { PhotoUploadMultiple } from './PhotoUploadMultiple';
+import { InvoiceLineBuilder } from '@/components/invoice/InvoiceLineBuilder';
+import {
+  fromLineItemRow,
+  toLineItemRow,
+  type BuilderLine,
+  type SaleChannel,
+} from '@/lib/invoice/lineMath';
+
 
 interface Invoice {
   id: string;
@@ -71,17 +79,6 @@ interface Product {
   wholesale_price: number | null;
 }
 
-interface LineItem {
-  id: string;
-  brand_id: string;
-  brand_name: string;
-  product_id: string;
-  product_name: string;
-  quantity: number;
-  unit_price: number;
-  total: number;
-}
-
 export function EditStoreInvoiceModal({
   open,
   onOpenChange,
@@ -92,10 +89,9 @@ export function EditStoreInvoiceModal({
 }: EditStoreInvoiceModalProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [lineItems, setLineItems] = useState<LineItem[]>([]);
-  const [selectedBrandId, setSelectedBrandId] = useState<string>('');
-  const [selectedProductId, setSelectedProductId] = useState<string>('');
-  const [quantity, setQuantity] = useState<number>(1);
+  const [lineItems, setLineItems] = useState<BuilderLine[]>([]);
+  const [saleChannel, setSaleChannel] = useState<SaleChannel>('retail');
+
   const [paymentMethod, setPaymentMethod] = useState(invoice.payment_method || '');
   const [dueDate, setDueDate] = useState<Date | undefined>(
     invoice.due_date ? new Date(invoice.due_date) : undefined
@@ -134,116 +130,11 @@ export function EditStoreInvoiceModal({
   // Load line items when modal opens
   useEffect(() => {
     if (existingLineItems.length > 0) {
-      setLineItems(
-        existingLineItems.map((item: any) => ({
-          id: item.id,
-          brand_id: item.brand_id,
-          brand_name: item.brand_name,
-          product_id: item.product_id,
-          product_name: item.product_name,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total: item.total,
-        }))
-      );
+      setLineItems(existingLineItems.map((item: any) => fromLineItemRow(item)));
     }
   }, [existingLineItems]);
 
-  // Fetch brands
-  const { data: brands = [], isLoading: brandsLoading } = useQuery({
-    queryKey: ['invoice-brands-grabba'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('brands')
-        .select('id, name, color')
-        .eq('active', true)
-        .order('name');
-      if (error) throw error;
-      return (data || []) as Brand[];
-    },
-  });
 
-  // Fetch products by brand
-  const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ['invoice-products', selectedBrandId],
-    queryFn: async () => {
-      if (!selectedBrandId) return [];
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, sku, store_price, wholesale_price')
-        .eq('brand_id', selectedBrandId)
-        .eq('is_active', true)
-        .order('name');
-      if (error) throw error;
-      return data as Product[];
-    },
-    enabled: !!selectedBrandId,
-  });
-
-  const handleAddProduct = () => {
-    if (!selectedBrandId || !selectedProductId || quantity <= 0) {
-      toast.error('Please select a brand, product, and quantity');
-      return;
-    }
-
-    const brand = brands.find(b => b.id === selectedBrandId);
-    const product = products.find(p => p.id === selectedProductId);
-
-    if (!brand || !product) return;
-
-    const unitPrice = product.store_price || product.wholesale_price || 0;
-
-    const existingIndex = lineItems.findIndex(item => item.product_id === selectedProductId);
-    if (existingIndex >= 0) {
-      const updated = [...lineItems];
-      updated[existingIndex].quantity += quantity;
-      updated[existingIndex].total = updated[existingIndex].quantity * updated[existingIndex].unit_price;
-      setLineItems(updated);
-    } else {
-      setLineItems([
-        ...lineItems,
-        {
-          id: crypto.randomUUID(),
-          brand_id: selectedBrandId,
-          brand_name: brand.name,
-          product_id: selectedProductId,
-          product_name: product.name,
-          quantity,
-          unit_price: unitPrice,
-          total: quantity * unitPrice,
-        },
-      ]);
-    }
-
-    setSelectedProductId('');
-    setQuantity(1);
-  };
-
-  const handleRemoveLineItem = (id: string) => {
-    setLineItems(lineItems.filter(item => item.id !== id));
-  };
-
-  const handleUpdateQuantity = (id: string, newQuantity: number) => {
-    if (newQuantity <= 0) return;
-    setLineItems(
-      lineItems.map(item =>
-        item.id === id
-          ? { ...item, quantity: newQuantity, total: newQuantity * item.unit_price }
-          : item
-      )
-    );
-  };
-
-  const handleUpdatePrice = (id: string, newPrice: number) => {
-    if (newPrice < 0) return;
-    setLineItems(
-      lineItems.map(item =>
-        item.id === id
-          ? { ...item, unit_price: newPrice, total: item.quantity * newPrice }
-          : item
-      )
-    );
-  };
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -297,23 +188,21 @@ export function EditStoreInvoiceModal({
         if (!prev) continue;
         const changed =
           Number(prev.quantity) !== Number(item.quantity) ||
-          Number(prev.unit_price) !== Number(item.unit_price) ||
-          Number(prev.total) !== Number(item.total) ||
+          Number(prev.unit_price) !== Number(item.unit_price_used) ||
+          Number(prev.total) !== Number(item.line_subtotal) ||
           prev.product_id !== item.product_id ||
-          prev.brand_id !== item.brand_id;
+          prev.brand_id !== item.brand_id ||
+          (prev.unit_kind ?? null) !== item.unit_kind;
         if (!changed) continue; // preserve provenance untouched
 
+        const { invoice_id: _ignored, line_source: _src, ...updatePayload } = toLineItemRow(
+          item,
+          invoice.id,
+          { pricingMode: saleChannel },
+        );
         const { error } = await (supabase as any)
           .from('invoice_line_items')
-          .update({
-            brand_id: item.brand_id,
-            brand_name: item.brand_name,
-            product_id: item.product_id,
-            product_name: item.product_name,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            total: item.total,
-          })
+          .update(updatePayload)
           .eq('id', item.id)
           .select('id');
         if (error) throw new Error(`Line update failed: ${error.message}`);
@@ -325,17 +214,12 @@ export function EditStoreInvoiceModal({
         const { error } = await (supabase as any)
           .from('invoice_line_items')
           .insert(
-            newRows.map((item) => ({
-              invoice_id: invoice.id,
-              brand_id: item.brand_id,
-              brand_name: item.brand_name,
-              product_id: item.product_id,
-              product_name: item.product_name,
-              quantity: item.quantity,
-              unit_price: item.unit_price,
-              total: item.total,
-              line_source: 'manual_edit',
-            }))
+            newRows.map((item) =>
+              toLineItemRow(item, invoice.id, {
+                pricingMode: saleChannel,
+                lineSource: 'manual_edit',
+              }),
+            )
           )
           .select('id');
         if (error) throw new Error(`Line insert failed: ${error.message}`);
@@ -412,155 +296,15 @@ export function EditStoreInvoiceModal({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Product Selection */}
-            <div className="space-y-3 p-4 rounded-lg bg-secondary/30 border border-dashed">
-              <div className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-primary" />
-                <Label className="text-sm font-medium">Add Product</Label>
-              </div>
+            {/* Canonical line builder — Full Box / Half Box / Pack / Loose Tube */}
+            <InvoiceLineBuilder
+              lines={lineItems}
+              onLinesChange={setLineItems}
+              saleChannel={saleChannel}
+              onSaleChannelChange={setSaleChannel}
+            />
 
-              {/* Brand Selection */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Brand</Label>
-                <Select
-                  value={selectedBrandId}
-                  onValueChange={(value) => {
-                    setSelectedBrandId(value);
-                    setSelectedProductId('');
-                  }}
-                  disabled={brandsLoading}
-                >
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder={brandsLoading ? "Loading brands..." : "Select brand"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {brands.map((brand) => (
-                      <SelectItem key={brand.id} value={brand.id}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="h-3 w-3 rounded-full"
-                            style={{ backgroundColor: brand.color }}
-                          />
-                          <span>{brand.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
-              {/* Product Selection */}
-              {selectedBrandId && (
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Product</Label>
-                  <Select
-                    value={selectedProductId}
-                    onValueChange={setSelectedProductId}
-                    disabled={productsLoading}
-                  >
-                    <SelectTrigger className="bg-background">
-                      <SelectValue placeholder={productsLoading ? "Loading products..." : "Select product"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((product) => {
-                        const price = product.store_price || product.wholesale_price || 0;
-                        return (
-                          <SelectItem key={product.id} value={product.id}>
-                            <div className="flex items-center justify-between gap-4 w-full">
-                              <span>{product.name}</span>
-                              <span className="text-xs text-muted-foreground font-mono">
-                                ${price.toFixed(2)}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Quantity */}
-              {selectedProductId && (
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Quantity</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                    className="bg-background"
-                  />
-                </div>
-              )}
-
-              {/* Add Button */}
-              {selectedProductId && (
-                <Button
-                  type="button"
-                  onClick={handleAddProduct}
-                  className="w-full"
-                  disabled={!selectedProductId || quantity <= 0}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add to Invoice
-                </Button>
-              )}
-            </div>
-
-            {/* Line Items */}
-            {lineItems.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Invoice Items</Label>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {lineItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-2 p-3 rounded-lg bg-secondary/30 border"
-                    >
-                      <div
-                        className="h-3 w-3 rounded-full shrink-0"
-                        style={{ backgroundColor: brands.find(b => b.id === item.brand_id)?.color || '#6366F1' }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.product_name}</p>
-                        <p className="text-xs text-muted-foreground">{item.brand_name}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => handleUpdateQuantity(item.id, parseInt(e.target.value) || 1)}
-                          className="w-16 h-8 text-sm"
-                        />
-                        <span className="text-xs text-muted-foreground">×</span>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.unit_price}
-                          onChange={(e) => handleUpdatePrice(item.id, parseFloat(e.target.value) || 0)}
-                          className="w-20 h-8 text-sm font-mono"
-                        />
-                        <span className="text-sm font-mono font-medium w-20 text-right">
-                          ${item.total.toFixed(2)}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleRemoveLineItem(item.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Totals */}
             {lineItems.length > 0 && (

@@ -26,6 +26,7 @@ import { VisitHistoryTab } from './visit-tabs/VisitHistoryTab';
 import { TubeIntelTab } from './visit-tabs/TubeIntelTab';
 import { DeliveryTasksTab } from './visit-tabs/DeliveryTasksTab';
 import { FieldOrder } from './visit-tabs/CreateOrderSection';
+import { toLineItemRow } from '@/lib/invoice/lineMath';
 import { StoreCommsPanel } from './StoreCommsPanel';
 import { InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
 
@@ -569,15 +570,8 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           // Create line items
           if (invoice) {
             const lineItems = order.line_items.map(item => ({
-              invoice_id: invoice.id,
-              product_id: item.product_id,
-              product_name: item.product_name,
-              brand: item.brand_name,
-              brand_id: item.brand_id,
-              quantity: item.quantity,
+              ...toLineItemRow(item, invoice.id, { lineSource: 'field_visit' }),
               unit_type: item.unit_type,
-              unit_price: item.unit_price,
-              total: item.total,
             }));
 
             await supabase
