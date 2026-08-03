@@ -51,7 +51,7 @@ async function findJob(supabase: ReturnType<typeof svc>, demoId: string) {
   const { data, error } = await supabase
     .from("brandaro_build_jobs")
     .select(
-      "id, demo_id, package_tier, intake_completed, intake_completed_at, logo_storage_path, created_at",
+      "id, demo_id, lead_id, client_id, package_tier, intake_completed, intake_completed_at, logo_storage_path, created_at",
     )
     .eq("demo_id", demoId)
     .order("created_at", { ascending: false })
