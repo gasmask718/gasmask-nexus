@@ -52,6 +52,16 @@ const templates: Record<TemplateName, (d: any) => { subject: string; html: strin
       ${d.intake_url ? `<p><a href="${d.intake_url}" style="display:inline-block;padding:12px 20px;background:#4fd1c5;color:#0b0f14;text-decoration:none;border-radius:6px;font-weight:600">Complete intake</a></p>` : ""}
     `),
   }),
+  "receptionist-portal-welcome": (d) => ({
+    subject: `Your AI Receptionist portal is ready — ${d.business_name || "your business"}`,
+    html: wrap("Your client portal is ready", `
+      <p>Hi ${d.owner_name || "there"},</p>
+      <p>Your AI Receptionist for <strong>${d.business_name || "your business"}</strong> is being set up right now.</p>
+      <p>Use the button below to sign in — no password needed.</p>
+      ${d.login_url ? `<p><a href="${d.login_url}" style="display:inline-block;padding:12px 20px;background:#4fd1c5;color:#0b0f14;text-decoration:none;border-radius:6px;font-weight:600">Sign in to your portal</a></p>` : ""}
+      <p style="font-size:13px;color:#94a3b8">You can view call logs, transcripts, and your receptionist settings any time at ${d.portal_url || ""}.</p>
+    `),
+  }),
 };
 
 serve(async (req) => {
