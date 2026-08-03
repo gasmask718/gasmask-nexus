@@ -14,8 +14,10 @@ import { toast } from 'sonner';
 import { dynastyDateTime } from '@/lib/dates';
 
 // Pending message statuses that exist in the check constraint
-type PendingStatus = 'pending' | 'approved' | 'sent' | 'rejected' | 'edited';
-type PendingFilter = 'all' | 'pending' | 'approved' | 'rejected';
+type PendingStatus = 'pending' | 'approved' | 'sent' | 'rejected' | 'edited' | 'failed';
+type PendingFilter = 'all' | 'pending' | 'approved' | 'rejected' | 'failed' | 'sent';
+
+const PAGE_SIZE = 100;
 
 interface PendingRow {
   id: string;
