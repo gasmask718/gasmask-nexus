@@ -1325,7 +1325,12 @@ export default function AppRoutes() {
       <Route path="/developer" element={<DeveloperPortal />} />
 
       {/* Brandaro AI Receptionist client portal - standalone, self-authenticated */}
-      <Route path="/client-portal" element={<ReceptionistClientPortal />} />
+      <Route path="/client-portal" element={<ReceptionistClientPortal />}>
+        <Route index element={<ClientPortalDashboard />} />
+        <Route path="calls" element={<ClientPortalCalls />} />
+        <Route path="settings" element={<ClientPortalSettings />} />
+        <Route path="billing" element={<ClientPortalBilling />} />
+      </Route>
 
       <Route path="/install" element={<InstallPwa />} />
       <Route path="/system-health" element={<ProtectedRoute><SystemHealthPage /></ProtectedRoute>} />
