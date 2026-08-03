@@ -335,7 +335,8 @@ export default function IdeaDashboard() {
                           {r.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <IdeaInternalNotes ideaId={r.id} ideaTitle={r.title} />
                         <Button
                           size="icon"
                           variant="ghost"
