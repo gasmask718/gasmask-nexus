@@ -1151,6 +1151,8 @@ const GrabbaClusterDashboard = lazy(() => import('@/pages/grabba/GrabbaClusterDa
 const UnifiedUploadCenter = lazy(() => import('@/pages/grabba/UnifiedUploadCenter'));
 const MultiBrandDelivery = lazy(() => import('@/pages/grabba/MultiBrandDelivery'));
 const StoreMasterProfile = lazy(() => import('@/pages/grabba/StoreMasterProfile'));
+const FlowerCustomersPage = lazy(() => import('@/pages/grabba/FlowerCustomersPage'));
+const IdeaDashboard = lazy(() => import('@/pages/ideas/IdeaDashboard'));
 const BrandCRM = lazy(() => import('@/pages/grabba/BrandCRM'));
 const BrandSelector = lazy(() => import('@/pages/grabba/BrandSelector'));
 const BrandCommunications = lazy(() => import('@/pages/grabba/BrandCommunications'));
@@ -2977,6 +2979,19 @@ export default function AppRoutes() {
           <RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr']}>
             <Layout><GrabbaLayout><StoreMasterProfile /></GrabbaLayout></Layout>
           </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/flower-customers" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr']}>
+            <Layout><GrabbaLayout><FlowerCustomersPage /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/flower-customers" element={<Navigate to="/grabba/flower-customers" replace />} />
+      <Route path="/ideas" element={
+        <ProtectedRoute>
+          <Layout><IdeaDashboard /></Layout>
         </ProtectedRoute>
       } />
       <Route path="/grabba/store-master/:id" element={
