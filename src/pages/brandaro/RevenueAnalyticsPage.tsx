@@ -113,11 +113,17 @@ export default function RevenueAnalyticsPage() {
   }
 
   const statCards = [
-    { label: 'Total Revenue', value: formatCurrency(stats.total), icon: DollarSign, sub: 'All time' },
-    { label: 'This Month', value: formatCurrency(stats.month), icon: CalendarRange, sub: 'Current month' },
-    { label: 'MRR', value: formatCurrency(stats.mrr), icon: TrendingUp, sub: 'Recurring revenue' },
-    { label: 'This Week', value: formatCurrency(stats.week), icon: CalendarDays, sub: 'Current week' },
+    { label: 'Total Revenue', value: formatCurrency(stats.total), icon: DollarSign, sub: 'Cash collected, all time' },
+    { label: 'This Month', value: formatCurrency(stats.month), icon: CalendarRange, sub: 'Cash collected this month' },
+    {
+      label: 'MRR',
+      value: formatCurrency(mrr),
+      icon: TrendingUp,
+      sub: `${activeSubs} active subscription${activeSubs === 1 ? '' : 's'}`,
+    },
+    { label: 'This Week', value: formatCurrency(stats.week), icon: CalendarDays, sub: 'Cash collected this week' },
   ];
+
 
   return (
     <div className="space-y-6">
