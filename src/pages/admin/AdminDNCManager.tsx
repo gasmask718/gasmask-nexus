@@ -33,12 +33,15 @@ export default function AdminDNCManager() {
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!newPhone.trim()) throw new Error('Phone number required');
-      const { error } = await (supabase as any).from('dnc_list').insert({
-        phone_number: newPhone.trim(),
-        added_by: user?.id,
-        reason: newReason || 'Manual add',
-      });
-      if (error) throw error;
+      // verifiedInsert throws when RLS silently drops the row (PostgREST
+      // returns 201/204 with zero rows and error === null).
+      await verifiedInsert('add number to DNC list', () =>
+        (supabase as any).from('dnc_list').insert({
+          phone_number: newPhone.trim(),
+          added_by: user?.id,
+          reason: newReason || 'Manual add',
+        }),
+      );
     },
     onSuccess: () => {
       toast.success('Number added to DNC list');
@@ -46,18 +49,20 @@ export default function AdminDNCManager() {
       setNewReason('');
       queryClient.invalidateQueries({ queryKey: ['dnc-list'] });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: unknown) => toast.error(mutationErrorMessage(err), { duration: 8000 }),
   });
 
   const removeMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any).from('dnc_list').delete().eq('id', id);
-      if (error) throw error;
+      await verifiedDelete('remove number from DNC list', () =>
+        (supabase as any).from('dnc_list').delete().eq('id', id),
+      );
     },
     onSuccess: () => {
       toast.success('Number removed from DNC list');
       queryClient.invalidateQueries({ queryKey: ['dnc-list'] });
     },
+    onError: (err: unknown) => toast.error(mutationErrorMessage(err), { duration: 8000 }),
   });
 
   return (
