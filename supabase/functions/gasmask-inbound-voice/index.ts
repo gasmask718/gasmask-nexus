@@ -27,6 +27,7 @@ import {
   resolveBusinessId,
   loadOwnerContacts,
   loadOnShiftClients,
+  loadOnShiftPhones,
 } from "../_shared/gasmaskVoice.ts";
 
 function twiml(body: string): Response {
@@ -76,7 +77,11 @@ Deno.serve(async (req) => {
   // On-shift VAs: browser softphones (<Client>) + any legacy forward numbers.
   const clients = withinHours ? await loadOnShiftClients(supabase, businessId) : [];
   const vas = withinHours ? await loadAvailableVas(supabase, "gasmask") : [];
-  const vaNumbers = vas.map((x) => x.forward_number);
+  // Presence rows that carry a dialable number but no softphone identity still ring.
+  const shiftPhones = withinHours ? await loadOnShiftPhones(supabase, businessId) : [];
+  const vaNumbers = Array.from(
+    new Set([...vas.map((x) => x.forward_number), ...shiftPhones].filter(Boolean)),
+  );
   const clientIdentities = clients.map((c) => c.client_identity);
 
   let numberTargets: string[] = [];
