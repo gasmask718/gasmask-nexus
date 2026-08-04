@@ -1,55 +1,74 @@
 // Temporary read-only diagnostic for Voice SDK tokenInvalid (20101).
-// Verifies account status/balance, API key validity, and TwiML App existence.
+// Cross-tests credential pairs to find which account each credential belongs to.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 const mask = (v?: string) => (!v ? 'MISSING' : `${v.slice(0, 6)}...${v.slice(-4)} (${v.length})`);
+const env = (k: string) => Deno.env.get(k) ?? '';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  const ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID') ?? '';
-  const AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN') ?? '';
-  const API_SID = Deno.env.get('TWILIO_API_SID') ?? '';
-  const API_SECRET = Deno.env.get('TWILIO_API_SECRET') ?? '';
-  const APP_SID = Deno.env.get('TWILIO_TWIML_APP_SID') ?? '';
+  const accounts = {
+    MAIN: env('TWILIO_ACCOUNT_SID'),
+    BRANDARO: env('BRANDARO_TWILIO_ACCOUNT_SID'),
+  };
+  const creds: Record<string, [string, string]> = {
+    MAIN_AUTHTOKEN: [env('TWILIO_ACCOUNT_SID'), env('TWILIO_AUTH_TOKEN')],
+    MAIN_APIKEY: [env('TWILIO_API_SID'), env('TWILIO_API_SECRET')],
+    BRANDARO_AUTHTOKEN: [env('BRANDARO_TWILIO_ACCOUNT_SID'), env('BRANDARO_TWILIO_AUTH_TOKEN')],
+    BRANDARO_APIKEY: [env('BRANDARO_TWILIO_API_KEY_SID'), env('BRANDARO_TWILIO_API_KEY_SECRET')],
+  };
 
   const out: Record<string, unknown> = {
     masked: {
-      ACCOUNT_SID: mask(ACCOUNT_SID),
-      AUTH_TOKEN: mask(AUTH_TOKEN),
-      API_SID: mask(API_SID),
-      API_SECRET: mask(API_SECRET),
-      TWIML_APP_SID: mask(APP_SID),
-    },
-    prefixes: {
-      account_ok: /^AC[a-f0-9]{32}$/i.test(ACCOUNT_SID),
-      api_key_ok: /^SK[a-f0-9]{32}$/i.test(API_SID),
-      app_ok: /^AP[a-f0-9]{32}$/i.test(APP_SID),
+      MAIN_ACCOUNT: mask(accounts.MAIN),
+      BRANDARO_ACCOUNT: mask(accounts.BRANDARO),
+      MAIN_API_SID: mask(env('TWILIO_API_SID')),
+      BRANDARO_API_SID: mask(env('BRANDARO_TWILIO_API_KEY_SID')),
+      MAIN_TWIML_APP: mask(env('TWILIO_TWIML_APP_SID')),
+      BRANDARO_TWIML_APP: mask(env('BRANDARO_TWILIO_TWIML_APP_SID')),
     },
   };
 
-  const call = async (label: string, path: string, user: string, pass: string) => {
-    try {
-      const r = await fetch(`https://api.twilio.com${path}`, {
-        headers: { Authorization: `Basic ${btoa(`${user}:${pass}`)}` },
-      });
-      const text = await r.text();
-      out[label] = { status: r.status, body: text.slice(0, 600) };
-    } catch (e) {
-      out[label] = { error: String(e) };
+  const results: Record<string, unknown> = {};
+  for (const [credName, [user, pass]] of Object.entries(creds)) {
+    if (!user || !pass) { results[credName] = 'missing'; continue; }
+    for (const [acctName, acct] of Object.entries(accounts)) {
+      if (!acct) continue;
+      try {
+        const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${acct}.json`, {
+          headers: { Authorization: `Basic ${btoa(`${user}:${pass}`)}` },
+        });
+        const t = await r.text();
+        let summary = t.slice(0, 300);
+        if (r.ok) {
+          const j = JSON.parse(t);
+          summary = JSON.stringify({ friendly_name: j.friendly_name, status: j.status, type: j.type });
+        }
+        results[`${credName}__on__${acctName}`] = { status: r.status, summary };
+      } catch (e) {
+        results[`${credName}__on__${acctName}`] = { error: String(e) };
+      }
     }
-  };
-
-  if (ACCOUNT_SID && AUTH_TOKEN) {
-    await call('account_via_authtoken', `/2010-04-01/Accounts/${ACCOUNT_SID}.json`, ACCOUNT_SID, AUTH_TOKEN);
-    await call('balance_via_authtoken', `/2010-04-01/Accounts/${ACCOUNT_SID}/Balance.json`, ACCOUNT_SID, AUTH_TOKEN);
   }
-  if (ACCOUNT_SID && API_SID && API_SECRET) {
-    await call('account_via_apikey', `/2010-04-01/Accounts/${ACCOUNT_SID}.json`, API_SID, API_SECRET);
-    await call('apikey_lookup', `/2010-04-01/Accounts/${ACCOUNT_SID}/Keys/${API_SID}.json`, API_SID, API_SECRET);
-    if (APP_SID) {
-      await call('twiml_app', `/2010-04-01/Accounts/${ACCOUNT_SID}/Applications/${APP_SID}.json`, API_SID, API_SECRET);
-    }
+  out.matrix = results;
+
+  // If a working cred exists, pull balance + TwiML apps + keys
+  const working = Object.entries(results).find(([, v]) => (v as any)?.status === 200);
+  if (working) {
+    const [name] = working[0].split('__on__');
+    const acctName = working[0].split('__on__')[1] as keyof typeof accounts;
+    const [user, pass] = creds[name];
+    const acct = accounts[acctName];
+    const auth = { Authorization: `Basic ${btoa(`${user}:${pass}`)}` };
+    const get = async (p: string) => {
+      const r = await fetch(`https://api.twilio.com${p}`, { headers: auth });
+      return { status: r.status, body: (await r.text()).slice(0, 1500) };
+    };
+    out.working_cred = { cred: name, account: acctName };
+    out.balance = await get(`/2010-04-01/Accounts/${acct}/Balance.json`);
+    out.twiml_apps = await get(`/2010-04-01/Accounts/${acct}/Applications.json?PageSize=20`);
+    out.keys = await get(`/2010-04-01/Accounts/${acct}/Keys.json?PageSize=20`);
   }
 
   return new Response(JSON.stringify(out, null, 2), {
