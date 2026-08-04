@@ -255,6 +255,9 @@ RULES:
     // --- CAPPER RESOLUTION LOGIC ---
     let resolvedCapperId = capper_id || null;
     let resolvedCapperName = capper_name || null;
+    // Stage 3 gate telemetry — why a new identity was or wasn't minted.
+    let capperGateReason: string | null = null;
+
 
     if (group_type === 'aggregator' && extractedCapperName) {
       // Use the normalization + alias system for lookup
