@@ -9,48 +9,17 @@ const corsHeaders = {
 // ═══════════════════════════════════════════════════════════════
 // NORMALIZATION LAYER
 // ═══════════════════════════════════════════════════════════════
+// The stat vocabulary lives in ONE place: ../_shared/statNormalize.ts.
+// This file used to carry a mirrored copy of STAT_MAP/normalizeStat, which
+// drifted. Same discipline as _shared/perPickScore.ts — import, never copy.
+export { normalizeStat } from '../_shared/statNormalize.ts';
+import {
+  normalizeStat,
+  marketPropCandidates,
+  lineTolerance,
+  UNMATCHABLE,
+} from '../_shared/statNormalize.ts';
 
-const STAT_MAP: Record<string, string> = {
-  'pts': 'points', 'point': 'points',
-  'reb': 'rebounds', 'rebound': 'rebounds',
-  'ast': 'assists', 'assist': 'assists',
-  'stl': 'steals', 'steal': 'steals',
-  'blk': 'blocks', 'block': 'blocks',
-  'tov': 'turnovers', 'turnover': 'turnovers',
-  // Combo props — target vocabulary is sbo_player_props.prop_type
-  'pts+reb+ast': 'pts_reb_ast', 'pra': 'pts_reb_ast', 'pts+rebs+asts': 'pts_reb_ast',
-  'pts+reb': 'pts_reb', 'pts+rebs': 'pts_reb', 'pr': 'pts_reb',
-  'pts+ast': 'pts_ast', 'pts+asts': 'pts_ast', 'pa': 'pts_ast',
-  'reb+ast': 'reb_ast', 'rebs+asts': 'reb_ast', 'ra': 'reb_ast',
-  '3pm': 'threes', '3pt': 'threes', '3-pointers': 'threes', 'threes': 'threes',
-  'passing_yards': 'passing_yards', 'pass_yds': 'passing_yards',
-  'rushing_yards': 'rushing_yards', 'rush_yds': 'rushing_yards',
-  'receiving_yards': 'receiving_yards', 'rec_yds': 'receiving_yards',
-  'td': 'touchdowns', 'touchdown': 'touchdowns',
-  'hr': 'home_runs', 'home_run': 'home_runs',
-  'strikeouts_pitched': 'strikeouts_p', 'pitcher_strikeouts': 'strikeouts_p',
-  'so': 'strikeouts', 'strikeout': 'strikeouts', 'k': 'strikeouts',
-  'rbi': 'rbis',
-  'total_bases': 'total_bases', 'tb': 'total_bases',
-};
-
-// Every value STAT_MAP can produce. A string already in this set is canonical
-// and must be returned untouched — the substring fallback below would otherwise
-// corrupt it ('strikeouts_p' contains 'k', 'pts_reb_ast' contains 'pts').
-const CANONICAL_STATS = new Set(Object.values(STAT_MAP));
-
-export function normalizeStat(s: string): string {
-  if (!s) return '';
-  const lower = s.toLowerCase().trim().replace(/[_\-\s]+/g, '_');
-  if (CANONICAL_STATS.has(lower)) return lower;
-  // Check direct map first
-  if (STAT_MAP[lower]) return STAT_MAP[lower];
-  // Try token-level replacement — substring matching corrupts longer stats.
-  const tokens = lower.split('_');
-  const mapped = tokens.map((t) => STAT_MAP[t] ?? t);
-  if (mapped.some((t, i) => t !== tokens[i])) return mapped.join('_');
-  return lower;
-}
 
 function normalizePlayer(name: string): string {
   if (!name) return '';
@@ -131,6 +100,10 @@ export function buildPropIndex(props: any[]): Map<string, IndexedProp[]> {
 function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchResult | null {
   const pickName = (pick.player_name || '').trim();
   const pickStat = normalizeStat(pick.prop_type || '');
+  // Stats with no market counterpart (MLB pitcher outs / innings) must never match.
+  if (pickStat === UNMATCHABLE) return null;
+  // Accepted market spellings for this pick's stat (e.g. strikeouts → strikeouts_p).
+  const acceptedStats = new Set(marketPropCandidates(pick.prop_type || ''));
   const pickLine = pick.line == null ? null : Number(pick.line);
   const pickDate = pick.game_date;
   const normPick = normalizePlayer(pickName);
@@ -155,11 +128,13 @@ function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchResult | 
       if (Math.abs(d1 - d2) > 86400000 * 1.5) continue;
     }
 
-    // Stat type must match (after normalization)
-    if (pickStat && propStat && pickStat !== propStat) continue;
+    // Stat type must match one of the accepted market spellings
+    if (pickStat && propStat && acceptedStats.size && !acceptedStats.has(propStat)) continue;
 
-    // Line tolerance ±1.0
-    if (pickLine != null && propLine != null && Math.abs(pickLine - propLine) > 1.0) continue;
+    // Line tolerance: max(1.0, 4% of line) — flat ±1.0 was too tight on combos
+    if (pickLine != null && propLine != null &&
+        Math.abs(pickLine - propLine) > lineTolerance(pickLine)) continue;
+
 
     // ── STEP 1: Exact Match ──
     if (pickName.toLowerCase() === propName.toLowerCase()) {
@@ -199,7 +174,7 @@ function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchResult | 
       if (lastMatch && firstInitial) {
         // Composite: name_sim * 0.5 + team * 0.2 + date * 0.2 + stat * 0.1
         const dateMatch = pickDate === propDate ? 1 : 0.5;
-        const statMatch = pickStat === propStat ? 1 : 0;
+        const statMatch = acceptedStats.has(propStat) ? 1 : 0;
         const compositeScore = Math.round(
           (0.7 * 0.5 + 0.2 * dateMatch + 0.1 * statMatch) * 100
         );

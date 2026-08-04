@@ -1,7 +1,12 @@
-// SBO stat/prop-type normalization — frontend port of the STAT_MAP + normalizeStat()
-// layer in supabase/functions/sbo-match-capper-picks/index.ts. Kept byte-identical in
-// behavior so capper picks and market props resolve to the SAME canonical vocabulary
-// on both the edge and the client. If you extend one, extend the other.
+// SBO stat/prop-type normalization — THE single canonical implementation.
+// Both the edge functions (sbo-match-capper-picks, sbo-score-capper-picks) and the
+// client (src/lib/sbo/statNormalize.ts, a re-export) import from this file. Never
+// mirror or re-implement this map anywhere — extend it here only.
+
+// Sentinel for capper vocabulary that has NO counterpart in the market feed.
+// A pick normalizing to this must never be matched against a market prop: a
+// silent wrong match corrupts the line-edge math worse than no match at all.
+export const UNMATCHABLE = '__unmatchable__';
 
 const STAT_MAP: Record<string, string> = {
   pts: 'points', point: 'points',
@@ -15,7 +20,10 @@ const STAT_MAP: Record<string, string> = {
   'pts+reb': 'pts_reb', 'pts+rebs': 'pts_reb', pr: 'pts_reb',
   'pts+ast': 'pts_ast', 'pts+asts': 'pts_ast', pa: 'pts_ast',
   'reb+ast': 'reb_ast', 'rebs+asts': 'reb_ast', ra: 'reb_ast',
-  '3pm': 'threes', '3pt': 'threes', '3-pointers': 'threes', threes: 'threes',
+  // NOTE: normalizeStat() collapses '-' and ' ' to '_' BEFORE the lookup, so the
+  // underscore spellings are the ones that actually get hit. Keep both.
+  '3pm': 'threes', '3pt': 'threes', '3_pointers': 'threes', '3_pointer': 'threes',
+  three_pointers: 'threes', threes: 'threes',
   passing_yards: 'passing_yards', pass_yds: 'passing_yards',
   rushing_yards: 'rushing_yards', rush_yds: 'rushing_yards',
   receiving_yards: 'receiving_yards', rec_yds: 'receiving_yards',
@@ -27,6 +35,11 @@ const STAT_MAP: Record<string, string> = {
   rbi: 'rbis',
   total_bases: 'total_bases', tb: 'total_bases',
   blocked_shots: 'blocks',
+  // MLB pitcher outs: the Odds API feed carries no outs/innings market at all.
+  // Previously these fell through as 'pitcher_outs'/'outs' and quietly failed;
+  // now they are explicitly unmatchable so the reason is legible.
+  pitcher_outs: UNMATCHABLE, outs: UNMATCHABLE, pitching_outs: UNMATCHABLE,
+  innings_pitched: UNMATCHABLE, ip: UNMATCHABLE,
 };
 
 // Values STAT_MAP can produce are already canonical and must pass through untouched —
@@ -40,9 +53,12 @@ export function normalizeStat(s: string): string {
   if (STAT_MAP[lower]) return STAT_MAP[lower];
   const tokens = lower.split('_');
   const mapped = tokens.map((t) => STAT_MAP[t] ?? t);
+  // A single unmatchable token poisons the whole stat (e.g. 'pitcher_outs').
+  if (mapped.includes(UNMATCHABLE)) return UNMATCHABLE;
   if (mapped.some((t, i) => t !== tokens[i])) return mapped.join('_');
   return lower;
 }
+
 
 // Some capper vocabularies are ambiguous against the market vocabulary: a capper writing
 // "strikeouts" may mean a pitcher's (strikeouts_p) or a batter's (strikeouts_b) line.
@@ -57,6 +73,15 @@ const AMBIGUOUS: Record<string, string[]> = {
 
 export function marketPropCandidates(propType: string): string[] {
   const canonical = normalizeStat(propType);
+  // Unmatchable stats must yield NO candidates — the caller skips the pick.
+  if (!canonical || canonical === UNMATCHABLE) return [];
   const out = [canonical, ...(AMBIGUOUS[canonical] || [])];
   return [...new Set(out.filter(Boolean))];
 }
+
+// Shared line tolerance. A flat ±1.0 is far too tight on large combo lines
+// (35.5 PRA) and slightly loose on small ones, so scale with the line.
+export function lineTolerance(line: number): number {
+  return Math.max(1.0, Math.abs(line) * 0.04);
+}
+
