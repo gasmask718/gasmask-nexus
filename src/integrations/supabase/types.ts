@@ -27288,6 +27288,42 @@ export type Database = {
           },
         ]
       }
+      business_owner_contacts: {
+        Row: {
+          business_id: string
+          contact_type: string
+          created_at: string
+          display_name: string | null
+          id: string
+          is_active: boolean
+          phone_e164: string
+          ring_order: number
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          contact_type?: string
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_active?: boolean
+          phone_e164: string
+          ring_order?: number
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          contact_type?: string
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_active?: boolean
+          phone_e164?: string
+          ring_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       business_phone_numbers: {
         Row: {
           assigned_agent_id: string | null
@@ -64567,32 +64603,44 @@ export type Database = {
         Row: {
           business_id: string | null
           busy_since: string | null
+          client_identity: string | null
           current_call_sid: string | null
           current_queue_item_id: string | null
+          display_name: string | null
           id: string
+          on_shift_since: string | null
           phone_number: string
           status: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           business_id?: string | null
           busy_since?: string | null
+          client_identity?: string | null
           current_call_sid?: string | null
           current_queue_item_id?: string | null
+          display_name?: string | null
           id?: string
+          on_shift_since?: string | null
           phone_number: string
           status?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           business_id?: string | null
           busy_since?: string | null
+          client_identity?: string | null
           current_call_sid?: string | null
           current_queue_item_id?: string | null
+          display_name?: string | null
           id?: string
+          on_shift_since?: string | null
           phone_number?: string
           status?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
