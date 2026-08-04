@@ -100,6 +100,10 @@ export function buildPropIndex(props: any[]): Map<string, IndexedProp[]> {
 function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchResult | null {
   const pickName = (pick.player_name || '').trim();
   const pickStat = normalizeStat(pick.prop_type || '');
+  // Stats with no market counterpart (MLB pitcher outs / innings) must never match.
+  if (pickStat === UNMATCHABLE) return null;
+  // Accepted market spellings for this pick's stat (e.g. strikeouts → strikeouts_p).
+  const acceptedStats = new Set(marketPropCandidates(pick.prop_type || ''));
   const pickLine = pick.line == null ? null : Number(pick.line);
   const pickDate = pick.game_date;
   const normPick = normalizePlayer(pickName);
@@ -124,11 +128,13 @@ function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchResult | 
       if (Math.abs(d1 - d2) > 86400000 * 1.5) continue;
     }
 
-    // Stat type must match (after normalization)
-    if (pickStat && propStat && pickStat !== propStat) continue;
+    // Stat type must match one of the accepted market spellings
+    if (pickStat && propStat && acceptedStats.size && !acceptedStats.has(propStat)) continue;
 
-    // Line tolerance ±1.0
-    if (pickLine != null && propLine != null && Math.abs(pickLine - propLine) > 1.0) continue;
+    // Line tolerance: max(1.0, 4% of line) — flat ±1.0 was too tight on combos
+    if (pickLine != null && propLine != null &&
+        Math.abs(pickLine - propLine) > lineTolerance(pickLine)) continue;
+
 
     // ── STEP 1: Exact Match ──
     if (pickName.toLowerCase() === propName.toLowerCase()) {
