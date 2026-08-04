@@ -66,8 +66,8 @@ export default function SBOAllPicks() {
       let q = (supabase as any)
         .from('sbo_capper_picks')
         .select('id,sport,team,player_name,pick_text,bet_type,line,stake,parse_confidence,result,created_at,extracted_capper_name,capper_detection_confidence,sbo_cappers(name)', { count: 'exact' })
-        .order('parse_confidence', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
+        .order('parse_confidence', { ascending: false, nullsFirst: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
       if (sport !== 'all')   q = q.eq('sport', sport);
@@ -138,7 +138,9 @@ export default function SBOAllPicks() {
                 <TableHead>Type</TableHead>
                 <TableHead>Line</TableHead>
                 <TableHead>Stake</TableHead>
-                <TableHead>Confidence</TableHead>
+                <TableHead title="AI text-extraction confidence — how cleanly the pick was read from the source message/image. Not a measure of pick quality.">
+                  % Parse
+                </TableHead>
                 <TableHead>Result</TableHead>
                 <TableHead>Posted At</TableHead>
               </TableRow>
