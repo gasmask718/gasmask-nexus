@@ -120,7 +120,7 @@ function AddDncDialog({ open, onOpenChange, businesses }: {
       setPhone(''); setBusiness(''); setReason('');
       onOpenChange(false);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(mutationErrorMessage(e), { duration: 8000 }),
   });
 
   return (
@@ -258,7 +258,7 @@ function RemoveDncDialog({ row, open, onOpenChange }: {
       setConfirmText(''); setReason('');
       onOpenChange(false);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(mutationErrorMessage(e), { duration: 8000 }),
   });
 
   return (
