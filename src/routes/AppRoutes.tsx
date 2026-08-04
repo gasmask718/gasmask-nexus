@@ -273,6 +273,7 @@ const MergeDryRun = lazy(() => import('@/pages/admin/MergeDryRun'));
 const RecentlyAddedStores = lazy(() => import('@/pages/admin/RecentlyAddedStores'));
 const DispatchMap = lazy(() => import('@/pages/admin/DispatchMap'));
 const UserManagementPage = lazy(() => import('@/components/security/UserManagementPage'));
+const UserInvitations = lazy(() => import('@/pages/security/UserInvitations'));
 const MessagesPage = lazy(() => import('@/pages/Messages'));
 const RouteOptimizer = lazy(() => import('@/pages/RouteOptimizer'));
 const RouteOpsCenter = lazy(() => import('@/pages/RouteOpsCenter'));
