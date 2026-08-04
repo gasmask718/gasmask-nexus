@@ -880,8 +880,8 @@ const StoreDetail = () => {
           {/* Per-SKU drill-down — pairs with brand-level snapshot above */}
           <SkuOrderHistoryPanel storeId={id || ""} />
 
-          {/* Route Intelligence Insights */}
-          {routeInsight && (
+          {/* Route Intelligence Insights — hidden: route_insights has no live writer */}
+          {isFeatureEnabled('routeInsightsPanel') && routeInsight && (
             <Card className="glass-card border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
