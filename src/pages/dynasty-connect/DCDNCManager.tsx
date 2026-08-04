@@ -62,19 +62,28 @@ function AddDncDialog({ open, onOpenChange, businesses }: {
       if (!normalized.ok) throw new Error((normalized as { ok: false; error: string }).error);
       if (!business) throw new Error('Business unit required');
       if (reason.trim().length < 10) throw new Error('Reason must be at least 10 characters');
-      const { error } = await supabase.from('dnc_list').insert({
-        phone_number: phone,
-        phone_e164: normalized.value,
-        source: 'manual_admin',
-        business,
-        reason: reason.trim(),
-      });
-      if (error) {
-        if (error.code === '23505' || /duplicate|unique/i.test(error.message)) {
+      try {
+        // verifiedInsert throws when RLS silently drops the row instead of
+        // returning an error (PostgREST 201/204 with zero rows).
+        await verifiedInsert('add number to DNC list', () =>
+          supabase.from('dnc_list').insert({
+            phone_number: phone,
+            phone_e164: normalized.value,
+            source: 'manual_admin',
+            business,
+            reason: reason.trim(),
+          }),
+        );
+      } catch (err) {
+        const raw = err instanceof VerifiedMutationError ? err.cause : err;
+        const code = (raw as { code?: string } | null)?.code;
+        const msg = (raw as { message?: string } | null)?.message ?? '';
+        if (code === '23505' || /duplicate|unique/i.test(msg)) {
           return { alreadyOnList: true };
         }
-        throw error;
+        throw err;
       }
+
       // Fire-and-forget immutable compliance audit event.
       try {
         await supabase.functions.invoke('dc-log-compliance-event', {
