@@ -80,11 +80,69 @@ export function ConnectedStoresCard({
   const [disconnectModalOpen, setDisconnectModalOpen] = useState(false);
   const [disconnectingStore, setDisconnectingStore] = useState<ConnectedStoreRow | null>(null);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [archivingStore, setArchivingStore] = useState<ConnectedStoreRow | null>(null);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
+
+  const { isAdmin } = useUserRole();
 
   const { data: connectedStores, isLoading, error } = useConnectedStores(
     storeId,
     currentStoreGroupId,
   );
+
+  const { data: archivedStores } = useArchivedConnectedStores(
+    currentStoreGroupId,
+    isAdmin(),
+  );
+
+  const refreshGroup = () => {
+    queryClient.invalidateQueries({ queryKey: ['connected-stores'] });
+    queryClient.invalidateQueries({ queryKey: ['connected-stores-count'] });
+    queryClient.invalidateQueries({ queryKey: ['connected-stores-archived'] });
+    onConnectionChange?.();
+  };
+
+  const handleArchive = (store: ConnectedStoreRow) => {
+    setArchivingStore(store);
+    setArchiveModalOpen(true);
+  };
+
+  const confirmArchive = async () => {
+    if (!archivingStore) return;
+    setIsArchiving(true);
+    try {
+      const now = new Date().toISOString();
+      // Soft delete only — the row stays recoverable from the archive below.
+      await verifiedUpdate('archive store', () =>
+        supabase.from('stores').update({ deleted_at: now }).eq('id', archivingStore.id),
+      );
+      await supabase.from('store_master').update({ deleted_at: now }).eq('id', archivingStore.id);
+      toast.success(`Archived ${archivingStore.name}`);
+      refreshGroup();
+    } catch (err: any) {
+      toast.error(mutationErrorMessage(err));
+    } finally {
+      setIsArchiving(false);
+      setArchiveModalOpen(false);
+      setArchivingStore(null);
+    }
+  };
+
+  const handleRestore = async (id: string, name: string) => {
+    try {
+      await verifiedUpdate('restore store', () =>
+        supabase.from('stores').update({ deleted_at: null }).eq('id', id),
+      );
+      await supabase.from('store_master').update({ deleted_at: null }).eq('id', id);
+      toast.success(`Restored ${name}`);
+      refreshGroup();
+    } catch (err: any) {
+      toast.error(mutationErrorMessage(err));
+    }
+  };
+
 
   const handleDisconnect = (store: ConnectedStoreRow) => {
     setDisconnectingStore(store);
