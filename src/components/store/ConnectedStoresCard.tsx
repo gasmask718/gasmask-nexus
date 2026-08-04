@@ -17,14 +17,21 @@ import {
   Plus,
   AlertCircle,
   Calendar,
+  DollarSign,
+  Archive,
+  RotateCcw,
 } from 'lucide-react';
 import { ConnectStoresModal } from './ConnectStoresModal';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { toast } from 'sonner';
+import { useUserRole } from '@/hooks/useUserRole';
+import { verifiedUpdate, mutationErrorMessage } from '@/lib/verifiedMutation';
 import {
   useConnectedStores,
+  useArchivedConnectedStores,
   type ConnectedStoreRow,
 } from '@/hooks/useConnectedStores';
+
 import { formatDistanceToNow } from 'date-fns';
 
 interface ConnectedStoresCardProps {
