@@ -167,6 +167,9 @@ serve(async (req) => {
       // Populated on BOTH aggregator and direct paths so downstream picks can preserve it
       // even when capper_id falls back to a channel-level record.
       let extractedFromText: string | null = null;
+      // Why a new identity was or wasn't minted (Stage 3 gate telemetry).
+      let capperGateReason: string | null = null;
+
 
       if (groupType === 'aggregator') {
         // Extract capper name from the message text
