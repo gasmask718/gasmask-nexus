@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldCreateCapper, markPendingPromoted } from "../_shared/capperIdentity.ts";
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -128,6 +130,13 @@ serve(async (req) => {
       const groupType = (body.group_type as string) || 'direct';
       const sourceGroup = body.source_group as string | undefined;
       const sourceGroupId = body.source_group_id as string | undefined;
+      // Distinct-message key for the Stage 3 second-sighting gate. Falls back to
+      // the channel id so an older caller degrades to "one sighting per channel"
+      // rather than crashing.
+      const sourceMessageId =
+        (body.source_message_id as string | undefined) ||
+        (sourceGroupId ? `channel:${sourceGroupId}` : null);
+
 
       if (!telegramUserId) {
         return new Response(JSON.stringify({ error: 'telegram_user_id required' }), {
@@ -158,6 +167,9 @@ serve(async (req) => {
       // Populated on BOTH aggregator and direct paths so downstream picks can preserve it
       // even when capper_id falls back to a channel-level record.
       let extractedFromText: string | null = null;
+      // Why a new identity was or wasn't minted (Stage 3 gate telemetry).
+      let capperGateReason: string | null = null;
+
 
       if (groupType === 'aggregator') {
         // Extract capper name from the message text
@@ -177,34 +189,51 @@ serve(async (req) => {
             await supabase.from('sbo_cappers')
               .update({ last_active: new Date().toISOString(), updated_at: new Date().toISOString() })
               .eq('id', resolvedCapperId);
-          } else if (capperDetectionConfidence >= 70) {
-            // Auto-create from extracted name
-            const { data: newCapper, error: createError } = await supabase
-              .from('sbo_cappers')
-              .insert({
-                name: extracted.name,
-                normalized_name: normalized || null,
-                source: 'aggregator_extract',
-                tier: 'unproven',
-                confidence_grade: 'D',
-                is_active: true,
-                total_picks: 0,
-                group_type: 'aggregator',
-                last_active: new Date().toISOString(),
-              })
-              .select('id, name')
-              .single();
+          } else {
+            // Stage 3 — CREATE is gated. "Did not resolve" no longer implies
+            // "therefore create": shape + confidence + second sighting.
+            const gate = await shouldCreateCapper(supabase, {
+              name: extracted.name,
+              normalized: normalized || '',
+              confidence: capperDetectionConfidence,
+              sourceMessageId,
+              source: 'aggregator_extract',
+              groupType: 'aggregator',
+            });
+            capperGateReason = gate.reason;
 
-            if (createError) {
-              // Race condition — retry lookup
-              const retry = await resolveCapperByName(supabase, extracted.name);
-              if (retry) resolvedCapperId = retry.id;
-            } else {
-              resolvedCapperId = newCapper.id;
-              wasCreated = true;
+            if (gate.allow) {
+              // Auto-create from extracted name
+              const { data: newCapper, error: createError } = await supabase
+                .from('sbo_cappers')
+                .insert({
+                  name: extracted.name,
+                  normalized_name: normalized || null,
+                  source: 'aggregator_extract',
+                  tier: 'unproven',
+                  confidence_grade: 'D',
+                  is_active: true,
+                  total_picks: 0,
+                  group_type: 'aggregator',
+                  last_active: new Date().toISOString(),
+                })
+                .select('id, name')
+                .single();
+
+              if (createError) {
+                // Race condition — retry lookup
+                const retry = await resolveCapperByName(supabase, extracted.name);
+                if (retry) resolvedCapperId = retry.id;
+              } else {
+                resolvedCapperId = newCapper.id;
+                wasCreated = true;
+                await markPendingPromoted(supabase, normalized || '', newCapper.id);
+              }
             }
+            // Gate refused → fall through to the sender fallback. The candidate
+            // is parked in sbo_pending_capper_identities, never dropped.
           }
-          // If confidence < 70, fall through to sender fallback
+
         }
       } else if (groupType === 'direct') {
         // Per-poster text extraction inside a direct channel (e.g. "VegasKing:" posting inside
@@ -225,36 +254,55 @@ serve(async (req) => {
                 .update({ last_active: new Date().toISOString(), updated_at: new Date().toISOString() })
                 .eq('id', resolvedCapperId);
             } else {
-              const { data: newCapper, error: createError } = await supabase
-                .from('sbo_cappers')
-                .insert({
-                  name: extracted.name,
-                  normalized_name: normalized || null,
-                  source: 'direct_extract',
-                  tier: 'unproven',
-                  confidence_grade: 'D',
-                  is_active: true,
-                  total_picks: 0,
-                  group_type: 'direct',
-                  last_active: new Date().toISOString(),
-                })
-                .select('id, name')
-                .single();
+              // Stage 3 — identical gate on the direct branch. This is the path
+              // that produced most of the junk identities (date headings and
+              // system labels extracted from the top line of a pick post).
+              const gate = await shouldCreateCapper(supabase, {
+                name: extracted.name,
+                normalized: normalized || '',
+                confidence: extracted.confidence,
+                sourceMessageId,
+                source: 'direct_extract',
+                groupType: 'direct',
+              });
+              capperGateReason = gate.reason;
 
-              if (createError) {
-                const retry = await resolveCapperByName(supabase, extracted.name);
-                if (retry) {
-                  resolvedCapperId = retry.id;
-                  resolvedCapperName = retry.name;
+              if (gate.allow) {
+                const { data: newCapper, error: createError } = await supabase
+                  .from('sbo_cappers')
+                  .insert({
+                    name: extracted.name,
+                    normalized_name: normalized || null,
+                    source: 'direct_extract',
+                    tier: 'unproven',
+                    confidence_grade: 'D',
+                    is_active: true,
+                    total_picks: 0,
+                    group_type: 'direct',
+                    last_active: new Date().toISOString(),
+                  })
+                  .select('id, name')
+                  .single();
+
+                if (createError) {
+                  const retry = await resolveCapperByName(supabase, extracted.name);
+                  if (retry) {
+                    resolvedCapperId = retry.id;
+                    resolvedCapperName = retry.name;
+                    capperDetectionConfidence = extracted.confidence;
+                  }
+                } else {
+                  resolvedCapperId = newCapper.id;
+                  resolvedCapperName = newCapper.name;
                   capperDetectionConfidence = extracted.confidence;
+                  wasCreated = true;
+                  await markPendingPromoted(supabase, normalized || '', newCapper.id);
                 }
-              } else {
-                resolvedCapperId = newCapper.id;
-                resolvedCapperName = newCapper.name;
-                capperDetectionConfidence = extracted.confidence;
-                wasCreated = true;
               }
+              // Gate refused → channel-level sender fallback below, unchanged.
+              // extractedFromText still carries the per-poster string downstream.
             }
+
           }
           // confidence < 70 → keep extractedFromText for downstream, fall through to sender fallback
         }
@@ -333,6 +381,9 @@ serve(async (req) => {
         extracted_from_content: !!extractedFromText && capperDetectionConfidence >= 70,
         extracted_capper_name: extractedFromText,
         needs_review: capperDetectionConfidence < 70,
+        // Stage 3 telemetry — why a new identity was or wasn't minted.
+        capper_gate_reason: capperGateReason,
+
       }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

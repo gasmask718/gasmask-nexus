@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { normalizeStat, UNMATCHABLE } from "../_shared/statNormalize.ts";
+import { shouldCreateCapper, markPendingPromoted, isHumanShapedName } from "../_shared/capperIdentity.ts";
+
 
 /** Canonicalize prop_type at write time — see sbo-telegram-intake for rationale. */
 function canonicalPropType(raw: unknown): string | null {
@@ -253,6 +255,9 @@ RULES:
     // --- CAPPER RESOLUTION LOGIC ---
     let resolvedCapperId = capper_id || null;
     let resolvedCapperName = capper_name || null;
+    // Stage 3 gate telemetry — why a new identity was or wasn't minted.
+    let capperGateReason: string | null = null;
+
 
     if (group_type === 'aggregator' && extractedCapperName) {
       // Use the normalization + alias system for lookup
@@ -261,34 +266,50 @@ RULES:
       if (existing) {
         resolvedCapperId = existing.id;
         resolvedCapperName = existing.name;
-      } else if (capperDetectionConfidence >= 70) {
-        // Auto-create with normalized name
+      } else {
+        // Stage 3 — gated CREATE (shape + confidence + second sighting).
         const normalized = normalizeName(extractedCapperName);
-        const { data: newCapper, error: createErr } = await supabase
-          .from('sbo_cappers')
-          .insert({
-            name: extractedCapperName.trim(),
-            normalized_name: normalized || null,
-            source: 'image_extract',
-            source_handle: extractedCapperHandle || null,
-            tier: 'unproven',
-            confidence_grade: 'D',
-            is_active: true,
-            total_picks: 0,
-            group_type: 'aggregator',
-          })
-          .select('id')
-          .single();
+        const gate = await shouldCreateCapper(supabase, {
+          name: extractedCapperName,
+          normalized: normalized || '',
+          confidence: capperDetectionConfidence,
+          sourceMessageId: source_message_id ?? null,
+          source: 'image_extract',
+          groupType: 'aggregator',
+        });
+        capperGateReason = gate.reason;
 
-        if (createErr) {
-          // Race condition retry
-          const retry = await resolveCapperByName(supabase, extractedCapperName);
-          resolvedCapperId = retry?.id || capper_id || null;
-        } else {
-          resolvedCapperId = newCapper.id;
-          resolvedCapperName = extractedCapperName.trim();
+        if (gate.allow) {
+          const { data: newCapper, error: createErr } = await supabase
+            .from('sbo_cappers')
+            .insert({
+              name: extractedCapperName.trim(),
+              normalized_name: normalized || null,
+              source: 'image_extract',
+              source_handle: extractedCapperHandle || null,
+              tier: 'unproven',
+              confidence_grade: 'D',
+              is_active: true,
+              total_picks: 0,
+              group_type: 'aggregator',
+            })
+            .select('id')
+            .single();
+
+          if (createErr) {
+            // Race condition retry
+            const retry = await resolveCapperByName(supabase, extractedCapperName);
+            resolvedCapperId = retry?.id || capper_id || null;
+          } else {
+            resolvedCapperId = newCapper.id;
+            resolvedCapperName = extractedCapperName.trim();
+            await markPendingPromoted(supabase, normalized || '', newCapper.id);
+          }
         }
+        // Gate refused → falls through to the Unknown Capper bucket below, which
+        // is the correct home for an unconfirmed identity.
       }
+
       // If confidence < 70 and no capper_id provided, assign to "unknown_capper"
       if (!resolvedCapperId && !capper_id) {
         const { data: unknown } = await supabase
@@ -356,14 +377,22 @@ RULES:
         }
       }
 
-      // 2) Auto-create from extracted name if it passes the quality gate — BEFORE caller fallback
-      if (!resolvedCapperId) {
-        const extractedIsRealName =
-          !!extractedName &&
-          extractedNorm.length >= 3 &&
-          extractedNorm !== callerNorm;
-        if (extractedIsRealName) {
+      // 2) Auto-create from extracted name — now behind the Stage 3 gate.
+      //    The old check (len>=3 AND != channel name) is what let date headings
+      //    and system labels through, so it is replaced, not merely extended.
+      if (!resolvedCapperId && extractedName && extractedNorm !== callerNorm) {
+        const gate = await shouldCreateCapper(supabase, {
+          name: extractedName,
+          normalized: extractedNorm,
+          confidence: capperDetectionConfidence,
+          sourceMessageId: source_message_id ?? null,
+          source: 'image_extract',
+          groupType: 'direct',
+        });
+        capperGateReason = gate.reason;
+        if (gate.allow) {
           await autoCreate(extractedName, 'image_extract');
+          if (resolvedCapperId) await markPendingPromoted(supabase, extractedNorm, resolvedCapperId);
         }
       }
 
@@ -376,10 +405,19 @@ RULES:
         }
       }
 
-      // 4) Last resort — auto-create from caller name (permissive)
+      // 4) Last resort — create from the CALLER/CHANNEL name. This value comes
+      //    from Telegram channel metadata, not from extracted message text, so
+      //    the second-sighting rule does not apply. The shape check still does:
+      //    a channel named like a date is still not an identity.
       if (!resolvedCapperId && callerName) {
-        await autoCreate(callerName, 'telegram_direct');
+        const shape = isHumanShapedName(callerName);
+        if (shape.ok) {
+          await autoCreate(callerName, 'telegram_direct');
+        } else {
+          capperGateReason = `caller_not_human_shaped:${shape.reason}`;
+        }
       }
+
     }
 
     // Final safety net — never silently drop. If still unresolved, use Unknown Capper bucket.
@@ -519,6 +557,8 @@ RULES:
       resolved_capper_id: resolvedCapperId,
       resolved_capper_name: resolvedCapperName,
       group_type,
+      capper_gate_reason: capperGateReason,
+
       needs_review: scoredPicks.filter((p: any) => p.parse_confidence < 70).length,
       needs_capper_review: needsCapperReview,
     }), {

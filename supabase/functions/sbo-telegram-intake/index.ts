@@ -406,6 +406,9 @@ serve(async (req) => {
             group_type: "direct",
             source_group: channel_name || channel_username || null,
             source_group_id: String(channel_id),
+            // Stage 3: the second-sighting gate keys on distinct messages.
+            source_message_id: sourceMessageId,
+
           },
         },
       );
