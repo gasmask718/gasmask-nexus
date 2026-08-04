@@ -242,36 +242,55 @@ serve(async (req) => {
                 .update({ last_active: new Date().toISOString(), updated_at: new Date().toISOString() })
                 .eq('id', resolvedCapperId);
             } else {
-              const { data: newCapper, error: createError } = await supabase
-                .from('sbo_cappers')
-                .insert({
-                  name: extracted.name,
-                  normalized_name: normalized || null,
-                  source: 'direct_extract',
-                  tier: 'unproven',
-                  confidence_grade: 'D',
-                  is_active: true,
-                  total_picks: 0,
-                  group_type: 'direct',
-                  last_active: new Date().toISOString(),
-                })
-                .select('id, name')
-                .single();
+              // Stage 3 — identical gate on the direct branch. This is the path
+              // that produced most of the junk identities (date headings and
+              // system labels extracted from the top line of a pick post).
+              const gate = await shouldCreateCapper(supabase, {
+                name: extracted.name,
+                normalized: normalized || '',
+                confidence: extracted.confidence,
+                sourceMessageId,
+                source: 'direct_extract',
+                groupType: 'direct',
+              });
+              capperGateReason = gate.reason;
 
-              if (createError) {
-                const retry = await resolveCapperByName(supabase, extracted.name);
-                if (retry) {
-                  resolvedCapperId = retry.id;
-                  resolvedCapperName = retry.name;
+              if (gate.allow) {
+                const { data: newCapper, error: createError } = await supabase
+                  .from('sbo_cappers')
+                  .insert({
+                    name: extracted.name,
+                    normalized_name: normalized || null,
+                    source: 'direct_extract',
+                    tier: 'unproven',
+                    confidence_grade: 'D',
+                    is_active: true,
+                    total_picks: 0,
+                    group_type: 'direct',
+                    last_active: new Date().toISOString(),
+                  })
+                  .select('id, name')
+                  .single();
+
+                if (createError) {
+                  const retry = await resolveCapperByName(supabase, extracted.name);
+                  if (retry) {
+                    resolvedCapperId = retry.id;
+                    resolvedCapperName = retry.name;
+                    capperDetectionConfidence = extracted.confidence;
+                  }
+                } else {
+                  resolvedCapperId = newCapper.id;
+                  resolvedCapperName = newCapper.name;
                   capperDetectionConfidence = extracted.confidence;
+                  wasCreated = true;
+                  await markPendingPromoted(supabase, normalized || '', newCapper.id);
                 }
-              } else {
-                resolvedCapperId = newCapper.id;
-                resolvedCapperName = newCapper.name;
-                capperDetectionConfidence = extracted.confidence;
-                wasCreated = true;
               }
+              // Gate refused → channel-level sender fallback below, unchanged.
+              // extractedFromText still carries the per-poster string downstream.
             }
+
           }
           // confidence < 70 → keep extractedFromText for downstream, fall through to sender fallback
         }
