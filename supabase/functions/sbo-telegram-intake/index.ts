@@ -28,6 +28,13 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 async function fetchImageAsDataUrl(url: string): Promise<string | null> {
   try {
     const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
@@ -219,6 +226,64 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // ── Idempotency gate (Stage 1) ──
+    // Telethon re-delivers the same message_id on retries and on edits. Hash the
+    // meaningful content so a re-delivery of IDENTICAL content is a no-op, while a
+    // genuine edit reprocesses cleanly (delete-and-reinsert, never additive).
+    const sourceMessageId = `${String(channel_id)}:${String(message_id)}`;
+    const contentHash = await sha256Hex(
+      JSON.stringify({
+        t: typeof message_text === "string" ? message_text.trim() : "",
+        i: image_url ?? null,
+        m: !!has_media,
+        d: typeof image_data === "string" ? image_data.length : 0,
+      }),
+    );
+
+    const { data: existing } = await supabase
+      .from("sbo_telegram_posts")
+      .select("id, processing_status, content_hash")
+      .eq("channel_id", String(channel_id))
+      .eq("message_id", String(message_id))
+      .maybeSingle();
+
+    const TERMINAL_STATUSES = [
+      "dispatched",
+      "extracted",
+      "skipped_not_pick",
+      "deleted",
+    ];
+    const alreadyProcessed =
+      !!existing && TERMINAL_STATUSES.includes(existing.processing_status ?? "");
+    const contentUnchanged = !!existing && existing.content_hash === contentHash;
+
+    if (alreadyProcessed && contentUnchanged && !deleted) {
+      console.log("Idempotency gate: skipping re-delivery of", sourceMessageId);
+      return json(200, {
+        ok: true,
+        id: existing.id,
+        stored: true,
+        dispatched: false,
+        reason: "duplicate_delivery",
+      });
+    }
+
+    // Genuine edit of a message we already turned into picks: remove the old picks
+    // for this exact source message before reprocessing, so an edit REPLACES rather
+    // than accumulates.
+    const isReprocess = alreadyProcessed && !contentUnchanged;
+    if (isReprocess) {
+      const { error: delErr, count } = await supabase
+        .from("sbo_capper_picks")
+        .delete({ count: "exact" })
+        .eq("source_message_id", sourceMessageId);
+      if (delErr) {
+        console.error("Reprocess delete failed:", delErr.message);
+        return json(500, { error: "Failed to clear prior picks", details: delErr.message });
+      }
+      console.log(`Reprocess ${sourceMessageId}: deleted ${count ?? 0} prior picks`);
+    }
+
     // Store / upsert the raw post
     const { data: post, error: upsertErr } = await supabase
       .from("sbo_telegram_posts")
@@ -236,6 +301,7 @@ serve(async (req) => {
           deleted: !!deleted,
           posted_at: posted_at || new Date().toISOString(),
           processing_status: "received",
+          content_hash: contentHash,
           raw_payload: body,
         },
         { onConflict: "channel_id,message_id" },
@@ -283,6 +349,7 @@ serve(async (req) => {
             platform: "telegram",
             source_group: channel_name || channel_username || null,
             source_group_id: String(channel_id),
+            source_message_id: sourceMessageId,
             posted_by: channel_username ? `@${channel_username}` : channel_name || null,
             group_type: "direct",
           },
@@ -438,6 +505,7 @@ serve(async (req) => {
         data_source: "telegram",
         source_group: channel_name || channel_username || null,
         source_group_id: String(channel_id),
+        source_message_id: sourceMessageId,
         posted_by: channel_username ? `@${channel_username}` : channel_name || null,
         extracted_capper_name: capperResp?.extracted_capper_name ?? null,
         capper_detection_confidence: capperResp?.capper_detection_confidence ?? null,
