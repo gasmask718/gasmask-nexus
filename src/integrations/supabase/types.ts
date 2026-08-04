@@ -93968,6 +93968,7 @@ export type Database = {
       }
       sbo_capper_picks: {
         Row: {
+          actual_value: number | null
           alignment_score: number | null
           bet_type: string | null
           capper_detection_confidence: number | null
@@ -93981,6 +93982,8 @@ export type Database = {
           external_result_id: string | null
           extracted_capper_name: string | null
           game_date: string | null
+          graded_at: string | null
+          grading_source: string | null
           id: string
           is_consensus: boolean | null
           league: string | null
@@ -94014,6 +94017,7 @@ export type Database = {
           unsupported_reason: string | null
         }
         Insert: {
+          actual_value?: number | null
           alignment_score?: number | null
           bet_type?: string | null
           capper_detection_confidence?: number | null
@@ -94027,6 +94031,8 @@ export type Database = {
           external_result_id?: string | null
           extracted_capper_name?: string | null
           game_date?: string | null
+          graded_at?: string | null
+          grading_source?: string | null
           id?: string
           is_consensus?: boolean | null
           league?: string | null
@@ -94060,6 +94066,7 @@ export type Database = {
           unsupported_reason?: string | null
         }
         Update: {
+          actual_value?: number | null
           alignment_score?: number | null
           bet_type?: string | null
           capper_detection_confidence?: number | null
@@ -94073,6 +94080,8 @@ export type Database = {
           external_result_id?: string | null
           extracted_capper_name?: string | null
           game_date?: string | null
+          graded_at?: string | null
+          grading_source?: string | null
           id?: string
           is_consensus?: boolean | null
           league?: string | null
