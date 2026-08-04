@@ -10,6 +10,7 @@ import { DrillDownEntity, DrillDownFilters } from '@/lib/drilldown';
 import { logAiCommand, updateAiCommandStatus } from '@/lib/aiCommands';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { verifiedInsert } from '@/lib/verifiedMutation';
 
 export interface AiCommandContext {
   entityType?: DrillDownEntity;
@@ -504,9 +505,8 @@ async function executeNotifyAction(
       status: 'pending',
     }));
 
-    const { error } = await (supabase as any)
-      .from('ai_communication_queue')
-      .insert(notifications);
+    const { error } = await verifiedInsert('queue AI notifications', () => ((supabase as any)).from('ai_communication_queue')
+      .insert(notifications));
     
     if (error) throw error;
 

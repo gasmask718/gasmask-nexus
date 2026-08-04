@@ -6,6 +6,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAiCommandEngine, AiParsedPlan } from './useAiCommandEngine';
 import { toast } from 'sonner';
+import { verifiedInsert } from '@/lib/verifiedMutation';
 
 export interface PlaybookStep {
   input: string;
@@ -410,8 +411,7 @@ export function usePlaybookEngine() {
 
       // Send notification if enabled
       if (routine.notify_user) {
-        await (supabase as any)
-          .from('ai_communication_queue')
+        await verifiedInsert('queue routine notification', () => ((supabase as any)).from('ai_communication_queue')
           .insert({
             entity_type: 'routine',
             entity_id: routineId,
@@ -419,7 +419,7 @@ export function usePlaybookEngine() {
             reason: `Routine "${routine.playbook.title}" completed. ${result.totalAffected} records processed.`,
             urgency: 30,
             status: 'pending',
-          });
+          }));
       }
 
       return result.success;

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -146,14 +147,14 @@ async function processInvoiceFollowUps(supabase: any, settings: any) {
       }
 
       // Log to communication queue
-      await supabase.from('ai_communication_queue').insert({
+      await verifiedInsertSoft(supabase, 'queue AI follow-up', (c: any) => c.from('ai_communication_queue').insert({
         entity_type: 'invoice',
         entity_id: invoice.id,
         suggested_action: 'send_reminder',
         reason: `Invoice ${daysOverdue} days overdue`,
         urgency: Math.min(90, 50 + daysOverdue * 2),
         status: 'pending',
-      });
+      }));
 
       // Log follow-up action
       await supabase.from('ai_follow_up_log').insert({
@@ -211,14 +212,14 @@ async function processStoreFollowUps(supabase: any, settings: any) {
         : settings?.auto_reminder_message || 'We\'re stopping by this week!';
 
       // Log to communication queue
-      await supabase.from('ai_communication_queue').insert({
+      await verifiedInsertSoft(supabase, 'queue AI follow-up', (c: any) => c.from('ai_communication_queue').insert({
         entity_type: 'store',
         entity_id: insight.entity_id,
         suggested_action: 'send_recovery',
         reason: `Store not visited in ${daysSinceVisit} days`,
         urgency: Math.min(95, 40 + daysSinceVisit * 2),
         status: 'pending',
-      });
+      }));
 
       // Log follow-up action
       await supabase.from('ai_follow_up_log').insert({
@@ -273,14 +274,14 @@ async function processInventoryFollowUps(supabase: any, settings: any) {
       const itemName = insight.source_data?.product_name || 'Unknown';
 
       // Log to communication queue
-      await supabase.from('ai_communication_queue').insert({
+      await verifiedInsertSoft(supabase, 'queue AI follow-up', (c: any) => c.from('ai_communication_queue').insert({
         entity_type: 'inventory',
         entity_id: insight.entity_id,
         suggested_action: 'reorder_alert',
         reason: `${itemName} low stock (${currentQty}/${reorderPoint})`,
         urgency: currentQty === 0 ? 100 : Math.min(90, 70 + (reorderPoint - currentQty) * 5),
         status: 'pending',
-      });
+      }));
 
       // Log follow-up action
       await supabase.from('ai_follow_up_log').insert({
@@ -334,14 +335,14 @@ async function processAmbassadorFollowUps(supabase: any, settings: any) {
       const message = settings?.motivational_message || 'Keep pushing!';
 
       // Log to communication queue
-      await supabase.from('ai_communication_queue').insert({
+      await verifiedInsertSoft(supabase, 'queue AI follow-up', (c: any) => c.from('ai_communication_queue').insert({
         entity_type: 'ambassador',
         entity_id: insight.entity_id,
         suggested_action: 'send_motivation',
         reason: `Ambassador inactive for ${daysSinceActivity} days`,
         urgency: Math.min(70, 30 + daysSinceActivity),
         status: 'pending',
-      });
+      }));
 
       // Log follow-up action
       await supabase.from('ai_follow_up_log').insert({
