@@ -106,6 +106,7 @@ serve(async (req) => {
     const platform = body.platform as string | undefined;
     const source_group = body.source_group as string | undefined;
     const source_group_id = body.source_group_id as string | undefined;
+    const source_message_id = body.source_message_id as string | undefined;
     const posted_by = body.posted_by as string | undefined;
     const group_type = body.group_type as string || 'direct';
 
@@ -430,6 +431,8 @@ RULES:
         result: 'pending',
         source_group: source_group || null,
         source_group_id: source_group_id || null,
+        source_message_id: source_message_id || null,
+        data_source: 'image_extract',
         posted_by: posted_by || null,
         extracted_capper_name: extractedCapperName || null,
         capper_detection_confidence: capperDetectionConfidence,
