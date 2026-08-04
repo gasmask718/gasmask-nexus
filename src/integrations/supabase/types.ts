@@ -94010,6 +94010,7 @@ export type Database = {
           source_group: string | null
           source_group_id: string | null
           source_image_url: string | null
+          source_message_id: string | null
           sport: string | null
           stake: number | null
           team: string | null
@@ -94059,6 +94060,7 @@ export type Database = {
           source_group?: string | null
           source_group_id?: string | null
           source_image_url?: string | null
+          source_message_id?: string | null
           sport?: string | null
           stake?: number | null
           team?: string | null
@@ -94108,6 +94110,7 @@ export type Database = {
           source_group?: string | null
           source_group_id?: string | null
           source_image_url?: string | null
+          source_message_id?: string | null
           sport?: string | null
           stake?: number | null
           team?: string | null
@@ -98144,6 +98147,7 @@ export type Database = {
           channel_id: string
           channel_name: string | null
           channel_username: string | null
+          content_hash: string | null
           deleted: boolean
           dispatch_error: string | null
           dispatched_to: string | null
@@ -98164,6 +98168,7 @@ export type Database = {
           channel_id: string
           channel_name?: string | null
           channel_username?: string | null
+          content_hash?: string | null
           deleted?: boolean
           dispatch_error?: string | null
           dispatched_to?: string | null
@@ -98184,6 +98189,7 @@ export type Database = {
           channel_id?: string
           channel_name?: string | null
           channel_username?: string | null
+          content_hash?: string | null
           deleted?: boolean
           dispatch_error?: string | null
           dispatched_to?: string | null
