@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
     // immediately after paying.
     const siteBase = Deno.env.get("BRANDARO_SITE_URL") || "https://www.brandarodigital.com";
     const successUrl =
-      `${siteBase}/thanks?demo_id=${encodeURIComponent(demo_id)}` +
+      `${siteBase}/purchase-success?demo_id=${encodeURIComponent(demo_id)}` +
       `&session={CHECKOUT_SESSION_ID}`;
     const cancelUrl = demo.demo_url || siteBase;
 
