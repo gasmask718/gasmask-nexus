@@ -261,34 +261,50 @@ RULES:
       if (existing) {
         resolvedCapperId = existing.id;
         resolvedCapperName = existing.name;
-      } else if (capperDetectionConfidence >= 70) {
-        // Auto-create with normalized name
+      } else {
+        // Stage 3 — gated CREATE (shape + confidence + second sighting).
         const normalized = normalizeName(extractedCapperName);
-        const { data: newCapper, error: createErr } = await supabase
-          .from('sbo_cappers')
-          .insert({
-            name: extractedCapperName.trim(),
-            normalized_name: normalized || null,
-            source: 'image_extract',
-            source_handle: extractedCapperHandle || null,
-            tier: 'unproven',
-            confidence_grade: 'D',
-            is_active: true,
-            total_picks: 0,
-            group_type: 'aggregator',
-          })
-          .select('id')
-          .single();
+        const gate = await shouldCreateCapper(supabase, {
+          name: extractedCapperName,
+          normalized: normalized || '',
+          confidence: capperDetectionConfidence,
+          sourceMessageId: source_message_id ?? null,
+          source: 'image_extract',
+          groupType: 'aggregator',
+        });
+        capperGateReason = gate.reason;
 
-        if (createErr) {
-          // Race condition retry
-          const retry = await resolveCapperByName(supabase, extractedCapperName);
-          resolvedCapperId = retry?.id || capper_id || null;
-        } else {
-          resolvedCapperId = newCapper.id;
-          resolvedCapperName = extractedCapperName.trim();
+        if (gate.allow) {
+          const { data: newCapper, error: createErr } = await supabase
+            .from('sbo_cappers')
+            .insert({
+              name: extractedCapperName.trim(),
+              normalized_name: normalized || null,
+              source: 'image_extract',
+              source_handle: extractedCapperHandle || null,
+              tier: 'unproven',
+              confidence_grade: 'D',
+              is_active: true,
+              total_picks: 0,
+              group_type: 'aggregator',
+            })
+            .select('id')
+            .single();
+
+          if (createErr) {
+            // Race condition retry
+            const retry = await resolveCapperByName(supabase, extractedCapperName);
+            resolvedCapperId = retry?.id || capper_id || null;
+          } else {
+            resolvedCapperId = newCapper.id;
+            resolvedCapperName = extractedCapperName.trim();
+            await markPendingPromoted(supabase, normalized || '', newCapper.id);
+          }
         }
+        // Gate refused → falls through to the Unknown Capper bucket below, which
+        // is the correct home for an unconfirmed identity.
       }
+
       // If confidence < 70 and no capper_id provided, assign to "unknown_capper"
       if (!resolvedCapperId && !capper_id) {
         const { data: unknown } = await supabase
