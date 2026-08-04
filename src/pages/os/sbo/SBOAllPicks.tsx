@@ -36,11 +36,11 @@ type Row = {
   sbo_cappers: { name: string | null } | null;
 };
 
-function confidenceBadge(v: number | null) {
-  if (v === null || v === undefined) return { label: 'UNSCORED', cls: 'bg-gray-500 text-white' };
-  if (v >= 90) return { label: 'HIGH', cls: 'bg-green-600 text-white' };
-  if (v >= 70) return { label: 'MEDIUM', cls: 'bg-amber-600 text-white' };
-  return { label: 'LOW', cls: 'bg-red-600 text-white' };
+function parseConfidenceBadge(v: number | null) {
+  if (v === null || v === undefined) return { label: 'PARSE: UNSCORED', cls: 'bg-gray-500 text-white' };
+  if (v >= 90) return { label: 'PARSE', cls: 'bg-green-600 text-white' };
+  if (v >= 70) return { label: 'PARSE', cls: 'bg-amber-600 text-white' };
+  return { label: 'PARSE', cls: 'bg-red-600 text-white' };
 }
 
 function resultBadge(r: string | null) {
@@ -195,8 +195,10 @@ export default function SBOAllPicks() {
                     <TableCell>{r.line ?? '—'}</TableCell>
                     <TableCell>{r.stake ?? '—'}</TableCell>
                     <TableCell>
-                      <Badge className={cb.cls}>
-                        {cb.label}{r.parse_confidence !== null && r.parse_confidence !== undefined ? ` ${Number(r.parse_confidence).toFixed(0)}` : ''}
+                      <Badge className={cb.cls} title="Text-extraction confidence, not pick confidence">
+                        {r.parse_confidence !== null && r.parse_confidence !== undefined
+                          ? `${Number(r.parse_confidence).toFixed(0)}% parse`
+                          : cb.label}
                       </Badge>
                     </TableCell>
                     <TableCell><Badge className={resultBadge(r.result)}>{r.result ?? 'pending'}</Badge></TableCell>
