@@ -4,6 +4,14 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import {
+  resolveSerpApiKey,
+  serpApiShoppingSearch,
+  trimOutliers,
+  titleRelevance,
+  BUNDLE_EXCLUSIONS,
+  type SerpResult,
+} from '../_shared/marketPrice.ts';
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-6';
