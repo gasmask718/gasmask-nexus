@@ -1018,6 +1018,9 @@ const StoreDetail = () => {
             </TabsList>
 
             <TabsContent value="inventory" className="space-y-4">
+              {/* store_product_state panels — hidden: table has no INSERT writer */}
+              {isFeatureEnabled('storeProductStatePanel') && (
+              <>
               {/* AI Prediction Card */}
               {inventory.length > 0 && inventory.some((i) => i.urgency_score > 0) && (
                 <InventoryPredictionCard
