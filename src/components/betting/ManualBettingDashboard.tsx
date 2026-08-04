@@ -9,52 +9,13 @@ import { useConsensusIntelligence, ConsensusPick, CapperKPI } from '@/hooks/useC
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 // ── Confidence Score Calculation ──
-// 25 pts: WHO backed it (consensus size + real capper ROI/win-rate)
-// 75 pts: THE PICK ITSELF (recent player form vs the line, direction agreement,
-//         price, line edge vs live market, market difficulty)
-const clamp01 = (n: number) => Math.min(Math.max(n, 0), 1);
+// The formula is NOT defined here. It lives in the canonical shared module
+// (supabase/functions/_shared/perPickScore.ts, re-exported by @/lib/sbo/perPickScore)
+// so the UI and the sbo-score-capper-picks recompute job can never drift.
+import { calcConfidenceBreakdown, calcConfidence } from '@/lib/sbo/perPickScore';
 
-export function calcConfidenceBreakdown(pick: ConsensusPick) {
-  // Capper-quality component (max 25)
-  const consensusWeight = Math.min(pick.capperCount / 5, 1) * 12;
-  const roiWeight = clamp01((pick.avgCapperROI + 20) / 40) * 8;
-  const wrWeight = clamp01(pick.avgCapperWinRate / 100) * 5;
+export { calcConfidenceBreakdown };
 
-  // Per-pick component (max 75)
-  // Recent player form: share of the player's last 15 games clearing this exact
-  // line in the pick's direction, mapped 20% → 70%. The strongest per-pick signal.
-  const formWeight = pick.formHitRate === null
-    ? 15
-    : clamp01((pick.formHitRate - 20) / 50) * 30;
-
-  // Directional agreement: 50/50 split = 0, unanimous = full credit
-  const dirWeight = clamp01((pick.directionAgreement - 0.5) * 2) * 10;
-
-  // Price quality: implied probability of the taken odds, mapped 40% → 60%
-  const priceWeight = pick.impliedProb === null
-    ? 8
-    : clamp01((pick.impliedProb - 0.40) / 0.20) * 16;
-
-  // Line edge vs live market line, in the pick's direction: -5% → +5%
-  const lineWeight = pick.lineEdgePct === null
-    ? 6
-    : clamp01((pick.lineEdgePct + 0.05) / 0.10) * 12;
-
-  // Market difficulty: historical hit rate for this sport + prop type, 35% → 65%
-  const marketWeight = pick.marketWinRate === null
-    ? 3.5
-    : clamp01((pick.marketWinRate - 35) / 30) * 7;
-
-  const total = consensusWeight + roiWeight + wrWeight + formWeight + dirWeight + priceWeight + lineWeight + marketWeight;
-  return {
-    consensusWeight, roiWeight, wrWeight, formWeight, dirWeight, priceWeight, lineWeight, marketWeight,
-    total: Math.round(total),
-  };
-}
-
-function calcConfidence(pick: ConsensusPick): number {
-  return calcConfidenceBreakdown(pick).total;
-}
 
 
 

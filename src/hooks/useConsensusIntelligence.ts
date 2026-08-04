@@ -44,6 +44,9 @@ export interface ConsensusPick {
   formHitRate: number | null;      // 0-100 share of the player's recent games clearing the line, in the pick's direction
   formGames: number;               // games behind formHitRate
   formAvgStat: number | null;      // player's recent average for this stat
+  confidenceScore: number;         // 0-100, canonical shared formula (same value persisted to sbo_capper_picks)
+  edgeScore: number;               // 0-100 pick-quality-only component of the same formula
+
 
 
 }
@@ -57,11 +60,9 @@ export interface ConsensusStats {
 }
 
 import { normalizeStat, marketPropCandidates } from '@/lib/sbo/statNormalize';
+// Canonical scoring formula — shared with the sbo-score-capper-picks edge job.
+import { calcConfidenceBreakdown, impliedFromAmerican } from '@/lib/sbo/perPickScore';
 
-function impliedFromAmerican(odds: number | null): number | null {
-  if (odds === null || odds === undefined || !Number.isFinite(odds) || odds === 0) return null;
-  return odds < 0 ? -odds / (-odds + 100) : 100 / (odds + 100);
-}
 
 export function useConsensusIntelligence() {
   // Fetch all resolved picks with capper info
@@ -290,6 +291,18 @@ export function useConsensusIntelligence() {
       // Result: use any resolved pick in the group
       const resolvedPick = group.find((p: any) => p.result === 'won' || p.result === 'lost' || p.result === 'push');
 
+      const scoreInput = {
+        capperCount: uniqueCappers.size,
+        avgCapperROI: Math.round(avgROI * 100) / 100,
+        avgCapperWinRate: Math.round(avgWR * 100) / 100,
+        formHitRate,
+        directionAgreement,
+        impliedProb,
+        lineEdgePct: lineEdgePct === null ? null : Math.round(lineEdgePct * 10000) / 10000,
+        marketWinRate,
+      };
+      const breakdown = calcConfidenceBreakdown(scoreInput);
+
       cPicks.push({
         player_name: first.player_name,
         prop_type: first.prop_type,
@@ -300,22 +313,24 @@ export function useConsensusIntelligence() {
         team: first.team,
         capperCount: uniqueCappers.size,
         capperNames,
-        avgCapperROI: Math.round(avgROI * 100) / 100,
-        avgCapperWinRate: Math.round(avgWR * 100) / 100,
+        avgCapperROI: scoreInput.avgCapperROI,
+        avgCapperWinRate: scoreInput.avgCapperWinRate,
         result: resolvedPick?.result || null,
         confidenceLevel: uniqueCappers.size >= 4 ? 'high' : uniqueCappers.size >= 2 ? 'medium' : 'normal',
         avgOdds,
         impliedProb,
         directionAgreement,
         marketLine,
-        lineEdgePct: lineEdgePct === null ? null : Math.round(lineEdgePct * 10000) / 10000,
+        lineEdgePct: scoreInput.lineEdgePct,
         marketWinRate,
         marketSampleSize,
         formHitRate,
         formGames,
         formAvgStat,
-
+        confidenceScore: breakdown.total,
+        edgeScore: breakdown.edgeScore,
       });
+
     }
 
 
