@@ -64,24 +64,42 @@ Deno.serve(async (req) => {
 
   // ── Build the ring list ──
   const withinHours = isWithinBusinessHours(settings);
-  const vas = withinHours ? await loadAvailableVas(supabase, "gasmask") : [];
-  const owner = settings.owner_forward_number || "";
-  const vaNumbers = vas.map((x) => x.forward_number);
+  const businessId = await resolveBusinessId(supabase, "gasmask");
 
-  let targets: string[] = [];
+  // Owner numbers are CONFIG, never literals in code (business_owner_contacts).
+  const ownerContacts = await loadOwnerContacts(supabase, businessId);
+  let ownerNumbers = ownerContacts.map((c) => c.phone_e164);
+  if (!ownerNumbers.length && settings.owner_forward_number) {
+    ownerNumbers = [settings.owner_forward_number]; // legacy fallback
+  }
+
+  // On-shift VAs: browser softphones (<Client>) + any legacy forward numbers.
+  const clients = withinHours ? await loadOnShiftClients(supabase, businessId) : [];
+  const vas = withinHours ? await loadAvailableVas(supabase, "gasmask") : [];
+  const vaNumbers = vas.map((x) => x.forward_number);
+  const clientIdentities = clients.map((c) => c.client_identity);
+
+  let numberTargets: string[] = [];
+  let clientTargets: string[] = [];
   let routeNote = "";
 
   if (settings.ring_model === "simultaneous") {
-    targets = owner ? [...vaNumbers, owner] : vaNumbers;
-    routeNote = vaNumbers.length ? `simultaneous: ${vaNumbers.length} VA(s) + owner` : "owner only (no VA available)";
+    numberTargets = [...vaNumbers, ...ownerNumbers];
+    clientTargets = clientIdentities;
+    routeNote = `simultaneous: ${clientIdentities.length} VA softphone(s) + ${vaNumbers.length} VA number(s) + ${ownerNumbers.length} owner number(s)`;
   } else if (settings.ring_model === "owner_first") {
-    targets = owner ? [owner] : vaNumbers;
+    numberTargets = ownerNumbers.length ? ownerNumbers : vaNumbers;
+    clientTargets = ownerNumbers.length ? [] : clientIdentities;
     routeNote = "owner first";
   } else {
-    targets = vaNumbers.length ? vaNumbers : owner ? [owner] : [];
-    routeNote = vaNumbers.length ? "sequential: VA leg" : "owner only (no VA available)";
+    const hasVa = vaNumbers.length || clientIdentities.length;
+    numberTargets = hasVa ? vaNumbers : ownerNumbers;
+    clientTargets = hasVa ? clientIdentities : [];
+    routeNote = hasVa ? "sequential: VA leg" : "owner only (no VA on shift)";
   }
   if (!withinHours) routeNote += " (off hours)";
+
+  const totalTargets = numberTargets.length + clientTargets.length;
 
   await upsertCallLog(supabase, {
     callSid,
@@ -93,7 +111,8 @@ Deno.serve(async (req) => {
         route: routeNote,
         within_hours: withinHours,
         va_targets: vaNumbers,
-        owner_target: owner || null,
+        va_client_targets: clientTargets,
+        owner_targets: ownerNumbers,
         ring_model: settings.ring_model,
       },
     },
@@ -104,7 +123,7 @@ Deno.serve(async (req) => {
     : "";
 
   // Nobody to ring → straight to voicemail.
-  if (targets.length === 0) {
+  if (totalTargets === 0) {
     if (!settings.voicemail_enabled) {
       await upsertCallLog(supabase, { callSid, from, to, status: "missed", summary: "Missed call — no route available" });
       return twiml(`${disclosure}<Say voice="alice">Sorry, no one is available right now. Please try again later.</Say><Hangup/>`);
@@ -113,9 +132,10 @@ Deno.serve(async (req) => {
   }
 
   // For sequential/owner_first, the dial-complete handler rings the second leg.
-  const nextStage = settings.ring_model === "sequential" && vaNumbers.length && owner
+  const hasVaLeg = vaNumbers.length + clientIdentities.length > 0;
+  const nextStage = settings.ring_model === "sequential" && hasVaLeg && ownerNumbers.length
     ? "owner"
-    : settings.ring_model === "owner_first" && owner && vaNumbers.length
+    : settings.ring_model === "owner_first" && ownerNumbers.length && hasVaLeg
     ? "va"
     : "voicemail";
 
@@ -125,11 +145,19 @@ Deno.serve(async (req) => {
     ? ` record="record-from-answer-dual" recordingStatusCallback="${escapeXml(recCb)}" recordingStatusCallbackMethod="POST" recordingStatusCallbackEvent="completed"`
     : "";
 
-  const numbers = targets.map((n) => `<Number>${escapeXml(n)}</Number>`).join("");
+  // All legs live inside ONE <Dial> → Twilio rings them in parallel and
+  // cancels the losers the moment someone answers.
+  const legs = [
+    ...numberTargets.map((n) => `<Number>${escapeXml(n)}</Number>`),
+    ...clientTargets.map((c) => `<Client>${escapeXml(c)}</Client>`),
+  ].join("");
+
+  // Parallel ring window: 20–25s, then voicemail.
+  const ringTimeout = Math.min(25, Math.max(20, settings.va_ring_timeout_seconds || 20));
 
   return twiml(`${disclosure}
-  <Dial answerOnBridge="true" timeout="${settings.va_ring_timeout_seconds}" callerId="${escapeXml(to)}"
+  <Dial answerOnBridge="true" timeout="${ringTimeout}" callerId="${escapeXml(to)}"
         action="${escapeXml(actionUrl)}" method="POST"${recordAttrs}>
-    ${numbers}
+    ${legs}
   </Dial>`);
 });
