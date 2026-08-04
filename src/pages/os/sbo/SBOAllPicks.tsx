@@ -161,7 +161,7 @@ export default function SBOAllPicks() {
                   </TableCell>
                 </TableRow>
               ) : rows.map((r) => {
-                const cb = confidenceBadge(r.parse_confidence);
+                const cb = parseConfidenceBadge(r.parse_confidence);
                 const playerTeam = r.player_name && r.team && r.team !== r.player_name
                   ? `${r.player_name} (${r.team})`
                   : (r.player_name || r.team || '—');
