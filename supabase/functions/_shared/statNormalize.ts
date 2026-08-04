@@ -73,6 +73,15 @@ const AMBIGUOUS: Record<string, string[]> = {
 
 export function marketPropCandidates(propType: string): string[] {
   const canonical = normalizeStat(propType);
+  // Unmatchable stats must yield NO candidates — the caller skips the pick.
+  if (!canonical || canonical === UNMATCHABLE) return [];
   const out = [canonical, ...(AMBIGUOUS[canonical] || [])];
   return [...new Set(out.filter(Boolean))];
 }
+
+// Shared line tolerance. A flat ±1.0 is far too tight on large combo lines
+// (35.5 PRA) and slightly loose on small ones, so scale with the line.
+export function lineTolerance(line: number): number {
+  return Math.max(1.0, Math.abs(line) * 0.04);
+}
+
