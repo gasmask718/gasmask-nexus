@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CheckCircle2, XCircle, Play, Loader2, Shield, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
+import { verifiedInsert, verifiedDelete, mutationErrorMessage } from "@/lib/verifiedMutation";
 
 const TEST_PHONE = "5551234567"; // Safe test number
 
@@ -88,9 +89,11 @@ export default function SmsSystemTests() {
     const testPhone = "5559999999";
     try {
       // Insert opt-out
-      await supabase.from("opt_out_events").upsert(
-        { phone_number: `1${testPhone}`, source: "test", reason: "Test STOP enforcement" },
-        { onConflict: "phone_number" }
+      await verifiedInsert("insert test opt-out record", () =>
+        supabase.from("opt_out_events").upsert(
+          { phone_number: `1${testPhone}`, source: "test", reason: "Test STOP enforcement" },
+          { onConflict: "phone_number" },
+        ),
       );
 
       updateTest(1, { details: "Attempting send to opted-out number..." });
@@ -103,10 +106,13 @@ export default function SmsSystemTests() {
       await logResult("STOP Enforcement", pass ? "PASS" : "FAIL", data);
 
       // Cleanup
-      await supabase.from("opt_out_events").delete().eq("phone_number", `1${testPhone}`);
-    } catch (e: any) {
-      updateTest(1, { status: "fail", details: e.message });
-      await logResult("STOP Enforcement", "FAIL", { error: e.message });
+      await verifiedDelete("clean up test opt-out record", () =>
+        supabase.from("opt_out_events").delete().eq("phone_number", `1${testPhone}`),
+      );
+    } catch (e: unknown) {
+      const msg = mutationErrorMessage(e);
+      updateTest(1, { status: "fail", details: msg });
+      await logResult("STOP Enforcement", "FAIL", { error: msg });
     }
   };
 
