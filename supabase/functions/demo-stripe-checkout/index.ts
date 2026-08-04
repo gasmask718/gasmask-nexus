@@ -141,10 +141,15 @@ Deno.serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
+    // NOTE: the apex domain (brandarodigital.com) has NO A record — only
+    // www resolves. Using the apex here would strand the buyer on a dead page
+    // immediately after paying.
+    const siteBase = Deno.env.get("BRANDARO_SITE_URL") || "https://www.brandarodigital.com";
     const successUrl =
-      `https://brandarodigital.com/thanks?demo_id=${encodeURIComponent(demo_id)}` +
+      `${siteBase}/thanks?demo_id=${encodeURIComponent(demo_id)}` +
       `&session={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = demo.demo_url || "https://brandarodigital.com";
+    const cancelUrl = demo.demo_url || siteBase;
+
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
