@@ -92,3 +92,21 @@ Code spots matching the literal string `"HotScalati"` (enum comparisons, switch 
 
 ### When to revisit
 Only if a future refactor of `brand_type` (replacing the enum, restructuring brand joins, or a full brand-table rewrite) is already in scope. At that point, fold the rename in as part of the larger migration.
+
+---
+
+## SBO — capper pick parser: anytime-home-run picks carry YES/NO direction (LOGGED, NOT FIXED)
+
+**Logged:** 2026-08-04 · **Status:** open, out of scope for the prop-grader task · **Owner:** SBO ingestion
+
+### Symptom
+`sbo-grade-capper-props` dry run skipped a handful of `home_runs` picks. Cause: 71 of 89 `home_runs` rows in `sbo_capper_picks` have `direction = 'YES'` (18 have `OVER`). `YES` is the anytime-home-run market, which is a boolean outcome, not an over/under line. The grader's `gradeOverUnder()` only understands OVER/UNDER, so those rows fall through as skips.
+
+### Why it is not fixed here
+This is an upstream parser/vocabulary gap in `sbo-parse-capper-image` / `sbo-telegram-intake`, not a grader bug. Papering over it inside the grader would hide the same vocabulary problem everywhere else it shows up (matching, signal fanout, capper win-rate math).
+
+### Correct fix, when scheduled
+Normalize the anytime-HR market to its own canonical prop (e.g. `home_runs_anytime`, boolean outcome, `line` implicitly 0.5) at parse time, and give the grader a boolean branch for it. Leave `home_runs` OVER/UNDER as the true line market.
+
+### Rule for future agents
+Do NOT convert `direction = 'YES'` to `OVER` with an implied 0.5 line inside the grader. Fix it at the parser.
