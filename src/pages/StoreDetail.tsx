@@ -1079,7 +1079,13 @@ const StoreDetail = () => {
                   )}
                 </CardContent>
               </Card>
+              </>
+              )}
+              {!isFeatureEnabled('storeProductStatePanel') && (
+                <StoreTubeInventorySummary storeId={id || ''} />
+              )}
             </TabsContent>
+
 
             <TabsContent value="performance">
               <StorePerformanceTab storeId={id!} storeName={store.name} />
