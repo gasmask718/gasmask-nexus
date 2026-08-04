@@ -130,6 +130,13 @@ serve(async (req) => {
       const groupType = (body.group_type as string) || 'direct';
       const sourceGroup = body.source_group as string | undefined;
       const sourceGroupId = body.source_group_id as string | undefined;
+      // Distinct-message key for the Stage 3 second-sighting gate. Falls back to
+      // the channel id so an older caller degrades to "one sighting per channel"
+      // rather than crashing.
+      const sourceMessageId =
+        (body.source_message_id as string | undefined) ||
+        (sourceGroupId ? `channel:${sourceGroupId}` : null);
+
 
       if (!telegramUserId) {
         return new Response(JSON.stringify({ error: 'telegram_user_id required' }), {
