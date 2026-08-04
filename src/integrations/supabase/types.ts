@@ -95974,6 +95974,60 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_pending_capper_identities: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          display_name: string
+          first_seen_at: string
+          group_type: string | null
+          id: string
+          last_seen_at: string
+          normalized_name: string
+          promoted_at: string | null
+          promoted_capper_id: string | null
+          rejected_reason: string | null
+          seen_message_ids: string[]
+          sighting_count: number
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          display_name: string
+          first_seen_at?: string
+          group_type?: string | null
+          id?: string
+          last_seen_at?: string
+          normalized_name: string
+          promoted_at?: string | null
+          promoted_capper_id?: string | null
+          rejected_reason?: string | null
+          seen_message_ids?: string[]
+          sighting_count?: number
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          display_name?: string
+          first_seen_at?: string
+          group_type?: string | null
+          id?: string
+          last_seen_at?: string
+          normalized_name?: string
+          promoted_at?: string | null
+          promoted_capper_id?: string | null
+          rejected_reason?: string | null
+          seen_message_ids?: string[]
+          sighting_count?: number
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sbo_player_game_logs: {
         Row: {
           assists: number | null
