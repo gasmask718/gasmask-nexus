@@ -21,6 +21,7 @@ import { ReplenishmentAI } from "@/components/store/ReplenishmentAI";
 import { LastOrderSnapshotPanel } from "@/components/store/LastOrderSnapshotPanel";
 import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
 import { RouteIntelligence } from "@/components/store/RouteIntelligence";
+import { isFeatureEnabled } from "@/config/featureFlags";
 import { StoreCallIntelligenceTab } from "@/components/store/StoreCallIntelligenceTab";
 import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIntelligenceTab";
 import { Activity, Headphones, Flame } from "lucide-react";
