@@ -381,6 +381,9 @@ serve(async (req) => {
         extracted_from_content: !!extractedFromText && capperDetectionConfidence >= 70,
         extracted_capper_name: extractedFromText,
         needs_review: capperDetectionConfidence < 70,
+        // Stage 3 telemetry — why a new identity was or wasn't minted.
+        capper_gate_reason: capperGateReason,
+
       }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
