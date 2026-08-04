@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -163,14 +164,14 @@ serve(async (req) => {
 
       if (openRisks) {
         for (const risk of openRisks) {
-          await supabase.from('ai_communication_queue').insert({
+          await verifiedInsertSoft(supabase, 'queue evening ops communication', (c: any) => c.from('ai_communication_queue').insert({
             entity_type: risk.entity_type,
             entity_id: risk.entity_id || risk.id,
             suggested_action: 'tomorrow_priority',
             reason: `Tomorrow: ${risk.headline}`,
             urgency: risk.risk_level === 'critical' ? 90 : 70,
             status: 'pending',
-          });
+          }));
           results.tomorrowTasksCreated++;
         }
         console.log(`✅ Created ${results.tomorrowTasksCreated} tasks for tomorrow`);

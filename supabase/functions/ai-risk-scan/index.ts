@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -128,8 +129,7 @@ serve(async (req) => {
           
           // Add to communication queue for high/critical
           if (level === 'high' || level === 'critical') {
-            await supabase
-              .from('ai_communication_queue')
+            await verifiedInsertSoft(supabase, 'queue risk communication', (c: any) => c.from('ai_communication_queue')
               .insert({
                 entity_type: 'risk',
                 entity_id: store.id,
@@ -137,7 +137,7 @@ serve(async (req) => {
                 reason: riskData.headline,
                 urgency: level === 'critical' ? 90 : 70,
                 status: 'pending',
-              });
+              }));
           }
         }
       }
@@ -220,8 +220,7 @@ serve(async (req) => {
           stats.new_risks++;
           
           if (level === 'high' || level === 'critical') {
-            await supabase
-              .from('ai_communication_queue')
+            await verifiedInsertSoft(supabase, 'queue risk communication', (c: any) => c.from('ai_communication_queue')
               .insert({
                 entity_type: 'risk',
                 entity_id: invoice.id,
@@ -229,7 +228,7 @@ serve(async (req) => {
                 reason: riskData.headline,
                 urgency: level === 'critical' ? 90 : 70,
                 status: 'pending',
-              });
+              }));
           }
         }
       }

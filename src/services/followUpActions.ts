@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { supabase } from '@/integrations/supabase/client';
+import { verifiedInsert } from '@/lib/verifiedMutation';
 
 export type FollowUpActionResult = {
   success: boolean;
@@ -77,14 +78,14 @@ export async function sendInvoiceReminder(
 
     // Log to communication queue
     const client = supabase as any;
-    await client.from('ai_communication_queue').insert({
+    await verifiedInsert('queue follow-up communication', () => (client).from('ai_communication_queue').insert({
       entity_type: 'invoice',
       entity_id: invoiceId,
       suggested_action: 'send_reminder',
       reason: `Invoice ${daysOverdue} days overdue - automated reminder`,
       urgency: Math.min(90, 50 + daysOverdue * 2),
       status: 'pending',
-    });
+    }));
 
     // Log follow-up action
     await logFollowUpAction({
@@ -151,14 +152,14 @@ export async function sendStoreRecoveryMessage(
       : settings.auto_reminder_message;
 
     const client = supabase as any;
-    await client.from('ai_communication_queue').insert({
+    await verifiedInsert('queue follow-up communication', () => (client).from('ai_communication_queue').insert({
       entity_type: 'store',
       entity_id: storeId,
       suggested_action: 'send_recovery',
       reason: `Store not visited in ${daysSinceVisit} days`,
       urgency: Math.min(95, 40 + daysSinceVisit * 2),
       status: 'pending',
-    });
+    }));
 
     await logFollowUpAction({
       entityType: 'store',
@@ -247,14 +248,14 @@ export async function createReorderAlert(
   try {
     const client = supabase as any;
     
-    await client.from('ai_communication_queue').insert({
+    await verifiedInsert('queue follow-up communication', () => (client).from('ai_communication_queue').insert({
       entity_type: 'inventory',
       entity_id: itemId,
       suggested_action: 'reorder_alert',
       reason: `${itemName} is low (${currentQty}/${reorderPoint})`,
       urgency: currentQty === 0 ? 100 : Math.min(90, 70 + (reorderPoint - currentQty) * 5),
       status: 'pending',
-    });
+    }));
 
     await client.from('scheduled_tasks').insert({
       task_type: 'inventory_reorder',
@@ -292,14 +293,14 @@ export async function notifyDriverLateness(
   try {
     const client = supabase as any;
     
-    await client.from('ai_communication_queue').insert({
+    await verifiedInsert('queue follow-up communication', () => (client).from('ai_communication_queue').insert({
       entity_type: 'driver',
       entity_id: driverId,
       suggested_action: 'notify_lateness',
       reason: `Driver is ${lateMinutes} minutes behind schedule`,
       urgency: Math.min(85, 50 + lateMinutes),
       status: 'pending',
-    });
+    }));
 
     await logFollowUpAction({
       entityType: 'driver',
@@ -323,14 +324,14 @@ export async function alertOperationsAboutDriver(
   try {
     const client = supabase as any;
     
-    await client.from('ai_communication_queue').insert({
+    await verifiedInsert('queue follow-up communication', () => (client).from('ai_communication_queue').insert({
       entity_type: 'driver',
       entity_id: driverId,
       suggested_action: 'alert_operations',
       reason: `Driver issue: ${issue}`,
       urgency: 80,
       status: 'pending',
-    });
+    }));
 
     await logFollowUpAction({
       entityType: 'driver',
@@ -359,14 +360,14 @@ export async function sendAmbassadorMotivation(
   try {
     const client = supabase as any;
     
-    await client.from('ai_communication_queue').insert({
+    await verifiedInsert('queue follow-up communication', () => (client).from('ai_communication_queue').insert({
       entity_type: 'ambassador',
       entity_id: ambassadorId,
       suggested_action: 'send_motivation',
       reason: `Ambassador inactive for ${daysSinceActivity} days`,
       urgency: Math.min(70, 30 + daysSinceActivity),
       status: 'pending',
-    });
+    }));
 
     await logFollowUpAction({
       entityType: 'ambassador',

@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -125,8 +126,7 @@ Deno.serve(async (req) => {
 
         // Send notification if enabled
         if (routine.notify_user && routine.playbook) {
-          await supabase
-            .from('ai_communication_queue')
+          await verifiedInsertSoft(supabase, 'queue routine notification', (c: any) => c.from('ai_communication_queue')
             .insert({
               entity_type: 'routine',
               entity_id: routine.id,
@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
               reason: `Routine "${routine.playbook.title}" completed. ${totalProcessed} steps processed.`,
               urgency: 30,
               status: 'pending',
-            });
+            }));
         }
 
         results.push({ routineId: routine.id, success: true });

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -190,9 +191,8 @@ Provide JSON response with:
               urgency: analysis.urgency,
             };
 
-            await supabase
-              .from('ai_communication_queue')
-              .insert(queueItem);
+            await verifiedInsertSoft(supabase, 'queue analyzed communication', (c: any) => c.from('ai_communication_queue')
+              .insert(queueItem));
 
             priorityQueue.push({
               ...queueItem,
