@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { verifyTwilio } from "../_shared/dialer.ts";
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -93,12 +94,15 @@ Deno.serve(async (req) => {
     // ─── 1a. STOP / opt-out enforcement (CTIA-compliant) ────────
     if (STOP_RE.test(messageText.trim())) {
       console.log(`[brandaro-handle-inbound] 🛑 STOP from ${normalizedPhone}`);
-      await supabase
-        .from("opt_out_events")
-        .upsert(
+      const optOut = await verifiedInsertSoft(supabase, 'record SMS opt-out', (c: any) =>
+        c.from("opt_out_events").upsert(
           { phone_number: normalizedPhone, source: "brandaro_inbound", reason: `Inbound STOP: "${messageText.trim().slice(0, 80)}"` },
-          { onConflict: "phone_number" }
-        );
+          { onConflict: "phone_number" },
+        ),
+      );
+      if (!optOut.ok) {
+        console.error(`[brandaro-handle-inbound] 🛑 COMPLIANCE: opt-out NOT recorded for ${normalizedPhone}: ${optOut.error}`);
+      }
       await supabase
         .from("brandaro_qualified_leads")
         .update({ ai_paused: true, pipeline_stage: "lost", lead_status: "not_interested", updated_at: new Date().toISOString() })
