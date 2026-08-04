@@ -134,9 +134,13 @@ Deno.serve(async (req) => {
 
   // Auto text the caller back from the same GasMask number + alert on-shift
   // staff. Fire-and-forget: recovery must never delay or break the TwiML.
-  EdgeRuntime.waitUntil(
-    runMissedCallRecovery(supabase, { caller: from, businessNumber: to, businessId, callSid }),
-  );
+  const recovery = runMissedCallRecovery(supabase, {
+    caller: from,
+    businessNumber: to,
+    businessId,
+    callSid,
+  }).catch((e) => console.error("[gasmask-call-dial-complete] recovery failed", (e as Error).message));
+  (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil?.(recovery);
 
   // ── AI-agent fallback (preserves the legacy inbound behaviour) ──
   // Humans got first crack. Nobody picked up, so hand the caller to the
