@@ -91742,8 +91742,12 @@ export type Database = {
           average_service_time_minutes: number | null
           best_time_window: string | null
           created_at: string
+          difficulty_score: number | null
           id: string
+          last_computed_at: string | null
           notes: string | null
+          recommended_route_group: string | null
+          sample_size: number | null
           store_id: string
           updated_at: string
           visit_success_rate: number | null
@@ -91753,8 +91757,12 @@ export type Database = {
           average_service_time_minutes?: number | null
           best_time_window?: string | null
           created_at?: string
+          difficulty_score?: number | null
           id?: string
+          last_computed_at?: string | null
           notes?: string | null
+          recommended_route_group?: string | null
+          sample_size?: number | null
           store_id: string
           updated_at?: string
           visit_success_rate?: number | null
@@ -91764,8 +91772,12 @@ export type Database = {
           average_service_time_minutes?: number | null
           best_time_window?: string | null
           created_at?: string
+          difficulty_score?: number | null
           id?: string
+          last_computed_at?: string | null
           notes?: string | null
+          recommended_route_group?: string | null
+          sample_size?: number | null
           store_id?: string
           updated_at?: string
           visit_success_rate?: number | null
