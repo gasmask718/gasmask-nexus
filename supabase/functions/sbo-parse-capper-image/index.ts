@@ -557,6 +557,8 @@ RULES:
       resolved_capper_id: resolvedCapperId,
       resolved_capper_name: resolvedCapperName,
       group_type,
+      capper_gate_reason: capperGateReason,
+
       needs_review: scoredPicks.filter((p: any) => p.parse_confidence < 70).length,
       needs_capper_review: needsCapperReview,
     }), {
