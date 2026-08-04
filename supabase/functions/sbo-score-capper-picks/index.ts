@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     const windowDays = Number(body?.window_days) || WINDOW_DAYS;
     const backfillAll = body?.backfill === true;
 
-    const since = new Date(Date.now() - windowDays * 86400000).toISOString().slice(0, 10);
+    const since = backfillAll ? "2000-01-01" : new Date(Date.now() - windowDays * 86400000).toISOString().slice(0, 10);
     const formSince = new Date(Date.now() - FORM_DAYS * 86400000).toISOString().slice(0, 10);
 
     // ── Load picks in window ──
