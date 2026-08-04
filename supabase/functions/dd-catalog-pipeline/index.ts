@@ -11,6 +11,7 @@
 
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { lookupMarket, type MarketLookup } from '../_shared/marketPrice.ts';
 
 const LOVABLE_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -202,10 +203,28 @@ async function runCopyPricing(body: any) {
     ? Number((numericCost / (1 - marginFraction)).toFixed(2))
     : 0;
 
+  // --- Market context (real competitor listings via SerpAPI Google Shopping) ---
+  // Never fatal: if the key is missing, quota is exhausted, or nothing relevant
+  // matched, we degrade to formula-only pricing and say so in the response.
+  let market: MarketLookup | null = null;
+  try {
+    market = await lookupMarket(sb, product_name, brand_hint);
+  } catch (e) {
+    market = null;
+    console.error('[copy_pricing] market lookup failed', e);
+  }
+  const marketUsable = !!(market && market.available && market.count > 0 && market.median);
+  const marketBlock = marketUsable
+    ? `Live market data (Google Shopping, ${market!.count} relevant listings after bundle/outlier filtering):
+  low $${market!.low} / median $${market!.median} / high $${market!.high}.
+Anchor suggested_retail near the market median, but NEVER below ${retailFloor}. Do not exceed $${market!.high} unless you state why.`
+    : `No live market data available${market?.reason ? ` (${market.reason})` : ''} — price from cost and margin only.`;
+
   const system = `You are a senior ecommerce copywriter + pricing analyst. Output STRICT JSON only.`;
   const user = `Product: "${product_name}"${brand_hint ? `, brand: "${brand_hint}"` : ''}.
 Cost basis (wholesale unit cost USD): ${numericCost}.
 Platform margin requirement: ${effectiveMarginPct}% (suggested_retail MUST be >= ${retailFloor} to honor this).
+${marketBlock}
 Generate JSON:
 {
   "title": "...",                                  // <= 70 chars, SEO-friendly
@@ -226,13 +245,45 @@ Generate JSON:
   const raw = await geminiText(system, user);
   const parsed = parseJson(raw);
 
-  // Enforce the floor server-side regardless of what the model returns.
+  // Server-side price arbitration. Order is fixed: margin floor always wins.
   const pricing = parsed.pricing || {};
-  if (retailFloor > 0 && (!pricing.suggested_retail || Number(pricing.suggested_retail) < retailFloor)) {
+  const notes: string[] = [];
+  let pricingBasis: 'market_informed' | 'formula_only' | 'floor_over_market' = marketUsable ? 'market_informed' : 'formula_only';
+
+  if (marketUsable) {
+    const median = Number(market!.median);
+    const high = Number(market!.high);
+    if (retailFloor > 0 && median < retailFloor) {
+      // Market sits below what our margin requires — keep the floor, surface the conflict.
+      pricing.suggested_retail = retailFloor;
+      pricingBasis = 'floor_over_market';
+      notes.push(`market median $${median} is BELOW the ${effectiveMarginPct}% margin floor $${retailFloor} — floor kept, this product may be uncompetitive`);
+    } else {
+      const suggested = Number(pricing.suggested_retail);
+      if (!Number.isFinite(suggested) || suggested <= 0) {
+        pricing.suggested_retail = median;
+        notes.push(`retail set to market median $${median}`);
+      } else if (suggested < retailFloor) {
+        pricing.suggested_retail = Math.max(retailFloor, median);
+        notes.push(`retail raised to $${pricing.suggested_retail} (margin floor $${retailFloor}, market median $${median})`);
+      } else if (high > 0 && suggested > high) {
+        pricing.suggested_retail = Math.max(retailFloor, median);
+        notes.push(`retail pulled back to market median $${median} (AI suggestion $${suggested} exceeded market high $${high})`);
+      } else {
+        notes.push(`retail $${suggested} validated against market median $${median} (${market!.count} listings)`);
+      }
+    }
+  } else if (retailFloor > 0 && (!pricing.suggested_retail || Number(pricing.suggested_retail) < retailFloor)) {
     pricing.suggested_retail = retailFloor;
-    pricing.rationale = (pricing.rationale ? pricing.rationale + ' ' : '')
-      + `[adjusted by server: floor ${retailFloor} to honor ${effectiveMarginPct}% margin]`;
+    notes.push(`floor ${retailFloor} applied to honor ${effectiveMarginPct}% margin`);
   }
+
+  if (!marketUsable) notes.push(`no market data${market?.reason ? `: ${market.reason}` : ''}`);
+  if (notes.length) {
+    pricing.rationale = (pricing.rationale ? pricing.rationale + ' ' : '') + `[${notes.join('; ')}]`;
+  }
+  pricing.basis = pricingBasis;
+
 
   // Emit Product JSON-LD for the public card to consume.
   const jsonld = {
@@ -251,6 +302,21 @@ Generate JSON:
     },
   };
 
+  // Audit snapshot of exactly what market data drove the suggestion.
+  const marketSnapshot = {
+    available: marketUsable,
+    reason: market?.reason,
+    query: market?.query ?? null,
+    range: marketUsable
+      ? { low: market!.low, median: market!.median, high: market!.high, avg: market!.avg, count: market!.count }
+      : null,
+    samples: market?.samples ?? [],
+    excluded: market?.excluded ?? null,
+    used_for_pricing: marketUsable,
+    basis: pricingBasis,
+    checked_at: market?.checked_at ?? new Date().toISOString(),
+  };
+
   if (draft_id) {
     await sb.from('dd_catalog_drafts').update({
       copy: {
@@ -266,50 +332,42 @@ Generate JSON:
         retail_floor: retailFloor,
       },
       pricing,
+      market_check: marketSnapshot,
       status: 'copy_ready',
     }).eq('id', draft_id);
   }
-  return { ...parsed, pricing, jsonld, margin_pct_applied: effectiveMarginPct, retail_floor: retailFloor };
+  return {
+    ...parsed,
+    pricing,
+    jsonld,
+    margin_pct_applied: effectiveMarginPct,
+    retail_floor: retailFloor,
+    pricing_basis: pricingBasis,
+    market: marketSnapshot,
+  };
 }
+
 
 
 async function runMarketCheck(body: any) {
   const { product_name, brand_hint, draft_id } = body;
   if (!product_name) throw new Error('product_name required');
-  const serpKey = Deno.env.get('SERPAPI_KEY');
-  if (!serpKey) {
-    return { available: false, reason: 'SerpAPI key not configured', prices: [], range: null };
-  }
-  const q = encodeURIComponent([brand_hint, product_name].filter(Boolean).join(' '));
-  const url = `https://serpapi.com/search.json?engine=google_shopping&q=${q}&api_key=${serpKey}`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`serpapi ${r.status}`);
-  const j = await r.json();
-  const items: any[] = (j.shopping_results || []).slice(0, 25);
-  const prices: number[] = [];
-  const samples: any[] = [];
-  for (const it of items) {
-    const raw = it.extracted_price ?? (typeof it.price === 'string' ? Number(it.price.replace(/[^0-9.]/g, '')) : null);
-    const n = Number(raw);
-    if (Number.isFinite(n) && n > 0) {
-      prices.push(n);
-      if (samples.length < 8) samples.push({ title: it.title, price: n, source: it.source, link: it.link });
-    }
-  }
-  prices.sort((a, b) => a - b);
-  const range = prices.length
-    ? {
-        low: prices[0],
-        median: prices[Math.floor(prices.length / 2)],
-        high: prices[prices.length - 1],
-        count: prices.length,
-      }
-    : null;
-  const payload = { available: true, range, samples, checked_at: new Date().toISOString() };
+  const sb = sbAdmin();
+  const m = await lookupMarket(sb, product_name, brand_hint);
+  const payload = {
+    available: m.available && m.count > 0,
+    reason: m.reason,
+    query: m.query,
+    range: m.count > 0 ? { low: m.low, median: m.median, high: m.high, avg: m.avg, count: m.count } : null,
+    samples: m.samples,
+    excluded: m.excluded,
+    checked_at: m.checked_at,
+  };
   if (draft_id) {
-    await sbAdmin().from('dd_catalog_drafts').update({ market_check: payload }).eq('id', draft_id);
+    await sb.from('dd_catalog_drafts').update({ market_check: payload }).eq('id', draft_id);
   }
   return payload;
+
 }
 
 async function runEstimateMeasurements(body: any) {

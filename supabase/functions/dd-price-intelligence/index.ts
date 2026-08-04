@@ -4,6 +4,14 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import {
+  resolveSerpApiKey,
+  serpApiShoppingSearch,
+  trimOutliers,
+  titleRelevance,
+  BUNDLE_EXCLUSIONS,
+  type SerpResult,
+} from '../_shared/marketPrice.ts';
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-6';
@@ -229,112 +237,10 @@ async function getDdAnthropicApiKey(supabase: ReturnType<typeof createClient>): 
     : null;
 }
 
-async function getDdSerpApiKey(supabase: ReturnType<typeof createClient>): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('dd_ai_config')
-    .select('serpapi_key')
-    .eq('id', 1)
-    .maybeSingle();
-  if (error) throw new Error(`dd_ai_config_read_failed: ${error.message}`);
-  return typeof (data as any)?.serpapi_key === 'string' && (data as any).serpapi_key.length > 0
-    ? (data as any).serpapi_key
-    : null;
-}
+// Key resolution + SerpAPI search + filtering/trimming now live in
+// _shared/marketPrice.ts so the catalog wizard produces identical numbers.
+const getDdSerpApiKey = (supabase: any) => resolveSerpApiKey(supabase);
 
-function parsePrice(raw: unknown): number | null {
-  if (raw == null) return null;
-  const s = String(raw).replace(/[^0-9.,]/g, '').replace(/,/g, '');
-  const n = Number(s);
-  return isFinite(n) && n > 0 ? n : null;
-}
-
-// Tighter IQR trim (1.0 instead of 1.5) so bundle/variety-pack outliers don't
-// skew the average as heavily. Also does a first-pass median-ratio trim to
-// handle small sample sizes where IQR alone can't kill a single wild value
-// (e.g. a $1000 collectible in a set of 4).
-function trimOutliers(prices: number[]): number[] {
-  if (prices.length < 2) return prices.slice();
-  const sorted0 = prices.slice().sort((a, b) => a - b);
-  const median = sorted0[Math.floor(sorted0.length / 2)];
-  // Pre-trim: drop anything more than 4× or less than 0.25× the median.
-  const preTrimmed = sorted0.filter((p) => p >= median * 0.25 && p <= median * 4);
-  if (preTrimmed.length < 4) return preTrimmed;
-  const s = preTrimmed;
-  const q1 = s[Math.floor(s.length * 0.25)];
-  const q3 = s[Math.floor(s.length * 0.75)];
-  const iqr = q3 - q1;
-  const lo = q1 - 1.0 * iqr;
-  const hi = q3 + 1.0 * iqr;
-  return s.filter((p) => p >= lo && p <= hi);
-}
-
-// Terms that almost always indicate a bundle / variety pack / multi-unit listing.
-// Any listing whose title contains one of these is excluded from the market avg.
-const BUNDLE_EXCLUSIONS = [
-  'variety pack', 'variety-pack', 'assortment', 'assorted', 'sampler',
-  'bundle', 'combo', 'multi-pack', 'multipack', 'gift set', 'gift box',
-  'wholesale lot', 'case of', 'display box', 'full case', 'bulk lot',
-  'carton of', 'x pack', ' pk ', ' pcs', ' pieces', ' count', 'ct pack',
-];
-
-// Words we ignore when scoring title relevance (stop words only). Do NOT put
-// category words like "paper", "papers", "roll" in here — those are often the
-// most discriminative token in a product name and dropping them lets unrelated
-// listings (posters, art, notebooks) pass the relevance filter.
-const STOP_TOKENS = new Set([
-  'the', 'a', 'an', 'of', 'and', 'or', 'for', 'with', 'in', 'on',
-  'new', 'authentic',
-]);
-
-function tokenize(s: string): string[] {
-  return s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
-}
-
-/**
- * Score how relevant a result title is to the target product name.
- * Returns the fraction of significant product tokens present in the title (0–1).
- * Treats singular/plural stems as equivalent so "papers" matches "paper".
- */
-function titleRelevance(productName: string, title: string): number {
-  const pTokens = tokenize(productName).filter((t) => !STOP_TOKENS.has(t) && t.length > 1);
-  if (pTokens.length === 0) return 1;
-  const tTokens = new Set(tokenize(title));
-  // Stem: allow either singular or plural form to satisfy a token.
-  const hits = pTokens.filter((t) => {
-    if (tTokens.has(t)) return true;
-    if (t.endsWith('s') && tTokens.has(t.slice(0, -1))) return true;
-    if (!t.endsWith('s') && tTokens.has(t + 's')) return true;
-    return false;
-  }).length;
-  return hits / pTokens.length;
-}
-
-interface SerpResult { source: string; price: number; url: string | null; title: string }
-
-async function serpApiShoppingSearch(apiKey: string, query: string): Promise<SerpResult[]> {
-  const url = new URL('https://serpapi.com/search.json');
-  url.searchParams.set('engine', 'google_shopping');
-  url.searchParams.set('q', query);
-  url.searchParams.set('gl', 'us');
-  url.searchParams.set('hl', 'en');
-  url.searchParams.set('api_key', apiKey);
-  const res = await fetch(url.toString());
-  if (!res.ok) throw new Error(`serpapi_http_${res.status}`);
-  const j = await res.json();
-  const rows = Array.isArray(j?.shopping_results) ? j.shopping_results : [];
-  const out: SerpResult[] = [];
-  for (const r of rows) {
-    const price = parsePrice(r?.extracted_price ?? r?.price);
-    if (price == null) continue;
-    out.push({
-      source: String(r?.source || r?.seller || 'google_shopping').slice(0, 120),
-      price,
-      url: r?.product_link || r?.link || null,
-      title: String(r?.title || '').slice(0, 300),
-    });
-  }
-  return out;
-}
 
 async function refreshMarketForProduct(
   supabase: any,
