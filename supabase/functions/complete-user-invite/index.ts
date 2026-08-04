@@ -66,11 +66,15 @@ serve(async (req) => {
     const role = String(invitation.role);
     let userId: string | undefined;
 
+    // The role comes from a server-verified invitation row, so it is passed as
+    // app_metadata.provisioned_role. handle_new_user() ignores any client-supplied
+    // user_metadata.role and only trusts app_metadata.provisioned_role.
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: fullName ? { full_name: fullName, role } : { role },
+      user_metadata: fullName ? { full_name: fullName } : {},
+      app_metadata: { provisioned_role: role },
     });
 
     if (createError) {
@@ -89,7 +93,10 @@ serve(async (req) => {
         user_metadata: {
           ...(existing.user_metadata ?? {}),
           ...(fullName ? { full_name: fullName } : {}),
-          role,
+        },
+        app_metadata: {
+          ...((existing as any).app_metadata ?? {}),
+          provisioned_role: role,
         },
       });
       if (updateError) {
@@ -100,6 +107,7 @@ serve(async (req) => {
     } else {
       userId = created.user?.id;
     }
+
 
     if (!userId) return json({ error: "Unable to create invited user" }, 500);
 
