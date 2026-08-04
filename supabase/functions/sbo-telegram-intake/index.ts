@@ -3,6 +3,20 @@
 // runs Claude extraction to insert structured picks into sbo_capper_picks.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { normalizeStat, UNMATCHABLE } from "../_shared/statNormalize.ts";
+
+/**
+ * Canonicalize prop_type at write time so 'pitcher outs' and 'pitcher_outs'
+ * collide under the widened dedup index. When the stat is UNMATCHABLE we keep
+ * the caller's token in normalized token form rather than writing the sentinel
+ * to the database — the sentinel is a matching signal, not stored data.
+ */
+function canonicalPropType(raw: unknown): string | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  const norm = normalizeStat(raw);
+  if (norm && norm !== UNMATCHABLE) return norm;
+  return raw.toLowerCase().trim().replace(/[_\-\s]+/g, "_");
+}
 
 const CLAUDE_MODEL = "claude-sonnet-4-5";
 const CLAUDE_URL = "https://api.anthropic.com/v1/messages";
