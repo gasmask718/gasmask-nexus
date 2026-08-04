@@ -133,15 +133,35 @@ export function useConnectedStores(
         (masterRes.data || []).map((r: any) => [r.id, r.last_order_at ?? null]),
       );
 
-      return storesData.map((s: any) => ({
-        ...s,
-        last_order_date: lastOrderByStore.get(s.id) ?? null,
-        needs_order: needsOrderStores.has(s.id),
-        contacts: contactsByStore[s.id] || [],
-        inventory: inventoryByStore[s.id] || [],
-      })) as ConnectedStoreRow[];
+      const owedByStore = new Map<string, { owed: number; count: number }>();
+      for (const inv of invoicesRes.data || []) {
+        const sid = (inv as any).store_id as string | null;
+        if (!sid) continue;
+        const owed = Math.max(
+          Number((inv as any).total ?? 0) - Number((inv as any).amount_paid ?? 0),
+          0,
+        );
+        if (owed <= 0) continue;
+        const prev = owedByStore.get(sid) ?? { owed: 0, count: 0 };
+        owedByStore.set(sid, { owed: prev.owed + owed, count: prev.count + 1 });
+      }
+
+      return storesData.map((s: any) => {
+        const ar = owedByStore.get(s.id) ?? { owed: 0, count: 0 };
+        return {
+          ...s,
+          last_order_date: lastOrderByStore.get(s.id) ?? null,
+          needs_order: needsOrderStores.has(s.id),
+          owed: ar.owed,
+          unpaid_count: ar.count,
+          payment_level: ar.owed <= 0 ? 'paid' : ar.owed >= 200 ? 'red' : 'amber',
+          contacts: contactsByStore[s.id] || [],
+          inventory: inventoryByStore[s.id] || [],
+        };
+      }) as ConnectedStoreRow[];
     },
     enabled: !!currentStoreId,
+
   });
 }
 
