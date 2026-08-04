@@ -479,6 +479,15 @@ export function ConnectedStoresCard({
         itemName={disconnectingStore?.name ?? undefined}
         onConfirm={confirmDisconnect}
       />
+
+      <DeleteConfirmModal
+        open={archiveModalOpen}
+        onOpenChange={setArchiveModalOpen}
+        title="Archive Store"
+        itemName={archivingStore?.name ?? undefined}
+        onConfirm={confirmArchive}
+      />
+
     </>
   );
 }
