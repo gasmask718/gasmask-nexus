@@ -71,7 +71,7 @@ export function useConnectedStores(
       const storeIds = storesData.map((s) => s.id);
 
       // Parallel enrichment.
-      const [contactsRes, inventoryRes, needsOrderRes, masterRes] = await Promise.all([
+      const [contactsRes, inventoryRes, needsOrderRes, masterRes, invoicesRes] = await Promise.all([
         supabase
           .from('store_contacts')
           .select('id, store_id, name, role, phone')
@@ -90,7 +90,16 @@ export function useConnectedStores(
           .from('store_master')
           .select('id, last_order_at')
           .in('id', storeIds),
+        // Same rule as useStorePaymentStatus: finalized, not soft-deleted, not paid.
+        supabase
+          .from('invoices')
+          .select('store_id, total, amount_paid')
+          .is('deleted_at', null)
+          .not('finalized_at', 'is', null)
+          .neq('payment_status', 'paid')
+          .in('store_id', storeIds),
       ]);
+
 
       const contactsByStore = (contactsRes.data || []).reduce(
         (acc, c: any) => {
