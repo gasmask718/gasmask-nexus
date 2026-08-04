@@ -980,7 +980,7 @@ const Layout = ({ children }: LayoutProps) => {
     );
   }
 
-  const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any; testId?: string; badge?: number; highlight?: boolean }>) => {
+  const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any; testId?: string; badge?: number; highlight?: boolean; gold?: boolean }>) => {
     const isOpen = openSections.includes(id);
     const sectionWired = sectionHasDispatch(items.map(i => i.path));
 
