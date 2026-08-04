@@ -426,7 +426,7 @@ RULES:
         pick_text: [p.player_name, p.direction, p.line, p.stat_type].filter(Boolean).join(' '),
         player_name: p.player_name || null,
         team: p.team || null,
-        prop_type: p.stat_type || null,
+        prop_type: canonicalPropType(p.stat_type),
         line: p.line ? parseFloat(p.line) : null,
         direction: p.direction || null,
         odds: p.odds ? parseInt(String(p.odds).replace('+', '')) : null,
@@ -447,7 +447,9 @@ RULES:
         capper_detection_confidence: capperDetectionConfidence,
       }));
 
-      // Insert with dedup: skip true duplicates (same capper + player + stat + line + date)
+      // Insert with dedup: skip true duplicates. As of Stage 2 the unique index
+      // also covers line-less / prop-less markets (NRFI, UFC moneylines) via
+      // coalesce, so 23505 now fires for those too. Still a silent skip.
       const inserted: any[] = [];
       let dupCount = 0;
       for (const row of rows) {
