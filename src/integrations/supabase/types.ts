@@ -94000,6 +94000,9 @@ export type Database = {
           resolved_at: string | null
           result: string | null
           review_status: string | null
+          score_frozen: boolean
+          score_version: string | null
+          scored_at: string | null
           sharp_flag: boolean | null
           source_group: string | null
           source_group_id: string | null
@@ -94043,6 +94046,9 @@ export type Database = {
           resolved_at?: string | null
           result?: string | null
           review_status?: string | null
+          score_frozen?: boolean
+          score_version?: string | null
+          scored_at?: string | null
           sharp_flag?: boolean | null
           source_group?: string | null
           source_group_id?: string | null
@@ -94086,6 +94092,9 @@ export type Database = {
           resolved_at?: string | null
           result?: string | null
           review_status?: string | null
+          score_frozen?: boolean
+          score_version?: string | null
+          scored_at?: string | null
           sharp_flag?: boolean | null
           source_group?: string | null
           source_group_id?: string | null
