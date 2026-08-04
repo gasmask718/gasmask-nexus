@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { verifyTwilio } from "../_shared/dialer.ts";
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -189,15 +190,17 @@ serve(async (req: Request) => {
         .eq("id", lead.id);
 
       // Also record opt-out
-      await supabase
-        .from("opt_out_events")
-        .upsert(
+      // verifiedInsertSoft forces .select() so an RLS/constraint rejection can
+      // no longer masquerade as success; STOP must never be silently dropped.
+      const optOut = await verifiedInsertSoft(supabase, 'record SMS opt-out', (c: any) =>
+        c.from("opt_out_events").upsert(
           { phone_number: normalizedFrom, source: "twilio", reason: `Inbound STOP: "${upperBody}"` },
-          { onConflict: "phone_number" }
-        )
-        .then(({ error }) => {
-          if (error) console.warn("opt_out upsert error:", error.message);
-        });
+          { onConflict: "phone_number" },
+        ),
+      );
+      if (!optOut.ok) {
+        console.error(`🛑 [COMPLIANCE] opt-out NOT recorded for ${normalizedFrom}: ${optOut.error}`);
+      }
 
       return new Response(
         `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`,

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -165,14 +166,14 @@ serve(async (req) => {
             .limit(1);
 
           if (!existing || existing.length === 0) {
-            await supabase.from('ai_communication_queue').insert({
+            await verifiedInsertSoft(supabase, 'queue morning ops communication', (c: any) => c.from('ai_communication_queue').insert({
               entity_type: risk.entity_type,
               entity_id: risk.entity_id || risk.id,
               suggested_action: 'urgent_review',
               reason: risk.headline,
               urgency: risk.risk_level === 'critical' ? 95 : 75,
               status: 'pending',
-            });
+            }));
             results.communicationQueueItems++;
           }
         }
@@ -233,14 +234,14 @@ serve(async (req) => {
 
       if (unpaidInvoices) {
         for (const invoice of unpaidInvoices) {
-          await supabase.from('ai_communication_queue').insert({
+          await verifiedInsertSoft(supabase, 'queue morning ops communication', (c: any) => c.from('ai_communication_queue').insert({
             entity_type: 'invoice',
             entity_id: invoice.entity_id,
             suggested_action: 'follow_up_call',
             reason: `High-priority: ${invoice.headline}`,
             urgency: 80,
             status: 'pending',
-          });
+          }));
           results.tasksCreated++;
         }
       }
@@ -255,14 +256,14 @@ serve(async (req) => {
 
       if (inactiveAmbassadors) {
         for (const amb of inactiveAmbassadors) {
-          await supabase.from('ai_communication_queue').insert({
+          await verifiedInsertSoft(supabase, 'queue morning ops communication', (c: any) => c.from('ai_communication_queue').insert({
             entity_type: 'ambassador',
             entity_id: amb.entity_id,
             suggested_action: 'check_in',
             reason: amb.headline,
             urgency: 60,
             status: 'pending',
-          });
+          }));
           results.tasksCreated++;
         }
       }

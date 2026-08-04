@@ -6,6 +6,7 @@
 // writes communication_messages rows, updates job + item counters in real time.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 const MAX_RUNTIME_MS = 140_000; // stay under 150s edge limit; pause and resume via cron
@@ -247,11 +248,11 @@ Deno.serve(async (req) => {
   // Activity log
   const { data: finalJob } = await admin.from("ambassador_bulk_jobs")
     .select("sent_count, success_count, failed_count, skipped_count").eq("id", job_id).maybeSingle();
-  await admin.from("ambassador_activity_log").insert({
+  await verifiedInsertSoft(admin, 'log ambassador bulk SMS job', (c: any) => c.from("ambassador_activity_log").insert({
     ambassador_id: amb.id,
     action_type: "bulk_job_completed",
     metadata: { job_id, type: "sms_blast", ...finalJob },
-  });
+  }));
 
   return json({ ok: true, status: "complete", processed: processedThisRun });
 });

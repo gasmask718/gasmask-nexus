@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { canonicalizeDisposition } from "../_shared/dnc.ts";
 import { logLeadSync } from "../_shared/dc_sync_log.ts";
+import { verifiedInsert } from "../_shared/verifiedWrite.ts";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -805,7 +806,7 @@ ${transcript}`
             const dncPhone = prevTt?.phone || payload.to || null;
             if (dncPhone) {
               try {
-                await supabase.from('dnc_list').upsert({
+                await verifiedInsert(supabase, 'add top_tier opt-out to DNC list', (c: any) => c.from('dnc_list').upsert({
                   phone_number: dncPhone,
                   phone_e164: dncPhone,
                   source: 'dc-bland-webhook:top_tier:transcript_optout',
@@ -816,9 +817,11 @@ ${transcript}`
                     crm_partner_id: leadId,
                     matched_at: new Date().toISOString(),
                   },
-                }, { onConflict: 'phone_number' });
+                }, { onConflict: 'phone_number' }));
               } catch (dncErr) {
-                console.error('[dc-bland-webhook:top_tier dnc upsert failed]', dncErr);
+                const m = dncErr instanceof Error ? dncErr.message : String(dncErr);
+                console.error('[dc-bland-webhook:top_tier dnc upsert failed]', m);
+                ttWarnings.push(`tt_dnc_upsert_failed: ${m}`);
               }
             }
           }
@@ -925,7 +928,9 @@ ${transcript}`
           if (canonical === 'dnc' || ddTranscriptFlagsDnc) {
             const dncPhone = prevDd?.phone || payload.to || null;
             if (dncPhone) {
-              const { error: dncErr } = await supabase.from('dnc_list').upsert({
+              let dncErr: { message: string } | null = null;
+              try {
+                await verifiedInsert(supabase, 'add opt-out to DNC list', (c: any) => c.from('dnc_list').upsert({
                 phone_number: dncPhone,
                 phone_e164: dncPhone,
                 source: 'dc-bland-webhook:dynasty_direct:transcript_optout',
@@ -939,7 +944,10 @@ ${transcript}`
                   matched_at: new Date().toISOString(),
                   via: canonical === 'dnc' ? 'analysis' : 'transcript_regex',
                 },
-              }, { onConflict: 'phone_number' });
+                }, { onConflict: 'phone_number' }));
+              } catch (e) {
+                dncErr = { message: e instanceof Error ? e.message : String(e) };
+              }
               if (dncErr) {
                 ttWarnings.push(`dd_dnc_upsert_failed: ${dncErr.message}`);
               }
@@ -1049,7 +1057,9 @@ ${transcript}`
           if (gmStatus === 'dnc' || blandAnalysis?.opted_out === true) {
             const dncPhone = prevGm?.phone || payload.to || null;
             if (dncPhone) {
-              const { error: dncErr } = await supabase.from('dnc_list').upsert({
+              let dncErr: { message: string } | null = null;
+              try {
+                await verifiedInsert(supabase, 'add opt-out to DNC list', (c: any) => c.from('dnc_list').upsert({
                 phone_number: dncPhone,
                 phone_e164: dncPhone,
                 source: 'dc-bland-webhook:gasmask:transcript_optout',
@@ -1063,7 +1073,10 @@ ${transcript}`
                   lead_id: leadId,
                   matched_at: new Date().toISOString(),
                 },
-              }, { onConflict: 'phone_number' });
+                }, { onConflict: 'phone_number' }));
+              } catch (e) {
+                dncErr = { message: e instanceof Error ? e.message : String(e) };
+              }
               if (dncErr) ttWarnings.push(`gm_dnc_upsert_failed: ${dncErr.message}`);
             }
           }
@@ -1202,7 +1215,9 @@ ${transcript}`
           if (blandAnalysis?.opted_out === true || brStatus === 'disqualified') {
             const dncPhone = prevBr?.phone_number || payload.to || null;
             if (dncPhone) {
-              const { error: dncErr } = await supabase.from('dnc_list').upsert({
+              let dncErr: { message: string } | null = null;
+              try {
+                await verifiedInsert(supabase, 'add opt-out to DNC list', (c: any) => c.from('dnc_list').upsert({
                 phone_number: dncPhone,
                 phone_e164: dncPhone,
                 source: 'dc-bland-webhook:brandaro:transcript_optout',
@@ -1214,7 +1229,10 @@ ${transcript}`
                   brandaro_lead_id: leadId,
                   matched_at: new Date().toISOString(),
                 },
-              }, { onConflict: 'phone_number' });
+                }, { onConflict: 'phone_number' }));
+              } catch (e) {
+                dncErr = { message: e instanceof Error ? e.message : String(e) };
+              }
               if (dncErr) ttWarnings.push(`brandaro_dnc_upsert_failed: ${dncErr.message}`);
             }
           }

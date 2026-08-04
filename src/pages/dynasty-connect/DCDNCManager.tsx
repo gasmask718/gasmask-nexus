@@ -19,6 +19,12 @@ import {
 import { Search, Plus, Download, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import {
+  verifiedInsert,
+  verifiedDelete,
+  VerifiedMutationError,
+  mutationErrorMessage,
+} from '@/lib/verifiedMutation';
 
 const PAGE_SIZE = 50;
 
@@ -62,19 +68,28 @@ function AddDncDialog({ open, onOpenChange, businesses }: {
       if (!normalized.ok) throw new Error((normalized as { ok: false; error: string }).error);
       if (!business) throw new Error('Business unit required');
       if (reason.trim().length < 10) throw new Error('Reason must be at least 10 characters');
-      const { error } = await supabase.from('dnc_list').insert({
-        phone_number: phone,
-        phone_e164: normalized.value,
-        source: 'manual_admin',
-        business,
-        reason: reason.trim(),
-      });
-      if (error) {
-        if (error.code === '23505' || /duplicate|unique/i.test(error.message)) {
+      try {
+        // verifiedInsert throws when RLS silently drops the row instead of
+        // returning an error (PostgREST 201/204 with zero rows).
+        await verifiedInsert('add number to DNC list', () =>
+          supabase.from('dnc_list').insert({
+            phone_number: phone,
+            phone_e164: normalized.value,
+            source: 'manual_admin',
+            business,
+            reason: reason.trim(),
+          }),
+        );
+      } catch (err) {
+        const raw = err instanceof VerifiedMutationError ? err.cause : err;
+        const code = (raw as { code?: string } | null)?.code;
+        const msg = (raw as { message?: string } | null)?.message ?? '';
+        if (code === '23505' || /duplicate|unique/i.test(msg)) {
           return { alreadyOnList: true };
         }
-        throw error;
+        throw err;
       }
+
       // Fire-and-forget immutable compliance audit event.
       try {
         await supabase.functions.invoke('dc-log-compliance-event', {
@@ -105,7 +120,7 @@ function AddDncDialog({ open, onOpenChange, businesses }: {
       setPhone(''); setBusiness(''); setReason('');
       onOpenChange(false);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(mutationErrorMessage(e), { duration: 8000 }),
   });
 
   return (
@@ -194,17 +209,12 @@ function RemoveDncDialog({ row, open, onOpenChange }: {
     mutationFn: async () => {
       if (!row) throw new Error('No row selected');
       if (!armed) throw new Error('Confirmation phone does not match');
-      const { data: deleted, error: delErr } = await supabase
-        .from('dnc_list')
-        .delete()
-        .eq('id', row.id)
-        .select('id');
-      if (delErr) throw delErr;
-      if (!deleted || deleted.length === 0) {
-        throw new Error(
-          'Deletion blocked: no rows were removed. You may not have admin permission to remove DNC entries, or your session has expired. Please sign in again and retry.'
-        );
-      }
+      // verifiedDelete throws (zero_rows) when the admin-only DELETE policy
+      // silently removes nothing.
+      await verifiedDelete('remove number from DNC list', () =>
+        supabase.from('dnc_list').delete().eq('id', row.id),
+      );
+
 
       const { error: logErr } = await supabase.from('dc_lead_sync_log').insert({
         sync_source: 'dnc_manual_removal',
@@ -248,7 +258,7 @@ function RemoveDncDialog({ row, open, onOpenChange }: {
       setConfirmText(''); setReason('');
       onOpenChange(false);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(mutationErrorMessage(e), { duration: 8000 }),
   });
 
   return (

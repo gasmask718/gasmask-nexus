@@ -10,6 +10,7 @@ import { DrillDownEntity, DrillDownFilters } from '@/lib/drilldown';
 import { logAiCommand, updateAiCommandStatus } from '@/lib/aiCommands';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { verifiedInsert } from '@/lib/verifiedMutation';
 
 export interface AiCommandContext {
   entityType?: DrillDownEntity;
@@ -504,11 +505,11 @@ async function executeNotifyAction(
       status: 'pending',
     }));
 
-    const { error } = await (supabase as any)
-      .from('ai_communication_queue')
-      .insert(notifications);
-    
-    if (error) throw error;
+    // Throws (and is caught below) if the DB rejects the rows or RLS
+    // silently drops them, instead of reporting a fake success.
+    await verifiedInsert('queue AI notifications', () =>
+      (supabase as any).from('ai_communication_queue').insert(notifications),
+    );
 
     return { success: true, affectedIds: entityIds };
   } catch (err) {

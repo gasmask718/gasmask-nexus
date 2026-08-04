@@ -1,6 +1,7 @@
 // Initiates an outbound Bland.ai call for an ambassador to a store.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const BLAND_API_KEY = Deno.env.get('BLAND_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -119,7 +120,7 @@ Deno.serve(async (req) => {
 
     await admin.from('communication_logs').update({ bland_call_id: blandData.call_id }).eq('id', log!.id);
     await admin.from('ambassador_call_scripts').update({ usage_count: (script.usage_count || 0) + 1, last_used_at: new Date().toISOString() }).eq('id', script_template_id);
-    await admin.from('ambassador_activity_log').insert({ ambassador_id: amb.id, store_id, action_type: 'ai_call_initiated', metadata: { bland_call_id: blandData.call_id, script_name: script.name, objective: objective || script.objective } });
+    await verifiedInsertSoft(admin, 'log ambassador AI call', (c: any) => c.from('ambassador_activity_log').insert({ ambassador_id: amb.id, store_id, action_type: 'ai_call_initiated', metadata: { bland_call_id: blandData.call_id, script_name: script.name, objective: objective || script.objective } }));
 
     return new Response(JSON.stringify({ success: true, log_id: log!.id, bland_call_id: blandData.call_id, estimated_duration: script.max_duration_seconds }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
