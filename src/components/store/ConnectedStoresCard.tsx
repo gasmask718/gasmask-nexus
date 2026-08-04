@@ -244,6 +244,23 @@ export function ConnectedStoresCard({
                             <Calendar className="h-3 w-3" />
                             {lastOrderLabel}
                           </Badge>
+                          {store.owed > 0 ? (
+                            <Badge
+                              className={`text-xs gap-1 ${
+                                store.payment_level === 'red'
+                                  ? 'bg-destructive/10 text-destructive border-destructive/30'
+                                  : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                              }`}
+                            >
+                              <DollarSign className="h-3 w-3" />
+                              ${store.owed.toFixed(2)} owed ({store.unpaid_count})
+                            </Badge>
+                          ) : (
+                            <Badge className="text-xs gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                              <DollarSign className="h-3 w-3" />
+                              Paid up
+                            </Badge>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
@@ -265,8 +282,20 @@ export function ConnectedStoresCard({
                         >
                           <Unlink className="h-3 w-3" />
                         </Button>
+                        {isAdmin() && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleArchive(store)}
+                            className="h-8 gap-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            title="Archive this store (soft delete)"
+                          >
+                            <Archive className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
+
 
                     {fullAddress && (
                       <div className="flex items-start gap-2 text-sm text-muted-foreground">
