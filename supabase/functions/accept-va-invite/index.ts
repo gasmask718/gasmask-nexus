@@ -95,11 +95,14 @@ Deno.serve(async (req) => {
       const userMetadata = fullName ? { full_name: fullName } : {};
       let createdUserId: string | undefined;
 
+      // Role is derived from a server-verified invite row and passed as
+      // app_metadata.provisioned_role — handle_new_user() trusts nothing else.
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email: invite.email.toLowerCase(),
         password,
         email_confirm: true,
         user_metadata: userMetadata,
+        app_metadata: { provisioned_role: 'va' },
       });
 
       if (createErr) {
@@ -122,7 +125,12 @@ Deno.serve(async (req) => {
             ...(maybeExisting.user_metadata ?? {}),
             ...userMetadata,
           },
+          app_metadata: {
+            ...((maybeExisting as any).app_metadata ?? {}),
+            provisioned_role: 'va',
+          },
         });
+
         if (updateErr) {
           console.error('admin updateUserById failed', updateErr);
           return new Response(JSON.stringify({ error: updateErr.message }),

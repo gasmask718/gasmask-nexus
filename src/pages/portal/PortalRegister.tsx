@@ -79,23 +79,31 @@ export default function PortalRegister() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Self-signup NEVER grants a role. The chosen portal is recorded as a
+      // request only; an admin issues the real role from /security/invitations.
       await createUserProfile(user.id, {
         full_name: fullName,
         phone,
-        primary_role: selectedRole,
+        primary_role: 'pending' as PrimaryRole,
         preferred_language: language
       });
 
+      await supabase
+        .from('user_profiles')
+        .update({ requested_role: selectedRole })
+        .eq('user_id', user.id);
+
       await createRoleProfile(user.id, selectedRole, roleData);
 
-      toast.success('Registration complete!');
-      navigate('/portal/home');
+      toast.success('Application submitted — an admin will review your access.');
+      navigate('/pending-approval');
     } catch (error: any) {
       toast.error(error.message || 'Failed to complete registration');
     } finally {
       setLoading(false);
     }
   };
+
 
   const updateRoleData = (key: string, value: any) => {
     setRoleData(prev => ({ ...prev, [key]: value }));

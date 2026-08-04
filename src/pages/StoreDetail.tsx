@@ -897,11 +897,17 @@ const StoreDetail = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Avg Service Time</p>
-                    <p className="text-2xl font-bold">{routeInsight.average_service_time_minutes} min</p>
+                    <p className="text-2xl font-bold">
+                      {routeInsight.average_service_time_minutes != null
+                        ? `${routeInsight.average_service_time_minutes} min`
+                        : "—"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Success Rate</p>
-                    <p className="text-2xl font-bold">{routeInsight.visit_success_rate?.toFixed(1)}%</p>
+                    <p className="text-2xl font-bold">
+                      {routeInsight.visit_success_rate != null ? `${routeInsight.visit_success_rate.toFixed(1)}%` : "—"}
+                    </p>
                   </div>
                 </div>
 
@@ -917,24 +923,25 @@ const StoreDetail = () => {
                             : "secondary"
                       }
                     >
-                      {(routeInsight as any).difficulty_score}/5
+                      {(routeInsight as any).difficulty_score ?? "—"}/5
                     </Badge>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Best Time</span>
                     <Badge variant="outline" className="capitalize">
-                      {routeInsight.best_time_window}
+                      {routeInsight.best_time_window ?? "—"}
                     </Badge>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Route Group</span>
                     <Badge variant="outline" className="capitalize">
-                      {(routeInsight as any).recommended_route_group}
+                      {(routeInsight as any).recommended_route_group ?? "Unassigned"}
                     </Badge>
                   </div>
                 </div>
+
 
                 {routeInsight.notes && (
                   <div className="pt-3 border-t">
