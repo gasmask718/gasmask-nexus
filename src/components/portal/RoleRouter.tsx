@@ -26,7 +26,8 @@ export default function RoleRouter() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (cancelled) return;
       if (!session) {
-        navigate(`/auth?redirect=${encodeURIComponent('/portal')}`, { replace: true });
+        // Auth resolves the role itself and lands the user on their own floor.
+        navigate('/auth', { replace: true, state: { returnTo: '/portal' } });
         return;
       }
       setSessionChecked(true);
