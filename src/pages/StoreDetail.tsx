@@ -21,6 +21,8 @@ import { ReplenishmentAI } from "@/components/store/ReplenishmentAI";
 import { LastOrderSnapshotPanel } from "@/components/store/LastOrderSnapshotPanel";
 import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
 import { RouteIntelligence } from "@/components/store/RouteIntelligence";
+import { isFeatureEnabled } from "@/config/featureFlags";
+import { StoreTubeInventoryCard } from "@/components/store/StoreTubeInventoryCard";
 import { StoreCallIntelligenceTab } from "@/components/store/StoreCallIntelligenceTab";
 import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIntelligenceTab";
 import { Activity, Headphones, Flame } from "lucide-react";
@@ -868,8 +870,10 @@ const StoreDetail = () => {
           {/* AI Relationship Health */}
           <AIRelationshipHealth entityType="store" entityId={id || ""} />
 
-          {/* Route Intelligence */}
-          <RouteIntelligence storeId={id || ""} storeName={store?.name} />
+          {/* Route Intelligence — hidden: route_checkins has no writer anywhere */}
+          {isFeatureEnabled('routeCheckinsPanel') && (
+            <RouteIntelligence storeId={id || ""} storeName={store?.name} />
+          )}
 
           {/* Replenishment AI */}
           <ReplenishmentAI storeId={id || ""} />
@@ -880,8 +884,8 @@ const StoreDetail = () => {
           {/* Per-SKU drill-down — pairs with brand-level snapshot above */}
           <SkuOrderHistoryPanel storeId={id || ""} />
 
-          {/* Route Intelligence Insights */}
-          {routeInsight && (
+          {/* Route Intelligence Insights — hidden: route_insights has no live writer */}
+          {isFeatureEnabled('routeInsightsPanel') && routeInsight && (
             <Card className="glass-card border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -1015,6 +1019,9 @@ const StoreDetail = () => {
             </TabsList>
 
             <TabsContent value="inventory" className="space-y-4">
+              {/* store_product_state panels — hidden: table has no INSERT writer */}
+              {isFeatureEnabled('storeProductStatePanel') && (
+              <>
               {/* AI Prediction Card */}
               {inventory.length > 0 && inventory.some((i) => i.urgency_score > 0) && (
                 <InventoryPredictionCard
@@ -1073,7 +1080,13 @@ const StoreDetail = () => {
                   )}
                 </CardContent>
               </Card>
+              </>
+              )}
+              {!isFeatureEnabled('storeProductStatePanel') && (
+                <StoreTubeInventoryCard storeId={id || ''} onAddCount={() => {}} />
+              )}
             </TabsContent>
+
 
             <TabsContent value="performance">
               <StorePerformanceTab storeId={id!} storeName={store.name} />

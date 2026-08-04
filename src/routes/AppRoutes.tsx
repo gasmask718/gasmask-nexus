@@ -273,6 +273,7 @@ const MergeDryRun = lazy(() => import('@/pages/admin/MergeDryRun'));
 const RecentlyAddedStores = lazy(() => import('@/pages/admin/RecentlyAddedStores'));
 const DispatchMap = lazy(() => import('@/pages/admin/DispatchMap'));
 const UserManagementPage = lazy(() => import('@/components/security/UserManagementPage'));
+const UserInvitations = lazy(() => import('@/pages/security/UserInvitations'));
 const MessagesPage = lazy(() => import('@/pages/Messages'));
 const RouteOptimizer = lazy(() => import('@/pages/RouteOptimizer'));
 const RouteOpsCenter = lazy(() => import('@/pages/RouteOpsCenter'));
@@ -1445,7 +1446,7 @@ export default function AppRoutes() {
         <Route path="/security/devices" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/sessions" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/users" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><UserManagementPage /></RequireRole>} />
-        <Route path="/security/invitations" element={<Navigate to="/admin/field-assignments" replace />} />
+        <Route path="/security/invitations" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><UserInvitations /></RequireRole>} />
         <Route path="/security/roles" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><RolesPermissionsPage /></RequireRole>} />
         <Route path="/security/audit" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/ambassador-requests" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><AmbassadorRequests /></RequireRole>} />
