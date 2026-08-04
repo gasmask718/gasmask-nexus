@@ -69091,6 +69091,8 @@ export type Database = {
           tax: number | null
           total: number | null
           total_amount: number | null
+          total_amount_source: string
+          total_amount_source_note: string | null
           total_boxes_sold: number
           total_tubes_sold: number
           void_reason: string | null
@@ -69154,6 +69156,8 @@ export type Database = {
           tax?: number | null
           total?: number | null
           total_amount?: number | null
+          total_amount_source?: string
+          total_amount_source_note?: string | null
           total_boxes_sold?: number
           total_tubes_sold?: number
           void_reason?: string | null
@@ -69217,6 +69221,8 @@ export type Database = {
           tax?: number | null
           total?: number | null
           total_amount?: number | null
+          total_amount_source?: string
+          total_amount_source_note?: string | null
           total_boxes_sold?: number
           total_tubes_sold?: number
           void_reason?: string | null
