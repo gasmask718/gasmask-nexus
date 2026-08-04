@@ -1,5 +1,6 @@
 // Bland.ai webhook: writes transcript, analyzes via Anthropic Haiku.
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
 
         if (parsed.order_intent) {
           const { data: row } = await admin.from('communication_logs').select('ambassador_id, store_id').eq('id', logId).maybeSingle();
-          if (row) await admin.from('ambassador_activity_log').insert({ ambassador_id: row.ambassador_id, store_id: row.store_id, action_type: 'order_intent_detected', metadata: { log_id: logId } });
+          if (row) await verifiedInsertSoft(admin, 'log ambassador order intent', (c: any) => c.from('ambassador_activity_log').insert({ ambassador_id: row.ambassador_id, store_id: row.store_id, action_type: 'order_intent_detected', metadata: { log_id: logId } }));
         }
       } catch (anaErr) {
         console.error('Haiku analysis failed', anaErr);
