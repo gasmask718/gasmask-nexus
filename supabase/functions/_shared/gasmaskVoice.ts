@@ -113,6 +113,92 @@ export async function loadAvailableVas(
   return (data || []).filter((v) => !!v.forward_number) as ForwardTarget[];
 }
 
+/** Resolve a business UUID from its slug (e.g. 'gasmask'). */
+export async function resolveBusinessId(
+  supabase: SupabaseClient,
+  slug = "gasmask",
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) console.error("[gasmaskVoice] business lookup failed:", error.message);
+  return data?.id ?? null;
+}
+
+export interface OwnerContact {
+  display_name: string | null;
+  phone_e164: string;
+  contact_type: string;
+  ring_order: number;
+}
+
+/**
+ * Owner / escalation numbers for a business, from public.business_owner_contacts.
+ * Config-driven — never hardcode a personal number in source.
+ */
+export async function loadOwnerContacts(
+  supabase: SupabaseClient,
+  businessId: string | null,
+): Promise<OwnerContact[]> {
+  if (!businessId) return [];
+  const { data, error } = await supabase
+    .from("business_owner_contacts")
+    .select("display_name, phone_e164, contact_type, ring_order")
+    .eq("business_id", businessId)
+    .eq("is_active", true)
+    .order("ring_order", { ascending: true });
+  if (error) {
+    console.error("[gasmaskVoice] owner contacts load failed:", error.message);
+    return [];
+  }
+  return (data || []).filter((c) => !!c.phone_e164) as OwnerContact[];
+}
+
+export interface OnShiftAgent {
+  client_identity: string;
+  display_name: string | null;
+  phone_number: string | null;
+}
+
+/**
+ * VAs currently on shift for a business, read from the existing presence table
+ * public.human_agent_line_status. Only rows carrying a browser softphone
+ * identity can be rung with <Client>.
+ */
+export async function loadOnShiftClients(
+  supabase: SupabaseClient,
+  businessId: string | null,
+): Promise<OnShiftAgent[]> {
+  if (!businessId) return [];
+  const { data, error } = await supabase
+    .from("human_agent_line_status")
+    .select("client_identity, display_name, phone_number, status")
+    .eq("business_id", businessId)
+    .eq("status", "available")
+    .not("client_identity", "is", null);
+  if (error) {
+    console.error("[gasmaskVoice] on-shift agents load failed:", error.message);
+    return [];
+  }
+  return (data || []).filter((a) => !!a.client_identity) as OnShiftAgent[];
+}
+
+/** Every phone number that should be alerted about a missed call. */
+export async function loadOnShiftPhones(
+  supabase: SupabaseClient,
+  businessId: string | null,
+): Promise<string[]> {
+  if (!businessId) return [];
+  const { data } = await supabase
+    .from("human_agent_line_status")
+    .select("phone_number")
+    .eq("business_id", businessId)
+    .eq("status", "available");
+  return (data || []).map((r: { phone_number: string | null }) => r.phone_number || "").filter(Boolean);
+}
+
 /** Resolve a caller number to a store + contact for attribution. */
 export async function matchCaller(
   supabase: SupabaseClient,
