@@ -191,6 +191,32 @@ export async function tryVercelHook(
     }
   };
 
+  // ---- Step 0: claim-CTA data (demo_id + checkout endpoint + tier pricing) ----
+  // Powers the "Get This Site" button in brandaro-base. Non-fatal: if pricing
+  // can't be read, the kill switch goes to "0" and the template hides the CTA.
+  const stripeMode = Deno.env.get("STRIPE_MODE") === "live" ? "live" : "test";
+  const TIER_LABELS: Record<string, string> = { starter: "Starter", pro: "Pro", custom: "Custom" };
+  let claimTiers: Array<{ tier: string; label: string; amount_cents: number | null }> = [];
+  try {
+    const { data: tierRows, error: tierErr } = await supabase
+      .from("brandaro_stripe_config")
+      .select("tier, amount_cents")
+      .eq("mode", stripeMode)
+      .in("tier", ["starter", "pro", "custom"]);
+    if (tierErr) throw new Error(tierErr.message);
+    claimTiers = ["starter", "pro", "custom"]
+      .map((t) => {
+        const row = (tierRows ?? []).find((r: { tier: string }) => r.tier === t);
+        if (!row) return null;
+        return { tier: t, label: TIER_LABELS[t], amount_cents: row.amount_cents ?? null };
+      })
+      .filter(Boolean) as typeof claimTiers;
+  } catch (e) {
+    console.warn("[vercel] claim tier lookup failed:", e instanceof Error ? e.message : e);
+  }
+  const claimEnabled =
+    Deno.env.get("BRANDARO_CLAIM_ENABLED") === "0" ? false : claimTiers.length > 0 && !!payload.demo_id;
+
   // ---- Step 1: push personalization into the project's production env vars ----
   const token = Deno.env.get("VERCEL_API_TOKEN");
   const envVars: Record<string, string> = {
@@ -203,7 +229,12 @@ export async function tryVercelHook(
     VITE_COLOR_PRIMARY: payload.color_primary ?? tpl.primary_color ?? "",
     VITE_COLOR_SECONDARY: payload.color_secondary ?? tpl.secondary_color ?? "",
     VITE_DEMO_SLUG: payload.slug ?? "",
+    VITE_DEMO_ID: payload.demo_id ?? "",
+    VITE_CHECKOUT_URL: `${Deno.env.get("SUPABASE_URL") ?? ""}/functions/v1/demo-stripe-checkout`,
+    VITE_CLAIM_TIERS_JSON: JSON.stringify(claimTiers),
+    VITE_CLAIM_ENABLED: claimEnabled ? "1" : "0",
   };
+
 
   // Optional vars: only sync when we actually have data, so brandaro-base's
   // fallbacks (typographic logo, generic services, hidden reviews/photos) apply.
