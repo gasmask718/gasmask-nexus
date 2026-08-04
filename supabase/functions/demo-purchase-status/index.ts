@@ -89,21 +89,14 @@ Deno.serve(async (req) => {
       return json({ status: "processing", business_name: demo.business_name, support_email }, 200);
     }
 
-    // Customer email lives on the client record created by the webhook.
-    let customer_email: string | null = null;
-    const { data: client } = await supabase
-      .from("brandaro_clients")
-      .select("email")
-      .eq("demo_id", demo_id)
-      .maybeSingle();
-    customer_email = client?.email ?? null;
-
+    // NOTE: brandaro_clients has no demo_id column, so there is no safe join
+    // back to the buyer's email here. The page simply omits it rather than
+    // guessing — Stripe emails the receipt regardless.
     return json({
       status: "paid",
       business_name: demo.business_name,
       tier: demo.paid_tier,
       amount: demo.paid_amount,
-      customer_email,
       intake_url: `${intake_base}?demo_id=${encodeURIComponent(demo_id)}`,
       support_email,
     });
