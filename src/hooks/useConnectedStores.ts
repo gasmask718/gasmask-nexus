@@ -166,6 +166,33 @@ export function useConnectedStores(
 }
 
 /**
+ * Admin-visible archive: soft-deleted stores that still belong to this
+ * owner group. Nothing is ever hard-deleted, so these stay recoverable.
+ */
+export function useArchivedConnectedStores(
+  groupId: string | null | undefined,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ['connected-stores-archived', groupId],
+    queryFn: async (): Promise<ArchivedConnectedStoreRow[]> => {
+      if (!groupId) return [];
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id, name, address_street, address_city, deleted_at, status')
+        .eq('connected_group_id', groupId)
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as ArchivedConnectedStoreRow[];
+    },
+    enabled: enabled && !!groupId,
+  });
+}
+
+
+
+/**
  * Fetch just the count of connected stores for a given group_id (fast).
  */
 export function useConnectedStoresCount(groupId: string | null | undefined) {
