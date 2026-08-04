@@ -276,40 +276,22 @@ Generate JSON:
 async function runMarketCheck(body: any) {
   const { product_name, brand_hint, draft_id } = body;
   if (!product_name) throw new Error('product_name required');
-  const serpKey = Deno.env.get('SERPAPI_KEY');
-  if (!serpKey) {
-    return { available: false, reason: 'SerpAPI key not configured', prices: [], range: null };
-  }
-  const q = encodeURIComponent([brand_hint, product_name].filter(Boolean).join(' '));
-  const url = `https://serpapi.com/search.json?engine=google_shopping&q=${q}&api_key=${serpKey}`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`serpapi ${r.status}`);
-  const j = await r.json();
-  const items: any[] = (j.shopping_results || []).slice(0, 25);
-  const prices: number[] = [];
-  const samples: any[] = [];
-  for (const it of items) {
-    const raw = it.extracted_price ?? (typeof it.price === 'string' ? Number(it.price.replace(/[^0-9.]/g, '')) : null);
-    const n = Number(raw);
-    if (Number.isFinite(n) && n > 0) {
-      prices.push(n);
-      if (samples.length < 8) samples.push({ title: it.title, price: n, source: it.source, link: it.link });
-    }
-  }
-  prices.sort((a, b) => a - b);
-  const range = prices.length
-    ? {
-        low: prices[0],
-        median: prices[Math.floor(prices.length / 2)],
-        high: prices[prices.length - 1],
-        count: prices.length,
-      }
-    : null;
-  const payload = { available: true, range, samples, checked_at: new Date().toISOString() };
+  const sb = sbAdmin();
+  const m = await lookupMarket(sb, product_name, brand_hint);
+  const payload = {
+    available: m.available && m.count > 0,
+    reason: m.reason,
+    query: m.query,
+    range: m.count > 0 ? { low: m.low, median: m.median, high: m.high, avg: m.avg, count: m.count } : null,
+    samples: m.samples,
+    excluded: m.excluded,
+    checked_at: m.checked_at,
+  };
   if (draft_id) {
-    await sbAdmin().from('dd_catalog_drafts').update({ market_check: payload }).eq('id', draft_id);
+    await sb.from('dd_catalog_drafts').update({ market_check: payload }).eq('id', draft_id);
   }
   return payload;
+
 }
 
 async function runEstimateMeasurements(body: any) {
