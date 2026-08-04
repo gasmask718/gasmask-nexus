@@ -17,14 +17,21 @@ import {
   Plus,
   AlertCircle,
   Calendar,
+  DollarSign,
+  Archive,
+  RotateCcw,
 } from 'lucide-react';
 import { ConnectStoresModal } from './ConnectStoresModal';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { toast } from 'sonner';
+import { useUserRole } from '@/hooks/useUserRole';
+import { verifiedUpdate, mutationErrorMessage } from '@/lib/verifiedMutation';
 import {
   useConnectedStores,
+  useArchivedConnectedStores,
   type ConnectedStoreRow,
 } from '@/hooks/useConnectedStores';
+
 import { formatDistanceToNow } from 'date-fns';
 
 interface ConnectedStoresCardProps {
@@ -73,11 +80,69 @@ export function ConnectedStoresCard({
   const [disconnectModalOpen, setDisconnectModalOpen] = useState(false);
   const [disconnectingStore, setDisconnectingStore] = useState<ConnectedStoreRow | null>(null);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [archivingStore, setArchivingStore] = useState<ConnectedStoreRow | null>(null);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
+
+  const { isAdmin } = useUserRole();
 
   const { data: connectedStores, isLoading, error } = useConnectedStores(
     storeId,
     currentStoreGroupId,
   );
+
+  const { data: archivedStores } = useArchivedConnectedStores(
+    currentStoreGroupId,
+    isAdmin(),
+  );
+
+  const refreshGroup = () => {
+    queryClient.invalidateQueries({ queryKey: ['connected-stores'] });
+    queryClient.invalidateQueries({ queryKey: ['connected-stores-count'] });
+    queryClient.invalidateQueries({ queryKey: ['connected-stores-archived'] });
+    onConnectionChange?.();
+  };
+
+  const handleArchive = (store: ConnectedStoreRow) => {
+    setArchivingStore(store);
+    setArchiveModalOpen(true);
+  };
+
+  const confirmArchive = async () => {
+    if (!archivingStore) return;
+    setIsArchiving(true);
+    try {
+      const now = new Date().toISOString();
+      // Soft delete only — the row stays recoverable from the archive below.
+      await verifiedUpdate('archive store', () =>
+        supabase.from('stores').update({ deleted_at: now }).eq('id', archivingStore.id),
+      );
+      await supabase.from('store_master').update({ deleted_at: now }).eq('id', archivingStore.id);
+      toast.success(`Archived ${archivingStore.name}`);
+      refreshGroup();
+    } catch (err: any) {
+      toast.error(mutationErrorMessage(err));
+    } finally {
+      setIsArchiving(false);
+      setArchiveModalOpen(false);
+      setArchivingStore(null);
+    }
+  };
+
+  const handleRestore = async (id: string, name: string) => {
+    try {
+      await verifiedUpdate('restore store', () =>
+        supabase.from('stores').update({ deleted_at: null }).eq('id', id),
+      );
+      await supabase.from('store_master').update({ deleted_at: null }).eq('id', id);
+      toast.success(`Restored ${name}`);
+      refreshGroup();
+    } catch (err: any) {
+      toast.error(mutationErrorMessage(err));
+    }
+  };
+
 
   const handleDisconnect = (store: ConnectedStoreRow) => {
     setDisconnectingStore(store);
@@ -244,6 +309,23 @@ export function ConnectedStoresCard({
                             <Calendar className="h-3 w-3" />
                             {lastOrderLabel}
                           </Badge>
+                          {store.owed > 0 ? (
+                            <Badge
+                              className={`text-xs gap-1 ${
+                                store.payment_level === 'red'
+                                  ? 'bg-destructive/10 text-destructive border-destructive/30'
+                                  : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                              }`}
+                            >
+                              <DollarSign className="h-3 w-3" />
+                              ${store.owed.toFixed(2)} owed ({store.unpaid_count})
+                            </Badge>
+                          ) : (
+                            <Badge className="text-xs gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                              <DollarSign className="h-3 w-3" />
+                              Paid up
+                            </Badge>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
@@ -265,8 +347,20 @@ export function ConnectedStoresCard({
                         >
                           <Unlink className="h-3 w-3" />
                         </Button>
+                        {isAdmin() && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleArchive(store)}
+                            className="h-8 gap-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            title="Archive this store (soft delete)"
+                          >
+                            <Archive className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
+
 
                     {fullAddress && (
                       <div className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -326,8 +420,47 @@ export function ConnectedStoresCard({
                 </div>
               );
             })}
+
+          {isAdmin() && !!archivedStores?.length && (
+            <div className="pt-3 border-t border-border/50 space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowArchive((v) => !v)}
+                className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <Archive className="h-3 w-3" />
+                Archived stores ({archivedStores.length})
+                <span className="opacity-60">{showArchive ? '▲' : '▼'}</span>
+              </button>
+              {showArchive &&
+                archivedStores.map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between gap-2 rounded-md border border-dashed border-border/60 bg-muted/30 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate line-through opacity-70">{s.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {[s.address_street, s.address_city].filter(Boolean).join(', ') || 'No address'}
+                        {s.deleted_at ? ` • archived ${new Date(s.deleted_at).toLocaleDateString()}` : ''}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1 shrink-0"
+                      onClick={() => handleRestore(s.id, s.name)}
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Restore
+                    </Button>
+                  </div>
+                ))}
+            </div>
+          )}
         </CardContent>
       </Card>
+
 
       <ConnectStoresModal
         open={connectModalOpen}
@@ -346,6 +479,15 @@ export function ConnectedStoresCard({
         itemName={disconnectingStore?.name ?? undefined}
         onConfirm={confirmDisconnect}
       />
+
+      <DeleteConfirmModal
+        open={archiveModalOpen}
+        onOpenChange={setArchiveModalOpen}
+        title="Archive Store"
+        itemName={archivingStore?.name ?? undefined}
+        onConfirm={confirmArchive}
+      />
+
     </>
   );
 }

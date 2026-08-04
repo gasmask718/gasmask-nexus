@@ -24,9 +24,23 @@ export interface ConnectedStoreRow {
   status: string | null;
   last_order_date: string | null;
   needs_order: boolean;
+  /** Outstanding balance across finalized, unpaid invoices. */
+  owed: number;
+  unpaid_count: number;
+  payment_level: 'paid' | 'amber' | 'red';
   contacts: { id: string; name: string; role: string | null; phone: string | null }[];
   inventory: { brand: string; current_tubes_left: number | null }[];
 }
+
+export interface ArchivedConnectedStoreRow {
+  id: string;
+  name: string;
+  address_street: string | null;
+  address_city: string | null;
+  deleted_at: string | null;
+  status: string | null;
+}
+
 
 /**
  * Fetch every store in the same connected group as `currentStoreId`,
@@ -57,7 +71,7 @@ export function useConnectedStores(
       const storeIds = storesData.map((s) => s.id);
 
       // Parallel enrichment.
-      const [contactsRes, inventoryRes, needsOrderRes, masterRes] = await Promise.all([
+      const [contactsRes, inventoryRes, needsOrderRes, masterRes, invoicesRes] = await Promise.all([
         supabase
           .from('store_contacts')
           .select('id, store_id, name, role, phone')
@@ -76,7 +90,16 @@ export function useConnectedStores(
           .from('store_master')
           .select('id, last_order_at')
           .in('id', storeIds),
+        // Same rule as useStorePaymentStatus: finalized, not soft-deleted, not paid.
+        supabase
+          .from('invoices')
+          .select('store_id, total, amount_paid')
+          .is('deleted_at', null)
+          .not('finalized_at', 'is', null)
+          .neq('payment_status', 'paid')
+          .in('store_id', storeIds),
       ]);
+
 
       const contactsByStore = (contactsRes.data || []).reduce(
         (acc, c: any) => {
@@ -110,17 +133,64 @@ export function useConnectedStores(
         (masterRes.data || []).map((r: any) => [r.id, r.last_order_at ?? null]),
       );
 
-      return storesData.map((s: any) => ({
-        ...s,
-        last_order_date: lastOrderByStore.get(s.id) ?? null,
-        needs_order: needsOrderStores.has(s.id),
-        contacts: contactsByStore[s.id] || [],
-        inventory: inventoryByStore[s.id] || [],
-      })) as ConnectedStoreRow[];
+      const owedByStore = new Map<string, { owed: number; count: number }>();
+      for (const inv of invoicesRes.data || []) {
+        const sid = (inv as any).store_id as string | null;
+        if (!sid) continue;
+        const owed = Math.max(
+          Number((inv as any).total ?? 0) - Number((inv as any).amount_paid ?? 0),
+          0,
+        );
+        if (owed <= 0) continue;
+        const prev = owedByStore.get(sid) ?? { owed: 0, count: 0 };
+        owedByStore.set(sid, { owed: prev.owed + owed, count: prev.count + 1 });
+      }
+
+      return storesData.map((s: any) => {
+        const ar = owedByStore.get(s.id) ?? { owed: 0, count: 0 };
+        return {
+          ...s,
+          last_order_date: lastOrderByStore.get(s.id) ?? null,
+          needs_order: needsOrderStores.has(s.id),
+          owed: ar.owed,
+          unpaid_count: ar.count,
+          payment_level: ar.owed <= 0 ? 'paid' : ar.owed >= 200 ? 'red' : 'amber',
+          contacts: contactsByStore[s.id] || [],
+          inventory: inventoryByStore[s.id] || [],
+        };
+      }) as ConnectedStoreRow[];
     },
     enabled: !!currentStoreId,
+
   });
 }
+
+/**
+ * Admin-visible archive: soft-deleted stores that still belong to this
+ * owner group. Nothing is ever hard-deleted, so these stay recoverable.
+ */
+export function useArchivedConnectedStores(
+  groupId: string | null | undefined,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ['connected-stores-archived', groupId],
+    queryFn: async (): Promise<ArchivedConnectedStoreRow[]> => {
+      if (!groupId) return [];
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id, name, address_street, address_city, deleted_at, status')
+        .eq('connected_group_id', groupId)
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as ArchivedConnectedStoreRow[];
+    },
+    enabled: enabled && !!groupId,
+  });
+}
+
+
 
 /**
  * Fetch just the count of connected stores for a given group_id (fast).
