@@ -10,6 +10,7 @@
 // Actions: "send_sms" | "start_call"
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -190,12 +191,13 @@ Deno.serve(async (req) => {
       if (logErr) console.error('[field-portal-comms] log insert failed', logErr);
 
       if (amb?.id) {
-        await admin.from('ambassador_activity_log').insert({
-          ambassador_id: amb.id,
-          store_id: storeId,
-          action_type: 'sms_sent',
-          metadata: { source: 'field_portal', twilio_sid: twData.sid },
-        });
+        await verifiedInsertSoft(admin, 'log field portal SMS', (c: any) =>
+          c.from('ambassador_activity_log').insert({
+            ambassador_id: amb.id,
+            store_id: storeId,
+            action_type: 'sms_sent',
+            metadata: { source: 'field_portal', twilio_sid: twData.sid },
+          }));
       }
 
       return json({ ok: true, log_id: log?.id ?? null, twilio_sid: twData.sid });
@@ -299,12 +301,13 @@ Deno.serve(async (req) => {
         .eq('id', log.id);
     }
     if (amb?.id) {
-      await admin.from('ambassador_activity_log').insert({
-        ambassador_id: amb.id,
-        store_id: storeId,
-        action_type: 'direct_call_initiated',
-        metadata: { source: 'field_portal', twilio_call_sid: twData.sid },
-      });
+      await verifiedInsertSoft(admin, 'log field portal call', (c: any) =>
+        c.from('ambassador_activity_log').insert({
+          ambassador_id: amb.id,
+          store_id: storeId,
+          action_type: 'direct_call_initiated',
+          metadata: { source: 'field_portal', twilio_call_sid: twData.sid },
+        }));
     }
 
     return json({

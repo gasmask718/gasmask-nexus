@@ -5,6 +5,7 @@
 // - Persists the message row (ambassador-scoped) and an activity log entry
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
@@ -162,12 +163,12 @@ Deno.serve(async (req) => {
 
 
   // 6. Activity log
-  await admin.from("ambassador_activity_log").insert({
+  await verifiedInsertSoft(admin, 'log ambassador SMS', (c: any) => c.from("ambassador_activity_log").insert({
     ambassador_id: amb.id,
     store_id: body.store_id,
     action_type: body.template_id ? "template_sent" : "sms_sent",
     metadata: { message_id: msgRow.id, template_id: body.template_id, status: providerStatus },
-  });
+  }));
 
   // 7. Template usage bump
   if (body.template_id) {

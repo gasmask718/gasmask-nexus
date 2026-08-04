@@ -2,6 +2,7 @@
 // Same pattern as bulk-sms-processor: pacing, skip re-check, daily-cap awareness.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -202,10 +203,10 @@ Deno.serve(async (req) => {
   await admin.from("ambassador_bulk_jobs").update({ status: "complete", completed_at: new Date().toISOString() }).eq("id", job_id);
   const { data: fj } = await admin.from("ambassador_bulk_jobs")
     .select("sent_count, success_count, failed_count, skipped_count").eq("id", job_id).maybeSingle();
-  await admin.from("ambassador_activity_log").insert({
+  await verifiedInsertSoft(admin, 'log ambassador bulk AI-call job', (c: any) => c.from("ambassador_activity_log").insert({
     ambassador_id: amb.id, action_type: "bulk_job_completed",
     metadata: { job_id, type: "ai_call_blast", ...fj },
-  });
+  }));
 
   return json({ ok: true, status: "complete", processed: processedThisRun });
 });

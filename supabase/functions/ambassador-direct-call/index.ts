@@ -1,6 +1,7 @@
 // Bridges an ambassador's personal phone to a store via Twilio.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')!;
 const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')!;
@@ -80,7 +81,7 @@ Deno.serve(async (req) => {
     }
 
     await admin.from('communication_logs').update({ twilio_call_sid: twData.sid }).eq('id', log!.id);
-    await admin.from('ambassador_activity_log').insert({ ambassador_id: amb.id, store_id, action_type: 'direct_call_initiated', metadata: { twilio_call_sid: twData.sid } });
+    await verifiedInsertSoft(admin, 'log ambassador direct call', (c: any) => c.from('ambassador_activity_log').insert({ ambassador_id: amb.id, store_id, action_type: 'direct_call_initiated', metadata: { twilio_call_sid: twData.sid } }));
 
     return new Response(JSON.stringify({ success: true, log_id: log!.id, twilio_call_sid: twData.sid, message: 'Your phone will ring shortly. Answer to connect to the store.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
