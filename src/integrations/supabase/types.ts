@@ -115088,6 +115088,7 @@ export type Database = {
           phone: string | null
           preferred_language: string | null
           primary_role: string
+          requested_role: string | null
           timezone: string | null
           updated_at: string
           user_id: string
@@ -115102,6 +115103,7 @@ export type Database = {
           phone?: string | null
           preferred_language?: string | null
           primary_role: string
+          requested_role?: string | null
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -115116,6 +115118,7 @@ export type Database = {
           phone?: string | null
           preferred_language?: string | null
           primary_role?: string
+          requested_role?: string | null
           timezone?: string | null
           updated_at?: string
           user_id?: string
