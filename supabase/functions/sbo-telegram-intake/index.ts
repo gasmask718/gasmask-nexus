@@ -3,6 +3,20 @@
 // runs Claude extraction to insert structured picks into sbo_capper_picks.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { normalizeStat, UNMATCHABLE } from "../_shared/statNormalize.ts";
+
+/**
+ * Canonicalize prop_type at write time so 'pitcher outs' and 'pitcher_outs'
+ * collide under the widened dedup index. When the stat is UNMATCHABLE we keep
+ * the caller's token in normalized token form rather than writing the sentinel
+ * to the database — the sentinel is a matching signal, not stored data.
+ */
+function canonicalPropType(raw: unknown): string | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  const norm = normalizeStat(raw);
+  if (norm && norm !== UNMATCHABLE) return norm;
+  return raw.toLowerCase().trim().replace(/[_\-\s]+/g, "_");
+}
 
 const CLAUDE_MODEL = "claude-sonnet-4-5";
 const CLAUDE_URL = "https://api.anthropic.com/v1/messages";
@@ -490,7 +504,7 @@ serve(async (req) => {
         raw_message: text,
         sport: pick.sport ?? null,
         bet_type: pick.pick_type ?? (pick.is_parlay ? "parlay" : pick.is_prop ? "prop" : null),
-        prop_type: pick.prop_stat ?? null,
+        prop_type: canonicalPropType(pick.prop_stat),
         line: toNumOrNull(pick.line),
         direction: pick.side ?? null,
         odds: toIntOrNull(pick.odds),
@@ -512,6 +526,26 @@ serve(async (req) => {
       };
 
       const { error: insertErr } = await supabase.from("sbo_capper_picks").insert(insertRow);
+
+      // A 23505 here is the widened dedup index doing its job: this exact pick
+      // already exists for this capper. Treat it as a successful no-op so the
+      // post lands in 'extracted', not 'extraction_failed'.
+      if (insertErr && (insertErr as { code?: string }).code === "23505") {
+        console.log(
+          `[dedup] duplicate pick suppressed: capper=${capperId} ` +
+            `player=${insertRow.player_name ?? "-"} prop=${insertRow.prop_type ?? "-"} ` +
+            `line=${insertRow.line ?? "-"} date=${insertRow.game_date ?? "-"}`,
+        );
+        await supabase
+          .from("sbo_telegram_posts")
+          .update({
+            processing_status: "extracted",
+            dispatched_to: "claude",
+            dispatch_error: null,
+          })
+          .eq("id", post.id);
+        return;
+      }
 
       if (insertErr) {
         console.error("sbo_capper_picks insert failed:", insertErr.message);
