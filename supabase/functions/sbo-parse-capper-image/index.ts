@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { normalizeStat, UNMATCHABLE } from "../_shared/statNormalize.ts";
+import { shouldCreateCapper, markPendingPromoted, isHumanShapedName } from "../_shared/capperIdentity.ts";
+
 
 /** Canonicalize prop_type at write time — see sbo-telegram-intake for rationale. */
 function canonicalPropType(raw: unknown): string | null {
