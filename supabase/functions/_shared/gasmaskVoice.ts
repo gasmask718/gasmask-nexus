@@ -196,7 +196,10 @@ export async function loadOnShiftPhones(
     .select("phone_number")
     .eq("business_id", businessId)
     .eq("status", "available");
-  return (data || []).map((r: { phone_number: string | null }) => r.phone_number || "").filter(Boolean);
+  return (data || [])
+    .map((r: { phone_number: string | null }) => r.phone_number || "")
+    // Softphone-only rows carry a `client:` sentinel, not a dialable number.
+    .filter((n) => n.startsWith("+"));
 }
 
 /** Resolve a caller number to a store + contact for attribution. */

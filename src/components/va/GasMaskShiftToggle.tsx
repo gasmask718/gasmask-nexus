@@ -50,19 +50,25 @@ export function GasMaskShiftToggle() {
     if (!identity || !userId) return;
     setSaving(true);
     const next = !onShift;
-    const { error } = await supabase
+    const payload = {
+      business_id: GASMASK_BUSINESS_ID,
+      client_identity: identity,
+      user_id: userId,
+      display_name: displayName,
+      // Softphone rows have no dialable PSTN number; the sentinel keeps the
+      // NOT NULL key satisfied and is filtered out of SMS alert fan-outs.
+      phone_number: `client:${identity}`,
+      status: next ? "available" : "offline",
+      on_shift_since: next ? new Date().toISOString() : null,
+    };
+    const { data: existing } = await supabase
       .from("human_agent_line_status")
-      .upsert(
-        {
-          business_id: GASMASK_BUSINESS_ID,
-          client_identity: identity,
-          user_id: userId,
-          display_name: displayName,
-          status: next ? "available" : "offline",
-          on_shift_since: next ? new Date().toISOString() : null,
-        },
-        { onConflict: "client_identity" },
-      );
+      .select("id")
+      .eq("client_identity", identity)
+      .maybeSingle();
+    const { error } = existing
+      ? await supabase.from("human_agent_line_status").update(payload).eq("id", existing.id)
+      : await supabase.from("human_agent_line_status").insert(payload);
     setSaving(false);
     if (error) {
       toast.error(`Could not update shift status: ${error.message}`);
