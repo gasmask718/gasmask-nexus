@@ -372,14 +372,22 @@ RULES:
         }
       }
 
-      // 2) Auto-create from extracted name if it passes the quality gate — BEFORE caller fallback
-      if (!resolvedCapperId) {
-        const extractedIsRealName =
-          !!extractedName &&
-          extractedNorm.length >= 3 &&
-          extractedNorm !== callerNorm;
-        if (extractedIsRealName) {
+      // 2) Auto-create from extracted name — now behind the Stage 3 gate.
+      //    The old check (len>=3 AND != channel name) is what let date headings
+      //    and system labels through, so it is replaced, not merely extended.
+      if (!resolvedCapperId && extractedName && extractedNorm !== callerNorm) {
+        const gate = await shouldCreateCapper(supabase, {
+          name: extractedName,
+          normalized: extractedNorm,
+          confidence: capperDetectionConfidence,
+          sourceMessageId: source_message_id ?? null,
+          source: 'image_extract',
+          groupType: 'direct',
+        });
+        capperGateReason = gate.reason;
+        if (gate.allow) {
           await autoCreate(extractedName, 'image_extract');
+          if (resolvedCapperId) await markPendingPromoted(supabase, extractedNorm, resolvedCapperId);
         }
       }
 
@@ -392,10 +400,19 @@ RULES:
         }
       }
 
-      // 4) Last resort — auto-create from caller name (permissive)
+      // 4) Last resort — create from the CALLER/CHANNEL name. This value comes
+      //    from Telegram channel metadata, not from extracted message text, so
+      //    the second-sighting rule does not apply. The shape check still does:
+      //    a channel named like a date is still not an identity.
       if (!resolvedCapperId && callerName) {
-        await autoCreate(callerName, 'telegram_direct');
+        const shape = isHumanShapedName(callerName);
+        if (shape.ok) {
+          await autoCreate(callerName, 'telegram_direct');
+        } else {
+          capperGateReason = `caller_not_human_shaped:${shape.reason}`;
+        }
       }
+
     }
 
     // Final safety net — never silently drop. If still unresolved, use Unknown Capper bucket.
