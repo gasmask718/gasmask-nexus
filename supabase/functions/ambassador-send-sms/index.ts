@@ -49,14 +49,17 @@ Deno.serve(async (req) => {
   if (userErr || !userData.user) return json({ error: "unauthenticated" }, 401);
   const userId = userData.user.id;
 
-  const { data: amb, error: ambErr } = await admin
+  // A single auth user can own several ambassador records (street-team
+  // aliases), so maybeSingle() used to throw "multiple rows returned" and
+  // kill the whole send — including the activity-log write. Fetch them all
+  // and pick the one that actually owns the target store below.
+  const { data: ambRows, error: ambErr } = await admin
     .from("ambassadors")
     .select("id, twilio_number, name")
     .eq("user_id", userId)
-    .eq("is_active", true)
-    .maybeSingle();
+    .eq("is_active", true);
   if (ambErr) return json({ error: ambErr.message }, 500);
-  if (!amb) return json({ error: "not_an_ambassador" }, 403);
+  if (!ambRows || ambRows.length === 0) return json({ error: "not_an_ambassador" }, 403);
 
   // 2. Validate body
   let body: Body;
@@ -65,15 +68,16 @@ Deno.serve(async (req) => {
     return json({ error: "missing_fields" }, 400);
   }
 
-  // 3. Confirm store is assigned to this ambassador
-  const { data: assignment } = await admin
+  // 3. Confirm the store is assigned to one of this user's ambassador records
+  const { data: assignments } = await admin
     .from("ambassador_assignments")
-    .select("id")
-    .eq("ambassador_id", amb.id)
+    .select("ambassador_id")
+    .in("ambassador_id", ambRows.map((a) => a.id))
     .eq("store_id", body.store_id)
-    .eq("active", true)
-    .maybeSingle();
-  if (!assignment) return json({ error: "store_not_assigned" }, 403);
+    .eq("active", true);
+  const owningId = assignments?.[0]?.ambassador_id;
+  if (!owningId) return json({ error: "store_not_assigned" }, 403);
+  const amb = ambRows.find((a) => a.id === owningId)!;
 
   const fromNumber = amb.twilio_number || DEFAULT_FROM;
   let twilioSid: string | null = null;
