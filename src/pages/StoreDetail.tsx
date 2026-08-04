@@ -869,8 +869,10 @@ const StoreDetail = () => {
           {/* AI Relationship Health */}
           <AIRelationshipHealth entityType="store" entityId={id || ""} />
 
-          {/* Route Intelligence */}
-          <RouteIntelligence storeId={id || ""} storeName={store?.name} />
+          {/* Route Intelligence — hidden: route_checkins has no writer anywhere */}
+          {isFeatureEnabled('routeCheckinsPanel') && (
+            <RouteIntelligence storeId={id || ""} storeName={store?.name} />
+          )}
 
           {/* Replenishment AI */}
           <ReplenishmentAI storeId={id || ""} />
