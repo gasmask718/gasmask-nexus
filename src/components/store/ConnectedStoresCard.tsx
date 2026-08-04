@@ -420,8 +420,47 @@ export function ConnectedStoresCard({
                 </div>
               );
             })}
+
+          {isAdmin() && !!archivedStores?.length && (
+            <div className="pt-3 border-t border-border/50 space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowArchive((v) => !v)}
+                className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <Archive className="h-3 w-3" />
+                Archived stores ({archivedStores.length})
+                <span className="opacity-60">{showArchive ? '▲' : '▼'}</span>
+              </button>
+              {showArchive &&
+                archivedStores.map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between gap-2 rounded-md border border-dashed border-border/60 bg-muted/30 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate line-through opacity-70">{s.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {[s.address_street, s.address_city].filter(Boolean).join(', ') || 'No address'}
+                        {s.deleted_at ? ` • archived ${new Date(s.deleted_at).toLocaleDateString()}` : ''}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1 shrink-0"
+                      onClick={() => handleRestore(s.id, s.name)}
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Restore
+                    </Button>
+                  </div>
+                ))}
+            </div>
+          )}
         </CardContent>
       </Card>
+
 
       <ConnectStoresModal
         open={connectModalOpen}
