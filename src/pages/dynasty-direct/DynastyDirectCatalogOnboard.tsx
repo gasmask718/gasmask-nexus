@@ -194,7 +194,7 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
     finally { setBusy(null); }
   }
 
-  async function runCopyPricing() {
+  async function runCopyPricing(opts?: { keepStep?: boolean }) {
     if (!draftId) return;
     setBusy('copy');
     try {
@@ -205,10 +205,19 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
         bullets: r.bullets || [], seo: r.seo || {}, category_guess: r.category_guess, tags: r.tags || [],
       });
       setPricing(r.pricing || {});
-      setStep('C');
+      if (r.market) setMarketCheck(r.market);
+      if (r.pricing_basis === 'formula_only') {
+        toast.message('Priced from formula only', { description: r.market?.reason || 'No live market data available.' });
+      } else if (r.pricing_basis === 'floor_over_market') {
+        toast.warning('Market is below your margin floor — floor price kept.');
+      } else if (r.market?.range) {
+        toast.success(`Market-informed: median $${r.market.range.median} from ${r.market.range.count} listings`);
+      }
+      if (!opts?.keepStep) setStep('C');
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(null); }
   }
+
 
   async function runPublish() {
     if (!draftId) return;
