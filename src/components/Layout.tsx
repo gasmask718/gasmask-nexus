@@ -206,6 +206,7 @@ const DYNASTY_NAVIGATION = {
     items: [
       { path: '/security/console', label: 'Security Console', icon: Shield },
       { path: '/security/users', label: 'User Management', icon: Users },
+      { path: '/security/invitations', label: 'User Invitations', icon: UserPlus, adminOnly: true },
       { path: '/security/roles', label: 'Roles & Permissions', icon: Lock },
       { path: '/security/devices', label: 'Device Management', icon: Key },
       { path: '/security/sessions', label: 'Active Sessions', icon: Clock },
