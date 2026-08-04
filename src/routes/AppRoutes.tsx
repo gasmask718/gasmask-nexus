@@ -1445,7 +1445,7 @@ export default function AppRoutes() {
         <Route path="/security/devices" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/sessions" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/users" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><UserManagementPage /></RequireRole>} />
-        <Route path="/security/invitations" element={<Navigate to="/admin/field-assignments" replace />} />
+        <Route path="/security/invitations" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><UserInvitations /></RequireRole>} />
         <Route path="/security/roles" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><RolesPermissionsPage /></RequireRole>} />
         <Route path="/security/audit" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/ambassador-requests" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><AmbassadorRequests /></RequireRole>} />
