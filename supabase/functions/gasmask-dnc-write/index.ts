@@ -18,6 +18,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 import { normalizeE164 } from '../_shared/dnc.ts';
+import { verifiedInsert } from "../_shared/verifiedWrite.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -115,15 +116,18 @@ Deno.serve(async (req) => {
   };
 
 
-  const { data, error } = await supabase
-    .from('dnc_list')
-    .upsert(row, { onConflict: 'phone_number', ignoreDuplicates: false })
-    .select('id, phone_e164, phone_number, reason, source, created_at')
-    .maybeSingle();
-
-  if (error) {
-    console.error('[gasmask-dnc-write] upsert failed', error);
-    return json({ error: 'db_write_failed', detail: error.message }, 500);
+  // verifiedInsert forces .select() and throws on a db error OR on zero rows
+  // (the silent RLS/GRANT rejection PostgREST reports as success).
+  let data: unknown = null;
+  try {
+    const rows = await verifiedInsert(supabase, 'record DNC opt-out', (c: any) =>
+      c.from('dnc_list').upsert(row, { onConflict: 'phone_number', ignoreDuplicates: false }),
+    );
+    data = rows[0] ?? null;
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[gasmask-dnc-write] upsert failed', detail);
+    return json({ error: 'db_write_failed', detail }, 500);
   }
 
   console.log(
