@@ -177,34 +177,51 @@ serve(async (req) => {
             await supabase.from('sbo_cappers')
               .update({ last_active: new Date().toISOString(), updated_at: new Date().toISOString() })
               .eq('id', resolvedCapperId);
-          } else if (capperDetectionConfidence >= 70) {
-            // Auto-create from extracted name
-            const { data: newCapper, error: createError } = await supabase
-              .from('sbo_cappers')
-              .insert({
-                name: extracted.name,
-                normalized_name: normalized || null,
-                source: 'aggregator_extract',
-                tier: 'unproven',
-                confidence_grade: 'D',
-                is_active: true,
-                total_picks: 0,
-                group_type: 'aggregator',
-                last_active: new Date().toISOString(),
-              })
-              .select('id, name')
-              .single();
+          } else {
+            // Stage 3 — CREATE is gated. "Did not resolve" no longer implies
+            // "therefore create": shape + confidence + second sighting.
+            const gate = await shouldCreateCapper(supabase, {
+              name: extracted.name,
+              normalized: normalized || '',
+              confidence: capperDetectionConfidence,
+              sourceMessageId,
+              source: 'aggregator_extract',
+              groupType: 'aggregator',
+            });
+            capperGateReason = gate.reason;
 
-            if (createError) {
-              // Race condition — retry lookup
-              const retry = await resolveCapperByName(supabase, extracted.name);
-              if (retry) resolvedCapperId = retry.id;
-            } else {
-              resolvedCapperId = newCapper.id;
-              wasCreated = true;
+            if (gate.allow) {
+              // Auto-create from extracted name
+              const { data: newCapper, error: createError } = await supabase
+                .from('sbo_cappers')
+                .insert({
+                  name: extracted.name,
+                  normalized_name: normalized || null,
+                  source: 'aggregator_extract',
+                  tier: 'unproven',
+                  confidence_grade: 'D',
+                  is_active: true,
+                  total_picks: 0,
+                  group_type: 'aggregator',
+                  last_active: new Date().toISOString(),
+                })
+                .select('id, name')
+                .single();
+
+              if (createError) {
+                // Race condition — retry lookup
+                const retry = await resolveCapperByName(supabase, extracted.name);
+                if (retry) resolvedCapperId = retry.id;
+              } else {
+                resolvedCapperId = newCapper.id;
+                wasCreated = true;
+                await markPendingPromoted(supabase, normalized || '', newCapper.id);
+              }
             }
+            // Gate refused → fall through to the sender fallback. The candidate
+            // is parked in sbo_pending_capper_identities, never dropped.
           }
-          // If confidence < 70, fall through to sender fallback
+
         }
       } else if (groupType === 'direct') {
         // Per-poster text extraction inside a direct channel (e.g. "VegasKing:" posting inside
