@@ -24,9 +24,23 @@ export interface ConnectedStoreRow {
   status: string | null;
   last_order_date: string | null;
   needs_order: boolean;
+  /** Outstanding balance across finalized, unpaid invoices. */
+  owed: number;
+  unpaid_count: number;
+  payment_level: 'paid' | 'amber' | 'red';
   contacts: { id: string; name: string; role: string | null; phone: string | null }[];
   inventory: { brand: string; current_tubes_left: number | null }[];
 }
+
+export interface ArchivedConnectedStoreRow {
+  id: string;
+  name: string;
+  address_street: string | null;
+  address_city: string | null;
+  deleted_at: string | null;
+  status: string | null;
+}
+
 
 /**
  * Fetch every store in the same connected group as `currentStoreId`,
