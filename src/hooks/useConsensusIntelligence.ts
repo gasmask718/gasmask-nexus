@@ -44,6 +44,9 @@ export interface ConsensusPick {
   formHitRate: number | null;      // 0-100 share of the player's recent games clearing the line, in the pick's direction
   formGames: number;               // games behind formHitRate
   formAvgStat: number | null;      // player's recent average for this stat
+  confidenceScore: number;         // 0-100, canonical shared formula (same value persisted to sbo_capper_picks)
+  edgeScore: number;               // 0-100 pick-quality-only component of the same formula
+
 
 
 }
