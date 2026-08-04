@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Shield, Plus, Trash2, Search, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { verifiedInsert, verifiedDelete, mutationErrorMessage } from '@/lib/verifiedMutation';
 
 export default function AdminDNCManager() {
   const navigate = useNavigate();
