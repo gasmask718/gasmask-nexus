@@ -538,7 +538,7 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
               <Button onClick={runStage} disabled={busy === 'stage'} variant="outline">
                 {busy === 'stage' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Staging…</> : <><Camera className="h-4 w-4 mr-2" /> Generate 3 staged shots</>}
               </Button>
-              <Button onClick={runCopyPricing} disabled={busy === 'copy'}>
+              <Button onClick={() => runCopyPricing()} disabled={busy === 'copy'}>
                 {busy === 'copy' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Writing copy…</> : <>Next: Copy & Pricing →</>}
               </Button>
             </div>
