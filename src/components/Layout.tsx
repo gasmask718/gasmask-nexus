@@ -1014,9 +1014,11 @@ const Layout = ({ children }: LayoutProps) => {
                     "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
                     item.highlight
                       ? "bg-destructive/15 text-destructive font-semibold ring-1 ring-destructive/50 hover:bg-destructive/25"
-                      : isPathActive(item.path)
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                      : item.gold
+                        ? "text-gold font-semibold hover:bg-gold/10"
+                        : isPathActive(item.path)
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   )}
                 >
                   <item.icon className="h-3 w-3 shrink-0" />
