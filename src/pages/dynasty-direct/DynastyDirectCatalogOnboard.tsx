@@ -562,6 +562,47 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
             <div className="space-y-2"><Label>Bullets (one per line)</Label>
               <Textarea rows={4} value={(copy.bullets || []).join('\n')} onChange={(e) => setCopy({ ...copy, bullets: e.target.value.split('\n').filter(Boolean) })} />
             </div>
+            {/* Market context — shown ABOVE the price fields because it drives them */}
+            <div className="rounded-lg border p-3 space-y-2 bg-muted/20">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-sm font-medium flex items-center gap-2">
+                    Market price check
+                    {pricing.basis === 'market_informed' && <Badge>market-informed</Badge>}
+                    {pricing.basis === 'floor_over_market' && <Badge variant="destructive">floor over market</Badge>}
+                    {pricing.basis === 'formula_only' && <Badge variant="secondary">formula only</Badge>}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Live retail listings drive the suggestion. Margin floor stays the hard minimum.</div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => runMarketCheckAction()} disabled={busy === 'market'}>
+                    {busy === 'market' ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Checking…</> : 'Check market'}
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => runCopyPricing({ keepStep: true })} disabled={busy === 'copy'}>
+                    {busy === 'copy' ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Re-pricing…</> : 'Re-price with market'}
+                  </Button>
+                </div>
+              </div>
+              {marketCheck?.range && (
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <Badge variant="secondary">low ${marketCheck.range.low}</Badge>
+                  <Badge>median ${marketCheck.range.median}</Badge>
+                  <Badge variant="secondary">high ${marketCheck.range.high}</Badge>
+                  <span className="text-muted-foreground">from {marketCheck.range.count} listings</span>
+                  {marketCheck.excluded && (
+                    <span className="text-muted-foreground">
+                      · filtered {marketCheck.excluded.bundles} bundles, {marketCheck.excluded.low_relevance} off-target, {marketCheck.excluded.outliers} outliers
+                    </span>
+                  )}
+                </div>
+              )}
+              {marketCheck && !marketCheck.range && (
+                <div className="text-xs text-amber-600">
+                  {marketCheck.reason || 'No listings matched'} — priced from cost and margin only.
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {(['suggested_wholesale', 'suggested_store', 'suggested_retail', 'suggested_street'] as const).map((k) => (
                 <div key={k} className="space-y-1">
@@ -572,32 +613,6 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
             </div>
             {pricing.rationale && <div className="text-xs text-muted-foreground italic">💡 {pricing.rationale}</div>}
 
-            {/* Market Price Check — key-ready (SerpAPI) */}
-            <div className="rounded-lg border p-3 space-y-2 bg-muted/20">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <div className="text-sm font-medium">Market price check</div>
-                  <div className="text-xs text-muted-foreground">Compare AI suggestion to live retail listings. Margin floor stays the hard minimum.</div>
-                </div>
-                <Button size="sm" variant="outline" onClick={runMarketCheckAction} disabled={busy === 'market'}>
-                  {busy === 'market' ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Checking…</> : 'Check market'}
-                </Button>
-              </div>
-              {marketCheck?.available === false && (
-                <div className="text-xs text-amber-600">Available when SerpAPI activates.</div>
-              )}
-              {marketCheck?.available && marketCheck.range && (
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <Badge variant="secondary">low ${marketCheck.range.low}</Badge>
-                  <Badge>median ${marketCheck.range.median}</Badge>
-                  <Badge variant="secondary">high ${marketCheck.range.high}</Badge>
-                  <span className="text-muted-foreground">from {marketCheck.range.count} listings</span>
-                </div>
-              )}
-              {marketCheck?.available && !marketCheck.range && (
-                <div className="text-xs text-muted-foreground">No listings matched — keep AI suggestion.</div>
-              )}
-            </div>
 
             <div className="flex justify-end border-t pt-4">
               <Button onClick={() => setStep('D')}>Next: Confirm Gate →</Button>
