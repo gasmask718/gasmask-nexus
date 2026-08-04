@@ -1083,7 +1083,7 @@ const StoreDetail = () => {
               </>
               )}
               {!isFeatureEnabled('storeProductStatePanel') && (
-                <StoreTubeInventoryCard storeId={id || ''} />
+                <StoreTubeInventoryCard storeId={id || ''} onAddCount={() => {}} />
               )}
             </TabsContent>
 
