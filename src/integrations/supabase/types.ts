@@ -36343,6 +36343,42 @@ export type Database = {
           },
         ]
       }
+      comms_dispatch_holds: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          entity_type: string
+          id: string
+          reason: string | null
+          released_at: string | null
+          released_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          entity_type: string
+          id?: string
+          reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          entity_type?: string
+          id?: string
+          reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       comms_health_alerts: {
         Row: {
           alert_count: number
