@@ -22,6 +22,7 @@ import { LastOrderSnapshotPanel } from "@/components/store/LastOrderSnapshotPane
 import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
 import { RouteIntelligence } from "@/components/store/RouteIntelligence";
 import { isFeatureEnabled } from "@/config/featureFlags";
+import { StoreTubeInventoryCard } from "@/components/store/StoreTubeInventoryCard";
 import { StoreCallIntelligenceTab } from "@/components/store/StoreCallIntelligenceTab";
 import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIntelligenceTab";
 import { Activity, Headphones, Flame } from "lucide-react";
