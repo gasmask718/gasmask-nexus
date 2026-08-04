@@ -2,19 +2,40 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { getRoleRedirectPath, type OSRole } from '@/config/osNavigation';
+import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Crown } from 'lucide-react';
 
 /**
- * RoleRouter - Routes users to their appropriate portal based on role
- * Uses the centralized osNavigation config for all routing logic
+ * RoleRouter — the PWA launch target (`start_url: /portal`).
+ *
+ * Resolves where the app should open for THIS user rather than dropping
+ * everyone on a single hard-coded page:
+ *   no session      → /auth (returns here after sign-in)
+ *   session, no profile → /portal/onboarding
+ *   session + role  → getRoleRedirectPath(role)
  */
 export default function RoleRouter() {
   const navigate = useNavigate();
   const { data, isLoading, error } = useCurrentUserProfile();
   const [status, setStatus] = useState<'loading' | 'redirecting' | 'error'>('loading');
+  const [sessionChecked, setSessionChecked] = useState(false);
+
+  // Signed-out launches (cold PWA open) must go to auth, not onboarding.
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
+      if (!session) {
+        navigate(`/auth?redirect=${encodeURIComponent('/portal')}`, { replace: true });
+        return;
+      }
+      setSessionChecked(true);
+    });
+    return () => { cancelled = true; };
+  }, [navigate]);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (!sessionChecked || isLoading) return;
 
     // Error fetching profile
     if (error) {
@@ -35,10 +56,10 @@ export default function RoleRouter() {
     // Get redirect path based on primary role from centralized config
     const role = data.profile.primary_role as OSRole;
     const redirectPath = getRoleRedirectPath(role);
-    
+
     console.log('🚀 RoleRouter: Redirecting', role, '→', redirectPath);
     navigate(redirectPath, { replace: true });
-  }, [data, isLoading, error, navigate]);
+  }, [data, isLoading, error, navigate, sessionChecked]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
