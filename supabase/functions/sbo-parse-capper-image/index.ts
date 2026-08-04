@@ -1,5 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { normalizeStat, UNMATCHABLE } from "../_shared/statNormalize.ts";
+
+/** Canonicalize prop_type at write time — see sbo-telegram-intake for rationale. */
+function canonicalPropType(raw: unknown): string | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  const norm = normalizeStat(raw);
+  if (norm && norm !== UNMATCHABLE) return norm;
+  return raw.toLowerCase().trim().replace(/[_\-\s]+/g, "_");
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
