@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useViewAs } from '@/contexts/ViewAsContext';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
+import { verifiedInsert, mutationErrorMessage } from '@/lib/verifiedMutation';
 
 export interface MessageThread {
   id: string;
@@ -357,12 +358,14 @@ export function useLogCall() {
       if (error) throw error;
 
       if (ambassadorId) {
-        await supabase.from('ambassador_activity_log').insert({
-          ambassador_id: ambassadorId,
-          store_id: input.storeId,
-          action_type: input.aiAssisted ? 'ai_call_made' : 'call_made',
-          metadata: { phone: input.phone, outcome: input.outcome },
-        });
+        await verifiedInsert('log ambassador call activity', () =>
+          supabase.from('ambassador_activity_log').insert({
+            ambassador_id: ambassadorId,
+            store_id: input.storeId,
+            action_type: input.aiAssisted ? 'ai_call_made' : 'call_made',
+            metadata: { phone: input.phone, outcome: input.outcome },
+          }),
+        );
       }
       return data;
     },
@@ -370,7 +373,7 @@ export function useLogCall() {
       queryClient.invalidateQueries({ queryKey: ['ambassador-call-history'] });
       queryClient.invalidateQueries({ queryKey: ['ambassador-kpis'] });
     },
-    onError: (e: Error) => toast.error(`Log failed: ${e.message}`),
+    onError: (e: unknown) => toast.error(`Log failed: ${mutationErrorMessage(e)}`, { duration: 8000 }),
   });
 }
 

@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { verifiedInsert, mutationErrorMessage } from '@/lib/verifiedMutation';
 
 export type BulkJobStatus = 'queued' | 'processing' | 'paused' | 'complete' | 'failed' | 'cancelled';
 export type BulkJobType = 'sms_blast' | 'ai_call_blast';
@@ -142,11 +143,15 @@ export function useCreateBulkJob() {
       if (itemsErr) throw itemsErr;
 
       // Activity log
-      await supabase.from('ambassador_activity_log').insert({
-        ambassador_id: input.ambassador_id,
-        action_type: 'bulk_job_created',
-        metadata: { job_id: (job as any).id, type: input.job_type, total_count: input.target_store_ids.length },
-      });
+      // verifiedInsert throws when the ambassador-scoped RLS policy silently
+      // drops the row, so the audit trail can never go quietly missing.
+      await verifiedInsert('log bulk outreach job', () =>
+        supabase.from('ambassador_activity_log').insert({
+          ambassador_id: input.ambassador_id,
+          action_type: 'bulk_job_created',
+          metadata: { job_id: (job as any).id, type: input.job_type, total_count: input.target_store_ids.length },
+        }),
+      );
 
       // Fire processor if "send now"
       if (!input.scheduled_for) {
@@ -161,7 +166,7 @@ export function useCreateBulkJob() {
       qc.invalidateQueries({ queryKey: ['ambassador-bulk-jobs', job.ambassador_id] });
       toast.success(job.scheduled_for ? 'Bulk job scheduled' : 'Bulk send started');
     },
-    onError: (e: any) => { toast.error(e?.message || 'Failed to create bulk job'); },
+    onError: (e: unknown) => { toast.error(mutationErrorMessage(e), { duration: 8000 }); },
   });
 }
 
