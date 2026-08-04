@@ -57,11 +57,9 @@ export interface ConsensusStats {
 }
 
 import { normalizeStat, marketPropCandidates } from '@/lib/sbo/statNormalize';
+// Canonical scoring formula — shared with the sbo-score-capper-picks edge job.
+import { calcConfidenceBreakdown, impliedFromAmerican } from '@/lib/sbo/perPickScore';
 
-function impliedFromAmerican(odds: number | null): number | null {
-  if (odds === null || odds === undefined || !Number.isFinite(odds) || odds === 0) return null;
-  return odds < 0 ? -odds / (-odds + 100) : 100 / (odds + 100);
-}
 
 export function useConsensusIntelligence() {
   // Fetch all resolved picks with capper info
