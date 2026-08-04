@@ -231,6 +231,8 @@ export async function tryVercelHook(
     VITE_DEMO_SLUG: payload.slug ?? "",
     VITE_DEMO_ID: payload.demo_id ?? "",
     VITE_CHECKOUT_URL: `${Deno.env.get("SUPABASE_URL") ?? ""}/functions/v1/demo-stripe-checkout`,
+    // Powers the post-Stripe /purchase-confirmed page in brandaro-base.
+    VITE_PURCHASE_STATUS_URL: `${Deno.env.get("SUPABASE_URL") ?? ""}/functions/v1/demo-purchase-status`,
     VITE_CLAIM_TIERS_JSON: JSON.stringify(claimTiers),
     VITE_CLAIM_ENABLED: claimEnabled ? "1" : "0",
   };
