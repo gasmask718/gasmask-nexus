@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
   const shiftPhones = withinHours ? await loadOnShiftPhones(supabase, businessId) : [];
   const vaNumbers = Array.from(
     new Set([...vas.map((x) => x.forward_number), ...shiftPhones].filter(Boolean)),
-  );
+  ).filter((n) => !ownerNumbers.includes(n));
   const clientIdentities = clients.map((c) => c.client_identity);
 
   let numberTargets: string[] = [];
