@@ -103,10 +103,15 @@ async function processInvoiceFollowUps(supabase: any, settings: any) {
   if (!settings?.auto_reminder_enabled) return result;
 
   try {
+    // Real invoices land as 'finalized' with a payment_status — the old
+    // ['sent','overdue'] status filter matched zero rows, which is why no
+    // follow-up was ever queued.
     const { data: invoices } = await supabase
       .from('invoices')
-      .select('id, invoice_number, due_date, total_amount, status')
-      .in('status', ['sent', 'overdue']);
+      .select('id, invoice_number, due_date, total_amount, status, payment_status')
+      .in('status', ['finalized', 'sent', 'overdue'])
+      .in('payment_status', ['unpaid', 'partial'])
+      .not('due_date', 'is', null);
 
     if (!invoices) return result;
 
