@@ -301,6 +301,21 @@ Generate JSON:
     },
   };
 
+  // Audit snapshot of exactly what market data drove the suggestion.
+  const marketSnapshot = {
+    available: marketUsable,
+    reason: market?.reason,
+    query: market?.query ?? null,
+    range: marketUsable
+      ? { low: market!.low, median: market!.median, high: market!.high, avg: market!.avg, count: market!.count }
+      : null,
+    samples: market?.samples ?? [],
+    excluded: market?.excluded ?? null,
+    used_for_pricing: marketUsable,
+    basis: pricingBasis,
+    checked_at: market?.checked_at ?? new Date().toISOString(),
+  };
+
   if (draft_id) {
     await sb.from('dd_catalog_drafts').update({
       copy: {
@@ -316,11 +331,21 @@ Generate JSON:
         retail_floor: retailFloor,
       },
       pricing,
+      market_check: marketSnapshot,
       status: 'copy_ready',
     }).eq('id', draft_id);
   }
-  return { ...parsed, pricing, jsonld, margin_pct_applied: effectiveMarginPct, retail_floor: retailFloor };
+  return {
+    ...parsed,
+    pricing,
+    jsonld,
+    margin_pct_applied: effectiveMarginPct,
+    retail_floor: retailFloor,
+    pricing_basis: pricingBasis,
+    market: marketSnapshot,
+  };
 }
+
 
 
 async function runMarketCheck(body: any) {
