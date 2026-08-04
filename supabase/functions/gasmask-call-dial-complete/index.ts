@@ -21,7 +21,11 @@ import {
   upsertCallLog,
   patchCallLog,
   normalizePhone,
+  resolveBusinessId,
+  loadOwnerContacts,
+  loadOnShiftClients,
 } from "../_shared/gasmaskVoice.ts";
+import { runMissedCallRecovery } from "../_shared/gasmaskMissedRecovery.ts";
 
 const ANSWERED = new Set(["completed", "answered"]);
 
@@ -73,13 +77,23 @@ Deno.serve(async (req) => {
   const u = new URL(canonicalUrl(req));
   const base = `${u.protocol}//${u.host}/functions/v1`;
 
+  const businessId = await resolveBusinessId(supabase, "gasmask");
+
   // ── Second leg for sequential ring models ──
   if (settings && (next === "owner" || next === "va")) {
-    const legTargets = next === "owner"
-      ? (settings.owner_forward_number ? [settings.owner_forward_number] : [])
-      : (await loadAvailableVas(supabase, "gasmask")).map((x) => x.forward_number);
+    let legNumbers: string[] = [];
+    let legClients: string[] = [];
+    if (next === "owner") {
+      const owners = await loadOwnerContacts(supabase, businessId);
+      legNumbers = owners.length
+        ? owners.map((o) => o.phone_e164)
+        : (settings.owner_forward_number ? [settings.owner_forward_number] : []);
+    } else {
+      legNumbers = (await loadAvailableVas(supabase, "gasmask")).map((x) => x.forward_number);
+      legClients = (await loadOnShiftClients(supabase, businessId)).map((c) => c.client_identity);
+    }
 
-    if (legTargets.length) {
+    if (legNumbers.length + legClients.length) {
       await patchCallLog(supabase, callSid, {
         status: "ringing",
         summary: next === "owner" ? "Unanswered by VA — forwarding to owner" : "Unanswered by owner — forwarding to VA",
@@ -89,12 +103,15 @@ Deno.serve(async (req) => {
       const recordAttrs = settings.recording_enabled
         ? ` record="record-from-answer-dual" recordingStatusCallback="${escapeXml(recCb)}" recordingStatusCallbackMethod="POST" recordingStatusCallbackEvent="completed"`
         : "";
-      const numbers = legTargets.map((n) => `<Number>${escapeXml(n)}</Number>`).join("");
+      const legs = [
+        ...legNumbers.map((n) => `<Number>${escapeXml(n)}</Number>`),
+        ...legClients.map((c) => `<Client>${escapeXml(c)}</Client>`),
+      ].join("");
 
       return twiml(`
-  <Dial answerOnBridge="true" timeout="${settings.owner_ring_timeout_seconds}" callerId="${escapeXml(to)}"
+  <Dial answerOnBridge="true" timeout="${Math.min(25, Math.max(20, settings.owner_ring_timeout_seconds || 20))}" callerId="${escapeXml(to)}"
         action="${escapeXml(`${base}/gasmask-call-dial-complete?next=voicemail`)}" method="POST"${recordAttrs}>
-    ${numbers}
+    ${legs}
   </Dial>`);
     }
   }
@@ -114,6 +131,16 @@ Deno.serve(async (req) => {
       follow_up_required: true,
     },
   });
+
+  // Auto text the caller back from the same GasMask number + alert on-shift
+  // staff. Fire-and-forget: recovery must never delay or break the TwiML.
+  const recovery = runMissedCallRecovery(supabase, {
+    caller: from,
+    businessNumber: to,
+    businessId,
+    callSid,
+  }).catch((e) => console.error("[gasmask-call-dial-complete] recovery failed", (e as Error).message));
+  (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil?.(recovery);
 
   // ── AI-agent fallback (preserves the legacy inbound behaviour) ──
   // Humans got first crack. Nobody picked up, so hand the caller to the
