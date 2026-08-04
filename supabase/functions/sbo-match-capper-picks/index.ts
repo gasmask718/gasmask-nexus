@@ -174,7 +174,7 @@ function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchResult | 
       if (lastMatch && firstInitial) {
         // Composite: name_sim * 0.5 + team * 0.2 + date * 0.2 + stat * 0.1
         const dateMatch = pickDate === propDate ? 1 : 0.5;
-        const statMatch = pickStat === propStat ? 1 : 0;
+        const statMatch = acceptedStats.has(propStat) ? 1 : 0;
         const compositeScore = Math.round(
           (0.7 * 0.5 + 0.2 * dateMatch + 0.1 * statMatch) * 100
         );
