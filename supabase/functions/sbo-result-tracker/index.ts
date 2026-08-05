@@ -127,7 +127,9 @@ function sideTakes(game: Game, side: string): { takingHome: boolean; takingAway:
 }
 function resolveMoneyline(game: Game, side: string, stake: number, odds: number | null): Resolution {
   const { takingHome, takingAway } = sideTakes(game, side);
-  if (!takingHome && !takingAway) return { result: "loss", pnl: -stake };
+  // No-match guard: if the side matches neither team, the pick is ungradeable
+  // against this game. Leave it pending instead of fabricating a loss.
+  if (!takingHome && !takingAway) return { result: "pending", pnl: 0 };
   if (game.home_score === game.away_score) return { result: "push", pnl: 0 };
   const won = takingHome ? game.home_score > game.away_score : game.away_score > game.home_score;
   return { result: won ? "win" : "loss", pnl: won ? winPnl(stake, odds) : -stake };
