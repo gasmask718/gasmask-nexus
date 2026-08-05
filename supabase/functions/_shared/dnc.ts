@@ -20,14 +20,23 @@ export async function isOnDNC(
   const e164 = normalizeE164(phone);
   if (!e164) return { blocked: false };
 
+  // NOTE: we deliberately use .in() rather than .or() here. PostgREST `or=`
+  // filter strings are sent raw, so the leading "+" in an E.164 number decodes
+  // as a space and the match silently misses. .in() values are URL-encoded.
+  const digits = e164.replace(/\D/g, "");
+  const variants = Array.from(new Set([e164, digits, String(phone || "")].filter(Boolean)));
+
   try {
-    const { data } = await supabase
-      .from("dnc_list")
-      .select("reason, phone_e164, phone_number")
-      .or(`phone_e164.eq.${e164},phone_number.eq.${e164},phone_number.eq.${phone}`)
-      .limit(1)
-      .maybeSingle();
-    if (data) return { blocked: true, reason: data.reason || "dnc_list" };
+    for (const col of ["phone_e164", "phone_number"]) {
+      const { data, error } = await supabase
+        .from("dnc_list")
+        .select("reason")
+        .in(col, variants)
+        .limit(1);
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row) return { blocked: true, reason: row.reason || "dnc_list" };
+    }
   } catch (_e) {
     // Fail-open is unacceptable for compliance — fail-CLOSED on lookup error.
     return { blocked: true, reason: "dnc_lookup_failed" };
