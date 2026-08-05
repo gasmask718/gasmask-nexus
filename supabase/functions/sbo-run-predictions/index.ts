@@ -788,7 +788,7 @@ CRITICAL RULES FROM CALIBRATION DATA:
     // Applied AFTER all brains, penalties, bonuses and live calibration —
     // this is the final mutation of finalScore. Any future adjustment must
     // be added ABOVE this block, never below it.
-    const ODDS_ONLY_MAX_CONFIDENCE = 62; // raised: strong odds-only signals may reach PLAY on their own
+    const ODDS_ONLY_MAX_CONFIDENCE = 65; // raised: strong odds-only signals may reach PLAY on their own
     if (dataQuality === 'odds_only' && finalScore > ODDS_ONLY_MAX_CONFIDENCE) {
       console.log(`odds_only hard cap: ${finalScore} → ${ODDS_ONLY_MAX_CONFIDENCE} (no real stats feed)`);
       finalScore = ODDS_ONLY_MAX_CONFIDENCE;
