@@ -214,9 +214,10 @@ async function runCopyPricing(body: any) {
     market = null;
     console.error('[copy_pricing] market lookup failed', e);
   }
-  const marketUsable = !!(market && market.available && market.count > 0 && market.median);
+  // Only apples-to-apples data steers price: same pack size, enough surviving listings.
+  const marketUsable = !!(market && market.available && market.comparable && market.count > 0 && market.median);
   const marketBlock = marketUsable
-    ? `Live market data (Google Shopping, ${market!.count} relevant listings after bundle/outlier filtering):
+    ? `Live market data (Google Shopping, ${market!.count} listings matching pack size ${market!.pack_size}, after bundle/relevance/outlier filtering):
   low $${market!.low} / median $${market!.median} / high $${market!.high}.
 Anchor suggested_retail near the market median, but NEVER below ${retailFloor}. Do not exceed $${market!.high} unless you state why.`
     : `No live market data available${market?.reason ? ` (${market.reason})` : ''} — price from cost and margin only.`;
@@ -240,11 +241,18 @@ Generate JSON:
     "suggested_street": <num>,
     "rationale": "..."
   },
-  "category_guess": "...",
+  "category_guess": "<EXACTLY one of: ${DD_CATEGORIES.join(' | ')}>",
   "tags": ["...", "..."]
 }`;
   const raw = await geminiText(system, user);
   const parsed = parseJson(raw);
+
+  // Normalize the AI category onto the products_all check-constraint values now,
+  // so the wizard shows (and the publish insert receives) a legal slug.
+  const catMap = mapDdCategory(parsed.category_guess, [product_name, brand_hint, (parsed.tags || []).join(' ')].filter(Boolean).join(' '));
+  parsed.category_guess = catMap.category;
+  parsed.category_source = catMap.method;
+  parsed.category_raw = catMap.raw;
 
   // Server-side price arbitration. Order is fixed: margin floor always wins.
   const pricing = parsed.pricing || {};
@@ -313,6 +321,8 @@ Generate JSON:
       : null,
     samples: market?.samples ?? [],
     excluded: market?.excluded ?? null,
+    comparable: market?.comparable ?? false,
+    pack_size: market?.pack_size ?? 1,
     used_for_pricing: marketUsable,
     basis: pricingBasis,
     checked_at: market?.checked_at ?? new Date().toISOString(),
@@ -327,6 +337,8 @@ Generate JSON:
         bullets: parsed.bullets || [],
         seo: parsed.seo || {},
         category_guess: parsed.category_guess,
+        category_source: catMap.method,
+        category_raw: catMap.raw,
         tags: parsed.tags || [],
         jsonld,
         margin_pct_applied: effectiveMarginPct,
@@ -362,6 +374,8 @@ async function runMarketCheck(body: any) {
     range: m.count > 0 ? { low: m.low, median: m.median, high: m.high, avg: m.avg, count: m.count } : null,
     samples: m.samples,
     excluded: m.excluded,
+    comparable: m.comparable,
+    pack_size: m.pack_size,
     checked_at: m.checked_at,
   };
   if (draft_id) {
@@ -653,6 +667,13 @@ Pricing rules:
 
   const raw = await geminiText(system, user);
   const parsed = parseJson(raw);
+
+  // Normalize the AI category onto the products_all check-constraint values now,
+  // so the wizard shows (and the publish insert receives) a legal slug.
+  const catMap = mapDdCategory(parsed.category_guess, [product_name, brand_hint, (parsed.tags || []).join(' ')].filter(Boolean).join(' '));
+  parsed.category_guess = catMap.category;
+  parsed.category_source = catMap.method;
+  parsed.category_raw = catMap.raw;
   const payload = {
     amazon_price: Number(parsed.amazon_price) || 0,
     walmart_price: Number(parsed.walmart_price) || 0,
