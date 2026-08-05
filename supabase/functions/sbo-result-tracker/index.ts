@@ -281,6 +281,8 @@ Deno.serve(async (req) => {
       if (kind === "spread")     r = resolveSpread(game, String(s.side ?? ""), line, stake, odds);
       else if (kind === "total") r = resolveTotal(game, String(s.side ?? ""), line, stake, odds);
       else                       r = resolveMoneyline(game, String(s.side ?? ""), stake, odds);
+      if (r.result === "pending") continue;
+
 
       const { error: uerr } = await supabase
         .from("sbo_signals")
