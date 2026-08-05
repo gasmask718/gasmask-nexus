@@ -26,6 +26,8 @@ export interface CheckoutData {
   /** Point-of-sale 21+ affirmation (required when the cart holds restricted items) */
   ageConfirmed?: boolean;
   ageConfirmedIp?: string | null;
+  /** Partner campaign code captured from the inbound ?campaign= link */
+  campaignCode?: string | null;
 }
 
 interface OrderResult {
