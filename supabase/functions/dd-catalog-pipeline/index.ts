@@ -12,6 +12,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { lookupMarket, type MarketLookup } from '../_shared/marketPrice.ts';
+import { DD_CATEGORIES, mapDdCategory } from '../_shared/ddCategory.ts';
 
 const LOVABLE_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -213,9 +214,10 @@ async function runCopyPricing(body: any) {
     market = null;
     console.error('[copy_pricing] market lookup failed', e);
   }
-  const marketUsable = !!(market && market.available && market.count > 0 && market.median);
+  // Only apples-to-apples data steers price: same pack size, enough surviving listings.
+  const marketUsable = !!(market && market.available && market.comparable && market.count > 0 && market.median);
   const marketBlock = marketUsable
-    ? `Live market data (Google Shopping, ${market!.count} relevant listings after bundle/outlier filtering):
+    ? `Live market data (Google Shopping, ${market!.count} listings matching pack size ${market!.pack_size}, after bundle/relevance/outlier filtering):
   low $${market!.low} / median $${market!.median} / high $${market!.high}.
 Anchor suggested_retail near the market median, but NEVER below ${retailFloor}. Do not exceed $${market!.high} unless you state why.`
     : `No live market data available${market?.reason ? ` (${market.reason})` : ''} — price from cost and margin only.`;
@@ -239,11 +241,18 @@ Generate JSON:
     "suggested_street": <num>,
     "rationale": "..."
   },
-  "category_guess": "...",
+  "category_guess": "<EXACTLY one of: ${DD_CATEGORIES.join(' | ')}>",
   "tags": ["...", "..."]
 }`;
   const raw = await geminiText(system, user);
   const parsed = parseJson(raw);
+
+  // Normalize the AI category onto the products_all check-constraint values now,
+  // so the wizard shows (and the publish insert receives) a legal slug.
+  const catMap = mapDdCategory(parsed.category_guess, [product_name, brand_hint, (parsed.tags || []).join(' ')].filter(Boolean).join(' '));
+  parsed.category_guess = catMap.category;
+  parsed.category_source = catMap.method;
+  parsed.category_raw = catMap.raw;
 
   // Server-side price arbitration. Order is fixed: margin floor always wins.
   const pricing = parsed.pricing || {};
@@ -312,6 +321,8 @@ Generate JSON:
       : null,
     samples: market?.samples ?? [],
     excluded: market?.excluded ?? null,
+    comparable: market?.comparable ?? false,
+    pack_size: market?.pack_size ?? 1,
     used_for_pricing: marketUsable,
     basis: pricingBasis,
     checked_at: market?.checked_at ?? new Date().toISOString(),
@@ -326,6 +337,8 @@ Generate JSON:
         bullets: parsed.bullets || [],
         seo: parsed.seo || {},
         category_guess: parsed.category_guess,
+        category_source: catMap.method,
+        category_raw: catMap.raw,
         tags: parsed.tags || [],
         jsonld,
         margin_pct_applied: effectiveMarginPct,
@@ -361,6 +374,8 @@ async function runMarketCheck(body: any) {
     range: m.count > 0 ? { low: m.low, median: m.median, high: m.high, avg: m.avg, count: m.count } : null,
     samples: m.samples,
     excluded: m.excluded,
+    comparable: m.comparable,
+    pack_size: m.pack_size,
     checked_at: m.checked_at,
   };
   if (draft_id) {
@@ -447,8 +462,26 @@ async function runPublish(body: any) {
   const images = selectedUrls.length ? selectedUrls : enhancedUrls;
   if (!images.length) throw new Error('cannot publish: no selected images (need at least 1 for images[0] hero)');
 
-  const categoryRaw = (draft.category || copy.category_guess || '').toString().trim().toLowerCase();
-  const category = categoryRaw ? categoryRaw.replace(/\s+/g, '-') : null;
+  const recognitionEarly = (draft.recognition || {}) as any;
+
+  // CATEGORY GATE: products_all.category is check-constrained to ten snake_case
+  // slugs. The AI returns human-readable text, so map it — never hyphenate raw
+  // text into the column (that produced "rolling-papers" and a 400 on insert).
+  const catCtx = [draft.product_name, copy.title, recognitionEarly.item_type, (copy.tags || []).join(' ')]
+    .filter(Boolean).join(' ');
+  const catMap = mapDdCategory(copy.category_guess || draft.category, catCtx);
+  if (!catMap.category) {
+    throw new Error(
+      `cannot publish: category "${catMap.raw ?? '(blank)'}" does not map to a Dynasty Direct category. ` +
+      `Pick one manually in Step C: ${DD_CATEGORIES.join(', ')}`,
+    );
+  }
+  const category = catMap.category;
+
+  // SUPPLIER FK GATE: products_all.wholesaler_id references wholesaler_profiles(id),
+  // but drafts may carry an id from the legacy `wholesalers` table. Resolve it via
+  // wholesaler_profiles.wholesaler_id instead of failing on the FK at insert time.
+  const wholesalerProfileId = await resolveWholesalerProfileId(sb, draft.supplier_id);
 
   // EXACTNESS-GATE CONFIRM: mark the draft as confirmed BEFORE the products_all insert so the
   // BEFORE-INSERT trigger (dd_enforce_catalog_confirm_gate) sees confirmed_at and allows status='active'.
@@ -457,10 +490,10 @@ async function runPublish(body: any) {
     confirmed_by: confirmed_by || null,
   }).eq('id', draft_id);
 
-  const recognition = (draft.recognition || {}) as any;
+  const recognition = recognitionEarly;
 
   const { data: prod, error: insErr } = await sb.from('products_all').insert({
-    wholesaler_id: draft.supplier_id,
+    wholesaler_id: wholesalerProfileId,
     product_name: copy.title || draft.product_name,
     description: copy.long_description || copy.short_description || null,
     images,
@@ -496,7 +529,7 @@ async function runPublish(body: any) {
   try {
     await sb.from('marketplace_inventory').insert({
       product_id: prod.id,
-      wholesaler_id: draft.supplier_id,
+      wholesaler_id: wholesalerProfileId,
       quantity_on_hand: typeof draft.inventory_qty === 'number' ? draft.inventory_qty : 0,
       quantity_reserved: 0,
     }).select().maybeSingle();
@@ -508,6 +541,30 @@ async function runPublish(body: any) {
   }).eq('id', draft_id);
 
   return { product_id: prod.id, images_count: images.length, hero: images[0] };
+}
+
+/**
+ * Resolve whatever supplier id a draft is carrying into a valid
+ * wholesaler_profiles.id (the FK target of products_all.wholesaler_id).
+ *
+ * Accepts either a wholesaler_profiles.id (pass-through) or a legacy
+ * wholesalers.id, which is bridged through wholesaler_profiles.wholesaler_id.
+ */
+async function resolveWholesalerProfileId(sb: any, supplierId: string): Promise<string> {
+  const { data: direct } = await sb
+    .from('wholesaler_profiles').select('id').eq('id', supplierId).maybeSingle();
+  if (direct?.id) return direct.id;
+
+  const { data: bridged } = await sb
+    .from('wholesaler_profiles').select('id').eq('wholesaler_id', supplierId).maybeSingle();
+  if (bridged?.id) return bridged.id;
+
+  const { data: legacy } = await sb
+    .from('wholesalers').select('name').eq('id', supplierId).maybeSingle();
+  throw new Error(
+    `cannot publish: supplier ${legacy?.name ? `"${legacy.name}" ` : ''}(${supplierId}) has no ` +
+    `Dynasty Direct wholesaler profile. Create/link one before publishing.`,
+  );
 }
 
 async function runContentFactory(body: any) {
@@ -610,6 +667,13 @@ Pricing rules:
 
   const raw = await geminiText(system, user);
   const parsed = parseJson(raw);
+
+  // Normalize the AI category onto the products_all check-constraint values now,
+  // so the wizard shows (and the publish insert receives) a legal slug.
+  const catMap = mapDdCategory(parsed.category_guess, [product_name, brand_hint, (parsed.tags || []).join(' ')].filter(Boolean).join(' '));
+  parsed.category_guess = catMap.category;
+  parsed.category_source = catMap.method;
+  parsed.category_raw = catMap.raw;
   const payload = {
     amazon_price: Number(parsed.amazon_price) || 0,
     walmart_price: Number(parsed.walmart_price) || 0,

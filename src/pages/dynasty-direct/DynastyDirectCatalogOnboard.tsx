@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { Loader2, Sparkles, ChevronRight, CheckCircle2, ImageOff, ArrowLeft, Wand2, Camera, Rocket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DD_CATEGORY_OPTIONS } from '@/lib/dynastyDirect/categories';
 
 interface Candidate { url: string; source: string; confidence: number; attribution?: string; thumb?: string }
 interface Supplier { id: string; company_name: string }
@@ -202,7 +204,9 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
       const r = await callPipeline({ mode: 'copy_pricing', draft_id: draftId, product_name: productName, brand_hint: brandHint, cost: Number(cost) || 0, hero_url: hero, supplier_id: supplierId || null });
       setCopy({
         title: r.title, short_description: r.short_description, long_description: r.long_description,
-        bullets: r.bullets || [], seo: r.seo || {}, category_guess: r.category_guess, tags: r.tags || [],
+        bullets: r.bullets || [], seo: r.seo || {},
+        category_guess: r.category_guess || '', category_raw: r.category_raw, category_source: r.category_source,
+        tags: r.tags || [],
       });
       setPricing(r.pricing || {});
       if (r.market) setMarketCheck(r.market);
@@ -224,6 +228,7 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
     if (!supplierId) { toast.error('Pick a wholesaler before publishing'); return; }
     if (selectedImages.length === 0) { toast.error('Select at least one image for the live product'); return; }
     if (!measurementsVerified) { toast.error('Tap "measurements verified" before publishing'); return; }
+    if (!copy.category_guess) { toast.error('Pick a category before publishing'); return; }
     setBusy('publish');
     try {
       const dims = (measurements.length_in || measurements.width_in || measurements.height_in)
@@ -555,7 +560,22 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Title</Label><Input value={copy.title || ''} onChange={(e) => setCopy({ ...copy, title: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Category</Label><Input value={copy.category_guess || ''} onChange={(e) => setCopy({ ...copy, category_guess: e.target.value })} /></div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={copy.category_guess || ''} onValueChange={(v) => setCopy({ ...copy, category_guess: v })}>
+                  <SelectTrigger><SelectValue placeholder="Pick a category" /></SelectTrigger>
+                  <SelectContent>
+                    {DD_CATEGORY_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!copy.category_guess && (
+                  <p className="text-xs text-destructive">
+                    AI couldn't match {copy.category_raw ? `"${copy.category_raw}"` : 'a category'} — pick one before publishing.
+                  </p>
+                )}
+              </div>
             </div>
             <div className="space-y-2"><Label>Short description</Label><Textarea rows={2} value={copy.short_description || ''} onChange={(e) => setCopy({ ...copy, short_description: e.target.value })} /></div>
             <div className="space-y-2"><Label>Long description</Label><Textarea rows={5} value={copy.long_description || ''} onChange={(e) => setCopy({ ...copy, long_description: e.target.value })} /></div>
