@@ -320,13 +320,16 @@ Deno.serve(async (req) => {
       const stake = Number(p.stake ?? 1);
       const odds = p.odds ?? null;
       const line = Number(p.line ?? 0);
-      const side = String(p.direction || p.team || "");
+      const side    = String(p.team      || "");  // moneyline + spread
+      const totSide = String(p.direction || "");  // totals only
       let r: Resolution;
       if (kind === "spread")     r = resolveSpread(game, side, line, stake, odds);
-      else if (kind === "total") r = resolveTotal(game, side, line, stake, odds);
+      else if (kind === "total") r = resolveTotal(game, totSide, line, stake, odds);
       else                       r = resolveMoneyline(game, side, stake, odds);
+      if (r.result === "pending") continue;
 
       const capperResult = r.result === "win" ? "won" : r.result === "loss" ? "lost" : "push";
+
 
       const { error: uerr } = await supabase
         .from("sbo_capper_picks")
