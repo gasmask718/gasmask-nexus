@@ -90,14 +90,19 @@ function winPnl(stake: number, oddsIn: number | null): number {
 }
 function resolveSpread(game: Game, side: string, line: number, stake: number, odds: number | null): Resolution {
   const { takingHome, takingAway } = sideTakes(game, side);
+  // No-match guard: an unrecognized side is ungradeable, never a loss.
   if (!takingHome && !takingAway) return { result: "pending", pnl: 0 };
   const margin = takingHome ? game.home_score - game.away_score : game.away_score - game.home_score;
 
-  const spreadLine = takingHome ? line : Math.abs(line);
-  if (margin === spreadLine) return { result: "push", pnl: 0 };
-  const won = margin > spreadLine;
+  // `line` is stored from the perspective of the picked side (e.g. +1.5 for a
+  // dog, -7.5 for a favorite). Cover math is margin + line: losing by 1 with
+  // +1.5 → net +0.5 → win. Never take the absolute value of the line.
+  const net = margin + line;
+  if (net === 0) return { result: "push", pnl: 0 };
+  const won = net > 0;
   return { result: won ? "win" : "loss", pnl: won ? winPnl(stake, odds) : -stake };
 }
+
 function resolveTotal(game: Game, side: string, line: number, stake: number, odds: number | null): Resolution {
   if (game.final_total === line) return { result: "push", pnl: 0 };
   const s = side.toLowerCase();
