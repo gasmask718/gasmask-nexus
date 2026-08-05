@@ -81,7 +81,7 @@ async function fetchCompletedGames(sport: string, url: string, errors: any[], da
 // (imported at top). Behavior unchanged.
 
 
-type Resolution = { result: "win" | "loss" | "push"; pnl: number };
+type Resolution = { result: "win" | "loss" | "push" | "pending"; pnl: number };
 
 function winPnl(stake: number, oddsIn: number | null): number {
   const odds = oddsIn ?? -110;
@@ -89,7 +89,8 @@ function winPnl(stake: number, oddsIn: number | null): number {
   return stake * (100 / Math.abs(odds));
 }
 function resolveSpread(game: Game, side: string, line: number, stake: number, odds: number | null): Resolution {
-  const takingHome = sideTakes(game, side).takingHome;
+  const { takingHome, takingAway } = sideTakes(game, side);
+  if (!takingHome && !takingAway) return { result: "pending", pnl: 0 };
   const margin = takingHome ? game.home_score - game.away_score : game.away_score - game.home_score;
 
   const spreadLine = takingHome ? line : Math.abs(line);
