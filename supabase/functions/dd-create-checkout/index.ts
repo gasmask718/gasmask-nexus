@@ -270,7 +270,17 @@ serve(async (req) => {
         );
         userId = (claimRes?.claims?.sub as string) ?? null;
       }
-      if (!userId) userId = Deno.env.get("DD_GUEST_USER_ID") ?? null;
+      if (!userId) {
+        // Guard: a misconfigured DD_GUEST_USER_ID (e.g. a URL) must fail loudly
+        // here rather than as an opaque uuid cast error on the order insert.
+        const guestId = Deno.env.get("DD_GUEST_USER_ID") ?? null;
+        const isUuid = !!guestId &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(guestId);
+        if (guestId && !isUuid) {
+          console.error("[dd-create-checkout] DD_GUEST_USER_ID is not a uuid");
+        }
+        userId = isUuid ? guestId : null;
+      }
       if (!userId) {
         // Roll back reserves — we cannot honor the order without a user_id.
         for (const r of reservedForRollback) {
