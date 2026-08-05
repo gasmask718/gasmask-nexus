@@ -167,6 +167,27 @@ export function useCheckout() {
         console.warn('Checkout geocode failed, falling back to state-only routing:', e);
       }
 
+      // ═══════════════════════════════════════════════════════════
+      // MULTI-WHOLESALER CAMPAIGN ROUTING
+      // When the cart carries an active partner campaign code, resolve it
+      // and hand the campaign id to the picker. If the campaign defines a
+      // wholesaler SET, every line item routes only within that set (and
+      // may split across members); otherwise the normal cascade applies.
+      // ═══════════════════════════════════════════════════════════
+      let campaignId: string | null = null;
+      let campaignWholesalerId: string | null = null;
+      if (data.campaignCode) {
+        const { data: camp } = await supabase
+          .from('dd_campaigns')
+          .select('id, preferred_wholesaler_id, status, ends_at')
+          .eq('campaign_code', data.campaignCode)
+          .maybeSingle();
+        if (camp && camp.status === 'active' && (!camp.ends_at || new Date(camp.ends_at) > new Date())) {
+          campaignId = camp.id as string;
+          campaignWholesalerId = (camp.preferred_wholesaler_id as string | null) ?? null;
+        }
+      }
+
       type RoutedItem = { item: CartItem; reason: string; details: any };
       const supplierBuckets = new Map<string, RoutedItem[]>();
 
@@ -182,7 +203,8 @@ export function useCheckout() {
             p_ship_state: data.shippingAddress.state,
             p_ship_lat: shipLat,
             p_ship_lng: shipLng,
-          });
+            p_campaign_id: campaignId,
+          } as any);
           if (pickErr) throw pickErr;
           const row = Array.isArray(pick) ? pick[0] : pick;
           if (row?.wholesaler_id) {
@@ -199,8 +221,11 @@ export function useCheckout() {
         supplierBuckets.set(chosenWid, [...existing, { item, reason, details }]);
       }
 
-      const firstWholesalerId = supplierBuckets.keys().next().value
-        || data.items[0]?.product?.wholesaler_id;
+      // Split orders: with >1 fulfilling supplier the order-level wholesaler_id
+      // is meaningless — per-item wholesaler_id governs payouts.
+      const firstWholesalerId = supplierBuckets.size === 1
+        ? supplierBuckets.keys().next().value
+        : (supplierBuckets.size === 0 ? data.items[0]?.product?.wholesaler_id : null);
 
       // Create main marketplace order
       const { data: order, error: orderError } = await supabase
@@ -219,6 +244,8 @@ export function useCheckout() {
           total: data.totals.total,
           shipping_funded_by_customer: true,
           notes: data.notes,
+          campaign_id: campaignId,
+          campaign_wholesaler_id: campaignWholesalerId,
           ...ageAudit,
         }])
         .select('id')
