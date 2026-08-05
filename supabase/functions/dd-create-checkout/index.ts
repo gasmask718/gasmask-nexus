@@ -281,24 +281,9 @@ serve(async (req) => {
         throw new Error("guest_user_not_configured");
       }
 
-      // Resolve campaign routing (optional). If campaign_code is present and
-      // the campaign is active, we stamp campaign_id + campaign_wholesaler_id
-      // onto the order so dd-grabba-bridge routes fulfillment to the partner
-      // wholesaler and dd-stripe-webhook can credit partner earnings.
-      let campaignId: string | null = null;
-      let campaignWholesalerId: string | null = null;
-      const campaignCode: string | null = body?.campaign_code ?? null;
-      if (campaignCode) {
-        const { data: camp } = await supabase
-          .from("dd_campaigns")
-          .select("id, preferred_wholesaler_id, status, ends_at")
-          .eq("campaign_code", campaignCode)
-          .maybeSingle();
-        if (camp && camp.status === "active" && (!camp.ends_at || new Date(camp.ends_at) > new Date())) {
-          campaignId = camp.id as string;
-          campaignWholesalerId = (camp.preferred_wholesaler_id as string | null) ?? null;
-        }
-      }
+      // (campaign routing was resolved above, before supplier picking)
+
+
 
       // Affiliate attribution — the stored ?ref= code travels with the request.
       const expressAffiliate = await resolveAffiliate(
