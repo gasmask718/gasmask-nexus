@@ -145,8 +145,9 @@ Deno.serve(async (req) => {
     // www resolves. Using the apex here would strand the buyer on a dead page
     // immediately after paying.
     const siteBase = Deno.env.get("BRANDARO_SITE_URL") || "https://www.brandarodigital.com";
+    // Spec (Section 8, STOP BWB-7): buyers land on the existing /thanks page.
     const successUrl =
-      `${siteBase}/purchase-success?demo_id=${encodeURIComponent(demo_id)}` +
+      `${siteBase}/thanks?demo_id=${encodeURIComponent(demo_id)}` +
       `&session={CHECKOUT_SESSION_ID}`;
     const cancelUrl = demo.demo_url || siteBase;
 
