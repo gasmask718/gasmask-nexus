@@ -469,7 +469,7 @@ async function runPublish(body: any) {
   // text into the column (that produced "rolling-papers" and a 400 on insert).
   const catCtx = [draft.product_name, copy.title, recognitionEarly.item_type, (copy.tags || []).join(' ')]
     .filter(Boolean).join(' ');
-  const catMap = mapDdCategory(draft.category || copy.category_guess, catCtx);
+  const catMap = mapDdCategory(copy.category_guess || draft.category, catCtx);
   if (!catMap.category) {
     throw new Error(
       `cannot publish: category "${catMap.raw ?? '(blank)'}" does not map to a Dynasty Direct category. ` +
