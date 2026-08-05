@@ -381,7 +381,7 @@ Deno.serve(async (req) => {
       const total_losses = (c.total_losses ?? 0) + d.l;
       const total_pushes = (c.total_pushes ?? 0) + d.p;
       const decided = total_wins + total_losses;
-      const win_rate = decided > 0 ? Number((total_wins / decided).toFixed(4)) : 0;
+      const win_rate = decided > 0 ? Number(((total_wins / decided) * 100).toFixed(2)) : 0;
 
       let hot_streak  = c.hot_streak  ?? 0;
       let cold_streak = c.cold_streak ?? 0;
