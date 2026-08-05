@@ -302,16 +302,88 @@ async function markOrderPaid(
         const revenue = Number(oc.total ?? 0);
         const commission = Math.round(revenue * pct) / 100;
 
-        await supabase.from("dd_partner_earnings").insert({
-          ambassador_id: c.ambassador_id ?? linkRow?.ambassador_id ?? null,
-          wholesaler_id: oc.campaign_wholesaler_id ?? null,
-          campaign_id: c.id,
-          order_id: orderId,
-          order_revenue: revenue,
-          commission_pct: pct,
-          commission_amount: commission,
-          status: "pending",
-        });
+        // ── PER-ITEM ATTRIBUTION ──────────────────────────────────────
+        // Orders can split across several campaign-set wholesalers, so
+        // commission is attributed per line item to the wholesaler that
+        // actually fulfills it (marketplace_order_items.wholesaler_id) —
+        // never to the old scalar campaign_wholesaler_id.
+        const { data: itemRows } = await supabase
+          .from("marketplace_order_items")
+          .select("id, wholesaler_id, qty, price_each")
+          .eq("order_id", orderId);
+        const oItems = (itemRows ?? []) as Array<{
+          id: string;
+          wholesaler_id: string | null;
+          qty: number | null;
+          price_each: number | null;
+        }>;
+        const itemsSubtotal = oItems.reduce(
+          (s, i) => s + Number(i.price_each ?? 0) * Number(i.qty ?? 0),
+          0,
+        );
+
+        if (oItems.length > 0 && itemsSubtotal > 0) {
+          // Legacy wholesalers-table id (FK on wholesaler_id) resolved from the
+          // fulfilling profile where a mapping exists; profile id is always kept.
+          const profileIds = Array.from(
+            new Set(oItems.map((i) => i.wholesaler_id).filter(Boolean)),
+          ) as string[];
+          const legacyByProfile = new Map<string, string | null>();
+          if (profileIds.length > 0) {
+            const { data: profs } = await supabase
+              .from("wholesaler_profiles")
+              .select("id, company_name")
+              .in("id", profileIds);
+            for (const pr of (profs ?? []) as any[]) {
+              const { data: legacy } = await supabase
+                .from("wholesalers")
+                .select("id")
+                .eq("name", pr.company_name ?? "")
+                .maybeSingle();
+              legacyByProfile.set(pr.id, (legacy as any)?.id ?? null);
+            }
+          }
+
+          let allocated = 0;
+          const rows = oItems.map((it, idx) => {
+            const lineRevenue = Number(it.price_each ?? 0) * Number(it.qty ?? 0);
+            // Allocate the order-level commission proportionally by line
+            // revenue; last line absorbs the rounding remainder.
+            let lineCommission =
+              Math.round(commission * (lineRevenue / itemsSubtotal) * 100) / 100;
+            if (idx === oItems.length - 1) {
+              lineCommission = Math.round((commission - allocated) * 100) / 100;
+            }
+            allocated = Math.round((allocated + lineCommission) * 100) / 100;
+            return {
+              ambassador_id: c.ambassador_id ?? linkRow?.ambassador_id ?? null,
+              wholesaler_id: it.wholesaler_id
+                ? legacyByProfile.get(it.wholesaler_id) ?? null
+                : null,
+              wholesaler_profile_id: it.wholesaler_id ?? null,
+              order_item_id: it.id,
+              campaign_id: c.id,
+              order_id: orderId,
+              order_revenue: lineRevenue,
+              commission_pct: pct,
+              commission_amount: lineCommission,
+              status: "pending",
+            };
+          });
+          await supabase.from("dd_partner_earnings").insert(rows);
+        } else {
+          // No line items resolvable — keep the legacy order-level record.
+          await supabase.from("dd_partner_earnings").insert({
+            ambassador_id: c.ambassador_id ?? linkRow?.ambassador_id ?? null,
+            wholesaler_id: oc.campaign_wholesaler_id ?? null,
+            campaign_id: c.id,
+            order_id: orderId,
+            order_revenue: revenue,
+            commission_pct: pct,
+            commission_amount: commission,
+            status: "pending",
+          });
+        }
 
         await supabase
           .from("dd_campaigns")
