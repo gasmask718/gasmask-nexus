@@ -81,7 +81,7 @@ async function fetchCompletedGames(sport: string, url: string, errors: any[], da
 // (imported at top). Behavior unchanged.
 
 
-type Resolution = { result: "win" | "loss" | "push"; pnl: number };
+type Resolution = { result: "win" | "loss" | "push" | "pending"; pnl: number };
 
 function winPnl(stake: number, oddsIn: number | null): number {
   const odds = oddsIn ?? -110;
@@ -89,7 +89,8 @@ function winPnl(stake: number, oddsIn: number | null): number {
   return stake * (100 / Math.abs(odds));
 }
 function resolveSpread(game: Game, side: string, line: number, stake: number, odds: number | null): Resolution {
-  const takingHome = sideTakes(game, side).takingHome;
+  const { takingHome, takingAway } = sideTakes(game, side);
+  if (!takingHome && !takingAway) return { result: "pending", pnl: 0 };
   const margin = takingHome ? game.home_score - game.away_score : game.away_score - game.home_score;
 
   const spreadLine = takingHome ? line : Math.abs(line);
@@ -280,6 +281,8 @@ Deno.serve(async (req) => {
       if (kind === "spread")     r = resolveSpread(game, String(s.side ?? ""), line, stake, odds);
       else if (kind === "total") r = resolveTotal(game, String(s.side ?? ""), line, stake, odds);
       else                       r = resolveMoneyline(game, String(s.side ?? ""), stake, odds);
+      if (r.result === "pending") continue;
+
 
       const { error: uerr } = await supabase
         .from("sbo_signals")
@@ -317,13 +320,16 @@ Deno.serve(async (req) => {
       const stake = Number(p.stake ?? 1);
       const odds = p.odds ?? null;
       const line = Number(p.line ?? 0);
-      const side = String(p.direction || p.team || "");
+      const side    = String(p.team      || "");  // moneyline + spread
+      const totSide = String(p.direction || "");  // totals only
       let r: Resolution;
       if (kind === "spread")     r = resolveSpread(game, side, line, stake, odds);
-      else if (kind === "total") r = resolveTotal(game, side, line, stake, odds);
+      else if (kind === "total") r = resolveTotal(game, totSide, line, stake, odds);
       else                       r = resolveMoneyline(game, side, stake, odds);
+      if (r.result === "pending") continue;
 
       const capperResult = r.result === "win" ? "won" : r.result === "loss" ? "lost" : "push";
+
 
       const { error: uerr } = await supabase
         .from("sbo_capper_picks")
