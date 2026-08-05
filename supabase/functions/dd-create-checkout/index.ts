@@ -236,11 +236,13 @@ serve(async (req) => {
       } catch (e) {
         // Release whatever we DID reserve — never release anything we didn't.
         for (const r of reservedForRollback) {
-          await supabase.rpc("release_marketplace_inventory", {
-            p_product_id: r.product_id,
-            p_wholesaler_id: r.wholesaler_id,
-            p_qty: r.qty,
-          }).catch(() => {});
+          try {
+            await supabase.rpc("release_marketplace_inventory", {
+              p_product_id: r.product_id,
+              p_wholesaler_id: r.wholesaler_id,
+              p_qty: r.qty,
+            });
+          } catch (_e) { /* best-effort release */ }
         }
         throw e;
       }
@@ -272,11 +274,13 @@ serve(async (req) => {
       if (!userId) {
         // Roll back reserves — we cannot honor the order without a user_id.
         for (const r of reservedForRollback) {
-          await supabase.rpc("release_marketplace_inventory", {
-            p_product_id: r.product_id,
-            p_wholesaler_id: r.wholesaler_id,
-            p_qty: r.qty,
-          }).catch(() => {});
+          try {
+            await supabase.rpc("release_marketplace_inventory", {
+              p_product_id: r.product_id,
+              p_wholesaler_id: r.wholesaler_id,
+              p_qty: r.qty,
+            });
+          } catch (_e) { /* best-effort release */ }
         }
         throw new Error("guest_user_not_configured");
       }
@@ -322,11 +326,13 @@ serve(async (req) => {
         .single();
       if (orderErr || !orderRow) {
         for (const r of reservedForRollback) {
-          await supabase.rpc("release_marketplace_inventory", {
-            p_product_id: r.product_id,
-            p_wholesaler_id: r.wholesaler_id,
-            p_qty: r.qty,
-          }).catch(() => {});
+          try {
+            await supabase.rpc("release_marketplace_inventory", {
+              p_product_id: r.product_id,
+              p_wholesaler_id: r.wholesaler_id,
+              p_qty: r.qty,
+            });
+          } catch (_e) { /* best-effort release */ }
         }
         throw orderErr ?? new Error("order_insert_failed");
       }
@@ -358,11 +364,13 @@ serve(async (req) => {
       if (itemsErr) {
         // Roll back reserves + the order row
         for (const r of reservedForRollback) {
-          await supabase.rpc("release_marketplace_inventory", {
-            p_product_id: r.product_id,
-            p_wholesaler_id: r.wholesaler_id,
-            p_qty: r.qty,
-          }).catch(() => {});
+          try {
+            await supabase.rpc("release_marketplace_inventory", {
+              p_product_id: r.product_id,
+              p_wholesaler_id: r.wholesaler_id,
+              p_qty: r.qty,
+            });
+          } catch (_e) { /* best-effort release */ }
         }
         await supabase.from("marketplace_orders").delete().eq("id", orderId);
         throw itemsErr;
