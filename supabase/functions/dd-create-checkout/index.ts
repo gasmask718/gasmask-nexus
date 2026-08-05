@@ -152,6 +152,25 @@ serve(async (req) => {
       const shipLat = typeof shipping?.lat === "number" ? shipping.lat : null;
       const shipLng = typeof shipping?.lng === "number" ? shipping.lng : null;
 
+      // Resolve campaign routing BEFORE picking suppliers. When the campaign
+      // defines a wholesaler SET (dd_campaign_wholesalers), the picker restricts
+      // candidates to that set; preferred_wholesaler_id stays as the legacy
+      // scalar for backward compatibility.
+      let campaignId: string | null = null;
+      let campaignWholesalerId: string | null = null;
+      const campaignCode: string | null = body?.campaign_code ?? null;
+      if (campaignCode) {
+        const { data: camp } = await supabase
+          .from("dd_campaigns")
+          .select("id, preferred_wholesaler_id, status, ends_at")
+          .eq("campaign_code", campaignCode)
+          .maybeSingle();
+        if (camp && camp.status === "active" && (!camp.ends_at || new Date(camp.ends_at) > new Date())) {
+          campaignId = camp.id as string;
+          campaignWholesalerId = (camp.preferred_wholesaler_id as string | null) ?? null;
+        }
+      }
+
       // Pick supplier per item AND reserve inventory. On any failure, release
       // everything we successfully reserved before bubbling the error up.
       const picks: Array<{ product_id: string; wholesaler_id: string; qty: number; unit_cents: number; product_name: string }> = [];
