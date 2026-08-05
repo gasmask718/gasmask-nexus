@@ -194,8 +194,10 @@ serve(async (req) => {
             unitCents = Math.max(0, Math.round(unitCents * (1 - pct / 100)));
           }
 
-          // Geo-aware supplier pick (same RPC the hosted path / split engine uses)
-          const { data: supplierId, error: pickErr } = await supabase.rpc(
+          // Geo-aware supplier pick (same RPC the hosted path / split engine uses).
+          // p_campaign_id restricts candidates to the campaign's wholesaler set
+          // when one exists; different items may land on different set members.
+          const { data: pickRows, error: pickErr } = await supabase.rpc(
             "dd_pick_supplier_for_item",
             {
               p_product_id: it.product_id,
@@ -203,9 +205,12 @@ serve(async (req) => {
               p_ship_state: shipState,
               p_ship_lat: shipLat,
               p_ship_lng: shipLng,
+              p_campaign_id: campaignId,
             },
           );
           if (pickErr) throw pickErr;
+          const pickRow: any = Array.isArray(pickRows) ? pickRows[0] : pickRows;
+          const supplierId: string | null = pickRow?.wholesaler_id ?? null;
           if (!supplierId) throw new Error(`oversold:${it.product_id}`);
 
           const { error: resErr } = await supabase.rpc("reserve_marketplace_inventory", {
