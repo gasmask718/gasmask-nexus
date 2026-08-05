@@ -1,0 +1,1 @@
+DELETE FROM public.dnc_list WHERE reason IN ('probe_test_a', 'probe_test_b');
