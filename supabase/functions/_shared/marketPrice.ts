@@ -14,6 +14,9 @@ export const MIN_COMPARABLE_LISTINGS = 2;
 /** Titles scoring below this share of product tokens are dropped as irrelevant. */
 export const RELEVANCE_THRESHOLD = 0.6;
 
+/** Sentinel unit count for wholesale packaging (box / carton / display / case). */
+export const BULK_UNITS = 9999;
+
 export interface MarketLookup {
   available: boolean;
   reason?: string;
@@ -119,10 +122,18 @@ export function titleRelevance(productName: string, title: string): number {
  */
 export function parsePackUnits(title: string): number {
   const t = title.toLowerCase();
+
+  // Wholesale packaging words. A "box" / "carton" / "display" of rolling papers
+  // holds many retail packs, and the listed count ("1 Box", "50 Heftchen") is a
+  // count of packaging, not of retail units — so any of these is treated as BULK
+  // and only ever compares against another bulk listing.
+  if (/\b(box|boxes|carton|cartons|case|cases|display|displays|sleeve|sleeves|heftchen|booklets?|brick)\b/.test(t)) {
+    return BULK_UNITS;
+  }
+
   const patterns: RegExp[] = [
-    /(?:pack|packs|box|boxes|booklet|booklets|carton|cartons|lot|set)\s*of\s*(\d{1,4})/,
-    /(\d{1,4})\s*[-\s]?(?:pack|packs|packets|booklets|boxes|box|cartons|units|ct\b|count\b)/,
-    /(\d{1,4})\s*x\s*\d{1,4}\s*(?:leaves|sheets|papers)/,
+    /(?:pack|packs|packets|lot|set)\s*of\s*(\d{1,4})/,
+    /(\d{1,4})\s*[-\s]?(?:pack|packs|packets|units|ct\b|count\b)/,
   ];
   for (const re of patterns) {
     const m = t.match(re);
