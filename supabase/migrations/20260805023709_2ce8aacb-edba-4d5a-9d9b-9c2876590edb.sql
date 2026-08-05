@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS sbo_weekly_reports_week_start_key ON public.sbo_weekly_reports (week_start);
