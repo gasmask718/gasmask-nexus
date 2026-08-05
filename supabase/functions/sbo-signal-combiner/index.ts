@@ -246,7 +246,10 @@ Deno.serve(async (req) => {
       if (error) throw error;
       signals = data ?? [];
     } else if (reprocess_all) {
-      const { data, error } = await base().eq('result', 'pending').limit(500);
+      const { data, error } = await base()
+        .eq('result', 'pending')
+        .is('signal_grade', null)
+        .limit(500);
       if (error) throw error;
       signals = data ?? [];
     } else {
