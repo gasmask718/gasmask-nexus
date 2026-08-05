@@ -8,6 +8,12 @@
 
 export interface SerpResult { source: string; price: number; url: string | null; title: string }
 
+/** Minimum number of apples-to-apples listings before we call a lookup market-informed. */
+export const MIN_COMPARABLE_LISTINGS = 2;
+
+/** Titles scoring below this share of product tokens are dropped as irrelevant. */
+export const RELEVANCE_THRESHOLD = 0.6;
+
 export interface MarketLookup {
   available: boolean;
   reason?: string;
@@ -18,7 +24,11 @@ export interface MarketLookup {
   avg: number | null;
   count: number;
   samples_raw: number;
-  excluded: { bundles: number; low_relevance: number; outliers: number };
+  excluded: { bundles: number; low_relevance: number; pack_mismatch: number; outliers: number };
+  /** true only when enough same-pack-size listings survived to be a fair comparison. */
+  comparable: boolean;
+  /** Pack size (units per listing) the comparison was normalized to. */
+  pack_size: number;
   samples: { title: string; price: number; source: string; link: string | null }[];
   checked_at: string;
 }
@@ -100,6 +110,38 @@ export function titleRelevance(productName: string, title: string): number {
   return hits / pTokens.length;
 }
 
+/**
+ * Best-effort "how many retail units is this listing selling?" parser.
+ *
+ * Only counts BUNDLE units (packs / boxes / booklets of the product), never
+ * content counts inside one pack ("32 leaves", "50 sheets") — those describe
+ * the single retail unit and must not be treated as a multi-pack.
+ */
+export function parsePackUnits(title: string): number {
+  const t = title.toLowerCase();
+  const patterns: RegExp[] = [
+    /(?:pack|packs|box|boxes|booklet|booklets|carton|cartons|lot|set)\s*of\s*(\d{1,4})/,
+    /(\d{1,4})\s*[-\s]?(?:pack|packs|packets|booklets|boxes|box|cartons|units|ct\b|count\b)/,
+    /(\d{1,4})\s*x\s*\d{1,4}\s*(?:leaves|sheets|papers)/,
+  ];
+  for (const re of patterns) {
+    const m = t.match(re);
+    if (m) {
+      const n = Number(m[1]);
+      if (Number.isFinite(n) && n >= 1 && n <= 5000) return n;
+    }
+  }
+  return 1;
+}
+
+/** Do two listings sell the same retail quantity? Allows a 1.5x fudge either way. */
+export function packSizesComparable(a: number, b: number): boolean {
+  const hi = Math.max(a, b);
+  const lo = Math.min(a, b);
+  if (lo <= 0) return false;
+  return hi / lo < 1.5;
+}
+
 export async function serpApiShoppingSearch(apiKey: string, query: string): Promise<SerpResult[]> {
   const url = new URL('https://serpapi.com/search.json');
   url.searchParams.set('engine', 'google_shopping');
@@ -135,20 +177,35 @@ export function buildMarketQuery(productName: string | null, brandHint?: string 
   return (brandPart + nameRaw).trim() || nameRaw;
 }
 
-/** Apply bundle + relevance filtering, then trim price outliers. */
+/**
+ * Apply bundle + relevance + pack-size filtering, then trim price outliers.
+ *
+ * Pack-size awareness: a single-pack product must never be priced against a
+ * 50-pack listing. We infer the product's own pack size from its name (default
+ * 1 unit) and drop every listing selling a materially different quantity.
+ */
 export function filterAndTrim(productName: string, rawResults: SerpResult[]) {
+  const targetUnits = parsePackUnits(productName || '');
   let bundles = 0;
   let lowRelevance = 0;
-  const filtered: SerpResult[] = [];
+  let packMismatch = 0;
+  const filtered: (SerpResult & { pack_units: number })[] = [];
   for (const r of rawResults) {
     const titleLc = r.title.toLowerCase();
     if (BUNDLE_EXCLUSIONS.some((t) => titleLc.includes(t))) { bundles++; continue; }
-    if (productName && titleRelevance(productName, r.title) < 0.75) { lowRelevance++; continue; }
-    filtered.push(r);
+    if (productName && titleRelevance(productName, r.title) < RELEVANCE_THRESHOLD) { lowRelevance++; continue; }
+    const units = parsePackUnits(r.title);
+    if (!packSizesComparable(units, targetUnits)) { packMismatch++; continue; }
+    filtered.push({ ...r, pack_units: units });
   }
   const rawPrices = filtered.map((r) => r.price);
   const prices = trimOutliers(rawPrices);
-  return { filtered, prices, excluded: { bundles, low_relevance: lowRelevance, outliers: rawPrices.length - prices.length } };
+  return {
+    filtered,
+    prices,
+    target_units: targetUnits,
+    excluded: { bundles, low_relevance: lowRelevance, pack_mismatch: packMismatch, outliers: rawPrices.length - prices.length },
+  };
 }
 
 /**
@@ -162,7 +219,9 @@ export async function lookupMarket(
 ): Promise<MarketLookup> {
   const base: MarketLookup = {
     available: false, query: '', low: null, median: null, high: null, avg: null,
-    count: 0, samples_raw: 0, excluded: { bundles: 0, low_relevance: 0, outliers: 0 },
+    count: 0, samples_raw: 0,
+    excluded: { bundles: 0, low_relevance: 0, pack_mismatch: 0, outliers: 0 },
+    comparable: false, pack_size: 1,
     samples: [], checked_at: new Date().toISOString(),
   };
 
@@ -180,17 +239,27 @@ export async function lookupMarket(
     return { ...base, query, reason: msg.includes('429') ? 'SerpAPI quota exhausted' : msg };
   }
 
-  const { filtered, prices, excluded } = filterAndTrim(productName, raw);
+  const { filtered, prices, excluded, target_units } = filterAndTrim(productName, raw);
   if (prices.length === 0) {
-    return { ...base, available: true, query, samples_raw: raw.length, excluded, reason: 'no relevant listings' };
+    return {
+      ...base, available: true, query, samples_raw: raw.length, excluded,
+      pack_size: target_units, reason: 'no comparable listings after bundle/pack-size filtering',
+    };
   }
 
   const sorted = prices.slice().sort((a, b) => a - b);
   const avg = sorted.reduce((s, p) => s + p, 0) / sorted.length;
   const r2 = (n: number) => Number(n.toFixed(2));
 
+  const comparable = sorted.length >= MIN_COMPARABLE_LISTINGS;
+
   return {
     available: true,
+    reason: comparable
+      ? undefined
+      : `only ${sorted.length} comparable listing(s) — below the ${MIN_COMPARABLE_LISTINGS} needed for a fair comparison`,
+    comparable,
+    pack_size: target_units,
     query,
     low: r2(sorted[0]),
     median: r2(sorted[Math.floor(sorted.length / 2)]),
