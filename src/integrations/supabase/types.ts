@@ -43180,6 +43180,61 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_campaign_wholesalers: {
+        Row: {
+          active: boolean
+          campaign_id: string
+          created_at: string
+          id: string
+          priority: number
+          updated_at: string
+          weight: number
+          wholesaler_id: string
+        }
+        Insert: {
+          active?: boolean
+          campaign_id: string
+          created_at?: string
+          id?: string
+          priority?: number
+          updated_at?: string
+          weight?: number
+          wholesaler_id: string
+        }
+        Update: {
+          active?: boolean
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          priority?: number
+          updated_at?: string
+          weight?: number
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_campaign_wholesalers_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "dd_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_campaign_wholesalers_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "dd_campaign_wholesalers_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_campaigns: {
         Row: {
           ambassador_id: string | null
@@ -44697,12 +44752,14 @@ export type Database = {
           id: string
           order_cost: number | null
           order_id: string | null
+          order_item_id: string | null
           order_profit: number | null
           order_revenue: number
           paid_at: string | null
           partner_id: string | null
           status: string | null
           wholesaler_id: string | null
+          wholesaler_profile_id: string | null
         }
         Insert: {
           ambassador_id?: string | null
@@ -44714,12 +44771,14 @@ export type Database = {
           id?: string
           order_cost?: number | null
           order_id?: string | null
+          order_item_id?: string | null
           order_profit?: number | null
           order_revenue: number
           paid_at?: string | null
           partner_id?: string | null
           status?: string | null
           wholesaler_id?: string | null
+          wholesaler_profile_id?: string | null
         }
         Update: {
           ambassador_id?: string | null
@@ -44731,12 +44790,14 @@ export type Database = {
           id?: string
           order_cost?: number | null
           order_id?: string | null
+          order_item_id?: string | null
           order_profit?: number | null
           order_revenue?: number
           paid_at?: string | null
           partner_id?: string | null
           status?: string | null
           wholesaler_id?: string | null
+          wholesaler_profile_id?: string | null
         }
         Relationships: [
           {
@@ -44789,6 +44850,20 @@ export type Database = {
             referencedColumns: ["order_id"]
           },
           {
+            foreignKeyName: "dd_partner_earnings_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_order_items_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "dd_partner_earnings_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
@@ -44828,6 +44903,20 @@ export type Database = {
             columns: ["wholesaler_id"]
             isOneToOne: false
             referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_wholesaler_profile_id_fkey"
+            columns: ["wholesaler_profile_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_wholesaler_profile_id_fkey"
+            columns: ["wholesaler_profile_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -140729,6 +140818,7 @@ export type Database = {
       dd_margin_warn: { Args: never; Returns: number }
       dd_pick_supplier_for_item: {
         Args: {
+          p_campaign_id?: string
           p_product_id: string
           p_qty: number
           p_ship_lat: number

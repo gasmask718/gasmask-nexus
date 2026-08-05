@@ -152,6 +152,25 @@ serve(async (req) => {
       const shipLat = typeof shipping?.lat === "number" ? shipping.lat : null;
       const shipLng = typeof shipping?.lng === "number" ? shipping.lng : null;
 
+      // Resolve campaign routing BEFORE picking suppliers. When the campaign
+      // defines a wholesaler SET (dd_campaign_wholesalers), the picker restricts
+      // candidates to that set; preferred_wholesaler_id stays as the legacy
+      // scalar for backward compatibility.
+      let campaignId: string | null = null;
+      let campaignWholesalerId: string | null = null;
+      const campaignCode: string | null = body?.campaign_code ?? null;
+      if (campaignCode) {
+        const { data: camp } = await supabase
+          .from("dd_campaigns")
+          .select("id, preferred_wholesaler_id, status, ends_at")
+          .eq("campaign_code", campaignCode)
+          .maybeSingle();
+        if (camp && camp.status === "active" && (!camp.ends_at || new Date(camp.ends_at) > new Date())) {
+          campaignId = camp.id as string;
+          campaignWholesalerId = (camp.preferred_wholesaler_id as string | null) ?? null;
+        }
+      }
+
       // Pick supplier per item AND reserve inventory. On any failure, release
       // everything we successfully reserved before bubbling the error up.
       const picks: Array<{ product_id: string; wholesaler_id: string; qty: number; unit_cents: number; product_name: string }> = [];
@@ -175,8 +194,10 @@ serve(async (req) => {
             unitCents = Math.max(0, Math.round(unitCents * (1 - pct / 100)));
           }
 
-          // Geo-aware supplier pick (same RPC the hosted path / split engine uses)
-          const { data: supplierId, error: pickErr } = await supabase.rpc(
+          // Geo-aware supplier pick (same RPC the hosted path / split engine uses).
+          // p_campaign_id restricts candidates to the campaign's wholesaler set
+          // when one exists; different items may land on different set members.
+          const { data: pickRows, error: pickErr } = await supabase.rpc(
             "dd_pick_supplier_for_item",
             {
               p_product_id: it.product_id,
@@ -184,9 +205,12 @@ serve(async (req) => {
               p_ship_state: shipState,
               p_ship_lat: shipLat,
               p_ship_lng: shipLng,
+              p_campaign_id: campaignId,
             },
           );
           if (pickErr) throw pickErr;
+          const pickRow: any = Array.isArray(pickRows) ? pickRows[0] : pickRows;
+          const supplierId: string | null = pickRow?.wholesaler_id ?? null;
           if (!supplierId) throw new Error(`oversold:${it.product_id}`);
 
           const { error: resErr } = await supabase.rpc("reserve_marketplace_inventory", {
@@ -212,11 +236,13 @@ serve(async (req) => {
       } catch (e) {
         // Release whatever we DID reserve — never release anything we didn't.
         for (const r of reservedForRollback) {
-          await supabase.rpc("release_marketplace_inventory", {
-            p_product_id: r.product_id,
-            p_wholesaler_id: r.wholesaler_id,
-            p_qty: r.qty,
-          }).catch(() => {});
+          try {
+            await supabase.rpc("release_marketplace_inventory", {
+              p_product_id: r.product_id,
+              p_wholesaler_id: r.wholesaler_id,
+              p_qty: r.qty,
+            });
+          } catch (_e) { /* best-effort release */ }
         }
         throw e;
       }
@@ -244,37 +270,34 @@ serve(async (req) => {
         );
         userId = (claimRes?.claims?.sub as string) ?? null;
       }
-      if (!userId) userId = Deno.env.get("DD_GUEST_USER_ID") ?? null;
+      if (!userId) {
+        // Guard: a misconfigured DD_GUEST_USER_ID (e.g. a URL) must fail loudly
+        // here rather than as an opaque uuid cast error on the order insert.
+        const guestId = Deno.env.get("DD_GUEST_USER_ID") ?? null;
+        const isUuid = !!guestId &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(guestId);
+        if (guestId && !isUuid) {
+          console.error("[dd-create-checkout] DD_GUEST_USER_ID is not a uuid");
+        }
+        userId = isUuid ? guestId : null;
+      }
       if (!userId) {
         // Roll back reserves — we cannot honor the order without a user_id.
         for (const r of reservedForRollback) {
-          await supabase.rpc("release_marketplace_inventory", {
-            p_product_id: r.product_id,
-            p_wholesaler_id: r.wholesaler_id,
-            p_qty: r.qty,
-          }).catch(() => {});
+          try {
+            await supabase.rpc("release_marketplace_inventory", {
+              p_product_id: r.product_id,
+              p_wholesaler_id: r.wholesaler_id,
+              p_qty: r.qty,
+            });
+          } catch (_e) { /* best-effort release */ }
         }
         throw new Error("guest_user_not_configured");
       }
 
-      // Resolve campaign routing (optional). If campaign_code is present and
-      // the campaign is active, we stamp campaign_id + campaign_wholesaler_id
-      // onto the order so dd-grabba-bridge routes fulfillment to the partner
-      // wholesaler and dd-stripe-webhook can credit partner earnings.
-      let campaignId: string | null = null;
-      let campaignWholesalerId: string | null = null;
-      const campaignCode: string | null = body?.campaign_code ?? null;
-      if (campaignCode) {
-        const { data: camp } = await supabase
-          .from("dd_campaigns")
-          .select("id, preferred_wholesaler_id, status, ends_at")
-          .eq("campaign_code", campaignCode)
-          .maybeSingle();
-        if (camp && camp.status === "active" && (!camp.ends_at || new Date(camp.ends_at) > new Date())) {
-          campaignId = camp.id as string;
-          campaignWholesalerId = (camp.preferred_wholesaler_id as string | null) ?? null;
-        }
-      }
+      // (campaign routing was resolved above, before supplier picking)
+
+
 
       // Affiliate attribution — the stored ?ref= code travels with the request.
       const expressAffiliate = await resolveAffiliate(
@@ -313,11 +336,13 @@ serve(async (req) => {
         .single();
       if (orderErr || !orderRow) {
         for (const r of reservedForRollback) {
-          await supabase.rpc("release_marketplace_inventory", {
-            p_product_id: r.product_id,
-            p_wholesaler_id: r.wholesaler_id,
-            p_qty: r.qty,
-          }).catch(() => {});
+          try {
+            await supabase.rpc("release_marketplace_inventory", {
+              p_product_id: r.product_id,
+              p_wholesaler_id: r.wholesaler_id,
+              p_qty: r.qty,
+            });
+          } catch (_e) { /* best-effort release */ }
         }
         throw orderErr ?? new Error("order_insert_failed");
       }
@@ -349,11 +374,13 @@ serve(async (req) => {
       if (itemsErr) {
         // Roll back reserves + the order row
         for (const r of reservedForRollback) {
-          await supabase.rpc("release_marketplace_inventory", {
-            p_product_id: r.product_id,
-            p_wholesaler_id: r.wholesaler_id,
-            p_qty: r.qty,
-          }).catch(() => {});
+          try {
+            await supabase.rpc("release_marketplace_inventory", {
+              p_product_id: r.product_id,
+              p_wholesaler_id: r.wholesaler_id,
+              p_qty: r.qty,
+            });
+          } catch (_e) { /* best-effort release */ }
         }
         await supabase.from("marketplace_orders").delete().eq("id", orderId);
         throw itemsErr;

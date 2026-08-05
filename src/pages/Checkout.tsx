@@ -107,6 +107,7 @@ export default function Checkout() {
           notes,
           ageConfirmed: hasRestrictedItems ? ageConfirmed : undefined,
           ageConfirmedIp: clientIp,
+          campaignCode: getStoredCampaignCode(),
         });
 
         // 2) Hand off to Stripe via dd-create-checkout (hosted session).
@@ -143,6 +144,7 @@ export default function Checkout() {
         notes,
         ageConfirmed: hasRestrictedItems ? ageConfirmed : undefined,
         ageConfirmedIp: clientIp,
+        campaignCode: getStoredCampaignCode(),
       });
 
       await clearCart();
