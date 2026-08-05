@@ -168,7 +168,7 @@ async function combineSignal(supabase: any, signal: SignalRow) {
       else if (sportWr >= 52) bonus += 4;
       if (Number(capper.hot_streak ?? 0) >= 5) bonus += 8;
       if (Number(pick.stake ?? 0) >= 2) bonus += 3;
-      const applied = (bonus * weight) / 100;
+      const applied = bonus * weight;
       combined += applied;
       confirming.push({
         capper_id: capper.id,
