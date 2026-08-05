@@ -99,8 +99,9 @@ export function canonicalizeDisposition(raw: string | null | undefined): string 
 // UNIFIED SUPPRESSION CHECK (UT-025)
 // `dnc_list` (voice-side) and `opt_out_events` (SMS-side) are two separate
 // suppression sources that were never cross-checked. isSuppressed() checks BOTH.
-// isOnDNC() above is intentionally left untouched — GasMask / dd- / tt- / dc-*
-// functions depend on its exact behaviour.
+// isOnDNC() above keeps its original signature and return shape (GasMask /
+// dd- / tt- / dc-* functions depend on it) and now uses the same encoded
+// .in() lookup pattern; it checks dnc_list only.
 // ---------------------------------------------------------------------------
 export async function isSuppressed(
   supabase: any,
