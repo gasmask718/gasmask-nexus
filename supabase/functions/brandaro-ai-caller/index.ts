@@ -16,7 +16,7 @@ serve(async (req) => {
   try {
     const bodyText = await req.text();
     const body = bodyText ? JSON.parse(bodyText) : {};
-    const { batch_size = 5, language_filter } = body;
+    const { batch_size = 5, language_filter, test_phone } = body;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -37,6 +37,87 @@ serve(async (req) => {
     }
     if (!BRANDARO_SALES_PATHWAY_ID) {
       throw new Error("BRANDARO_SALES_PATHWAY_ID (or legacy BRANDARO_SALES_AGENT_ID) not configured");
+    }
+
+    // === TEST OVERRIDE ===
+    // `test_phone` dials one explicit number and bypasses the lead table, the
+    // dispatch gates, the 24h recent-call filter and all DB bookkeeping. It
+    // exists so outbound dialing can be validated without calling a real
+    // business. It never touches brandaro_leads_master or brandaro_ai_calls.
+    if (test_phone) {
+      if (!/^\+[1-9]\d{6,14}$/.test(String(test_phone))) {
+        return new Response(
+          JSON.stringify({ success: false, error: "test_phone must be E.164, e.g. +15551234567" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Same from-number cascade as the live path, minus the usage bookkeeping.
+      let testFrom: string | null = null;
+      try {
+        const { data: sel, error: selErr } = await supabase.rpc(
+          "select_best_number_for_business",
+          { p_business: "brandaro" }
+        );
+        if (selErr) throw selErr;
+        const row = Array.isArray(sel) ? sel[0] : sel;
+        testFrom = row?.phone_number ?? null;
+      } catch (e) {
+        console.error("[brandaro-ai-caller][TEST] number selection failed:", e);
+      }
+      if (!testFrom) {
+        const { data: fbRows } = await supabase
+          .from("dc_phone_numbers")
+          .select("phone_number")
+          .eq("business", "brandaro")
+          .eq("status", "active")
+          .order("daily_call_count", { ascending: true })
+          .limit(1);
+        testFrom = fbRows?.[0]?.phone_number ?? null;
+      }
+      if (!testFrom) {
+        return new Response(
+          JSON.stringify({ success: false, error: "No active brandaro from-number available" }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const testPayload: Record<string, unknown> = {
+        phone_number: test_phone,
+        from: testFrom,
+        pathway_id: BRANDARO_SALES_PATHWAY_ID,
+        metadata: { campaign: "brandaro-ai-caller-test", test: true },
+      };
+
+      const tRes = await fetch("https://api.bland.ai/v1/calls", {
+        method: "POST",
+        headers: { Authorization: BLAND_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify(testPayload),
+      });
+      const tText = await tRes.text();
+      let tData: any = {};
+      try { tData = tText ? JSON.parse(tText) : {}; } catch { tData = { raw: tText }; }
+      const tCallId = tData.call_id || tData.callId || null;
+      const tErrored =
+        !tRes.ok ||
+        String(tData?.status || "").toLowerCase() === "error" ||
+        Boolean(tData?.errors) ||
+        !tCallId;
+
+      console.log(`[brandaro-ai-caller][TEST] to=${test_phone} from=${testFrom} http=${tRes.status} body=${tText}`);
+
+      return new Response(
+        JSON.stringify({
+          success: !tErrored,
+          test_mode: true,
+          to: test_phone,
+          from: testFrom,
+          call_id: tCallId,
+          provider_status: tRes.status,
+          provider_response: tData,
+        }),
+        { status: tErrored ? 502 : 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Fetch leads that haven't been AI-called recently
