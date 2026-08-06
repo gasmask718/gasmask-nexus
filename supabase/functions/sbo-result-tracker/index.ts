@@ -38,11 +38,59 @@ const ESPN_ENDPOINTS: Record<string, string> = {
   WNBA:  "https://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard",
 };
 
+const ET_TZ = "America/New_York";
+
+/**
+ * Calendar date (YYYY-MM-DD) for a moment as seen in America/New_York.
+ * en-CA locale yields ISO-ordered YYYY-MM-DD. Used everywhere a "slate date"
+ * is needed so evening games never bleed into the next UTC day.
+ */
+function etDate(d: Date = new Date()): string {
+  return d.toLocaleDateString("en-CA", { timeZone: ET_TZ });
+}
+
+/** Half-open UTC instant range [start, end) covering one ET calendar day. */
+function etDayWindowUtc(ymd: string): { startIso: string; endIso: string } {
+  const [y, m, day] = ymd.split("-").map(Number);
+  // Probe noon UTC on that date to read the ET offset without DST edge cases.
+  const probe = new Date(Date.UTC(y, m - 1, day, 12, 0, 0));
+  const etWall = new Date(probe.toLocaleString("en-US", { timeZone: ET_TZ }));
+  const offsetMs = probe.getTime() - etWall.getTime(); // e.g. +4h in EDT
+  const startUtc = new Date(Date.UTC(y, m - 1, day, 0, 0, 0) + offsetMs);
+  const endUtc = new Date(startUtc.getTime() + 86400_000);
+  return { startIso: startUtc.toISOString(), endIso: endUtc.toISOString() };
+}
+
+/**
+ * True when a stored game_date lands exactly on midnight ET — the signature of
+ * a date-only placeholder row (272 NBA rows), never a real tip-off.
+ */
+function isMidnightEtPlaceholder(iso: string): boolean {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: ET_TZ, hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(d);
+  const hour = parts.find((p) => p.type === "hour")?.value;
+  const minute = parts.find((p) => p.type === "minute")?.value;
+  return (hour === "00" || hour === "24") && minute === "00";
+}
+
+/** Stable key bridging in-memory ESPN games to resolved sbo_games UUIDs. */
+function gameKey(sport: string, ymd: string, home: string, away: string): string {
+  return [sport, ymd, home, away].map((s) => String(s ?? "").trim().toLowerCase()).join("|");
+}
+
 // Game type + team-matching primitives imported from _shared/teamMatcher.ts
 
 async function fetchCompletedGames(sport: string, url: string, errors: any[], dateYYYYMMDD?: string): Promise<Game[]> {
   try {
     const finalUrl = dateYYYYMMDD ? `${url}?dates=${dateYYYYMMDD}` : url;
+    // The requested slate date is authoritative — ESPN returns UTC instants,
+    // so parsing ev.date buckets 7pm ET night games into the NEXT day.
+    const requestedDate = dateYYYYMMDD
+      ? `${dateYYYYMMDD.slice(0, 4)}-${dateYYYYMMDD.slice(4, 6)}-${dateYYYYMMDD.slice(6, 8)}`
+      : etDate();
     const res = await fetch(finalUrl);
     if (!res.ok) { errors.push({ sport, stage: "fetch", status: res.status, date: dateYYYYMMDD ?? "today" }); return []; }
     const json = await res.json();
@@ -58,8 +106,8 @@ async function fetchCompletedGames(sport: string, url: string, errors: any[], da
       const homeScore = Number(home.score);
       const awayScore = Number(away.score);
       if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) continue;
-      const dateIso = ev?.date ?? comp?.date;
-      const gameDate = dateIso ? new Date(dateIso).toISOString().slice(0, 10) : null;
+      
+      const gameDate = requestedDate;
       if (!gameDate) continue;
       games.push({
         sport, game_date: gameDate,
@@ -199,7 +247,7 @@ Deno.serve(async (req) => {
   // then call ESPN once per (sport, date) using ?dates=YYYYMMDD. Today always included.
   const CUTOFF_DAYS = 180;
   const cutoffIso = new Date(Date.now() - CUTOFF_DAYS * 86400_000).toISOString().slice(0, 10);
-  const todayYmd = new Date().toISOString().slice(0, 10);
+  const todayYmd = etDate();
 
   const supportedSports = new Set(Object.keys(ESPN_ENDPOINTS));
   const dateSetBySport = new Map<string, Set<string>>();
@@ -228,9 +276,10 @@ Deno.serve(async (req) => {
   const fetchPlan: Array<{ sport: string; date: string }> = [];
   for (const [sport, url] of sportsList) {
     for (const ymd of dateSetBySport.get(sport) ?? []) {
-      const isToday = ymd === todayYmd;
-      const dateArg = isToday ? undefined : ymd.replace(/-/g, "");
-      fetchPlan.push({ sport, date: dateArg ?? "today" });
+      // Always pass an explicit slate date — never let ESPN pick "today"
+      // from its own UTC clock.
+      const dateArg = ymd.replace(/-/g, "");
+      fetchPlan.push({ sport, date: dateArg });
       const games = await fetchCompletedGames(sport, url, summary.errors, dateArg);
       allGames.push(...games);
       await new Promise((r) => setTimeout(r, 100));
@@ -239,6 +288,42 @@ Deno.serve(async (req) => {
   (summary as any).fetch_plan_count = fetchPlan.length;
   (summary as any).cutoff_date = cutoffIso;
   summary.games_resolved = allGames.length;
+
+  // ── Score write-back to sbo_games (Fix C) ────────────────────────────────
+  // Two-step SELECT/UPDATE so doubleheaders are skipped rather than
+  // double-written, and so the resolved UUID can bridge into pick grading.
+  const dbGameIdByKey = new Map<string, string>();
+  let gamesWrittenBack = 0;
+  let gamesSkippedAmbiguous = 0;
+  for (const g of allGames) {
+    try {
+      const { startIso, endIso } = etDayWindowUtc(g.game_date);
+      const { data: candidates, error: selErr } = await supabase
+        .from("sbo_games")
+        .select("id, game_date")
+        .eq("sport_key", g.sport.toLowerCase())
+        .gte("game_date", startIso)
+        .lt("game_date", endIso)
+        .eq("home_team", g.home_team)
+        .eq("away_team", g.away_team);
+      if (selErr) { summary.errors.push({ stage: "game_writeback_select", sport: g.sport, message: selErr.message }); continue; }
+      // Drop midnight-ET placeholder rows (date-only ingestion artifacts).
+      const real = (candidates ?? []).filter((c: any) => !isMidnightEtPlaceholder(c.game_date));
+      if (real.length !== 1) { if (real.length > 1) gamesSkippedAmbiguous++; continue; }
+      const row = real[0] as any;
+      dbGameIdByKey.set(gameKey(g.sport, g.game_date, g.home_team, g.away_team), row.id);
+      const { error: updErr } = await supabase
+        .from("sbo_games")
+        .update({ home_score: g.home_score, away_score: g.away_score, status: "closed" })
+        .eq("id", row.id);
+      if (updErr) { summary.errors.push({ stage: "game_writeback_update", id: row.id, message: updErr.message }); continue; }
+      gamesWrittenBack++;
+    } catch (e: any) {
+      summary.errors.push({ stage: "game_writeback", message: e?.message });
+    }
+  }
+  (summary as any).games_written_back = gamesWrittenBack;
+  (summary as any).games_skipped_ambiguous = gamesSkippedAmbiguous;
 
   const capperDeltas = new Map<string, { w: number; l: number; p: number }>();
   const sportBuckets = new Map<string, {
@@ -345,6 +430,10 @@ Deno.serve(async (req) => {
 
       const capperResult = r.result === "win" ? "won" : r.result === "loss" ? "lost" : "push";
 
+      // Resolved sbo_games UUID from the write-back bridge; null never blocks grading.
+      const dbGameId = dbGameIdByKey.get(
+        gameKey(game.sport, game.game_date, game.home_team, game.away_team),
+      ) ?? null;
 
       const { error: uerr } = await supabase
         .from("sbo_capper_picks")
@@ -353,6 +442,10 @@ Deno.serve(async (req) => {
           pnl_units: r.pnl,
           profit_loss: r.pnl,
           resolved_at: new Date().toISOString(),
+          game_id: dbGameId,
+          graded_at: new Date().toISOString(),
+          grading_source: "espn",
+          stake: stake,
         })
         .eq("id", p.id)
         .eq("result", "pending");
