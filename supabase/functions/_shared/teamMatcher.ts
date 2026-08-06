@@ -86,6 +86,17 @@ export function sideMatchesTeam(side: string, team: string, sport?: string): boo
   return false;
 }
 
+// NOTE (doubleheader limitation): candidates are filtered only by sport +
+// game_date, and the first team match wins. When the same two teams play twice
+// on one calendar day (an MLB doubleheader), both games share sport, date,
+// home_team and away_team, so they are indistinguishable here and game 1 is
+// always returned — even for a pick on game 2.
+//
+// True tie-breaking is impossible without a start-time signal: the Game type
+// carries no time field, only a YYYY-MM-DD slate date. Adding `game_time` to
+// Game (and populating it from the ESPN event timestamp) is the prerequisite
+// for disambiguating these. Until then, callers that must not guess should
+// detect the multi-match case themselves and skip rather than pick one.
 export function findGameForRow(
   games: Game[],
   sport: string,
