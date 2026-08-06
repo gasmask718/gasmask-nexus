@@ -289,6 +289,42 @@ Deno.serve(async (req) => {
   (summary as any).cutoff_date = cutoffIso;
   summary.games_resolved = allGames.length;
 
+  // ── Score write-back to sbo_games (Fix C) ────────────────────────────────
+  // Two-step SELECT/UPDATE so doubleheaders are skipped rather than
+  // double-written, and so the resolved UUID can bridge into pick grading.
+  const dbGameIdByKey = new Map<string, string>();
+  let gamesWrittenBack = 0;
+  let gamesSkippedAmbiguous = 0;
+  for (const g of allGames) {
+    try {
+      const { startIso, endIso } = etDayWindowUtc(g.game_date);
+      const { data: candidates, error: selErr } = await supabase
+        .from("sbo_games")
+        .select("id, game_date")
+        .eq("sport_key", g.sport.toLowerCase())
+        .gte("game_date", startIso)
+        .lt("game_date", endIso)
+        .eq("home_team", g.home_team)
+        .eq("away_team", g.away_team);
+      if (selErr) { summary.errors.push({ stage: "game_writeback_select", sport: g.sport, message: selErr.message }); continue; }
+      // Drop midnight-ET placeholder rows (date-only ingestion artifacts).
+      const real = (candidates ?? []).filter((c: any) => !isMidnightEtPlaceholder(c.game_date));
+      if (real.length !== 1) { if (real.length > 1) gamesSkippedAmbiguous++; continue; }
+      const row = real[0] as any;
+      dbGameIdByKey.set(gameKey(g.sport, g.game_date, g.home_team, g.away_team), row.id);
+      const { error: updErr } = await supabase
+        .from("sbo_games")
+        .update({ home_score: g.home_score, away_score: g.away_score, status: "closed" })
+        .eq("id", row.id);
+      if (updErr) { summary.errors.push({ stage: "game_writeback_update", id: row.id, message: updErr.message }); continue; }
+      gamesWrittenBack++;
+    } catch (e: any) {
+      summary.errors.push({ stage: "game_writeback", message: e?.message });
+    }
+  }
+  (summary as any).games_written_back = gamesWrittenBack;
+  (summary as any).games_skipped_ambiguous = gamesSkippedAmbiguous;
+
   const capperDeltas = new Map<string, { w: number; l: number; p: number }>();
   const sportBuckets = new Map<string, {
     spread_w: number; spread_l: number; spread_p: number; spread_pnl: number;
