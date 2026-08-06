@@ -88514,6 +88514,7 @@ export type Database = {
           source: string
           sport: string | null
           stat_type: string
+          stats_checked_at: string | null
           team: string | null
           top_play_rank: number | null
           updated_at: string
@@ -88557,6 +88558,7 @@ export type Database = {
           source?: string
           sport?: string | null
           stat_type: string
+          stats_checked_at?: string | null
           team?: string | null
           top_play_rank?: number | null
           updated_at?: string
@@ -88600,6 +88602,7 @@ export type Database = {
           source?: string
           sport?: string | null
           stat_type?: string
+          stats_checked_at?: string | null
           team?: string | null
           top_play_rank?: number | null
           updated_at?: string
