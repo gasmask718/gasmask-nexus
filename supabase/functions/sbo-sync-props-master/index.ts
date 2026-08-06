@@ -101,57 +101,72 @@ Deno.serve(async (req) => {
         confidence_tier: pred.confidence_tier || null,
       } : null;
 
-      return {
-        player_name: p.player_name,
-        team: p.team || null,
-        opponent: null,
-        sport: SPORT_LABEL[String(p.sport_key ?? '').toLowerCase()]
-          ?? String(p.sport_key ?? 'NBA').toUpperCase(),
+      // Grade is computed here but NOT part of the upsert payload —
+      // it is applied separately in Operation B, guarded on result='pending'.
+      const grade = (() => {
+        // correct/incorrect are direct verdicts — already adjudicated
+        // against the pick direction.
+        if (p.verdict === 'correct') return 'win';
+        if (p.verdict === 'incorrect') return 'loss';
+        if (p.verdict === 'push') return 'push';
+        // over/under = where the actual landed vs the line.
+        if (p.verdict === 'over' || p.verdict === 'under') {
+          const pr = String(prediction ?? '').toLowerCase().trim();
+          const normalizedPred =
+            pr === 'more' ? 'over'
+            : pr === 'less' ? 'under'
+            : pr;
+          if (!normalizedPred || normalizedPred === 'hold') return null;
+          return normalizedPred === p.verdict ? 'win' : 'loss';
+        }
+        return null;
+      })();
 
-        stat_type: p.prop_type,
-        line: p.line,
-        platform: p.source,
-        odds: p.over_odds ? `O${p.over_odds}/U${p.under_odds}` : null,
-        game_time: null,
-        game_date: p.game_date,
-        source: 'api',
-        prediction,
-        confidence_score: confidence,
-        edge_score: edgeScore,
-        reasoning_json: reasoningJson,
-        season_avg: seasonAvg,
-        last_5_avg: l5Avg,
-        last_10_avg: l10Avg,
-        hit_rate: null,
-        matchup_avg: null,
-        actual_result: p.actual_value ?? null,
-        result: (() => {
-          // correct/incorrect are direct verdicts — already adjudicated
-          // against the pick direction.
-          if (p.verdict === 'correct') return 'win';
-          if (p.verdict === 'incorrect') return 'loss';
-          if (p.verdict === 'push') return 'push';
-          // over/under = where the actual landed vs the line.
-          // Win if the pick direction matches the outcome.
-          // `prediction` is computed above as 'more' / 'less' / 'hold'.
-          if (p.verdict === 'over' || p.verdict === 'under') {
-            const pred = String(prediction ?? '').toLowerCase().trim();
-            const normalizedPred =
-              pred === 'more' ? 'over'
-              : pred === 'less' ? 'under'
-              : pred;
-            if (!normalizedPred || normalizedPred === 'hold') return 'pending';
-            return normalizedPred === p.verdict ? 'win' : 'loss';
-          }
-          return 'pending';
-        })(),
-        settled_at: p.verified_at || null,
-        batch_id: `sync-${new Date().toISOString().split('T')[0]}`,
+      return {
+        row: {
+          player_name: p.player_name,
+          team: p.team || null,
+          opponent: null,
+          sport: SPORT_LABEL[String(p.sport_key ?? '').toLowerCase()]
+            ?? String(p.sport_key ?? 'NBA').toUpperCase(),
+
+          stat_type: p.prop_type,
+          line: p.line,
+          platform: p.source,
+          odds: p.over_odds ? `O${p.over_odds}/U${p.under_odds}` : null,
+          game_time: null,
+          game_date: p.game_date,
+          source: 'api',
+          prediction,
+          confidence_score: confidence,
+          edge_score: edgeScore,
+          reasoning_json: reasoningJson,
+          season_avg: seasonAvg,
+          last_5_avg: l5Avg,
+          last_10_avg: l10Avg,
+          hit_rate: null,
+          matchup_avg: null,
+          batch_id: `sync-${new Date().toISOString().split('T')[0]}`,
+        },
+        grade: grade
+          ? {
+              player_name: p.player_name,
+              stat_type: p.prop_type,
+              line: p.line,
+              platform: p.source,
+              game_date: p.game_date,
+              result: grade,
+              actual_result: p.actual_value ?? null,
+              settled_at: p.verified_at || new Date().toISOString(),
+            }
+          : null,
       };
     });
 
+    const upsertRows = built.map(b => b.row);
+    const gradeRows = built.map(b => b.grade).filter(Boolean) as any[];
 
-    // Upsert in chunks
+    // ── Operation A: upsert price/metadata only (never touches result) ──
     let synced = 0;
     for (let i = 0; i < upsertRows.length; i += 200) {
       const chunk = upsertRows.slice(i, i + 200);
@@ -163,7 +178,6 @@ Deno.serve(async (req) => {
         });
       if (error) {
         console.warn(`Chunk ${i} upsert error:`, error.message);
-        // Fallback: try insert ignoring dupes
         const { error: insertErr } = await supabase
           .from('props_master')
           .insert(chunk);
@@ -174,8 +188,37 @@ Deno.serve(async (req) => {
       synced += chunk.length;
     }
 
+    // ── Operation B: grade pass — only rows still pending get written ──
+    let graded = 0;
+    const CONCURRENCY = 25;
+    for (let i = 0; i < gradeRows.length; i += CONCURRENCY) {
+      const chunk = gradeRows.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(chunk.map(async (g) => {
+        const { data, error } = await supabase
+          .from('props_master')
+          .update({
+            result: g.result,
+            actual_result: g.actual_result,
+            settled_at: g.settled_at,
+          })
+          .eq('player_name', g.player_name)
+          .eq('stat_type', g.stat_type)
+          .eq('line', g.line)
+          .eq('platform', g.platform)
+          .eq('game_date', g.game_date)
+          .eq('result', 'pending')
+          .select('id');
+        if (error) {
+          console.error('Grade update failed:', error.message);
+          return 0;
+        }
+        return data?.length ?? 0;
+      }));
+      graded += results.reduce((a, b) => a + b, 0);
+    }
+
     const withPred = upsertRows.filter(r => r.prediction).length;
-    console.log(`✅ Synced ${synced} props to props_master (${withPred} with predictions)`);
+    console.log(`✅ Synced ${synced} props (${withPred} with predictions), graded ${graded} of ${gradeRows.length} candidates`);
 
     return new Response(JSON.stringify({
       success: true,
@@ -184,7 +227,10 @@ Deno.serve(async (req) => {
       predictions_matched: withPred,
       from_sbo_predictions: predMap.size,
       from_unified: unifiedMap.size,
+      graded,
+      grade_candidates: gradeRows.length,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
 
   } catch (e) {
     console.error('❌ Sync error:', e);
