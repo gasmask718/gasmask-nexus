@@ -188,34 +188,21 @@ Deno.serve(async (req) => {
       synced += chunk.length;
     }
 
-    // ── Operation B: grade pass — only rows still pending get written ──
+    // ── Operation B: set-based grade pass — only rows still pending get written ──
     let graded = 0;
-    const CONCURRENCY = 25;
-    for (let i = 0; i < gradeRows.length; i += CONCURRENCY) {
-      const chunk = gradeRows.slice(i, i + CONCURRENCY);
-      const results = await Promise.all(chunk.map(async (g) => {
-        const { data, error } = await supabase
-          .from('props_master')
-          .update({
-            result: g.result,
-            actual_result: g.actual_result,
-            settled_at: g.settled_at,
-          })
-          .eq('player_name', g.player_name)
-          .eq('stat_type', g.stat_type)
-          .eq('line', g.line)
-          .eq('platform', g.platform)
-          .eq('game_date', g.game_date)
-          .eq('result', 'pending')
-          .select('id');
-        if (error) {
-          console.error('Grade update failed:', error.message);
-          return 0;
-        }
-        return data?.length ?? 0;
-      }));
-      graded += results.reduce((a, b) => a + b, 0);
+    const GRADE_CHUNK = 2000;
+    for (let i = 0; i < gradeRows.length; i += GRADE_CHUNK) {
+      const chunk = gradeRows.slice(i, i + GRADE_CHUNK);
+      const { data, error } = await supabase.rpc('props_master_apply_grades', {
+        _grades: chunk,
+      });
+      if (error) {
+        console.error(`Grade chunk ${i} failed:`, error.message);
+        continue;
+      }
+      graded += Number(data ?? 0);
     }
+
 
     const withPred = upsertRows.filter(r => r.prediction).length;
     console.log(`✅ Synced ${synced} props (${withPred} with predictions), graded ${graded} of ${gradeRows.length} candidates`);
