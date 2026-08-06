@@ -128,6 +128,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+    supabaseRef = supabase;
+
 
     // Resolve per-sport + global step lists based on requested `steps` selector.
     const ALL_PERSPORT = [...MORNING_STEPS, ...PREGAME_STEPS];
