@@ -4,6 +4,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { normalizeStat, UNMATCHABLE } from "../_shared/statNormalize.ts";
+import { canonicalizeSport } from "../_shared/sportCanonical.ts";
 
 /**
  * Canonicalize prop_type at write time so 'pitcher outs' and 'pitcher_outs'
@@ -103,7 +104,7 @@ async function extractPickWithClaude(
   const user = `Extract pick data from this Telegram message. Return JSON with these exact fields:
 {
   is_pick: boolean,
-  sport: string or null,
+  sport: string or null (MUST be one of: MLB, NBA, NFL, NHL, WNBA, NCAAB, NCAAF, UFC, Tennis, Golf, Soccer, CFL, Boxing, Rugby — use null if the sport is not in this list or the message covers multiple sports),
   game: string or null,
   pick_type: 'spread'|'moneyline'|'total'|'prop'|'parlay'|'other',
   pick_detail: string or null,
@@ -505,7 +506,7 @@ serve(async (req) => {
         capper_id: capperId,
         pick_text: pickText,
         raw_message: text,
-        sport: pick.sport ?? null,
+        sport: canonicalizeSport(pick.sport) ?? null,
         bet_type: pick.pick_type ?? (pick.is_parlay ? "parlay" : pick.is_prop ? "prop" : null),
         prop_type: canonicalPropType(pick.prop_stat),
         line: toNumOrNull(pick.line),
