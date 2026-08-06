@@ -97755,7 +97755,10 @@ export type Database = {
           fading_cappers: Json | null
           game: string | null
           game_date: string | null
+          game_id: string | null
           game_time: string | null
+          graded_at: string | null
+          grading_source: string | null
           home_team: string | null
           id: string
           internal_confidence: number | null
@@ -97778,7 +97781,10 @@ export type Database = {
           fading_cappers?: Json | null
           game?: string | null
           game_date?: string | null
+          game_id?: string | null
           game_time?: string | null
+          graded_at?: string | null
+          grading_source?: string | null
           home_team?: string | null
           id?: string
           internal_confidence?: number | null
@@ -97801,7 +97807,10 @@ export type Database = {
           fading_cappers?: Json | null
           game?: string | null
           game_date?: string | null
+          game_id?: string | null
           game_time?: string | null
+          graded_at?: string | null
+          grading_source?: string | null
           home_team?: string | null
           id?: string
           internal_confidence?: number | null
@@ -97816,7 +97825,15 @@ export type Database = {
           signal_grade?: string | null
           sport?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sbo_signals_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sbo_simulations: {
         Row: {
