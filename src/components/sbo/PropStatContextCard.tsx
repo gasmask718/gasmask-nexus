@@ -13,6 +13,8 @@ interface PropStatContextCardProps {
   propType: string;
   line: number;
   compact?: boolean;
+  /** Which table `propId` belongs to. 'props_master' ids are resolved to sbo_player_props ids. */
+  idSpace?: 'player_props' | 'props_master';
 }
 
 interface StatContext {
@@ -90,22 +92,38 @@ const MiniSparkline = ({ values, line }: { values: number[]; line: number }) => 
   );
 };
 
-export function PropStatContextCard({ propId, playerName, propType, line, compact = false }: PropStatContextCardProps) {
+
+export function PropStatContextCard({ propId, playerName, propType, line, compact = false, idSpace = 'player_props' }: PropStatContextCardProps) {
   const [open, setOpen] = useState(false);
 
   const { data: ctx, isLoading } = useQuery({
-    queryKey: ['prop-stat-context', propId],
+    queryKey: ['prop-stat-context', idSpace, propId],
     queryFn: async () => {
+      let resolvedId = propId;
+
+      // props_master ids live in a different id space — resolve to the linked sbo_player_props id
+      if (idSpace === 'props_master') {
+        const { data: pm, error: pmErr } = await (supabase as any)
+          .from('props_master')
+          .select('player_prop_id')
+          .eq('id', propId)
+          .maybeSingle();
+        if (pmErr) throw pmErr;
+        if (!pm?.player_prop_id) return null;
+        resolvedId = pm.player_prop_id;
+      }
+
       const { data, error } = await (supabase as any)
         .from('sbo_prop_stat_context')
         .select('*')
-        .eq('prop_id', propId)
+        .eq('prop_id', resolvedId)
         .maybeSingle();
       if (error) throw error;
       return data as StatContext | null;
     },
     staleTime: 5 * 60 * 1000,
   });
+
 
   if (isLoading) return <div className="text-[10px] text-muted-foreground animate-pulse">Loading stats...</div>;
   if (!ctx) return <div className="text-[10px] text-muted-foreground">No stat context</div>;

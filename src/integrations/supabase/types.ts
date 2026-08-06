@@ -88503,6 +88503,7 @@ export type Database = {
           platform: string
           play_reasons: Json | null
           player_name: string
+          player_prop_id: string | null
           prediction: string | null
           reasoning_json: Json | null
           result: string | null
@@ -88545,6 +88546,7 @@ export type Database = {
           platform?: string
           play_reasons?: Json | null
           player_name: string
+          player_prop_id?: string | null
           prediction?: string | null
           reasoning_json?: Json | null
           result?: string | null
@@ -88587,6 +88589,7 @@ export type Database = {
           platform?: string
           play_reasons?: Json | null
           player_name?: string
+          player_prop_id?: string | null
           prediction?: string | null
           reasoning_json?: Json | null
           result?: string | null
@@ -88603,7 +88606,15 @@ export type Database = {
           upload_group_id?: string | null
           value_score?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "props_master_player_prop_id_fkey"
+            columns: ["player_prop_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_player_props"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       provider_availability_schedule: {
         Row: {
