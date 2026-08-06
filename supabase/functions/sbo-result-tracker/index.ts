@@ -430,6 +430,10 @@ Deno.serve(async (req) => {
 
       const capperResult = r.result === "win" ? "won" : r.result === "loss" ? "lost" : "push";
 
+      // Resolved sbo_games UUID from the write-back bridge; null never blocks grading.
+      const dbGameId = dbGameIdByKey.get(
+        gameKey(game.sport, game.game_date, game.home_team, game.away_team),
+      ) ?? null;
 
       const { error: uerr } = await supabase
         .from("sbo_capper_picks")
@@ -438,6 +442,10 @@ Deno.serve(async (req) => {
           pnl_units: r.pnl,
           profit_loss: r.pnl,
           resolved_at: new Date().toISOString(),
+          game_id: dbGameId,
+          graded_at: new Date().toISOString(),
+          grading_source: "espn",
+          stake: stake,
         })
         .eq("id", p.id)
         .eq("result", "pending");
