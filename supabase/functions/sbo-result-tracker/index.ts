@@ -383,13 +383,25 @@ Deno.serve(async (req) => {
       else                       r = resolveMoneyline(game, String(s.side ?? ""), stake, odds);
       if (r.result === "pending") continue;
 
+      // Resolved sbo_games UUID from the write-back bridge; null never blocks grading.
+      const dbGameId = dbGameIdByKey.get(
+        gameKey(game.sport, game.game_date, game.home_team, game.away_team),
+      ) ?? null;
 
       const { error: uerr } = await supabase
         .from("sbo_signals")
-        .update({ result: r.result, pnl_units: r.pnl, resolved_at: new Date().toISOString() })
+        .update({
+          result: r.result,
+          pnl_units: r.pnl,
+          resolved_at: new Date().toISOString(),
+          game_id: dbGameId,
+          graded_at: new Date().toISOString(),
+          grading_source: "espn",
+        })
         .eq("id", s.id)
         .eq("result", "pending");
       if (uerr) { summary.errors.push({ stage: "signal_update", id: s.id, message: uerr.message }); continue; }
+
       summary.signals_updated++;
       addBucket(s.sport, kind, r);
     }
