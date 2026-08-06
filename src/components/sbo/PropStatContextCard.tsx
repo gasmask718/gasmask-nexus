@@ -92,8 +92,6 @@ const MiniSparkline = ({ values, line }: { values: number[]; line: number }) => 
   );
 };
 
-export function PropStatContextCard({ propId, playerName, propType, line, compact = false }: PropStatContextCardProps) {
-  const [open, setOpen] = useState(false);
 
 export function PropStatContextCard({ propId, playerName, propType, line, compact = false, idSpace = 'player_props' }: PropStatContextCardProps) {
   const [open, setOpen] = useState(false);
