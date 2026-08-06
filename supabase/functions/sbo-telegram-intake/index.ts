@@ -106,7 +106,7 @@ async function extractPickWithClaude(
   is_pick: boolean,
   sport: string or null (MUST be one of: MLB, NBA, NFL, NHL, WNBA, NCAAB, NCAAF, UFC, Tennis, Golf, Soccer, CFL, Boxing, Rugby — use null if the sport is not in this list or the message covers multiple sports),
   game: string or null,
-  pick_type: 'spread'|'moneyline'|'total'|'prop'|'parlay'|'other',
+  pick_type: 'spread'|'moneyline'|'total'|'f5_total'|'team_total'|'prop'|'parlay'|'other',
   pick_detail: string or null,
   team_or_player: string or null,
   side: string or null,

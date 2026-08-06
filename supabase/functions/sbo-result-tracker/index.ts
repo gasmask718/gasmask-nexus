@@ -137,6 +137,14 @@ function resolveMoneyline(game: Game, side: string, stake: number, odds: number 
 
 function classifyBetType(betType: string | null, pickType?: string | null): "spread" | "total" | "moneyline" | "prop" | "unknown" {
   const s = (betType || pickType || "").toLowerCase();
+
+  // Must check exact segment types FIRST — 'f5_total' and 'team_total' both
+  // contain "total" so they would match the total branch below without this
+  // guard. Segment picks have no ESPN data source (sbo_games stores only
+  // final full-game scores) and must stay pending rather than be graded
+  // against home_score + away_score.
+  if (s === "f5_total" || s === "team_total") return "unknown";
+
   if (s.includes("spread") || s === "ats") return "spread";
   if (s.includes("total") || s === "ou" || s.includes("over") || s.includes("under")) return "total";
   if (s.includes("money") || s === "ml") return "moneyline";
