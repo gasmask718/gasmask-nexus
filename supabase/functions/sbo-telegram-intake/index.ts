@@ -106,7 +106,7 @@ async function extractPickWithClaude(
   is_pick: boolean,
   sport: string or null (MUST be one of: MLB, NBA, NFL, NHL, WNBA, NCAAB, NCAAF, UFC, Tennis, Golf, Soccer, CFL, Boxing, Rugby — use null if the sport is not in this list or the message covers multiple sports),
   game: string or null,
-  pick_type: 'spread'|'moneyline'|'total'|'prop'|'parlay'|'other',
+  pick_type: 'spread'|'moneyline'|'total'|'f5_total'|'team_total'|'prop'|'parlay'|'other',
   pick_detail: string or null,
   team_or_player: string or null,
   side: string or null,
@@ -122,6 +122,10 @@ async function extractPickWithClaude(
   extraction_confidence: 'high'|'medium'|'low',
   capper_notes: string or null
 }
+Pick type rules:
+- Use 'f5_total' for first-5-innings, first half, or any partial-game total (e.g. "F5 OVER 4.5", "1H UNDER 48.5", "first 5 OVER 4.5").
+- Use 'team_total' for one team's score only (e.g. "Yankees OVER 4.5", "Lakers TT UNDER 112").
+- Use 'total' for full-game combined totals only.
 If not a pick return { is_pick: false }.
 Message: ${messageText}`;
 
