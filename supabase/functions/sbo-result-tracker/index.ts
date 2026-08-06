@@ -276,9 +276,10 @@ Deno.serve(async (req) => {
   const fetchPlan: Array<{ sport: string; date: string }> = [];
   for (const [sport, url] of sportsList) {
     for (const ymd of dateSetBySport.get(sport) ?? []) {
-      const isToday = ymd === todayYmd;
-      const dateArg = isToday ? undefined : ymd.replace(/-/g, "");
-      fetchPlan.push({ sport, date: dateArg ?? "today" });
+      // Always pass an explicit slate date — never let ESPN pick "today"
+      // from its own UTC clock.
+      const dateArg = ymd.replace(/-/g, "");
+      fetchPlan.push({ sport, date: dateArg });
       const games = await fetchCompletedGames(sport, url, summary.errors, dateArg);
       allGames.push(...games);
       await new Promise((r) => setTimeout(r, 100));
