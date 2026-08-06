@@ -247,7 +247,7 @@ Deno.serve(async (req) => {
   // then call ESPN once per (sport, date) using ?dates=YYYYMMDD. Today always included.
   const CUTOFF_DAYS = 180;
   const cutoffIso = new Date(Date.now() - CUTOFF_DAYS * 86400_000).toISOString().slice(0, 10);
-  const todayYmd = new Date().toISOString().slice(0, 10);
+  const todayYmd = etDate();
 
   const supportedSports = new Set(Object.keys(ESPN_ENDPOINTS));
   const dateSetBySport = new Map<string, Set<string>>();
