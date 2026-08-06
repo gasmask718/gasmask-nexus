@@ -13,6 +13,8 @@ interface PropStatContextCardProps {
   propType: string;
   line: number;
   compact?: boolean;
+  /** Which table `propId` belongs to. 'props_master' ids are resolved to sbo_player_props ids. */
+  idSpace?: 'player_props' | 'props_master';
 }
 
 interface StatContext {
