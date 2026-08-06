@@ -595,6 +595,7 @@ serve(async (req) => {
         completed_at: new Date().toISOString(),
       })
       .eq('id', runId);
+    finalized = true;
 
     return new Response(JSON.stringify({
       success: true,
@@ -617,9 +618,43 @@ serve(async (req) => {
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (e) {
+    fatalError = e instanceof Error ? e.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }),
+      JSON.stringify({ error: fatalError }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+  } finally {
+    // Always close the run row. If the happy-path update already ran
+    // (finalized === true) this is a no-op. Otherwise persist whatever
+    // partial progress was captured before the error/abort.
+    if (!finalized && runId && supabaseRef) {
+      try {
+        const duration = Math.round((Date.now() - startTime) / 1000);
+        const partialStatus = completed.length > 0 ? 'partial' : 'failed';
+        await supabaseRef
+          .from('sbo_day_engine_runs')
+          .update({
+            steps_completed: {
+              steps: completed,
+              steps_skipped: skippedCount,
+              aborted: true,
+            },
+            steps_failed: [
+              ...failed,
+              { fn: 'run', error: fatalError ?? 'Run aborted before completion', aborted: true },
+            ],
+            total_records_synced: totalRecords,
+            total_api_calls: totalCalls,
+            estimated_cost_cents: totalCostCents,
+            duration_seconds: duration,
+            status: partialStatus,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', runId);
+      } catch (_) {
+        // Never let cleanup failure mask the original response.
+      }
+    }
   }
 });
+
