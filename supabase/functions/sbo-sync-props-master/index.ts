@@ -164,7 +164,12 @@ Deno.serve(async (req) => {
       if (error) {
         console.warn(`Chunk ${i} upsert error:`, error.message);
         // Fallback: try insert ignoring dupes
-        await supabase.from('props_master').insert(chunk);
+        const { error: insertErr } = await supabase
+          .from('props_master')
+          .insert(chunk);
+        if (insertErr) {
+          console.error(`Chunk ${i} insert fallback also failed:`, insertErr.message);
+        }
       }
       synced += chunk.length;
     }

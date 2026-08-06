@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.idx_props_master_unique_prop;
