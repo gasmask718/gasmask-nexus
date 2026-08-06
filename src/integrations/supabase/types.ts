@@ -142014,6 +142014,7 @@ export type Database = {
         }
         Returns: string
       }
+      props_master_apply_grades: { Args: { _grades: Json }; Returns: number }
       quarantine_portal_device: {
         Args: { _device_id: string; _reason: string }
         Returns: boolean
