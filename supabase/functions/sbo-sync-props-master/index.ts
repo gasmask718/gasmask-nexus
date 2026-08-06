@@ -124,8 +124,27 @@ Deno.serve(async (req) => {
         last_10_avg: l10Avg,
         hit_rate: null,
         matchup_avg: null,
-        actual_result: p.actual_value || null,
-        result: p.verdict === 'hit' ? 'win' : p.verdict === 'miss' ? 'loss' : 'pending',
+        actual_result: p.actual_value ?? null,
+        result: (() => {
+          // correct/incorrect are direct verdicts — already adjudicated
+          // against the pick direction.
+          if (p.verdict === 'correct') return 'win';
+          if (p.verdict === 'incorrect') return 'loss';
+          if (p.verdict === 'push') return 'push';
+          // over/under = where the actual landed vs the line.
+          // Win if the pick direction matches the outcome.
+          // `prediction` is computed above as 'more' / 'less' / 'hold'.
+          if (p.verdict === 'over' || p.verdict === 'under') {
+            const pred = String(prediction ?? '').toLowerCase().trim();
+            const normalizedPred =
+              pred === 'more' ? 'over'
+              : pred === 'less' ? 'under'
+              : pred;
+            if (!normalizedPred || normalizedPred === 'hold') return 'pending';
+            return normalizedPred === p.verdict ? 'win' : 'loss';
+          }
+          return 'pending';
+        })(),
         settled_at: p.verified_at || null,
         batch_id: `sync-${new Date().toISOString().split('T')[0]}`,
       };
