@@ -86,6 +86,11 @@ function gameKey(sport: string, ymd: string, home: string, away: string): string
 async function fetchCompletedGames(sport: string, url: string, errors: any[], dateYYYYMMDD?: string): Promise<Game[]> {
   try {
     const finalUrl = dateYYYYMMDD ? `${url}?dates=${dateYYYYMMDD}` : url;
+    // The requested slate date is authoritative — ESPN returns UTC instants,
+    // so parsing ev.date buckets 7pm ET night games into the NEXT day.
+    const requestedDate = dateYYYYMMDD
+      ? `${dateYYYYMMDD.slice(0, 4)}-${dateYYYYMMDD.slice(4, 6)}-${dateYYYYMMDD.slice(6, 8)}`
+      : etDate();
     const res = await fetch(finalUrl);
     if (!res.ok) { errors.push({ sport, stage: "fetch", status: res.status, date: dateYYYYMMDD ?? "today" }); return []; }
     const json = await res.json();
