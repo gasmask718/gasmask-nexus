@@ -97,7 +97,22 @@ const RUN_BUDGET_MS = 115_000;
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
+  // Hoisted run state so the finally block can always close the run row,
+  // even on crash, thrown error, or client-side timeout.
+  let supabaseRef: any = null;
+  let runId: string | undefined;
+  let finalized = false;
+  const completed: any[] = [];
+  const failed: any[] = [];
+  let totalRecords = 0;
+  let totalCalls = 0;
+  let totalCostCents = 0;
+  let skippedCount = 0;
+  const startTime = Date.now();
+  let fatalError: string | null = null;
+
   try {
+
     const body = await req.json().catch(() => ({}));
     const {
       run_type = 'manual',
@@ -113,6 +128,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+    supabaseRef = supabase;
+
 
     // Resolve per-sport + global step lists based on requested `steps` selector.
     const ALL_PERSPORT = [...MORNING_STEPS, ...PREGAME_STEPS];
@@ -183,14 +200,8 @@ serve(async (req) => {
       .select()
       .single();
 
-    const runId = runRecord?.id;
-    const completed: any[] = [];
-    const failed: any[] = [];
-    let totalRecords = 0;
-    let totalCalls = 0;
-    let totalCostCents = 0;
-    let skippedCount = 0;
-    const startTime = Date.now();
+    runId = runRecord?.id;
+
 
     const recordStep = async (
       step: { fn: string; label: string; required?: boolean },
@@ -584,6 +595,7 @@ serve(async (req) => {
         completed_at: new Date().toISOString(),
       })
       .eq('id', runId);
+    finalized = true;
 
     return new Response(JSON.stringify({
       success: true,
@@ -606,9 +618,43 @@ serve(async (req) => {
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (e) {
+    fatalError = e instanceof Error ? e.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }),
+      JSON.stringify({ error: fatalError }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+  } finally {
+    // Always close the run row. If the happy-path update already ran
+    // (finalized === true) this is a no-op. Otherwise persist whatever
+    // partial progress was captured before the error/abort.
+    if (!finalized && runId && supabaseRef) {
+      try {
+        const duration = Math.round((Date.now() - startTime) / 1000);
+        const partialStatus = completed.length > 0 ? 'partial' : 'failed';
+        await supabaseRef
+          .from('sbo_day_engine_runs')
+          .update({
+            steps_completed: {
+              steps: completed,
+              steps_skipped: skippedCount,
+              aborted: true,
+            },
+            steps_failed: [
+              ...failed,
+              { fn: 'run', error: fatalError ?? 'Run aborted before completion', aborted: true },
+            ],
+            total_records_synced: totalRecords,
+            total_api_calls: totalCalls,
+            estimated_cost_cents: totalCostCents,
+            duration_seconds: duration,
+            status: partialStatus,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', runId);
+      } catch (_) {
+        // Never let cleanup failure mask the original response.
+      }
+    }
   }
 });
+
