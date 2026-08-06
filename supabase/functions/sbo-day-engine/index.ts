@@ -198,14 +198,8 @@ serve(async (req) => {
       .select()
       .single();
 
-    const runId = runRecord?.id;
-    const completed: any[] = [];
-    const failed: any[] = [];
-    let totalRecords = 0;
-    let totalCalls = 0;
-    let totalCostCents = 0;
-    let skippedCount = 0;
-    const startTime = Date.now();
+    runId = runRecord?.id;
+
 
     const recordStep = async (
       step: { fn: string; label: string; required?: boolean },
