@@ -506,7 +506,7 @@ serve(async (req) => {
         capper_id: capperId,
         pick_text: pickText,
         raw_message: text,
-        sport: pick.sport ?? null,
+        sport: canonicalizeSport(pick.sport) ?? null,
         bet_type: pick.pick_type ?? (pick.is_parlay ? "parlay" : pick.is_prop ? "prop" : null),
         prop_type: canonicalPropType(pick.prop_stat),
         line: toNumOrNull(pick.line),
