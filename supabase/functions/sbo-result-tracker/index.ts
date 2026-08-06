@@ -107,7 +107,7 @@ async function fetchCompletedGames(sport: string, url: string, errors: any[], da
       const awayScore = Number(away.score);
       if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) continue;
       const dateIso = ev?.date ?? comp?.date;
-      const gameDate = dateIso ? new Date(dateIso).toISOString().slice(0, 10) : null;
+      const gameDate = requestedDate;
       if (!gameDate) continue;
       games.push({
         sport, game_date: gameDate,
