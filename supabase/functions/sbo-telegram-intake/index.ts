@@ -4,6 +4,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { normalizeStat, UNMATCHABLE } from "../_shared/statNormalize.ts";
+import { canonicalizeSport } from "../_shared/sportCanonical.ts";
 
 /**
  * Canonicalize prop_type at write time so 'pitcher outs' and 'pitcher_outs'
