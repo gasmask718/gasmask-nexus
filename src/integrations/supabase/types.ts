@@ -94071,6 +94071,7 @@ export type Database = {
           external_result_id: string | null
           extracted_capper_name: string | null
           game_date: string | null
+          game_id: string | null
           graded_at: string | null
           grading_source: string | null
           id: string
@@ -94121,6 +94122,7 @@ export type Database = {
           external_result_id?: string | null
           extracted_capper_name?: string | null
           game_date?: string | null
+          game_id?: string | null
           graded_at?: string | null
           grading_source?: string | null
           id?: string
@@ -94171,6 +94173,7 @@ export type Database = {
           external_result_id?: string | null
           extracted_capper_name?: string | null
           game_date?: string | null
+          game_id?: string | null
           graded_at?: string | null
           grading_source?: string | null
           id?: string
@@ -94219,6 +94222,13 @@ export type Database = {
             columns: ["external_result_id"]
             isOneToOne: false
             referencedRelation: "sbo_external_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sbo_capper_picks_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_games"
             referencedColumns: ["id"]
           },
         ]
