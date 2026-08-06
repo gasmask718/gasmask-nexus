@@ -38,6 +38,49 @@ const ESPN_ENDPOINTS: Record<string, string> = {
   WNBA:  "https://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard",
 };
 
+const ET_TZ = "America/New_York";
+
+/**
+ * Calendar date (YYYY-MM-DD) for a moment as seen in America/New_York.
+ * en-CA locale yields ISO-ordered YYYY-MM-DD. Used everywhere a "slate date"
+ * is needed so evening games never bleed into the next UTC day.
+ */
+function etDate(d: Date = new Date()): string {
+  return d.toLocaleDateString("en-CA", { timeZone: ET_TZ });
+}
+
+/** Half-open UTC instant range [start, end) covering one ET calendar day. */
+function etDayWindowUtc(ymd: string): { startIso: string; endIso: string } {
+  const [y, m, day] = ymd.split("-").map(Number);
+  // Probe noon UTC on that date to read the ET offset without DST edge cases.
+  const probe = new Date(Date.UTC(y, m - 1, day, 12, 0, 0));
+  const etWall = new Date(probe.toLocaleString("en-US", { timeZone: ET_TZ }));
+  const offsetMs = probe.getTime() - etWall.getTime(); // e.g. +4h in EDT
+  const startUtc = new Date(Date.UTC(y, m - 1, day, 0, 0, 0) + offsetMs);
+  const endUtc = new Date(startUtc.getTime() + 86400_000);
+  return { startIso: startUtc.toISOString(), endIso: endUtc.toISOString() };
+}
+
+/**
+ * True when a stored game_date lands exactly on midnight ET — the signature of
+ * a date-only placeholder row (272 NBA rows), never a real tip-off.
+ */
+function isMidnightEtPlaceholder(iso: string): boolean {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: ET_TZ, hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(d);
+  const hour = parts.find((p) => p.type === "hour")?.value;
+  const minute = parts.find((p) => p.type === "minute")?.value;
+  return (hour === "00" || hour === "24") && minute === "00";
+}
+
+/** Stable key bridging in-memory ESPN games to resolved sbo_games UUIDs. */
+function gameKey(sport: string, ymd: string, home: string, away: string): string {
+  return [sport, ymd, home, away].map((s) => String(s ?? "").trim().toLowerCase()).join("|");
+}
+
 // Game type + team-matching primitives imported from _shared/teamMatcher.ts
 
 async function fetchCompletedGames(sport: string, url: string, errors: any[], dateYYYYMMDD?: string): Promise<Game[]> {
