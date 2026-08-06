@@ -71,8 +71,8 @@ Deno.serve(async (req) => {
     }
     console.log(`📊 Unified props with predictions: ${unifiedMap.size}`);
 
-    // ── 4. Transform and upsert into props_master ──
-    const upsertRows = allProps.map(p => {
+    // ── 4. Transform: build upsert payload + separate grade candidates ──
+    const built = allProps.map(p => {
       const pred = predMap.get(p.id);
       const unified = unifiedMap.get(`${p.player_name}|${p.prop_type}|${p.source}|${p.line}`);
 
