@@ -97,7 +97,22 @@ const RUN_BUDGET_MS = 115_000;
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
+  // Hoisted run state so the finally block can always close the run row,
+  // even on crash, thrown error, or client-side timeout.
+  let supabaseRef: any = null;
+  let runId: string | undefined;
+  let finalized = false;
+  const completed: any[] = [];
+  const failed: any[] = [];
+  let totalRecords = 0;
+  let totalCalls = 0;
+  let totalCostCents = 0;
+  let skippedCount = 0;
+  const startTime = Date.now();
+  let fatalError: string | null = null;
+
   try {
+
     const body = await req.json().catch(() => ({}));
     const {
       run_type = 'manual',
