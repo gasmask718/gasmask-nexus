@@ -7,11 +7,34 @@ import {
   placeDetails,
   parseCityState,
   DETAILS_MASK_FULL,
+  SKU_TEXT_SEARCH,
+  SKU_PLACE_DETAILS,
   createUsageTracker,
   fetchBudgetStatus,
   enforceBudgetGate,
   pausedResponse,
 } from "../_shared/places-client.ts";
+
+// Google does not bill non-2xx responses. The tracker notes each call BEFORE
+// the fetch, so a rejected request must be un-counted or it lands in the ledger.
+function uncount(tracker: any, sku: string) {
+  if (tracker?.counts?.[sku]) tracker.counts[sku]--;
+}
+
+async function searchOrFail(query: string, apiKey: string, pageToken: string | undefined, tracker: any) {
+  try {
+    return await textSearch(query, apiKey, pageToken, tracker);
+  } catch (e) {
+    uncount(tracker, SKU_TEXT_SEARCH);
+    throw new Error(`Google Places search failed: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+async function detailsOrNull(placeId: string, apiKey: string, tracker: any) {
+  const p = await placeDetails(placeId, apiKey, DETAILS_MASK_FULL, tracker);
+  if (!p) uncount(tracker, SKU_PLACE_DETAILS);
+  return p;
+}
 
 function mapPlace(p: any) {
   const { city, state } = parseCityState(p.addressComponents);
