@@ -270,7 +270,7 @@ serve(async (req) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     await writeLedger();
-    return new Response(JSON.stringify({ error: msg, ...meta() }), {
+    return new Response(JSON.stringify({ success: false, error: msg, ...meta() }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
