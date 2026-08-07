@@ -171,6 +171,9 @@ serve(async (req) => {
       if (!phone && tracker.canRequest()) {
         try {
           const details = await placeDetails(p.id, apiKey, DETAILS_MASK_FULL, tracker);
+          // placeDetails returns null on any non-2xx. Un-count it — Google does
+          // not bill rejected Details requests either.
+          if (!details && tracker.counts[SKU_PLACE_DETAILS]) tracker.counts[SKU_PLACE_DETAILS]--;
           if (details) {
             phone = details.nationalPhoneNumber || details.internationalPhoneNumber || null;
             website = details.websiteUri || website;
@@ -271,6 +274,7 @@ serve(async (req) => {
     await writeLedger();
 
     return new Response(JSON.stringify({
+      success: false,
       error: err instanceof Error ? err.message : 'Unknown error',
       requests_made: tracker.total(),
       estimated_cost: Number(tracker.estimatedCost().toFixed(4)),
