@@ -8,6 +8,8 @@ import {
   parseCityState,
   normState,
   DETAILS_MASK_FULL,
+  SKU_TEXT_SEARCH,
+  SKU_PLACE_DETAILS,
   createUsageTracker,
   fetchBudgetStatus,
   enforceBudgetGate,
@@ -107,8 +109,13 @@ serve(async (req) => {
         pageToken = result.nextPageToken;
         if (!pageToken) break;
       } catch (e) {
-        console.error(`Page ${page} search error:`, e);
-        break;
+        // A non-2xx from Google is NOT a zero-result search. The tracker already
+        // noted the call before the fetch, so un-count it: Google does not bill
+        // rejected requests and neither should our ledger. Then fail loudly.
+        if (tracker.counts[SKU_TEXT_SEARCH]) tracker.counts[SKU_TEXT_SEARCH]--;
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`Page ${page} search error:`, msg);
+        throw new Error(`Google Places search failed: ${msg}`);
       }
     }
 
@@ -164,6 +171,9 @@ serve(async (req) => {
       if (!phone && tracker.canRequest()) {
         try {
           const details = await placeDetails(p.id, apiKey, DETAILS_MASK_FULL, tracker);
+          // placeDetails returns null on any non-2xx. Un-count it — Google does
+          // not bill rejected Details requests either.
+          if (!details && tracker.counts[SKU_PLACE_DETAILS]) tracker.counts[SKU_PLACE_DETAILS]--;
           if (details) {
             phone = details.nationalPhoneNumber || details.internationalPhoneNumber || null;
             website = details.websiteUri || website;
@@ -264,6 +274,7 @@ serve(async (req) => {
     await writeLedger();
 
     return new Response(JSON.stringify({
+      success: false,
       error: err instanceof Error ? err.message : 'Unknown error',
       requests_made: tracker.total(),
       estimated_cost: Number(tracker.estimatedCost().toFixed(4)),

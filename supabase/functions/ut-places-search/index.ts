@@ -7,11 +7,34 @@ import {
   placeDetails,
   parseCityState,
   DETAILS_MASK_FULL,
+  SKU_TEXT_SEARCH,
+  SKU_PLACE_DETAILS,
   createUsageTracker,
   fetchBudgetStatus,
   enforceBudgetGate,
   pausedResponse,
 } from "../_shared/places-client.ts";
+
+// Google does not bill non-2xx responses. The tracker notes each call BEFORE
+// the fetch, so a rejected request must be un-counted or it lands in the ledger.
+function uncount(tracker: any, sku: string) {
+  if (tracker?.counts?.[sku]) tracker.counts[sku]--;
+}
+
+async function searchOrFail(query: string, apiKey: string, pageToken: string | undefined, tracker: any) {
+  try {
+    return await textSearch(query, apiKey, pageToken, tracker);
+  } catch (e) {
+    uncount(tracker, SKU_TEXT_SEARCH);
+    throw new Error(`Google Places search failed: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+async function detailsOrNull(placeId: string, apiKey: string, tracker: any) {
+  const p = await placeDetails(placeId, apiKey, DETAILS_MASK_FULL, tracker);
+  if (!p) uncount(tracker, SKU_PLACE_DETAILS);
+  return p;
+}
 
 function mapPlace(p: any) {
   const { city, state } = parseCityState(p.addressComponents);
@@ -109,7 +132,7 @@ serve(async (req) => {
       let places: any[] = [];
       let nextPageToken: string | null = null;
       if (tracker.canRequest()) {
-        const result = await textSearch(query, apiKey, page_token || undefined, tracker);
+        const result = await searchOrFail(query, apiKey, page_token || undefined, tracker);
         places = (result.places || []).map(mapPlace);
         nextPageToken = result.nextPageToken || null;
       } else {
@@ -143,7 +166,7 @@ serve(async (req) => {
         if (!tracker.canRequest()) { tracker.capped = true; break; }
         if (page > 0) await delay(2000); // Google requires delay before using pageToken
 
-        const result = await textSearch(query, apiKey, pageToken, tracker);
+        const result = await searchOrFail(query, apiKey, pageToken, tracker);
         const mapped = (result.places || []).map(mapPlace);
         allPlaces.push(...mapped);
         pageToken = result.nextPageToken;
@@ -172,7 +195,7 @@ serve(async (req) => {
         await writeLedger();
         throw new Error('Request cap reached before Place Details call');
       }
-      const p = await placeDetails(place_id, apiKey, DETAILS_MASK_FULL, tracker);
+      const p = await detailsOrNull(place_id, apiKey, tracker);
       if (!p) throw new Error(`Place Details failed for ${place_id}`);
       ledgerCtx = { results_returned: 1 };
       await writeLedger();
@@ -211,7 +234,7 @@ serve(async (req) => {
       for (const pid of ids) {
         if (!tracker.canRequest()) { tracker.capped = true; break; }
         try {
-          const p = await placeDetails(pid, apiKey, DETAILS_MASK_FULL, tracker);
+          const p = await detailsOrNull(pid, apiKey, tracker);
           if (!p) throw new Error(`Place Details failed for ${pid}`);
           enriched.push({
             place_id: p.id,
@@ -247,7 +270,7 @@ serve(async (req) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     await writeLedger();
-    return new Response(JSON.stringify({ error: msg, ...meta() }), {
+    return new Response(JSON.stringify({ success: false, error: msg, ...meta() }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
