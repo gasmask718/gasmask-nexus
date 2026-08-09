@@ -12,7 +12,11 @@ const BodySchema = z.object({
   city: z.string().max(100).optional().nullable(),
   state: z.string().max(50).optional().nullable(),
   zip: z.string().max(20).optional().nullable(),
-  ssn: z.string().regex(/^\d{9}$/, "SSN must be exactly 9 digits"),
+  // STAGE 0 / Option A: this product NEVER captures a full SSN.
+  // Intake collects the last 4 digits only; there is no plaintext or
+  // "encrypted" full SSN anywhere in the pipeline.
+  ssn_last4: z.string().regex(/^\d{4}$/, "Provide the last 4 digits of the SSN only"),
+  ssn: z.undefined({ invalid_type_error: "Full SSN is not accepted. Send ssn_last4 only." }).optional(),
   employment_status: z.string().max(100).optional().nullable(),
   monthly_income: z.number().min(0).optional().nullable(),
   business_name: z.string().max(255).optional().nullable(),
