@@ -1364,7 +1364,8 @@ export default function AppRoutes() {
       <Route path="/auth/intake" element={<PublicIntakePage />} />
       <Route path="/auth/intake/:token" element={<PublicIntakePage />} />
       <Route path="/portal/login" element={<PortalLogin />} />
-      <Route path="/funding-machine/portal" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingClientPortal /></RequireRole>} />
+      {/* Client-facing portal: intentionally NOT staff-guarded — clients authenticate here and RLS scopes them to their own row */}
+      <Route path="/funding-machine/portal" element={<FundingClientPortal />} />
       <Route path="/funding-portal" element={<FundingClientPortal />} />
       <Route path="/portal/register" element={<PortalRegister />} />
       <Route path="/portal/driver/login" element={<DriverLogin />} />
