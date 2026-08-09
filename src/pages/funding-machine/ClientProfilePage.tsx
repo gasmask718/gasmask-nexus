@@ -17,6 +17,7 @@ import DocumentVault from "@/components/funding-machine/DocumentVault";
 import ScoreSimulator from "@/components/funding-machine/ScoreSimulator";
 import LenderRelationships from "@/components/funding-machine/LenderRelationships";
 import AutoFillApplicationDialog from "@/components/funding-machine/AutoFillApplicationDialog";
+import { FUNDING_CLIENT_SAFE_COLUMNS } from '@/lib/funding/pii';
 
 const GOLD = "#C9A84C";
 
@@ -87,7 +88,7 @@ export default function ClientProfilePage() {
   const { data: client, isLoading } = useQuery({
     queryKey: ['funding-client', clientId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('funding_clients').select('*').eq('id', clientId).single();
+      const { data, error } = await supabase.from('funding_clients').select(FUNDING_CLIENT_SAFE_COLUMNS).eq('id', clientId).single();
       if (error) throw error;
       return data;
     },

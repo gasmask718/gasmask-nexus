@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
+import { FUNDING_CLIENT_SAFE_COLUMNS } from '@/lib/funding/pii';
   Building2, ArrowLeft, RefreshCw, Brain, Lock, ExternalLink, TrendingUp
 } from "lucide-react";
 
@@ -58,7 +59,7 @@ export default function BusinessBuilderPage() {
     queryKey: ['funding-client', clientId],
     enabled: !!clientId,
     queryFn: async () => {
-      const { data, error } = await supabase.from('funding_clients').select('*').eq('id', clientId!).single();
+      const { data, error } = await supabase.from('funding_clients').select(FUNDING_CLIENT_SAFE_COLUMNS).eq('id', clientId!).single();
       if (error) throw error;
       return data;
     },
