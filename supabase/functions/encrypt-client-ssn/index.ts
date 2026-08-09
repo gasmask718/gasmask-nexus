@@ -62,7 +62,7 @@ serve(async (req) => {
         city: clientData.city,
         state: clientData.state,
         zip_code: clientData.zip,
-        ssn_encrypted: ssnEncrypted,
+        // ssn_encrypted intentionally never written — full SSN is never captured.
         ssn_last4: ssnLast4,
         employment_status: clientData.employment_status,
         monthly_income: clientData.monthly_income,
@@ -117,7 +117,7 @@ serve(async (req) => {
       success: true,
       client_id: client.id,
       ssn_last4: client.ssn_last4,
-      message: "Client created. SSN encrypted via Vault. Raw SSN discarded.",
+      message: "Client created. Only the last 4 SSN digits are collected or stored.",
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
