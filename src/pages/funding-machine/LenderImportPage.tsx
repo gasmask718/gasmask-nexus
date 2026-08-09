@@ -41,6 +41,8 @@ import {
   type ParsedRow,
 } from '@/lib/funding/lenderImportSchema';
 
+type LenderInsert = DatabaseSchema['public']['Tables']['funding_lender_database']['Insert'];
+
 const UNMAPPED = '__skip__';
 const CHUNK_SIZE = 200;
 
