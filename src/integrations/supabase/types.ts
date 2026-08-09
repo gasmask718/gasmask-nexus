@@ -109189,6 +109189,8 @@ export type Database = {
         Row: {
           address: string | null
           ai_summary: string | null
+          all_emails: Json | null
+          all_phones: Json | null
           amount_owed: number | null
           assigned_attorney_id: string | null
           bland_call_id: string | null
@@ -109206,6 +109208,10 @@ export type Database = {
           created_at: string | null
           dc_campaign_id: string | null
           dnc: boolean
+          dnc_checked_at: string | null
+          dnc_national: boolean | null
+          dnc_state: boolean | null
+          dnc_state_list: string | null
           email: string | null
           email_notification_sent: boolean | null
           email_notification_sent_at: string | null
@@ -109218,8 +109224,18 @@ export type Database = {
           last_called_at: string | null
           last_name: string | null
           lead_source: string | null
+          mailing_address: string | null
+          mailing_city: string | null
+          mailing_state: string | null
+          mailing_zip: string | null
           notes: string | null
+          owner_age: number | null
+          owner_deceased: boolean | null
+          parcel_id: string | null
           phone: string | null
+          phone_carrier: string | null
+          phone_dnc: boolean | null
+          phone_type: string | null
           property_address: string | null
           recommended_action: string | null
           referrer: string | null
@@ -109231,6 +109247,9 @@ export type Database = {
           state: string | null
           status: string | null
           surplus_amount: number | null
+          tcpa_litigator: boolean | null
+          trace_completed_at: string | null
+          trace_provider: string | null
           updated_at: string | null
           user_agent: string | null
           utm_campaign: string | null
@@ -109250,6 +109269,8 @@ export type Database = {
         Insert: {
           address?: string | null
           ai_summary?: string | null
+          all_emails?: Json | null
+          all_phones?: Json | null
           amount_owed?: number | null
           assigned_attorney_id?: string | null
           bland_call_id?: string | null
@@ -109267,6 +109288,10 @@ export type Database = {
           created_at?: string | null
           dc_campaign_id?: string | null
           dnc?: boolean
+          dnc_checked_at?: string | null
+          dnc_national?: boolean | null
+          dnc_state?: boolean | null
+          dnc_state_list?: string | null
           email?: string | null
           email_notification_sent?: boolean | null
           email_notification_sent_at?: string | null
@@ -109279,8 +109304,18 @@ export type Database = {
           last_called_at?: string | null
           last_name?: string | null
           lead_source?: string | null
+          mailing_address?: string | null
+          mailing_city?: string | null
+          mailing_state?: string | null
+          mailing_zip?: string | null
           notes?: string | null
+          owner_age?: number | null
+          owner_deceased?: boolean | null
+          parcel_id?: string | null
           phone?: string | null
+          phone_carrier?: string | null
+          phone_dnc?: boolean | null
+          phone_type?: string | null
           property_address?: string | null
           recommended_action?: string | null
           referrer?: string | null
@@ -109292,6 +109327,9 @@ export type Database = {
           state?: string | null
           status?: string | null
           surplus_amount?: number | null
+          tcpa_litigator?: boolean | null
+          trace_completed_at?: string | null
+          trace_provider?: string | null
           updated_at?: string | null
           user_agent?: string | null
           utm_campaign?: string | null
@@ -109311,6 +109349,8 @@ export type Database = {
         Update: {
           address?: string | null
           ai_summary?: string | null
+          all_emails?: Json | null
+          all_phones?: Json | null
           amount_owed?: number | null
           assigned_attorney_id?: string | null
           bland_call_id?: string | null
@@ -109328,6 +109368,10 @@ export type Database = {
           created_at?: string | null
           dc_campaign_id?: string | null
           dnc?: boolean
+          dnc_checked_at?: string | null
+          dnc_national?: boolean | null
+          dnc_state?: boolean | null
+          dnc_state_list?: string | null
           email?: string | null
           email_notification_sent?: boolean | null
           email_notification_sent_at?: string | null
@@ -109340,8 +109384,18 @@ export type Database = {
           last_called_at?: string | null
           last_name?: string | null
           lead_source?: string | null
+          mailing_address?: string | null
+          mailing_city?: string | null
+          mailing_state?: string | null
+          mailing_zip?: string | null
           notes?: string | null
+          owner_age?: number | null
+          owner_deceased?: boolean | null
+          parcel_id?: string | null
           phone?: string | null
+          phone_carrier?: string | null
+          phone_dnc?: boolean | null
+          phone_type?: string | null
           property_address?: string | null
           recommended_action?: string | null
           referrer?: string | null
@@ -109353,6 +109407,9 @@ export type Database = {
           state?: string | null
           status?: string | null
           surplus_amount?: number | null
+          tcpa_litigator?: boolean | null
+          trace_completed_at?: string | null
+          trace_provider?: string | null
           updated_at?: string | null
           user_agent?: string | null
           utm_campaign?: string | null
@@ -119374,6 +119431,7 @@ export type Database = {
           state: string | null
           status: string
           times_seen: number
+          timezone: string | null
           updated_at: string
           website: string | null
         }
@@ -119434,6 +119492,7 @@ export type Database = {
           state?: string | null
           status?: string
           times_seen?: number
+          timezone?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -119494,6 +119553,7 @@ export type Database = {
           state?: string | null
           status?: string
           times_seen?: number
+          timezone?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -119883,6 +119943,7 @@ export type Database = {
           source_lead_id: string | null
           state: string | null
           updated_at: string
+          user_id: string | null
           website: string | null
         }
         Insert: {
@@ -119908,6 +119969,7 @@ export type Database = {
           source_lead_id?: string | null
           state?: string | null
           updated_at?: string
+          user_id?: string | null
           website?: string | null
         }
         Update: {
@@ -119933,6 +119995,7 @@ export type Database = {
           source_lead_id?: string | null
           state?: string | null
           updated_at?: string
+          user_id?: string | null
           website?: string | null
         }
         Relationships: [
