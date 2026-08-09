@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -176,7 +177,9 @@ export default function LenderImportPage() {
         .slice(0, 20)
         .map((row) => `Row ${row.rowNumber}: ${row.errors.join('; ')}`);
 
-      const payload = validRows.map((row) => ({ ...row.record, import_batch_id: batch.id }));
+      const payload = validRows.map(
+        (row) => ({ ...row.record, import_batch_id: batch.id }) as unknown as LenderInsert,
+      );
       const withRef = payload.filter((row) => row.external_ref);
       const withoutRef = payload.filter((row) => !row.external_ref);
 
