@@ -394,6 +394,11 @@ export function buildRows(
 
     if (!record.lender_name) errors.push('Lender name is required');
 
+    // lender_name / product_name / category are NOT NULL in the database, so a
+    // sheet that omits product or category still produces a valid row.
+    if (record.lender_name && !record.product_name) record.product_name = record.lender_name;
+    if (!record.category) record.category = 'other';
+
     // A lender may only be automated when its route is api/browser and ToS permits.
     if (record.submission_method === 'manual') record.automation_allowed = false;
     if (record.automation_allowed === undefined) record.automation_allowed = false;
