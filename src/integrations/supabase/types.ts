@@ -60071,7 +60071,6 @@ export type Database = {
           score_ex: number | null
           score_tu: number | null
           score_updated_at: string | null
-          ssn_encrypted: string | null
           ssn_last4: string | null
           stage: string | null
           state: string | null
@@ -60131,7 +60130,6 @@ export type Database = {
           score_ex?: number | null
           score_tu?: number | null
           score_updated_at?: string | null
-          ssn_encrypted?: string | null
           ssn_last4?: string | null
           stage?: string | null
           state?: string | null
@@ -60191,7 +60189,6 @@ export type Database = {
           score_ex?: number | null
           score_tu?: number | null
           score_updated_at?: string | null
-          ssn_encrypted?: string | null
           ssn_last4?: string | null
           stage?: string | null
           state?: string | null
