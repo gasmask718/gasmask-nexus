@@ -45,21 +45,8 @@ serve(async (req) => {
       });
     }
 
-    const { ssn, ...clientData } = parsed.data;
-    const ssnLast4 = ssn.slice(-4);
+    const { ssn_last4: ssnLast4, ...clientData } = parsed.data;
 
-    // Encrypt SSN using Supabase Vault
-    const { data: vaultData, error: vaultError } = await supabase.rpc("vault_create_secret", {
-      new_secret: ssn,
-      new_name: `client_ssn_${Date.now()}`,
-      new_description: `Encrypted SSN for ${clientData.full_name}`,
-    });
-
-    // Fallback: if vault RPC doesn't exist, store a marker
-    let ssnEncrypted = "vault_unavailable";
-    if (!vaultError && vaultData) {
-      ssnEncrypted = String(vaultData);
-    }
 
     // Insert the funding client
     const { data: client, error: insertError } = await supabase
