@@ -26,7 +26,7 @@ export default function SecureClientIntakePage() {
 
   const [form, setForm] = useState({
     full_name: '', email: '', phone: '', date_of_birth: '',
-    address: '', city: '', state: '', zip: '', ssn: '',
+    address: '', city: '', state: '', zip: '', ssn_last4: '',
     employment_status: '', monthly_income: '',
     business_name: '', ein: '', business_start_date: '', business_state_of_formation: '',
     credit_score_estimate: '', assigned_advisor: '',
@@ -37,8 +37,8 @@ export default function SecureClientIntakePage() {
 
   const handleSubmit = async () => {
     if (!form.consent) { toast.error('You must agree to the consent'); return; }
-    if (!form.full_name || !form.ssn || form.ssn.length !== 9) {
-      toast.error('Full name and valid 9-digit SSN are required');
+    if (!form.full_name || form.ssn_last4.length !== 4) {
+      toast.error('Full name and the last 4 digits of the SSN are required');
       return;
     }
 
@@ -54,7 +54,7 @@ export default function SecureClientIntakePage() {
           city: form.city || null,
           state: form.state || null,
           zip: form.zip || null,
-          ssn: form.ssn,
+          ssn_last4: form.ssn_last4,
           employment_status: form.employment_status || null,
           monthly_income: form.monthly_income ? Number(form.monthly_income) : null,
           business_name: form.business_name || null,
@@ -85,7 +85,7 @@ export default function SecureClientIntakePage() {
             <h2 className="text-2xl font-bold text-foreground">Client Submitted Successfully</h2>
             <p className="text-muted-foreground">SSN has been encrypted via Vault. Raw SSN was discarded. Only the last 4 digits are stored for matching.</p>
             <div className="flex gap-3 justify-center pt-4">
-              <Button onClick={() => { setSubmitted(false); setStep(1); setForm({ full_name: '', email: '', phone: '', date_of_birth: '', address: '', city: '', state: '', zip: '', ssn: '', employment_status: '', monthly_income: '', business_name: '', ein: '', business_start_date: '', business_state_of_formation: '', credit_score_estimate: '', assigned_advisor: '', consent: false }); }}>
+              <Button onClick={() => { setSubmitted(false); setStep(1); setForm({ full_name: '', email: '', phone: '', date_of_birth: '', address: '', city: '', state: '', zip: '', ssn_last4: '', employment_status: '', monthly_income: '', business_name: '', ein: '', business_start_date: '', business_state_of_formation: '', credit_score_estimate: '', assigned_advisor: '', consent: false }); }}>
                 Add Another Client
               </Button>
               <Button variant="outline" onClick={() => navigate('/funding-machine')}>Back to Dashboard</Button>
@@ -135,10 +135,10 @@ export default function SecureClientIntakePage() {
               <div className="pt-2">
                 <Label className="flex items-center gap-2">
                   <Lock className="h-4 w-4 text-amber-500" />
-                  Social Security Number — Encrypted on entry. Never stored in plain text.
+                  SSN — Last 4 Digits Only
                 </Label>
-                <Input type="password" value={form.ssn} onChange={e => update('ssn', e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="•••••••••" maxLength={9} className="mt-1 font-mono" />
-                <p className="text-xs text-muted-foreground mt-1">9 digits only. Encrypted via Vault immediately on submission. Only last 4 stored.</p>
+                <Input type="password" value={form.ssn_last4} onChange={e => update('ssn_last4', e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="••••" maxLength={4} className="mt-1 font-mono" />
+                <p className="text-xs text-muted-foreground mt-1">We never collect or store a full Social Security Number — last 4 digits only.</p>
               </div>
             </>
           )}

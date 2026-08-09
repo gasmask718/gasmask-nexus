@@ -12,7 +12,11 @@ const BodySchema = z.object({
   city: z.string().max(100).optional().nullable(),
   state: z.string().max(50).optional().nullable(),
   zip: z.string().max(20).optional().nullable(),
-  ssn: z.string().regex(/^\d{9}$/, "SSN must be exactly 9 digits"),
+  // STAGE 0 / Option A: this product NEVER captures a full SSN.
+  // Intake collects the last 4 digits only; there is no plaintext or
+  // "encrypted" full SSN anywhere in the pipeline.
+  ssn_last4: z.string().regex(/^\d{4}$/, "Provide the last 4 digits of the SSN only"),
+  ssn: z.undefined({ invalid_type_error: "Full SSN is not accepted. Send ssn_last4 only." }).optional(),
   employment_status: z.string().max(100).optional().nullable(),
   monthly_income: z.number().min(0).optional().nullable(),
   business_name: z.string().max(255).optional().nullable(),
@@ -41,21 +45,8 @@ serve(async (req) => {
       });
     }
 
-    const { ssn, ...clientData } = parsed.data;
-    const ssnLast4 = ssn.slice(-4);
+    const { ssn_last4: ssnLast4, ...clientData } = parsed.data;
 
-    // Encrypt SSN using Supabase Vault
-    const { data: vaultData, error: vaultError } = await supabase.rpc("vault_create_secret", {
-      new_secret: ssn,
-      new_name: `client_ssn_${Date.now()}`,
-      new_description: `Encrypted SSN for ${clientData.full_name}`,
-    });
-
-    // Fallback: if vault RPC doesn't exist, store a marker
-    let ssnEncrypted = "vault_unavailable";
-    if (!vaultError && vaultData) {
-      ssnEncrypted = String(vaultData);
-    }
 
     // Insert the funding client
     const { data: client, error: insertError } = await supabase
@@ -71,7 +62,7 @@ serve(async (req) => {
         city: clientData.city,
         state: clientData.state,
         zip_code: clientData.zip,
-        ssn_encrypted: ssnEncrypted,
+        // ssn_encrypted intentionally never written — full SSN is never captured.
         ssn_last4: ssnLast4,
         employment_status: clientData.employment_status,
         monthly_income: clientData.monthly_income,
@@ -126,7 +117,7 @@ serve(async (req) => {
       success: true,
       client_id: client.id,
       ssn_last4: client.ssn_last4,
-      message: "Client created. SSN encrypted via Vault. Raw SSN discarded.",
+      message: "Client created. Only the last 4 SSN digits are collected or stored.",
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
