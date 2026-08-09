@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
-import { FUNDING_CLIENT_SAFE_COLUMNS } from '@/lib/funding/pii';
   Building2, ArrowLeft, RefreshCw, Brain, Lock, ExternalLink, TrendingUp
 } from "lucide-react";
+import { FUNDING_CLIENT_SAFE_COLUMNS } from '@/lib/funding/pii';
 
 const TIER1_VENDORS = [
   { name: 'Uline', bureaus: ['D&B', 'Experian Business'], minOrder: '$50', terms: 'Net 30', url: 'https://www.uline.com' },
