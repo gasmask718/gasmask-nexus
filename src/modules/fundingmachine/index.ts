@@ -59,6 +59,7 @@ export const FundingMachineModule: DynastyModule = {
     { path: '/business-builder', component: BusinessBuilderPage, label: 'Business Builder', icon: Building2, requiresAuth: true },
     { path: '/bureau-intel', component: BureauIntelPage, label: 'Bureau Intelligence', icon: CreditCard, requiresAuth: true },
     { path: '/funding-matrix', component: FundingMatrixPage, label: 'Funding Matrix', icon: Landmark, requiresAuth: true },
+    { path: '/lender-import', component: LenderImportPage, label: 'Lender Import', icon: Upload, requiresAuth: true },
     { path: '/applications', component: ApplicationsPage, label: 'Applications', icon: ClipboardList, requiresAuth: true },
     { path: '/velocity', component: VelocityCalculatorPage, label: 'Velocity Calculator', icon: TrendingUp, requiresAuth: true },
     { path: '/tradeline-vault', component: TradelineVaultPage, label: 'Tradeline Vault', icon: FileText, requiresAuth: true },
