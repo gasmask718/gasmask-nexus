@@ -142374,6 +142374,7 @@ export type Database = {
         }
         Returns: Json
       }
+      recompute_all_funding_dfs: { Args: never; Returns: number }
       recompute_answer_rates: { Args: never; Returns: undefined }
       recover_stale_calls: { Args: { p_business_id: string }; Returns: Json }
       redeem_portal_invite: {
