@@ -689,65 +689,31 @@ export default function ClientProfilePage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* DFS Score */}
-          <Card className="border-amber-500/20 bg-gradient-to-br from-background to-amber-500/5">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-amber-500" />
-                Dynasty Fundability Score
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-8 mb-6">
-                <div className="text-center">
-                  <div className="text-6xl font-bold text-amber-400">{latestDFS?.total_score || 0}</div>
-                  <div className="text-sm text-muted-foreground">of 100</div>
-                </div>
-                <div className="flex-1 grid grid-cols-2 gap-4">
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <p className="text-sm text-muted-foreground">Current Ceiling</p>
-                    <p className="text-xl font-bold text-amber-400">${Number(client.current_funding_ceiling || 0).toLocaleString()}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <p className="text-sm text-muted-foreground">Projected Ceiling</p>
-                    <p className="text-xl font-bold text-emerald-400">${Number(client.projected_funding_ceiling || 0).toLocaleString()}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <p className="text-sm text-muted-foreground">Target Amount</p>
-                    <p className="text-xl font-bold">${Number(client.target_funding_amount || 0).toLocaleString()}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <p className="text-sm text-muted-foreground">Monthly Revenue</p>
-                    <p className="text-xl font-bold">${Number(client.monthly_revenue || 0).toLocaleString()}</p>
-                  </div>
-                </div>
+          {/* DFS Score — computed by public.compute_funding_dfs, with full breakdown */}
+          <div className="space-y-4">
+            <DfsBreakdownCard
+              clientId={clientId!}
+              totalScore={latestDFS?.total_score}
+              fundingCeiling={client.current_funding_ceiling}
+              breakdown={(latestDFS as any)?.score_breakdown}
+              completeness={(latestDFS as any)?.data_completeness_pct}
+              computedAt={(latestDFS as any)?.computed_at}
+            />
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-3 rounded-lg bg-muted/30">
+                <p className="text-sm text-muted-foreground">Projected Ceiling</p>
+                <p className="text-xl font-bold text-emerald-400">${Number(client.projected_funding_ceiling || 0).toLocaleString()}</p>
               </div>
-
-              {/* Dimension Breakdown */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {DFS_DIMENSIONS.map(dim => {
-                  const value = latestDFS ? (latestDFS as any)[dim.key] || 0 : 0;
-                  const pct = (value / dim.max) * 100;
-                  return (
-                    <div key={dim.key} className="p-3 rounded-lg bg-muted/20">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-muted-foreground">{dim.label}</span>
-                        <span className="text-xs font-bold">{value}/{dim.max}</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="p-3 rounded-lg bg-muted/30">
+                <p className="text-sm text-muted-foreground">Target Amount</p>
+                <p className="text-xl font-bold">${Number(client.target_funding_amount || 0).toLocaleString()}</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="p-3 rounded-lg bg-muted/30">
+                <p className="text-sm text-muted-foreground">Monthly Revenue</p>
+                <p className="text-xl font-bold">${Number(client.monthly_revenue || 0).toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
 
           {/* Score Simulator */}
           <ScoreSimulator clientId={clientId!} />
