@@ -1,7 +1,7 @@
 import { DynastyModule, SidebarItem } from '../types';
 import {
   Landmark, Users, Shield, Building2, CreditCard,
-  TrendingUp, FileText, ClipboardList, LayoutDashboard, Plus, Sunrise, Settings, DollarSign
+  TrendingUp, FileText, ClipboardList, LayoutDashboard, Plus, Sunrise, Settings, DollarSign, Upload
 } from 'lucide-react';
 import FundingMachineDashboard from '@/pages/funding-machine/FundingMachineDashboard';
 import ClientIntakePage from '@/pages/funding-machine/ClientIntakePage';
@@ -17,6 +17,7 @@ import MorningBriefingPage from '@/pages/funding-machine/MorningBriefingPage';
 import FundingMachineSettingsPage from '@/pages/funding-machine/FundingMachineSettingsPage';
 import ApplicationsPage from '@/pages/funding-machine/ApplicationsPage';
 import RevenueDashboardPage from '@/pages/funding-machine/RevenueDashboardPage';
+import LenderImportPage from '@/pages/funding-machine/LenderImportPage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine/briefing', label: 'Morning Briefing', icon: Sunrise },
@@ -28,6 +29,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine/business-builder', label: 'Business Builder', icon: Building2 },
   { path: '/funding-machine/bureau-intel', label: 'Bureau Intelligence', icon: CreditCard },
   { path: '/funding-machine/funding-matrix', label: 'Funding Matrix', icon: Landmark },
+  { path: '/funding-machine/lender-import', label: 'Lender Import', icon: Upload },
   { path: '/funding-machine/applications', label: 'Applications', icon: ClipboardList },
   { path: '/funding-machine/velocity', label: 'Velocity Calculator', icon: TrendingUp },
   { path: '/funding-machine/tradeline-vault', label: 'Tradeline Vault', icon: FileText },
