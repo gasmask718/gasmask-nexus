@@ -17,6 +17,7 @@ import DocumentVault from "@/components/funding-machine/DocumentVault";
 import ScoreSimulator from "@/components/funding-machine/ScoreSimulator";
 import LenderRelationships from "@/components/funding-machine/LenderRelationships";
 import AutoFillApplicationDialog from "@/components/funding-machine/AutoFillApplicationDialog";
+import { DfsBreakdownCard } from "@/components/funding-machine/DfsBreakdownCard";
 import { FUNDING_CLIENT_SAFE_COLUMNS } from '@/lib/funding/pii';
 
 const GOLD = "#C9A84C";
