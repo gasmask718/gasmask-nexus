@@ -7,17 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Settings, Key, User, Globe, ArrowLeft, Save, CheckCircle, XCircle } from "lucide-react";
+import { Key, User, Globe, ArrowLeft, Save, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { DfsWeightsCard } from "@/components/funding-machine/DfsWeightsCard";
 
 export default function FundingMachineSettingsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [postgridKey, setPostgridKey] = useState("");
   const [operatorPhone, setOperatorPhone] = useState("");
   const [operatorEmail, setOperatorEmail] = useState("");
 
-  const { data: settings = [], isLoading } = useQuery({
+  const { data: settings = [] } = useQuery({
     queryKey: ["funding-machine-settings"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -30,7 +30,24 @@ export default function FundingMachineSettingsPage() {
 
   const getSetting = (key: string) => settings.find((s: any) => s.setting_key === key)?.setting_value || "";
 
-  const isPostgridConfigured = !!getSetting("postgrid_api_key");
+  // The mail runtime reads POSTGRID_API_KEY from the edge-function environment,
+  // never from the database. Ask the runtime itself rather than inferring state
+  // from a settings row it does not consult.
+  const {
+    data: postgrid,
+    isFetching: checkingPostgrid,
+    refetch: recheckPostgrid,
+  } = useQuery({
+    queryKey: ["postgrid-health"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("funding-postgrid", {
+        body: { ping: true },
+      });
+      if (error) throw error;
+      return data as { configured: boolean; mode?: string; reason?: string };
+    },
+    retry: false,
+  });
 
   const saveMutation = useMutation({
     mutationFn: async ({ key, value }: { key: string; value: string }) => {
@@ -54,53 +71,58 @@ export default function FundingMachineSettingsPage() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold">Funding Machine Settings</h1>
-          <p className="text-muted-foreground">Configure API keys, operator preferences, and client portal</p>
+          <p className="text-muted-foreground">Configure integrations, scoring weights, and client portal</p>
         </div>
       </div>
 
-      {/* API Keys */}
+      {/* Integrations */}
       <Card className="border-amber-500/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="h-5 w-5 text-amber-500" />
-            API Keys
+            Integrations
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>PostGrid API Key</Label>
-              {isPostgridConfigured ? (
-                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                  <CheckCircle className="h-3 w-3 mr-1" /> Configured
-                </Badge>
-              ) : (
-                <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-                  <XCircle className="h-3 w-3 mr-1" /> Not Configured
-                </Badge>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                type="password"
-                placeholder={isPostgridConfigured ? "••••••••••••" : "Enter PostGrid API key"}
-                value={postgridKey}
-                onChange={(e) => setPostgridKey(e.target.value)}
-              />
-              <Button
-                onClick={() => saveMutation.mutate({ key: "postgrid_api_key", value: postgridKey })}
-                disabled={!postgridKey}
-                className="bg-gradient-to-r from-amber-600 to-yellow-500 text-black"
-              >
-                <Save className="h-4 w-4 mr-1" /> Save
-              </Button>
+              <Label>PostGrid — certified mail</Label>
+              <div className="flex items-center gap-2">
+                {postgrid?.configured ? (
+                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Connected{postgrid.mode ? ` (${postgrid.mode})` : ""}
+                  </Badge>
+                ) : (
+                  <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                    <XCircle className="h-3 w-3 mr-1" /> Not configured
+                  </Badge>
+                )}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => recheckPostgrid()}
+                  disabled={checkingPostgrid}
+                  aria-label="Re-check PostGrid connection"
+                >
+                  <RefreshCw className={`h-4 w-4 ${checkingPostgrid ? "animate-spin" : ""}`} />
+                </Button>
+              </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Sign up at <a href="https://postgrid.com" target="_blank" rel="noopener noreferrer" className="text-amber-400 underline">postgrid.com</a> to get your API key. Required for certified mail dispatch.
+              {postgrid?.configured
+                ? "Dispute letters are mailed certified with return receipt, and tracking numbers are written back to the mailing log."
+                : postgrid?.reason
+                  ? `${postgrid.reason}. The API key is stored as a backend secret, not in this page — ask your developer to set POSTGRID_API_KEY.`
+                  : "Checking connection…"}
             </p>
           </div>
         </CardContent>
       </Card>
+
+      {/* Fundability score weights */}
+      <DfsWeightsCard />
+
 
       {/* Operator Settings */}
       <Card className="border-amber-500/20">
