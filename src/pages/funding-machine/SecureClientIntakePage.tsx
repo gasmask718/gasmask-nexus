@@ -85,7 +85,7 @@ export default function SecureClientIntakePage() {
             <h2 className="text-2xl font-bold text-foreground">Client Submitted Successfully</h2>
             <p className="text-muted-foreground">SSN has been encrypted via Vault. Raw SSN was discarded. Only the last 4 digits are stored for matching.</p>
             <div className="flex gap-3 justify-center pt-4">
-              <Button onClick={() => { setSubmitted(false); setStep(1); setForm({ full_name: '', email: '', phone: '', date_of_birth: '', address: '', city: '', state: '', zip: '', ssn: '', employment_status: '', monthly_income: '', business_name: '', ein: '', business_start_date: '', business_state_of_formation: '', credit_score_estimate: '', assigned_advisor: '', consent: false }); }}>
+              <Button onClick={() => { setSubmitted(false); setStep(1); setForm({ full_name: '', email: '', phone: '', date_of_birth: '', address: '', city: '', state: '', zip: '', ssn_last4: '', employment_status: '', monthly_income: '', business_name: '', ein: '', business_start_date: '', business_state_of_formation: '', credit_score_estimate: '', assigned_advisor: '', consent: false }); }}>
                 Add Another Client
               </Button>
               <Button variant="outline" onClick={() => navigate('/funding-machine')}>Back to Dashboard</Button>
