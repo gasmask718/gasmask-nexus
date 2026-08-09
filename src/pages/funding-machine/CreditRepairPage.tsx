@@ -15,6 +15,7 @@ import {
   Mail, FileText, Send, RefreshCw, ChevronUp, Upload
 } from "lucide-react";
 import CreditReportUploadModal from "@/components/funding-machine/CreditReportUploadModal";
+import { FUNDING_CLIENT_SAFE_COLUMNS } from '@/lib/funding/pii';
 
 const LETTER_TYPES = [
   { value: 'fcra_609', label: 'FCRA §609 Dispute' },
@@ -65,7 +66,7 @@ export default function CreditRepairPage() {
     queryKey: ['funding-client', clientId],
     enabled: !!clientId,
     queryFn: async () => {
-      const { data, error } = await supabase.from('funding_clients').select('*').eq('id', clientId!).single();
+      const { data, error } = await supabase.from('funding_clients').select(FUNDING_CLIENT_SAFE_COLUMNS).eq('id', clientId!).single();
       if (error) throw error;
       return data;
     },

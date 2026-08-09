@@ -1364,6 +1364,7 @@ export default function AppRoutes() {
       <Route path="/auth/intake" element={<PublicIntakePage />} />
       <Route path="/auth/intake/:token" element={<PublicIntakePage />} />
       <Route path="/portal/login" element={<PortalLogin />} />
+      {/* Client-facing portal: intentionally NOT staff-guarded — clients authenticate here and RLS scopes them to their own row */}
       <Route path="/funding-machine/portal" element={<FundingClientPortal />} />
       <Route path="/funding-portal" element={<FundingClientPortal />} />
       <Route path="/portal/register" element={<PortalRegister />} />
@@ -2247,41 +2248,41 @@ export default function AppRoutes() {
         <Route path="/os/grants/:id" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantApplicationDetail /></RequireRole>} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
         {/* Floor 10 — Dynasty Funding Machine */}
-        <Route path="/funding-machine" element={<FundingMachineDashboard />} />
-        <Route path="/funding-machine/intake" element={<FundingMachineIntake />} />
-        <Route path="/funding-machine/client/:clientId" element={<FundingMachineClientProfile />} />
-        <Route path="/funding-machine/credit-repair" element={<FundingMachineCreditRepair />} />
-        <Route path="/funding-machine/business-builder" element={<FundingMachineBusinessBuilder />} />
-        <Route path="/funding-machine/bureau-intel" element={<FundingMachineBureauIntel />} />
-        <Route path="/funding-machine/funding-matrix" element={<FundingMachineFundingMatrix />} />
-        <Route path="/funding-machine/applications" element={<FundingMachineApplications />} />
-        <Route path="/funding-machine/velocity" element={<FundingMachineVelocity />} />
-        <Route path="/funding-machine/tradeline-vault" element={<FundingMachineTradelineVault />} />
-        <Route path="/funding-machine/tasks" element={<FundingMachineTaskCards />} />
-        <Route path="/funding-machine/morning-briefing" element={<FundingMachineMorningBriefing />} />
-        <Route path="/funding-machine/bill-guardian" element={<FundingMachineBillGuardian />} />
-        <Route path="/funding-machine/deletion-letters" element={<FundingMachineDeletionLetterEngine />} />
-        <Route path="/funding-machine/secure-intake" element={<FundingMachineSecureIntake />} />
-        <Route path="/funding-machine/credit-union-intel" element={<FundingMachineCreditUnionIntel />} />
-        <Route path="/funding-machine/auto-financing" element={<FundingMachineAutoFinancing />} />
-        <Route path="/funding-machine/shelf-corp" element={<FundingMachineShelfCorp />} />
-        <Route path="/funding-machine/settings" element={<FundingMachineSettings />} />
-        <Route path="/funding-machine/revenue" element={<FundingMachineRevenue />} />
+        <Route path="/funding-machine" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineDashboard /></RequireRole>} />
+        <Route path="/funding-machine/intake" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineIntake /></RequireRole>} />
+        <Route path="/funding-machine/client/:clientId" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineClientProfile /></RequireRole>} />
+        <Route path="/funding-machine/credit-repair" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineCreditRepair /></RequireRole>} />
+        <Route path="/funding-machine/business-builder" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineBusinessBuilder /></RequireRole>} />
+        <Route path="/funding-machine/bureau-intel" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineBureauIntel /></RequireRole>} />
+        <Route path="/funding-machine/funding-matrix" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineFundingMatrix /></RequireRole>} />
+        <Route path="/funding-machine/applications" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineApplications /></RequireRole>} />
+        <Route path="/funding-machine/velocity" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineVelocity /></RequireRole>} />
+        <Route path="/funding-machine/tradeline-vault" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineTradelineVault /></RequireRole>} />
+        <Route path="/funding-machine/tasks" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineTaskCards /></RequireRole>} />
+        <Route path="/funding-machine/morning-briefing" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineMorningBriefing /></RequireRole>} />
+        <Route path="/funding-machine/bill-guardian" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineBillGuardian /></RequireRole>} />
+        <Route path="/funding-machine/deletion-letters" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineDeletionLetterEngine /></RequireRole>} />
+        <Route path="/funding-machine/secure-intake" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineSecureIntake /></RequireRole>} />
+        <Route path="/funding-machine/credit-union-intel" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineCreditUnionIntel /></RequireRole>} />
+        <Route path="/funding-machine/auto-financing" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineAutoFinancing /></RequireRole>} />
+        <Route path="/funding-machine/shelf-corp" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineShelfCorp /></RequireRole>} />
+        <Route path="/funding-machine/settings" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineSettings /></RequireRole>} />
+        <Route path="/funding-machine/revenue" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineRevenue /></RequireRole>} />
         {/* Validation-aligned route aliases + new module registrations */}
-        <Route path="/funding-machine/lenders" element={<FundingMachineFundingMatrix />} />
+        <Route path="/funding-machine/lenders" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineFundingMatrix /></RequireRole>} />
         <Route path="/funding-machine/tradelines" element={<Navigate to="/funding-machine/tradeline-vault" replace />} />
         <Route path="/funding-machine/credit-unions" element={<Navigate to="/funding-machine/credit-union-intel" replace />} />
-        <Route path="/funding-machine/briefing" element={<FundingMachineMorningBriefing />} />
-        <Route path="/funding-machine/grants" element={<GrantFunderCRMPage />} />
-        <Route path="/funding-machine/clients" element={<FundingMachineClientsList />} />
-        <Route path="/funding-machine/credit-stacking" element={<FundingModuleStub title="Credit Stacking" description="Sequenced multi-lender credit stacking playbook" />} />
-        <Route path="/funding-machine/sba" element={<FundingModuleStub title="SBA Loans" description="SBA 7(a), 504, and microloan pipeline" />} />
-        <Route path="/funding-machine/cdfi" element={<FundingModuleStub title="CDFI Network" description="Community Development Financial Institution partners" />} />
-        <Route path="/funding-machine/playbook" element={<FundingModuleStub title="Funding Playbook" description="Full Dynasty funding strategy playbook" />} />
-        <Route path="/funding-machine/pg-rotation" element={<FundingModuleStub title="PG Rotation" description="Personal guarantor rotation and utilization tracking" />} />
-        <Route path="/funding-machine/entities" element={<FundingModuleStub title="Entities" description="Business entity registry and structure" />} />
-        <Route path="/funding-machine/analytics" element={<FundingModuleStub title="Funding Analytics" description="Approval rates, velocity, and funnel analytics" />} />
-        <Route path="/funding-machine/compliance" element={<FundingModuleStub title="Compliance" description="Funding Machine compliance and audit trail" />} />
+        <Route path="/funding-machine/briefing" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineMorningBriefing /></RequireRole>} />
+        <Route path="/funding-machine/grants" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><GrantFunderCRMPage /></RequireRole>} />
+        <Route path="/funding-machine/clients" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineClientsList /></RequireRole>} />
+        <Route path="/funding-machine/credit-stacking" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="Credit Stacking" description="Sequenced multi-lender credit stacking playbook" /></RequireRole>} />
+        <Route path="/funding-machine/sba" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="SBA Loans" description="SBA 7(a), 504, and microloan pipeline" /></RequireRole>} />
+        <Route path="/funding-machine/cdfi" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="CDFI Network" description="Community Development Financial Institution partners" /></RequireRole>} />
+        <Route path="/funding-machine/playbook" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="Funding Playbook" description="Full Dynasty funding strategy playbook" /></RequireRole>} />
+        <Route path="/funding-machine/pg-rotation" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="PG Rotation" description="Personal guarantor rotation and utilization tracking" /></RequireRole>} />
+        <Route path="/funding-machine/entities" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="Entities" description="Business entity registry and structure" /></RequireRole>} />
+        <Route path="/funding-machine/analytics" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="Funding Analytics" description="Approval rates, velocity, and funnel analytics" /></RequireRole>} />
+        <Route path="/funding-machine/compliance" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="Compliance" description="Funding Machine compliance and audit trail" /></RequireRole>} />
         {/* UBEN HQ — Non-Profit Operations Tracker */}
         <Route path="/os/uben" element={<UbenHQ />} />
         <Route path="/os/uben/grants" element={<UbenGrantTracker />} />

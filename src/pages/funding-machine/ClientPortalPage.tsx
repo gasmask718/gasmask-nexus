@@ -11,6 +11,7 @@ import {
   FileText, ArrowRight, LogOut, Loader2
 } from "lucide-react";
 import DocumentVault from "@/components/funding-machine/DocumentVault";
+import { FUNDING_CLIENT_SAFE_COLUMNS } from '@/lib/funding/pii';
 
 const PIPELINE_PHASES = [
   "Infrastructure Setup",
@@ -48,7 +49,7 @@ export default function ClientPortalPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("funding_clients")
-        .select("*")
+        .select(FUNDING_CLIENT_SAFE_COLUMNS)
         .eq("email", session!.user!.email!)
         .maybeSingle();
       if (error) throw error;
