@@ -102,14 +102,18 @@ export default function BureauIntelPage() {
       .eq('client_id', selectedClient).order('scored_at', { ascending: false }).limit(1).maybeSingle()
       .then(({ data }) => setDfs(data));
 
-    supabase.from('funding_credit_items').select('bureau').eq('client_id', selectedClient).eq('item_type', 'hard_inquiry')
+    // NOTE: stored values are human-readable Title Case ("Hard Inquiry", "TransUnion"),
+    // not snake_case. Match case-insensitively so these counts are never silently zero.
+    supabase.from('funding_credit_items').select('bureau, item_type').eq('client_id', selectedClient)
       .then(({ data }) => {
         const counts = { tu: 0, eq: 0, ex: 0 };
-        data?.forEach(i => {
-          if (i.bureau === 'transunion') counts.tu++;
-          else if (i.bureau === 'equifax') counts.eq++;
-          else if (i.bureau === 'experian') counts.ex++;
-        });
+        data?.filter(i => (i.item_type ?? '').toLowerCase() === 'hard inquiry')
+          .forEach(i => {
+            const b = (i.bureau ?? '').toLowerCase();
+            if (b === 'transunion') counts.tu++;
+            else if (b === 'equifax') counts.eq++;
+            else if (b === 'experian') counts.ex++;
+          });
         setInquiryCounts(counts);
       });
   }, [selectedClient]);

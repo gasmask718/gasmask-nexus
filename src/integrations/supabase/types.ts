@@ -60337,6 +60337,9 @@ export type Database = {
           banking_history: number | null
           business_credit_age: number | null
           client_id: string
+          computed_at: string | null
+          computed_by: string | null
+          data_completeness_pct: number
           derogatory_count: number | null
           ein_age: number | null
           entity_quality: number | null
@@ -60344,6 +60347,7 @@ export type Database = {
           id: string
           industry_risk: number | null
           inquiry_velocity: number | null
+          missing_components: string[]
           notes: string | null
           personal_credit_eq: number | null
           personal_credit_ex: number | null
@@ -60351,6 +60355,7 @@ export type Database = {
           projected_ceiling: number | null
           public_records: number | null
           revenue_docs: number | null
+          score_breakdown: Json | null
           scored_at: string
           total_score: number
           tradeline_density: number | null
@@ -60360,6 +60365,9 @@ export type Database = {
           banking_history?: number | null
           business_credit_age?: number | null
           client_id: string
+          computed_at?: string | null
+          computed_by?: string | null
+          data_completeness_pct?: number
           derogatory_count?: number | null
           ein_age?: number | null
           entity_quality?: number | null
@@ -60367,6 +60375,7 @@ export type Database = {
           id?: string
           industry_risk?: number | null
           inquiry_velocity?: number | null
+          missing_components?: string[]
           notes?: string | null
           personal_credit_eq?: number | null
           personal_credit_ex?: number | null
@@ -60374,6 +60383,7 @@ export type Database = {
           projected_ceiling?: number | null
           public_records?: number | null
           revenue_docs?: number | null
+          score_breakdown?: Json | null
           scored_at?: string
           total_score?: number
           tradeline_density?: number | null
@@ -60383,6 +60393,9 @@ export type Database = {
           banking_history?: number | null
           business_credit_age?: number | null
           client_id?: string
+          computed_at?: string | null
+          computed_by?: string | null
+          data_completeness_pct?: number
           derogatory_count?: number | null
           ein_age?: number | null
           entity_quality?: number | null
@@ -60390,6 +60403,7 @@ export type Database = {
           id?: string
           industry_risk?: number | null
           inquiry_velocity?: number | null
+          missing_components?: string[]
           notes?: string | null
           personal_credit_eq?: number | null
           personal_credit_ex?: number | null
@@ -60397,6 +60411,7 @@ export type Database = {
           projected_ceiling?: number | null
           public_records?: number | null
           revenue_docs?: number | null
+          score_breakdown?: Json | null
           scored_at?: string
           total_score?: number
           tradeline_density?: number | null
@@ -60411,6 +60426,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      funding_dfs_weights: {
+        Row: {
+          component: string
+          description: string | null
+          is_active: boolean
+          label: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          component: string
+          description?: string | null
+          is_active?: boolean
+          label: string
+          updated_at?: string
+          weight: number
+        }
+        Update: {
+          component?: string
+          description?: string | null
+          is_active?: boolean
+          label?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
       }
       funding_dispute_rounds: {
         Row: {
@@ -140815,6 +140857,14 @@ export type Database = {
       compute_device_reliability: {
         Args: { p_device_id: string }
         Returns: number
+      }
+      compute_funding_dfs: {
+        Args: { _client_id: string }
+        Returns: {
+          breakdown: Json
+          completeness: number
+          total: number
+        }[]
       }
       compute_risk_reasons: {
         Args: {
