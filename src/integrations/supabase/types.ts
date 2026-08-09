@@ -60546,74 +60546,280 @@ export type Database = {
       funding_lender_database: {
         Row: {
           accepts_bank_statements: boolean | null
+          application_url: string | null
+          automation_allowed: boolean
+          best_paired_with: string[]
           category: string
           created_at: string
           direct_deposit: boolean | null
+          docs_required: string[]
+          entity_required: string | null
+          external_ref: string | null
+          funding_lane: string | null
           funding_speed: string | null
           has_soft_pull_prequal: boolean | null
           id: string
+          import_batch_id: string | null
+          inquiry_sensitivity: string | null
           interest_rate_range: string | null
           is_active: boolean | null
           lender_name: string
           max_amount: number | null
+          membership_method: string | null
+          min_amount: number | null
           min_credit_score: number | null
           min_revenue: number | null
           min_time_in_business_months: number | null
+          no_pg: boolean
           notes: string | null
           prequal_url: string | null
           product_name: string
           product_type: string | null
+          reports_to: string[]
           requires_collateral: boolean | null
           requires_tax_returns: boolean | null
+          source_tab: string | null
+          stack_priority: number | null
+          submission_method: string
           updated_at: string
         }
         Insert: {
           accepts_bank_statements?: boolean | null
+          application_url?: string | null
+          automation_allowed?: boolean
+          best_paired_with?: string[]
           category: string
           created_at?: string
           direct_deposit?: boolean | null
+          docs_required?: string[]
+          entity_required?: string | null
+          external_ref?: string | null
+          funding_lane?: string | null
           funding_speed?: string | null
           has_soft_pull_prequal?: boolean | null
           id?: string
+          import_batch_id?: string | null
+          inquiry_sensitivity?: string | null
           interest_rate_range?: string | null
           is_active?: boolean | null
           lender_name: string
           max_amount?: number | null
+          membership_method?: string | null
+          min_amount?: number | null
           min_credit_score?: number | null
           min_revenue?: number | null
           min_time_in_business_months?: number | null
+          no_pg?: boolean
           notes?: string | null
           prequal_url?: string | null
           product_name: string
           product_type?: string | null
+          reports_to?: string[]
           requires_collateral?: boolean | null
           requires_tax_returns?: boolean | null
+          source_tab?: string | null
+          stack_priority?: number | null
+          submission_method?: string
           updated_at?: string
         }
         Update: {
           accepts_bank_statements?: boolean | null
+          application_url?: string | null
+          automation_allowed?: boolean
+          best_paired_with?: string[]
           category?: string
           created_at?: string
           direct_deposit?: boolean | null
+          docs_required?: string[]
+          entity_required?: string | null
+          external_ref?: string | null
+          funding_lane?: string | null
           funding_speed?: string | null
           has_soft_pull_prequal?: boolean | null
           id?: string
+          import_batch_id?: string | null
+          inquiry_sensitivity?: string | null
           interest_rate_range?: string | null
           is_active?: boolean | null
           lender_name?: string
           max_amount?: number | null
+          membership_method?: string | null
+          min_amount?: number | null
           min_credit_score?: number | null
           min_revenue?: number | null
           min_time_in_business_months?: number | null
+          no_pg?: boolean
           notes?: string | null
           prequal_url?: string | null
           product_name?: string
           product_type?: string | null
+          reports_to?: string[]
           requires_collateral?: boolean | null
           requires_tax_returns?: boolean | null
+          source_tab?: string | null
+          stack_priority?: number | null
+          submission_method?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_lender_database_import_batch_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "funding_lender_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_lender_import_batches: {
+        Row: {
+          column_mapping: Json
+          created_at: string
+          errors: Json
+          file_name: string
+          id: string
+          imported_by: string | null
+          rows_failed: number
+          rows_inserted: number
+          rows_total: number
+          rows_updated: number
+          source_tab: string | null
+          status: string
+          target_table: string
+          updated_at: string
+        }
+        Insert: {
+          column_mapping?: Json
+          created_at?: string
+          errors?: Json
+          file_name: string
+          id?: string
+          imported_by?: string | null
+          rows_failed?: number
+          rows_inserted?: number
+          rows_total?: number
+          rows_updated?: number
+          source_tab?: string | null
+          status?: string
+          target_table?: string
+          updated_at?: string
+        }
+        Update: {
+          column_mapping?: Json
+          created_at?: string
+          errors?: Json
+          file_name?: string
+          id?: string
+          imported_by?: string | null
+          rows_failed?: number
+          rows_inserted?: number
+          rows_total?: number
+          rows_updated?: number
+          source_tab?: string | null
+          status?: string
+          target_table?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      funding_lender_products: {
+        Row: {
+          application_url: string | null
+          created_at: string
+          docs_required: string[]
+          external_ref: string | null
+          funding_lane: string | null
+          id: string
+          import_batch_id: string | null
+          inquiry_sensitivity: string | null
+          interest_rate_range: string | null
+          is_active: boolean
+          lender_id: string
+          max_amount: number | null
+          min_amount: number | null
+          min_credit_score: number | null
+          min_revenue: number | null
+          min_time_in_business_months: number | null
+          no_pg: boolean
+          notes: string | null
+          product_name: string
+          product_type: string | null
+          reports_to: string[]
+          requires_collateral: boolean
+          source_tab: string | null
+          stack_priority: number | null
+          updated_at: string
+        }
+        Insert: {
+          application_url?: string | null
+          created_at?: string
+          docs_required?: string[]
+          external_ref?: string | null
+          funding_lane?: string | null
+          id?: string
+          import_batch_id?: string | null
+          inquiry_sensitivity?: string | null
+          interest_rate_range?: string | null
+          is_active?: boolean
+          lender_id: string
+          max_amount?: number | null
+          min_amount?: number | null
+          min_credit_score?: number | null
+          min_revenue?: number | null
+          min_time_in_business_months?: number | null
+          no_pg?: boolean
+          notes?: string | null
+          product_name: string
+          product_type?: string | null
+          reports_to?: string[]
+          requires_collateral?: boolean
+          source_tab?: string | null
+          stack_priority?: number | null
+          updated_at?: string
+        }
+        Update: {
+          application_url?: string | null
+          created_at?: string
+          docs_required?: string[]
+          external_ref?: string | null
+          funding_lane?: string | null
+          id?: string
+          import_batch_id?: string | null
+          inquiry_sensitivity?: string | null
+          interest_rate_range?: string | null
+          is_active?: boolean
+          lender_id?: string
+          max_amount?: number | null
+          min_amount?: number | null
+          min_credit_score?: number | null
+          min_revenue?: number | null
+          min_time_in_business_months?: number | null
+          no_pg?: boolean
+          notes?: string | null
+          product_name?: string
+          product_type?: string | null
+          reports_to?: string[]
+          requires_collateral?: boolean
+          source_tab?: string | null
+          stack_priority?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_lender_products_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "funding_lender_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_lender_products_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "funding_lender_database"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       funding_lender_relationships: {
         Row: {
