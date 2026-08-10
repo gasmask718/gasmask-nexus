@@ -418,7 +418,7 @@ serve(async (req) => {
           .update({
             processing_status: error ? "dispatch_failed" : "dispatched",
             dispatched_to: "sbo-parse-capper-image",
-            dispatch_error: error?.message ?? null,
+            dispatch_error: error ? await invokeErrorDetail(error) : null,
           })
           .eq("id", post.id);
         return;
@@ -464,7 +464,7 @@ serve(async (req) => {
           .update({
             processing_status: "dispatch_failed",
             dispatched_to: "sbo-auto-capper",
-            dispatch_error: capperErr.message,
+            dispatch_error: await invokeErrorDetail(capperErr),
           })
           .eq("id", post.id);
         return;
