@@ -142449,6 +142449,7 @@ export type Database = {
       is_sbo_operator: { Args: { _user_id?: string }; Returns: boolean }
       is_simulation_mode: { Args: never; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      is_ut_staff: { Args: never; Returns: boolean }
       is_va: { Args: { _user_id: string }; Returns: boolean }
       log_ai_audit_event: {
         Args: {
@@ -142702,6 +142703,12 @@ export type Database = {
         Args: { _client_id: string }
         Returns: boolean
       }
+      owns_ut_partner: { Args: { _partner_id: string }; Returns: boolean }
+      owns_ut_partner_profile: {
+        Args: { _profile_id: string }
+        Returns: boolean
+      }
+      owns_ut_venue: { Args: { _venue_id: string }; Returns: boolean }
       preview_address_extractions: {
         Args: never
         Returns: {
