@@ -330,11 +330,24 @@ serve(async (req) => {
 
 
   } catch (e: any) {
+    // Phase 7b Item 2: a nested provider auth/quota rejection thrown from the
+    // games pass (e.g. `Odds API games error 401: ... DEACTIVATED_KEY`) used to
+    // land here and surface as HTTP 500. Phase 2 specced 502 for nested
+    // 401/403/429. Body is unchanged and still fail-loud; only the outer
+    // status is normalized. Every other fatal remains 500.
+    const detail = String(e?.message ?? 'Unknown error');
+    const isProviderAuthFailure =
+      /Odds API .*error (401|403|429)\b/.test(detail) ||
+      /\bstatus (401|403|429)\b/.test(detail) ||
+      /DEACTIVATED_KEY|INVALID_KEY|out of usage credits|quota/i.test(detail);
+
     return new Response(JSON.stringify({
       sport_key,
       games_fetched: 0, games_inserted: 0,
       props_fetched: 0, props_inserted: 0,
-      errors: [...errors, { stage: 'fatal', detail: e?.message ?? 'Unknown error' }],
-    }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      provider_auth_failure: isProviderAuthFailure ? detail : undefined,
+      errors: [...errors, { stage: 'fatal', detail }],
+    }), { status: isProviderAuthFailure ? 502 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
+
 });
