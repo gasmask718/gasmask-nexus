@@ -28,11 +28,25 @@ const PROP_ICONS: Record<string, string> = {
   ko_win: '🥊', decision: '📋', rounds: '⏱️',
 };
 
+// PHASE 7d / DEFECT B — the day window must be the EASTERN day, not the
+// browser-local/UTC day. ET-evening games commence after 00:00Z and were
+// landing in the NEXT UTC day, so a live 10-game slate rendered as 0.
+// Mirrors the tracker's ET day window (sbo-fetch-odds etDayWindow()).
+function getEtOffsetHours(d: Date): number {
+  const utc = new Date(d.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const et = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  return Math.round((utc.getTime() - et.getTime()) / 3600000);
+}
+
 function todayRangeUtc() {
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
-  return { start, end, dateOnly: start.slice(0, 10) };
+  const dateOnly = now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }); // YYYY-MM-DD (ET)
+  const offset = getEtOffsetHours(now);
+  const sign = offset >= 0 ? '-' : '+';
+  const startDate = new Date(`${dateOnly}T00:00:00${sign}${String(Math.abs(offset)).padStart(2, '0')}:00`);
+  const endDate = new Date(startDate.getTime());
+  endDate.setUTCDate(endDate.getUTCDate() + 1);
+  return { start: startDate.toISOString(), end: endDate.toISOString(), dateOnly };
 }
 
 const fmtTime = (d: string) =>
