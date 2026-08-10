@@ -383,6 +383,7 @@ serve(async (req) => {
       sport_key,
       games_fetched: 0, games_inserted: 0,
       props_fetched: 0, props_inserted: 0,
+      provider_usage: usage,
       provider_auth_failure: isProviderAuthFailure ? detail : undefined,
       errors: [...errors, { stage: 'fatal', detail }],
     }), { status: isProviderAuthFailure ? 502 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
