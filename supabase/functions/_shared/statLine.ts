@@ -105,11 +105,12 @@ const BASKETBALL_SPECS: Record<string, StatSpec> = {
 const BASKETBALL_ALIASES: Record<string, string> = {
   pts: 'points', player_points: 'points', points: 'points',
   reb: 'rebounds', rebs: 'rebounds', player_rebounds: 'rebounds', rebounds: 'rebounds',
+  rebounding: 'rebounds',
   ast: 'assists', asts: 'assists', player_assists: 'assists', assists: 'assists',
   stl: 'steals', steals: 'steals', player_steals: 'steals',
   blk: 'blocks', blocks: 'blocks', player_blocks: 'blocks',
   to: 'turnovers', tov: 'turnovers', turnovers: 'turnovers',
-  threes: 'threes', three_pointers: 'threes', threes_made: 'threes', player_threes: 'threes', '3pm': 'threes',
+  threes: 'threes', three_pointers: 'threes', threes_made: 'threes', player_threes: 'threes', '3pm': 'threes', '3_pointers': 'threes', '3_pt': 'threes', three_pointers_made: 'threes',
   pra: 'pts_reb_ast', pts_reb_ast: 'pts_reb_ast',
   points_rebounds_assists: 'pts_reb_ast',
   pts_rebs_asts: 'pts_reb_ast',
