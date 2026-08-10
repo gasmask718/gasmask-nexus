@@ -108,6 +108,8 @@ function useNightlyGames(sport: SportKey) {
         .gte('game_date', start)
         .lt('game_date', end)
         .neq('status', 'final')
+        // PHASE 4 / ITEM 1 — bounded read (single-day slate).
+        .limit(200)
         .order('game_date');
       if (error) throw error;
       return (data ?? []) as any[];
