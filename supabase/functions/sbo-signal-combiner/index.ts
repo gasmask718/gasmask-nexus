@@ -245,8 +245,10 @@ async function combineSignal(supabase: any, signal: SignalRow) {
     signal_grade: grade,
     confirming_count: confirming.length,
     fading_count: fading.length,
+    unweighted_count: unweighted.length,
     confirming,
     fading,
+    unweighted,
     ambiguous_ny_la_skipped: getNylaSkipped(),
   };
 
