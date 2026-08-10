@@ -88,39 +88,72 @@ function averages(lines: Record<string, any>[]): Record<string, number> {
   return out;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+// ── Season windows (mirrors sbo-day-engine SEASON_WINDOWS) ─────────
+// Inclusive month ranges (1-12). start > end wraps the calendar year.
+const SEASON_WINDOWS: Record<string, { start: number; end: number }> = {
+  mlb: { start: 3, end: 10 },   // Mar–Oct
+  wnba: { start: 5, end: 9 },   // May–Sep
+  nfl: { start: 8, end: 2 },    // Aug (preseason) – Feb (wraps)
+  nhl: { start: 9, end: 6 },    // Sep – Jun (wraps)
+  nba: { start: 10, end: 6 },   // Oct – Jun (wraps)
+};
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  );
+function isInSeason(sportKey: string, dateStr: string): boolean {
+  const w = SEASON_WINDOWS[(sportKey || '').toLowerCase()];
+  if (!w) return true; // unknown sport: never block collection on its behalf
+  const month = Number(dateStr.slice(5, 7));
+  if (!month) return true;
+  return w.start <= w.end
+    ? month >= w.start && month <= w.end
+    : month >= w.start || month <= w.end;
+}
 
-  try {
-    const body = await req.json().catch(() => ({}));
-    const sport = String(body.sport ?? 'mlb').toLowerCase();
+type SportOpts = {
+  endDate: string;
+  daysBack: number;
+  seasonOverride?: string;
+  skipSplits: boolean;
+  dryRun: boolean;
+  force: boolean;
+};
+
+async function runSport(supabase: any, sport: string, o: SportOpts) {
     const config = getGradingConfig(sport);
 
     if (!config) {
-      return new Response(JSON.stringify({
+      return {
+        sport,
         success: false,
+        status: 'unsupported_sport',
         error: `No stats config for sport '${sport}'. Supported: ${GRADED_SPORT_KEYS.join(', ')}`,
-      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      };
     }
 
-    const yesterday = new Date();
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-    const endDate = String(body.date ?? ymd(yesterday));
-    const daysBack = Math.max(1, Math.min(Number(body.days_back ?? 1), 400));
+    const endDate = o.endDate;
+    const daysBack = o.daysBack;
     // Season label: for sports whose season crosses a calendar year
     // (NFL/NHL/NBA), a January game belongs to the PRIOR year's season.
-    const season = String(body.season ?? seasonForDate(sport, endDate));
+    const season = String(o.seasonOverride ?? seasonForDate(sport, endDate));
     const window = seasonWindow(sport, season);
-    const skipSplits = body.skip_splits === true;
+    const skipSplits = o.skipSplits;
+    const dryRun = o.dryRun === true;
 
     const dates = dateRange(endDate, daysBack);
+
+    // Off-season guard: skip, never fail. NFL has no box scores in Aug 9 of a
+    // year whose first regular-season game is Sep 10.
+    if (!o.force && !dates.some((d) => isInSeason(sport, d))) {
+      return {
+        sport,
+        success: true,
+        status: 'skipped_offseason',
+        season,
+        date_range: { from: dates[0], to: dates[dates.length - 1] },
+        records_synced: 0,
+        note: `${sport.toUpperCase()} is out of season across the requested window — nothing to collect.`,
+      };
+    }
+
 
     let gamesSeen = 0;
     let gamesParsed = 0;
