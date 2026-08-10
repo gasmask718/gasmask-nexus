@@ -58,6 +58,12 @@ const PREGAME_STEPS: EngineStep[] = [
 
 // Global (run once total, after per-sport loop finishes)
 const GLOBAL_STEPS: EngineStep[] = [
+  // PHASE 7d / DEFECT A — props_master fanout. sbo-fetch-odds writes
+  // sbo_player_props; the Command Center reads props_master. This downstream
+  // sync existed but was never wired into the engine (UI-invoke only), so a
+  // successful pull still rendered "No props data for today". Runs once,
+  // after the per-sport loop, before consumers.
+  { fn: 'sbo-sync-props-master', label: 'Props Master Fanout (sbo_player_props → props_master)', icon: '🔁', required: false },
   { fn: 'sbo-compare-odds', label: 'Cross-Platform Odds Comparison', icon: '💎', required: false },
   { fn: 'sbo-generate-daily-briefing', label: 'Generate Daily SMS Briefing', icon: '📱', required: false },
   { fn: 'sbo-send-daily-sms', label: 'Send Daily SMS to Phone', icon: '✉️', required: false },
