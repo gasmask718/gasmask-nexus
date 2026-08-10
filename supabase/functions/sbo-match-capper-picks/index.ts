@@ -97,23 +97,47 @@ export function buildPropIndex(props: any[]): Map<string, IndexedProp[]> {
   return index;
 }
 
-function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchResult | null {
+// Why a pick did NOT match. Written to sbo_external_match_logs.match_details
+// so the miss distribution is measurable instead of guessed. Ordered by the
+// stage at which the pick fell out of the funnel.
+export type MissReason =
+  | 'NO_PLAYER_NAME'      // game-level bet (moneyline/spread/total) — no player prop can exist
+  | 'UNMATCHABLE_STAT'    // stat has no market counterpart (pitcher outs, NRFI)
+  | 'NO_CANDIDATE'        // no prop row anywhere for that surname
+  | 'NAME_FUZZY_FAIL'     // surname bucket exists but no name cleared the similarity bar
+  | 'DATE_MISMATCH'       // name matched, but no prop within ±1 day
+  | 'PROP_TYPE_MISMATCH'  // name + date matched, but that stat was never priced for them
+  | 'LINE_MISMATCH';      // everything matched except the line
+
+export interface MatchAttempt {
+  result: MatchResult | null;
+  reason: MissReason | null;
+  candidateCount: number;
+}
+
+function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchAttempt {
   const pickName = (pick.player_name || '').trim();
   const pickStat = normalizeStat(pick.prop_type || '');
+  if (!pickName) return { result: null, reason: 'NO_PLAYER_NAME', candidateCount: 0 };
   // Stats with no market counterpart (MLB pitcher outs / innings) must never match.
-  if (pickStat === UNMATCHABLE) return null;
+  if (pickStat === UNMATCHABLE) return { result: null, reason: 'UNMATCHABLE_STAT', candidateCount: 0 };
   // Accepted market spellings for this pick's stat (e.g. strikeouts → strikeouts_p).
   const acceptedStats = new Set(marketPropCandidates(pick.prop_type || ''));
   const pickLine = pick.line == null ? null : Number(pick.line);
   const pickDate = pick.game_date;
   const normPick = normalizePlayer(pickName);
   const pickWords = normPick.split(' ').filter(Boolean);
-  if (pickWords.length === 0) return null;
+  if (pickWords.length === 0) return { result: null, reason: 'NO_PLAYER_NAME', candidateCount: 0 };
 
   // Only props sharing the pick's normalized last name are plausible candidates.
   const candidates = index.get(pickWords[pickWords.length - 1]) ?? [];
+  if (candidates.length === 0) return { result: null, reason: 'NO_CANDIDATE', candidateCount: 0 };
 
   let bestMatch: MatchResult | null = null;
+  // Furthest stage reached across all candidates — this is what makes the miss
+  // reason honest (a pick that cleared name+date for one prop is a prop_type
+  // miss, not a name miss, even if other candidates failed earlier).
+  let reachedName = false, reachedDate = false, reachedStat = false;
 
   for (const prop of candidates) {
     const propName = prop.rawName;
@@ -121,72 +145,57 @@ function matchPick(pick: any, index: Map<string, IndexedProp[]>): MatchResult | 
     const propLine = prop.line;
     const propDate = prop.date;
 
+    // Name gate first so the funnel stages are attributable.
+    const normProp = prop.normName;
+    const exact = pickName.toLowerCase() === propName.toLowerCase();
+    const normalized = normPick === normProp;
+    const nameSim = exact || normalized ? 1 : diceCoefficient(normPick, normProp);
+    const propWords = normProp.split(' ').filter(Boolean);
+    const contextName = pickWords.length >= 2 && propWords.length >= 2 &&
+      pickWords[pickWords.length - 1] === propWords[propWords.length - 1] &&
+      pickWords[0][0] === propWords[0][0];
+    if (!exact && !normalized && nameSim < 0.80 && !contextName) continue;
+    reachedName = true;
+
     // Date check: must be within ±1 day
     if (pickDate && propDate) {
       const d1 = new Date(pickDate).getTime();
       const d2 = new Date(propDate).getTime();
       if (Math.abs(d1 - d2) > 86400000 * 1.5) continue;
     }
+    reachedDate = true;
 
     // Stat type must match one of the accepted market spellings
     if (pickStat && propStat && acceptedStats.size && !acceptedStats.has(propStat)) continue;
+    reachedStat = true;
 
     // Line tolerance: max(1.0, 4% of line) — flat ±1.0 was too tight on combos
     if (pickLine != null && propLine != null &&
         Math.abs(pickLine - propLine) > lineTolerance(pickLine)) continue;
 
-
-    // ── STEP 1: Exact Match ──
-    if (pickName.toLowerCase() === propName.toLowerCase()) {
-      const score = 100;
-      if (!bestMatch || score > bestMatch.score) {
-        bestMatch = { propId: prop.id, score, method: 'exact' };
-      }
-      continue;
+    let score: number;
+    let method: MatchResult['method'];
+    if (exact) { score = 100; method = 'exact'; }
+    else if (normalized) { score = 95; method = 'normalized'; }
+    else if (nameSim >= 0.80) { score = Math.round(80 + nameSim * 15); method = 'fuzzy'; }
+    else {
+      const dateMatch = pickDate === propDate ? 1 : 0.5;
+      const statMatch = acceptedStats.has(propStat) ? 1 : 0;
+      score = Math.round((0.7 * 0.5 + 0.2 * dateMatch + 0.1 * statMatch) * 100);
+      method = 'context';
+      if (score < 70) continue;
     }
-
-    // ── STEP 2: Normalized Match ──
-    const normProp = prop.normName;
-    if (normPick === normProp) {
-      const score = 95;
-      if (!bestMatch || score > bestMatch.score) {
-        bestMatch = { propId: prop.id, score, method: 'normalized' };
-      }
-      continue;
-    }
-
-    // ── STEP 3: Fuzzy Match (Dice Coefficient) ──
-    const nameSim = diceCoefficient(normPick, normProp);
-    if (nameSim >= 0.80) {
-      const score = Math.round(80 + nameSim * 15); // 80-95 range
-      if (!bestMatch || score > bestMatch.score) {
-        bestMatch = { propId: prop.id, score, method: 'fuzzy' };
-      }
-      continue;
-    }
-
-    // ── STEP 4: Context Match (composite) ──
-    // Last name match + first initial
-    const propWords = normProp.split(' ').filter(Boolean);
-    if (pickWords.length >= 2 && propWords.length >= 2) {
-      const lastMatch = pickWords[pickWords.length - 1] === propWords[propWords.length - 1];
-      const firstInitial = pickWords[0][0] === propWords[0][0];
-      if (lastMatch && firstInitial) {
-        // Composite: name_sim * 0.5 + team * 0.2 + date * 0.2 + stat * 0.1
-        const dateMatch = pickDate === propDate ? 1 : 0.5;
-        const statMatch = acceptedStats.has(propStat) ? 1 : 0;
-        const compositeScore = Math.round(
-          (0.7 * 0.5 + 0.2 * dateMatch + 0.1 * statMatch) * 100
-        );
-        if (compositeScore >= 70 && (!bestMatch || compositeScore > bestMatch.score)) {
-          bestMatch = { propId: prop.id, score: compositeScore, method: 'context' };
-        }
-      }
-    }
+    if (!bestMatch || score > bestMatch.score) bestMatch = { propId: prop.id, score, method };
   }
 
-  return bestMatch;
+  if (bestMatch) return { result: bestMatch, reason: null, candidateCount: candidates.length };
+  const reason: MissReason = !reachedName ? 'NAME_FUZZY_FAIL'
+    : !reachedDate ? 'DATE_MISMATCH'
+    : !reachedStat ? 'PROP_TYPE_MISMATCH'
+    : 'LINE_MISMATCH';
+  return { result: null, reason, candidateCount: candidates.length };
 }
+
 
 // ═══════════════════════════════════════════════════════════════
 // GRADING ENGINE
@@ -252,18 +261,43 @@ serve(async (req) => {
     const matchLogs: any[] = [];
 
     // ── MATCH ──
+    // dry_run: compute the full funnel and return the miss distribution
+    // WITHOUT writing matched_prop_id or match logs. This is how BUG-03 is
+    // measured between attempts instead of guessed at.
+    const dryRun = body.dry_run === true;
+    const missReasons: Record<string, number> = {};
+    let gameLevelSkipped = 0;
     if (mode === 'match' || mode === 'full') {
-      const { data: unmatched } = await supabase
-        .from('sbo_capper_picks')
-        .select('id, player_name, prop_type, line, game_date, sport, direction')
-        .is('matched_prop_id', null)
-        .not('player_name', 'is', null)
-        // Newest first: props only exist for recent dates, so an unordered
-        // slice wastes the budget on picks that can never match.
-        .order('game_date', { ascending: false })
-        .limit(1000);
+      // Full population, paginated. The old flat .limit(1000) silently hid the
+      // tail of the backlog, so the "0.96% matched" figure was measured against
+      // an arbitrary slice rather than the real denominator.
+      const unmatched: any[] = [];
+      for (let from = 0; from < 20000; from += 1000) {
+        const { data: page, error: pageErr } = await supabase
+          .from('sbo_capper_picks')
+          .select('id, player_name, prop_type, line, game_date, sport, direction')
+          .is('matched_prop_id', null)
+          .not('player_name', 'is', null)
+          // Newest first: props only exist for recent dates, so the early pages
+          // carry the picks that can actually match.
+          .order('game_date', { ascending: false })
+          .range(from, from + 999);
+        if (pageErr) { errors.push(`unmatched page ${from}: ${pageErr.message}`); break; }
+        if (!page || page.length === 0) break;
+        unmatched.push(...page);
+        if (page.length < 1000) break;
+      }
 
-      if (unmatched && unmatched.length > 0) {
+      // Game-level picks can never match a player prop. Counted, not scanned,
+      // so the funnel denominator is honest.
+      const { count: noNameCount } = await supabase
+        .from('sbo_capper_picks')
+        .select('id', { count: 'exact', head: true })
+        .is('matched_prop_id', null)
+        .is('player_name', null);
+      gameLevelSkipped = noNameCount ?? 0;
+
+      if (unmatched.length > 0) {
         const dates = [...new Set(unmatched.map(p => p.game_date).filter(Boolean))];
         // Also include ±1 day for each date
         const expandedDates = new Set<string>();
@@ -291,7 +325,7 @@ serve(async (req) => {
           }
         }
 
-        console.log(`[match] ${unmatched.length} unmatched, ${allProps.length} candidate props`);
+        console.log(`[match] ${unmatched.length} unmatched, ${allProps.length} candidate props, dry_run=${dryRun}`);
 
         const propIndex = buildPropIndex(allProps);
         allProps = [];
@@ -299,7 +333,8 @@ serve(async (req) => {
 
         for (const pick of unmatched) {
           if (!pick.player_name) continue;
-          const result = matchPick(pick, propIndex);
+          const attempt = matchPick(pick, propIndex);
+          const result = attempt.result;
 
           if (result && result.score >= 70) {
             const status = result.score >= 85 ? 'matched' : 'needs_review';
@@ -318,26 +353,48 @@ serve(async (req) => {
               toLink.push({ id: pick.id, propId: result.propId });
               matched++;
             }
+          } else {
+            const reason = attempt.reason ?? 'LINE_MISMATCH';
+            missReasons[reason] = (missReasons[reason] || 0) + 1;
+            // Unmatched attempts are logged too — without them the funnel has
+            // no denominator and every regression looks like noise.
+            matchLogs.push({
+              pick_id: pick.id,
+              external_result_id: null,
+              match_type: 'none',
+              match_confidence: 0,
+              match_details: {
+                status: 'unmatched',
+                reason,
+                candidate_count: attempt.candidateCount,
+                pick_stat: pick.prop_type ?? null,
+                pick_date: pick.game_date ?? null,
+              },
+              result: 'unmatched',
+            });
           }
         }
 
-        // Persist links in bounded batches rather than one round trip per pick.
-        for (let i = 0; i < toLink.length; i += 25) {
-          const chunk = toLink.slice(i, i + 25);
-          await Promise.all(chunk.map((l) =>
-            supabase.from('sbo_capper_picks')
-              .update({ matched_prop_id: l.propId })
-              .eq('id', l.id)
-          ));
-        }
+        if (!dryRun) {
+          // Persist links in bounded batches rather than one round trip per pick.
+          for (let i = 0; i < toLink.length; i += 25) {
+            const chunk = toLink.slice(i, i + 25);
+            await Promise.all(chunk.map((l) =>
+              supabase.from('sbo_capper_picks')
+                .update({ matched_prop_id: l.propId })
+                .eq('id', l.id)
+            ));
+          }
 
-        // Batch insert match logs
-        for (let i = 0; i < matchLogs.length; i += 200) {
-          await supabase.from('sbo_external_match_logs').insert(matchLogs.slice(i, i + 200));
+          // Batch insert match logs
+          for (let i = 0; i < matchLogs.length; i += 200) {
+            await supabase.from('sbo_external_match_logs').insert(matchLogs.slice(i, i + 200));
+          }
         }
-        console.log(`[match] ${matched} auto-matched, ${matchLogs.length} total logged`);
+        console.log(`[match] ${matched} auto-matched of ${unmatched.length}; misses=${JSON.stringify(missReasons)}`);
       }
     }
+
 
     // ── RESOLVE ──
     if (mode === 'resolve' || mode === 'full') {
