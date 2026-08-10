@@ -164,6 +164,9 @@ serve(async (req) => {
       steps = 'full',
       date = new Date().toISOString().split('T')[0],
       prop_fanout_limit,
+      // Escape hatch: run the full chain even for out-of-season sports.
+      force_offseason = false,
+
 
     } = body;
 
