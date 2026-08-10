@@ -564,7 +564,7 @@ serve(async (req) => {
         console.log(`[global] Running step: ${step.fn}`);
         const { data, error } = await supabase.functions.invoke(step.fn, { body: { date } });
         if (error && step.required) throw error;
-        const records = data?.records_synced || data?.games_processed || data?.inserted || data?.props || 0;
+        const records = extractRecords(data);
         await recordStep(step, {
           sport: 'global',
           status: error ? 'warning' : 'success',
@@ -600,7 +600,7 @@ serve(async (req) => {
             body: target ? { date, sport: target } : { date },
           });
           if (error && step.required) throw error;
-          const records = data?.records_synced || data?.games_processed || data?.inserted || data?.props || 0;
+          const records = extractRecords(data);
           await recordStep(step, {
             sport: target ?? 'global',
             status: error ? 'warning' : 'success',
