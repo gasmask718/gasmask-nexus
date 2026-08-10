@@ -214,6 +214,73 @@ Deno.serve(async (req) => {
       return acc;
     }, {});
 
+    // Optional strategy note — only written when there is something to strategise about.
+    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+    let strategy = "";
+    if (anthropicKey && persistable.length > 0) {
+      const top5 = persistable.slice(0, 5);
+      const prompt = `You are David's Funding Strategist. Given this client and the top lender matches, tell David the exact play.
+
+CLIENT:
+- Name: ${client.first_name} ${client.last_name}
+- Credit score: ${score ?? "unknown"} | Target: ${client.target_credit_score ?? "n/a"}
+- Monthly revenue: ${monthlyRevenue != null ? `$${monthlyRevenue}` : "unknown"}
+- Time in business: ${tib != null ? `${tib} months` : "unknown"}
+- Funding target: ${client.funding_target ?? "not set"}
+- Received so far: ${client.funding_received ?? 0}
+- Stage: ${client.stage ?? "intake"}
+- Outstanding prerequisites: ${missingPrereqs.length ? missingPrereqs.join(", ") : "none"}
+
+TOP LENDER MATCHES:
+${top5.map((m, i) =>
+  `${i + 1}. ${m.lender_name} — ${m.product_name} (${m.category}/${m.product_type}) [${m.verdict}]
+   Max: $${m.max_amount ?? "?"} | Match: ${m.match_score}/100
+   Rules: ${m.rules.filter((r) => r.outcome !== "n/a").map((r) => `${r.rule} ${r.outcome}`).join("; ")}`
+).join("\n\n")}
+
+Give David:
+1. Which ONE lender to apply to FIRST and why.
+2. Recommended stacking order for the rest.
+3. Prep steps before applying (including clearing the outstanding prerequisites).
+4. Realistic total funding in the next 30 days.
+
+Under 350 words. Tactical, no fluff.`;
+
+      try {
+        const resp = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": anthropicKey,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-6",
+            max_tokens: 1500,
+            messages: [{ role: "user", content: prompt }],
+          }),
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          strategy = data?.content?.[0]?.text ?? "";
+        } else {
+          console.error("Anthropic error:", resp.status, await resp.text());
+        }
+      } catch (e) {
+        console.error("Anthropic call failed:", (e as Error).message);
+      }
+
+      if (strategy) {
+        await supabase.from("client_notes").insert({
+          client_id,
+          note_type: "funding",
+          content: strategy,
+          is_pinned: true,
+          created_by: "Lender Brain",
+        });
+      }
+    }
+
     return json({
       client_id,
       lender_universe: lenders.length,
@@ -221,6 +288,7 @@ Deno.serve(async (req) => {
       matched_count: counts.MATCHED ?? 0,
       missing_prerequisites: missingPrereqs,
       top_lender: persistable[0] ?? null,
+      strategy,
       results,
     });
   } catch (e) {
