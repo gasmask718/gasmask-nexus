@@ -94864,6 +94864,30 @@ export type Database = {
           },
         ]
       }
+      sbo_capper_picks_repoint_backup: {
+        Row: {
+          id: string
+          original_game_date: string
+          original_unsupported: boolean
+          original_unsupported_reason: string | null
+          repointed_at: string
+        }
+        Insert: {
+          id: string
+          original_game_date: string
+          original_unsupported: boolean
+          original_unsupported_reason?: string | null
+          repointed_at?: string
+        }
+        Update: {
+          id?: string
+          original_game_date?: string
+          original_unsupported?: boolean
+          original_unsupported_reason?: string | null
+          repointed_at?: string
+        }
+        Relationships: []
+      }
       sbo_capper_roi: {
         Row: {
           avg_odds: number | null
