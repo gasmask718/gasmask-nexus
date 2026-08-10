@@ -50,6 +50,8 @@ export default function PredictionHistory() {
           sbo_results_verification(verdict, actual_result, final_score_home, final_score_away, verified_at)
         `)
         .gte('created_at', fromDate)
+        // PHASE 3 / ITEM 8 — bounded read (history list); table exceeds the 1k PostgREST default.
+        .limit(200)
         .order('created_at', { ascending: false });
 
       if (typeFilter === 'games') query = query.eq('prediction_type', 'moneyline');

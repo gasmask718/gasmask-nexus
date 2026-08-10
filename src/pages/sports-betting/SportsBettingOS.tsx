@@ -1022,7 +1022,7 @@ export function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, 
       await supabase.from('sbo_predictions').delete().eq('prediction_type', 'player_prop').gte('created_at', `${today}T00:00:00-04:00`);
       await supabase.from('sbo_saved_picks').delete().eq('pick_type', 'prop').gte('created_at', `${today}T00:00:00-04:00`);
       toast.info('Old prop predictions cleared — rerunning with AI-determined OVER/UNDER...');
-      const { data: todayProps } = await supabase.from('sbo_player_props').select('id, player_name').gte('created_at', `${today}T00:00:00-04:00`);
+      const { data: todayProps } = await supabase.from('sbo_player_props').select('id, player_name').gte('created_at', `${today}T00:00:00-04:00`).limit(2000);
       for (const prop of (todayProps || [])) {
         setAllProgress(`Reanalyzing ${count + 1}/${todayProps?.length}: ${prop.player_name}`);
         await supabase.functions.invoke('sbo-run-predictions', { body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: null } });
@@ -1714,6 +1714,8 @@ export function ParlayBuilderTab() {
         .gte('final_confidence', 60)
         .gte('created_at', bounds.start)
         .lt('created_at', bounds.end)
+        // PHASE 3 / ITEM 8 — bounded read (day-bounded board); table exceeds the 1k PostgREST default.
+        .limit(500)
         .order('final_confidence', { ascending: false });
       return (data as any[]) || [];
     },
@@ -2306,6 +2308,8 @@ export function SimulationTab() {
           sbo_player_props(player_name, prop_type, line, over_odds, under_odds)
         `)
         .gte('created_at', new Date(Date.now() - 24 * 3600000).toISOString())
+        // PHASE 3 / ITEM 8 — bounded read (last 24h); table exceeds the 1k PostgREST default.
+        .limit(500)
         .order('final_confidence', { ascending: false });
       return (data as any[]) || [];
     },
@@ -4140,6 +4144,8 @@ export default function SportsBettingOS() {
         .from('sbo_predictions')
         .select('game_id')
         .eq('prediction_type', 'moneyline')
+        // PHASE 3 / ITEM 8 — bounded read (today's moneylines); table exceeds the 1k PostgREST default.
+        .limit(2000)
         .gte('created_at', `${today}T00:00:00-04:00`);
 
       const predictedIds = new Set((existingToday || []).map((p: any) => p.game_id));
@@ -4187,6 +4193,8 @@ export default function SportsBettingOS() {
       const { data: allProps } = await supabase
         .from('sbo_player_props')
         .select('id, player_name')
+        // PHASE 3 / ITEM 8 — bounded read (today's props); table exceeds the 1k PostgREST default.
+        .limit(2000)
         .gte('created_at', `${today}T00:00:00-04:00`);
 
       // Check which props already have predictions

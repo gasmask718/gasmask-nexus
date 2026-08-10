@@ -152,6 +152,8 @@ export function PrizePicksAnalyzer() {
         `)
         .eq('source', 'prizepicks')
         .eq('game_date', targetDate)
+        // PHASE 3 / ITEM 8 — bounded read (analyzer board); table exceeds the 1k PostgREST default.
+        .limit(500)
         .order('created_at', { ascending: false });
 
       if (!error && data) {
@@ -247,6 +249,8 @@ export function PrizePicksAnalyzer() {
         .from('sbo_player_props')
         .select('id, player_name, prop_type, line, sbo_predictions(id)')
         .eq('source', 'prizepicks')
+        // PHASE 3 / ITEM 8 — bounded read (today's prizepicks slate); table exceeds the 1k PostgREST default.
+        .limit(500)
         .eq('game_date', todayEST);
 
       const total = allProps?.length || 0;

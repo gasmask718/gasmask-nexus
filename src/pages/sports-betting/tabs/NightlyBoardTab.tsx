@@ -52,8 +52,8 @@ function useGameCounts() {
       const { data, error } = await (supabase as any)
         .from('sbo_games')
         .select('sport_key')
-        .gte('commence_time', start)
-        .lt('commence_time', end)
+        .gte('game_date', start)
+        .lt('game_date', end)
         .neq('status', 'final');
       if (error) throw error;
       const counts: Record<string, number> = {};
@@ -72,7 +72,7 @@ function useSportStats(sport: SportKey) {
       const client = supabase as any;
       const [games, preds, highConf, props] = await Promise.all([
         client.from('sbo_games').select('*', { count: 'exact', head: true })
-          .eq('sport_key', sport).gte('commence_time', start).lt('commence_time', end),
+          .eq('sport_key', sport).gte('game_date', start).lt('game_date', end),
         client.from('sbo_predictions').select('*', { count: 'exact', head: true })
           .eq('sport_key', sport).gte('created_at', start).lt('created_at', end),
         client.from('sbo_predictions').select('*', { count: 'exact', head: true })
@@ -105,10 +105,10 @@ function useNightlyGames(sport: SportKey) {
           sbo_predictions!game_id(predicted_outcome, final_confidence, confidence_tier, data_quality, stats_brain_score, market_brain_score, context_brain_score, reasoning)
         `)
         .eq('sport_key', sport)
-        .gte('commence_time', start)
-        .lt('commence_time', end)
+        .gte('game_date', start)
+        .lt('game_date', end)
         .neq('status', 'final')
-        .order('commence_time');
+        .order('game_date');
       if (error) throw error;
       return (data ?? []) as any[];
     },
@@ -125,13 +125,13 @@ function useBestBets(sport: SportKey) {
         .from('sbo_predictions')
         .select(`
           id, predicted_outcome, final_confidence, confidence_tier, data_quality, prediction_type, prop_id, game_id,
-          sbo_games!inner(home_team, away_team, commence_time, sport_key),
+          sbo_games!inner(home_team, away_team, game_date, sport_key),
           sbo_player_props(player_name, prop_type, line)
         `)
         .eq('sport_key', sport)
         .gte('final_confidence', 65)
-        .gte('sbo_games.commence_time', start)
-        .lt('sbo_games.commence_time', end)
+        .gte('sbo_games.game_date', start)
+        .lt('sbo_games.game_date', end)
         .order('final_confidence', { ascending: false })
         .limit(8);
       if (error) throw error;
@@ -223,7 +223,7 @@ function GameCard({
   return (
     <div className={`rounded-xl border p-4 ${borderClass}`}>
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">{fmtTime(game.commence_time)}</span>
+        <span className="text-xs text-muted-foreground">{fmtTime(game.game_date)}</span>
         {game.status === 'live' && <span className="animate-pulse text-xs font-bold text-green-400">🔴 LIVE</span>}
       </div>
       <div className="mb-3 grid grid-cols-3 gap-2">
@@ -486,6 +486,8 @@ export default function NightlyBoardTab() {
       `)
       .eq('game_id', gameId)
       .eq('sport_key', selectedSport)
+      // PHASE 3 / ITEM 8 — bounded read (nightly board); table exceeds the 1k PostgREST default.
+      .limit(1000)
       .order('player_name');
     if (error) { toast.error(error.message); return []; }
     return data ?? [];

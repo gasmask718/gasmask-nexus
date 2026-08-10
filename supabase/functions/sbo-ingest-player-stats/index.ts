@@ -13,11 +13,25 @@
 //
 // Params (POST JSON, all optional):
 //   sport      — sport_key, default 'mlb'. Must exist in GRADING_CONFIGS.
+//   sports     — string[] of sport_keys. Overrides `sport`; the function then
+//                loops every listed sport in one invocation. This is the
+//                multi-sport fanout entry point used by sbo-day-engine and by
+//                the hourly stats cron (NFL/NHL/WNBA/MLB in a single call).
 //   date       — 'YYYY-MM-DD' single day. Default: yesterday (UTC).
 //   days_back  — ingest N days ending at `date` (inclusive). Default 1.
 //                Used for history seeding, e.g. days_back: 120.
 //   season     — season label for the splits rollup. Default: year of `date`.
 //   skip_splits— true to ingest games only and defer the rollup.
+//   dry_run    — true to fetch ESPN box scores and REPORT what would be written
+//                without performing a single database write. Used to verify new
+//                sport wiring (NFL/NHL/WNBA) without mutating production data.
+//   force      — true to bypass the off-season guard below.
+//
+// OFF-SEASON GUARD: a sport whose season window does not contain the requested
+// date is SKIPPED (status 'skipped_offseason'), not failed. NFL box scores stop
+// existing in February and resume in September; churning ESPN for empty
+// scoreboards every hour is noise, not a failure.
+
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -74,39 +88,72 @@ function averages(lines: Record<string, any>[]): Record<string, number> {
   return out;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+// ── Season windows (mirrors sbo-day-engine SEASON_WINDOWS) ─────────
+// Inclusive month ranges (1-12). start > end wraps the calendar year.
+const SEASON_WINDOWS: Record<string, { start: number; end: number }> = {
+  mlb: { start: 3, end: 10 },   // Mar–Oct
+  wnba: { start: 5, end: 9 },   // May–Sep
+  nfl: { start: 8, end: 2 },    // Aug (preseason) – Feb (wraps)
+  nhl: { start: 9, end: 6 },    // Sep – Jun (wraps)
+  nba: { start: 10, end: 6 },   // Oct – Jun (wraps)
+};
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  );
+function isInSeason(sportKey: string, dateStr: string): boolean {
+  const w = SEASON_WINDOWS[(sportKey || '').toLowerCase()];
+  if (!w) return true; // unknown sport: never block collection on its behalf
+  const month = Number(dateStr.slice(5, 7));
+  if (!month) return true;
+  return w.start <= w.end
+    ? month >= w.start && month <= w.end
+    : month >= w.start || month <= w.end;
+}
 
-  try {
-    const body = await req.json().catch(() => ({}));
-    const sport = String(body.sport ?? 'mlb').toLowerCase();
+type SportOpts = {
+  endDate: string;
+  daysBack: number;
+  seasonOverride?: string;
+  skipSplits: boolean;
+  dryRun: boolean;
+  force: boolean;
+};
+
+async function runSport(supabase: any, sport: string, o: SportOpts) {
     const config = getGradingConfig(sport);
 
     if (!config) {
-      return new Response(JSON.stringify({
+      return {
+        sport,
         success: false,
+        status: 'unsupported_sport',
         error: `No stats config for sport '${sport}'. Supported: ${GRADED_SPORT_KEYS.join(', ')}`,
-      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      };
     }
 
-    const yesterday = new Date();
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-    const endDate = String(body.date ?? ymd(yesterday));
-    const daysBack = Math.max(1, Math.min(Number(body.days_back ?? 1), 400));
+    const endDate = o.endDate;
+    const daysBack = o.daysBack;
     // Season label: for sports whose season crosses a calendar year
     // (NFL/NHL/NBA), a January game belongs to the PRIOR year's season.
-    const season = String(body.season ?? seasonForDate(sport, endDate));
+    const season = String(o.seasonOverride ?? seasonForDate(sport, endDate));
     const window = seasonWindow(sport, season);
-    const skipSplits = body.skip_splits === true;
+    const skipSplits = o.skipSplits;
+    const dryRun = o.dryRun === true;
 
     const dates = dateRange(endDate, daysBack);
+
+    // Off-season guard: skip, never fail. NFL has no box scores in Aug 9 of a
+    // year whose first regular-season game is Sep 10.
+    if (!o.force && !dates.some((d) => isInSeason(sport, d))) {
+      return {
+        sport,
+        success: true,
+        status: 'skipped_offseason',
+        season,
+        date_range: { from: dates[0], to: dates[dates.length - 1] },
+        records_synced: 0,
+        note: `${sport.toUpperCase()} is out of season across the requested window — nothing to collect.`,
+      };
+    }
+
 
     let gamesSeen = 0;
     let gamesParsed = 0;
@@ -176,17 +223,20 @@ serve(async (req) => {
         // Upsert on the player_key-based unique constraint — safe to re-run any date.
         // player_key is a generated column: coalesce(player_id, player_name), so two
         // different athletes sharing a name never collide.
-        const { error } = await supabase
-          .from('sbo_player_game_stats')
-          .upsert(rows, { onConflict: 'sport,player_key,game_id' });
+        if (!dryRun) {
+          const { error } = await supabase
+            .from('sbo_player_game_stats')
+            .upsert(rows, { onConflict: 'sport,player_key,game_id' });
 
-        if (error) {
-          errors.push(`${dateStr}/${final.eventId}: upsert failed — ${error.message}`);
-          continue;
+          if (error) {
+            errors.push(`${dateStr}/${final.eventId}: upsert failed — ${error.message}`);
+            continue;
+          }
         }
         rowsUpserted += rows.length;
         dayRows += rows.length;
         for (const r of rows) affectedPlayers.add(r.player_id || r.player_name);
+
       }
 
       dayResults.push({ date: dateStr, ok: true, finals: sb.finals.length, rows: dayRows });
@@ -194,8 +244,9 @@ serve(async (req) => {
 
     // ── Season splits rollup (computed, never fetched) ──────────────
     let splitsUpserted = 0;
-    if (!skipSplits && affectedPlayers.size > 0) {
+    if (!dryRun && !skipSplits && affectedPlayers.size > 0) {
       const keys = [...affectedPlayers];
+
       for (let i = 0; i < keys.length; i += 50) {
         const chunk = keys.slice(i, i + 50);
         const { data: gameRows, error: readErr } = await supabase
@@ -253,15 +304,19 @@ serve(async (req) => {
 
 
     const result = {
-      success: true,
       sport,
+      success: true,
+      status: dryRun ? 'dry_run' : 'ok',
+      dry_run: dryRun,
       season,
       season_window: window,
       dates_processed: dates.length,
       date_range: { from: dates[0], to: dates[dates.length - 1] },
       games_seen: gamesSeen,
       games_parsed: gamesParsed,
-      records_synced: rowsUpserted,
+      // In dry_run this is "rows that WOULD be written", not rows written.
+      records_synced: dryRun ? 0 : rowsUpserted,
+      would_write_rows: dryRun ? rowsUpserted : undefined,
       players_touched: affectedPlayers.size,
       splits_upserted: splitsUpserted,
       errors: errors.slice(0, 25),
@@ -270,12 +325,71 @@ serve(async (req) => {
     };
 
     console.log('[sbo-ingest-player-stats]', JSON.stringify({
-      sport, records_synced: rowsUpserted, splits_upserted: splitsUpserted, error_count: errors.length,
+      sport, dry_run: dryRun, rows: rowsUpserted, splits_upserted: splitsUpserted, error_count: errors.length,
     }));
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return result;
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
+
+  try {
+    const body = await req.json().catch(() => ({}));
+
+    // `sports` (array) is the multi-sport fanout; `sport` (string) stays the
+    // single-sport contract every existing caller already uses.
+    const requested: string[] = Array.isArray(body.sports) && body.sports.length
+      ? body.sports.map((s: unknown) => String(s).toLowerCase())
+      : [String(body.sport ?? 'mlb').toLowerCase()];
+
+    const unknown = requested.filter((s) => !getGradingConfig(s));
+    if (unknown.length === requested.length) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: `No stats config for sport(s) '${unknown.join(', ')}'. Supported: ${GRADED_SPORT_KEYS.join(', ')}`,
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const yesterday = new Date();
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    const opts: SportOpts = {
+      endDate: String(body.date ?? ymd(yesterday)),
+      daysBack: Math.max(1, Math.min(Number(body.days_back ?? 1), 400)),
+      seasonOverride: body.season ? String(body.season) : undefined,
+      skipSplits: body.skip_splits === true,
+      dryRun: body.dry_run === true,
+      force: body.force === true,
+    };
+
+    const perSport: any[] = [];
+    for (const s of requested) {
+      perSport.push(await runSport(supabase, s, opts));
+    }
+
+    // Single-sport callers keep the exact legacy response shape.
+    if (perSport.length === 1) {
+      return new Response(JSON.stringify(perSport[0]), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({
+      success: perSport.some((r) => r.success),
+      dry_run: opts.dryRun,
+      sports_requested: requested,
+      records_synced: perSport.reduce((a, r) => a + (r.records_synced ?? 0), 0),
+      would_write_rows: perSport.reduce((a, r) => a + (r.would_write_rows ?? 0), 0),
+      skipped_offseason: perSport.filter((r) => r.status === 'skipped_offseason').map((r) => r.sport),
+      results: perSport,
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('[sbo-ingest-player-stats] fatal:', e?.message);
     return new Response(JSON.stringify({ success: false, error: e?.message ?? 'unknown error' }), {
@@ -283,3 +397,4 @@ serve(async (req) => {
     });
   }
 });
+

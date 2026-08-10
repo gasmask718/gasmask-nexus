@@ -164,6 +164,9 @@ serve(async (req) => {
       steps = 'full',
       date = new Date().toISOString().split('T')[0],
       prop_fanout_limit,
+      // Escape hatch: run the full chain even for out-of-season sports.
+      force_offseason = false,
+
 
     } = body;
 
@@ -211,10 +214,18 @@ serve(async (req) => {
 
     const sportsToRun: string[] = [];
     const sportsSkippedUnsupported: string[] = [];
+    // PHASE 3 / ITEM 5.4 — OFF-SEASON GUARD.
+    // A sport outside its SEASON_WINDOWS range has no slate to fetch. Running
+    // the full per-sport chain for it burns budget the in-season sports need
+    // and produces a wall of "0 records" warnings. SKIP, never fail — an
+    // off-season zero is correct output, not a broken feed.
+    const sportsSkippedOffseason: string[] = [];
     for (const s of (activeSports ?? [])) {
-      if (SUPPORTED_ALLOWLIST.has(s.sport_key)) sportsToRun.push(s.sport_key);
-      else sportsSkippedUnsupported.push(s.sport_key);
+      if (!SUPPORTED_ALLOWLIST.has(s.sport_key)) { sportsSkippedUnsupported.push(s.sport_key); continue; }
+      if (!isInSeason(s.sport_key, date) && !force_offseason) { sportsSkippedOffseason.push(s.sport_key); continue; }
+      sportsToRun.push(s.sport_key);
     }
+
 
     // Resolve the ESPN grading step's label + required flag from the sports
     // actually running tonight that have a grading config. Required only when
@@ -643,6 +654,7 @@ serve(async (req) => {
     const stepsCompletedPayload = {
       sports_run: sportsToRun,
       sports_skipped_unsupported: sportsSkippedUnsupported,
+      sports_skipped_offseason: sportsSkippedOffseason,
       allowlist: Array.from(SUPPORTED_ALLOWLIST),
       steps_planned: totalStepsPlanned,
       steps_skipped: skippedCount,
@@ -680,6 +692,7 @@ serve(async (req) => {
       status,
       sports_run: sportsToRun,
       sports_skipped_unsupported: sportsSkippedUnsupported,
+      sports_skipped_offseason: sportsSkippedOffseason,
       ...(blockers.length
         ? {
             error: `Pipeline blocked: ${blockers.length} required feed(s) returned zero rows for in-season sport(s) on ${date}`,

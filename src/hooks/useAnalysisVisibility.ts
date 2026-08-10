@@ -104,6 +104,8 @@ export function useAnalysisVisibility() {
       const { data: propsData } = await (supabase as any)
         .from('sbo_unified_props')
         .select('id, player_name, stat_type, line')
+        // PHASE 3 / ITEM 8 — bounded read (single-day slate); table exceeds the 1k PostgREST default.
+        .limit(1000)
         .eq('game_date', todayEST);
 
       propsList = propsData || [];

@@ -66,7 +66,9 @@ export default function SBOCommandCenter() {
     queryFn: async () => {
       const { data } = await supabase
         .from("sbo_capper_picks" as any)
-        .select("capper_id, player_name, stat_type, direction, line, edge_score, source, review_status")
+        // PHASE 3 / ITEM 9 — schema drift fix: sbo_capper_picks has prop_type + data_source,
+        // NOT stat_type/source. The old select 400'd and the panel rendered permanently empty.
+        .select("capper_id, player_name, prop_type, direction, line, edge_score, data_source, review_status")
         .eq("game_date", today())
         .eq("review_status", "verified")
         .limit(20);
@@ -308,7 +310,7 @@ export default function SBOCommandCenter() {
                       {(capperPicks || []).map((c: any, i: number) => (
                         <tr key={i} className="border-b border-border/20 hover:bg-muted/20">
                           <td className="p-2 font-medium">{c.player_name || "-"}</td>
-                          <td className="p-2">{c.stat_type} {c.line}</td>
+                          <td className="p-2">{c.prop_type} {c.line}</td>
                           <td className="p-2">
                             <Badge variant="outline" className={
                               c.direction === "OVER" ? "text-emerald-400 border-emerald-500/40" : "text-red-400 border-red-500/40"
@@ -317,7 +319,7 @@ export default function SBOCommandCenter() {
                             </Badge>
                           </td>
                           <td className="p-2">{c.edge_score || "-"}</td>
-                          <td className="p-2 text-xs text-muted-foreground">{c.source || "manual"}</td>
+                          <td className="p-2 text-xs text-muted-foreground">{c.data_source || "manual"}</td>
                         </tr>
                       ))}
                     </tbody>
