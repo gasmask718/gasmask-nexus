@@ -242,6 +242,27 @@ function normalizeGameDate(d?: string | null): string | null {
   return parsed.toISOString().slice(0, 10);
 }
 
+/**
+ * PHASE 6 / ITEM 1 — missing-date fallback.
+ * Slate posts routinely carry no date token, and the AI extractor returned
+ * game_date = NULL for them, which produced undated pending picks that no
+ * grader could ever key. When (and only when) the extracted date is absent,
+ * fall back to the Telegram POST DATE expressed in America/New_York — the same
+ * ET convention validated in Phase 5-A/5-B. Explicitly-present dates are
+ * untouched; the extraction prompt is unchanged.
+ */
+function postDateEt(postedAt?: string | null): string | null {
+  const base = postedAt ? new Date(postedAt) : new Date();
+  if (isNaN(base.getTime())) return null;
+  // en-CA gives YYYY-MM-DD directly.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(base);
+}
+
 function toIntOrNull(n: unknown): number | null {
   if (n === null || n === undefined) return null;
   const num = Number(n);
