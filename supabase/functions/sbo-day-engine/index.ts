@@ -622,7 +622,11 @@ serve(async (req) => {
     const totalStepsPlanned = (perSportSteps.length * sportsToRun.length) + globalSteps.length + postgameSteps.length;
     const realStepsPlanned = totalStepsPlanned - skippedCount;
     const errorCount = failed.length;
-    const status = errorCount === 0 ? 'completed'
+    // BUG-01: any in-season required feed that produced zero rows downgrades
+    // the run to 'failed' regardless of how many other steps succeeded. A run
+    // that syncs nothing for a live sport is not a success.
+    const status = blockers.length > 0 ? 'failed'
+      : errorCount === 0 ? 'completed'
       : (realStepsPlanned > 0 && errorCount === realStepsPlanned) ? 'failed'
       : 'partial';
 
