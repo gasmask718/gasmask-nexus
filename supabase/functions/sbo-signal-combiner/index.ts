@@ -8,6 +8,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// BUG-16: minimum GRADED picks before a capper is allowed to move a signal.
+// Below this the win_rate/streak/weight fields are statistical noise.
+const MIN_GRADED_PICKS_FOR_WEIGHT = 3;
+
 interface CapperRow {
   id: string;
   name: string | null;
@@ -15,6 +19,9 @@ interface CapperRow {
   capper_weight: number | null;
   hot_streak: number | null;
   picks_by_sport: Record<string, any> | null;
+  total_wins: number | null;
+  total_losses: number | null;
+  total_pushes: number | null;
 }
 
 interface PickRow {
@@ -140,7 +147,7 @@ async function combineSignal(supabase: any, signal: SignalRow) {
   if (capperIds.length > 0) {
     const { data: cData, error: cErr } = await supabase
       .from('sbo_cappers')
-      .select('id, name, win_rate, capper_weight, hot_streak, picks_by_sport')
+      .select('id, name, win_rate, capper_weight, hot_streak, picks_by_sport, total_wins, total_losses, total_pushes')
       .in('id', capperIds);
     if (cErr) throw cErr;
     cappers = cData ?? [];
@@ -150,13 +157,39 @@ async function combineSignal(supabase: any, signal: SignalRow) {
   let combined = Number(signal.internal_confidence ?? 0);
   const confirming: any[] = [];
   const fading: any[] = [];
+  // Cappers whose picks were seen but deliberately given zero influence.
+  // Surfaced so an operator can tell "no cappers on this game" apart from
+  // "cappers on this game, all of them unproven".
+  const unweighted: any[] = [];
 
   for (const pick of gamePicks) {
     if (!pick.capper_id) continue;
     const capper = capperById.get(pick.capper_id);
     if (!capper) continue;
+
+    // BUG-16: a capper with no (or a trivially small) GRADED sample has no
+    // demonstrated skill, so their win_rate/hot_streak/weight are noise. They
+    // must not move a signal's confidence in either direction until they have
+    // graded results. 35 cappers currently carry a weight on zero graded picks.
+    const gradedSample =
+      Number(capper.total_wins ?? 0) +
+      Number(capper.total_losses ?? 0) +
+      Number(capper.total_pushes ?? 0);
+    if (gradedSample < MIN_GRADED_PICKS_FOR_WEIGHT) {
+      unweighted.push({
+        capper_id: capper.id,
+        capper_name: capper.name,
+        graded_sample: gradedSample,
+        reason: `below ${MIN_GRADED_PICKS_FOR_WEIGHT}-graded-pick minimum`,
+      });
+      continue;
+    }
+
     const sportWr = sportWinRate(capper, signal.sport);
-    const weight = Number(capper.capper_weight ?? 100);
+    // Weights are multipliers on roughly a 0.5–1.5 scale (see calcWeight in
+    // sbo-match-capper-picks). The old `?? 100` fallback silently applied a
+    // 100x bonus to any capper whose weight had never been computed.
+    const weight = Number(capper.capper_weight ?? 1);
 
     const sameSide = pickAgrees(pick, signal);
     if (sameSide === null) continue; // pick has no readable opinion on this signal
@@ -212,8 +245,10 @@ async function combineSignal(supabase: any, signal: SignalRow) {
     signal_grade: grade,
     confirming_count: confirming.length,
     fading_count: fading.length,
+    unweighted_count: unweighted.length,
     confirming,
     fading,
+    unweighted,
     ambiguous_ny_la_skipped: getNylaSkipped(),
   };
 

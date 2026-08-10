@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // Sports with a working free-ESPN grading path (registry in _shared/espnGrading.ts).
 import { GRADED_SPORT_KEYS } from '../_shared/espnGrading.ts';
+import { invokeErrorDetail } from '../_shared/invokeError.ts';
 
 
 const corsHeaders = {
@@ -88,6 +89,48 @@ const POSTGAME_STEPS: EngineStep[] = [
 // so grading + stats ingestion stay MLB-only by design.
 const SUPPORTED_ALLOWLIST = new Set<string>(['nba', 'mlb', 'nfl', 'nhl', 'wnba']);
 
+// ── Season windows (BUG-01) ────────────────────────────────────────
+// A zero-row feed is only an ERROR when the sport is actually in season.
+// NBA in August is a legitimate zero and must NOT fail the run.
+// Inclusive month ranges (1-12) in US/Eastern terms; a window whose start
+// month is greater than its end month wraps the calendar year.
+const SEASON_WINDOWS: Record<string, { start: number; end: number }> = {
+  mlb: { start: 3, end: 10 },   // Mar–Oct
+  wnba: { start: 5, end: 9 },   // May–Sep
+  nfl: { start: 9, end: 2 },    // Sep–Feb (wraps)
+  nhl: { start: 10, end: 6 },   // Oct–Jun (wraps)
+  nba: { start: 10, end: 6 },   // Oct–Jun (wraps)
+};
+
+function isInSeason(sportKey: string, dateStr: string): boolean {
+  const w = SEASON_WINDOWS[(sportKey || '').toLowerCase()];
+  if (!w) return false; // unknown sport: never fail the run on its behalf
+  const month = Number(dateStr.slice(5, 7));
+  if (!month) return false;
+  return w.start <= w.end
+    ? month >= w.start && month <= w.end
+    : month >= w.start || month <= w.end;
+}
+
+// sbo-fetch-odds reports games_inserted/props_inserted; other steps report
+// records_synced/games_processed/inserted/props. Reading only the latter set
+// (the old behaviour) made every odds fetch look like zero records, which is
+// exactly how a dead upstream feed stayed invisible.
+function extractRecords(data: any): number {
+  if (!data || typeof data !== 'object') return 0;
+  const explicit = data.records_synced ?? data.games_processed ?? data.inserted ?? data.props;
+  if (typeof explicit === 'number') return explicit;
+  const oddsTotal = (Number(data.games_inserted) || 0) + (Number(data.props_inserted) || 0);
+  if (oddsTotal > 0) return oddsTotal;
+  if (typeof data.games_fetched === 'number' || typeof data.props_fetched === 'number') return 0;
+  return 0;
+}
+
+// A required feed that produced zero rows for an IN-SEASON sport. Collected
+// during the run and turned into a thrown failure at the end so the run
+// cannot report HTTP 200 while writing nothing.
+type FeedBlocker = { sport: string; fn: string; detail: string };
+
 // Whole-invocation wall clock. Each fanout step used to claim its own fixed 60s
 // budget, which was safe at 2 sports and would blow the ~150s edge limit at 4.
 // Steps now draw from this shared deadline instead.
@@ -110,6 +153,8 @@ serve(async (req) => {
   let skippedCount = 0;
   const startTime = Date.now();
   let fatalError: string | null = null;
+  // Required feeds that returned zero rows for an in-season sport (BUG-01).
+  const blockers: FeedBlocker[] = [];
 
   try {
 
@@ -471,24 +516,44 @@ serve(async (req) => {
 
           if (error && step.required) throw error;
 
-          const records = data?.records_synced || data?.games_processed ||
-            data?.inserted || data?.props || 0;
+          const records = extractRecords(data);
+          const upstreamErrors = Array.isArray(data?.errors) ? data.errors : [];
+
+          // BUG-01: a required feed that returns zero rows for an IN-SEASON
+          // sport is a pipeline failure, not a quiet success. Previously this
+          // recorded 'success' and the run reported HTTP 200 while writing
+          // nothing, which is how the props table went stale unnoticed.
+          let zeroFeed = false;
+          if (step.required && records === 0 && isInSeason(sport, date)) {
+            zeroFeed = true;
+            const detail = upstreamErrors.length
+              ? upstreamErrors.map((e: any) => `${e?.stage ?? 'error'}: ${e?.detail ?? e}`).join('; ')
+              : 'upstream returned no rows and reported no error';
+            blockers.push({ sport, fn: step.fn, detail });
+          }
 
           await recordStep(step, {
             sport,
-            status: error ? 'warning' : 'success',
+            status: error || zeroFeed ? (zeroFeed ? 'error' : 'warning') : 'success',
             records,
             duration_ms: Date.now() - stepStart,
+            error: zeroFeed
+              ? `ZERO ROWS for in-season ${sport.toUpperCase()} on ${date} — ${blockers[blockers.length - 1].detail}`
+              : undefined,
           });
 
           await new Promise(r => setTimeout(r, 500));
         } catch (e: any) {
           console.error(`[${sport}] Step ${step.fn} failed:`, e.message);
+          const detail = await invokeErrorDetail(e);
+          if (step.required && isInSeason(sport, date)) {
+            blockers.push({ sport, fn: step.fn, detail });
+          }
           await recordStep(step, {
             sport,
             status: 'error',
             duration_ms: Date.now() - stepStart,
-            error: e.message,
+            error: detail,
           });
         }
       }
@@ -501,7 +566,7 @@ serve(async (req) => {
         console.log(`[global] Running step: ${step.fn}`);
         const { data, error } = await supabase.functions.invoke(step.fn, { body: { date } });
         if (error && step.required) throw error;
-        const records = data?.records_synced || data?.games_processed || data?.inserted || data?.props || 0;
+        const records = extractRecords(data);
         await recordStep(step, {
           sport: 'global',
           status: error ? 'warning' : 'success',
@@ -537,7 +602,7 @@ serve(async (req) => {
             body: target ? { date, sport: target } : { date },
           });
           if (error && step.required) throw error;
-          const records = data?.records_synced || data?.games_processed || data?.inserted || data?.props || 0;
+          const records = extractRecords(data);
           await recordStep(step, {
             sport: target ?? 'global',
             status: error ? 'warning' : 'success',
@@ -559,7 +624,11 @@ serve(async (req) => {
     const totalStepsPlanned = (perSportSteps.length * sportsToRun.length) + globalSteps.length + postgameSteps.length;
     const realStepsPlanned = totalStepsPlanned - skippedCount;
     const errorCount = failed.length;
-    const status = errorCount === 0 ? 'completed'
+    // BUG-01: any in-season required feed that produced zero rows downgrades
+    // the run to 'failed' regardless of how many other steps succeeded. A run
+    // that syncs nothing for a live sport is not a success.
+    const status = blockers.length > 0 ? 'failed'
+      : errorCount === 0 ? 'completed'
       : (realStepsPlanned > 0 && errorCount === realStepsPlanned) ? 'failed'
       : 'partial';
 
@@ -579,6 +648,7 @@ serve(async (req) => {
       steps_skipped: skippedCount,
       real_steps_planned: realStepsPlanned,
       ...(durationWarning ? { duration_warning: durationWarning } : {}),
+      ...(blockers.length ? { zero_row_blockers: blockers } : {}),
       steps: completed,
     };
 
@@ -597,12 +667,25 @@ serve(async (req) => {
       .eq('id', runId);
     finalized = true;
 
+    if (blockers.length > 0) {
+      const msg = blockers
+        .map(b => `${b.sport.toUpperCase()}/${b.fn}: ${b.detail}`)
+        .join(' | ');
+      console.error(`[sbo-day-engine] PIPELINE BLOCKED — ${msg}`);
+    }
+
     return new Response(JSON.stringify({
-      success: true,
+      success: blockers.length === 0,
       run_id: runId,
       status,
       sports_run: sportsToRun,
       sports_skipped_unsupported: sportsSkippedUnsupported,
+      ...(blockers.length
+        ? {
+            error: `Pipeline blocked: ${blockers.length} required feed(s) returned zero rows for in-season sport(s) on ${date}`,
+            zero_row_blockers: blockers,
+          }
+        : {}),
       completed,
       failed,
       summary: {
@@ -615,7 +698,10 @@ serve(async (req) => {
         estimated_cost_usd: (totalCostCents / 100).toFixed(2),
         duration_seconds: duration,
       },
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }), {
+      status: blockers.length > 0 ? 500 : 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (e) {
     fatalError = e instanceof Error ? e.message : 'Unknown error';

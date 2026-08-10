@@ -139,7 +139,11 @@ Message: ${messageText}`;
       },
       body: JSON.stringify({
         model: CLAUDE_MODEL,
-        max_tokens: 500,
+        // BUG-06: was 500. The schema above has 18 fields and parlay_legs is an
+        // array, so real picks routinely exceeded the cap and came back as
+        // truncated JSON ("Unterminated string at position ~1250"). Those were
+        // then filed as skipped_not_pick — a silent conversion loss.
+        max_tokens: 2000,
         system,
         messages: [{ role: "user", content: user }],
       }),
@@ -155,18 +159,54 @@ Message: ${messageText}`;
     const raw = data?.content?.[0]?.text ?? "";
     if (!raw) return { pick: null, error: "claude_empty_response" };
 
+    // A truncated completion is a FAILURE, not a verdict. Surface it explicitly
+    // so it is never confused with "the model read this and said it is not a pick".
+    const stopReason = data?.stop_reason ?? null;
+    if (stopReason === "max_tokens") {
+      return {
+        pick: null,
+        error: `claude_truncated: response hit max_tokens (${raw.length} chars) — pick could not be extracted`,
+        raw,
+      };
+    }
+
     try {
       const parsed = JSON.parse(stripJsonFence(raw)) as ClaudePick;
       return { pick: parsed, raw };
     } catch (parseErr) {
+      // Return pick:null (previously { is_pick: false }) so the caller records
+      // extraction_failed instead of skipped_not_pick. An unparseable response
+      // means we do not know whether it was a pick.
       return {
-        pick: { is_pick: false, extraction_confidence: "low" },
+        pick: null,
         error: `claude_parse_error: ${(parseErr as Error).message}`,
         raw,
       };
     }
   } catch (e) {
     return { pick: null, error: `claude_call_failed: ${(e as Error).message}` };
+  }
+}
+
+// supabase.functions.invoke() collapses every non-2xx into the useless string
+// "Edge Function returned a non-2xx status code" and hides the real body on
+// error.context. 445 image posts sat in dispatch_failed with that string while
+// the actual cause was an AI-gateway 402 (out of credits). Always unwrap.
+async function invokeErrorDetail(error: any): Promise<string> {
+  const base = error?.message ?? "unknown_invoke_error";
+  const ctx = error?.context;
+  if (!ctx || typeof ctx.text !== "function") return base;
+  try {
+    const body = await ctx.text();
+    if (!body) return `${base} [status ${ctx.status ?? "?"}]`;
+    let detail = body;
+    try {
+      const parsed = JSON.parse(body);
+      detail = parsed?.error ?? parsed?.message ?? body;
+    } catch { /* body was not JSON — use it raw */ }
+    return `[status ${ctx.status ?? "?"}] ${String(detail).slice(0, 500)}`;
+  } catch {
+    return base;
   }
 }
 
@@ -378,7 +418,7 @@ serve(async (req) => {
           .update({
             processing_status: error ? "dispatch_failed" : "dispatched",
             dispatched_to: "sbo-parse-capper-image",
-            dispatch_error: error?.message ?? null,
+            dispatch_error: error ? await invokeErrorDetail(error) : null,
           })
           .eq("id", post.id);
         return;
@@ -424,7 +464,7 @@ serve(async (req) => {
           .update({
             processing_status: "dispatch_failed",
             dispatched_to: "sbo-auto-capper",
-            dispatch_error: capperErr.message,
+            dispatch_error: await invokeErrorDetail(capperErr),
           })
           .eq("id", post.id);
         return;
