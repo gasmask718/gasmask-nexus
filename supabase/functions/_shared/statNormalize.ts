@@ -49,7 +49,17 @@ const STAT_MAP: Record<string, string> = {
   no_runs_first_inning: UNMATCHABLE, runs_first_inning: UNMATCHABLE,
   first_inning_runs: UNMATCHABLE,
 
+  // Tennis / MMA vocabulary. These arrive tagged with a competitor's name so
+  // they look like player props, but no player-prop market exists for them in
+  // the feed and no ESPN grading provider is wired for those sports. Marking
+  // them unmatchable keeps them out of the funnel with a legible reason
+  // instead of burning candidate scans every run.
+  games_won: UNMATCHABLE, sets_won: UNMATCHABLE, total_games: UNMATCHABLE,
+  set_handicap: UNMATCHABLE, game_handicap: UNMATCHABLE,
+  method_of_victory: UNMATCHABLE, moneyline: UNMATCHABLE,
+
 };
+
 
 // Values STAT_MAP can produce are already canonical and must pass through untouched —
 // token replacement would otherwise corrupt them ('strikeouts_p' tokenizes to include 'k').
