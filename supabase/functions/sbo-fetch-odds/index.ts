@@ -356,6 +356,8 @@ serve(async (req) => {
       props_inserted,
       source,
       et_date: etToday,
+      // PHASE 7d / ITEM 4 — measured provider quota (null = header absent).
+      provider_usage: usage,
       provider_auth_failure: authFailure ? String((authFailure as any).detail) : undefined,
       errors,
     }), {
