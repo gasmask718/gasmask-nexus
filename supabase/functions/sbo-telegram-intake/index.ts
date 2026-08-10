@@ -19,8 +19,24 @@ function canonicalPropType(raw: unknown): string | null {
   return raw.toLowerCase().trim().replace(/[_\-\s]+/g, "_");
 }
 
+/**
+ * Sports that actually have a grading provider wired up (ESPN box scores /
+ * alt graders). Anything outside this set can be parsed but never settled,
+ * so it is written as unsupported at intake instead of sitting 'pending'.
+ */
+const GRADED_SPORTS = new Set([
+  "MLB",
+  "NBA",
+  "WNBA",
+  "NFL",
+  "NHL",
+  "UFC",
+  "CFL",
+]);
+
 const CLAUDE_MODEL = "claude-sonnet-4-5";
 const CLAUDE_URL = "https://api.anthropic.com/v1/messages";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -546,11 +562,22 @@ serve(async (req) => {
           .join(" ") ||
         text.slice(0, 200);
 
+      // BUG-02: mark picks in sports with no grading provider as ungradeable at
+      // intake, so they never sit in 'pending' forever waiting on a grader that
+      // does not exist. Matches the backfill applied to the historical rows.
+      const canonSport = canonicalizeSport(pick.sport) ?? null;
+      const gradeable = canonSport !== null && GRADED_SPORTS.has(canonSport);
+
       const insertRow: Record<string, unknown> = {
         capper_id: capperId,
         pick_text: pickText,
         raw_message: text,
-        sport: canonicalizeSport(pick.sport) ?? null,
+        sport: canonSport,
+        unsupported: !gradeable,
+        unsupported_reason: gradeable
+          ? null
+          : `no_grading_provider:${canonSport ?? "unknown"}`,
+
         bet_type: pick.pick_type ?? (pick.is_parlay ? "parlay" : pick.is_prop ? "prop" : null),
         prop_type: canonicalPropType(pick.prop_stat),
         line: toNumOrNull(pick.line),
