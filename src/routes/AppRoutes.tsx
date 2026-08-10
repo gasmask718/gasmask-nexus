@@ -2292,15 +2292,16 @@ export default function AppRoutes() {
         <Route path="/funding-machine/analytics" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="Funding Analytics" description="Approval rates, velocity, and funnel analytics" /></RequireRole>} />
         <Route path="/funding-machine/compliance" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="Compliance" description="Funding Machine compliance and audit trail" /></RequireRole>} />
         {/* UBEN HQ — Non-Profit Operations Tracker */}
-        <Route path="/os/uben" element={<UbenHQ />} />
-        <Route path="/os/uben/grants" element={<UbenGrantTracker />} />
-        <Route path="/os/uben/applications" element={<UbenApplications />} />
-        <Route path="/os/uben/programs" element={<UbenPrograms />} />
-        <Route path="/os/uben/impact" element={<UbenImpact />} />
-        <Route path="/os/uben/donors" element={<UbenDonors />} />
-        <Route path="/os/uben/compliance" element={<UbenCompliance />} />
-        <Route path="/os/uben/documents" element={<UbenDocuments />} />
-        <Route path="/os/uben/commissions" element={<UbenCommissions />} />
+        <Route path="/os/uben" element={<RequireRole allowedRoles={['admin','owner']} showLocked><UbenHQ /></RequireRole>} />
+        <Route path="/os/uben/grants" element={<RequireRole allowedRoles={['admin','owner']} showLocked><UbenGrantTracker /></RequireRole>} />
+        <Route path="/os/uben/applications" element={<RequireRole allowedRoles={['admin','owner']} showLocked><UbenApplications /></RequireRole>} />
+        <Route path="/os/uben/programs" element={<RequireRole allowedRoles={['admin','owner']} showLocked><UbenPrograms /></RequireRole>} />
+        <Route path="/os/uben/impact" element={<RequireRole allowedRoles={['admin','owner']} showLocked><UbenImpact /></RequireRole>} />
+        <Route path="/os/uben/donors" element={<RequireRole allowedRoles={['admin','owner']} showLocked><UbenDonors /></RequireRole>} />
+        <Route path="/os/uben/compliance" element={<RequireRole allowedRoles={['admin','owner']} showLocked><UbenCompliance /></RequireRole>} />
+        <Route path="/os/uben/documents" element={<RequireRole allowedRoles={['admin','owner']} showLocked><UbenDocuments /></RequireRole>} />
+        <Route path="/os/uben/commissions" element={<RequireRole allowedRoles={['admin','owner']} showLocked><UbenCommissions /></RequireRole>} />
+
         <Route path="/os/dynasty-earn" element={<DynastyEarn />} />
         <Route path="/os/dynasty-earn/earners" element={<EarnEarners />} />
         <Route path="/os/dynasty-earn/brands" element={<EarnBrands />} />

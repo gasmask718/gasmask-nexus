@@ -62905,6 +62905,7 @@ export type Database = {
           employee_count_ft: number | null
           employee_count_pt: number | null
           entity_type: string | null
+          funding_client_id: string | null
           id: string
           is_active: boolean
           is_hud_zone: boolean | null
@@ -63007,6 +63008,7 @@ export type Database = {
           employee_count_ft?: number | null
           employee_count_pt?: number | null
           entity_type?: string | null
+          funding_client_id?: string | null
           id?: string
           is_active?: boolean
           is_hud_zone?: boolean | null
@@ -63109,6 +63111,7 @@ export type Database = {
           employee_count_ft?: number | null
           employee_count_pt?: number | null
           entity_type?: string | null
+          funding_client_id?: string | null
           id?: string
           is_active?: boolean
           is_hud_zone?: boolean | null
@@ -63143,7 +63146,15 @@ export type Database = {
           website?: string | null
           years_in_business?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "grant_business_profiles_funding_client_id_fkey"
+            columns: ["funding_client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       grant_documents: {
         Row: {
@@ -142159,6 +142170,20 @@ export type Database = {
       get_best_rep_for_store: {
         Args: { p_business_id: string; p_store_id: string }
         Returns: Json
+      }
+      get_capital_plan: {
+        Args: { _client_id: string }
+        Returns: {
+          amount_approved: number
+          amount_funded: number
+          amount_requested: number
+          client_id: string
+          counterparty: string
+          created_at: string
+          reference_id: string
+          source: string
+          status: string
+        }[]
       }
       get_commission_rate: {
         Args: {

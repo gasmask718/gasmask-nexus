@@ -164,9 +164,17 @@ function PlaidConnectionSection({ clientId }: { clientId: string }) {
   return (
     <Card className="border-amber-500/20">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2"><Link2 className="h-4 w-4 text-amber-500" /> Banking Connection</CardTitle>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Link2 className="h-4 w-4 text-amber-500" /> Banking Connection
+          <Badge variant="outline" className="border-amber-500/40 text-amber-400">Plaid Sandbox</Badge>
+        </CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-400 mb-3 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          This connection uses Plaid&apos;s <strong>sandbox</strong> environment. Balances and transactions shown here are test data, not live banking data.
+        </div>
+
         {noCredentials && (
           <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-sm text-amber-400 mb-3 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />

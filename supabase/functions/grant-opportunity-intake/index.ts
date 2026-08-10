@@ -5,6 +5,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3";
+import { requireGrantsStaff, grantsAuthResponse } from "../_shared/grantsAuth.ts";
 
 const BodySchema = z.object({
   grant_opportunity_id: z.string().uuid(),
@@ -62,6 +63,10 @@ function stripFences(s: string): string {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Runs with the service role (RLS bypass) — the caller must be grants staff.
+  const auth = await requireGrantsStaff(req);
+  if (!auth.ok) return grantsAuthResponse(auth, corsHeaders);
 
   try {
     const parsed = BodySchema.safeParse(await req.json());
