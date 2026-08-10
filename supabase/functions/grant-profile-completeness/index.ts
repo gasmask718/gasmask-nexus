@@ -46,6 +46,10 @@ function isFilled(field: CriticalField, value: unknown): boolean {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  // Runs with the service role (RLS bypass) — the caller must be grants staff.
+  const auth = await requireGrantsStaff(req);
+  if (!auth.ok) return grantsAuthResponse(auth, corsHeaders);
+
   try {
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) {
