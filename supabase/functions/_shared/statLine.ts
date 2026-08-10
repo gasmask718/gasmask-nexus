@@ -22,8 +22,9 @@ export type StatSpec = {
   /** Human label for the dry-run/grade note. */
   label: string;
   /** Which side of the box score must be present for the row to be usable. */
-  side: 'batting' | 'pitching';
+  side: 'batting' | 'pitching' | 'basketball';
 };
+
 
 /** Raw prop_type spellings resolved directly, before normalizeStat(). */
 const RAW_OVERRIDES: Record<string, StatSpec> = {
@@ -77,6 +78,66 @@ export function statSpecFor(propType: string): StatSpec | null {
 export function isAmbiguousStrikeouts(propType: string): boolean {
   return normalizeStat(propType) === 'strikeouts';
 }
+
+// ═══════════════════════════════════════════════════════════════
+// BASKETBALL (NBA / WNBA) — Phase 7a
+// ═══════════════════════════════════════════════════════════════
+// stat_line shape comes from buildWnbaStatLines() (shared by NBA and WNBA):
+//   { PTS, REB, AST, STL, BLK, TOV, PF, FGM/FGA, TPM/TPA, FTM/FTA, OREB, DREB, MIN, played }
+// Combos are SUMS of those keys; actualValue() already returns null when any
+// component is missing, so a DNP can never be graded as a zero.
+const BASKETBALL_SPECS: Record<string, StatSpec> = {
+  points: { keys: ['PTS'], label: 'points', side: 'basketball' },
+  rebounds: { keys: ['REB'], label: 'rebounds', side: 'basketball' },
+  assists: { keys: ['AST'], label: 'assists', side: 'basketball' },
+  steals: { keys: ['STL'], label: 'steals', side: 'basketball' },
+  blocks: { keys: ['BLK'], label: 'blocks', side: 'basketball' },
+  turnovers: { keys: ['TOV'], label: 'turnovers', side: 'basketball' },
+  threes: { keys: ['TPM'], label: 'three-pointers made', side: 'basketball' },
+  pts_reb_ast: { keys: ['PTS', 'REB', 'AST'], label: 'points+rebounds+assists', side: 'basketball' },
+  pts_reb: { keys: ['PTS', 'REB'], label: 'points+rebounds', side: 'basketball' },
+  pts_ast: { keys: ['PTS', 'AST'], label: 'points+assists', side: 'basketball' },
+  reb_ast: { keys: ['REB', 'AST'], label: 'rebounds+assists', side: 'basketball' },
+  stl_blk: { keys: ['STL', 'BLK'], label: 'steals+blocks', side: 'basketball' },
+};
+
+/** Capper spellings → BASKETBALL_SPECS keys. */
+const BASKETBALL_ALIASES: Record<string, string> = {
+  pts: 'points', player_points: 'points', points: 'points',
+  reb: 'rebounds', rebs: 'rebounds', player_rebounds: 'rebounds', rebounds: 'rebounds',
+  rebounding: 'rebounds',
+  ast: 'assists', asts: 'assists', player_assists: 'assists', assists: 'assists',
+  stl: 'steals', steals: 'steals', player_steals: 'steals',
+  blk: 'blocks', blocks: 'blocks', player_blocks: 'blocks',
+  to: 'turnovers', tov: 'turnovers', turnovers: 'turnovers',
+  threes: 'threes', three_pointers: 'threes', threes_made: 'threes', player_threes: 'threes', '3pm': 'threes', '3_pointers': 'threes', '3_pt': 'threes', three_pointers_made: 'threes',
+  pra: 'pts_reb_ast', pts_reb_ast: 'pts_reb_ast',
+  points_rebounds_assists: 'pts_reb_ast',
+  pts_rebs_asts: 'pts_reb_ast',
+  pr: 'pts_reb', pts_reb: 'pts_reb', points_rebounds: 'pts_reb',
+  pa: 'pts_ast', pts_ast: 'pts_ast', points_assists: 'pts_ast',
+  ra: 'reb_ast', reb_ast: 'reb_ast', rebounds_assists: 'reb_ast',
+  stl_blk: 'stl_blk', blocks_steals: 'stl_blk', steals_blocks: 'stl_blk',
+};
+
+/**
+ * Sport-aware resolution. Basketball sports use the basketball table; every
+ * other sport keeps the existing MLB path byte-for-byte (statSpecFor is
+ * unchanged and still exported for existing callers).
+ */
+export function statSpecForSport(sport: string, propType: string): StatSpec | null {
+  const s = (sport || '').toLowerCase().trim();
+  if (s !== 'nba' && s !== 'wnba') return statSpecFor(propType);
+  if (!propType) return null;
+  const cleaned = propType.toLowerCase().trim()
+    .replace(/\band\b/g, '+')
+    .replace(/[\s\-]+/g, '_')
+    .replace(/_*\+_*/g, '_')
+    .replace(/^_+|_+$/g, '');
+  const key = BASKETBALL_ALIASES[cleaned] ?? cleaned;
+  return BASKETBALL_SPECS[key] ?? null;
+}
+
 
 export const STRIKEOUTS_PITCHING: StatSpec = CANONICAL_SPECS.strikeouts_p;
 export const STRIKEOUTS_BATTING: StatSpec = CANONICAL_SPECS.strikeouts_b;
