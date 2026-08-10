@@ -304,15 +304,19 @@ async function runSport(supabase: any, sport: string, o: SportOpts) {
 
 
     const result = {
-      success: true,
       sport,
+      success: true,
+      status: dryRun ? 'dry_run' : 'ok',
+      dry_run: dryRun,
       season,
       season_window: window,
       dates_processed: dates.length,
       date_range: { from: dates[0], to: dates[dates.length - 1] },
       games_seen: gamesSeen,
       games_parsed: gamesParsed,
-      records_synced: rowsUpserted,
+      // In dry_run this is "rows that WOULD be written", not rows written.
+      records_synced: dryRun ? 0 : rowsUpserted,
+      would_write_rows: dryRun ? rowsUpserted : undefined,
       players_touched: affectedPlayers.size,
       splits_upserted: splitsUpserted,
       errors: errors.slice(0, 25),
@@ -321,12 +325,71 @@ async function runSport(supabase: any, sport: string, o: SportOpts) {
     };
 
     console.log('[sbo-ingest-player-stats]', JSON.stringify({
-      sport, records_synced: rowsUpserted, splits_upserted: splitsUpserted, error_count: errors.length,
+      sport, dry_run: dryRun, rows: rowsUpserted, splits_upserted: splitsUpserted, error_count: errors.length,
     }));
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return result;
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
+
+  try {
+    const body = await req.json().catch(() => ({}));
+
+    // `sports` (array) is the multi-sport fanout; `sport` (string) stays the
+    // single-sport contract every existing caller already uses.
+    const requested: string[] = Array.isArray(body.sports) && body.sports.length
+      ? body.sports.map((s: unknown) => String(s).toLowerCase())
+      : [String(body.sport ?? 'mlb').toLowerCase()];
+
+    const unknown = requested.filter((s) => !getGradingConfig(s));
+    if (unknown.length === requested.length) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: `No stats config for sport(s) '${unknown.join(', ')}'. Supported: ${GRADED_SPORT_KEYS.join(', ')}`,
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const yesterday = new Date();
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    const opts: SportOpts = {
+      endDate: String(body.date ?? ymd(yesterday)),
+      daysBack: Math.max(1, Math.min(Number(body.days_back ?? 1), 400)),
+      seasonOverride: body.season ? String(body.season) : undefined,
+      skipSplits: body.skip_splits === true,
+      dryRun: body.dry_run === true,
+      force: body.force === true,
+    };
+
+    const perSport: any[] = [];
+    for (const s of requested) {
+      perSport.push(await runSport(supabase, s, opts));
+    }
+
+    // Single-sport callers keep the exact legacy response shape.
+    if (perSport.length === 1) {
+      return new Response(JSON.stringify(perSport[0]), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({
+      success: perSport.some((r) => r.success),
+      dry_run: opts.dryRun,
+      sports_requested: requested,
+      records_synced: perSport.reduce((a, r) => a + (r.records_synced ?? 0), 0),
+      would_write_rows: perSport.reduce((a, r) => a + (r.would_write_rows ?? 0), 0),
+      skipped_offseason: perSport.filter((r) => r.status === 'skipped_offseason').map((r) => r.sport),
+      results: perSport,
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('[sbo-ingest-player-stats] fatal:', e?.message);
     return new Response(JSON.stringify({ success: false, error: e?.message ?? 'unknown error' }), {
@@ -334,3 +397,4 @@ async function runSport(supabase: any, sport: string, o: SportOpts) {
     });
   }
 });
+
