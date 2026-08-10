@@ -56,18 +56,40 @@ export function SBOHealthDashboard() {
   const { data: metrics, isLoading, refetch } = useQuery<HealthMetrics>({
     queryKey: ['sbo-health', todayEST],
     queryFn: async () => {
+      // BUG-08: Supabase caps reads at 1000 rows. sbo_player_props holds 20k+ rows
+      // and a single slate can exceed 1000, so unpaginated reads silently under-report
+      // totalProps and every completeness % derived from it. Page through instead.
+      const pageAll = async (build: (from: number, to: number) => any) => {
+        const out: any[] = [];
+        const size = 1000;
+        for (let from = 0; ; from += size) {
+          const { data, error } = await build(from, from + size - 1);
+          if (error) throw error;
+          const rows = data || [];
+          out.push(...rows);
+          if (rows.length < size) break;
+        }
+        return out;
+      };
+
       // Fetch games
-      const { data: games } = await supabase
-        .from('sbo_games')
-        .select('id')
-        .gte('game_date', `${todayEST}T00:00:00`)
-        .lte('game_date', `${todayEST}T23:59:59`);
+      const games = await pageAll((from, to) =>
+        supabase
+          .from('sbo_games')
+          .select('id')
+          .gte('game_date', `${todayEST}T00:00:00`)
+          .lte('game_date', `${todayEST}T23:59:59`)
+          .range(from, to)
+      );
 
       // Fetch props
-      const { data: allProps } = await (supabase as any)
-        .from('sbo_player_props')
-        .select('id, source, game_date')
-        .eq('game_date', todayEST);
+      const allProps = await pageAll((from, to) =>
+        (supabase as any)
+          .from('sbo_player_props')
+          .select('id, source, game_date')
+          .eq('game_date', todayEST)
+          .range(from, to)
+      );
 
       // Fetch stat contexts
       const propIds = (allProps || []).map((p: any) => p.id);
@@ -90,11 +112,14 @@ export function SBOHealthDashboard() {
       }
 
       // Fetch predictions count
-      const { data: predictions } = await supabase
-        .from('sbo_predictions')
-        .select('prop_id')
-        .eq('prediction_type', 'player_prop')
-        .gte('created_at', `${todayEST}T00:00:00`);
+      const predictions = await pageAll((from, to) =>
+        supabase
+          .from('sbo_predictions')
+          .select('prop_id')
+          .eq('prediction_type', 'player_prop')
+          .gte('created_at', `${todayEST}T00:00:00`)
+          .range(from, to)
+      );
 
       const predPropIds = new Set((predictions || []).map((p: any) => p.prop_id).filter(Boolean));
 
