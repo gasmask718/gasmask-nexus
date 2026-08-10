@@ -88,6 +88,48 @@ const POSTGAME_STEPS: EngineStep[] = [
 // so grading + stats ingestion stay MLB-only by design.
 const SUPPORTED_ALLOWLIST = new Set<string>(['nba', 'mlb', 'nfl', 'nhl', 'wnba']);
 
+// ── Season windows (BUG-01) ────────────────────────────────────────
+// A zero-row feed is only an ERROR when the sport is actually in season.
+// NBA in August is a legitimate zero and must NOT fail the run.
+// Inclusive month ranges (1-12) in US/Eastern terms; a window whose start
+// month is greater than its end month wraps the calendar year.
+const SEASON_WINDOWS: Record<string, { start: number; end: number }> = {
+  mlb: { start: 3, end: 10 },   // Mar–Oct
+  wnba: { start: 5, end: 9 },   // May–Sep
+  nfl: { start: 9, end: 2 },    // Sep–Feb (wraps)
+  nhl: { start: 10, end: 6 },   // Oct–Jun (wraps)
+  nba: { start: 10, end: 6 },   // Oct–Jun (wraps)
+};
+
+function isInSeason(sportKey: string, dateStr: string): boolean {
+  const w = SEASON_WINDOWS[(sportKey || '').toLowerCase()];
+  if (!w) return false; // unknown sport: never fail the run on its behalf
+  const month = Number(dateStr.slice(5, 7));
+  if (!month) return false;
+  return w.start <= w.end
+    ? month >= w.start && month <= w.end
+    : month >= w.start || month <= w.end;
+}
+
+// sbo-fetch-odds reports games_inserted/props_inserted; other steps report
+// records_synced/games_processed/inserted/props. Reading only the latter set
+// (the old behaviour) made every odds fetch look like zero records, which is
+// exactly how a dead upstream feed stayed invisible.
+function extractRecords(data: any): number {
+  if (!data || typeof data !== 'object') return 0;
+  const explicit = data.records_synced ?? data.games_processed ?? data.inserted ?? data.props;
+  if (typeof explicit === 'number') return explicit;
+  const oddsTotal = (Number(data.games_inserted) || 0) + (Number(data.props_inserted) || 0);
+  if (oddsTotal > 0) return oddsTotal;
+  if (typeof data.games_fetched === 'number' || typeof data.props_fetched === 'number') return 0;
+  return 0;
+}
+
+// A required feed that produced zero rows for an IN-SEASON sport. Collected
+// during the run and turned into a thrown failure at the end so the run
+// cannot report HTTP 200 while writing nothing.
+type FeedBlocker = { sport: string; fn: string; detail: string };
+
 // Whole-invocation wall clock. Each fanout step used to claim its own fixed 60s
 // budget, which was safe at 2 sports and would blow the ~150s edge limit at 4.
 // Steps now draw from this shared deadline instead.
