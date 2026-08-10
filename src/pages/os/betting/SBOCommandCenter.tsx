@@ -310,7 +310,7 @@ export default function SBOCommandCenter() {
                       {(capperPicks || []).map((c: any, i: number) => (
                         <tr key={i} className="border-b border-border/20 hover:bg-muted/20">
                           <td className="p-2 font-medium">{c.player_name || "-"}</td>
-                          <td className="p-2">{c.stat_type} {c.line}</td>
+                          <td className="p-2">{c.prop_type} {c.line}</td>
                           <td className="p-2">
                             <Badge variant="outline" className={
                               c.direction === "OVER" ? "text-emerald-400 border-emerald-500/40" : "text-red-400 border-red-500/40"
@@ -319,7 +319,7 @@ export default function SBOCommandCenter() {
                             </Badge>
                           </td>
                           <td className="p-2">{c.edge_score || "-"}</td>
-                          <td className="p-2 text-xs text-muted-foreground">{c.source || "manual"}</td>
+                          <td className="p-2 text-xs text-muted-foreground">{c.data_source || "manual"}</td>
                         </tr>
                       ))}
                     </tbody>
