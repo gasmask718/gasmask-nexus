@@ -646,6 +646,7 @@ serve(async (req) => {
       steps_skipped: skippedCount,
       real_steps_planned: realStepsPlanned,
       ...(durationWarning ? { duration_warning: durationWarning } : {}),
+      ...(blockers.length ? { zero_row_blockers: blockers } : {}),
       steps: completed,
     };
 
