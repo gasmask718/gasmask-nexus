@@ -35,12 +35,31 @@ const STAT_MAP: Record<string, string> = {
   rbi: 'rbis',
   total_bases: 'total_bases', tb: 'total_bases',
   blocked_shots: 'blocks',
+  rebounding: 'rebounds', boards: 'rebounds',
   // MLB pitcher outs: the Odds API feed carries no outs/innings market at all.
   // Previously these fell through as 'pitcher_outs'/'outs' and quietly failed;
   // now they are explicitly unmatchable so the reason is legible.
   pitcher_outs: UNMATCHABLE, outs: UNMATCHABLE, pitching_outs: UNMATCHABLE,
   innings_pitched: UNMATCHABLE, ip: UNMATCHABLE,
+  // NRFI / first-inning runs are GAME-level markets. Cappers attach the
+  // starting pitcher's name to them, which previously made them look like
+  // player props and sent 43 picks down the player-prop matcher, where they
+  // could only ever mis-match. There is no player-prop counterpart.
+  nrfi: UNMATCHABLE, yrfi: UNMATCHABLE,
+  no_runs_first_inning: UNMATCHABLE, runs_first_inning: UNMATCHABLE,
+  first_inning_runs: UNMATCHABLE,
+
+  // Tennis / MMA vocabulary. These arrive tagged with a competitor's name so
+  // they look like player props, but no player-prop market exists for them in
+  // the feed and no ESPN grading provider is wired for those sports. Marking
+  // them unmatchable keeps them out of the funnel with a legible reason
+  // instead of burning candidate scans every run.
+  games_won: UNMATCHABLE, sets_won: UNMATCHABLE, total_games: UNMATCHABLE,
+  set_handicap: UNMATCHABLE, game_handicap: UNMATCHABLE,
+  method_of_victory: UNMATCHABLE, moneyline: UNMATCHABLE,
+
 };
+
 
 // Values STAT_MAP can produce are already canonical and must pass through untouched —
 // token replacement would otherwise corrupt them ('strikeouts_p' tokenizes to include 'k').

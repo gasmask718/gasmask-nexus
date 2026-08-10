@@ -50,7 +50,10 @@ export const MLB_ALIASES: Record<string, string> = {
   tex: "Texas Rangers", rangers: "Texas Rangers",
   tor: "Toronto Blue Jays", bluejays: "Toronto Blue Jays",
   wsh: "Washington Nationals", was: "Washington Nationals", nationals: "Washington Nationals",
+  dbacks: "Arizona Diamondbacks", az: "Arizona Diamondbacks",
+  sf: "San Francisco Giants", laa2: "Los Angeles Angels",
 };
+
 
 // Tokens that are ambiguous between MLB teams (NY = Yankees|Mets, LA = Angels|Dodgers).
 export const AMBIGUOUS_MLB_TOKENS = new Set(["ny", "la"]);
@@ -69,6 +72,54 @@ export function splitSideCandidates(side: string): string[] {
   return parts.length > 1 ? [raw, ...parts] : [raw];
 }
 
+// ── Nickname matching ──────────────────────────────────────────────────────
+// Cappers write team names as abbreviation + nickname ("TB Rays", "BOS Red
+// Sox", "NY Mets", "SA Spurs", "Vegas"). The original whole-string comparison
+// could never match those against an ESPN displayName ("Tampa Bay Rays"):
+// neither string contains the other, and the MLB alias map is keyed on single
+// tokens only. That single gap left ~155 in-window game-level picks pending.
+//
+// Rules (deliberately conservative — a wrong grade is worse than a pending one):
+//   • Compare the side's word/word-pair tokens against the TEAM'S NICKNAME
+//     tokens only (last word + last two words joined), never its city words.
+//     This is what keeps "Los Angeles Angels" from matching "Los Angeles
+//     Dodgers" — {dodgers, angelesdodgers} shares nothing with the side.
+//   • Bare nicknames that are ambiguous inside their own league require the
+//     two-word form ("sox" alone is Red Sox OR White Sox).
+//   • Tokens shorter than 3 characters never match on their own.
+
+const AMBIGUOUS_NICKNAMES = new Set(["sox", "cats", "jays", "sox"]);
+
+/** Word + adjacent-word-pair tokens for an arbitrary team string. */
+function wordTokens(s: string): string[] {
+  const words = String(s ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+  const out: string[] = [];
+  for (let i = 0; i < words.length; i++) {
+    out.push(words[i]);
+    if (i + 1 < words.length) out.push(words[i] + words[i + 1]);
+  }
+  return out;
+}
+
+/** Nickname tokens of an ESPN display name: last word, and last two joined. */
+function nicknameTokens(team: string): Set<string> {
+  const words = String(team ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+  const set = new Set<string>();
+  if (words.length === 0) return set;
+  const last = words[words.length - 1];
+  if (!AMBIGUOUS_NICKNAMES.has(last)) set.add(last);
+  if (words.length >= 2) set.add(words[words.length - 2] + last);
+  return set;
+}
+
 export function sideMatchesTeam(side: string, team: string, sport?: string): boolean {
   const t = norm(team);
   if (!t) return false;
@@ -83,8 +134,27 @@ export function sideMatchesTeam(side: string, team: string, sport?: string): boo
       if (canonical && norm(canonical) === t) return true;
     }
   }
+
+  // Token-level pass. Runs only after the whole-string pass has failed.
+  const sideToks = wordTokens(side);
+  if (sideToks.length === 0) return false;
+
+  if (isMlb) {
+    for (const tok of sideToks) {
+      if (AMBIGUOUS_MLB_TOKENS.has(tok)) { nylaSkippedCount++; continue; }
+      const canonical = MLB_ALIASES[tok];
+      if (canonical && norm(canonical) === t) return true;
+    }
+  }
+
+  const nicks = nicknameTokens(team);
+  for (const tok of sideToks) {
+    if (tok.length < 3) continue;
+    if (nicks.has(tok)) return true;
+  }
   return false;
 }
+
 
 // NOTE (doubleheader limitation): candidates are filtered only by sport +
 // game_date, and the first team match wins. When the same two teams play twice
