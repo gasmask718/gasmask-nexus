@@ -244,8 +244,9 @@ async function runSport(supabase: any, sport: string, o: SportOpts) {
 
     // ── Season splits rollup (computed, never fetched) ──────────────
     let splitsUpserted = 0;
-    if (!skipSplits && affectedPlayers.size > 0) {
+    if (!dryRun && !skipSplits && affectedPlayers.size > 0) {
       const keys = [...affectedPlayers];
+
       for (let i = 0; i < keys.length; i += 50) {
         const chunk = keys.slice(i, i + 50);
         const { data: gameRows, error: readErr } = await supabase
