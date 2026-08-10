@@ -25,6 +25,38 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Admin/owner only — verify the caller's identity and role server-side.
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: userData, error: userErr } = await authClient.auth.getUser();
+    const caller = userData?.user;
+    if (userErr || !caller) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const roleClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data: callerRoles } = await (roleClient as any)
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", caller.id);
+    const isAdmin = (callerRoles || []).some((r: any) => r.role === "admin" || r.role === "owner");
+    if (!isAdmin) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: admin or owner role required to issue payouts" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+
     const body = await req.json();
     const clipper_id: string | undefined = body.clipper_id;
     const amount_cents: number | undefined = body.amount_cents;
