@@ -95,8 +95,42 @@ function etDayWindow(now = new Date()) {
   return { etToday, dayStartUtc: start.toISOString(), dayEndUtc: end.toISOString() };
 }
 
+// ---------------------------------------------------------------------------
+// PHASE 7d / ITEM 4 — provider usage-header capture.
+// The Odds API returns running quota counters on every response
+// (x-requests-used / x-requests-remaining / x-requests-last). Capturing them
+// turns the REQUEST LEDGER from an estimate into a measurement. Header names
+// only — no key material is ever read or echoed.
+// ---------------------------------------------------------------------------
+type ProviderUsage = {
+  requests_used: number | null;
+  requests_remaining: number | null;
+  requests_last: number | null;
+  header_present: boolean;
+  observed_headers: string[];
+};
+
+function captureUsage(resp: Response, usage: ProviderUsage) {
+  const used = resp.headers.get('x-requests-used');
+  const remaining = resp.headers.get('x-requests-remaining');
+  const last = resp.headers.get('x-requests-last');
+  if (used != null) { usage.requests_used = Number(used); usage.header_present = true; }
+  if (remaining != null) { usage.requests_remaining = Number(remaining); usage.header_present = true; }
+  if (last != null) { usage.requests_last = Number(last); usage.header_present = true; }
+  if (!usage.observed_headers.length) {
+    // Header NAMES only (never values) so a missing counter can be diagnosed.
+    usage.observed_headers = [...resp.headers.keys()];
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  const usage: ProviderUsage = {
+    requests_used: null, requests_remaining: null, requests_last: null,
+    header_present: false, observed_headers: [],
+  };
+
 
   const errors: Array<{ stage: string; detail: string }> = [];
   let sport_key = 'nba';
