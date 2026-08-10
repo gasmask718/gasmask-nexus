@@ -107,6 +107,8 @@ serve(async (req) => {
       .in('sport', sportVariants)
       .eq('bet_type', 'prop')
       .eq('result', 'pending')
+      // Never grade a pick that governance has already marked unsupported.
+      .or('unsupported.is.null,unsupported.eq.false')
       .not('player_name', 'is', null)
       .not('game_date', 'is', null)
       .gte('game_date', since)
