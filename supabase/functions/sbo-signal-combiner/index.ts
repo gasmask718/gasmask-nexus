@@ -157,6 +157,10 @@ async function combineSignal(supabase: any, signal: SignalRow) {
   let combined = Number(signal.internal_confidence ?? 0);
   const confirming: any[] = [];
   const fading: any[] = [];
+  // Cappers whose picks were seen but deliberately given zero influence.
+  // Surfaced so an operator can tell "no cappers on this game" apart from
+  // "cappers on this game, all of them unproven".
+  const unweighted: any[] = [];
 
   for (const pick of gamePicks) {
     if (!pick.capper_id) continue;
