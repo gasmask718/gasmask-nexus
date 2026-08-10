@@ -52,7 +52,6 @@ Deno.serve(async (req) => {
     const score: number | null = client.credit_score_estimate ?? null;
     const monthlyRevenue: number | null =
       client.monthly_revenue != null ? Number(client.monthly_revenue) : null;
-    const annualRevenue = monthlyRevenue != null ? monthlyRevenue * 12 : null;
     const tib: number | null = client.time_in_business_months ?? null;
 
     // Business foundation prerequisites (real data — no assumptions).
@@ -124,7 +123,7 @@ Deno.serve(async (req) => {
       };
 
       numeric("Credit score", l.min_credit_score, score, "");
-      numeric("Annual revenue", l.min_revenue != null ? Number(l.min_revenue) : null, annualRevenue, "$");
+      numeric("Monthly revenue", l.min_revenue != null ? Number(l.min_revenue) : null, monthlyRevenue, "$");
       numeric("Time in business", l.min_time_in_business_months, tib, "");
 
       if (l.entity_required) {
@@ -155,7 +154,7 @@ Deno.serve(async (req) => {
       if (verdict === "MATCHED" || verdict === "REQUIRES_PREREQUISITE") {
         matchScore = 50;
         if (l.min_credit_score != null && score != null && score > l.min_credit_score + 50) matchScore += 20;
-        if (l.min_revenue != null && annualRevenue != null && annualRevenue > Number(l.min_revenue) * 1.5) matchScore += 15;
+        if (l.min_revenue != null && monthlyRevenue != null && monthlyRevenue > Number(l.min_revenue) * 1.5) matchScore += 15;
         if (l.min_time_in_business_months != null && tib != null && tib > l.min_time_in_business_months * 2) matchScore += 10;
         if (l.has_soft_pull_prequal) matchScore += 5;
         if (verdict === "REQUIRES_PREREQUISITE") matchScore = Math.round(matchScore * 0.6);
