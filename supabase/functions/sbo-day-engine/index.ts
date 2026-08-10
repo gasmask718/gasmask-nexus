@@ -152,6 +152,8 @@ serve(async (req) => {
   let skippedCount = 0;
   const startTime = Date.now();
   let fatalError: string | null = null;
+  // Required feeds that returned zero rows for an in-season sport (BUG-01).
+  const blockers: FeedBlocker[] = [];
 
   try {
 
