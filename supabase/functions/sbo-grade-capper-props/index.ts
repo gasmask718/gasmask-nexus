@@ -25,6 +25,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   statSpecFor,
+  statSpecForSport,
   isAmbiguousStrikeouts,
   STRIKEOUTS_PITCHING,
   STRIKEOUTS_BATTING,
@@ -268,7 +269,7 @@ serve(async (req) => {
       skip_reasons: reasonCounts,
       grade_table: graded,
       pending_table: skipped,
-      scope: 'MLB capper single-player props only — no market props, predictions, signals, or clamp gates',
+      scope: 'Capper single-player props (MLB + free-ESPN basketball) only — no market props, predictions, signals, or clamp gates',
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     return new Response(JSON.stringify({ success: false, error: e?.message ?? String(e) }), {
