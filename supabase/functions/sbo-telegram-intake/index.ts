@@ -242,6 +242,27 @@ function normalizeGameDate(d?: string | null): string | null {
   return parsed.toISOString().slice(0, 10);
 }
 
+/**
+ * PHASE 6 / ITEM 1 — missing-date fallback.
+ * Slate posts routinely carry no date token, and the AI extractor returned
+ * game_date = NULL for them, which produced undated pending picks that no
+ * grader could ever key. When (and only when) the extracted date is absent,
+ * fall back to the Telegram POST DATE expressed in America/New_York — the same
+ * ET convention validated in Phase 5-A/5-B. Explicitly-present dates are
+ * untouched; the extraction prompt is unchanged.
+ */
+function postDateEt(postedAt?: string | null): string | null {
+  const base = postedAt ? new Date(postedAt) : new Date();
+  if (isNaN(base.getTime())) return null;
+  // en-CA gives YYYY-MM-DD directly.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(base);
+}
+
 function toIntOrNull(n: unknown): number | null {
   if (n === null || n === undefined) return null;
   const num = Number(n);
@@ -568,6 +589,11 @@ serve(async (req) => {
       const canonSport = canonicalizeSport(pick.sport) ?? null;
       const gradeable = canonSport !== null && GRADED_SPORTS.has(canonSport);
 
+      // PHASE 6 / ITEM 1: only the NULL case falls back to the ET post date.
+      const extractedGameDate = normalizeGameDate(pick.game_date);
+      const inferredGameDate = extractedGameDate ? null : postDateEt(posted_at);
+
+
       const insertRow: Record<string, unknown> = {
         capper_id: capperId,
         pick_text: pickText,
@@ -584,7 +610,8 @@ serve(async (req) => {
         direction: pick.side ?? null,
         odds: toIntOrNull(pick.odds),
         stake: toNumOrNull(pick.units),
-        game_date: normalizeGameDate(pick.game_date),
+        game_date: extractedGameDate ?? inferredGameDate,
+        game_date_source: extractedGameDate ? null : (inferredGameDate ? "inferred_post_date" : null),
         player_name: pick.is_prop ? pick.team_or_player ?? null : null,
         team: !pick.is_prop ? pick.team_or_player ?? null : null,
         parsed_by_ai: true,
