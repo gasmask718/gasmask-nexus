@@ -1086,6 +1086,11 @@ const BettingResultsPage = lazy(() => import('@/pages/os/betting/ResultsPage'));
 const SportsBettingOS = lazy(() => import('@/pages/sports-betting/SportsBettingOS'));
 const SystemIntegrity = lazy(() => import('@/pages/admin/SystemIntegrity'));
 const SBOProfitCenter = lazy(() => import('@/pages/os/betting/SBOProfitCenter'));
+// BUG-09: these three exist in the BettingModule registry (src/modules/betting)
+// but that registry is never mounted by the router, so they were unreachable.
+const SBOCommandCenter = lazy(() => import('@/pages/os/betting/SBOCommandCenter'));
+const CrossPlatformLines = lazy(() => import('@/pages/os/betting/CrossPlatformLines'));
+const BettingAnalytics = lazy(() => import('@/pages/os/betting/BettingAnalytics'));
 const SBOWalletTracker = lazy(() => import('@/pages/os/betting/SBOWalletTracker'));
 const SBOCapperTracker = lazy(() => import('@/pages/os/betting/SBOCapperTracker'));
 const SBOSignalAlignment = lazy(() => import('@/pages/os/betting/SBOSignalAlignment'));
