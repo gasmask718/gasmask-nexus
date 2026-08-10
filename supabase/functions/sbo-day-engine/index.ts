@@ -172,6 +172,22 @@ serve(async (req) => {
       prop_fanout_limit,
       // Escape hatch: run the full chain even for out-of-season sports.
       force_offseason = false,
+      // PHASE 7d / ITEM 1 — approved budget shape (locked 2026-08-10):
+      // props once daily, MLB-only. `sports` narrows the fanout (the cron
+      // passes ["mlb"]); absent = every active+supported+in-season sport,
+      // so the MANUAL path is unchanged. `props_sports` declares which
+      // sports get include_props:true on sbo-fetch-odds; default MLB-only.
+      sports: sportsFilter,
+      props_sports: propsSportsRaw,
+    } = body as any;
+
+    const sportsFilterSet: Set<string> | null = Array.isArray(sportsFilter) && sportsFilter.length
+      ? new Set(sportsFilter.map((s: string) => String(s).toLowerCase()))
+      : null;
+    const propsSports = new Set<string>(
+      (Array.isArray(propsSportsRaw) ? propsSportsRaw : ['mlb']).map((s: string) => String(s).toLowerCase())
+    );
+
 
 
     } = body;
