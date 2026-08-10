@@ -240,8 +240,12 @@ serve(async (req) => {
     // and produces a wall of "0 records" warnings. SKIP, never fail — an
     // off-season zero is correct output, not a broken feed.
     const sportsSkippedOffseason: string[] = [];
+    // PHASE 7d / ITEM 1.3 — cron-level budget filter. isInSeason() and the
+    // manual path are untouched; this only drops sports the CALLER did not ask for.
+    const sportsSkippedBudget: string[] = [];
     for (const s of (activeSports ?? [])) {
       if (!SUPPORTED_ALLOWLIST.has(s.sport_key)) { sportsSkippedUnsupported.push(s.sport_key); continue; }
+      if (sportsFilterSet && !sportsFilterSet.has(String(s.sport_key).toLowerCase())) { sportsSkippedBudget.push(s.sport_key); continue; }
       if (!isInSeason(s.sport_key, date) && !force_offseason) { sportsSkippedOffseason.push(s.sport_key); continue; }
       sportsToRun.push(s.sport_key);
     }
