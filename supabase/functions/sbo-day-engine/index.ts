@@ -513,19 +513,38 @@ serve(async (req) => {
 
           if (error && step.required) throw error;
 
-          const records = data?.records_synced || data?.games_processed ||
-            data?.inserted || data?.props || 0;
+          const records = extractRecords(data);
+          const upstreamErrors = Array.isArray(data?.errors) ? data.errors : [];
+
+          // BUG-01: a required feed that returns zero rows for an IN-SEASON
+          // sport is a pipeline failure, not a quiet success. Previously this
+          // recorded 'success' and the run reported HTTP 200 while writing
+          // nothing, which is how the props table went stale unnoticed.
+          let zeroFeed = false;
+          if (step.required && records === 0 && isInSeason(sport, date)) {
+            zeroFeed = true;
+            const detail = upstreamErrors.length
+              ? upstreamErrors.map((e: any) => `${e?.stage ?? 'error'}: ${e?.detail ?? e}`).join('; ')
+              : 'upstream returned no rows and reported no error';
+            blockers.push({ sport, fn: step.fn, detail });
+          }
 
           await recordStep(step, {
             sport,
-            status: error ? 'warning' : 'success',
+            status: error || zeroFeed ? (zeroFeed ? 'error' : 'warning') : 'success',
             records,
             duration_ms: Date.now() - stepStart,
+            error: zeroFeed
+              ? `ZERO ROWS for in-season ${sport.toUpperCase()} on ${date} — ${blockers[blockers.length - 1].detail}`
+              : undefined,
           });
 
           await new Promise(r => setTimeout(r, 500));
         } catch (e: any) {
           console.error(`[${sport}] Step ${step.fn} failed:`, e.message);
+          if (step.required && isInSeason(sport, date)) {
+            blockers.push({ sport, fn: step.fn, detail: e?.message ?? 'step threw' });
+          }
           await recordStep(step, {
             sport,
             status: 'error',
