@@ -193,6 +193,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/sbo-ai-engine/simulation', label: '⚡ Simulation', icon: Activity },
       { path: '/sbo-ai-engine/history', label: '📜 History', icon: FileText },
       { path: '/sbo-ai-engine/sms', label: '📱 ChingWorld SMS', icon: MessageSquare },
+      { path: '/sbo-ai-engine/signals', label: '📡 Signals', icon: Radio },
       { path: '/sbo-ai-engine/health', label: '🩺 Health', icon: Heart },
       { path: '/sbo-ai-engine/sync', label: '⚙️ Sync', icon: Settings },
       { path: '/sbo-ai-engine/va-entry', label: '📋 VA Entry', icon: ClipboardList },

@@ -1112,6 +1112,7 @@ const SBOSMSPage = lazy(() => import('@/pages/sports-betting/pages/SMSPage'));
 const SBOHistoryPage = lazy(() => import('@/pages/sports-betting/pages/HistoryPage'));
 const SBOHealthPage = lazy(() => import('@/pages/sports-betting/pages/HealthPage'));
 const SBOSyncPage = lazy(() => import('@/pages/sports-betting/pages/SyncPage'));
+const SBOSignalsPage = lazy(() => import('@/pages/sports-betting/pages/SignalsPage'));
 const SBODashboard = lazy(() => import('@/pages/os/sbo/SBODashboard'));
 const SBOAllPicks = lazy(() => import('@/pages/os/sbo/SBOAllPicks'));
 const BikerDashboard = lazy(() => import('@/pages/os/biker/BikerDashboard'));
@@ -2361,6 +2362,8 @@ export default function AppRoutes() {
         <Route path="/sbo-ai-engine/history" element={<SBOHistoryPage />} />
         <Route path="/sbo-ai-engine/health" element={<SBOHealthPage />} />
         <Route path="/sbo-ai-engine/sync" element={<SBOSyncPage />} />
+        {/* PHASE 3 / ITEM 9 — SignalsPage.tsx existed but was never registered; /sbo-ai-engine/signals 404'd in a signed-in render. */}
+        <Route path="/sbo-ai-engine/signals" element={<SBOSignalsPage />} />
         <Route path="/os/sbo" element={<SBODashboard />} />
         <Route path="/os/sbo/picks" element={<SBOAllPicks />} />
         <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
