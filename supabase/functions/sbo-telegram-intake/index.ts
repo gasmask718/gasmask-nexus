@@ -188,6 +188,28 @@ Message: ${messageText}`;
   }
 }
 
+// supabase.functions.invoke() collapses every non-2xx into the useless string
+// "Edge Function returned a non-2xx status code" and hides the real body on
+// error.context. 445 image posts sat in dispatch_failed with that string while
+// the actual cause was an AI-gateway 402 (out of credits). Always unwrap.
+async function invokeErrorDetail(error: any): Promise<string> {
+  const base = error?.message ?? "unknown_invoke_error";
+  const ctx = error?.context;
+  if (!ctx || typeof ctx.text !== "function") return base;
+  try {
+    const body = await ctx.text();
+    if (!body) return `${base} [status ${ctx.status ?? "?"}]`;
+    let detail = body;
+    try {
+      const parsed = JSON.parse(body);
+      detail = parsed?.error ?? parsed?.message ?? body;
+    } catch { /* body was not JSON — use it raw */ }
+    return `[status ${ctx.status ?? "?"}] ${String(detail).slice(0, 500)}`;
+  } catch {
+    return base;
+  }
+}
+
 function confidenceToNumber(c?: string | null): number | null {
   if (c === "high") return 90;
   if (c === "medium") return 70;
