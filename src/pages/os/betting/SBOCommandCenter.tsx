@@ -231,12 +231,12 @@ export default function SBOCommandCenter() {
                           <td className="p-2">{p.line}</td>
                           <td className="p-2">
                             <Badge variant="outline" className={
-                              p.ai_recommendation === "OVER" ? "text-emerald-400 border-emerald-500/40" : "text-red-400 border-red-500/40"
+                              String(p.prediction).toUpperCase() === "OVER" ? "text-emerald-400 border-emerald-500/40" : "text-red-400 border-red-500/40"
                             }>
-                              {p.ai_recommendation}
+                              {p.prediction ?? "—"}
                             </Badge>
                           </td>
-                          <td className={`p-2 font-bold ${confColor(p.ai_confidence)}`}>{p.ai_confidence}%</td>
+                          <td className={`p-2 font-bold ${confColor(Number(p.confidence_score) || 0)}`}>{p.confidence_score}%</td>
                           <td className="p-2 text-xs text-muted-foreground">{p.platform}</td>
                         </tr>
                       ))}
