@@ -190,8 +190,6 @@ serve(async (req) => {
 
 
 
-    } = body;
-
     const RUN_START = Date.now();
     const remainingRunMs = () => Math.max(0, RUN_BUDGET_MS - (Date.now() - RUN_START));
     const supabase = createClient(
