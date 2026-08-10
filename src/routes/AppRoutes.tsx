@@ -2320,7 +2320,9 @@ export default function AppRoutes() {
         <Route path="/os/clipper-nation/settings" element={<ClipperSettings />} />
         <Route path="/os/revenue-orchestrator" element={<DynastyRevenueOrchestrator />} />
         <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
-        <Route path="/os/sports-betting/analytics" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
+        <Route path="/os/sports-betting/analytics" element={<BettingAnalytics />} />
+        <Route path="/os/sports-betting/command-center" element={<SBOCommandCenter />} />
+        <Route path="/os/sports-betting/cross-platform" element={<CrossPlatformLines />} />
         <Route path="/os/sports-betting/dashboard" element={<BettingDashboard />} />
         <Route path="/os/sports-betting/ai-os" element={<SportsBettingOS />} />
         <Route path="/os/sports-betting/nba" element={<NBADailyBoard />} />
