@@ -546,11 +546,22 @@ serve(async (req) => {
           .join(" ") ||
         text.slice(0, 200);
 
+      // BUG-02: mark picks in sports with no grading provider as ungradeable at
+      // intake, so they never sit in 'pending' forever waiting on a grader that
+      // does not exist. Matches the backfill applied to the historical rows.
+      const canonSport = canonicalizeSport(pick.sport) ?? null;
+      const gradeable = canonSport !== null && GRADED_SPORTS.has(canonSport);
+
       const insertRow: Record<string, unknown> = {
         capper_id: capperId,
         pick_text: pickText,
         raw_message: text,
-        sport: canonicalizeSport(pick.sport) ?? null,
+        sport: canonSport,
+        unsupported: !gradeable,
+        unsupported_reason: gradeable
+          ? null
+          : `no_grading_provider:${canonSport ?? "unknown"}`,
+
         bet_type: pick.pick_type ?? (pick.is_parlay ? "parlay" : pick.is_prop ? "prop" : null),
         prop_type: canonicalPropType(pick.prop_stat),
         line: toNumOrNull(pick.line),
