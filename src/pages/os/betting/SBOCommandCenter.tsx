@@ -38,11 +38,13 @@ export default function SBOCommandCenter() {
     queryFn: async () => {
       const { data } = await supabase
         .from("props_master" as any)
-        .select("player_name, stat_type, line, ai_confidence, ai_recommendation, over_odds, under_odds, platform, consensus_score")
+        // PHASE 4 / ITEM 1 — schema drift fix: props_master has prediction/confidence_score/odds,
+        // NOT ai_recommendation/ai_confidence/over_odds/under_odds. Old select 400'd.
+        .select("player_name, stat_type, line, confidence_score, prediction, odds, platform, consensus_score")
         .eq("game_date", today())
-        .not("ai_confidence", "is", null)
-        .gte("ai_confidence", 60)
-        .order("ai_confidence", { ascending: false })
+        .not("confidence_score", "is", null)
+        .gte("confidence_score", 60)
+        .order("confidence_score", { ascending: false })
         .limit(20);
       return (data as any[]) || [];
     },
@@ -229,12 +231,12 @@ export default function SBOCommandCenter() {
                           <td className="p-2">{p.line}</td>
                           <td className="p-2">
                             <Badge variant="outline" className={
-                              p.ai_recommendation === "OVER" ? "text-emerald-400 border-emerald-500/40" : "text-red-400 border-red-500/40"
+                              String(p.prediction).toUpperCase() === "OVER" ? "text-emerald-400 border-emerald-500/40" : "text-red-400 border-red-500/40"
                             }>
-                              {p.ai_recommendation}
+                              {p.prediction ?? "—"}
                             </Badge>
                           </td>
-                          <td className={`p-2 font-bold ${confColor(p.ai_confidence)}`}>{p.ai_confidence}%</td>
+                          <td className={`p-2 font-bold ${confColor(Number(p.confidence_score) || 0)}`}>{p.confidence_score}%</td>
                           <td className="p-2 text-xs text-muted-foreground">{p.platform}</td>
                         </tr>
                       ))}

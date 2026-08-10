@@ -32,10 +32,26 @@ This file exists so the next person does not re-derive the mapping.
    A working key returns HTTP 200 with `games_inserted > 0`.
    A dead key now returns **HTTP 502** (Phase 2 fix — nested 401/403/429 are no
    longer swallowed as success).
-3. Confirm rows land: `select count(*) from sbo_odds where sport='nhl'` and
-   `sbo_player_props where sport='nhl'`.
-4. Nothing else. The day-engine fanout picks NHL up automatically once it is
-   `is_active` in `sbo_sports` **and** inside the Sep–Jun season window.
+3. Confirm rows land. NOTE the column name is `sport_key`, not `sport`
+   (`sbo_games` is the only table that carries a raw `sport` value such as
+   `icehockey_nhl`):
+   ```sql
+   select count(*) from sbo_odds         where sport_key = 'nhl';
+   select count(*) from sbo_player_props where sport_key = 'nhl'
+     and game_date >= current_date;   -- forward-dated is the real signal
+   ```
+   Baseline before activation (2026-08-10): `sbo_odds` 1,722 NHL rows (all
+   stale, pre-outage), `sbo_player_props` 0 forward-dated NHL rows.
+4. Nothing else. The day-engine fanout picks NHL up automatically: `sbo_sports`
+   already has `nhl` with `is_active = true` (verified 2026-08-10), and the
+   Sep–Jun `SEASON_WINDOWS` entry opens on its own. Until September the engine
+   will *skip* NHL as off-season — that is correct, not a failure.
+
+## 2b. Vault secret name
+
+The one and only secret is **`ODDS_API_KEY`** (Supabase Vault / edge-function
+secret). `sbo-fetch-odds` reads it via `Deno.env.get('ODDS_API_KEY')`. Do not
+introduce a second name and never hardcode the value.
 
 ## 3. Known gaps to watch on first live NHL run
 
