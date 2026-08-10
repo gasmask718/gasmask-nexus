@@ -211,10 +211,18 @@ serve(async (req) => {
 
     const sportsToRun: string[] = [];
     const sportsSkippedUnsupported: string[] = [];
+    // PHASE 3 / ITEM 5.4 — OFF-SEASON GUARD.
+    // A sport outside its SEASON_WINDOWS range has no slate to fetch. Running
+    // the full per-sport chain for it burns budget the in-season sports need
+    // and produces a wall of "0 records" warnings. SKIP, never fail — an
+    // off-season zero is correct output, not a broken feed.
+    const sportsSkippedOffseason: string[] = [];
     for (const s of (activeSports ?? [])) {
-      if (SUPPORTED_ALLOWLIST.has(s.sport_key)) sportsToRun.push(s.sport_key);
-      else sportsSkippedUnsupported.push(s.sport_key);
+      if (!SUPPORTED_ALLOWLIST.has(s.sport_key)) { sportsSkippedUnsupported.push(s.sport_key); continue; }
+      if (!isInSeason(s.sport_key, date) && !force_offseason) { sportsSkippedOffseason.push(s.sport_key); continue; }
+      sportsToRun.push(s.sport_key);
     }
+
 
     // Resolve the ESPN grading step's label + required flag from the sports
     // actually running tonight that have a grading config. Required only when
