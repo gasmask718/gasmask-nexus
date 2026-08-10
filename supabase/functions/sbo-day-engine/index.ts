@@ -544,9 +544,16 @@ serve(async (req) => {
           }
 
 
-          // Standard per-sport step — pass sport_key through
+          // Standard per-sport step — pass sport_key through.
+          // PHASE 7d / ITEM 1.1 — props are the expensive leg (1 credit per
+          // event). Only sports in `props_sports` (default MLB) get
+          // include_props:true; every other sport pulls games/markets only.
+          const stepBody: Record<string, unknown> = { date, sport_key: sport };
+          if (step.fn === 'sbo-fetch-odds') {
+            stepBody.include_props = propsSports.has(String(sport).toLowerCase());
+          }
           const { data, error } = await supabase.functions.invoke(step.fn, {
-            body: { date, sport_key: sport },
+            body: stepBody,
           });
 
           if (error && step.required) throw error;
