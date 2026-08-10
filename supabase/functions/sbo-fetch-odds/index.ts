@@ -279,6 +279,16 @@ serve(async (req) => {
       });
     } catch { /* ignore audit failures */ }
 
+    // A provider auth/quota rejection is a FAILURE, not a quiet zero. The prop
+    // loop only pushes `{stage:'props_fetch', detail:'... status 401'}` into
+    // `errors`, so this used to return HTTP 200 with props_inserted: 0 — the
+    // caller (sbo-day-engine) recorded a successful run and the dead Odds API
+    // key went unnoticed for days. Normalize those to a real non-2xx.
+    const authFailure = errors.find((e: any) =>
+      /\bstatus (401|403|429)\b/.test(String(e?.detail ?? '')) ||
+      /DEACTIVATED_KEY|INVALID_KEY|out of usage credits|quota/i.test(String(e?.detail ?? ''))
+    );
+
     return new Response(JSON.stringify({
       sport_key,
       games_fetched,
@@ -287,8 +297,13 @@ serve(async (req) => {
       props_inserted,
       source,
       et_date: etToday,
+      provider_auth_failure: authFailure ? String((authFailure as any).detail) : undefined,
       errors,
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }), {
+      status: authFailure ? 502 : 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
 
 
   } catch (e: any) {
