@@ -114,11 +114,20 @@ export default function GrantsDashboard() {
     try {
       const { data: clients } = await supabase.from("funding_clients").select("id").limit(50);
       let count = 0;
+      let unlinked = 0;
       for (const client of clients ?? []) {
-        await supabase.functions.invoke("grant-eligibility-check", { body: { client_id: client.id } });
-        count++;
+        // Single eligibility engine, keyed on the funding client identity.
+        const { data, error } = await supabase.functions.invoke("grant-eligibility-checker", {
+          body: { funding_client_id: client.id },
+        });
+        if (error || (data as any)?.error) unlinked++;
+        else count++;
       }
-      toast.success(`Eligibility checked for ${count} clients`);
+      toast.success(
+        unlinked > 0
+          ? `Eligibility checked for ${count} clients — ${unlinked} skipped (no linked grant business profile)`
+          : `Eligibility checked for ${count} clients`,
+      );
     } catch (e: any) {
       toast.error(e.message);
     } finally {

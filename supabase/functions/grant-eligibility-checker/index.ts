@@ -23,6 +23,10 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BodySchema = z.object({
   business_profile_id: z.string().uuid().optional(),
   grant_opportunity_id: z.string().uuid().optional(),
+  // Phase 4 identity bridge: scope a run to one Funding Hub client. The client
+  // resolves to its linked grant_business_profiles rows, so eligibility is always
+  // calculated and stored against a single client identity.
+  funding_client_id: z.string().uuid().optional(),
 }).strict();
 
 type Requirement = {
@@ -169,15 +173,31 @@ Deno.serve(async (req) => {
         { status: 400, headers: jsonHeaders },
       );
     }
-    const { business_profile_id, grant_opportunity_id } = parsed.data;
+    const { business_profile_id, grant_opportunity_id, funding_client_id } = parsed.data;
 
     const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
     // Load businesses
     let bizQuery = sb.from("grant_business_profiles").select("*").eq("is_active", true);
     if (business_profile_id) bizQuery = bizQuery.eq("id", business_profile_id);
+    if (funding_client_id) bizQuery = bizQuery.eq("funding_client_id", funding_client_id);
     const { data: businesses, error: bizErr } = await bizQuery;
     if (bizErr) throw bizErr;
+
+    // A client with no linked grant business profile cannot be scored — say so
+    // loudly instead of silently returning a zero-eligibility result.
+    if (funding_client_id && (businesses ?? []).length === 0) {
+      return new Response(
+        JSON.stringify({
+          error: "no_linked_business_profile",
+          message:
+            "This funding client has no linked (active) grant business profile. Link one before running eligibility.",
+          checked: 0,
+          upserted: 0,
+        }),
+        { status: 400, headers: jsonHeaders },
+      );
+    }
 
     // Load opportunities (open only)
     let oppQuery = sb.from("grant_opportunities").select("id, status").eq("status", "open");

@@ -62731,6 +62731,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "grant_application_packages_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "grant_eligibility_by_client"
+            referencedColumns: ["business_profile_id"]
+          },
+          {
+            foreignKeyName: "grant_application_packages_eligibility_result_id_fkey"
+            columns: ["eligibility_result_id"]
+            isOneToOne: false
+            referencedRelation: "grant_eligibility_by_client"
+            referencedColumns: ["eligibility_result_id"]
+          },
+          {
             foreignKeyName: "grant_application_packages_eligibility_result_id_fkey"
             columns: ["eligibility_result_id"]
             isOneToOne: false
@@ -63268,6 +63282,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "grant_business_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grant_eligibility_results_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "grant_eligibility_by_client"
+            referencedColumns: ["business_profile_id"]
           },
           {
             foreignKeyName: "grant_eligibility_results_grant_opportunity_id_fkey"
@@ -134309,6 +134330,35 @@ export type Database = {
           total_active_clients?: number | null
         }
         Relationships: []
+      }
+      grant_eligibility_by_client: {
+        Row: {
+          application_status: string | null
+          business_name: string | null
+          business_profile_id: string | null
+          eligibility_result_id: string | null
+          eligibility_score: number | null
+          eligibility_status: string | null
+          funding_client_id: string | null
+          grant_opportunity_id: string | null
+          last_checked_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grant_business_profiles_funding_client_id_fkey"
+            columns: ["funding_client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grant_eligibility_results_grant_opportunity_id_fkey"
+            columns: ["grant_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "grant_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoice_source_summary: {
         Row: {
