@@ -94702,6 +94702,7 @@ export type Database = {
           external_result_id: string | null
           extracted_capper_name: string | null
           game_date: string | null
+          game_date_source: string | null
           game_id: string | null
           graded_at: string | null
           grading_source: string | null
@@ -94753,6 +94754,7 @@ export type Database = {
           external_result_id?: string | null
           extracted_capper_name?: string | null
           game_date?: string | null
+          game_date_source?: string | null
           game_id?: string | null
           graded_at?: string | null
           grading_source?: string | null
@@ -94804,6 +94806,7 @@ export type Database = {
           external_result_id?: string | null
           extracted_capper_name?: string | null
           game_date?: string | null
+          game_date_source?: string | null
           game_id?: string | null
           graded_at?: string | null
           grading_source?: string | null
@@ -94863,6 +94866,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sbo_capper_picks_phase6_backup: {
+        Row: {
+          captured_at: string
+          id: string
+          phase: string
+          prev_sport: string | null
+          prev_team: string | null
+          prev_unsupported: boolean | null
+          prev_unsupported_reason: string | null
+        }
+        Insert: {
+          captured_at?: string
+          id: string
+          phase: string
+          prev_sport?: string | null
+          prev_team?: string | null
+          prev_unsupported?: boolean | null
+          prev_unsupported_reason?: string | null
+        }
+        Update: {
+          captured_at?: string
+          id?: string
+          phase?: string
+          prev_sport?: string | null
+          prev_team?: string | null
+          prev_unsupported?: boolean | null
+          prev_unsupported_reason?: string | null
+        }
+        Relationships: []
       }
       sbo_capper_picks_repoint_backup: {
         Row: {
