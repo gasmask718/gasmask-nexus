@@ -1,7 +1,30 @@
 // supabase/functions/sbo-fetch-odds/index.ts
 // SBO Multi-Sport Odds Fetcher — additive, NBA-safe
+//
+// ───────────────────────────────────────────────────────────────────────────
+// NHL READINESS (Phase 3, Item 5.3) — see ./PHASE_NHL_README.md
+// ───────────────────────────────────────────────────────────────────────────
+// NHL needs ZERO code changes here. Everything is already mapped:
+//   SPORT_MAP.nhl      = 'icehockey_nhl'
+//   PROP_MARKETS.nhl   = player_goals, player_assists,
+//                        player_shots_on_goal, player_total_saves
+//   PROP_TYPE_MAP      = player_goals→goals, player_assists→assists,
+//                        player_shots_on_goal→shots,
+//                        player_total_saves→saves, goalie_saves→saves
+// Grading is already live too: _shared/espnGrading.ts exports NHL_GRADING
+// (espnPath 'hockey/nhl') and registers it in GRADING_CONFIGS, so
+// sbo-ingest-player-stats can collect NHL box scores from free ESPN TODAY,
+// with no odds key at all: POST { "sport": "nhl" }.
+//
+// The single blocker for NHL PROPS is the deactivated ODDS_API_KEY (401
+// DEACTIVATED_KEY). Once a live key is in Vault, the whole activation is:
+//   POST /sbo-fetch-odds { "sport_key": "nhl", "include_props": true }
+// A dead key now surfaces as HTTP 502 rather than a silent success.
+// DO NOT hardcode a key here; read it from Vault as the rest of this file does.
+// ───────────────────────────────────────────────────────────────────────────
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
