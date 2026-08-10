@@ -140,7 +140,7 @@ async function combineSignal(supabase: any, signal: SignalRow) {
   if (capperIds.length > 0) {
     const { data: cData, error: cErr } = await supabase
       .from('sbo_cappers')
-      .select('id, name, win_rate, capper_weight, hot_streak, picks_by_sport')
+      .select('id, name, win_rate, capper_weight, hot_streak, picks_by_sport, total_wins, total_losses, total_pushes')
       .in('id', capperIds);
     if (cErr) throw cErr;
     cappers = cData ?? [];
