@@ -101,8 +101,8 @@ function useNightlyGames(sport: SportKey) {
         .from('sbo_games')
         .select(`
           *,
-          sbo_odds!game_id(home_odds, away_odds, spread_home, spread_away, total_line, bookmaker),
-          sbo_predictions!game_id(predicted_outcome, final_confidence, confidence_tier, data_quality, stats_brain_score, market_brain_score, context_brain_score, reasoning)
+          sbo_odds!game_id(home_odds, away_odds, home_spread, away_spread, total_line, sportsbook),
+          sbo_predictions!game_id(predicted_outcome, final_confidence, confidence_tier, data_quality, stats_brain_score, market_brain_score, context_brain_score, stats_brain_reasoning)
         `)
         .eq('sport_key', sport)
         .gte('game_date', start)
@@ -239,9 +239,9 @@ function GameCard({
           {odds?.home_odds != null && <p className="mt-1 font-mono text-xs">{formatOdds(odds.home_odds)}</p>}
         </div>
       </div>
-      {odds && (odds.spread_home != null || odds.total_line != null) && (
+      {odds && (odds.home_spread != null || odds.total_line != null) && (
         <div className="mb-3 flex justify-center gap-4 text-xs text-muted-foreground">
-          {odds.spread_home != null && <span>Spread: {odds.spread_home > 0 ? '+' : ''}{odds.spread_home}</span>}
+          {odds.home_spread != null && <span>Spread: {odds.home_spread > 0 ? '+' : ''}{odds.home_spread}</span>}
           {odds.total_line != null && <span>O/U {odds.total_line}</span>}
         </div>
       )}
