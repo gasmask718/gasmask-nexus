@@ -66,7 +66,9 @@ export default function SBOCommandCenter() {
     queryFn: async () => {
       const { data } = await supabase
         .from("sbo_capper_picks" as any)
-        .select("capper_id, player_name, stat_type, direction, line, edge_score, source, review_status")
+        // PHASE 3 / ITEM 9 — schema drift fix: sbo_capper_picks has prop_type + data_source,
+        // NOT stat_type/source. The old select 400'd and the panel rendered permanently empty.
+        .select("capper_id, player_name, prop_type, direction, line, edge_score, data_source, review_status")
         .eq("game_date", today())
         .eq("review_status", "verified")
         .limit(20);
