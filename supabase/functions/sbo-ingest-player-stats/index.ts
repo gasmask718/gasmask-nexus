@@ -13,11 +13,25 @@
 //
 // Params (POST JSON, all optional):
 //   sport      — sport_key, default 'mlb'. Must exist in GRADING_CONFIGS.
+//   sports     — string[] of sport_keys. Overrides `sport`; the function then
+//                loops every listed sport in one invocation. This is the
+//                multi-sport fanout entry point used by sbo-day-engine and by
+//                the hourly stats cron (NFL/NHL/WNBA/MLB in a single call).
 //   date       — 'YYYY-MM-DD' single day. Default: yesterday (UTC).
 //   days_back  — ingest N days ending at `date` (inclusive). Default 1.
 //                Used for history seeding, e.g. days_back: 120.
 //   season     — season label for the splits rollup. Default: year of `date`.
 //   skip_splits— true to ingest games only and defer the rollup.
+//   dry_run    — true to fetch ESPN box scores and REPORT what would be written
+//                without performing a single database write. Used to verify new
+//                sport wiring (NFL/NHL/WNBA) without mutating production data.
+//   force      — true to bypass the off-season guard below.
+//
+// OFF-SEASON GUARD: a sport whose season window does not contain the requested
+// date is SKIPPED (status 'skipped_offseason'), not failed. NFL box scores stop
+// existing in February and resume in September; churning ESPN for empty
+// scoreboards every hour is noise, not a failure.
+
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
