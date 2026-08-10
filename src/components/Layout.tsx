@@ -550,6 +550,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/funding-machine/bureau-intel', label: '💳 Floor 5 — Bureau Intelligence', icon: CreditCard },
       { path: '/funding-machine/funding-matrix', label: '🏛️ Floor 6 — Funding Matrix', icon: Landmark },
       { path: '/funding-machine/applications', label: '📋 Floor 7 — Applications', icon: ClipboardList },
+      { path: '/funding-machine/automation', label: '🤖 Application Automation', icon: ClipboardList },
       { path: '/funding-machine/velocity', label: '📈 Floor 8 — Velocity Calculator', icon: TrendingUp },
       { path: '/funding-machine/tradeline-vault', label: '📄 Floor 9 — Tradeline Vault', icon: FileText },
       { path: '/funding-machine/tasks', label: '✅ Floor 10 — Task Cards', icon: CheckSquare },
