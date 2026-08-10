@@ -19,8 +19,24 @@ function canonicalPropType(raw: unknown): string | null {
   return raw.toLowerCase().trim().replace(/[_\-\s]+/g, "_");
 }
 
+/**
+ * Sports that actually have a grading provider wired up (ESPN box scores /
+ * alt graders). Anything outside this set can be parsed but never settled,
+ * so it is written as unsupported at intake instead of sitting 'pending'.
+ */
+const GRADED_SPORTS = new Set([
+  "MLB",
+  "NBA",
+  "WNBA",
+  "NFL",
+  "NHL",
+  "UFC",
+  "CFL",
+]);
+
 const CLAUDE_MODEL = "claude-sonnet-4-5";
 const CLAUDE_URL = "https://api.anthropic.com/v1/messages";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
