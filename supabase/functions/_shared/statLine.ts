@@ -22,8 +22,9 @@ export type StatSpec = {
   /** Human label for the dry-run/grade note. */
   label: string;
   /** Which side of the box score must be present for the row to be usable. */
-  side: 'batting' | 'pitching';
+  side: 'batting' | 'pitching' | 'basketball';
 };
+
 
 /** Raw prop_type spellings resolved directly, before normalizeStat(). */
 const RAW_OVERRIDES: Record<string, StatSpec> = {
