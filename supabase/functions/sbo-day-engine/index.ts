@@ -553,7 +553,7 @@ serve(async (req) => {
             sport,
             status: 'error',
             duration_ms: Date.now() - stepStart,
-            error: e.message,
+            error: detail,
           });
         }
       }
