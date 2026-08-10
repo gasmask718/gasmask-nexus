@@ -654,6 +654,7 @@ serve(async (req) => {
     const stepsCompletedPayload = {
       sports_run: sportsToRun,
       sports_skipped_unsupported: sportsSkippedUnsupported,
+      sports_skipped_offseason: sportsSkippedOffseason,
       allowlist: Array.from(SUPPORTED_ALLOWLIST),
       steps_planned: totalStepsPlanned,
       steps_skipped: skippedCount,
@@ -691,6 +692,7 @@ serve(async (req) => {
       status,
       sports_run: sportsToRun,
       sports_skipped_unsupported: sportsSkippedUnsupported,
+      sports_skipped_offseason: sportsSkippedOffseason,
       ...(blockers.length
         ? {
             error: `Pipeline blocked: ${blockers.length} required feed(s) returned zero rows for in-season sport(s) on ${date}`,
