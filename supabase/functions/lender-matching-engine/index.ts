@@ -56,13 +56,15 @@ Deno.serve(async (req) => {
     const tib: number | null = client.time_in_business_months ?? null;
 
     // Business foundation prerequisites (real data — no assumptions).
+    const COMPLETE_STATUSES = ["complete", "completed", "done", "verified"];
     const { data: checklist } = await supabase
       .from("funding_infrastructure_checklist")
-      .select("item_name, is_complete")
+      .select("step_key, step_label, status")
       .eq("client_id", client_id);
     const missingPrereqs = (checklist ?? [])
-      .filter((c: { is_complete: boolean | null }) => c.is_complete !== true)
-      .map((c: { item_name: string }) => c.item_name);
+      .filter((c: { status: string | null }) =>
+        !COMPLETE_STATUSES.includes((c.status ?? "").toLowerCase()))
+      .map((c: { step_label: string | null; step_key: string }) => c.step_label ?? c.step_key);
 
     const { data: lenders, error: lenderErr } = await supabase
       .from("funding_lender_database")
