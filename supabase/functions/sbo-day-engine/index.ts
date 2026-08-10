@@ -665,12 +665,25 @@ serve(async (req) => {
       .eq('id', runId);
     finalized = true;
 
+    if (blockers.length > 0) {
+      const msg = blockers
+        .map(b => `${b.sport.toUpperCase()}/${b.fn}: ${b.detail}`)
+        .join(' | ');
+      console.error(`[sbo-day-engine] PIPELINE BLOCKED — ${msg}`);
+    }
+
     return new Response(JSON.stringify({
-      success: true,
+      success: blockers.length === 0,
       run_id: runId,
       status,
       sports_run: sportsToRun,
       sports_skipped_unsupported: sportsSkippedUnsupported,
+      ...(blockers.length
+        ? {
+            error: `Pipeline blocked: ${blockers.length} required feed(s) returned zero rows for in-season sport(s) on ${date}`,
+            zero_row_blockers: blockers,
+          }
+        : {}),
       completed,
       failed,
       summary: {
@@ -683,7 +696,10 @@ serve(async (req) => {
         estimated_cost_usd: (totalCostCents / 100).toFixed(2),
         duration_seconds: duration,
       },
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }), {
+      status: blockers.length > 0 ? 500 : 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (e) {
     fatalError = e instanceof Error ? e.message : 'Unknown error';
