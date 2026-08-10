@@ -1040,6 +1040,7 @@ const FundingMachineShelfCorp = lazy(() => import('@/pages/funding-machine/Shelf
 const FundingMachineRevenue = lazy(() => import('@/pages/funding-machine/RevenueDashboardPage'));
 const FundingMachineClientsList = lazy(() => import('@/pages/funding-machine/ClientsListPage'));
 const FundingModuleStub = lazy(() => import('@/pages/funding-machine/FundingModuleStub'));
+const FundingApplicationAutomation = lazy(() => import('@/pages/funding-machine/ApplicationAutomationPage'));
 const UbenHQ = lazy(() => import('@/pages/os/uben/UbenHQ'));
 const UbenGrantTracker = lazy(() => import('@/pages/os/uben/UbenGrantTracker'));
 const UbenApplications = lazy(() => import('@/pages/os/uben/UbenApplications'));
@@ -2268,6 +2269,7 @@ export default function AppRoutes() {
         <Route path="/funding-machine/shelf-corp" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineShelfCorp /></RequireRole>} />
         <Route path="/funding-machine/settings" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineSettings /></RequireRole>} />
         <Route path="/funding-machine/revenue" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineRevenue /></RequireRole>} />
+        <Route path="/funding-machine/automation" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingApplicationAutomation /></RequireRole>} />
         {/* Validation-aligned route aliases + new module registrations */}
         <Route path="/funding-machine/lenders" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineFundingMatrix /></RequireRole>} />
         <Route path="/funding-machine/tradelines" element={<Navigate to="/funding-machine/tradeline-vault" replace />} />

@@ -12792,6 +12792,62 @@ export type Database = {
           },
         ]
       }
+      automation_checkpoints: {
+        Row: {
+          automation_job_id: string
+          automation_resumed: boolean
+          checkpoint_type: string
+          completed_at: string | null
+          completed_by: string | null
+          completion_note: string | null
+          created_at: string
+          detected_at: string
+          id: string
+          reason: string | null
+          resumed_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          automation_job_id: string
+          automation_resumed?: boolean
+          checkpoint_type: string
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_note?: string | null
+          created_at?: string
+          detected_at?: string
+          id?: string
+          reason?: string | null
+          resumed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          automation_job_id?: string
+          automation_resumed?: boolean
+          checkpoint_type?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_note?: string | null
+          created_at?: string
+          detected_at?: string
+          id?: string
+          reason?: string | null
+          resumed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_checkpoints_automation_job_id_fkey"
+            columns: ["automation_job_id"]
+            isOneToOne: false
+            referencedRelation: "automation_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_communication_settings: {
         Row: {
           automation_type: string
@@ -12824,6 +12880,239 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      automation_events: {
+        Row: {
+          actor_user_id: string | null
+          application_id: string | null
+          automation_job_id: string
+          created_at: string
+          event_type: string
+          id: string
+          level: string
+          message: string | null
+          metadata: Json
+        }
+        Insert: {
+          actor_user_id?: string | null
+          application_id?: string | null
+          automation_job_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          level?: string
+          message?: string | null
+          metadata?: Json
+        }
+        Update: {
+          actor_user_id?: string | null
+          application_id?: string | null
+          automation_job_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          level?: string
+          message?: string | null
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_events_automation_job_id_fkey"
+            columns: ["automation_job_id"]
+            isOneToOne: false
+            referencedRelation: "automation_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_field_mappings: {
+        Row: {
+          allowed_values: string[] | null
+          canonical_field: string
+          created_at: string
+          field_kind: string
+          id: string
+          lender_config_id: string
+          lender_field_label: string
+          lender_selector: string | null
+          required: boolean
+          sort_order: number
+          transform: string | null
+          updated_at: string
+        }
+        Insert: {
+          allowed_values?: string[] | null
+          canonical_field: string
+          created_at?: string
+          field_kind?: string
+          id?: string
+          lender_config_id: string
+          lender_field_label: string
+          lender_selector?: string | null
+          required?: boolean
+          sort_order?: number
+          transform?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allowed_values?: string[] | null
+          canonical_field?: string
+          created_at?: string
+          field_kind?: string
+          id?: string
+          lender_config_id?: string
+          lender_field_label?: string
+          lender_selector?: string | null
+          required?: boolean
+          sort_order?: number
+          transform?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_field_mappings_lender_config_id_fkey"
+            columns: ["lender_config_id"]
+            isOneToOne: false
+            referencedRelation: "lender_automation_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_jobs: {
+        Row: {
+          adapter_key: string
+          application_id: string
+          approved_amount: number | null
+          attempt_count: number
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          current_step: string | null
+          decision_date: string | null
+          failure_class: string | null
+          failure_reason: string | null
+          human_action_type: string | null
+          id: string
+          idempotency_key: string
+          last_event_at: string | null
+          lease_expires_at: string | null
+          lender_id: string | null
+          lender_name: string | null
+          lender_reference: string | null
+          max_attempts: number
+          missing_fields: string[]
+          next_action: string | null
+          priority: number
+          queued_at: string | null
+          raw_response: Json | null
+          requested_amount: number | null
+          requires_human_action: boolean
+          result_status: string | null
+          started_at: string | null
+          status: string
+          submission_confirmed: boolean
+          submission_method: string
+          updated_at: string
+          worker_id: string | null
+        }
+        Insert: {
+          adapter_key?: string
+          application_id: string
+          approved_amount?: number | null
+          attempt_count?: number
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_step?: string | null
+          decision_date?: string | null
+          failure_class?: string | null
+          failure_reason?: string | null
+          human_action_type?: string | null
+          id?: string
+          idempotency_key: string
+          last_event_at?: string | null
+          lease_expires_at?: string | null
+          lender_id?: string | null
+          lender_name?: string | null
+          lender_reference?: string | null
+          max_attempts?: number
+          missing_fields?: string[]
+          next_action?: string | null
+          priority?: number
+          queued_at?: string | null
+          raw_response?: Json | null
+          requested_amount?: number | null
+          requires_human_action?: boolean
+          result_status?: string | null
+          started_at?: string | null
+          status?: string
+          submission_confirmed?: boolean
+          submission_method: string
+          updated_at?: string
+          worker_id?: string | null
+        }
+        Update: {
+          adapter_key?: string
+          application_id?: string
+          approved_amount?: number | null
+          attempt_count?: number
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_step?: string | null
+          decision_date?: string | null
+          failure_class?: string | null
+          failure_reason?: string | null
+          human_action_type?: string | null
+          id?: string
+          idempotency_key?: string
+          last_event_at?: string | null
+          lease_expires_at?: string | null
+          lender_id?: string | null
+          lender_name?: string | null
+          lender_reference?: string | null
+          max_attempts?: number
+          missing_fields?: string[]
+          next_action?: string | null
+          priority?: number
+          queued_at?: string | null
+          raw_response?: Json | null
+          requested_amount?: number | null
+          requires_human_action?: boolean
+          result_status?: string | null
+          started_at?: string | null
+          status?: string
+          submission_confirmed?: boolean
+          submission_method?: string
+          updated_at?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_jobs_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "funding_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_jobs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_jobs_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "funding_lender_database"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       automation_logs: {
         Row: {
@@ -70737,6 +71026,89 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "loan_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lender_automation_config: {
+        Row: {
+          active: boolean
+          adapter_key: string
+          api_base_url: string | null
+          api_enabled: boolean
+          api_secret_name: string | null
+          application_url: string | null
+          authorization_note: string | null
+          automation_authorized: boolean
+          browser_enabled: boolean
+          created_at: string
+          id: string
+          lender_id: string | null
+          lender_name: string
+          manual_enabled: boolean
+          max_attempts: number
+          requires_final_certification: boolean
+          requires_human_verification: boolean
+          requires_identity_verification: boolean
+          requires_otp: boolean
+          requires_signature: boolean
+          submission_method: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          adapter_key?: string
+          api_base_url?: string | null
+          api_enabled?: boolean
+          api_secret_name?: string | null
+          application_url?: string | null
+          authorization_note?: string | null
+          automation_authorized?: boolean
+          browser_enabled?: boolean
+          created_at?: string
+          id?: string
+          lender_id?: string | null
+          lender_name: string
+          manual_enabled?: boolean
+          max_attempts?: number
+          requires_final_certification?: boolean
+          requires_human_verification?: boolean
+          requires_identity_verification?: boolean
+          requires_otp?: boolean
+          requires_signature?: boolean
+          submission_method?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          adapter_key?: string
+          api_base_url?: string | null
+          api_enabled?: boolean
+          api_secret_name?: string | null
+          application_url?: string | null
+          authorization_note?: string | null
+          automation_authorized?: boolean
+          browser_enabled?: boolean
+          created_at?: string
+          id?: string
+          lender_id?: string | null
+          lender_name?: string
+          manual_enabled?: boolean
+          max_attempts?: number
+          requires_final_certification?: boolean
+          requires_human_verification?: boolean
+          requires_identity_verification?: boolean
+          requires_otp?: boolean
+          requires_signature?: boolean
+          submission_method?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_automation_config_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: true
+            referencedRelation: "funding_lender_database"
             referencedColumns: ["id"]
           },
         ]
@@ -141986,6 +142358,7 @@ export type Database = {
         Args: { _client_id: string; _user_id: string }
         Returns: boolean
       }
+      is_funding_operator: { Args: never; Returns: boolean }
       is_funding_staff: { Args: { _user_id: string }; Returns: boolean }
       is_grants_staff: { Args: { _user_id?: string }; Returns: boolean }
       is_internal_staff: { Args: { _user_id?: string }; Returns: boolean }
