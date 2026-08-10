@@ -1022,11 +1022,18 @@ export const GRADING_CONFIGS: Record<string, SportGradingConfig<any>> = {
   wnba: WNBA_GRADING,
   nfl: NFL_GRADING,
   nhl: NHL_GRADING,
+  nba: NBA_GRADING,
 };
 
 
-/** Sports that currently have a working free-ESPN grading path. */
-export const GRADED_SPORT_KEYS: string[] = Object.keys(GRADING_CONFIGS);
+/**
+ * Sports enrolled in the automated fanout (sbo-day-engine, sbo-verify-results).
+ * EXPLICIT LIST, not Object.keys(GRADING_CONFIGS): NBA has a working free-ESPN
+ * box-score path (Phase 7a) and is resolvable by sbo-ingest-player-stats, but
+ * adding it to the scheduled fanout is a separate governance decision.
+ */
+export const GRADED_SPORT_KEYS: string[] = ['mlb', 'wnba', 'nfl', 'nhl'];
+
 
 export function getGradingConfig(sportKey: string): SportGradingConfig<any> | null {
   return GRADING_CONFIGS[(sportKey || '').toLowerCase()] ?? null;
