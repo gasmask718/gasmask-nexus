@@ -91,11 +91,19 @@ serve(async (req) => {
     const limit: number = Number(body.limit ?? 500);
     const since = addDays(date, -Math.abs(lookbackDays));
 
+    // Sports to grade. Default is the Phase 6 MLB scope plus the free-ESPN
+    // basketball sports whose box scores now exist (Phase 7a). Case-insensitive:
+    // sbo_capper_picks stores 'MLB'/'NBA' uppercase, sbo_player_game_stats lowercase.
+    const sports: string[] = (Array.isArray(body.sports) && body.sports.length
+      ? body.sports
+      : ['mlb', 'nba', 'wnba']).map((s: string) => String(s).toLowerCase());
+    const sportVariants = sports.flatMap((s) => [s, s.toUpperCase()]);
+
     // ── 1. Candidate picks ────────────────────────────────────────
     const { data: picks, error: pickErr } = await supabase
       .from('sbo_capper_picks')
       .select('id, sport, bet_type, prop_type, player_name, team, opponent, line, direction, odds, game_date, result')
-      .ilike('sport', 'mlb')
+      .in('sport', sportVariants)
       .eq('bet_type', 'prop')
       .eq('result', 'pending')
       .not('player_name', 'is', null)
@@ -107,26 +115,36 @@ serve(async (req) => {
     if (pickErr) throw pickErr;
     const pending = picks ?? [];
 
-    // ── 2. Box scores for the dates in play (paginated) ───────────
-    const dates = [...new Set(pending.map((p: any) => p.game_date))];
-    const statsByDate = new Map<string, StatRow[]>();
-    if (dates.length) {
+    // ── 2. Box scores for the (sport, date) pairs in play (paginated) ──
+    const datesBySport = new Map<string, Set<string>>();
+    for (const p of pending as any[]) {
+      const s = String(p.sport || '').toLowerCase();
+      if (!datesBySport.has(s)) datesBySport.set(s, new Set());
+      datesBySport.get(s)!.add(p.game_date);
+    }
+    // Keyed 'sport|date' so an NBA date can never read an MLB box score.
+    const statsByKey = new Map<string, StatRow[]>();
+    for (const [sport, dateSet] of datesBySport) {
+      const dates = [...dateSet];
+      if (!dates.length) continue;
       const page = 1000;
       for (let from = 0; ; from += page) {
         const { data, error } = await supabase
           .from('sbo_player_game_stats')
           .select('player_key, player_id, player_name, team, game_date, stat_line')
-          .eq('sport', 'mlb')
+          .eq('sport', sport)
           .in('game_date', dates)
           .range(from, from + page - 1);
         if (error) throw error;
         for (const r of (data ?? []) as StatRow[]) {
-          if (!statsByDate.has(r.game_date)) statsByDate.set(r.game_date, []);
-          statsByDate.get(r.game_date)!.push(r);
+          const k = `${sport}|${r.game_date}`;
+          if (!statsByKey.has(k)) statsByKey.set(k, []);
+          statsByKey.get(k)!.push(r);
         }
         if (!data || data.length < page) break;
       }
     }
+
 
     // ── 3. Grade ──────────────────────────────────────────────────
     type Graded = {
