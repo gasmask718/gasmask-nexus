@@ -545,8 +545,9 @@ serve(async (req) => {
           await new Promise(r => setTimeout(r, 500));
         } catch (e: any) {
           console.error(`[${sport}] Step ${step.fn} failed:`, e.message);
+          const detail = await invokeErrorDetail(e);
           if (step.required && isInSeason(sport, date)) {
-            blockers.push({ sport, fn: step.fn, detail: e?.message ?? 'step threw' });
+            blockers.push({ sport, fn: step.fn, detail });
           }
           await recordStep(step, {
             sport,
