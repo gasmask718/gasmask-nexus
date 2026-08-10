@@ -23,6 +23,10 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BodySchema = z.object({
   business_profile_id: z.string().uuid().optional(),
   grant_opportunity_id: z.string().uuid().optional(),
+  // Phase 4 identity bridge: scope a run to one Funding Hub client. The client
+  // resolves to its linked grant_business_profiles rows, so eligibility is always
+  // calculated and stored against a single client identity.
+  funding_client_id: z.string().uuid().optional(),
 }).strict();
 
 type Requirement = {
