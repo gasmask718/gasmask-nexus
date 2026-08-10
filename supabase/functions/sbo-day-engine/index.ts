@@ -58,6 +58,12 @@ const PREGAME_STEPS: EngineStep[] = [
 
 // Global (run once total, after per-sport loop finishes)
 const GLOBAL_STEPS: EngineStep[] = [
+  // PHASE 7d / DEFECT A — props_master fanout. sbo-fetch-odds writes
+  // sbo_player_props; the Command Center reads props_master. This downstream
+  // sync existed but was never wired into the engine (UI-invoke only), so a
+  // successful pull still rendered "No props data for today". Runs once,
+  // after the per-sport loop, before consumers.
+  { fn: 'sbo-sync-props-master', label: 'Props Master Fanout (sbo_player_props → props_master)', icon: '🔁', required: false },
   { fn: 'sbo-compare-odds', label: 'Cross-Platform Odds Comparison', icon: '💎', required: false },
   { fn: 'sbo-generate-daily-briefing', label: 'Generate Daily SMS Briefing', icon: '📱', required: false },
   { fn: 'sbo-send-daily-sms', label: 'Send Daily SMS to Phone', icon: '✉️', required: false },
@@ -166,9 +172,23 @@ serve(async (req) => {
       prop_fanout_limit,
       // Escape hatch: run the full chain even for out-of-season sports.
       force_offseason = false,
+      // PHASE 7d / ITEM 1 — approved budget shape (locked 2026-08-10):
+      // props once daily, MLB-only. `sports` narrows the fanout (the cron
+      // passes ["mlb"]); absent = every active+supported+in-season sport,
+      // so the MANUAL path is unchanged. `props_sports` declares which
+      // sports get include_props:true on sbo-fetch-odds; default MLB-only.
+      sports: sportsFilter,
+      props_sports: propsSportsRaw,
+    } = body as any;
+
+    const sportsFilterSet: Set<string> | null = Array.isArray(sportsFilter) && sportsFilter.length
+      ? new Set(sportsFilter.map((s: string) => String(s).toLowerCase()))
+      : null;
+    const propsSports = new Set<string>(
+      (Array.isArray(propsSportsRaw) ? propsSportsRaw : ['mlb']).map((s: string) => String(s).toLowerCase())
+    );
 
 
-    } = body;
 
     const RUN_START = Date.now();
     const remainingRunMs = () => Math.max(0, RUN_BUDGET_MS - (Date.now() - RUN_START));
@@ -220,8 +240,12 @@ serve(async (req) => {
     // and produces a wall of "0 records" warnings. SKIP, never fail — an
     // off-season zero is correct output, not a broken feed.
     const sportsSkippedOffseason: string[] = [];
+    // PHASE 7d / ITEM 1.3 — cron-level budget filter. isInSeason() and the
+    // manual path are untouched; this only drops sports the CALLER did not ask for.
+    const sportsSkippedBudget: string[] = [];
     for (const s of (activeSports ?? [])) {
       if (!SUPPORTED_ALLOWLIST.has(s.sport_key)) { sportsSkippedUnsupported.push(s.sport_key); continue; }
+      if (sportsFilterSet && !sportsFilterSet.has(String(s.sport_key).toLowerCase())) { sportsSkippedBudget.push(s.sport_key); continue; }
       if (!isInSeason(s.sport_key, date) && !force_offseason) { sportsSkippedOffseason.push(s.sport_key); continue; }
       sportsToRun.push(s.sport_key);
     }
@@ -520,9 +544,16 @@ serve(async (req) => {
           }
 
 
-          // Standard per-sport step — pass sport_key through
+          // Standard per-sport step — pass sport_key through.
+          // PHASE 7d / ITEM 1.1 — props are the expensive leg (1 credit per
+          // event). Only sports in `props_sports` (default MLB) get
+          // include_props:true; every other sport pulls games/markets only.
+          const stepBody: Record<string, unknown> = { date, sport_key: sport };
+          if (step.fn === 'sbo-fetch-odds') {
+            stepBody.include_props = propsSports.has(String(sport).toLowerCase());
+          }
           const { data, error } = await supabase.functions.invoke(step.fn, {
-            body: { date, sport_key: sport },
+            body: stepBody,
           });
 
           if (error && step.required) throw error;
