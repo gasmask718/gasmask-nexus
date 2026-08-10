@@ -204,6 +204,7 @@ serve(async (req) => {
     } else {
       const gamesUrl = `https://api.the-odds-api.com/v4/sports/${oddsApiSport}/odds/?apiKey=${ODDS_API_KEY}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&bookmakers=draftkings,fanduel,betmgm,caesars`;
       const gamesResp = await fetch(gamesUrl);
+      captureUsage(gamesResp, usage);
       if (!gamesResp.ok) throw new Error(`Odds API games error ${gamesResp.status}: ${await gamesResp.text()}`);
       const games: any[] = await gamesResp.json();
       games_fetched = games.length;
@@ -278,6 +279,7 @@ serve(async (req) => {
         const propsUrl = `https://api.the-odds-api.com/v4/sports/${oddsApiSport}/events/${target.external_id}/odds/?apiKey=${ODDS_API_KEY}&regions=us&markets=${propMarkets}&oddsFormat=american&bookmakers=draftkings,fanduel,prizepicks`;
         try {
           const pr = await fetch(propsUrl);
+          captureUsage(pr, usage);
           if (!pr.ok) {
             errors.push({ stage: 'props_fetch', detail: `${target.external_id} status ${pr.status}` });
             continue;
