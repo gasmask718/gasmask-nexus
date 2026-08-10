@@ -171,15 +171,18 @@ serve(async (req) => {
         skip('no numeric line'); continue;
       }
 
-      let spec: StatSpec | null = statSpecFor(p.prop_type || '');
-      const ambiguousK = !spec && isAmbiguousStrikeouts(p.prop_type || '');
+      const pSport = String(p.sport || '').toLowerCase();
+      let spec: StatSpec | null = statSpecForSport(pSport, p.prop_type || '');
+      // Bare-"strikeouts" disambiguation is an MLB-only concept.
+      const ambiguousK = !spec && pSport === 'mlb' && isAmbiguousStrikeouts(p.prop_type || '');
       if (!spec && !ambiguousK) {
         skip(`prop type not gradable from box score (${p.prop_type})`); continue;
       }
 
       // ── Player resolution (Stage 2c order) ──
-      const rows = statsByDate.get(p.game_date) ?? [];
+      const rows = statsByKey.get(`${pSport}|${p.game_date}`) ?? [];
       if (!rows.length) { skip('no box scores ingested for that date'); continue; }
+
       const target = normalizePlayer(p.player_name);
       let matches = rows.filter((r) => normalizePlayer(r.player_name) === target);
 
