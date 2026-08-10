@@ -14,6 +14,8 @@ interface RequireRoleProps {
   fallbackPath?: string;
   readOnly?: boolean;
   showLocked?: boolean;
+  /** When true, only the roles in `allowedRoles` pass — no elevated-role bypass. */
+  strict?: boolean;
 }
 
 // Elevated roles that ALWAYS bypass access checks
@@ -37,7 +39,8 @@ export function RequireRole({
   allowedRoles, 
   fallbackPath = '/',
   readOnly = false,
-  showLocked = false
+  showLocked = false,
+  strict = false
 }: RequireRoleProps) {
   const { currentBusiness, loading: businessLoading } = useBusiness();
   const currentBusinessId = currentBusiness?.id ?? null;
@@ -86,7 +89,9 @@ export function RequireRole({
   }
 
   // Check if user has any elevated role (ALWAYS allowed)
-  const hasElevatedAccess = roles.some(r => ELEVATED_ROLES.includes(r)) || isAdmin();
+  const hasElevatedAccess = strict
+    ? roles.some(r => allowedRoles.includes(r))
+    : roles.some(r => ELEVATED_ROLES.includes(r)) || isAdmin();
 
   // Check if user has any of the allowed roles
   const hasDirectAccess = role && allowedRoles.includes(role);
