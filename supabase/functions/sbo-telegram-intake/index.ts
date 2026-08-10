@@ -589,6 +589,11 @@ serve(async (req) => {
       const canonSport = canonicalizeSport(pick.sport) ?? null;
       const gradeable = canonSport !== null && GRADED_SPORTS.has(canonSport);
 
+      // PHASE 6 / ITEM 1: only the NULL case falls back to the ET post date.
+      const extractedGameDate = normalizeGameDate(pick.game_date);
+      const inferredGameDate = extractedGameDate ? null : postDateEt(posted_at);
+
+
       const insertRow: Record<string, unknown> = {
         capper_id: capperId,
         pick_text: pickText,
