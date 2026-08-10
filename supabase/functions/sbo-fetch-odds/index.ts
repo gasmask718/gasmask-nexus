@@ -145,7 +145,17 @@ serve(async (req) => {
       } catch { /* empty body = defaults */ }
     }
 
-    const ODDS_API_KEY = Deno.env.get('ODDS_API_KEY')!;
+    // PHASE 8C — explicit config guard (was a `!` non-null assert). Fails
+    // clean and BEFORE any network call if the secret is missing.
+    const ODDS_API_KEY = Deno.env.get('ODDS_API_KEY');
+    if (!ODDS_API_KEY) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'config_error',
+        stage: 'startup',
+        detail: 'Missing ODDS_API_KEY in Supabase Vault / env. Set the secret and redeploy; no provider call was attempted.',
+      }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
