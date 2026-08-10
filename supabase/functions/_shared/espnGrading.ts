@@ -470,6 +470,58 @@ export const WNBA_GRADING: SportGradingConfig<WnbaStatLine> = {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// CONFIG 2b — NBA (Phase 7a, free ESPN)
+// ═══════════════════════════════════════════════════════════════
+// NBA shares the WNBA box-score shape byte-for-byte (verified live against
+// basketball/nba scoreboard 2026-03-19, 8 FINAL events), so the WNBA parser
+// and prop accessor are REUSED verbatim — never mirrored.
+// NOTE: this config is registered in GRADING_CONFIGS (so sbo-ingest-player-stats
+// can resolve 'nba') but is deliberately NOT added to GRADED_SPORT_KEYS: that
+// list drives the sbo-day-engine / sbo-verify-results fanout, and enrolling NBA
+// there is a separate governance decision with its own evidence.
+export const NBA_ALIASES: Record<string, string> = {
+  'atl': 'Atlanta Hawks', 'hawks': 'Atlanta Hawks',
+  'bos': 'Boston Celtics', 'celtics': 'Boston Celtics',
+  'bkn': 'Brooklyn Nets', 'nets': 'Brooklyn Nets',
+  'cha': 'Charlotte Hornets', 'hornets': 'Charlotte Hornets',
+  'chi': 'Chicago Bulls', 'bulls': 'Chicago Bulls',
+  'cle': 'Cleveland Cavaliers', 'cavaliers': 'Cleveland Cavaliers', 'cavs': 'Cleveland Cavaliers',
+  'dal': 'Dallas Mavericks', 'mavericks': 'Dallas Mavericks', 'mavs': 'Dallas Mavericks',
+  'den': 'Denver Nuggets', 'nuggets': 'Denver Nuggets',
+  'det': 'Detroit Pistons', 'pistons': 'Detroit Pistons',
+  'gsw': 'Golden State Warriors', 'warriors': 'Golden State Warriors',
+  'hou': 'Houston Rockets', 'rockets': 'Houston Rockets',
+  'ind': 'Indiana Pacers', 'pacers': 'Indiana Pacers',
+  'lac': 'LA Clippers', 'clippers': 'LA Clippers',
+  'lal': 'Los Angeles Lakers', 'lakers': 'Los Angeles Lakers',
+  'mem': 'Memphis Grizzlies', 'grizzlies': 'Memphis Grizzlies',
+  'mia': 'Miami Heat', 'heat': 'Miami Heat',
+  'mil': 'Milwaukee Bucks', 'bucks': 'Milwaukee Bucks',
+  'min': 'Minnesota Timberwolves', 'timberwolves': 'Minnesota Timberwolves', 'wolves': 'Minnesota Timberwolves',
+  'nop': 'New Orleans Pelicans', 'pelicans': 'New Orleans Pelicans',
+  'nyk': 'New York Knicks', 'knicks': 'New York Knicks',
+  'okc': 'Oklahoma City Thunder', 'thunder': 'Oklahoma City Thunder',
+  'orl': 'Orlando Magic', 'magic': 'Orlando Magic',
+  'phi': 'Philadelphia 76ers', '76ers': 'Philadelphia 76ers', 'sixers': 'Philadelphia 76ers',
+  'phx': 'Phoenix Suns', 'suns': 'Phoenix Suns',
+  'por': 'Portland Trail Blazers', 'blazers': 'Portland Trail Blazers',
+  'sac': 'Sacramento Kings', 'kings': 'Sacramento Kings',
+  'sas': 'San Antonio Spurs', 'spurs': 'San Antonio Spurs',
+  'tor': 'Toronto Raptors', 'raptors': 'Toronto Raptors',
+  'uta': 'Utah Jazz', 'jazz': 'Utah Jazz',
+  'was': 'Washington Wizards', 'wsh': 'Washington Wizards', 'wizards': 'Washington Wizards',
+};
+
+export const NBA_GRADING: SportGradingConfig<WnbaStatLine> = {
+  sportKey: 'nba',
+  espnPath: 'basketball/nba',
+  aliases: NBA_ALIASES,
+  buildStatLines: buildWnbaStatLines,
+  getPropValue: getWnbaPropValue,
+};
+
+
+// ═══════════════════════════════════════════════════════════════
 // CONFIG 3 — NFL (Stage 4)
 // ═══════════════════════════════════════════════════════════════
 // PROBED LIVE against event 401772966 (Saints, 2026-01-04). NFL does
