@@ -428,15 +428,16 @@ export default function ClientProfilePage() {
 
   const handleCheckEligibility = async () => {
     setCheckingEligibility(true);
-    const { data, error } = await supabase.functions.invoke('grant-eligibility-check', {
-      body: { client_id: clientId },
+    const { data, error } = await supabase.functions.invoke('grant-eligibility-checker', {
+      body: { funding_client_id: clientId },
     });
     setCheckingEligibility(false);
     if (error) { toast.error(error.message); return; }
     const result = data as any;
-    if (result?.error) { toast.error(result.error); return; }
+    if (result?.error) { toast.error(result.message ?? result.error); return; }
+    const s = result?.results_summary ?? {};
     toast.success(
-      `${result.eligible_count ?? 0} grants found! Up to $${(result.total_available ?? 0).toLocaleString()} available.`
+      `${(s.eligible ?? 0) + (s.partially_eligible ?? 0)} eligible / ${result?.checked ?? 0} grants checked.`
     );
     refetchGrantData();
   };
