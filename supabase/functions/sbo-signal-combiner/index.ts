@@ -8,6 +8,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// BUG-16: minimum GRADED picks before a capper is allowed to move a signal.
+// Below this the win_rate/streak/weight fields are statistical noise.
+const MIN_GRADED_PICKS_FOR_WEIGHT = 3;
+
 interface CapperRow {
   id: string;
   name: string | null;
@@ -15,6 +19,9 @@ interface CapperRow {
   capper_weight: number | null;
   hot_streak: number | null;
   picks_by_sport: Record<string, any> | null;
+  total_wins: number | null;
+  total_losses: number | null;
+  total_pushes: number | null;
 }
 
 interface PickRow {
