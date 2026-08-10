@@ -139,7 +139,11 @@ Message: ${messageText}`;
       },
       body: JSON.stringify({
         model: CLAUDE_MODEL,
-        max_tokens: 500,
+        // BUG-06: was 500. The schema above has 18 fields and parlay_legs is an
+        // array, so real picks routinely exceeded the cap and came back as
+        // truncated JSON ("Unterminated string at position ~1250"). Those were
+        // then filed as skipped_not_pick — a silent conversion loss.
+        max_tokens: 2000,
         system,
         messages: [{ role: "user", content: user }],
       }),
@@ -155,12 +159,26 @@ Message: ${messageText}`;
     const raw = data?.content?.[0]?.text ?? "";
     if (!raw) return { pick: null, error: "claude_empty_response" };
 
+    // A truncated completion is a FAILURE, not a verdict. Surface it explicitly
+    // so it is never confused with "the model read this and said it is not a pick".
+    const stopReason = data?.stop_reason ?? null;
+    if (stopReason === "max_tokens") {
+      return {
+        pick: null,
+        error: `claude_truncated: response hit max_tokens (${raw.length} chars) — pick could not be extracted`,
+        raw,
+      };
+    }
+
     try {
       const parsed = JSON.parse(stripJsonFence(raw)) as ClaudePick;
       return { pick: parsed, raw };
     } catch (parseErr) {
+      // Return pick:null (previously { is_pick: false }) so the caller records
+      // extraction_failed instead of skipped_not_pick. An unparseable response
+      // means we do not know whether it was a pick.
       return {
-        pick: { is_pick: false, extraction_confidence: "low" },
+        pick: null,
         error: `claude_parse_error: ${(parseErr as Error).message}`,
         raw,
       };
