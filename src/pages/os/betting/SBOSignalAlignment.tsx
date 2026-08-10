@@ -244,6 +244,8 @@ export default function SBOSignalAlignment() {
         .from('sbo_predictions')
         .select('*')
         .gte('created_at', `${today}T00:00:00`)
+        // PHASE 3 / ITEM 8 — bounded read (today's predictions); table exceeds the 1k PostgREST default.
+        .limit(500)
         .order('final_confidence', { ascending: false });
       return data || [];
     },

@@ -240,6 +240,8 @@ export function usePropCrossIntelligence(playerName?: string, statType?: string)
         .select('*')
         .eq('player_name', playerName)
         .eq('stat_type', statType)
+        // PHASE 3 / ITEM 8 — bounded read (one player+stat); table exceeds the 1k PostgREST default.
+        .limit(200)
         .order('line', { ascending: true });
       if (error) throw error;
       return (data || []) as PropMaster[];

@@ -486,6 +486,8 @@ export default function NightlyBoardTab() {
       `)
       .eq('game_id', gameId)
       .eq('sport_key', selectedSport)
+      // PHASE 3 / ITEM 8 — bounded read (nightly board); table exceeds the 1k PostgREST default.
+      .limit(1000)
       .order('player_name');
     if (error) { toast.error(error.message); return []; }
     return data ?? [];

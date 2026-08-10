@@ -31,6 +31,8 @@ export function useCrossPlatformProps(date?: string) {
         .select('id, player_name, team, prop_type, line, over_odds, under_odds, source, game_id, game_date')
         .gte('game_date', todayEST)
         .lte('game_date', todayEST + 'T23:59:59')
+        // PHASE 3 / ITEM 8 — bounded read (single-day slate); table exceeds the 1k PostgREST default.
+        .limit(1000)
         .order('player_name');
 
       if (error) throw error;

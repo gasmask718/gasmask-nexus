@@ -164,6 +164,8 @@ export function ChingWorldPicksSMS() {
         .from("sbo_predictions")
         .select("*, sbo_games(home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds, team)")
         .gte("created_at", `${today}T00:00:00-04:00`)
+        // PHASE 3 / ITEM 8 — bounded read (today's picks board); table exceeds the 1k PostgREST default.
+        .limit(200)
         .order("final_confidence", { ascending: false });
 
       if (error) console.error("ChingWorld query error:", error);

@@ -62,6 +62,8 @@ export function useUnifiedProps(date?: string, coverageMode?: CoverageMode) {
       let query = (supabase as any)
         .from('sbo_unified_props')
         .select('*')
+        // PHASE 3 / ITEM 8 — bounded read (top-confidence board); table exceeds the 1k PostgREST default.
+        .limit(500)
         .order('ai_confidence', { ascending: false, nullsFirst: false });
 
       if (mode === 'limited') {
