@@ -549,11 +549,20 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      success: true, matched, resolved, graded,
+      success: true, dry_run: dryRun, matched, resolved, graded,
       matchLogs: matchLogs.length,
       needsReview: matchLogs.filter(l => l.result === 'needs_review').length,
+      // Funnel telemetry for BUG-03: attempted is the real denominator and
+      // miss_reasons says exactly where the picks fall out.
+      attempted: matchLogs.length,
+      match_rate_pct: matchLogs.length
+        ? Math.round((matched / matchLogs.length) * 10000) / 100
+        : 0,
+      game_level_skipped: gameLevelSkipped,
+      miss_reasons: missReasons,
       errors: errors.length > 0 ? errors : undefined,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
 
   } catch (error: any) {
     console.error('Error:', error);
