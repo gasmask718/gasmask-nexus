@@ -223,17 +223,20 @@ async function runSport(supabase: any, sport: string, o: SportOpts) {
         // Upsert on the player_key-based unique constraint — safe to re-run any date.
         // player_key is a generated column: coalesce(player_id, player_name), so two
         // different athletes sharing a name never collide.
-        const { error } = await supabase
-          .from('sbo_player_game_stats')
-          .upsert(rows, { onConflict: 'sport,player_key,game_id' });
+        if (!dryRun) {
+          const { error } = await supabase
+            .from('sbo_player_game_stats')
+            .upsert(rows, { onConflict: 'sport,player_key,game_id' });
 
-        if (error) {
-          errors.push(`${dateStr}/${final.eventId}: upsert failed — ${error.message}`);
-          continue;
+          if (error) {
+            errors.push(`${dateStr}/${final.eventId}: upsert failed — ${error.message}`);
+            continue;
+          }
         }
         rowsUpserted += rows.length;
         dayRows += rows.length;
         for (const r of rows) affectedPlayers.add(r.player_id || r.player_name);
+
       }
 
       dayResults.push({ date: dateStr, ok: true, finals: sb.finals.length, rows: dayRows });
