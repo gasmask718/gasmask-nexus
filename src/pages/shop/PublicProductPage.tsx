@@ -52,13 +52,21 @@ export default function PublicProductPage() {
   });
 
   const price = product ? (product.dtc_price_b ?? product.retail_price ?? null) : null;
-  const images = Array.isArray(product?.images) ? (product!.images as string[]) : [];
+  const rawImages = [
+    ...(Array.isArray(product?.images) ? (product!.images as string[]) : []),
+    ...(Array.isArray(product?.image_urls) ? (product!.image_urls as string[]) : []),
+  ].filter((u): u is string => typeof u === 'string' && u.length > 0);
+  const primary = product?.primary_image_url ?? null;
+  const images = Array.from(new Set([...(primary ? [primary] : []), ...rawImages]));
+  const productDescription =
+    product?.ai_description ?? product?.description ?? product?.ai_description_short ?? null;
 
   useEffect(() => {
     if (!product) return;
     document.title = `${product.product_name} — Dynasty Direct`;
     const desc =
-      product.description ??
+      product.ai_description_short ??
+      productDescription ??
       `${product.product_name}${price != null ? ` — ${formatCurrency(price)}` : ''} from Dynasty Direct.`;
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
@@ -67,7 +75,7 @@ export default function PublicProductPage() {
       document.head.appendChild(meta);
     }
     meta.setAttribute('content', desc.slice(0, 155));
-  }, [product, price]);
+  }, [product, price, productDescription]);
 
   if (isLoading) {
     return (
