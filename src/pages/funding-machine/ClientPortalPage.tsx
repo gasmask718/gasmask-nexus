@@ -12,6 +12,10 @@ import {
 } from "lucide-react";
 import DocumentVault from "@/components/funding-machine/DocumentVault";
 import { FUNDING_CLIENT_SAFE_COLUMNS } from '@/lib/funding/pii';
+import {
+  toClientDisplayStatus, clientStatusTone, CLIENT_STATUS_LABEL, isClientActionRequired,
+} from '@/lib/funding/clientStatus';
+
 
 const PIPELINE_PHASES = [
   "Infrastructure Setup",
