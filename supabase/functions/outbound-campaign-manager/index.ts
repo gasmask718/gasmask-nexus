@@ -316,14 +316,12 @@ Deno.serve(async (req) => {
 
         throwIfError(error, 'Campaign update failed');
 
-        return new Response(
-          JSON.stringify({ success: true, campaign, sentinel_approval: approval }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaign, sentinel_approval: approval });
       }
 
       case 'pause': {
-        if (!campaign_id) throw new Error('Missing campaign_id');
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
 
         const { data: campaign, error } = await supabase
           .from('outbound_campaigns')
@@ -334,14 +332,12 @@ Deno.serve(async (req) => {
 
         throwIfError(error, 'Pause campaign failed');
 
-        return new Response(
-          JSON.stringify({ success: true, campaign }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaign });
       }
 
       case 'resume': {
-        if (!campaign_id) throw new Error('Missing campaign_id');
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
 
         // Check kill switch
         const { data: killSwitch } = await supabase
@@ -349,10 +345,10 @@ Deno.serve(async (req) => {
           .select('*')
           .eq('campaign_id', campaign_id)
           .eq('scope', 'campaign')
-          .single();
+          .maybeSingle();
 
         if (killSwitch && !killSwitch.is_active) {
-          throw new Error('Cannot resume: Kill switch is active. Requires manual reset.');
+          throw new HttpError(409, 'Cannot resume: Kill switch is active. Requires manual reset.');
         }
 
         const { data: campaign, error } = await supabase
@@ -364,14 +360,12 @@ Deno.serve(async (req) => {
 
         throwIfError(error, 'Resume campaign failed');
 
-        return new Response(
-          JSON.stringify({ success: true, campaign }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaign });
       }
 
       case 'halt': {
-        if (!campaign_id) throw new Error('Missing campaign_id');
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
 
         // Trigger kill switch
         await supabase
@@ -379,7 +373,7 @@ Deno.serve(async (req) => {
           .update({
             is_active: false,
             triggered_at: new Date().toISOString(),
-            triggered_by: data?.triggered_by,
+            triggered_by: userId,
             trigger_reason: data?.reason || 'Manual halt',
           })
           .eq('campaign_id', campaign_id)
@@ -399,14 +393,12 @@ Deno.serve(async (req) => {
 
         throwIfError(error, 'Halt campaign failed');
 
-        return new Response(
-          JSON.stringify({ success: true, campaign }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaign });
       }
 
       case 'get': {
-        if (!campaign_id) throw new Error('Missing campaign_id');
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
 
         const { data: campaign, error } = await supabase
           .from('outbound_campaigns')
@@ -430,16 +422,13 @@ Deno.serve(async (req) => {
 
         const targetStats = {
           total: stats?.length || 0,
-          pending: stats?.filter(t => t.status === 'pending').length || 0,
-          completed: stats?.filter(t => t.status === 'completed').length || 0,
-          opted_out: stats?.filter(t => t.status === 'opted_out').length || 0,
-          escalated: stats?.filter(t => t.status === 'escalated').length || 0,
+          pending: stats?.filter((t: any) => t.status === 'pending').length || 0,
+          completed: stats?.filter((t: any) => t.status === 'completed').length || 0,
+          opted_out: stats?.filter((t: any) => t.status === 'opted_out').length || 0,
+          escalated: stats?.filter((t: any) => t.status === 'escalated').length || 0,
         };
 
-        return new Response(
-          JSON.stringify({ success: true, campaign, targetStats }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaign, targetStats });
       }
 
       case 'list': {
@@ -448,23 +437,28 @@ Deno.serve(async (req) => {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (business_id) {
-          query = query.eq('business_id', business_id);
+        if (requestedBusinessId) {
+          await assertBusinessAccess(requestedBusinessId);
+          query = query.eq('business_id', requestedBusinessId);
+        } else if (!isPlatformAdmin) {
+          // No body filter: return only the caller's own businesses, never all.
+          if (memberBusinessIds.length === 0) {
+            return json({ success: true, campaigns: [] });
+          }
+          query = query.in('business_id', memberBusinessIds);
         }
 
         const { data: campaigns, error } = await query;
 
         throwIfError(error, 'List campaigns failed');
 
-        return new Response(
-          JSON.stringify({ success: true, campaigns }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaigns });
       }
 
       default:
-        throw new Error(`Unknown action: ${action}`);
+        throw new HttpError(400, `Unknown action: ${action}`);
     }
+
   } catch (error) {
     console.error('Outbound Campaign Manager Error:', error);
     return new Response(
