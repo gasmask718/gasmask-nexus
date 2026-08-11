@@ -251,7 +251,7 @@ export default function ClientPortalPage() {
   }
 
   // No client found
-  if (clientLoading) return (
+  if (claiming || clientLoading) return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
     </div>
