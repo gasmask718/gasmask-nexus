@@ -1,42 +1,78 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'npm:@supabase/supabase-js@2'
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+// Tables actually read by the 9 TopTier call sites. Nothing else is proxied.
+const ALLOWED_TABLES = new Set([
+  'promo_codes',
+  'commission_rates',
+  'commissions',
+  'affiliates',
+  'affiliate_applications',
+  'affiliate_commissions',
+  'partner_earnings',
+  'payments',
+  'partners',
+  'bookings',
+  'service_packages',
+  'packages',
+  'add_on_packages',
+  'add_ons',
+])
 
-const PUBLIC_URL = 'https://hruhkyvwtfpfviwnvhne.supabase.co'
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    // --- Auth: reject anonymous ---
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401)
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } },
+    )
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(
+      authHeader.replace('Bearer ', ''),
+    )
+    if (claimsError || !claimsData?.claims?.sub) return json({ error: 'Unauthorized' }, 401)
+
     const { table, select, filters, order, limit } = await req.json()
 
-    const serviceKey = Deno.env.get('PUBLIC_SITE_SERVICE_ROLE_KEY')
-    const key = serviceKey || Deno.env.get('PUBLIC_SITE_ANON_KEY') ||
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhydWhreXZ3dGZwZnZpd252aG5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMTM3MzAsImV4cCI6MjA3NzY4OTczMH0.XqD-w-e-tOYnF87rpxvspwdyhk63hBm4WNErwpXq5iE'
+    if (typeof table !== 'string' || !ALLOWED_TABLES.has(table)) {
+      return json({ error: 'Table not allowed' }, 403)
+    }
 
-    let url = `${PUBLIC_URL}/rest/v1/${table}?select=${select || '*'}`
-    if (filters) Object.entries(filters).forEach(([k, v]) => url += `&${k}=${v}`)
-    if (order) url += `&order=${order}`
-    if (limit) url += `&limit=${limit}`
+    const publicUrl = Deno.env.get('PUBLIC_SITE_URL')
+    const key =
+      Deno.env.get('PUBLIC_SITE_SERVICE_ROLE_KEY') || Deno.env.get('PUBLIC_SITE_ANON_KEY')
+    if (!publicUrl || !key) return json({ error: 'Public site proxy not configured' }, 503)
+
+    let url = `${publicUrl.replace(/\/$/, '')}/rest/v1/${table}?select=${encodeURIComponent(select || '*')}`
+    if (filters && typeof filters === 'object') {
+      for (const [k, v] of Object.entries(filters as Record<string, string>)) {
+        url += `&${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`
+      }
+    }
+    if (order) url += `&order=${encodeURIComponent(String(order))}`
+    if (limit) url += `&limit=${encodeURIComponent(String(limit))}`
 
     const res = await fetch(url, {
       headers: {
         apikey: key,
         Authorization: `Bearer ${key}`,
         'Content-Type': 'application/json',
-      }
+      },
     })
 
-    const data = await res.json()
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return json(await res.json(), res.ok ? 200 : res.status)
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return json({ error: (err as Error).message }, 500)
   }
 })
