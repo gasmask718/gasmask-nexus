@@ -10,6 +10,7 @@ import { useFundingClients, useFundingClient } from '@/hooks/useFundingClient';
 import { useCapitalPlan } from '@/hooks/useCapitalPlan';
 import { useLenderMatches, useRunLenderMatching } from '@/hooks/useLenderMatches';
 import { useFundingPlan } from '@/hooks/useFundingStrategy';
+import { useApplicationPackages } from '@/hooks/useApplicationPackage';
 import { toast } from 'sonner';
 
 const money = (n: number) =>
