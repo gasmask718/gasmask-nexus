@@ -165,6 +165,14 @@ async function checkDataCanary(client: ReturnType<typeof sb>, check: any): Promi
       const n = count ?? 0;
       return { status: n > threshold ? "warn" : "pass", message: `${n} stale pending notifications` };
     }
+    case "canary.dd_error_spike": {
+      const mins = check.config?.minutes ?? 60;
+      const cutoff = new Date(Date.now() - mins * 60_000).toISOString();
+      const { count } = await client.from("dd_error_log" as any).select("*", { count: "exact", head: true }).eq("severity", "error").gte("created_at", cutoff);
+      const n = count ?? 0;
+      if (n > threshold * 3) return { status: "fail", message: `${n} Dynasty Direct errors in last ${mins}m (threshold ${threshold})` };
+      return { status: n > threshold ? "warn" : "pass", message: `${n} Dynasty Direct errors in last ${mins}m (threshold ${threshold})` };
+    }
     case "canary.dup_order_clusters": {
       const { data } = await client.from("dd_anomaly_findings" as any).select("id").eq("kind", "duplicate_cluster").gte("created_at", new Date(Date.now() - 86400_000).toISOString());
       const n = data?.length ?? 0;
@@ -172,6 +180,40 @@ async function checkDataCanary(client: ReturnType<typeof sb>, check: any): Promi
     }
   }
   return { status: "pass", message: "Canary stub OK" };
+}
+
+async function checkFunction(check: any): Promise<CheckResult> {
+  const fn = check.config?.function;
+  if (!fn) return { status: "warn", message: "Registry missing config.function" };
+  const maxStatus = Number(check.config?.max_status ?? 499);
+  const expect = check.config?.expect_status ? Number(check.config.expect_status) : null;
+  const body = check.config?.probe_body ?? { healthcheck: true };
+  const t0 = Date.now();
+  try {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        apikey: SERVICE_KEY,
+      },
+      body: JSON.stringify(body),
+    });
+    const ms = Date.now() - t0;
+    const text = (await r.text()).slice(0, 300);
+    if (expect !== null) {
+      return r.status === expect
+        ? { status: "pass", message: `${fn} responded ${r.status} in ${ms}ms`, details: { body: text } }
+        : { status: "fail", message: `${fn} returned ${r.status} (expected ${expect})`, details: { body: text } };
+    }
+    if (r.status > maxStatus) {
+      return { status: "fail", message: `${fn} returned HTTP ${r.status}`, details: { body: text } };
+    }
+    if (ms > 8000) return { status: "warn", message: `${fn} slow: ${ms}ms`, details: { body: text } };
+    return { status: "pass", message: `${fn} responded ${r.status} in ${ms}ms`, details: { body: text } };
+  } catch (e) {
+    return { status: "fail", message: `${fn} unreachable: ${(e as Error).message}` };
+  }
 }
 
 async function checkAgent(client: ReturnType<typeof sb>, check: any): Promise<CheckResult> {
@@ -205,7 +247,7 @@ async function runOne(client: ReturnType<typeof sb>, check: any): Promise<CheckR
         if (check.config?.key_ready) return await checkIntegrationKeyReadySlot(check);
         return { status: "warn", message: "Unknown integration" };
       }
-      case "function": return { status: "pass", message: "Function probe stub" };
+      case "function": return await checkFunction(check);
     }
   } catch (e) {
     return { status: "fail", message: `Runner threw: ${(e as Error).message}` };
