@@ -9,6 +9,31 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // SEC-018: this endpoint is NOT a Twilio callback — it is invoked from the
+    // dialer console in the browser (DialerConsolePage / LiveCallPanel). A
+    // Twilio signature is therefore the wrong control; it requires a signed-in
+    // user. Without this, anyone could write call outcomes for any session.
+    const authHeader = req.headers.get("Authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const authed = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: claimsData, error: claimsErr } = await authed.auth.getClaims(
+      authHeader.replace(/^Bearer\s+/i, ""),
+    );
+    if (claimsErr || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const callerId = claimsData.claims.sub as string;
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -42,6 +67,26 @@ Deno.serve(async (req) => {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Ownership: the rep who took the call owns its outcome. Admins/owners may
+    // dispose any session; nobody else can write an outcome onto someone else's call.
+    if (session.rep_user_id && session.rep_user_id !== callerId) {
+      const { data: isStaff } = await supabase.rpc("has_role", {
+        _user_id: callerId,
+        _role: "admin",
+      });
+      const { data: isOwner } = await supabase.rpc("has_role", {
+        _user_id: callerId,
+        _role: "owner",
+      });
+      if (!isStaff && !isOwner) {
+        return new Response(
+          JSON.stringify({ error: "forbidden: this call session belongs to another rep" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
 
     // Prevent double-disposition
     if (session.disposition_code_id) {

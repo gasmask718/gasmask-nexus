@@ -7,6 +7,7 @@
 // store by phone number so calls thread onto the right store.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { readForm, verifyTwilio } from '../_shared/dialer.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -41,7 +42,17 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const logIdParam = url.searchParams.get('log_id');
-    const form = await req.formData();
+    // SEC-018: Twilio request signature is required. Without it, anyone who
+    // knows this URL can POST fabricated call outcomes into communication_logs.
+    const params = await readForm(req);
+    const v = verifyTwilio(req, params);
+    if (!v.ok) {
+      console.error('[twilio-call-status] rejected unsigned request:', v.reason);
+      return new Response(JSON.stringify({ error: 'invalid_twilio_signature', reason: v.reason }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const form = { get: (k: string) => params[k] ?? null };
     const callSid = String(form.get('CallSid') || '');
     const status = String(form.get('CallStatus') || '');
     const duration = Number(form.get('CallDuration') || 0);

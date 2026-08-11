@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { readForm, verifyTwilio } from "../_shared/dialer.ts";
 
 serve(async (req) => {
   // Twilio sends POST with form data
@@ -8,7 +9,18 @@ serve(async (req) => {
   }
 
   try {
-    const formData = await req.formData();
+    // SEC-018: recordings are placed by both the primary and the Brandaro
+    // Twilio accounts, so both auth tokens are accepted — but a signature is
+    // mandatory. Unsigned POSTs could forge call_recordings rows.
+    const params = await readForm(req);
+    const v = verifyTwilio(req, params, { extraTokenEnvVars: ['BRANDARO_TWILIO_AUTH_TOKEN'] });
+    if (!v.ok) {
+      console.error('[twilio-recording-callback] rejected unsigned request:', v.reason);
+      return new Response(JSON.stringify({ error: 'invalid_twilio_signature', reason: v.reason }), {
+        status: 403, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const formData = { get: (k: string) => params[k] ?? null };
     const recordingUrl = formData.get("RecordingUrl")?.toString() || "";
     const callSid = formData.get("CallSid")?.toString().trim() || "";
     const recordingStatus = formData.get("RecordingStatus")?.toString() || "";

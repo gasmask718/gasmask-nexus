@@ -5,6 +5,7 @@
  * inbound DID. ElevenLabs is no longer used.
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { readForm, verifyTwilio } from "../_shared/dialer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +18,18 @@ serve(async (req) => {
   }
 
   try {
-    const formData = await req.formData();
+    // SEC-018: this endpoint bridges a live call to a paid AI agent on "yes".
+    // An unsigned POST is a free way to make us dial out, so require the signature.
+    const params = await readForm(req);
+    const v = verifyTwilio(req, params);
+    if (!v.ok) {
+      console.error("[twilio-status-webhook] rejected unsigned request:", v.reason);
+      return new Response(
+        JSON.stringify({ error: "invalid_twilio_signature", reason: v.reason }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const formData = { get: (k: string) => params[k] ?? null };
     const digits = formData.get("Digits")?.toString() || "";
     const speechResult = formData.get("SpeechResult")?.toString().toLowerCase() || "";
 
