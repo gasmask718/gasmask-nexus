@@ -10,8 +10,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { toast } from "sonner";
 import {
   Upload, CheckCircle, AlertCircle, Loader2,
-  FolderOpen, Package, Plus
+  FolderOpen, Package, Plus, Eye
 } from "lucide-react";
+
+/** Documents live in a PRIVATE bucket — access is always via short-lived signed URLs. */
+const SIGNED_URL_TTL_SECONDS = 120;
+
 
 interface DocumentVaultProps {
   clientId: string;
