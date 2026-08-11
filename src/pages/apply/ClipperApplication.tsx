@@ -31,7 +31,6 @@ export default function ClipperApplication() {
   const [ranges, setRanges] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [refId, setRefId] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "Apply to Clipper Nation | Get Paid to Clip";
@@ -67,7 +66,7 @@ export default function ClipperApplication() {
     );
 
     setSubmitting(true);
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("clipper_applications")
       .insert({
         full_name: name,
@@ -76,16 +75,13 @@ export default function ClipperApplication() {
         socials: cleanSocials,
         follower_ranges: cleanRanges,
         why_join: whyJoin.trim() || null,
-      })
-      .select("id")
-      .single();
+      });
     setSubmitting(false);
 
     if (error) {
       toast.error(`Could not submit application: ${error.message}`);
       return;
     }
-    setRefId(data?.id ?? null);
     setSubmitted(true);
   };
 
@@ -101,11 +97,6 @@ export default function ClipperApplication() {
               We'll email {email} once it's reviewed.
             </CardDescription>
           </CardHeader>
-          {refId && (
-            <CardContent>
-              <p className="text-xs text-muted-foreground font-mono">Reference: {refId}</p>
-            </CardContent>
-          )}
         </Card>
       </div>
     );
