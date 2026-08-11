@@ -89,16 +89,17 @@ serve(async (req) => {
 
     const idem = `verify-contact-${contact_id}-${Date.now()}`;
 
-    // Forward auth header to send-sms so it knows who triggered it
-    const authHeader = req.headers.get("Authorization") || "";
+    // Forward the caller's own auth header to send-sms. No service-role fallback:
+    // an unauthenticated request never reaches here (401 above).
     const sendRes = await fetch(
       `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-sms`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: authHeader || `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          Authorization: authHeader,
         },
+      
         body: JSON.stringify({
           to_number: normalize(contact.phone),
           message_body: message,
