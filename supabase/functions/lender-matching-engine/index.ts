@@ -15,13 +15,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { requireFundingStaff, fundingAuthResponse } from "../_shared/fundingAuth.ts";
 
-type Verdict = "MATCHED" | "REQUIRES_PREREQUISITE" | "MANUAL_REVIEW" | "NOT_MATCHED";
+import { matchLenders, isSubmittable } from "./lenderMatch.ts";
 
-interface RuleResult {
-  rule: string;
-  outcome: "pass" | "fail" | "unknown" | "n/a";
-  detail: string;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -36,7 +31,10 @@ Deno.serve(async (req) => {
   if (!auth.ok) return fundingAuthResponse(auth, corsHeaders);
 
   try {
-    const { client_id } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const client_id = body?.client_id;
+    // QA fixtures are opt-in, never on by default, and never submittable.
+    const includeQaFixtures = body?.include_qa_fixtures === true;
     if (!client_id) return json({ error: "client_id required" }, 400);
 
     const supabase = createClient(
@@ -65,10 +63,21 @@ Deno.serve(async (req) => {
         !COMPLETE_STATUSES.includes((c.status ?? "").toLowerCase()))
       .map((c: { step_label: string | null; step_key: string }) => c.step_label ?? c.step_key);
 
-    const { data: lenders, error: lenderErr } = await supabase
+    // Documents actually on file for this client — never assumed.
+    const { data: docRows } = await supabase
+      .from("funding_client_documents")
+      .select("document_type")
+      .eq("client_id", client_id);
+    const documentsOnFile = (docRows ?? [])
+      .map((d: { document_type: string | null }) => d.document_type ?? "")
+      .filter(Boolean);
+
+    let lenderQuery = supabase
       .from("funding_lender_database")
       .select("*")
       .eq("is_active", true);
+    if (!includeQaFixtures) lenderQuery = lenderQuery.eq("is_qa_fixture", false);
+    const { data: lenders, error: lenderErr } = await lenderQuery;
     if (lenderErr) return json({ error: lenderErr.message, client_id }, 500);
 
     if (!lenders || lenders.length === 0) {
@@ -77,114 +86,33 @@ Deno.serve(async (req) => {
         lender_universe: 0,
         matched_count: 0,
         results: [],
+        qa_fixture_mode: includeQaFixtures,
         note:
-          "NO LENDER DATA — funding_lender_database is empty. Import real lender records at /funding-machine/lender-import before matching.",
+          "NO LENDER DATA — no active production lender records are available. Import an approved lender dataset at /funding-machine/lender-import before matching.",
       });
     }
 
-    const results = lenders.map((l: Record<string, any>) => {
-      const rules: RuleResult[] = [];
-      let failed = false;
-      let unknown = false;
-
-      const numeric = (
-        label: string,
-        required: number | null | undefined,
-        actual: number | null,
-        unit: string,
-      ) => {
-        if (required == null) {
-          rules.push({ rule: label, outcome: "n/a", detail: "No requirement published" });
-          return;
-        }
-        if (actual == null) {
-          unknown = true;
-          rules.push({
-            rule: label,
-            outcome: "unknown",
-            detail: `Requires ${unit}${required} — client value not on file`,
-          });
-          return;
-        }
-        if (actual < required) {
-          failed = true;
-          rules.push({
-            rule: label,
-            outcome: "fail",
-            detail: `${unit}${actual} is below required ${unit}${required}`,
-          });
-          return;
-        }
-        rules.push({
-          rule: label,
-          outcome: "pass",
-          detail: `${unit}${actual} meets required ${unit}${required}`,
-        });
-      };
-
-      numeric("Credit score", l.min_credit_score, score, "");
-      numeric("Monthly revenue", l.min_revenue != null ? Number(l.min_revenue) : null, monthlyRevenue, "$");
-      numeric("Time in business", l.min_time_in_business_months, tib, "");
-
-      if (l.entity_required) {
-        if (!client.business_name || !client.ein) {
-          failed = true;
-          rules.push({
-            rule: "Entity requirement",
-            outcome: "fail",
-            detail: `${l.entity_required} required — client has no registered entity/EIN on file`,
-          });
-        } else {
-          rules.push({
-            rule: "Entity requirement",
-            outcome: "pass",
-            detail: `${l.entity_required} satisfied (${client.business_name})`,
-          });
-        }
-      }
-
-      let verdict: Verdict;
-      if (failed) verdict = "NOT_MATCHED";
-      else if (unknown) verdict = "MANUAL_REVIEW";
-      else if (missingPrereqs.length > 0) verdict = "REQUIRES_PREREQUISITE";
-      else verdict = "MATCHED";
-
-      // Score only ranks lenders that actually qualify.
-      let matchScore = 0;
-      if (verdict === "MATCHED" || verdict === "REQUIRES_PREREQUISITE") {
-        matchScore = 50;
-        if (l.min_credit_score != null && score != null && score > l.min_credit_score + 50) matchScore += 20;
-        if (l.min_revenue != null && monthlyRevenue != null && monthlyRevenue > Number(l.min_revenue) * 1.5) matchScore += 15;
-        if (l.min_time_in_business_months != null && tib != null && tib > l.min_time_in_business_months * 2) matchScore += 10;
-        if (l.has_soft_pull_prequal) matchScore += 5;
-        if (verdict === "REQUIRES_PREREQUISITE") matchScore = Math.round(matchScore * 0.6);
-      }
-
-      return {
-        lender_id: l.id,
-        lender_name: l.lender_name,
-        product_name: l.product_name,
-        category: l.category,
-        product_type: l.product_type,
-        funding_lane: l.funding_lane,
-        max_amount: l.max_amount,
-        submission_method: l.submission_method ?? "MANUAL",
-        automation_allowed: l.automation_allowed === true,
-        application_url: l.application_url,
-        stack_priority: l.stack_priority ?? null,
-        verdict,
-        match_score: matchScore,
-        rules,
-        missing_prerequisites: verdict === "REQUIRES_PREREQUISITE" ? missingPrereqs : [],
-      };
-    });
-
-    results.sort((a, b) => b.match_score - a.match_score);
-
-    // Persist only lenders the client can actually pursue.
-    const persistable = results.filter(
-      (r) => r.verdict === "MATCHED" || r.verdict === "REQUIRES_PREREQUISITE",
+    const { results } = matchLenders(
+      lenders as never,
+      {
+        credit_score_estimate: score,
+        monthly_revenue: monthlyRevenue,
+        time_in_business_months: tib,
+        business_name: client.business_name,
+        ein: client.ein,
+        personal_guarantee_ok: client.personal_guarantee_ok ?? null,
+        documents_on_file: documentsOnFile,
+      },
+      missingPrereqs,
+      { includeQaFixtures },
     );
+    // Persist only real lenders the client can actually pursue. QA fixtures are
+    // never written to the client's match record.
+    const persistable = results.filter(
+      (r) => !r.is_qa_fixture &&
+        (r.verdict === "MATCHED" || r.verdict === "REQUIRES_PREREQUISITE"),
+    );
+
     if (persistable.length > 0) {
       const rows = persistable.map((m) => ({
         client_id,
@@ -286,11 +214,17 @@ Under 350 words. Tactical, no fluff.`;
       lender_universe: lenders.length,
       counts,
       matched_count: counts.MATCHED ?? 0,
+      /** Real, active, non-QA lenders that may actually be submitted to. */
+      submittable_count: results.filter(isSubmittable).length,
+      qa_fixture_mode: includeQaFixtures,
+      qa_fixture_count: results.filter((r) => r.is_qa_fixture).length,
       missing_prerequisites: missingPrereqs,
+      documents_on_file: documentsOnFile,
       top_lender: persistable[0] ?? null,
       strategy,
       results,
     });
+
   } catch (e) {
     console.error("lender-matching-engine failed:", (e as Error).message);
     return json({ error: (e as Error).message ?? "Unknown error" }, 500);

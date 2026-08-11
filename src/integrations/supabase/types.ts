@@ -60473,6 +60473,7 @@ export type Database = {
           monthly_income: number | null
           monthly_revenue: number | null
           notes: string | null
+          personal_guarantee_ok: boolean | null
           phone: string | null
           portal_invite_sent_at: string | null
           portal_user_id: string | null
@@ -60532,6 +60533,7 @@ export type Database = {
           monthly_income?: number | null
           monthly_revenue?: number | null
           notes?: string | null
+          personal_guarantee_ok?: boolean | null
           phone?: string | null
           portal_invite_sent_at?: string | null
           portal_user_id?: string | null
@@ -60591,6 +60593,7 @@ export type Database = {
           monthly_income?: number | null
           monthly_revenue?: number | null
           notes?: string | null
+          personal_guarantee_ok?: boolean | null
           phone?: string | null
           portal_invite_sent_at?: string | null
           portal_user_id?: string | null
@@ -61015,6 +61018,7 @@ export type Database = {
           inquiry_sensitivity: string | null
           interest_rate_range: string | null
           is_active: boolean | null
+          is_qa_fixture: boolean
           lender_name: string
           max_amount: number | null
           membership_method: string | null
@@ -61054,6 +61058,7 @@ export type Database = {
           inquiry_sensitivity?: string | null
           interest_rate_range?: string | null
           is_active?: boolean | null
+          is_qa_fixture?: boolean
           lender_name: string
           max_amount?: number | null
           membership_method?: string | null
@@ -61093,6 +61098,7 @@ export type Database = {
           inquiry_sensitivity?: string | null
           interest_rate_range?: string | null
           is_active?: boolean | null
+          is_qa_fixture?: boolean
           lender_name?: string
           max_amount?: number | null
           membership_method?: string | null
@@ -71259,6 +71265,7 @@ export type Database = {
           browser_enabled: boolean
           created_at: string
           id: string
+          is_qa_fixture: boolean
           lender_id: string | null
           lender_name: string
           manual_enabled: boolean
@@ -71283,6 +71290,7 @@ export type Database = {
           browser_enabled?: boolean
           created_at?: string
           id?: string
+          is_qa_fixture?: boolean
           lender_id?: string | null
           lender_name: string
           manual_enabled?: boolean
@@ -71307,6 +71315,7 @@ export type Database = {
           browser_enabled?: boolean
           created_at?: string
           id?: string
+          is_qa_fixture?: boolean
           lender_id?: string | null
           lender_name?: string
           manual_enabled?: boolean
