@@ -42,24 +42,91 @@ export default function ClientPortalPage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Look up client by auth email
+  // Canonical identity link: the server derives the funding client from the
+  // verified JWT (user id / sign-in email). The browser never supplies an id.
+  const { data: claimedClientId, isLoading: claiming } = useQuery({
+    queryKey: ["portal-claim", session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("claim_funding_portal_account" as any);
+      if (error) throw error;
+      return (data as string | null) ?? null;
+    },
+  });
+
   const { data: client, isLoading: clientLoading } = useQuery({
-    queryKey: ["portal-client", session?.user?.email],
-    enabled: !!session?.user?.email,
+    queryKey: ["portal-client", claimedClientId],
+    enabled: !!claimedClientId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("funding_clients")
         .select(FUNDING_CLIENT_SAFE_COLUMNS)
-        .eq("email", session!.user!.email!)
+        .eq("id", claimedClientId!)
         .maybeSingle();
       if (error) throw error;
-      // Link portal_user_id if not set
-      if (data && !data.portal_user_id) {
-        await supabase.from("funding_clients").update({ portal_user_id: session!.user!.id }).eq("id", data.id);
-      }
       return data;
     },
   });
+
+  // Client-visible updates (internal staff notes are never exposed here)
+  const { data: updates = [] } = useQuery({
+    queryKey: ["portal-updates", client?.id],
+    enabled: !!client?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_status_updates" as any)
+        .select("*")
+        .eq("client_id", client!.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+  });
+
+  const { data: applications = [] } = useQuery({
+    queryKey: ["portal-applications", client?.id],
+    enabled: !!client?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("funding_applications")
+        .select("id,lender_name,product_type,requested_amount,approved_amount,status,application_date,updated_at")
+        .eq("client_id", client!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: statusHistory = [] } = useQuery({
+    queryKey: ["portal-status-history", client?.id],
+    enabled: !!client?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("funding_application_status_history" as any)
+        .select("id,application_id,previous_status,new_status,client_display_status,message,created_at")
+        .eq("client_id", client!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+  });
+
+  const { data: businessProfile } = useQuery({
+    queryKey: ["portal-business", client?.id],
+    enabled: !!client?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("grant_business_profiles" as any)
+        .select("id,business_name,entity_type,ein,business_address,business_city,business_state,industry,naics_code,annual_revenue,years_in_business")
+        .eq("funding_client_id", client!.id)
+        .maybeSingle();
+      if (error) return null;
+      return data as any;
+    },
+  });
+
 
   const { data: dfsScores = [] } = useQuery({
     queryKey: ["portal-dfs", client?.id],
