@@ -15,9 +15,15 @@ const TWILIO_API_SID = Deno.env.get("TWILIO_API_SID") || "";
 const TWILIO_API_SECRET = Deno.env.get("TWILIO_API_SECRET") || "";
 const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") || "";
 const ESCALATION_PHONE =
-  Deno.env.get("HEALTH_ESCALATION_PHONE") || Deno.env.get("DAVID_PHONE") || "";
+  Deno.env.get("HEALTH_ESCALATION_PHONE") ||
+  Deno.env.get("DAVID_PHONE_NUMBER") ||
+  Deno.env.get("ADMIN_ALERT_PHONE") ||
+  Deno.env.get("DAVID_PHONE") || "";
 const ESCALATION_FROM =
-  Deno.env.get("HEALTH_ESCALATION_FROM") || "+18776818621";
+  Deno.env.get("HEALTH_ESCALATION_FROM") ||
+  Deno.env.get("TWILIO_FROM_NUMBER") ||
+  Deno.env.get("TWILIO_PHONE_NUMBER") ||
+  "+18776818621";
 const DEDUPE_MINUTES = Number(Deno.env.get("DD_ALERT_DEDUPE_MINUTES") || "30");
 
 export type DdErrorSeverity = "warn" | "error";
