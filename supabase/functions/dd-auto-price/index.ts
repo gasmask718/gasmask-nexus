@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { logDdError } from "../_shared/ddAlert.ts";
 
 // ---------------------------------------------------------------------------
 // Category pricing rules
@@ -55,7 +56,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body: AutoPriceInput = await req.json();
+    const body: AutoPriceInput & { healthcheck?: boolean } = await req.json();
+    if (body?.healthcheck === true) {
+      return new Response(JSON.stringify({ ok: true, fn: "dd-auto-price" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -169,6 +176,10 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
   } catch (e) {
+    await logDdError({
+      source: "dd-auto-price",
+      message: e instanceof Error ? e.message : String(e),
+    });
     // Contract: always return 200 with { error }
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : String(e) }),

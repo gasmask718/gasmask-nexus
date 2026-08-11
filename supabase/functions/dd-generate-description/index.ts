@@ -13,6 +13,7 @@
  */
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { logDdError } from '../_shared/ddAlert.ts';
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-6';
@@ -148,6 +149,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+    if ((body as any)?.healthcheck === true) return ok({ ok: true, fn: 'dd-generate-description' });
     const {
       product_id,
       name: nameIn,
@@ -232,6 +234,10 @@ Deno.serve(async (req) => {
 
     return ok({ product_id: product_id ?? null, result, placeholder: usedPlaceholder, warning: genError });
   } catch (e) {
+    await logDdError({
+      source: 'dd-generate-description',
+      message: (e as Error).message ?? 'unknown_error',
+    });
     return ok({ error: (e as Error).message ?? 'unknown_error' });
   }
 });
