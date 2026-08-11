@@ -63,9 +63,17 @@ async function authenticate(req: Request): Promise<Caller | null> {
   const userClient = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: authHeader } }, auth: { persistSession: false },
   });
-  const { data, error } = await userClient.auth.getClaims(token);
-  if (error || !data?.claims?.sub) return null;
-  const userId = data.claims.sub as string;
+  // getClaims() throws on a structurally invalid JWT — a forged token must be
+  // an unauthenticated caller (401), not a 500.
+  let userId: string;
+  try {
+    const { data, error } = await userClient.auth.getClaims(token);
+    if (error || !data?.claims?.sub) return null;
+    userId = data.claims.sub as string;
+  } catch {
+    return null;
+  }
+
   const { data: roles } = await admin.from('user_roles').select('role').eq('user_id', userId);
   const allowed = ['owner', 'admin', 'employee', 'accountant'];
   if (!roles?.some((r: { role: string }) => allowed.includes(r.role))) return null;
