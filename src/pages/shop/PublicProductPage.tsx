@@ -31,7 +31,7 @@ export default function PublicProductPage() {
       const { data, error } = await supabase
         .from('products_public')
         .select(
-          'id, product_name, description, images, dtc_price_b, retail_price, inventory_qty, category, brand_id, unit_type, status',
+          'id, product_name, description, ai_description, ai_description_short, images, image_urls, primary_image_url, dtc_price_b, retail_price, inventory_qty, category, brand_id, unit_type, status',
         )
         .eq('id', productId)
         .maybeSingle();
