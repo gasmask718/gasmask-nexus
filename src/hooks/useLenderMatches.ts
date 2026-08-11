@@ -17,6 +17,7 @@ export interface LenderMatchRow {
     submission_method: string | null;
     automation_allowed: boolean | null;
     application_url: string | null;
+    is_qa_fixture: boolean | null;
   } | null;
 }
 
@@ -32,7 +33,7 @@ export function useLenderMatches(clientId?: string) {
           `id, client_id, lender_id, match_score, match_reasons, status, matched_at,
            lender:funding_lender_database (
              lender_name, product_name, category, max_amount,
-             submission_method, automation_allowed, application_url
+             submission_method, automation_allowed, application_url, is_qa_fixture
            )`,
         )
         .eq('client_id', clientId!)

@@ -258,12 +258,16 @@ export default function DynastyCapitalPage() {
                   )}
                   {(matches ?? []).map((m) => (
                     <div key={m.id} className="rounded-md border p-3 text-sm">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2">
                         <p className="font-medium">
                           {m.lender?.lender_name} — {m.lender?.product_name}
+                          {m.lender?.is_qa_fixture && (
+                            <Badge variant="destructive" className="ml-2">QA FIXTURE — NOT SUBMITTABLE</Badge>
+                          )}
                         </p>
                         <Badge variant="outline">{m.match_score ?? 0}/100</Badge>
                       </div>
+
                       <ul className="mt-2 space-y-1 text-muted-foreground">
                         {(m.match_reasons ?? []).map((r, i) => <li key={i}>• {r}</li>)}
                       </ul>
