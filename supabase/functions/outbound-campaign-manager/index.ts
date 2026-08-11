@@ -9,9 +9,43 @@ interface CampaignRequest {
   action: 'create' | 'update' | 'approve' | 'pause' | 'resume' | 'halt' | 'complete' | 'get' | 'list';
   campaign_id?: string;
   business_id?: string;
-  data?: any;
+  data?: Record<string, unknown>;
   approved_by?: string;
 }
+
+// Fields a caller may change via `update`. Anything else in data is ignored.
+// Deliberately excludes status, approval, kill-switch and business_id columns —
+// those move only through their own actions.
+const UPDATABLE_FIELDS = [
+  'name',
+  'description',
+  'campaign_type',
+  'audience_type',
+  'allowed_business_types',
+  'geographic_scope',
+  'max_calls_per_day',
+  'max_calls_per_contact',
+  'cooldown_period_days',
+  'b2b_only',
+  'mandatory_ai_disclosure',
+  'prohibited_claims',
+  'required_disclaimers',
+  'product_playbook_id',
+  'vendor_playbook_id',
+] as const;
+
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+const json = (payload: unknown, status = 200) =>
+  new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
