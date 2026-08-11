@@ -12,6 +12,10 @@ import {
 } from "lucide-react";
 import DocumentVault from "@/components/funding-machine/DocumentVault";
 import { FUNDING_CLIENT_SAFE_COLUMNS } from '@/lib/funding/pii';
+import {
+  toClientDisplayStatus, clientStatusTone, CLIENT_STATUS_LABEL, isClientActionRequired,
+} from '@/lib/funding/clientStatus';
+
 
 const PIPELINE_PHASES = [
   "Infrastructure Setup",
@@ -42,24 +46,91 @@ export default function ClientPortalPage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Look up client by auth email
+  // Canonical identity link: the server derives the funding client from the
+  // verified JWT (user id / sign-in email). The browser never supplies an id.
+  const { data: claimedClientId, isLoading: claiming } = useQuery({
+    queryKey: ["portal-claim", session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("claim_funding_portal_account" as any);
+      if (error) throw error;
+      return (data as string | null) ?? null;
+    },
+  });
+
   const { data: client, isLoading: clientLoading } = useQuery({
-    queryKey: ["portal-client", session?.user?.email],
-    enabled: !!session?.user?.email,
+    queryKey: ["portal-client", claimedClientId],
+    enabled: !!claimedClientId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("funding_clients")
         .select(FUNDING_CLIENT_SAFE_COLUMNS)
-        .eq("email", session!.user!.email!)
+        .eq("id", claimedClientId!)
         .maybeSingle();
       if (error) throw error;
-      // Link portal_user_id if not set
-      if (data && !data.portal_user_id) {
-        await supabase.from("funding_clients").update({ portal_user_id: session!.user!.id }).eq("id", data.id);
-      }
       return data;
     },
   });
+
+  // Client-visible updates (internal staff notes are never exposed here)
+  const { data: updates = [] } = useQuery({
+    queryKey: ["portal-updates", client?.id],
+    enabled: !!client?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_status_updates" as any)
+        .select("*")
+        .eq("client_id", client!.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+  });
+
+  const { data: applications = [] } = useQuery({
+    queryKey: ["portal-applications", client?.id],
+    enabled: !!client?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("funding_applications")
+        .select("id,lender_name,product_type,requested_amount,approved_amount,status,application_date,updated_at")
+        .eq("client_id", client!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: statusHistory = [] } = useQuery({
+    queryKey: ["portal-status-history", client?.id],
+    enabled: !!client?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("funding_application_status_history" as any)
+        .select("id,application_id,previous_status,new_status,client_display_status,message,created_at")
+        .eq("client_id", client!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+  });
+
+  const { data: businessProfile } = useQuery({
+    queryKey: ["portal-business", client?.id],
+    enabled: !!client?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("grant_business_profiles" as any)
+        .select("id,business_name,entity_type,ein,address_street,address_city,address_state,address_zip,naics_primary,annual_revenue_current,years_in_business,state_of_incorporation")
+        .eq("funding_client_id", client!.id)
+        .maybeSingle();
+      if (error) return null;
+      return data as any;
+    },
+  });
+
 
   const { data: dfsScores = [] } = useQuery({
     queryKey: ["portal-dfs", client?.id],
@@ -184,7 +255,7 @@ export default function ClientPortalPage() {
   }
 
   // No client found
-  if (clientLoading) return (
+  if (claiming || clientLoading) return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
     </div>
@@ -313,6 +384,108 @@ export default function ClientPortalPage() {
           <DocumentVault clientId={client.id} />
         </CardContent>
       </Card>
+
+      {/* Recent Updates (client-visible only — internal notes are never shown) */}
+      <Card className="border-amber-500/20">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Mail className="h-5 w-5 text-amber-500" />
+            Recent Updates ({updates.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {updates.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No updates yet.</p>
+          ) : updates.map((u: any) => (
+            <div key={u.id} className={`p-3 rounded-lg border ${u.action_required ? "border-amber-500/40 bg-amber-500/5" : "border-border/30"}`}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">{u.title}</p>
+                {u.action_required && <Badge variant="outline" className="text-xs border-amber-500/40 text-amber-400">Action Required</Badge>}
+              </div>
+              {u.body && <p className="text-xs text-muted-foreground mt-1">{u.body}</p>}
+              <p className="text-[11px] text-muted-foreground mt-1">{new Date(u.created_at).toLocaleString()}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Application Center */}
+      <Card className="border-amber-500/20">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5 text-amber-500" />
+            Application Center ({applications.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {applications.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No applications yet. Your specialist will start these once your profile is complete.</p>
+          ) : applications.map((a: any) => {
+            const display = toClientDisplayStatus(a.status);
+            return (
+              <div key={a.id} className="p-3 rounded-lg border border-border/30">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">{a.lender_name}</p>
+                  <Badge variant="outline" className={`text-xs ${clientStatusTone(display)}`}>
+                    {CLIENT_STATUS_LABEL[display]}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {a.product_type || "Funding"}
+                  {a.requested_amount ? ` · Requested $${Number(a.requested_amount).toLocaleString()}` : ""}
+                  {a.approved_amount ? ` · Approved $${Number(a.approved_amount).toLocaleString()}` : ""}
+                </p>
+                {isClientActionRequired(display) && (
+                  <p className="text-xs text-amber-400 mt-1">Something is needed from you — check Recent Updates.</p>
+                )}
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      {/* Application Status History */}
+      {statusHistory.length > 0 && (
+        <Card className="border-amber-500/20">
+          <CardHeader>
+            <CardTitle className="text-lg">Application Timeline</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {statusHistory.map((h: any) => (
+              <div key={h.id} className="flex items-start gap-3 p-2 rounded-lg bg-muted/10">
+                <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm">
+                    {CLIENT_STATUS_LABEL[(h.client_display_status as any) || toClientDisplayStatus(h.new_status)] || h.new_status}
+                  </p>
+                  {h.message && <p className="text-xs text-muted-foreground">{h.message}</p>}
+                  <p className="text-[11px] text-muted-foreground">{new Date(h.created_at).toLocaleString()}</p>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Business Profile */}
+      {businessProfile && (
+        <Card className="border-amber-500/20">
+          <CardHeader>
+            <CardTitle className="text-lg">Business Profile</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-3 text-sm">
+            <div><span className="text-muted-foreground text-xs block">Legal Name</span>{businessProfile.business_name || "—"}</div>
+            <div><span className="text-muted-foreground text-xs block">Entity Type</span>{businessProfile.entity_type || "—"}</div>
+            <div><span className="text-muted-foreground text-xs block">EIN</span>{businessProfile.ein ? "On file" : "Not provided"}</div>
+            <div><span className="text-muted-foreground text-xs block">State of Formation</span>{businessProfile.state_of_incorporation || "—"}</div>
+            <div><span className="text-muted-foreground text-xs block">Address</span>{[businessProfile.address_street, businessProfile.address_city, businessProfile.address_state, businessProfile.address_zip].filter(Boolean).join(", ") || "—"}</div>
+            <div><span className="text-muted-foreground text-xs block">NAICS</span>{businessProfile.naics_primary || "—"}</div>
+            <div><span className="text-muted-foreground text-xs block">Years in Business</span>{businessProfile.years_in_business ?? "—"}</div>
+            <div><span className="text-muted-foreground text-xs block">Annual Revenue</span>{businessProfile.annual_revenue_current ? `$${Number(businessProfile.annual_revenue_current).toLocaleString()}` : "—"}</div>
+          </CardContent>
+        </Card>
+      )}
+
 
       {/* Pipeline Timeline */}
       <Card className="border-amber-500/20">
