@@ -3,12 +3,11 @@
  * Routes read requests through proxy-public-data edge function
  * to bypass RLS on the public site. Writes go direct.
  */
+import { supabase } from '@/integrations/supabase/client';
 
 const PUBLIC_URL = 'https://hruhkyvwtfpfviwnvhne.supabase.co';
 const PUBLIC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhydWhreXZ3dGZwZnZpd252aG5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMTM3MzAsImV4cCI6MjA3NzY4OTczMH0.XqD-w-e-tOYnF87rpxvspwdyhk63hBm4WNErwpXq5iE';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const directHeaders: Record<string, string> = {
   apikey: PUBLIC_KEY,
@@ -27,30 +26,22 @@ export async function pubFetch<T = any>(
   }
 ): Promise<T[]> {
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/functions/v1/proxy-public-data`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          apikey: SUPABASE_KEY,
-        },
-        body: JSON.stringify({
-          table,
-          select: params?.select || '*',
-          filters: params?.filters,
-          order: params?.order,
-          limit: params?.limit,
-        }),
-      }
-    );
-    const data = await res.json();
+    const { data, error } = await supabase.functions.invoke('proxy-public-data', {
+      body: {
+        table,
+        select: params?.select || '*',
+        filters: params?.filters,
+        order: params?.order,
+        limit: params?.limit,
+      },
+    });
+    if (error) return [];
     return Array.isArray(data) ? data : [];
   } catch {
     return [];
   }
 }
+
 
 export async function pubPatch(
   table: string,
