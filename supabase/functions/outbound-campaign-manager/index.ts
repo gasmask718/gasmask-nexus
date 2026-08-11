@@ -157,16 +157,16 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case 'create': {
-        // Validate required fields
-        if (!data?.name || !data?.campaign_type || !business_id) {
-          throw new Error('Missing required fields: name, campaign_type, business_id');
+        const businessId = await resolveBusinessId();
+        if (!data?.name || !data?.campaign_type) {
+          throw new HttpError(400, 'Missing required fields: name, campaign_type');
         }
 
         // Create the campaign
         const { data: campaign, error } = await supabase
           .from('outbound_campaigns')
           .insert({
-            business_id,
+            business_id: businessId,
             name: data.name,
             description: data.description,
             campaign_type: data.campaign_type,
@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
             required_disclaimers: data.required_disclaimers || [],
             product_playbook_id: data.product_playbook_id,
             vendor_playbook_id: data.vendor_playbook_id,
-            created_by: data.created_by,
+            created_by: userId,
           })
           .select()
           .single();
@@ -196,22 +196,67 @@ Deno.serve(async (req) => {
           .insert({
             scope: 'campaign',
             campaign_id: campaign.id,
-            business_id,
+            business_id: businessId,
             is_active: true,
             auto_trigger_opt_out_rate: 0.10,
             auto_trigger_escalation_rate: 0.20,
           });
 
-        return new Response(
-          JSON.stringify({ success: true, campaign }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaign });
+      }
+
+      case 'update': {
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
+
+        const patch: Record<string, unknown> = {};
+        for (const field of UPDATABLE_FIELDS) {
+          if (data && Object.prototype.hasOwnProperty.call(data, field)) {
+            patch[field] = data[field];
+          }
+        }
+        if (Object.keys(patch).length === 0) {
+          throw new HttpError(
+            400,
+            `No updatable fields supplied. Allowed: ${UPDATABLE_FIELDS.join(', ')}.`,
+          );
+        }
+
+        const { data: campaign, error } = await supabase
+          .from('outbound_campaigns')
+          .update(patch)
+          .eq('id', campaign_id)
+          .select()
+          .single();
+
+        throwIfError(error, 'Update campaign failed');
+
+        return json({ success: true, campaign, updated_fields: Object.keys(patch) });
+      }
+
+      case 'complete': {
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
+
+        const { data: campaign, error } = await supabase
+          .from('outbound_campaigns')
+          .update({ status: 'completed', completed_at: new Date().toISOString() })
+          .eq('id', campaign_id)
+          .select()
+          .single();
+
+        throwIfError(error, 'Complete campaign failed');
+
+        return json({ success: true, campaign });
       }
 
       case 'approve': {
-        if (!campaign_id || !approved_by) {
-          throw new Error('Missing campaign_id or approved_by');
-        }
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
+        // Approval is attributed to the authenticated caller, never to a
+        // body-supplied approved_by.
+        const approved_by = userId;
+
 
         // Check sentinel status first
         const { data: sentinel } = await supabase
