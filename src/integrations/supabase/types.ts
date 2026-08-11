@@ -27741,12 +27741,19 @@ export type Database = {
           brand: string | null
           category: string
           created_at: string
+          currency: string
+          customer_email: string | null
           description: string | null
           entity_id: string | null
           entity_type: string | null
+          external_transaction_id: string | null
           id: string
+          line_items: Json | null
+          metadata: Json
+          occurred_at: string | null
           receipt_url: string | null
           region: string | null
+          source_system: string | null
           subcategory: string | null
           tags: string[] | null
           transaction_date: string
@@ -27758,12 +27765,19 @@ export type Database = {
           brand?: string | null
           category: string
           created_at?: string
+          currency?: string
+          customer_email?: string | null
           description?: string | null
           entity_id?: string | null
           entity_type?: string | null
+          external_transaction_id?: string | null
           id?: string
+          line_items?: Json | null
+          metadata?: Json
+          occurred_at?: string | null
           receipt_url?: string | null
           region?: string | null
+          source_system?: string | null
           subcategory?: string | null
           tags?: string[] | null
           transaction_date?: string
@@ -27775,12 +27789,19 @@ export type Database = {
           brand?: string | null
           category?: string
           created_at?: string
+          currency?: string
+          customer_email?: string | null
           description?: string | null
           entity_id?: string | null
           entity_type?: string | null
+          external_transaction_id?: string | null
           id?: string
+          line_items?: Json | null
+          metadata?: Json
+          occurred_at?: string | null
           receipt_url?: string | null
           region?: string | null
+          source_system?: string | null
           subcategory?: string | null
           tags?: string[] | null
           transaction_date?: string
