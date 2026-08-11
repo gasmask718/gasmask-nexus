@@ -19,10 +19,35 @@ function normalize(p: string): string {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Hard auth gate. This function must never promote an unauthenticated caller
+  // to service role (previously: `authHeader || Bearer SERVICE_ROLE_KEY`).
+  const authHeader = req.headers.get("Authorization") || "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
+
+  {
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+    );
+    const { data, error } = await authClient.auth.getClaims(
+      authHeader.replace("Bearer ", ""),
+    ).catch(() => ({ data: null, error: new Error("invalid token") } as any));
+    if (error || !data?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
 
   try {
     const { contact_id, business_label } = await req.json();
@@ -64,16 +89,17 @@ serve(async (req) => {
 
     const idem = `verify-contact-${contact_id}-${Date.now()}`;
 
-    // Forward auth header to send-sms so it knows who triggered it
-    const authHeader = req.headers.get("Authorization") || "";
+    // Forward the caller's own auth header to send-sms. No service-role fallback:
+    // an unauthenticated request never reaches here (401 above).
     const sendRes = await fetch(
       `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-sms`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: authHeader || `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          Authorization: authHeader,
         },
+      
         body: JSON.stringify({
           to_number: normalize(contact.phone),
           message_body: message,
