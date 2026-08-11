@@ -50,7 +50,41 @@ async function logEvent(
   await admin.from('automation_jobs').update({ last_event_at: new Date().toISOString() }).eq('id', jobId);
 }
 
+
+/**
+ * Append a client-safe status-history row.
+ * Idempotent: `event_id` carries a unique index, so a replayed automation
+ * event produces exactly one transition record.
+ */
+async function recordStatusHistory(args: {
+  applicationId: string | null;
+  clientId: string | null;
+  previousStatus: string | null;
+  newStatus: string;
+  jobId: string | null;
+  eventId: string | null;
+  message: string;
+}) {
+  if (!args.applicationId || !args.clientId) return;
+  if (args.previousStatus === args.newStatus && !args.eventId) return;
+  const { error } = await admin.from('funding_application_status_history').insert({
+    application_id: args.applicationId,
+    client_id: args.clientId,
+    previous_status: args.previousStatus,
+    new_status: args.newStatus,
+    source: 'automation',
+    automation_job_id: args.jobId,
+    event_id: args.eventId,
+    message: args.message,
+  });
+  // 23505 = duplicate event_id → already processed, safe to ignore.
+  if (error && error.code !== '23505') {
+    console.error('status history insert failed:', error.message);
+  }
+}
+
 interface Caller { kind: 'operator' | 'worker'; userId: string | null }
+
 
 async function authenticate(req: Request): Promise<Caller | null> {
   const workerToken = req.headers.get('x-automation-worker-token');
