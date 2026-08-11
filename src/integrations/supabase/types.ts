@@ -34324,6 +34324,62 @@ export type Database = {
           },
         ]
       }
+      client_status_updates: {
+        Row: {
+          action_label: string | null
+          action_required: boolean
+          action_url: string | null
+          application_id: string | null
+          body: string | null
+          category: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          read_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_label?: string | null
+          action_required?: boolean
+          action_url?: string | null
+          application_id?: string | null
+          body?: string | null
+          category?: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          read_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_label?: string | null
+          action_required?: boolean
+          action_url?: string | null
+          application_id?: string | null
+          body?: string | null
+          category?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          read_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_status_updates_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clipper_accounts: {
         Row: {
           application_id: string | null
@@ -59987,6 +60043,69 @@ export type Database = {
           years_in_business?: number | null
         }
         Relationships: []
+      }
+      funding_application_status_history: {
+        Row: {
+          application_id: string
+          automation_job_id: string | null
+          client_display_status: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          event_id: string | null
+          id: string
+          message: string | null
+          metadata: Json
+          new_status: string
+          previous_status: string | null
+          source: string
+        }
+        Insert: {
+          application_id: string
+          automation_job_id?: string | null
+          client_display_status?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          event_id?: string | null
+          id?: string
+          message?: string | null
+          metadata?: Json
+          new_status: string
+          previous_status?: string | null
+          source?: string
+        }
+        Update: {
+          application_id?: string
+          automation_job_id?: string | null
+          client_display_status?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          event_id?: string | null
+          id?: string
+          message?: string | null
+          metadata?: Json
+          new_status?: string
+          previous_status?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_application_status_history_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "funding_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_application_status_history_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       funding_applications: {
         Row: {
@@ -141376,6 +141495,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_funding_portal_account: { Args: never; Returns: string }
       claim_queue_items:
         | {
             Args: {
