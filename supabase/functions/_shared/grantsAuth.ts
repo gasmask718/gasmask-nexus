@@ -35,11 +35,21 @@ export async function requireGrantsStaff(req: Request): Promise<GrantsAuthResult
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
 
-  const { data, error } = await authClient.auth.getClaims(token);
-  const userId = data?.claims?.sub as string | undefined;
-  if (error || !userId) {
+  // getClaims() THROWS on a structurally invalid JWT (e.g. "aaa.bbb.ccc").
+  // Unhandled, that surfaced as a 500, which both leaks "the endpoint broke"
+  // and makes forged-token attempts indistinguishable from real outages.
+  let userId: string | undefined;
+  try {
+    const { data, error } = await authClient.auth.getClaims(token);
+    if (error) return { ok: false, status: 401, error: "unauthorized" };
+    userId = data?.claims?.sub as string | undefined;
+  } catch {
     return { ok: false, status: 401, error: "unauthorized" };
   }
+  if (!userId) {
+    return { ok: false, status: 401, error: "unauthorized" };
+  }
+
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   const { data: allowed, error: roleErr } = await admin.rpc("is_grants_staff", {
