@@ -10,6 +10,7 @@ import { useFundingClients, useFundingClient } from '@/hooks/useFundingClient';
 import { useCapitalPlan } from '@/hooks/useCapitalPlan';
 import { useLenderMatches, useRunLenderMatching } from '@/hooks/useLenderMatches';
 import { useFundingPlan } from '@/hooks/useFundingStrategy';
+import { useApplicationPackages } from '@/hooks/useApplicationPackage';
 import { toast } from 'sonner';
 
 const money = (n: number) =>
@@ -50,6 +51,14 @@ const statusTone: Record<string, string> = {
   UNKNOWN: 'bg-muted text-muted-foreground border-border',
 };
 
+const packageTone: Record<string, string> = {
+  READY: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  MISSING_INFORMATION: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  MANUAL_REVIEW: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+  BLOCKED: 'bg-destructive/15 text-destructive border-destructive/30',
+};
+
+
 export default function DynastyCapitalPage() {
   const { data: clients, isLoading: clientsLoading } = useFundingClients();
   const [clientId, setClientId] = useState<string | undefined>();
@@ -65,6 +74,9 @@ export default function DynastyCapitalPage() {
     completedSteps: ctx?.completedSteps,
     tradelineCount: ctx?.tradelineCount,
   });
+  const { data: packages, isLoading: packagesLoading } = useApplicationPackages(activeId, client);
+
+
 
   const totals = capital?.totals;
   const grantRows = capital?.grants ?? [];
@@ -132,6 +144,7 @@ export default function DynastyCapitalPage() {
               <TabsTrigger value="grants">Grants</TabsTrigger>
               <TabsTrigger value="strategy">Funding Plan</TabsTrigger>
               <TabsTrigger value="lenders">Lender Matches</TabsTrigger>
+              <TabsTrigger value="packages">Application Package</TabsTrigger>
               <TabsTrigger value="automation">Automation</TabsTrigger>
             </TabsList>
 
@@ -254,6 +267,89 @@ export default function DynastyCapitalPage() {
                       <ul className="mt-2 space-y-1 text-muted-foreground">
                         {(m.match_reasons ?? []).map((r, i) => <li key={i}>• {r}</li>)}
                       </ul>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="packages">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Application packages</CardTitle>
+                  <CardDescription>
+                    One package per matched lender, assembled from what is actually on file. Nothing is
+                    invented — absent values are listed as missing.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {packagesLoading && <Skeleton className="h-24 w-full" />}
+                  {!packagesLoading && (packages ?? []).length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No packages yet. Run lender matching first — a package is built for each persisted match.
+                    </p>
+                  )}
+                  {(packages ?? []).map((pkg) => (
+                    <div key={pkg.lender_id} className="rounded-md border p-3 text-sm space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-medium">
+                          {pkg.lender_name}
+                          {pkg.product_name ? ` — ${pkg.product_name}` : ''}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{pkg.submission_method}</Badge>
+                          <Badge variant="outline" className={packageTone[pkg.status]}>
+                            {pkg.status.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                      </div>
+                      <p className="text-muted-foreground">
+                        Client authorization:{' '}
+                        {pkg.consent_signed
+                          ? `signed${pkg.consent_signed_at ? ` ${new Date(pkg.consent_signed_at).toLocaleDateString()}` : ''}`
+                          : 'not on file — submission blocked'}
+                      </p>
+                      {pkg.missing_fields.length > 0 && (
+                        <p className="text-muted-foreground">
+                          Missing fields ({pkg.missing_fields.length}): {pkg.missing_fields.join(', ')}
+                        </p>
+                      )}
+                      {pkg.missing_documents.length > 0 && (
+                        <p className="text-muted-foreground">
+                          Missing documents: {pkg.missing_documents.join(', ')}
+                        </p>
+                      )}
+                      {pkg.notes.map((n, i) => (
+                        <p key={i} className="text-muted-foreground">• {n}</p>
+                      ))}
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {pkg.sections.map((s) => (
+                          <div key={s.key} className="rounded border p-2">
+                            <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                              {s.title}
+                            </p>
+                            <ul className="mt-1 space-y-0.5">
+                              {s.fields.map((f) => (
+                                <li key={f.key} className={f.present ? '' : 'text-muted-foreground'}>
+                                  {f.label}: {f.present ? String(f.value) : f.required ? 'MISSING (required)' : '—'}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={pkg.status !== 'READY'}
+                        onClick={() =>
+                          toast.info(
+                            `Create an automation job for ${pkg.lender_name} at /funding-machine/automation (${pkg.submission_method}).`,
+                          )
+                        }
+                      >
+                        {pkg.status === 'READY' ? 'Package ready to submit' : `Cannot submit — ${pkg.status.replace('_', ' ')}`}
+                      </Button>
                     </div>
                   ))}
                 </CardContent>
