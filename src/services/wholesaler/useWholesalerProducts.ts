@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useWholesalerProfile } from "./useWholesalerProfile";
+import { reportDdError } from "@/lib/dd/reportDdError";
 
 export interface WholesalerProduct {
   id: string;
@@ -107,6 +108,10 @@ export function useWholesalerProducts() {
       toast.success('Product created');
     },
     onError: (error) => {
+      reportDdError("wholesaler-product-save", `create failed: ${error.message}`, {
+        wholesaler_id: profile?.id ?? null,
+        op: "create",
+      });
       toast.error(`Failed to create product: ${error.message}`);
     },
   });
@@ -125,6 +130,10 @@ export function useWholesalerProducts() {
       toast.success('Product updated');
     },
     onError: (error) => {
+      reportDdError("wholesaler-product-save", `update failed: ${error.message}`, {
+        wholesaler_id: profile?.id ?? null,
+        op: "update",
+      });
       toast.error(`Failed to update: ${error.message}`);
     },
   });
@@ -143,6 +152,10 @@ export function useWholesalerProducts() {
       toast.success('Product deleted');
     },
     onError: (error) => {
+      reportDdError("wholesaler-product-save", `delete failed: ${error.message}`, {
+        wholesaler_id: profile?.id ?? null,
+        op: "delete",
+      });
       toast.error(`Failed to delete: ${error.message}`);
     },
   });
@@ -159,6 +172,13 @@ export function useWholesalerProducts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wholesaler-products'] });
       toast.success('Inventory updated');
+    },
+    onError: (error: any) => {
+      reportDdError("wholesaler-product-save", `inventory update failed: ${error?.message}`, {
+        wholesaler_id: profile?.id ?? null,
+        op: "inventory",
+      });
+      toast.error(`Failed to update inventory: ${error?.message}`);
     },
   });
 

@@ -19,6 +19,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { logDdError } from "../_shared/ddAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -124,6 +125,12 @@ serve(async (req) => {
   } catch {
     return json({ mode: "pending", error: "invalid_body" }, 400);
   }
+
+  // Health probe — proves the function is running, does no Stripe work.
+  if (body?.healthcheck === true) {
+    return json({ ok: true, fn: "dd-create-checkout", stripe: "configured" }, 200);
+  }
+
 
   try {
     // ────────────────────────────────────────────────────────────────────
@@ -696,7 +703,13 @@ serve(async (req) => {
     return json({ mode: "live", url: session.url, session_id: session.id });
   } catch (err: any) {
     console.error("[dd-create-checkout]", err);
+    await logDdError({
+      source: "dd-create-checkout",
+      message: err?.message ?? "unknown",
+      context: { mode: body?.mode ?? "hosted", item_count: Array.isArray(body?.items) ? body.items.length : null },
+    });
     // Graceful: public site treats { mode: 'pending' } as soft no-op.
     return json({ mode: "pending", error: err?.message ?? "unknown" }, 200);
   }
+
 });

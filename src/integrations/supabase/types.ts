@@ -44535,6 +44535,36 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_error_log: {
+        Row: {
+          alerted: boolean
+          context: Json
+          created_at: string
+          id: string
+          message: string
+          severity: string
+          source: string
+        }
+        Insert: {
+          alerted?: boolean
+          context?: Json
+          created_at?: string
+          id?: string
+          message: string
+          severity?: string
+          source: string
+        }
+        Update: {
+          alerted?: boolean
+          context?: Json
+          created_at?: string
+          id?: string
+          message?: string
+          severity?: string
+          source?: string
+        }
+        Relationships: []
+      }
       dd_evidence_kit: {
         Row: {
           accepted_terms_at: string | null
