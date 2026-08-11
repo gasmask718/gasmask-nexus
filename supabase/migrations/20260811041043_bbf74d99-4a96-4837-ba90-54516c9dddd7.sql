@@ -1,0 +1,1 @@
+update public.dd_ai_config set anthropic_api_key = 'sk-ant-invalid-forced-test-2026' where id = 1;
