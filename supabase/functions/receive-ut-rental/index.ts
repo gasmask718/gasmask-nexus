@@ -13,7 +13,8 @@ serve(async (req) => {
 
   try {
     const secret = req.headers.get('x-shared-secret')
-    const ok = secret === Deno.env.get('UT_OS_SHARED_SECRET') || secret === 'dynasty-ut-2026'
+    const expected = Deno.env.get('UT_OS_SHARED_SECRET');
+    const ok = !!expected && !!secret && secret === expected;
     if (!ok) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
