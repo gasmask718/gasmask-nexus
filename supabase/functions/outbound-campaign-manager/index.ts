@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { HttpError, tenancy } from '../_shared/tenancy.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +10,7 @@ interface CampaignRequest {
   campaign_id?: string;
   business_id?: string;
   data?: Record<string, unknown>;
+  /** Ignored. Approval is attributed to the authenticated caller. */
   approved_by?: string;
 }
 
@@ -34,12 +35,6 @@ const UPDATABLE_FIELDS = [
   'vendor_playbook_id',
 ] as const;
 
-class HttpError extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
-  }
-}
-
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
     status,
@@ -52,27 +47,12 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // --- JWT gate (added on restore; function was deployed with no auth check) ---
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return json({ success: false, error: 'Unauthorized' }, 401);
-  }
-  const authClient = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-  );
-  const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(
-    authHeader.replace('Bearer ', ''),
-  );
-  if (claimsError || !claimsData?.claims?.sub) {
-    return json({ success: false, error: 'Unauthorized' }, 401);
-  }
-  const userId = claimsData.claims.sub as string;
-
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Auth + tenancy in one door. Throws HttpError(401) without a valid JWT;
+    // the service-role client only exists behind it.
+    const t = await tenancy(req);
+    const { userId, admin: supabase, isPlatformAdmin, memberBusinessIds } = t;
+    const assertBusinessAccess = t.assertBusinessAccess;
 
     const body: CampaignRequest = await req.json();
     const action = body.action;
@@ -89,70 +69,17 @@ Deno.serve(async (req) => {
       }
     };
 
-    // ── Tenancy ────────────────────────────────────────────────────────────
-    // This function holds a service-role client, so RLS does not apply. Every
-    // business_id it acts on is therefore derived from the caller's membership,
-    // never taken on trust from the request body.
-    const [{ data: memberships, error: membershipError }, { data: platformRoles }] = await Promise.all([
-      supabase.from('business_members').select('business_id, role').eq('user_id', userId),
-      supabase.from('user_roles').select('role').eq('user_id', userId).in('role', ['owner', 'admin']),
-    ]);
-    throwIfError(membershipError, 'Membership lookup failed');
-
-    const isPlatformAdmin = (platformRoles ?? []).length > 0;
-    const memberBusinessIds = [...new Set((memberships ?? []).map((m: any) => m.business_id))];
-
-    const businessLabel = async (id: string) => {
-      const { data: biz } = await supabase.from('businesses').select('name').eq('id', id).maybeSingle();
-      return biz?.name ? `"${biz.name}" (${id})` : id;
-    };
-
-    /** Confirms the caller may act on `id`, or throws a 403 naming the business. */
-    const assertBusinessAccess = async (id: string) => {
-      if (isPlatformAdmin || memberBusinessIds.includes(id)) return;
-      throw new HttpError(
-        403,
-        `You are not a member of ${await businessLabel(id)} and cannot manage its campaigns.`,
-      );
-    };
-
-    /**
-     * Resolves the business a body-scoped action targets.
-     * One membership -> derived. Several -> body value required and validated.
-     */
-    const resolveBusinessId = async (): Promise<string> => {
-      if (requestedBusinessId) {
-        await assertBusinessAccess(requestedBusinessId);
-        return requestedBusinessId;
-      }
-      if (isPlatformAdmin) {
-        throw new HttpError(400, 'business_id is required for platform administrators.');
-      }
-      if (memberBusinessIds.length === 0) {
-        throw new HttpError(403, 'Your account has no business membership, so it cannot manage campaigns.');
-      }
-      if (memberBusinessIds.length > 1) {
-        const names = await Promise.all(memberBusinessIds.map(businessLabel));
-        throw new HttpError(
-          400,
-          `You belong to more than one business. Specify business_id — one of: ${names.join(', ')}.`,
-        );
-      }
-      return memberBusinessIds[0];
-    };
+    /** Resolves the target business from the caller's membership, not the body. */
+    const resolveBusinessId = () => t.resolveBusinessId(body);
 
     /** Loads a campaign and confirms the caller's business owns it. */
-    const loadOwnedCampaign = async (id: string) => {
-      const { data: existing, error } = await supabase
-        .from('outbound_campaigns')
-        .select('id, business_id, status')
-        .eq('id', id)
-        .maybeSingle();
-      throwIfError(error, 'Campaign lookup failed');
-      if (!existing) throw new HttpError(404, `Campaign ${id} not found.`);
-      await assertBusinessAccess(existing.business_id);
-      return existing;
-    };
+    const loadOwnedCampaign = (id: string) =>
+      t.loadOwned<{ id: string; business_id: string; status: string }>('outbound_campaigns', id, {
+        select: 'id, business_id, status',
+        label: 'Campaign',
+      });
+
+
 
 
     switch (action) {
