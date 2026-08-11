@@ -381,6 +381,108 @@ export default function ClientPortalPage() {
         </CardContent>
       </Card>
 
+      {/* Recent Updates (client-visible only — internal notes are never shown) */}
+      <Card className="border-amber-500/20">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Mail className="h-5 w-5 text-amber-500" />
+            Recent Updates ({updates.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {updates.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No updates yet.</p>
+          ) : updates.map((u: any) => (
+            <div key={u.id} className={`p-3 rounded-lg border ${u.action_required ? "border-amber-500/40 bg-amber-500/5" : "border-border/30"}`}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">{u.title}</p>
+                {u.action_required && <Badge variant="outline" className="text-xs border-amber-500/40 text-amber-400">Action Required</Badge>}
+              </div>
+              {u.body && <p className="text-xs text-muted-foreground mt-1">{u.body}</p>}
+              <p className="text-[11px] text-muted-foreground mt-1">{new Date(u.created_at).toLocaleString()}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Application Center */}
+      <Card className="border-amber-500/20">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5 text-amber-500" />
+            Application Center ({applications.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {applications.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No applications yet. Your specialist will start these once your profile is complete.</p>
+          ) : applications.map((a: any) => {
+            const display = toClientDisplayStatus(a.status);
+            return (
+              <div key={a.id} className="p-3 rounded-lg border border-border/30">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">{a.lender_name}</p>
+                  <Badge variant="outline" className={`text-xs ${clientStatusTone(display)}`}>
+                    {CLIENT_STATUS_LABEL[display]}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {a.product_type || "Funding"}
+                  {a.requested_amount ? ` · Requested $${Number(a.requested_amount).toLocaleString()}` : ""}
+                  {a.approved_amount ? ` · Approved $${Number(a.approved_amount).toLocaleString()}` : ""}
+                </p>
+                {isClientActionRequired(display) && (
+                  <p className="text-xs text-amber-400 mt-1">Something is needed from you — check Recent Updates.</p>
+                )}
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      {/* Application Status History */}
+      {statusHistory.length > 0 && (
+        <Card className="border-amber-500/20">
+          <CardHeader>
+            <CardTitle className="text-lg">Application Timeline</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {statusHistory.map((h: any) => (
+              <div key={h.id} className="flex items-start gap-3 p-2 rounded-lg bg-muted/10">
+                <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm">
+                    {CLIENT_STATUS_LABEL[(h.client_display_status as any) || toClientDisplayStatus(h.new_status)] || h.new_status}
+                  </p>
+                  {h.message && <p className="text-xs text-muted-foreground">{h.message}</p>}
+                  <p className="text-[11px] text-muted-foreground">{new Date(h.created_at).toLocaleString()}</p>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Business Profile */}
+      {businessProfile && (
+        <Card className="border-amber-500/20">
+          <CardHeader>
+            <CardTitle className="text-lg">Business Profile</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-3 text-sm">
+            <div><span className="text-muted-foreground text-xs block">Legal Name</span>{businessProfile.business_name || "—"}</div>
+            <div><span className="text-muted-foreground text-xs block">Entity Type</span>{businessProfile.entity_type || "—"}</div>
+            <div><span className="text-muted-foreground text-xs block">EIN</span>{businessProfile.ein ? "On file" : "Not provided"}</div>
+            <div><span className="text-muted-foreground text-xs block">State of Formation</span>{businessProfile.state_of_incorporation || "—"}</div>
+            <div><span className="text-muted-foreground text-xs block">Address</span>{[businessProfile.address_street, businessProfile.address_city, businessProfile.address_state, businessProfile.address_zip].filter(Boolean).join(", ") || "—"}</div>
+            <div><span className="text-muted-foreground text-xs block">NAICS</span>{businessProfile.naics_primary || "—"}</div>
+            <div><span className="text-muted-foreground text-xs block">Years in Business</span>{businessProfile.years_in_business ?? "—"}</div>
+            <div><span className="text-muted-foreground text-xs block">Annual Revenue</span>{businessProfile.annual_revenue_current ? `$${Number(businessProfile.annual_revenue_current).toLocaleString()}` : "—"}</div>
+          </CardContent>
+        </Card>
+      )}
+
+
       {/* Pipeline Timeline */}
       <Card className="border-amber-500/20">
         <CardHeader>
