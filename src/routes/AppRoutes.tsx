@@ -1387,6 +1387,9 @@ export default function AppRoutes() {
       {/* Public Ambassador Application Form */}
       <Route path="/apply" element={<ClipperApplication />} />
       <Route path="/apply/clipper" element={<ClipperApplication />} />
+      {/* Clipper Nation portal (approved clippers only — gated inside ClipperPortal) */}
+      <Route path="/clipper/login" element={<ClipperLogin />} />
+      <Route path="/clipper/portal" element={<ClipperPortal />} />
       <Route path="/apply/ambassador" element={<AmbassadorApplication />} />
       <Route path="/apply/beauty-specialist" element={<BeautyProviderSignup />} />
       {/* Brandaro paid-client intake (public, no login) */}
