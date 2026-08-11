@@ -230,6 +230,7 @@ const AdminPartnerPerformance = lazy(() => import('@/pages/admin/AdminPartnerPer
 const AdminOpsDashboard = lazy(() => import('@/pages/admin/AdminOpsDashboard'));
 const FieldAssignments = lazy(() => import('@/pages/admin/FieldAssignments'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
+const ClipperApplication = lazy(() => import('@/pages/apply/ClipperApplication'));
 
 // VA Portal
 const VAAuthPage = lazy(() => import('@/pages/va/VAAuthPage'));
@@ -1064,6 +1065,7 @@ const BrandAcquisitionSystem = lazy(() => import('@/pages/os/brand-acquisition/B
 const DynastySalesNetwork = lazy(() => import('@/pages/os/dynasty-sales/DynastySalesNetwork'));
 const ClipperDashboard = lazy(() => import('@/pages/os/clipper/ClipperDashboard'));
 const ClipperClippers = lazy(() => import('@/pages/os/clipper/ClipperClippers'));
+const ClipperApplications = lazy(() => import('@/pages/os/clipper/ClipperApplications'));
 const ClipperCampaigns = lazy(() => import('@/pages/os/clipper/ClipperCampaigns'));
 const ClipperSubmissions = lazy(() => import('@/pages/os/clipper/ClipperSubmissions'));
 const ClipperAnalytics = lazy(() => import('@/pages/os/clipper/ClipperAnalytics'));
@@ -1383,6 +1385,8 @@ export default function AppRoutes() {
       <Route path="/portal/driver/login" element={<DriverLogin />} />
       <Route path="/portal/biker/login" element={<BikerLogin />} />
       {/* Public Ambassador Application Form */}
+      <Route path="/apply" element={<ClipperApplication />} />
+      <Route path="/apply/clipper" element={<ClipperApplication />} />
       <Route path="/apply/ambassador" element={<AmbassadorApplication />} />
       <Route path="/apply/beauty-specialist" element={<BeautyProviderSignup />} />
       {/* Brandaro paid-client intake (public, no login) */}
@@ -2319,6 +2323,7 @@ export default function AppRoutes() {
         <Route path="/os/dynasty-sales" element={<DynastySalesNetwork />} />
         {/* Clipper Nation — admin/owner only (payouts included) */}
         <Route path="/os/clipper-nation" element={<RequireRole allowedRoles={['admin', 'owner']} strict showLocked><ClipperDashboard /></RequireRole>} />
+        <Route path="/os/clipper-nation/applications" element={<RequireRole allowedRoles={['admin', 'owner']} strict showLocked><ClipperApplications /></RequireRole>} />
         <Route path="/os/clipper-nation/clippers" element={<RequireRole allowedRoles={['admin', 'owner']} strict showLocked><ClipperClippers /></RequireRole>} />
         <Route path="/os/clipper-nation/campaigns" element={<RequireRole allowedRoles={['admin', 'owner']} strict showLocked><ClipperCampaigns /></RequireRole>} />
         <Route path="/os/clipper-nation/submissions" element={<RequireRole allowedRoles={['admin', 'owner']} strict showLocked><ClipperSubmissions /></RequireRole>} />
