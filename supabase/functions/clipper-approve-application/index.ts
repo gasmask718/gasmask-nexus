@@ -153,9 +153,14 @@ Deno.serve(async (req) => {
       user_metadata: { full_name: app.full_name, clipper: true },
     });
     if (created.error) {
-      // already registered -> find them
-      const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      const found = list?.users?.find((u: any) => String(u.email).toLowerCase() === email);
+      // already registered -> find them (paginate; the project has many users)
+      let found: any = null;
+      for (let page = 1; page <= 40 && !found; page++) {
+        const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+        const users = list?.users ?? [];
+        found = users.find((u: any) => String(u.email).toLowerCase() === email) ?? null;
+        if (users.length < 1000) break;
+      }
       if (!found) throw created.error;
       userId = found.id;
     } else {
