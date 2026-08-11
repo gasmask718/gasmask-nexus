@@ -31,7 +31,7 @@ export default function PublicProductPage() {
       const { data, error } = await supabase
         .from('products_public')
         .select(
-          'id, product_name, description, images, dtc_price_b, retail_price, inventory_qty, category, brand_id, unit_type, status',
+          'id, product_name, description, ai_description, ai_description_short, images, image_urls, primary_image_url, dtc_price_b, retail_price, inventory_qty, category, brand_id, unit_type, status',
         )
         .eq('id', productId)
         .maybeSingle();
@@ -52,13 +52,21 @@ export default function PublicProductPage() {
   });
 
   const price = product ? (product.dtc_price_b ?? product.retail_price ?? null) : null;
-  const images = Array.isArray(product?.images) ? (product!.images as string[]) : [];
+  const rawImages = [
+    ...(Array.isArray(product?.images) ? (product!.images as string[]) : []),
+    ...(Array.isArray(product?.image_urls) ? (product!.image_urls as string[]) : []),
+  ].filter((u): u is string => typeof u === 'string' && u.length > 0);
+  const primary = product?.primary_image_url ?? null;
+  const images = Array.from(new Set([...(primary ? [primary] : []), ...rawImages]));
+  const productDescription =
+    product?.ai_description ?? product?.description ?? product?.ai_description_short ?? null;
 
   useEffect(() => {
     if (!product) return;
     document.title = `${product.product_name} — Dynasty Direct`;
     const desc =
-      product.description ??
+      product.ai_description_short ??
+      productDescription ??
       `${product.product_name}${price != null ? ` — ${formatCurrency(price)}` : ''} from Dynasty Direct.`;
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
@@ -67,7 +75,7 @@ export default function PublicProductPage() {
       document.head.appendChild(meta);
     }
     meta.setAttribute('content', desc.slice(0, 155));
-  }, [product, price]);
+  }, [product, price, productDescription]);
 
   if (isLoading) {
     return (
@@ -96,7 +104,7 @@ export default function PublicProductPage() {
     <div className="container mx-auto px-4 py-10">
       <ProductJsonLd
         name={product.product_name}
-        description={product.description}
+        description={productDescription}
         images={images}
         price={price}
         inventoryQty={product.inventory_qty}
@@ -134,8 +142,8 @@ export default function PublicProductPage() {
             </Badge>
           </div>
           {price != null && <p className="text-2xl font-semibold">{formatCurrency(price)}</p>}
-          {product.description && (
-            <p className="text-muted-foreground whitespace-pre-line">{product.description}</p>
+          {productDescription && (
+            <p className="text-muted-foreground whitespace-pre-line">{productDescription}</p>
           )}
           {product.unit_type && (
             <p className="text-sm text-muted-foreground">Sold per {product.unit_type}</p>
