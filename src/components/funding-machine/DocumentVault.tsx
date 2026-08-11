@@ -87,7 +87,23 @@ export default function DocumentVault({ clientId, readOnly = false }: DocumentVa
 
   const getDocForType = (type: string) => documents.find((d) => d.document_type === type);
 
+  const openDocument = async (filePath: string) => {
+    if (!filePath) {
+      toast.error("This entry has no stored file");
+      return;
+    }
+    const { data, error } = await supabase.storage
+      .from("funding-documents")
+      .createSignedUrl(filePath, SIGNED_URL_TTL_SECONDS);
+    if (error || !data?.signedUrl) {
+      toast.error(error?.message || "You are not authorized to view this document");
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
   const handleUpload = async (docType: string, displayName: string, file: File) => {
+
     setUploadingType(docType);
     try {
       const fileExt = file.name.split(".").pop();
