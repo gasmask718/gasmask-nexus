@@ -702,7 +702,13 @@ serve(async (req) => {
     return json({ mode: "live", url: session.url, session_id: session.id });
   } catch (err: any) {
     console.error("[dd-create-checkout]", err);
+    await logDdError({
+      source: "dd-create-checkout",
+      message: err?.message ?? "unknown",
+      context: { mode: body?.mode ?? "hosted", item_count: Array.isArray(body?.items) ? body.items.length : null },
+    });
     // Graceful: public site treats { mode: 'pending' } as soft no-op.
     return json({ mode: "pending", error: err?.message ?? "unknown" }, 200);
   }
+
 });
