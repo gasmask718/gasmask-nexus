@@ -234,10 +234,12 @@ Deno.serve(async (req) => {
       email_error = "RESEND_API_KEY not configured";
     }
 
+    // login_link is returned to the admin caller so the OS floor can hand the
+    // clipper a working link when email delivery is unavailable.
     return json({
       success: true, decision: "approved", account_created: true,
       clipper_account_id: clipperId, user_id: userId,
-      portal_url: portalUrl, email_sent, message_id, email_error,
+      portal_url: portalUrl, login_link: loginLink, email_sent, message_id, email_error,
     });
   } catch (e) {
     console.error("[clipper-approve-application] error", e);
