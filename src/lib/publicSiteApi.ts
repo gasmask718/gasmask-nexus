@@ -27,30 +27,22 @@ export async function pubFetch<T = any>(
   }
 ): Promise<T[]> {
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/functions/v1/proxy-public-data`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          apikey: SUPABASE_KEY,
-        },
-        body: JSON.stringify({
-          table,
-          select: params?.select || '*',
-          filters: params?.filters,
-          order: params?.order,
-          limit: params?.limit,
-        }),
-      }
-    );
-    const data = await res.json();
+    const { data, error } = await supabase.functions.invoke('proxy-public-data', {
+      body: {
+        table,
+        select: params?.select || '*',
+        filters: params?.filters,
+        order: params?.order,
+        limit: params?.limit,
+      },
+    });
+    if (error) return [];
     return Array.isArray(data) ? data : [];
   } catch {
     return [];
   }
 }
+
 
 export async function pubPatch(
   table: string,
