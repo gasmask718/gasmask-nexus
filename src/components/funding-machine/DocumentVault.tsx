@@ -221,6 +221,12 @@ export default function DocumentVault({ clientId, readOnly = false }: DocumentVa
                         <Badge variant="outline" className={`text-xs ${doc.required ? "border-red-500/30 text-red-400" : "border-muted text-muted-foreground"}`}>
                           {doc.required ? "Required" : "Optional"}
                         </Badge>
+                        {uploaded?.file_path && (
+                          <Button variant="ghost" size="sm" onClick={() => openDocument(uploaded.file_path as string)}>
+                            <Eye className="h-3 w-3 mr-1" /> View
+                          </Button>
+                        )}
+
                         {!readOnly && (
                           <label className="cursor-pointer">
                             <input
