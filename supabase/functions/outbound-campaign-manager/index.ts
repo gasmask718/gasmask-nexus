@@ -460,10 +460,15 @@ Deno.serve(async (req) => {
     }
 
   } catch (error) {
+    if (error instanceof HttpError) {
+      // 400/403/404/409 are caller-facing decisions, not server faults.
+      return json({ success: false, error: error.message }, error.status);
+    }
     console.error('Outbound Campaign Manager Error:', error);
-    return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : String(error) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    return json(
+      { success: false, error: error instanceof Error ? error.message : String(error) },
+      500,
     );
   }
 });
+
