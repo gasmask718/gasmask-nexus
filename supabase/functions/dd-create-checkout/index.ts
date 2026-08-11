@@ -125,6 +125,12 @@ serve(async (req) => {
     return json({ mode: "pending", error: "invalid_body" }, 400);
   }
 
+  // Health probe — proves the function is running, does no Stripe work.
+  if (body?.healthcheck === true) {
+    return json({ ok: true, fn: "dd-create-checkout", stripe: "configured" }, 200);
+  }
+
+
   try {
     // ────────────────────────────────────────────────────────────────────
     // EXPRESS PAY
