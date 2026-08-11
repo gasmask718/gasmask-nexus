@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       return json({ error: 'Table not allowed' }, 403)
     }
 
-    const publicUrl = Deno.env.get('PUBLIC_SITE_URL')
+    const publicUrl = Deno.env.get('PUBLIC_SITE_URL') || Deno.env.get('PUBLIC_SITE_ORIGIN')
     const key =
       Deno.env.get('PUBLIC_SITE_SERVICE_ROLE_KEY') || Deno.env.get('PUBLIC_SITE_ANON_KEY')
     if (!publicUrl || !key) return json({ error: 'Public site proxy not configured' }, 503)
