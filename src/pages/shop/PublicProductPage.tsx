@@ -104,7 +104,7 @@ export default function PublicProductPage() {
     <div className="container mx-auto px-4 py-10">
       <ProductJsonLd
         name={product.product_name}
-        description={product.description}
+        description={productDescription}
         images={images}
         price={price}
         inventoryQty={product.inventory_qty}
@@ -142,8 +142,8 @@ export default function PublicProductPage() {
             </Badge>
           </div>
           {price != null && <p className="text-2xl font-semibold">{formatCurrency(price)}</p>}
-          {product.description && (
-            <p className="text-muted-foreground whitespace-pre-line">{product.description}</p>
+          {productDescription && (
+            <p className="text-muted-foreground whitespace-pre-line">{productDescription}</p>
           )}
           {product.unit_type && (
             <p className="text-sm text-muted-foreground">Sold per {product.unit_type}</p>
