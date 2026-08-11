@@ -51,16 +51,28 @@ export default function ClipperApplications() {
 
   const review = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "approved" | "rejected" }) => {
-      const { data: auth } = await supabase.auth.getUser();
-      const { error } = await supabase
-        .from("clipper_applications")
-        .update({ status, reviewed_at: new Date().toISOString(), reviewed_by: auth.user?.id ?? null })
-        .eq("id", id);
+      const { data, error } = await supabase.functions.invoke("clipper-approve-application", {
+        body: {
+          application_id: id,
+          decision: status,
+          login_base: window.location.origin,
+        },
+      });
       if (error) throw error;
+      if (!(data as any)?.success) throw new Error((data as any)?.error || "Approval failed");
+      return data as any;
     },
-    onSuccess: (_d, v) => {
+    onSuccess: (d: any, v) => {
       qc.invalidateQueries({ queryKey: ["clipper-applications"] });
-      toast.success(`Application ${v.status}`);
+      if (v.status === "approved") {
+        toast.success(
+          d?.already_approved
+            ? "Already approved"
+            : `Approved — account created${d?.email_sent ? " and approval email sent" : ", but the email did not send"}`,
+        );
+      } else {
+        toast.success("Application rejected");
+      }
     },
     onError: (e: any) => toast.error(e?.message || "Failed to update application"),
   });
