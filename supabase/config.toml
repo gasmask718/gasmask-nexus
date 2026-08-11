@@ -595,3 +595,6 @@ verify_jwt = false
 
 [functions.sbo-grade-capper-picks-alt]
 verify_jwt = false
+
+[functions.dd-provision-wholesaler]
+verify_jwt = false
