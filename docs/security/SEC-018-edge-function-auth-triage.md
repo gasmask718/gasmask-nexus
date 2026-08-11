@@ -13,6 +13,19 @@ nothing. An unsigned callback lets anyone POST fabricated call outcomes into our
 own tables, and after the fact there is no way to tell a forged row from a real
 one. This is an import problem, not a build problem.
 
+## Cron cross-reference (confirmed before any gating)
+
+`SELECT jobname, schedule, command FROM cron.job` returned 70 jobs. Every
+function reachable from pg_cron was moved into the CRON bucket **before**
+remediation, and the buckets are mutually exclusive: the intersection of CRON
+and MISSING_GATE is **0 functions**. No scheduled job is queued to receive a JWT
+gate, so nothing in the cron fleet breaks from this work.
+
+Related finding, tracked separately: 43 of the cron jobs call `net.http_post`
+directly with no Authorization header at all, and `private.cron_post` falls back
+to an anon JWT when the vault `service_role_key` is absent. The shared-secret
+work for bucket 2 must land before those functions are gated.
+
 ## Counts
 
 | Bucket | Count |
