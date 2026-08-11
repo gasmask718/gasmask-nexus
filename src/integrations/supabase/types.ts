@@ -61623,6 +61623,66 @@ export type Database = {
           },
         ]
       }
+      funding_strategy_rules: {
+        Row: {
+          created_at: string
+          funding_lane: string | null
+          id: string
+          inquiry_sensitivity: string
+          is_active: boolean
+          min_credit_score: number | null
+          min_monthly_revenue: number | null
+          min_time_in_business_months: number | null
+          prerequisite_step_keys: string[]
+          rationale: string
+          requires_business_entity: boolean
+          requires_personal_guarantee: boolean
+          requires_tradelines: number
+          step_key: string
+          step_label: string
+          step_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          funding_lane?: string | null
+          id?: string
+          inquiry_sensitivity?: string
+          is_active?: boolean
+          min_credit_score?: number | null
+          min_monthly_revenue?: number | null
+          min_time_in_business_months?: number | null
+          prerequisite_step_keys?: string[]
+          rationale: string
+          requires_business_entity?: boolean
+          requires_personal_guarantee?: boolean
+          requires_tradelines?: number
+          step_key: string
+          step_label: string
+          step_order: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          funding_lane?: string | null
+          id?: string
+          inquiry_sensitivity?: string
+          is_active?: boolean
+          min_credit_score?: number | null
+          min_monthly_revenue?: number | null
+          min_time_in_business_months?: number | null
+          prerequisite_step_keys?: string[]
+          rationale?: string
+          requires_business_entity?: boolean
+          requires_personal_guarantee?: boolean
+          requires_tradelines?: number
+          step_key?: string
+          step_label?: string
+          step_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       funding_task_cards: {
         Row: {
           category: string
