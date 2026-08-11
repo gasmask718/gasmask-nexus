@@ -31,9 +31,18 @@ export async function requireFundingStaff(req: Request): Promise<FundingAuthResu
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
 
-  const { data, error } = await authClient.auth.getClaims(token);
-  const userId = data?.claims?.sub as string | undefined;
-  if (error || !userId) return { ok: false, status: 401, error: "unauthorized" };
+  // getClaims() THROWS on a structurally invalid JWT. Unhandled, a forged
+  // token produced a 500 instead of a clean 401.
+  let userId: string | undefined;
+  try {
+    const { data, error } = await authClient.auth.getClaims(token);
+    if (error) return { ok: false, status: 401, error: "unauthorized" };
+    userId = data?.claims?.sub as string | undefined;
+  } catch {
+    return { ok: false, status: 401, error: "unauthorized" };
+  }
+  if (!userId) return { ok: false, status: 401, error: "unauthorized" };
+
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   const { data: allowed, error: roleErr } = await admin.rpc("is_funding_staff", {
