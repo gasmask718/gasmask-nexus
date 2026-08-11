@@ -95,11 +95,10 @@ export default function ClipperSettings() {
   const [schedule, setSchedule] = useState<string>("weekly");
 
   const saveMinPayout = () => {
-    toast.success(`Settings saved. Payout engine will use $${minPayout} minimum in Phase 2.`);
+    toast.info("Minimum payout is not saved yet — coming in Phase 5. Contact david@dynastyconnect.com to change it.");
   };
   const saveSchedule = () => {
-    const label = schedule === "weekly" ? "Weekly (Friday)" : schedule === "biweekly" ? "Bi-weekly" : "Monthly";
-    toast.success(`Settings saved. Payout schedule set to ${label} in Phase 2.`);
+    toast.info("Payout schedule is not saved yet — coming in Phase 5. Contact david@dynastyconnect.com to change it.");
   };
 
   return (
