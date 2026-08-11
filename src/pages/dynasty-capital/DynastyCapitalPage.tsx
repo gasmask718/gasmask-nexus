@@ -66,6 +66,9 @@ export default function DynastyCapitalPage() {
     completedSteps: ctx?.completedSteps,
     tradelineCount: ctx?.tradelineCount,
   });
+  const { data: packages, isLoading: packagesLoading } = useApplicationPackages(activeId, client);
+
+
 
   const totals = capital?.totals;
   const grantRows = capital?.grants ?? [];
