@@ -231,6 +231,8 @@ const AdminOpsDashboard = lazy(() => import('@/pages/admin/AdminOpsDashboard'));
 const FieldAssignments = lazy(() => import('@/pages/admin/FieldAssignments'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
 const ClipperApplication = lazy(() => import('@/pages/apply/ClipperApplication'));
+const ClipperLogin = lazy(() => import('@/pages/clipper/ClipperLogin'));
+const ClipperPortal = lazy(() => import('@/pages/clipper/ClipperPortal'));
 
 // VA Portal
 const VAAuthPage = lazy(() => import('@/pages/va/VAAuthPage'));
