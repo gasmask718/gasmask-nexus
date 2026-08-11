@@ -19,10 +19,35 @@ function normalize(p: string): string {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Hard auth gate. This function must never promote an unauthenticated caller
+  // to service role (previously: `authHeader || Bearer SERVICE_ROLE_KEY`).
+  const authHeader = req.headers.get("Authorization") || "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
+
+  {
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+    );
+    const { data, error } = await authClient.auth.getClaims(
+      authHeader.replace("Bearer ", ""),
+    ).catch(() => ({ data: null, error: new Error("invalid token") } as any));
+    if (error || !data?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
 
   try {
     const { contact_id, business_label } = await req.json();
