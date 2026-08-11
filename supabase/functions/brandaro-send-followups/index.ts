@@ -217,13 +217,24 @@ Deno.serve(async (req) => {
     });
 
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("brandaro-send-followups error:", message);
-    return new Response(JSON.stringify({ error: message }), {
+    // Do NOT collapse non-Error objects (e.g. PostgrestError) into "[object Object]".
+    const e = err as Record<string, unknown> | null;
+    const message =
+      err instanceof Error
+        ? err.message
+        : (e && typeof e === "object" && typeof e.message === "string")
+          ? e.message
+          : (() => { try { return JSON.stringify(err); } catch { return String(err); } })();
+    const detail = e && typeof e === "object"
+      ? { message: e.message, code: e.code, details: e.details, hint: e.hint }
+      : undefined;
+    console.error("brandaro-send-followups error:", message, "detail:", JSON.stringify(detail ?? {}), "raw:", (() => { try { return JSON.stringify(err); } catch { return String(err); } })());
+    return new Response(JSON.stringify({ error: message, detail }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+
 });
 
 // ─── HELPERS ──────────────────────────────────────────────────────────
