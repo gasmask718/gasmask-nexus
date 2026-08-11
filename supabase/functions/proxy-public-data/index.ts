@@ -19,6 +19,9 @@ const ALLOWED_TABLES = new Set([
   'add_ons',
 ])
 
+// Public (non-secret) project ref of the TopTier public site data API.
+const PUBLIC_SITE_REST_BASE = 'https://hruhkyvwtfpfviwnvhne.supabase.co'
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -49,9 +52,10 @@ Deno.serve(async (req) => {
       return json({ error: 'Table not allowed' }, 403)
     }
 
-    const publicUrl = Deno.env.get('PUBLIC_SITE_URL') || Deno.env.get('PUBLIC_SITE_ORIGIN')
-    const key =
-      Deno.env.get('PUBLIC_SITE_SERVICE_ROLE_KEY') || Deno.env.get('PUBLIC_SITE_ANON_KEY')
+    // PUBLIC_SITE_ORIGIN is the marketing site origin (serves HTML), NOT the data API.
+    // Use the public project's REST base explicitly.
+    const publicUrl = Deno.env.get('PUBLIC_SITE_URL') || PUBLIC_SITE_REST_BASE
+    const key = Deno.env.get('PUBLIC_SITE_SERVICE_ROLE_KEY')
     if (!publicUrl || !key) return json({ error: 'Public site proxy not configured' }, 503)
 
     let url = `${publicUrl.replace(/\/$/, '')}/rest/v1/${table}?select=${encodeURIComponent(select || '*')}`
