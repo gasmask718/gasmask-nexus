@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,9 +9,43 @@ interface CampaignRequest {
   action: 'create' | 'update' | 'approve' | 'pause' | 'resume' | 'halt' | 'complete' | 'get' | 'list';
   campaign_id?: string;
   business_id?: string;
-  data?: any;
+  data?: Record<string, unknown>;
   approved_by?: string;
 }
+
+// Fields a caller may change via `update`. Anything else in data is ignored.
+// Deliberately excludes status, approval, kill-switch and business_id columns —
+// those move only through their own actions.
+const UPDATABLE_FIELDS = [
+  'name',
+  'description',
+  'campaign_type',
+  'audience_type',
+  'allowed_business_types',
+  'geographic_scope',
+  'max_calls_per_day',
+  'max_calls_per_contact',
+  'cooldown_period_days',
+  'b2b_only',
+  'mandatory_ai_disclosure',
+  'prohibited_claims',
+  'required_disclaimers',
+  'product_playbook_id',
+  'vendor_playbook_id',
+] as const;
+
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+const json = (payload: unknown, status = 200) =>
+  new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,24 +55,19 @@ Deno.serve(async (req) => {
   // --- JWT gate (added on restore; function was deployed with no auth check) ---
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return json({ success: false, error: 'Unauthorized' }, 401);
   }
-  {
-    const authClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-    );
-    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(
-      authHeader.replace('Bearer ', ''),
-    );
-    if (claimsError || !claimsData?.claims?.sub) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+  const authClient = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+  );
+  const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(
+    authHeader.replace('Bearer ', ''),
+  );
+  if (claimsError || !claimsData?.claims?.sub) {
+    return json({ success: false, error: 'Unauthorized' }, 401);
   }
+  const userId = claimsData.claims.sub as string;
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -49,9 +78,8 @@ Deno.serve(async (req) => {
     const action = body.action;
     // Treat empty strings as null to prevent UUID parse errors
     const campaign_id = body.campaign_id && body.campaign_id.trim() !== '' ? body.campaign_id : null;
-    const business_id = body.business_id && body.business_id.trim() !== '' ? body.business_id : null;
-    const data = body.data;
-    const approved_by = body.approved_by;
+    const requestedBusinessId = body.business_id && body.business_id.trim() !== '' ? body.business_id : null;
+    const data = body.data as Record<string, any> | undefined;
 
     // Helper to safely throw errors from Supabase
     const throwIfError = (error: any, context: string) => {
@@ -61,18 +89,84 @@ Deno.serve(async (req) => {
       }
     };
 
+    // ── Tenancy ────────────────────────────────────────────────────────────
+    // This function holds a service-role client, so RLS does not apply. Every
+    // business_id it acts on is therefore derived from the caller's membership,
+    // never taken on trust from the request body.
+    const [{ data: memberships, error: membershipError }, { data: platformRoles }] = await Promise.all([
+      supabase.from('business_members').select('business_id, role').eq('user_id', userId),
+      supabase.from('user_roles').select('role').eq('user_id', userId).in('role', ['owner', 'admin']),
+    ]);
+    throwIfError(membershipError, 'Membership lookup failed');
+
+    const isPlatformAdmin = (platformRoles ?? []).length > 0;
+    const memberBusinessIds = [...new Set((memberships ?? []).map((m: any) => m.business_id))];
+
+    const businessLabel = async (id: string) => {
+      const { data: biz } = await supabase.from('businesses').select('name').eq('id', id).maybeSingle();
+      return biz?.name ? `"${biz.name}" (${id})` : id;
+    };
+
+    /** Confirms the caller may act on `id`, or throws a 403 naming the business. */
+    const assertBusinessAccess = async (id: string) => {
+      if (isPlatformAdmin || memberBusinessIds.includes(id)) return;
+      throw new HttpError(
+        403,
+        `You are not a member of ${await businessLabel(id)} and cannot manage its campaigns.`,
+      );
+    };
+
+    /**
+     * Resolves the business a body-scoped action targets.
+     * One membership -> derived. Several -> body value required and validated.
+     */
+    const resolveBusinessId = async (): Promise<string> => {
+      if (requestedBusinessId) {
+        await assertBusinessAccess(requestedBusinessId);
+        return requestedBusinessId;
+      }
+      if (isPlatformAdmin) {
+        throw new HttpError(400, 'business_id is required for platform administrators.');
+      }
+      if (memberBusinessIds.length === 0) {
+        throw new HttpError(403, 'Your account has no business membership, so it cannot manage campaigns.');
+      }
+      if (memberBusinessIds.length > 1) {
+        const names = await Promise.all(memberBusinessIds.map(businessLabel));
+        throw new HttpError(
+          400,
+          `You belong to more than one business. Specify business_id — one of: ${names.join(', ')}.`,
+        );
+      }
+      return memberBusinessIds[0];
+    };
+
+    /** Loads a campaign and confirms the caller's business owns it. */
+    const loadOwnedCampaign = async (id: string) => {
+      const { data: existing, error } = await supabase
+        .from('outbound_campaigns')
+        .select('id, business_id, status')
+        .eq('id', id)
+        .maybeSingle();
+      throwIfError(error, 'Campaign lookup failed');
+      if (!existing) throw new HttpError(404, `Campaign ${id} not found.`);
+      await assertBusinessAccess(existing.business_id);
+      return existing;
+    };
+
+
     switch (action) {
       case 'create': {
-        // Validate required fields
-        if (!data?.name || !data?.campaign_type || !business_id) {
-          throw new Error('Missing required fields: name, campaign_type, business_id');
+        const businessId = await resolveBusinessId();
+        if (!data?.name || !data?.campaign_type) {
+          throw new HttpError(400, 'Missing required fields: name, campaign_type');
         }
 
         // Create the campaign
         const { data: campaign, error } = await supabase
           .from('outbound_campaigns')
           .insert({
-            business_id,
+            business_id: businessId,
             name: data.name,
             description: data.description,
             campaign_type: data.campaign_type,
@@ -89,7 +183,7 @@ Deno.serve(async (req) => {
             required_disclaimers: data.required_disclaimers || [],
             product_playbook_id: data.product_playbook_id,
             vendor_playbook_id: data.vendor_playbook_id,
-            created_by: data.created_by,
+            created_by: userId,
           })
           .select()
           .single();
@@ -102,22 +196,67 @@ Deno.serve(async (req) => {
           .insert({
             scope: 'campaign',
             campaign_id: campaign.id,
-            business_id,
+            business_id: businessId,
             is_active: true,
             auto_trigger_opt_out_rate: 0.10,
             auto_trigger_escalation_rate: 0.20,
           });
 
-        return new Response(
-          JSON.stringify({ success: true, campaign }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaign });
+      }
+
+      case 'update': {
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
+
+        const patch: Record<string, unknown> = {};
+        for (const field of UPDATABLE_FIELDS) {
+          if (data && Object.prototype.hasOwnProperty.call(data, field)) {
+            patch[field] = data[field];
+          }
+        }
+        if (Object.keys(patch).length === 0) {
+          throw new HttpError(
+            400,
+            `No updatable fields supplied. Allowed: ${UPDATABLE_FIELDS.join(', ')}.`,
+          );
+        }
+
+        const { data: campaign, error } = await supabase
+          .from('outbound_campaigns')
+          .update(patch)
+          .eq('id', campaign_id)
+          .select()
+          .single();
+
+        throwIfError(error, 'Update campaign failed');
+
+        return json({ success: true, campaign, updated_fields: Object.keys(patch) });
+      }
+
+      case 'complete': {
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
+
+        const { data: campaign, error } = await supabase
+          .from('outbound_campaigns')
+          .update({ status: 'completed', completed_at: new Date().toISOString() })
+          .eq('id', campaign_id)
+          .select()
+          .single();
+
+        throwIfError(error, 'Complete campaign failed');
+
+        return json({ success: true, campaign });
       }
 
       case 'approve': {
-        if (!campaign_id || !approved_by) {
-          throw new Error('Missing campaign_id or approved_by');
-        }
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
+        // Approval is attributed to the authenticated caller, never to a
+        // body-supplied approved_by.
+        const approved_by = userId;
+
 
         // Check sentinel status first
         const { data: sentinel } = await supabase
@@ -177,14 +316,12 @@ Deno.serve(async (req) => {
 
         throwIfError(error, 'Campaign update failed');
 
-        return new Response(
-          JSON.stringify({ success: true, campaign, sentinel_approval: approval }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaign, sentinel_approval: approval });
       }
 
       case 'pause': {
-        if (!campaign_id) throw new Error('Missing campaign_id');
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
 
         const { data: campaign, error } = await supabase
           .from('outbound_campaigns')
@@ -195,14 +332,12 @@ Deno.serve(async (req) => {
 
         throwIfError(error, 'Pause campaign failed');
 
-        return new Response(
-          JSON.stringify({ success: true, campaign }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaign });
       }
 
       case 'resume': {
-        if (!campaign_id) throw new Error('Missing campaign_id');
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
 
         // Check kill switch
         const { data: killSwitch } = await supabase
@@ -210,10 +345,10 @@ Deno.serve(async (req) => {
           .select('*')
           .eq('campaign_id', campaign_id)
           .eq('scope', 'campaign')
-          .single();
+          .maybeSingle();
 
         if (killSwitch && !killSwitch.is_active) {
-          throw new Error('Cannot resume: Kill switch is active. Requires manual reset.');
+          throw new HttpError(409, 'Cannot resume: Kill switch is active. Requires manual reset.');
         }
 
         const { data: campaign, error } = await supabase
@@ -225,14 +360,12 @@ Deno.serve(async (req) => {
 
         throwIfError(error, 'Resume campaign failed');
 
-        return new Response(
-          JSON.stringify({ success: true, campaign }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaign });
       }
 
       case 'halt': {
-        if (!campaign_id) throw new Error('Missing campaign_id');
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
 
         // Trigger kill switch
         await supabase
@@ -240,7 +373,7 @@ Deno.serve(async (req) => {
           .update({
             is_active: false,
             triggered_at: new Date().toISOString(),
-            triggered_by: data?.triggered_by,
+            triggered_by: userId,
             trigger_reason: data?.reason || 'Manual halt',
           })
           .eq('campaign_id', campaign_id)
@@ -260,14 +393,12 @@ Deno.serve(async (req) => {
 
         throwIfError(error, 'Halt campaign failed');
 
-        return new Response(
-          JSON.stringify({ success: true, campaign }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaign });
       }
 
       case 'get': {
-        if (!campaign_id) throw new Error('Missing campaign_id');
+        if (!campaign_id) throw new HttpError(400, 'Missing campaign_id');
+        await loadOwnedCampaign(campaign_id);
 
         const { data: campaign, error } = await supabase
           .from('outbound_campaigns')
@@ -291,16 +422,13 @@ Deno.serve(async (req) => {
 
         const targetStats = {
           total: stats?.length || 0,
-          pending: stats?.filter(t => t.status === 'pending').length || 0,
-          completed: stats?.filter(t => t.status === 'completed').length || 0,
-          opted_out: stats?.filter(t => t.status === 'opted_out').length || 0,
-          escalated: stats?.filter(t => t.status === 'escalated').length || 0,
+          pending: stats?.filter((t: any) => t.status === 'pending').length || 0,
+          completed: stats?.filter((t: any) => t.status === 'completed').length || 0,
+          opted_out: stats?.filter((t: any) => t.status === 'opted_out').length || 0,
+          escalated: stats?.filter((t: any) => t.status === 'escalated').length || 0,
         };
 
-        return new Response(
-          JSON.stringify({ success: true, campaign, targetStats }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaign, targetStats });
       }
 
       case 'list': {
@@ -309,28 +437,38 @@ Deno.serve(async (req) => {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (business_id) {
-          query = query.eq('business_id', business_id);
+        if (requestedBusinessId) {
+          await assertBusinessAccess(requestedBusinessId);
+          query = query.eq('business_id', requestedBusinessId);
+        } else if (!isPlatformAdmin) {
+          // No body filter: return only the caller's own businesses, never all.
+          if (memberBusinessIds.length === 0) {
+            return json({ success: true, campaigns: [] });
+          }
+          query = query.in('business_id', memberBusinessIds);
         }
 
         const { data: campaigns, error } = await query;
 
         throwIfError(error, 'List campaigns failed');
 
-        return new Response(
-          JSON.stringify({ success: true, campaigns }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ success: true, campaigns });
       }
 
       default:
-        throw new Error(`Unknown action: ${action}`);
+        throw new HttpError(400, `Unknown action: ${action}`);
     }
+
   } catch (error) {
+    if (error instanceof HttpError) {
+      // 400/403/404/409 are caller-facing decisions, not server faults.
+      return json({ success: false, error: error.message }, error.status);
+    }
     console.error('Outbound Campaign Manager Error:', error);
-    return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : String(error) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    return json(
+      { success: false, error: error instanceof Error ? error.message : String(error) },
+      500,
     );
   }
 });
+
