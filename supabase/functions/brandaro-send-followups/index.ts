@@ -199,8 +199,8 @@ Deno.serve(async (req) => {
           paymentPushed++;
           console.log(`💳 Payment link created for deal ${deal.id}`);
         } else {
-          const errText = await linkRes.text();
-          console.error(`Payment link creation failed for deal ${deal.id}:`, errText);
+          const bodyText = await linkRes.text();
+          console.error(`Payment link creation failed for deal ${deal.id}:`, bodyText);
         }
       } catch (e) {
         console.error(`Payment push failed for deal ${deal.id}:`, errText(e));
@@ -299,8 +299,8 @@ async function sendSendGridEmail(to: string, businessName: string, content: stri
   });
 
   if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`SendGrid failed [${response.status}]: ${errText}`);
+    const bodyText = await response.text();
+    throw new Error(`SendGrid failed [${response.status}]: ${bodyText}`);
   }
 
   return { messageId: response.headers.get("X-Message-Id") || undefined };
