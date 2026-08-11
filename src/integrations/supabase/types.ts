@@ -34378,6 +34378,54 @@ export type Database = {
         }
         Relationships: []
       }
+      clipper_applications: {
+        Row: {
+          created_at: string
+          email: string
+          follower_ranges: Json
+          full_name: string
+          id: string
+          phone: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          socials: Json
+          status: string
+          updated_at: string
+          why_join: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          follower_ranges?: Json
+          full_name: string
+          id?: string
+          phone?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          socials?: Json
+          status?: string
+          updated_at?: string
+          why_join?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          follower_ranges?: Json
+          full_name?: string
+          id?: string
+          phone?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          socials?: Json
+          status?: string
+          updated_at?: string
+          why_join?: string | null
+        }
+        Relationships: []
+      }
       clipper_assignments: {
         Row: {
           assigned_at: string | null

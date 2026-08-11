@@ -596,6 +596,7 @@ const DYNASTY_NAVIGATION = {
     name: '🎬 Clipper Nation',
     items: [
       { path: '/os/clipper-nation', label: '🎬 Dashboard', icon: Film },
+      { path: '/os/clipper-nation/applications', label: '📝 Applications', icon: ClipboardList },
       { path: '/os/clipper-nation/clippers', label: '👥 Clippers', icon: Users },
       { path: '/os/clipper-nation/campaigns', label: '📢 Campaigns', icon: Megaphone },
       { path: '/os/clipper-nation/submissions', label: '📹 Submissions', icon: Video },
