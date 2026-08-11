@@ -119,7 +119,7 @@ export default function ClientPortalPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("grant_business_profiles" as any)
-        .select("id,business_name,entity_type,ein,business_address,business_city,business_state,industry,naics_code,annual_revenue,years_in_business")
+        .select("id,business_name,entity_type,ein,address_street,address_city,address_state,address_zip,naics_primary,annual_revenue_current,years_in_business,state_of_incorporation")
         .eq("funding_client_id", client!.id)
         .maybeSingle();
       if (error) return null;
