@@ -214,3 +214,51 @@ Storage: `funding-documents` → private.
 **NO-GO for full client-portal production launch.** Exact reason: the cross-client isolation matrix and the automation end-to-end/idempotency replay have not been executed with real authenticated principals — there are currently no provisioned portal clients and no worker run. The enforcement is in place at the RLS and unique-index layer, but "enforced by construction" is not the same as "observed denying a real Client B request", and this report will not claim otherwise.
 
 Unblock path: provision two QA portal clients (clearly flagged as fixtures, never mixed with production records) and one worker token run against a `is_qa_fixture` lender; the remaining NOT VERIFIED rows can then be closed in a single pass.
+
+---
+
+## Part 21 — Final Live QA: Two-Client Isolation + Automation E2E (2026-08-11)
+
+### Fixtures provisioned (labelled, deletable)
+| Identity | auth uid | funding_clients.id |
+|---|---|---|
+| QA Portal Client A · qa.client.a@dynastyos.app | 5292cb4c-11df-49de-8191-e162a13c253b | aaaa1111-…-000000000001 |
+| QA Portal Client B · qa.client.b@dynastyos.app | 41fd2410-11d4-4ab7-9ea1-8ab199f50c90 | bbbb2222-…-000000000002 |
+
+Each client has 1 funding application, 1 grant application, 1 grant business profile, 1 client status update and 1 internal staff note. Client A additionally has 1 automation job + 1 automation event + 1 status-history event (`qa-evt-1`). All rows carry a `QA TEST FIXTURE` marker.
+
+### Defects found by live testing and fixed this pass
+1. **`get_capital_plan` was broken for every client** — referenced `fa.amount_requested/amount_approved/amount_funded`, which do not exist (`requested_amount` / `approved_amount`). Every portal capital call returned `42703`. Rewritten against real columns; funded amount now derives from funded status (funding) / `award_date` (grants).
+2. **Clients could not see their own grants** — `grant_applications` and `grant_business_profiles` were staff-only, so the portal's grant section rendered empty. Added `is_funding_client_self`-scoped SELECT policies.
+3. **Unbounded client self-update on `funding_clients`** — the self-update policy allowed a portal client to rewrite *any* column of their own record (status, stage, DFS score, funding target, `user_id`, `portal_user_id`, `ssn_last4`). Verified live: Client B changed their own `full_name` and could equally have set `status='funded'`. Fixed with a `BEFORE UPDATE` guard trigger that silently restores protected columns for non-staff callers; staff and service-role paths are unaffected.
+4. **Automation invisible to clients** — added client-self SELECT policies on `automation_jobs` and `automation_events`.
+
+### IDOR matrix (live, real JWTs)
+| Probe | A | B | anon |
+|---|---|---|---|
+| own `funding_clients` | 200 own row | 200 own row | 401 |
+| other client's `funding_clients` | 200 `[]` | 200 `[]` | 401 |
+| `funding_applications` (unfiltered) | own only | own only | 401 |
+| `grant_applications` (unfiltered) | own only | own only | 401 |
+| `grant_business_profiles` | own only | own only | 401 |
+| `client_status_updates` | own only | own only | 401 |
+| `client_notes` (staff-only) | `[]` | `[]` | 401 |
+| `client_notes` INSERT | 403 RLS | 403 RLS | 401 |
+| `client_notes` UPDATE/DELETE | 0 rows affected (DB verified unchanged) | 0 rows | 401 |
+| `funding_client_documents` | own only | own only | 401 |
+| `automation_jobs` / `automation_events` | own only | `[]` | 401 |
+| `funding_application_status_history` | own only | `[]` | 401 |
+| `get_capital_plan(self)` | 200 funding+grant rows | 200 | 401 |
+| `get_capital_plan(other)` | `forbidden` | `forbidden` | 401 |
+| PATCH other client's record | 200 `[]`, 0 rows; DB unchanged | — | 401 |
+| PATCH own privileged fields (`status`, `funding_target`, `current_dfs_score`) | ignored, old values retained | ignored | 401 |
+
+### Automation E2E
+- Job `…ab01` (QUEUED, adapter `qa-fixture`, idempotency key `qa-fixture-job-a-1`) visible to Client A only.
+- Status history event `qa-evt-1` delivered twice → **1 row** persisted. Idempotency by `event_id` confirmed at the database level.
+
+### Remaining gaps (unchanged by this pass)
+- `funding_lender_database` still holds 0 non-fixture lenders → real lender matching remains UNPROVEN.
+- No worker process has executed a live job; the automation state machine beyond `QUEUED` is exercised only by fixtures.
+
+**Verdict:** cross-client isolation **PASS** (post-fix). Portal data layer **GO**. Full launch still **NO-GO** pending real lender data and a live worker run.
