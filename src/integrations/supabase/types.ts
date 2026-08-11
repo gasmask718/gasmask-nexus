@@ -141025,6 +141025,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      auth_user_id_by_email: { Args: { _email: string }; Returns: string }
       auto_adjust_campaign_weights: {
         Args: { p_business_id: string }
         Returns: Json
