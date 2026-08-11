@@ -15,7 +15,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { requireFundingStaff, fundingAuthResponse } from "../_shared/fundingAuth.ts";
 
-import { matchLenders, isSubmittable } from "../_shared/lenderMatch.ts";
+import { matchLenders, isSubmittable } from "./lenderMatch.ts";
 
 
 Deno.serve(async (req) => {

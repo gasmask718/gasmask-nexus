@@ -5,7 +5,7 @@ import {
   isSubmittable,
   type LenderRow,
   type ClientProfile,
-} from '../../supabase/functions/_shared/lenderMatch';
+} from '../../supabase/functions/lender-matching-engine/lenderMatch';
 
 const lender = (over: Partial<LenderRow> = {}): LenderRow => ({
   id: over.id ?? 'l1',
