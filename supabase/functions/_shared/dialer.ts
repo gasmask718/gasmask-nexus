@@ -122,7 +122,8 @@ function computeSig(token: string, url: string, params: Record<string, string>):
 export function verifyTwilio(
   req: Request,
   params: Record<string, string>,
-): { ok: boolean; reason?: string; matchedUrl?: string } {
+  opts?: { extraTokenEnvVars?: string[] },
+): { ok: boolean; reason?: string; matchedUrl?: string; matchedToken?: string } {
   if ((Deno.env.get("DIALER_SKIP_TWILIO_VERIFY") || "").toLowerCase() === "true") {
     return { ok: true, reason: "skipped_by_env" };
   }
@@ -131,13 +132,20 @@ export function verifyTwilio(
   // that if TWILIO_AUTH_TOKEN holds an API Key Secret (starts with the API Key
   // pair), signature verification will ALWAYS fail. Twilio signs webhooks with
   // the Account Auth Token, not API Key secrets.
-  const token =
-    Deno.env.get("TWILIO_WEBHOOK_AUTH_TOKEN") ||
-    Deno.env.get("TWILIO_AUTH_TOKEN");
-  if (!token) return { ok: false, reason: "no_auth_token" };
-  const tokenSource = Deno.env.get("TWILIO_WEBHOOK_AUTH_TOKEN")
-    ? "TWILIO_WEBHOOK_AUTH_TOKEN"
-    : "TWILIO_AUTH_TOKEN";
+  //
+  // Some flows place calls from a second Twilio account (e.g. Brandaro); those
+  // callbacks are signed with THAT account's auth token. Pass the extra env var
+  // names via opts.extraTokenEnvVars so a single endpoint can serve both.
+  const tokenEnvVars = [
+    "TWILIO_WEBHOOK_AUTH_TOKEN",
+    "TWILIO_AUTH_TOKEN",
+    ...(opts?.extraTokenEnvVars ?? []),
+  ];
+  const tokens = tokenEnvVars
+    .map((name) => ({ name, value: Deno.env.get(name) || "" }))
+    .filter((t) => t.value);
+  if (tokens.length === 0) return { ok: false, reason: "no_auth_token" };
+
   const sig = req.headers.get("x-twilio-signature");
   if (!sig) return { ok: false, reason: "no_signature_header" };
 
@@ -148,21 +156,23 @@ export function verifyTwilio(
   ];
 
   const computed: Record<string, string> = {};
-  for (const c of candidates) {
-    const s = computeSig(token, c.url, params);
-    computed[c.label] = s;
-    if (s.length === sig.length) {
-      let diff = 0;
-      for (let i = 0; i < s.length; i++) diff |= s.charCodeAt(i) ^ sig.charCodeAt(i);
-      if (diff === 0) return { ok: true, matchedUrl: c.label };
+  for (const t of tokens) {
+    for (const c of candidates) {
+      const s = computeSig(t.value, c.url, params);
+      computed[`${t.name}:${c.label}`] = s;
+      if (s.length === sig.length) {
+        let diff = 0;
+        for (let i = 0; i < s.length; i++) diff |= s.charCodeAt(i) ^ sig.charCodeAt(i);
+        if (diff === 0) return { ok: true, matchedUrl: c.label, matchedToken: t.name };
+      }
     }
   }
 
   // Diagnostic — surface the exact mismatch so we can fix the URL/token.
   console.error("[verifyTwilio] signature mismatch", JSON.stringify({
     received_signature: sig,
-    token_source: tokenSource,
-    candidates: candidates.map((c) => ({ label: c.label, url: c.url, computed: computed[c.label] })),
+    tokens_tried: tokens.map((t) => t.name),
+    candidates: candidates.map((c) => ({ label: c.label, url: c.url })),
     x_forwarded_proto: req.headers.get("x-forwarded-proto"),
     x_forwarded_host: req.headers.get("x-forwarded-host"),
     host: req.headers.get("host"),
@@ -171,6 +181,7 @@ export function verifyTwilio(
   }));
   return { ok: false, reason: "invalid_signature" };
 }
+
 
 
 /**

@@ -63083,6 +63083,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_hud_zone: boolean | null
+          is_internal_entity: boolean
           is_opportunity_zone: boolean | null
           is_rural: boolean | null
           is_urban: boolean | null
@@ -63186,6 +63187,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_hud_zone?: boolean | null
+          is_internal_entity?: boolean
           is_opportunity_zone?: boolean | null
           is_rural?: boolean | null
           is_urban?: boolean | null
@@ -63289,6 +63291,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_hud_zone?: boolean | null
+          is_internal_entity?: boolean
           is_opportunity_zone?: boolean | null
           is_rural?: boolean | null
           is_urban?: boolean | null
@@ -100419,7 +100422,9 @@ export type Database = {
       }
       sentinel_campaign_approvals: {
         Row: {
+          approval_note: string | null
           approved_at: string | null
+          approved_by: string | null
           approved_by_system: boolean | null
           campaign_id: string
           checks_passed: Json | null
@@ -100435,7 +100440,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          approval_note?: string | null
           approved_at?: string | null
+          approved_by?: string | null
           approved_by_system?: boolean | null
           campaign_id: string
           checks_passed?: Json | null
@@ -100451,7 +100458,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          approval_note?: string | null
           approved_at?: string | null
+          approved_by?: string | null
           approved_by_system?: boolean | null
           campaign_id?: string
           checks_passed?: Json | null
@@ -142394,6 +142403,18 @@ export type Database = {
           reference_id: string
           source: string
           status: string
+        }[]
+      }
+      get_capital_plan_totals: {
+        Args: never
+        Returns: {
+          amount_approved: number
+          amount_funded: number
+          amount_pending: number
+          amount_requested: number
+          application_count: number
+          client_count: number
+          source: string
         }[]
       }
       get_commission_rate: {

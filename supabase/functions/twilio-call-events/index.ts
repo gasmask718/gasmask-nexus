@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { readForm, verifyTwilio } from "../_shared/dialer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,15 +25,32 @@ Deno.serve(async (req) => {
     let recordingSid: string | null = null;
 
     const contentType = req.headers.get("content-type") || "";
-    
-    if (contentType.includes("application/x-www-form-urlencoded")) {
-      const formData = await req.formData();
-      callSid = formData.get("CallSid") as string;
-      callStatus = formData.get("CallStatus") as string;
-      duration = formData.get("CallDuration") as string;
-      recordingUrl = formData.get("RecordingUrl") as string;
-      recordingSid = formData.get("RecordingSid") as string;
+
+    if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart/form-data")) {
+      // SEC-018: Twilio-signed path. Unsigned POSTs could write fabricated call
+      // states into dialer tables with no way to tell them from real ones.
+      const params = await readForm(req);
+      const v = verifyTwilio(req, params);
+      if (!v.ok) {
+        console.error("[twilio-call-events] rejected unsigned request:", v.reason);
+        return new Response(JSON.stringify({ error: "invalid_twilio_signature", reason: v.reason }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      callSid = params.CallSid ?? null;
+      callStatus = params.CallStatus ?? null;
+      duration = params.CallDuration ?? null;
+      recordingUrl = params.RecordingUrl ?? null;
+      recordingSid = params.RecordingSid ?? null;
     } else {
+      // SEC-018: the JSON path is server-to-server only. It carries no Twilio
+      // signature, so it requires the service-role bearer token.
+      const bearer = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+      if (!bearer || bearer !== Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
+        return new Response(JSON.stringify({ error: "unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const body = await req.json();
       callSid = body.CallSid || body.call_sid;
       callStatus = body.CallStatus || body.call_status;
@@ -40,6 +58,7 @@ Deno.serve(async (req) => {
       recordingUrl = body.RecordingUrl || body.recording_url;
       recordingSid = body.RecordingSid || body.recording_sid;
     }
+
 
     if (!callSid || !callStatus) {
       return new Response(JSON.stringify({ error: "Missing CallSid or CallStatus" }), {

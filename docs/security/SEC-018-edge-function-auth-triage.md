@@ -1,0 +1,591 @@
+# SEC-018 — Edge Function Authentication Triage
+
+Date: 2026-08-11  
+Status: OPEN — remediation started, not complete.  
+Scope: every function under `supabase/functions/`.
+
+## Why this exists
+
+`_shared/dialer.ts` already contains a correct `verifyTwilio()` — constant-time
+compare, multi-token support, and the canonical-URL handling that the Supabase
+edge gateway requires. Dozens of Twilio callbacks in the same directory verify
+nothing. An unsigned callback lets anyone POST fabricated call outcomes into our
+own tables, and after the fact there is no way to tell a forged row from a real
+one. This is an import problem, not a build problem.
+
+## Cron cross-reference (confirmed before any gating)
+
+`SELECT jobname, schedule, command FROM cron.job` returned 70 jobs. Every
+function reachable from pg_cron was moved into the CRON bucket **before**
+remediation, and the buckets are mutually exclusive: the intersection of CRON
+and MISSING_GATE is **0 functions**. No scheduled job is queued to receive a JWT
+gate, so nothing in the cron fleet breaks from this work.
+
+Related finding, tracked separately: 43 of the cron jobs call `net.http_post`
+directly with no Authorization header at all, and `private.cron_post` falls back
+to an anon JWT when the vault `service_role_key` is absent. The shared-secret
+work for bucket 2 must land before those functions are gated.
+
+## Counts
+
+| Bucket | Count |
+| --- | --- |
+| UNSIGNED_WEBHOOK | 125 |
+| MISSING_GATE | 198 |
+| CRON | 66 |
+| HAS_JWT | 73 |
+| OK_SIGNED | 56 |
+
+## Remediation completed so far
+
+- `twilio-call-status` — verifyTwilio() wired; forged signature → 403 (verified live)
+- `twilio-status-webhook` — verifyTwilio() wired; forged signature → 403 (verified live)
+- `twilio-recording-callback` — verifyTwilio() wired, accepts the Brandaro token too; forged → 403 (verified live)
+- `twilio-call-events` — form path verifyTwilio(); JSON path now requires the service-role bearer; unsigned form → 403 and bogus bearer → 401 (both verified live)
+- `apply-call-disposition` — **not** a Twilio callback (it is invoked from the browser dialer console), so it got a JWT gate plus a rep-ownership check, not a signature check. Anonymous and forged-JWT calls → 401 (verified live). The authenticated success path is UNVERIFIED pending a signed-in session.
+
+`supabase/functions/twilio-call-status/signature_test.ts` proves the signature
+algorithm against a throwaway token: genuine signature accepted, forged rejected,
+missing header rejected, post-signing body tampering rejected, second-account
+token accepted. 5/5 passing.
+
+## Rules for the remaining work
+
+1. Provider callbacks (Twilio, Bland, Stripe, etc.) get **signature verification** — never a JWT gate; the provider has no JWT.
+2. pg_cron-invoked functions get a **shared secret** header — a JWT gate breaks them, and 43 of the cron jobs post without any Authorization header today.
+3. App-invoked service-role functions get a **JWT gate plus a tenancy check**. A JWT gate alone is authentication without authorization: it proves who is calling, not what they are allowed to touch.
+
+
+## Bucket 1 — UNSIGNED WEBHOOK (highest risk: forged provider callbacks) — 125
+
+- `ambassador-approve-sms`
+- `ambassador-sale-webhook`
+- `analyze-dialer-call`
+- `analyze-va-call`
+- `apply-call-disposition`
+- `bland-call-webhook`
+- `bland-context-api`
+- `bland-send-sms`
+- `bland-start-call`
+- `bland-webhook`
+- `brandaro-ai-call-status`
+- `brandaro-ai-caller`
+- `brandaro-analyze-call`
+- `brandaro-call-analysis`
+- `brandaro-call-analyzer`
+- `brandaro-call-status`
+- `brandaro-call-twiml`
+- `brandaro-execute-calls`
+- `brandaro-fetch-recordings`
+- `brandaro-recording-proxy`
+- `brandaro-retell-webhook`
+- `brandaro-sms-dispatch`
+- `brandaro-sync-recordings`
+- `brandaro-twilio-creds-check`
+- `brandaro-voice-agent`
+- `call-ai-assist`
+- `call-ai-assisted-suggest`
+- `call-ai-audit-export`
+- `call-ai-audit-proof`
+- `call-ai-authorize-live`
+- `call-ai-auto-downgrade`
+- `call-ai-canary-escape`
+- `call-ai-canary-gate`
+- `call-ai-decision-logger`
+- `call-ai-kill-switch`
+- `call-ai-live-gate`
+- `call-ai-live-handler`
+- `call-ai-shadow-processor`
+- `call-ai-trust-evaluator`
+- `call-auto-escalation`
+- `call-center-ai-agent`
+- `call-center-ai-processor`
+- `call-center-missed-call-recovery`
+- `call-disclosure-handler`
+- `call-intelligence`
+- `call-live-handoff`
+- `call-outcome-intelligence`
+- `call-outcome-scorer`
+- `call-playbook-selector`
+- `call-shadow-predictor`
+- `call-state-orchestrator`
+- `call-technique-extractor`
+- `check-twilio-health`
+- `claude-call-analyzer`
+- `cold-call-tts-webhook`
+- `dc-amd-callback`
+- `dc-bland-dispatch`
+- `dc-call-status`
+- `dc-configure-webhook`
+- `dc-outbound-call`
+- `dc-post-call-analysis`
+- `dc-twilio-creds-check`
+- `dd-grabba-bridge`
+- `dd-whatsapp-webhook`
+- `dialer-bridge-agent`
+- `dialer-daily-summary`
+- `dialer-state-transition`
+- `dialer-watchdog`
+- `expose-admin-bridge`
+- `fetch-twilio-conversation`
+- `fetch-twilio-messages`
+- `fix-twiml-voice-url`
+- `gasmask-ai-caller`
+- `gasmask-trigger-bland-campaign`
+- `get-unified-call-history`
+- `outbound-call-authority`
+- `outscraper-webhook`
+- `owner-voice-stt`
+- `owner-voice-tts`
+- `playboxxx-trigger-bland-campaign`
+- `predictive-dialer-engine`
+- `re-docusign-webhook`
+- `re-post-call-analysis`
+- `recover-dialer`
+- `relay-sms`
+- `sbo-inbound-sms`
+- `sbo-send-daily-sms`
+- `sbo-send-picks-sms`
+- `send-approval-sms`
+- `send-biztext-sms`
+- `send-invoice-receipt`
+- `sf-post-call-analysis`
+- `sf-trigger-bland-campaign`
+- `sms-writer`
+- `solar-call-initiate`
+- `solar-call-logger`
+- `solar-parallel-dialer`
+- `start-call-recording`
+- `store-voice-notes-transcribe`
+- `supplier-reply-webhook`
+- `sync-bland-call`
+- `sync-call-to-source`
+- `transcribe-call-audio`
+- `transfer-campaign-call`
+- `twilio-bridge`
+- `twilio-call-events`
+- `twilio-call-status`
+- `twilio-gather-webhook`
+- `twilio-human-call-complete`
+- `twilio-human-queue-hold`
+- `twilio-manual-call`
+- `twilio-outbound-call`
+- `twilio-recording-callback`
+- `twilio-sms-status`
+- `twilio-status-webhook`
+- `twilio-transfer-choice-webhook`
+- `twilio-voice-diagnose`
+- `ut-generate-invoice`
+- `va-analyze-call`
+- `va-dialer-status`
+- `va-initiate-call`
+- `va-post-call-analysis`
+- `va-power-dialer`
+- `voice-pipeline-audit`
+- `voice-token-selftest`
+
+## Bucket 4 — MISSING_GATE (service-role, app-invoked, no gate) — 198
+
+- `advisor-instincts`
+- `advisor-mind`
+- `ai-backfill-runner`
+- `ai-financial-analysis`
+- `ai-generate-message`
+- `ai-graduation-evaluator`
+- `ai-risk-scan`
+- `ai-sales-scorer`
+- `ai-store-insights`
+- `ai-worker-engine`
+- `ambassador-notify`
+- `ambassador-profile`
+- `analyze-account-note`
+- `approve-ut-ambassador`
+- `assign-lead-to-dc`
+- `auto-fill-application`
+- `auto-reserve-materials`
+- `bag-pipeline-activate`
+- `batch-geocode-stores`
+- `blast-investors-ai`
+- `brandaro-ai-optimizer`
+- `brandaro-auto-build`
+- `brandaro-auto-distribute`
+- `brandaro-auto-striker`
+- `brandaro-closer-action`
+- `brandaro-closing-psychology`
+- `brandaro-competitor-takeover`
+- `brandaro-create-checkout`
+- `brandaro-create-payment-link`
+- `brandaro-execution-worker`
+- `brandaro-generate-demo`
+- `brandaro-global-scaling`
+- `brandaro-lead-discovery`
+- `brandaro-lead-sync`
+- `brandaro-learning-engine`
+- `brandaro-maintenance-coach`
+- `brandaro-number-assign`
+- `brandaro-personality-evolution`
+- `brandaro-pipeline-automator`
+- `brandaro-predictive-engine`
+- `brandaro-provision-receptionist`
+- `brandaro-receptionist-checkout`
+- `brandaro-revenue-autopilot`
+- `brandaro-seed-automations`
+- `brandaro-send-demo`
+- `brandaro-test-inbound`
+- `brandaro-track-demo-event`
+- `calculate-health-scores`
+- `campaign-frame-writer`
+- `campaign-kill-switch`
+- `canva-bulk-generate`
+- `cb-dispatch-engine`
+- `communication-brain`
+- `communication-insights`
+- `complete-user-invite`
+- `compliance-baseline-manager`
+- `compliance-data-seeder`
+- `compliance-metrics-calculator`
+- `compliance-sentinel`
+- `coverage-scan`
+- `daily-briefing`
+- `dc-manual-disposition`
+- `dd-affiliate-signup`
+- `dd-affiliate-track`
+- `dd-application-triage`
+- `dd-calculate-packing`
+- `dd-catalog-pipeline`
+- `dd-draft-outreach`
+- `dd-generate-description`
+- `dd-generate-po`
+- `dd-notify-customer-order-update`
+- `dd-notify-supplier-order`
+- `dd-pay-partner`
+- `dd-personalize-invite`
+- `dd-process-image`
+- `dd-refund-order`
+- `dd-send-referral-invite`
+- `dd-stripe-connect-onboard`
+- `dropship-product-scorer`
+- `dynasty-command-brain`
+- `economic-scan`
+- `encrypt-client-ssn`
+- `execute-playbook`
+- `extract-store-memory-v5`
+- `follow-up-engine`
+- `followup-ai`
+- `followup-execution-worker`
+- `forensic-replay-builder`
+- `funding-plaid`
+- `funding-postgrid`
+- `gasmask-order-receipt`
+- `gasmask-route-agent`
+- `generate-canva-asset`
+- `generate-deal-sheet-ai`
+- `generate-deletion-letter`
+- `generate-live-response`
+- `generate-personality-response`
+- `generate-ut-ambassador-insights`
+- `generate-visit-checklist`
+- `get-todays-games`
+- `gm-neighborhood-scan`
+- `import-cleaned-data`
+- `incident-drill-runner`
+- `incident-simulator`
+- `ingest-personality`
+- `ingestion-enrich-phones`
+- `intent-extraction`
+- `inventory-engine`
+- `match-auto-lenders`
+- `messaging-launch`
+- `meta-ai-supervisor`
+- `nba-moneyline-engine`
+- `nba-stats-engine`
+- `neighborhood-lockdown-engine`
+- `nightlife-notify`
+- `optimize-assignment-fee-ai`
+- `optimize-routes`
+- `playbook-manager`
+- `pod-generate-design`
+- `process-automation`
+- `production-supply-predict`
+- `promotion-gate`
+- `promotion-sandbox`
+- `provision-dc-number`
+- `re-buyer-blast`
+- `re-match-buyers`
+- `regulatory-evidence-generator`
+- `relationship-agent`
+- `revenue-engine`
+- `revenue-engine-v2`
+- `route-ai`
+- `route-optimizer-engine`
+- `run-note-cleaner`
+- `run-ut-ambassador-pipeline-test`
+- `sbo-analyze-model`
+- `sbo-analyze-tonight`
+- `sbo-build-parlays`
+- `sbo-build-prop-context`
+- `sbo-cache-player-images`
+- `sbo-compare-odds`
+- `sbo-daily-automation`
+- `sbo-daily-profit-plan`
+- `sbo-expand-stat-context`
+- `sbo-external-results`
+- `sbo-fetch-intelligence`
+- `sbo-fetch-odds`
+- `sbo-ingest-book-props`
+- `sbo-intelligence-audit`
+- `sbo-market-performance`
+- `sbo-parse-capper-image`
+- `sbo-parse-prop-image`
+- `sbo-recalibrate`
+- `sbo-run-analysis`
+- `sbo-run-predictions`
+- `sbo-simulate-parlay`
+- `sbo-system-health`
+- `sbo-top-plays`
+- `sbo-track-clv`
+- `scale-engine`
+- `score-client-for-credit-unions`
+- `select-personality`
+- `send-invite`
+- `sf-assign-attorney`
+- `sf-send-contract`
+- `simulate-lines`
+- `simulate-outcomes`
+- `solar-followup-engine`
+- `sportsbook-lines-ingest`
+- `start-followup-execution-run`
+- `store-performance-engine`
+- `submit-lender-application`
+- `submit-public-intake`
+- `submit-ut-ambassador`
+- `supplier-send`
+- `system-health`
+- `territory-ai`
+- `trust-calibration-engine`
+- `tt-booking-fulfillment`
+- `tt-claim-via-link`
+- `tt-smart-dispatch`
+- `ut-ai-business-builder`
+- `ut-ai-negotiation`
+- `ut-ambassador-finder`
+- `ut-create-checkout`
+- `ut-growth-engine`
+- `ut-lead-scraper`
+- `ut-places-search`
+- `ut-pricing-engine`
+- `ut-run-territory-job`
+- `ut-verify-payment`
+- `va-create-pay-session`
+- `va-task-router-ai`
+- `va-translate-batch`
+- `va-verify-payment`
+- `verify-contact-number`
+- `warehouse-brain-engine`
+- `website-pitch-writer`
+- `weekly-briefing`
+
+## Bucket 2 — CRON-INVOKED (needs a shared secret, NOT a JWT gate) — 66
+
+- `admin-notify`
+- `brandaro-build-worker`
+- `brandaro-market-domination`
+- `brandaro-nightly-discovery`
+- `brandaro-recovery-worker`
+- `brandaro-retry-jobs`
+- `brandaro-scout-agent`
+- `brandaro-send-followup`
+- `brandaro-send-followups`
+- `bulk-ai-call-processor`
+- `bulk-sms-processor`
+- `bureau-deadline-checker`
+- `dc-configure-webhooks-bulk`
+- `dd-cart-recovery-cron`
+- `dd-generate-partner-payouts`
+- `dd-order-anomaly-cron`
+- `dd-price-intelligence`
+- `dd-pro-monthly-report`
+- `dd-release-reserves`
+- `dd-reorder-nudges`
+- `dd-review-summary-drain`
+- `dd-sla-snapshot`
+- `dd-subscription-fulfillment`
+- `dd-supplier-scorecard`
+- `demo-expiry-cleanup`
+- `dispatch-campaign-tick`
+- `dynasty-agent-runner`
+- `floor-agent-runner`
+- `funding-morning-briefing`
+- `gasmask-opportunity-sync`
+- `gdrive-backup`
+- `generate-daily-ops-report`
+- `generate-partner-snapshots`
+- `gm-cadence-cron`
+- `grant-auto-pipeline`
+- `grant-deadline-reminder`
+- `grant-eligibility-checker`
+- `monitor-ut-ambassador-pipeline`
+- `morning-ops-cycle`
+- `optimize-ut-ambassador-performance`
+- `process-notification-queue`
+- `process-settlements`
+- `public-view-security-probe`
+- `re-lead-import`
+- `re-skip-trace`
+- `re-trigger-bland-campaign`
+- `route-learning`
+- `sbo-clamp-readiness`
+- `sbo-collect-stats`
+- `sbo-consensus-engine`
+- `sbo-day-engine`
+- `sbo-match-capper-picks`
+- `sbo-result-tracker`
+- `sbo-score-capper-picks`
+- `sbo-signal-combiner`
+- `sbo-sync-props-master`
+- `sbo-track-results`
+- `sbo-verify-results`
+- `sbo-weekly-report-generator`
+- `sbo-weight-optimizer`
+- `sf-lead-import`
+- `solar-followup-sender`
+- `sync-clipper-metrics`
+- `system-health-runner`
+- `tt-release-expired-auths`
+- `vault-snapshot`
+
+## Bucket 3 — HAS_JWT (gate present; tenancy/ownership still unproven) — 73
+
+- `accept-crm-invite`
+- `accept-va-invite`
+- `admin-twilio-test`
+- `ambassador-ai-call`
+- `ambassador-direct-call`
+- `ambassador-send-sms`
+- `audit-note-parser`
+- `brandaro-client-billing-portal`
+- `brandaro-client-update-config`
+- `brandaro-invoice-checkout`
+- `brandaro-live-discovery`
+- `brandaro-start-hosting-subscription`
+- `brandaro-voice-token`
+- `bulk-import-partners`
+- `clipper-approve-application`
+- `clipper-payout`
+- `cold-call-tts-blast`
+- `create-ops-thread`
+- `crm-inactivity-scanner`
+- `dc-bulk-call`
+- `dc-log-compliance-event`
+- `dd-ai-category-copy`
+- `dd-create-checkout`
+- `dd-provision-wholesaler`
+- `dd-stripe-connect-status`
+- `escalation-handler`
+- `executive-decision-engine`
+- `executive-directive-manager`
+- `executive-policy-manager`
+- `extract-profile-enrichment`
+- `field-portal-comms`
+- `finalize-audit-draft`
+- `finance-signal-scanner`
+- `generate-grant-draft`
+- `generate-shipping-label`
+- `governed-outbound-call`
+- `grant-auto-apply`
+- `grant-eligibility-check`
+- `grant-opportunity-intake`
+- `grant-profile-completeness`
+- `initiate-operator-call`
+- `invite-va`
+- `lender-matching-engine`
+- `margin-deviation-scanner`
+- `outbound-campaign-manager`
+- `place-outbound-call`
+- `play-twilio-recording`
+- `proxy-public-data`
+- `realtime-kill-switch`
+- `reconcile-audit-batch`
+- `redeem-portal-invite`
+- `sbo-auto-bet`
+- `send-ambassador-invite`
+- `send-coaching-to-va`
+- `send-crm-invite`
+- `send-invoice-sms`
+- `send-operator-sms`
+- `send-sms`
+- `send-user-invite`
+- `send-wholesaler-invite`
+- `strict-verify-batch`
+- `style-profile-manager`
+- `submit-grant-application`
+- `test-ring`
+- `tt-invite-partner`
+- `twilio-voice-token`
+- `va-analyze-single-call`
+- `va-live-coach`
+- `va-next-call-coach`
+- `va-send-intake-invite`
+- `va-send-invoice`
+- `va-stripe-checkout`
+- `validate-twilio-credentials`
+
+## Bucket 0 — OK_SIGNED (already verifies a signature or shared secret) — no action — 56
+
+- `bland-agent-trigger`
+- `bland-agent-webhook`
+- `brandaro-billing-webhook`
+- `brandaro-durable-webhook`
+- `brandaro-handle-inbound`
+- `brandaro-receptionist-webhook`
+- `brandaro-stripe-webhook`
+- `comms-health-monitor`
+- `dc-bland-webhook`
+- `dc-inbound-call`
+- `dd-email-unsubscribe`
+- `dd-process-email-jobs`
+- `dd-stripe-connect-webhook`
+- `dd-stripe-webhook`
+- `dd-tracking-webhook`
+- `dd-trigger-bland-campaign`
+- `demo-stripe-webhook`
+- `demo-webhook-selftest`
+- `dialer-call-status`
+- `funding-automation-api`
+- `gasmask-call-dial-complete`
+- `gasmask-call-recording-status`
+- `gasmask-inbound-voice`
+- `gasmask-missed-call-handler`
+- `gasmask-sms-inbound`
+- `gasmask-voicemail-complete`
+- `gasmask-voicemail-transcription`
+- `make-grant-webhook`
+- `onboard-transport-partner`
+- `re-intake-webhook`
+- `receive-customer-rating-event`
+- `receive-event-booking`
+- `receive-public-booking`
+- `receive-ut-ambassador`
+- `receive-ut-rental`
+- `receive-ut-staff`
+- `receive-ut-venue`
+- `sbo-telegram-intake`
+- `secret-presence-check`
+- `secret-presence-probe`
+- `sf-payment-handler`
+- `sms-inbound-webhook`
+- `tt-create-bland-agent`
+- `tt-trigger-bland-campaign`
+- `twilio-bridge-fallback`
+- `twilio-bridge-to-bland`
+- `twilio-campaign-confirm`
+- `twilio-campaign-twiml`
+- `twilio-inbound-call`
+- `twilio-recording-webhook`
+- `twilio-sms-webhook`
+- `twilio-voice-twiml`
+- `twilio-voice-webhook`
+- `ut-stripe-webhook`
+- `ut-trigger-bland-campaign`
+- `voicemail-webhook`
+
