@@ -34305,6 +34305,7 @@ export type Database = {
       }
       clipper_accounts: {
         Row: {
+          application_id: string | null
           bio: string | null
           country: string | null
           created_at: string | null
@@ -34329,6 +34330,7 @@ export type Database = {
           wise_email: string | null
         }
         Insert: {
+          application_id?: string | null
           bio?: string | null
           country?: string | null
           created_at?: string | null
@@ -34353,6 +34355,7 @@ export type Database = {
           wise_email?: string | null
         }
         Update: {
+          application_id?: string | null
           bio?: string | null
           country?: string | null
           created_at?: string | null
@@ -34376,10 +34379,19 @@ export type Database = {
           wise_account_id?: string | null
           wise_email?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clipper_accounts_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clipper_applications: {
         Row: {
+          clipper_account_id: string | null
           created_at: string
           email: string
           follower_ranges: Json
@@ -34395,6 +34407,7 @@ export type Database = {
           why_join: string | null
         }
         Insert: {
+          clipper_account_id?: string | null
           created_at?: string
           email: string
           follower_ranges?: Json
@@ -34410,6 +34423,7 @@ export type Database = {
           why_join?: string | null
         }
         Update: {
+          clipper_account_id?: string | null
           created_at?: string
           email?: string
           follower_ranges?: Json
@@ -34424,7 +34438,15 @@ export type Database = {
           updated_at?: string
           why_join?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clipper_applications_clipper_account_id_fkey"
+            columns: ["clipper_account_id"]
+            isOneToOne: false
+            referencedRelation: "clipper_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clipper_assignments: {
         Row: {
@@ -141003,6 +141025,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      auth_user_id_by_email: { Args: { _email: string }; Returns: string }
       auto_adjust_campaign_weights: {
         Args: { p_business_id: string }
         Returns: Json

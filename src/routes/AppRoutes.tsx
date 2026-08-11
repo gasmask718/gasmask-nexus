@@ -231,6 +231,8 @@ const AdminOpsDashboard = lazy(() => import('@/pages/admin/AdminOpsDashboard'));
 const FieldAssignments = lazy(() => import('@/pages/admin/FieldAssignments'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
 const ClipperApplication = lazy(() => import('@/pages/apply/ClipperApplication'));
+const ClipperLogin = lazy(() => import('@/pages/clipper/ClipperLogin'));
+const ClipperPortal = lazy(() => import('@/pages/clipper/ClipperPortal'));
 
 // VA Portal
 const VAAuthPage = lazy(() => import('@/pages/va/VAAuthPage'));
@@ -1387,6 +1389,9 @@ export default function AppRoutes() {
       {/* Public Ambassador Application Form */}
       <Route path="/apply" element={<ClipperApplication />} />
       <Route path="/apply/clipper" element={<ClipperApplication />} />
+      {/* Clipper Nation portal (approved clippers only — gated inside ClipperPortal) */}
+      <Route path="/clipper/login" element={<ClipperLogin />} />
+      <Route path="/clipper/portal" element={<ClipperPortal />} />
       <Route path="/apply/ambassador" element={<AmbassadorApplication />} />
       <Route path="/apply/beauty-specialist" element={<BeautyProviderSignup />} />
       {/* Brandaro paid-client intake (public, no login) */}
