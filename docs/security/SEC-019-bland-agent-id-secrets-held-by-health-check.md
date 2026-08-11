@@ -1,8 +1,17 @@
 # SEC-019 — 13 secret slots held by Bland agent IDs with nothing behind them
 
-**Status:** OPEN (deliberately not actioned — product decision, not engineering)
+**Status:** PARTIALLY ACTIONED — 1 of 13 deleted (see log below); remaining 12 still OPEN
 **Filed:** 2026-08-11
 **Related:** secret-cap triage (100/100 dev cap), PIPE-01 slot freeing
+
+## Deletion log
+
+| Date | Secret deleted | Reason | Effect |
+|---|---|---|---|
+| 2026-08-11 | `SF_ATTORNEY_AGENT_ID` | One slot needed for `UT_INGEST_SECRET` (PIPE-01 activation). Chosen because it is referenced **only** by `comms-health-monitor` (line 617) — grep across `supabase/` and `src/` returns no other consumer, and no Bland agent was ever created behind it. | `comms-health-monitor` now reports that one Surplus Funds line as missing/amber. That reading is accurate: the secret was never backed by a real agent. Assertion left in place intentionally so the gap stays visible. |
+
+Remaining in the block: 12 secrets. Same two clean outcomes as below still apply.
+
 
 ## Finding
 
