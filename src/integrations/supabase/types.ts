@@ -100422,7 +100422,9 @@ export type Database = {
       }
       sentinel_campaign_approvals: {
         Row: {
+          approval_note: string | null
           approved_at: string | null
+          approved_by: string | null
           approved_by_system: boolean | null
           campaign_id: string
           checks_passed: Json | null
@@ -100438,7 +100440,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          approval_note?: string | null
           approved_at?: string | null
+          approved_by?: string | null
           approved_by_system?: boolean | null
           campaign_id: string
           checks_passed?: Json | null
@@ -100454,7 +100458,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          approval_note?: string | null
           approved_at?: string | null
+          approved_by?: string | null
           approved_by_system?: boolean | null
           campaign_id?: string
           checks_passed?: Json | null
