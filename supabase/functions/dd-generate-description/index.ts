@@ -172,10 +172,12 @@ Deno.serve(async (req) => {
     let store_price_a = priceIn;
     let recognition: RecognitionFacts | undefined = body?.recognition;
 
+    let hasExistingCopy = false;
+
     if (product_id) {
       const { data, error } = await supabase
         .from('products_all')
-        .select('product_name, brand, category, supplier_cost, store_price_a, key_features, item_type, package_text, flavor_or_variant, size_or_count, brand_visible')
+        .select('product_name, brand, category, supplier_cost, store_price_a, key_features, item_type, package_text, flavor_or_variant, size_or_count, brand_visible, ai_description, ai_description_short')
         .eq('id', product_id)
         .maybeSingle();
       if (error) return ok({ error: error.message, product_id });
@@ -185,6 +187,9 @@ Deno.serve(async (req) => {
       category = category ?? data.category;
       supplier_cost = supplier_cost ?? data.supplier_cost;
       store_price_a = store_price_a ?? data.store_price_a;
+      hasExistingCopy =
+        (typeof (data as any).ai_description === 'string' && (data as any).ai_description.trim().length > 0) ||
+        (typeof (data as any).ai_description_short === 'string' && (data as any).ai_description_short.trim().length > 0);
       if (!recognition) {
         recognition = {
           key_features: (data as any).key_features ?? null,
@@ -205,19 +210,38 @@ Deno.serve(async (req) => {
     let genError: string | null = null;
 
     if (!apiKey) {
-      result = placeholderFor({ name, brand, category });
       usedPlaceholder = true;
       genError = 'anthropic_api_key_missing';
+      result = placeholderFor({ name, brand, category });
     } else {
       try {
         result = await callClaude(apiKey, { name, brand, category, supplier_cost, store_price_a, recognition });
       } catch (e) {
-        result = placeholderFor({ name, brand, category });
         usedPlaceholder = true;
         genError = (e as Error).message;
+        result = placeholderFor({ name, brand, category });
       }
     }
 
+    // Never overwrite real existing copy with placeholder text. If the model call
+    // failed and the product already has copy, write nothing and report failure.
+    if (usedPlaceholder && hasExistingCopy) {
+      await logDdError({
+        source: 'dd-generate-description',
+        message: `generation_failed_no_overwrite: ${genError}`,
+        context: { product_id },
+      });
+      return ok({
+        product_id,
+        success: false,
+        persisted: false,
+        error: 'generation_failed',
+        reason: genError,
+        message: 'AI generation failed. Existing description was left untouched — nothing was written.',
+      });
+    }
+
+    let persisted = false;
     if (persist && product_id) {
       const { error: upErr } = await supabase
         .from('products_all')
@@ -229,10 +253,19 @@ Deno.serve(async (req) => {
           description_generated_at: new Date().toISOString(),
         })
         .eq('id', product_id);
-      if (upErr) return ok({ error: upErr.message, product_id, result });
+      if (upErr) return ok({ error: upErr.message, success: false, persisted: false, product_id, result });
+      persisted = true;
     }
 
-    return ok({ product_id: product_id ?? null, result, placeholder: usedPlaceholder, warning: genError });
+    return ok({
+      product_id: product_id ?? null,
+      success: !usedPlaceholder,
+      persisted,
+      result,
+      placeholder: usedPlaceholder,
+      warning: genError,
+    });
+
   } catch (e) {
     await logDdError({
       source: 'dd-generate-description',
