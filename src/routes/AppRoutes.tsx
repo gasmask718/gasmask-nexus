@@ -43,6 +43,8 @@ const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const PendingApproval = lazy(() => import('@/pages/PendingApproval'));
 const Shop = lazy(() => import('@/pages/Shop'));
+const PublicProductPage = lazy(() => import('@/pages/shop/PublicProductPage'));
+
 const ShopifyStore = lazy(() => import('@/pages/ShopifyStore'));
 const Cart = lazy(() => import('@/pages/Cart'));
 const Checkout = lazy(() => import('@/pages/Checkout'));
@@ -1318,6 +1320,9 @@ export default function AppRoutes() {
         <Route path="/public" element={<LandingRedirect />} />
         {/* T1 M2: /shop → DD storefront (tier-aware pricing canonical there) */}
         <Route path="/shop" element={<Navigate to="/dynasty-direct/d2c-storefront" replace />} />
+        {/* Public, crawlable product detail page (schema.org Product JSON-LD) */}
+        <Route path="/shop/product/:productId" element={<PublicProductPage />} />
+
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/about" element={<AboutPage />} />
