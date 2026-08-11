@@ -18,6 +18,10 @@ export function errText(err: unknown): string {
 
   const e = err as Record<string, unknown>;
 
+  if (err instanceof Error) {
+    return err.stack ? `${err.name}: ${err.message}\n${err.stack}` : `${err.name}: ${err.message}`;
+  }
+
   // PostgrestError / PostgrestException shape: { message, code, details, hint }
   const hasPgShape =
     typeof e.message === "string" &&
@@ -30,10 +34,6 @@ export function errText(err: unknown): string {
     if (e.details != null && e.details !== "") out += ` | details: ${stringify(e.details)}`;
     if (e.hint != null && e.hint !== "") out += ` | hint: ${stringify(e.hint)}`;
     return out;
-  }
-
-  if (err instanceof Error) {
-    return err.stack ? `${err.name}: ${err.message}\n${err.stack}` : `${err.name}: ${err.message}`;
   }
 
   if (typeof e.message === "string") return e.message;

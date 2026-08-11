@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { errText } from "../_shared/errText.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,7 +38,7 @@ Deno.serve(async (req) => {
     // ─── 1. Fetch pending follow-ups that are due ───────────────
     const { data: pending, error: fetchErr } = await supabase
       .from("brandaro_followup_sequences")
-      .select("*, brandaro_qualified_leads:lead_id(phone, email, business_name)")
+      .select("*, brandaro_qualified_leads:lead_id(phone_number, email, business_name)")
       .eq("status", "pending")
       .eq("sent", false)
       .lte("scheduled_at", now)
@@ -59,7 +60,7 @@ Deno.serve(async (req) => {
 
       try {
         if (followup.channel === "sms") {
-          const phone = lead.phone;
+          const phone = lead.phone_number;
           if (!phone) {
             await markFailed(supabase, followup.id, "No phone number");
             failedCount++;
@@ -104,7 +105,7 @@ Deno.serve(async (req) => {
           sentCount++;
         }
       } catch (sendErr: unknown) {
-        const reason = sendErr instanceof Error ? sendErr.message : String(sendErr);
+        const reason = errText(sendErr);
         console.error(`Follow-up ${followup.id} send failed:`, reason);
         
         const retryCount = (followup.retry_count || 0) + 1;
@@ -126,7 +127,7 @@ Deno.serve(async (req) => {
     // Phase 12: If demo_viewed but no response, send nudge
     const { data: viewedDeals } = await supabase
       .from("brandaro_close_pipeline")
-      .select("*, brandaro_qualified_leads:lead_id(phone, email, business_name)")
+      .select("*, brandaro_qualified_leads:lead_id(phone_number, email, business_name)")
       .eq("stage", "demo_viewed")
       .lt("nudge_count", 3)
       .or(`last_nudge_at.is.null,last_nudge_at.lt.${new Date(Date.now() - 2 * 3600000).toISOString()}`);
@@ -141,13 +142,13 @@ Deno.serve(async (req) => {
 
     for (const deal of (viewedDeals || [])) {
       const lead = deal.brandaro_qualified_leads;
-      if (!lead?.phone) continue;
+      if (!lead?.phone_number) continue;
 
       const nudgeIdx = Math.min(deal.nudge_count || 0, nudgeMessages.length - 1);
       const msg = nudgeMessages[nudgeIdx];
 
       try {
-        await sendTwilioSms(lead.phone, msg, lead.business_name);
+        await sendTwilioSms(lead.phone_number, msg, lead.business_name);
         
         await supabase.from("brandaro_close_pipeline").update({
           nudge_count: (deal.nudge_count || 0) + 1,
@@ -157,7 +158,7 @@ Deno.serve(async (req) => {
 
         nudgesSent++;
       } catch (e) {
-        console.error(`Nudge failed for deal ${deal.id}:`, e);
+        console.error(`Nudge failed for deal ${deal.id}:`, errText(e));
       }
     }
 
@@ -165,7 +166,7 @@ Deno.serve(async (req) => {
     // If stage is "negotiating" and no payment link sent, create one
     const { data: negotiating } = await supabase
       .from("brandaro_close_pipeline")
-      .select("*, brandaro_qualified_leads:lead_id(phone, email, business_name)")
+      .select("*, brandaro_qualified_leads:lead_id(phone_number, email, business_name)")
       .eq("stage", "negotiating")
       .is("payment_link_sent_at", null);
 
@@ -173,7 +174,7 @@ Deno.serve(async (req) => {
 
     for (const deal of (negotiating || [])) {
       const lead = deal.brandaro_qualified_leads;
-      if (!lead?.phone || deal.payment_link_url) continue;
+      if (!lead?.phone_number || deal.payment_link_url) continue;
 
       // Generate real Stripe payment link via brandaro-create-payment-link
       try {
@@ -202,7 +203,7 @@ Deno.serve(async (req) => {
           console.error(`Payment link creation failed for deal ${deal.id}:`, errText);
         }
       } catch (e) {
-        console.error(`Payment push failed for deal ${deal.id}:`, e);
+        console.error(`Payment push failed for deal ${deal.id}:`, errText(e));
       }
     }
 
@@ -217,19 +218,9 @@ Deno.serve(async (req) => {
     });
 
   } catch (err: unknown) {
-    // Do NOT collapse non-Error objects (e.g. PostgrestError) into "[object Object]".
-    const e = err as Record<string, unknown> | null;
-    const message =
-      err instanceof Error
-        ? err.message
-        : (e && typeof e === "object" && typeof e.message === "string")
-          ? e.message
-          : (() => { try { return JSON.stringify(err); } catch { return String(err); } })();
-    const detail = e && typeof e === "object"
-      ? { message: e.message, code: e.code, details: e.details, hint: e.hint }
-      : undefined;
-    console.error("brandaro-send-followups error:", message, "detail:", JSON.stringify(detail ?? {}), "raw:", (() => { try { return JSON.stringify(err); } catch { return String(err); } })());
-    return new Response(JSON.stringify({ error: message, detail }), {
+    const message = errText(err);
+    console.error("brandaro-send-followups error:", message);
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
