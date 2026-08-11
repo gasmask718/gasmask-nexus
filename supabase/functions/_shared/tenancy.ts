@@ -188,14 +188,14 @@ export async function tenancy(req: Request): Promise<TenancyContext> {
     if (error) throw new Error(`${label} lookup failed: ${error.message}`);
     if (!row) throw new HttpError(404, `${label} ${id} not found.`);
 
-    const owner = (row as Record<string, unknown>)[businessColumn];
+    const owner = (row as unknown as Record<string, unknown>)[businessColumn];
     if (typeof owner !== 'string' || !owner) {
       // A row with no owner cannot be proven to belong to the caller. Refuse
       // rather than fall open.
       throw new HttpError(403, `${label} ${id} has no ${businessColumn} and cannot be authorized.`);
     }
     await assertBusinessAccess(owner);
-    return row as T;
+    return row as unknown as T;
   };
 
   return {
