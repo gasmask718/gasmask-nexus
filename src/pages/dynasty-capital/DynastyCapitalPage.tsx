@@ -51,6 +51,14 @@ const statusTone: Record<string, string> = {
   UNKNOWN: 'bg-muted text-muted-foreground border-border',
 };
 
+const packageTone: Record<string, string> = {
+  READY: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  MISSING_INFORMATION: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  MANUAL_REVIEW: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+  BLOCKED: 'bg-destructive/15 text-destructive border-destructive/30',
+};
+
+
 export default function DynastyCapitalPage() {
   const { data: clients, isLoading: clientsLoading } = useFundingClients();
   const [clientId, setClientId] = useState<string | undefined>();
