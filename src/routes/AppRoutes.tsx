@@ -2268,8 +2268,11 @@ export default function AppRoutes() {
         <Route path="/os/grants/apply/:packageId" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantApplicationPackage /></RequireRole>} />
         <Route path="/os/grants/:id" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantApplicationDetail /></RequireRole>} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
+        {/* Dynasty Capital — unified funding + grant capital view */}
+        <Route path="/dynasty-capital" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><DynastyCapitalPage /></RequireRole>} />
         {/* Floor 10 — Dynasty Funding Machine */}
         <Route path="/funding-machine" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineDashboard /></RequireRole>} />
+
         <Route path="/funding-machine/intake" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineIntake /></RequireRole>} />
         <Route path="/funding-machine/client/:clientId" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineClientProfile /></RequireRole>} />
         <Route path="/funding-machine/credit-repair" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineCreditRepair /></RequireRole>} />
