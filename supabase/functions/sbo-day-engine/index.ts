@@ -10,21 +10,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const API_COSTS: Record<string, { provider: string; cost_cents: number; note: string }> = {
+// PHASE 8F — Item 5: AI-bearing steps used to hardcode cost_cents: 0, so every
+// sbo_api_costs row for AI spend read as "free" by construction (8G finding).
+// cost_cents is now nullable: NULL == "usage not persisted yet — unknown", which
+// the dashboard renders as 0 contribution without ever claiming the step is free.
+// The `note` carries the honest reason. Rollback = restore the all-zero table.
+const API_COSTS: Record<string, { provider: string; cost_cents: number | null; note: string }> = {
   'sbo-fetch-odds': { provider: 'the_odds_api', cost_cents: 0, note: 'Free tier' },
-  'sbo-run-predictions': { provider: 'internal', cost_cents: 0, note: 'Internal AI predictions' },
-  'sbo-run-prop-predictions': { provider: 'internal', cost_cents: 0, note: 'Internal AI prop predictions (fanout)' },
+  'sbo-run-predictions': { provider: 'lovable_ai_gateway', cost_cents: null, note: 'AI spend UNKNOWN — usage-not-persisted (gemini-2.5-flash via gateway; no published per-token list price)' },
+  'sbo-run-prop-predictions': { provider: 'lovable_ai_gateway', cost_cents: null, note: 'AI spend UNKNOWN — usage-not-persisted (prop fanout, gemini-2.5-flash via gateway)' },
 
   'sbo-sync-daily': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-sync-pregame': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-sync-prizepicks': { provider: 'prizepicks', cost_cents: 0, note: 'Free unofficial API' },
   'sbo-sync-polymarket-full': { provider: 'polymarket', cost_cents: 0, note: 'Free public API' },
-  'sbo-compare-odds': { provider: 'internal', cost_cents: 0, note: 'Internal comparison' },
+  'sbo-compare-odds': { provider: 'internal', cost_cents: 0, note: 'Internal comparison — no model call' },
   'sbo-track-results': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
-  'sbo-analyze-model': { provider: 'internal', cost_cents: 0, note: 'Internal model analysis' },
-  'sbo-generate-daily-briefing': { provider: 'internal', cost_cents: 0, note: 'Generates SMS briefing' },
+  'sbo-analyze-model': { provider: 'lovable_ai_gateway', cost_cents: null, note: 'AI spend UNKNOWN — usage-not-persisted (gemini-3-flash-preview via gateway)' },
+  'sbo-generate-daily-briefing': { provider: 'internal', cost_cents: 0, note: 'Generates SMS briefing — no model call' },
   'sbo-send-daily-sms': { provider: 'twilio', cost_cents: 1, note: '~$0.01 per SMS' },
 };
+
 
 // A pipeline step. `sports` is the sport-support declaration: when
 // present, the step only runs for those sport_keys. Absent = runs for
