@@ -581,7 +581,36 @@ serve(async (req) => {
         return;
       }
 
-      const { pick, error: claudeErr, raw } = await extractPickWithClaude(text, ANTHROPIC_API_KEY);
+      const claudeStartedAt = Date.now();
+      const { pick, error: claudeErr, raw, usage } = await extractPickWithClaude(text, ANTHROPIC_API_KEY);
+
+      // PHASE 8F — Item 2: persist token usage into sbo_function_logs.metadata
+      // (jsonb, verified nullable). Previously data.usage was discarded, so SBO had
+      // zero measurement of Anthropic spend. This is the precondition for the 8A
+      // day-1 $5 budget cap and the 50k output-token/day abort (NOT added here).
+      if (usage) {
+        const { error: usageLogErr } = await supabase.from("sbo_function_logs").insert({
+          function_name: "sbo-telegram-intake",
+          status: pick ? "completed" : "failed",
+          records_processed: pick ? 1 : 0,
+          error_message: claudeErr ?? null,
+          duration_ms: Date.now() - claudeStartedAt,
+          completed_at: new Date().toISOString(),
+          metadata: {
+            phase: "8F",
+            provider: "anthropic",
+            call: "extract_pick",
+            source_message_id: sourceMessageId,
+            post_id: post.id,
+            usage,
+          },
+        });
+        if (usageLogErr) {
+          // Telemetry must never break intake.
+          console.error("usage log insert failed:", usageLogErr.message);
+        }
+      }
+
 
       if (!pick) {
         console.error("Claude extraction failed:", claudeErr);
