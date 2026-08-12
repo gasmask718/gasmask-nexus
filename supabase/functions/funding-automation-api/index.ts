@@ -439,7 +439,24 @@ async function submitResult(body: any, caller: Caller) {
 
   const ambiguous = normalized.status === 'NEEDS_HUMAN_REVIEW' || normalized.confidence === 'low';
 
-  await admin.from('automation_jobs').update({ status: 'READING_RESPONSE' }).eq('id', job.id);
+  // Walk the job to READING_RESPONSE through legal transitions only. Manual
+  // submissions sit in READY_TO_SUBMIT and must pass through SUBMITTING.
+  if (job.status !== 'READING_RESPONSE') {
+    if (job.status === 'READY_TO_SUBMIT') {
+      const { error: subErr } = await admin.from('automation_jobs')
+        .update({ status: 'SUBMITTING' }).eq('id', job.id);
+      if (subErr) return json({ error: subErr.message, job_status: job.status }, 409);
+    }
+    const { error: readErr } = await admin.from('automation_jobs')
+      .update({ status: 'READING_RESPONSE' }).eq('id', job.id);
+    if (readErr) {
+      await logEvent(job.id, job.application_id, 'RESULT_REJECTED',
+        `Cannot record a result from status ${job.status}: ${readErr.message}`,
+        { from_status: job.status }, 'error', caller.userId);
+      return json({ error: readErr.message, job_status: job.status }, 409);
+    }
+  }
+
 
   const patch: Record<string, unknown> = {
     result_status: normalized.status,
