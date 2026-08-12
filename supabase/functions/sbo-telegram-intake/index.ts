@@ -111,10 +111,20 @@ function stripJsonFence(s: string): string {
     .trim();
 }
 
+// PHASE 8F — Item 2: token usage is returned to the caller so it can be persisted
+// into sbo_function_logs.metadata instead of being discarded.
+export interface ClaudeUsage {
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  stop_reason: string | null;
+  estimated_cost_cents: number;
+}
+
 async function extractPickWithClaude(
   messageText: string,
   apiKey: string,
-): Promise<{ pick: ClaudePick | null; error?: string; raw?: string }> {
+): Promise<{ pick: ClaudePick | null; error?: string; raw?: string; usage?: ClaudeUsage }> {
   const system =
     "You are a sports betting pick extractor. Extract structured pick data from Telegram messages. Return ONLY valid JSON, no other text.";
   const user = `Extract pick data from this Telegram message. Return JSON with these exact fields:
