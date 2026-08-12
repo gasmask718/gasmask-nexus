@@ -3,6 +3,7 @@ import {
   evaluateLender,
   matchLenders,
   isSubmittable,
+  expandLenderProducts,
   type LenderRow,
   type ClientProfile,
 } from '../../supabase/functions/lender-matching-engine/lenderMatch';
@@ -144,5 +145,56 @@ describe('lender matching rules', () => {
     const { results, excluded_qa_fixtures } = matchLenders([], client());
     expect(results).toEqual([]);
     expect(excluded_qa_fixtures).toBe(0);
+  });
+});
+
+describe('expandLenderProducts', () => {
+  const baseLender = {
+    id: 'L1',
+    lender_name: 'Verified Lender',
+    product_name: 'Default product',
+    min_credit_score: 600,
+    min_revenue: 10000,
+    min_time_in_business_months: 12,
+    is_active: true,
+  };
+
+  it('leaves a lender with no products untouched', () => {
+    const rows = expandLenderProducts([baseLender], []);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].product_id ?? null).toBeNull();
+    expect(rows[0].min_credit_score).toBe(600);
+  });
+
+  it('evaluates one row per active product with product thresholds winning', () => {
+    const rows = expandLenderProducts([baseLender], [
+      { id: 'P1', lender_id: 'L1', product_name: 'Term loan', min_credit_score: 680, is_active: true },
+      { id: 'P2', lender_id: 'L1', product_name: 'Line of credit', min_revenue: 25000, is_active: true },
+      { id: 'P3', lender_id: 'L1', product_name: 'Retired', is_active: false },
+    ]);
+    expect(rows).toHaveLength(2);
+    const term = rows.find((r) => r.product_id === 'P1')!;
+    expect(term.min_credit_score).toBe(680);
+    // Unpublished product thresholds fall back to the lender record.
+    expect(term.min_revenue).toBe(10000);
+    const loc = rows.find((r) => r.product_id === 'P2')!;
+    expect(loc.min_revenue).toBe(25000);
+    expect(loc.min_credit_score).toBe(600);
+  });
+
+  it('carries the product id into the match result', () => {
+    const rows = expandLenderProducts([baseLender], [
+      { id: 'P1', lender_id: 'L1', product_name: 'Term loan', is_active: true },
+    ]);
+    const result = evaluateLender(rows[0], {
+      credit_score_estimate: 700,
+      monthly_revenue: 50000,
+      time_in_business_months: 36,
+      business_name: 'Acme LLC',
+      ein: '12-3456789',
+      personal_guarantee_ok: true,
+    });
+    expect(result.product_id).toBe('P1');
+    expect(result.verdict).toBe('MATCHED');
   });
 });

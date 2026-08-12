@@ -15,7 +15,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { requireFundingStaff, fundingAuthResponse } from "../_shared/fundingAuth.ts";
 
-import { matchLenders, isSubmittable } from "./lenderMatch.ts";
+import { matchLenders, isSubmittable, expandLenderProducts } from "./lenderMatch.ts";
 
 
 Deno.serve(async (req) => {
@@ -92,8 +92,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Product-level requirements, when published, are what the client is
+    // actually applying to. Lenders with no products stay in the universe.
+    const { data: products } = await supabase
+      .from("funding_lender_products")
+      .select("*")
+      .in("lender_id", lenders.map((l: { id: string }) => l.id));
+
+    const universe = expandLenderProducts(lenders as never, (products ?? []) as never);
+
     const { results } = matchLenders(
-      lenders as never,
+      universe as never,
       {
         credit_score_estimate: score,
         monthly_revenue: monthlyRevenue,
@@ -113,13 +122,23 @@ Deno.serve(async (req) => {
         (r.verdict === "MATCHED" || r.verdict === "REQUIRES_PREREQUISITE"),
     );
 
-    if (persistable.length > 0) {
-      const rows = persistable.map((m) => ({
+    // funding_client_lender_matches is keyed by lender — persist the strongest
+    // product per lender so a multi-product lender cannot collide on upsert.
+    const bestPerLender = new Map<string, typeof persistable[number]>();
+    for (const m of persistable) {
+      const prior = bestPerLender.get(m.lender_id);
+      if (!prior || m.match_score > prior.match_score) bestPerLender.set(m.lender_id, m);
+    }
+    const persistableUnique = [...bestPerLender.values()];
+
+    if (persistableUnique.length > 0) {
+      const rows = persistableUnique.map((m) => ({
         client_id,
         lender_id: m.lender_id,
         match_score: m.match_score,
         match_reasons: [
           `Verdict: ${m.verdict}`,
+          ...(m.product_id ? [`Product: ${m.product_name ?? m.product_id}`] : []),
           ...m.rules.filter((r) => r.outcome !== "n/a").map((r) => `${r.rule}: ${r.detail}`),
           ...(m.missing_prerequisites.length
             ? [`Missing prerequisites: ${m.missing_prerequisites.join(", ")}`]
@@ -211,7 +230,9 @@ Under 350 words. Tactical, no fluff.`;
 
     return json({
       client_id,
-      lender_universe: lenders.length,
+      lender_universe: universe.length,
+      lender_records: lenders.length,
+      product_records: (products ?? []).length,
       counts,
       matched_count: counts.MATCHED ?? 0,
       /** Real, active, non-QA lenders that may actually be submitted to. */

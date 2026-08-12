@@ -17,6 +17,8 @@ export interface RuleResult {
 export interface LenderRow {
   id: string;
   lender_name: string | null;
+  /** funding_lender_products.id when this row came from a product record. */
+  product_id?: string | null;
   product_name?: string | null;
   category?: string | null;
   product_type?: string | null;
@@ -51,6 +53,8 @@ export interface ClientProfile {
 
 export interface MatchResult {
   lender_id: string;
+  /** Set when the evaluated requirements came from a funding_lender_products row. */
+  product_id: string | null;
   lender_name: string | null;
   product_name: string | null;
   category: string | null;
@@ -236,6 +240,7 @@ export function evaluateLender(
 
   return {
     lender_id: lender.id,
+    product_id: lender.product_id ?? null,
     lender_name: lender.lender_name ?? null,
     product_name: lender.product_name ?? null,
     category: lender.category ?? null,
@@ -274,4 +279,69 @@ export function matchLenders(
     .map((l) => evaluateLender(l, client, [...missingPrerequisites]))
     .sort((a, b) => b.match_score - a.match_score);
   return { results, excluded_qa_fixtures: lenders.length - usable.length };
+}
+
+/** A funding_lender_products row as stored in the database. */
+export interface LenderProductRow {
+  id: string;
+  lender_id: string;
+  product_name?: string | null;
+  product_type?: string | null;
+  funding_lane?: string | null;
+  min_credit_score?: number | null;
+  min_revenue?: number | string | null;
+  min_time_in_business_months?: number | null;
+  max_amount?: number | string | null;
+  no_pg?: boolean | null;
+  docs_required?: string[] | null;
+  stack_priority?: number | null;
+  application_url?: string | null;
+  is_active?: boolean | null;
+}
+
+const pick = <T,>(product: T | null | undefined, lender: T | null | undefined): T | null =>
+  product === null || product === undefined ? (lender ?? null) : product;
+
+/**
+ * Expands the lender universe into the rows the engine actually evaluates.
+ *
+ * A lender with published products is evaluated once per active product, with
+ * product-level requirements overriding the lender-level defaults. A lender
+ * with no products is evaluated as a single row exactly as before, so nothing
+ * disappears from the universe when the products table is empty.
+ */
+export function expandLenderProducts(
+  lenders: LenderRow[],
+  products: LenderProductRow[] = [],
+): LenderRow[] {
+  const byLender = new Map<string, LenderProductRow[]>();
+  for (const p of products) {
+    if (p.is_active === false) continue;
+    const list = byLender.get(p.lender_id) ?? [];
+    list.push(p);
+    byLender.set(p.lender_id, list);
+  }
+
+  return lenders.flatMap((lender) => {
+    const own = byLender.get(lender.id) ?? [];
+    if (own.length === 0) return [lender];
+    return own.map((p) => ({
+      ...lender,
+      product_id: p.id,
+      product_name: p.product_name ?? lender.product_name ?? null,
+      product_type: p.product_type ?? lender.product_type ?? null,
+      funding_lane: p.funding_lane ?? lender.funding_lane ?? null,
+      min_credit_score: pick(p.min_credit_score, lender.min_credit_score),
+      min_revenue: pick(p.min_revenue, lender.min_revenue),
+      min_time_in_business_months: pick(
+        p.min_time_in_business_months,
+        lender.min_time_in_business_months,
+      ),
+      max_amount: pick(p.max_amount, lender.max_amount),
+      no_pg: pick(p.no_pg, lender.no_pg),
+      docs_required: p.docs_required ?? lender.docs_required ?? null,
+      stack_priority: pick(p.stack_priority, lender.stack_priority),
+      application_url: p.application_url ?? lender.application_url ?? null,
+    }));
+  });
 }
