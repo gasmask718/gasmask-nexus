@@ -391,6 +391,24 @@ async function resolveCheckpoint(body: any, caller: Caller) {
   if (cp.status !== 'PENDING') return json({ error: `Checkpoint already ${cp.status}` }, 409);
 
   const resume = body.resume !== false;
+  const { data: job } = await admin.from('automation_jobs').select('*').eq('id', cp.automation_job_id).maybeSingle();
+
+  // Move the job FIRST so a rejected transition cannot leave a checkpoint
+  // marked COMPLETED against a job that never moved.
+  if (job) {
+    const next = body.abandoned ? 'CANCELLED' : (resume ? (body.next_status ?? 'READY_TO_SUBMIT') : 'NEEDS_HUMAN_REVIEW');
+    const { error: jobError } = await admin.from('automation_jobs').update({
+      status: next, requires_human_action: false, human_action_type: null,
+      completed_at: next === 'CANCELLED' ? new Date().toISOString() : null,
+    }).eq('id', job.id);
+    if (jobError) {
+      await logEvent(job.id, job.application_id, 'CHECKPOINT_RESOLUTION_REJECTED',
+        `Job state machine rejected ${job.status} -> ${next}: ${jobError.message}`,
+        { from_status: job.status, next }, 'error', caller.userId);
+      return json({ error: jobError.message, job_status: job.status }, 409);
+    }
+  }
+
   await admin.from('automation_checkpoints').update({
     status: body.abandoned ? 'ABANDONED' : 'COMPLETED',
     completed_at: new Date().toISOString(),
@@ -400,18 +418,13 @@ async function resolveCheckpoint(body: any, caller: Caller) {
     resumed_at: resume && !body.abandoned ? new Date().toISOString() : null,
   }).eq('id', cp.id);
 
-  const { data: job } = await admin.from('automation_jobs').select('*').eq('id', cp.automation_job_id).maybeSingle();
   if (job) {
-    const next = body.abandoned ? 'CANCELLED' : (resume ? (body.next_status ?? 'READY_TO_SUBMIT') : 'NEEDS_HUMAN_REVIEW');
-    await admin.from('automation_jobs').update({
-      status: next, requires_human_action: false, human_action_type: null,
-      completed_at: next === 'CANCELLED' ? new Date().toISOString() : null,
-    }).eq('id', job.id);
     await logEvent(job.id, job.application_id, 'HUMAN_COMPLETED_CHECKPOINT',
       `${cp.checkpoint_type} completed by operator`, { checkpoint_type: cp.checkpoint_type, resumed: resume }, 'info', caller.userId);
   }
   return json({ ok: true });
 }
+
 
 /** Normalized result comes back and Funding Hub is updated. Never fabricated. */
 async function submitResult(body: any, caller: Caller) {
