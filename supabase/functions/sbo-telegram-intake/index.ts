@@ -169,7 +169,13 @@ Message: ${messageText}`;
         // array, so real picks routinely exceeded the cap and came back as
         // truncated JSON ("Unterminated string at position ~1250"). Those were
         // then filed as skipped_not_pick — a silent conversion loss.
-        max_tokens: 2000,
+        // PHASE 8F — Item 1: 2000 -> 600. Never below 600 (500 caused BUG-06).
+        // The stop_reason === "max_tokens" guard below makes any truncation an
+        // explicit failure, so a too-small cap is visible, never silent.
+        max_tokens: 600,
+        // PHASE 8F — Item 1.2: extraction is deterministic; sampling buys nothing
+        // and produces wasted paid retries.
+        temperature: 0,
         system,
         messages: [{ role: "user", content: user }],
       }),
@@ -183,7 +189,22 @@ Message: ${messageText}`;
 
     const data = await r.json();
     const raw = data?.content?.[0]?.text ?? "";
-    if (!raw) return { pick: null, error: "claude_empty_response" };
+
+    // PHASE 8F — Item 2: capture usage instead of discarding it. Anthropic list
+    // price for claude-sonnet-4-5: $3 / 1M input, $15 / 1M output.
+    const inputTokens = Number(data?.usage?.input_tokens ?? 0);
+    const outputTokens = Number(data?.usage?.output_tokens ?? 0);
+    const usage: ClaudeUsage = {
+      model: data?.model ?? CLAUDE_MODEL,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      stop_reason: data?.stop_reason ?? null,
+      estimated_cost_cents: Math.ceil(
+        ((inputTokens * 3) / 1_000_000 + (outputTokens * 15) / 1_000_000) * 100,
+      ),
+    };
+
+    if (!raw) return { pick: null, error: "claude_empty_response", usage };
 
     // A truncated completion is a FAILURE, not a verdict. Surface it explicitly
     // so it is never confused with "the model read this and said it is not a pick".
@@ -193,12 +214,13 @@ Message: ${messageText}`;
         pick: null,
         error: `claude_truncated: response hit max_tokens (${raw.length} chars) — pick could not be extracted`,
         raw,
+        usage,
       };
     }
 
     try {
       const parsed = JSON.parse(stripJsonFence(raw)) as ClaudePick;
-      return { pick: parsed, raw };
+      return { pick: parsed, raw, usage };
     } catch (parseErr) {
       // Return pick:null (previously { is_pick: false }) so the caller records
       // extraction_failed instead of skipped_not_pick. An unparseable response
@@ -207,6 +229,7 @@ Message: ${messageText}`;
         pick: null,
         error: `claude_parse_error: ${(parseErr as Error).message}`,
         raw,
+        usage,
       };
     }
   } catch (e) {
