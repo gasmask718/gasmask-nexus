@@ -11,6 +11,8 @@ import { useCapitalPlan } from '@/hooks/useCapitalPlan';
 import { useLenderMatches, useRunLenderMatching } from '@/hooks/useLenderMatches';
 import { useFundingPlan } from '@/hooks/useFundingStrategy';
 import { useApplicationPackages } from '@/hooks/useApplicationPackage';
+import { useCreateApplicationFromPackage } from '@/hooks/useCreateApplicationFromPackage';
+import { useAutomationActions } from '@/hooks/useAutomationJobs';
 import { toast } from 'sonner';
 
 const money = (n: number) =>
@@ -29,6 +31,7 @@ function useClientContext(clientId?: string) {
         supabase
           .from('automation_jobs')
           .select('id, status, submission_method, created_at, lender_name')
+          .eq('client_id', clientId!)
           .order('created_at', { ascending: false })
           .limit(25),
       ]);
@@ -75,6 +78,8 @@ export default function DynastyCapitalPage() {
     tradelineCount: ctx?.tradelineCount,
   });
   const { data: packages, isLoading: packagesLoading } = useApplicationPackages(activeId, client);
+  const createApplication = useCreateApplicationFromPackage();
+  const { createJob } = useAutomationActions();
 
 
 
@@ -342,18 +347,35 @@ export default function DynastyCapitalPage() {
                           </div>
                         ))}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={pkg.status !== 'READY'}
-                        onClick={() =>
-                          toast.info(
-                            `Create an automation job for ${pkg.lender_name} at /funding-machine/automation (${pkg.submission_method}).`,
-                          )
-                        }
-                      >
-                        {pkg.status === 'READY' ? 'Package ready to submit' : `Cannot submit — ${pkg.status.replace('_', ' ')}`}
-                      </Button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          size="sm"
+                          disabled={
+                            pkg.status !== 'READY' ||
+                            pkg.submission_method === 'UNKNOWN' ||
+                            createApplication.isPending
+                          }
+                          onClick={() =>
+                            createApplication.mutate({
+                              clientId: activeId!,
+                              pkg,
+                              requestedAmount: client?.funding_target ?? null,
+                            })
+                          }
+                        >
+                          {pkg.status === 'READY'
+                            ? createApplication.isPending
+                              ? 'Creating…'
+                              : 'Create application'
+                            : `Cannot submit — ${pkg.status.replace('_', ' ')}`}
+                        </Button>
+                        {pkg.status === 'READY' && (
+                          <span className="text-xs text-muted-foreground">
+                            Creates a funding_applications record linked to this lender. The automation
+                            job is created from the Automation tab once the application exists.
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </CardContent>
