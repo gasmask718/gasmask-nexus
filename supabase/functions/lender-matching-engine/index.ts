@@ -33,9 +33,8 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const client_id = body?.client_id;
-    // QA fixtures are opt-in, never on by default, and never submittable.
-    const includeQaFixtures = body?.include_qa_fixtures === true;
     if (!client_id) return json({ error: "client_id required" }, 400);
+
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
