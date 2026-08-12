@@ -59876,6 +59876,38 @@ export type Database = {
           },
         ]
       }
+      funding_application_external_refs: {
+        Row: {
+          application_id: string
+          created_at: string
+          external_id: string
+          id: string
+          provider: string
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          external_id: string
+          id?: string
+          provider: string
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          external_id?: string
+          id?: string
+          provider?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_application_external_refs_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "funding_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funding_application_profile: {
         Row: {
           annual_revenue: number | null
@@ -61477,6 +61509,68 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_lender_webhook_events: {
+        Row: {
+          application_id: string | null
+          client_id: string | null
+          error_detail: string | null
+          event_id: string
+          event_type: string | null
+          id: string
+          is_qa_fixture: boolean
+          normalized_status: string | null
+          outcome: string
+          payload_hash: string
+          processed_at: string | null
+          provider: string
+          raw_payload: Json
+          received_at: string
+          signature_valid: boolean
+        }
+        Insert: {
+          application_id?: string | null
+          client_id?: string | null
+          error_detail?: string | null
+          event_id: string
+          event_type?: string | null
+          id?: string
+          is_qa_fixture?: boolean
+          normalized_status?: string | null
+          outcome?: string
+          payload_hash: string
+          processed_at?: string | null
+          provider: string
+          raw_payload: Json
+          received_at?: string
+          signature_valid?: boolean
+        }
+        Update: {
+          application_id?: string | null
+          client_id?: string | null
+          error_detail?: string | null
+          event_id?: string
+          event_type?: string | null
+          id?: string
+          is_qa_fixture?: boolean
+          normalized_status?: string | null
+          outcome?: string
+          payload_hash?: string
+          processed_at?: string | null
+          provider?: string
+          raw_payload?: Json
+          received_at?: string
+          signature_valid?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_lender_webhook_events_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "funding_applications"
             referencedColumns: ["id"]
           },
         ]
@@ -71495,6 +71589,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lender_webhook_providers: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_name: string
+          is_qa_fixture: boolean
+          provider: string
+          signing_secret_name: string
+          tolerance_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_name: string
+          is_qa_fixture?: boolean
+          provider: string
+          signing_secret_name: string
+          tolerance_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_name?: string
+          is_qa_fixture?: boolean
+          provider?: string
+          signing_secret_name?: string
+          tolerance_seconds?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       lenders: {
         Row: {
@@ -90138,6 +90265,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      qa_probe_results: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          result: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          result?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          result?: Json | null
+        }
+        Relationships: []
       }
       raw_allocation_overrides: {
         Row: {
