@@ -149,7 +149,7 @@ describe('lender matching rules', () => {
 });
 
 describe('expandLenderProducts', () => {
-  const lender = {
+  const baseLender = {
     id: 'L1',
     lender_name: 'Verified Lender',
     product_name: 'Default product',
@@ -160,14 +160,14 @@ describe('expandLenderProducts', () => {
   };
 
   it('leaves a lender with no products untouched', () => {
-    const rows = expandLenderProducts([lender], []);
+    const rows = expandLenderProducts([baseLender], []);
     expect(rows).toHaveLength(1);
     expect(rows[0].product_id ?? null).toBeNull();
     expect(rows[0].min_credit_score).toBe(600);
   });
 
   it('evaluates one row per active product with product thresholds winning', () => {
-    const rows = expandLenderProducts([lender], [
+    const rows = expandLenderProducts([baseLender], [
       { id: 'P1', lender_id: 'L1', product_name: 'Term loan', min_credit_score: 680, is_active: true },
       { id: 'P2', lender_id: 'L1', product_name: 'Line of credit', min_revenue: 25000, is_active: true },
       { id: 'P3', lender_id: 'L1', product_name: 'Retired', is_active: false },
@@ -183,7 +183,7 @@ describe('expandLenderProducts', () => {
   });
 
   it('carries the product id into the match result', () => {
-    const rows = expandLenderProducts([lender], [
+    const rows = expandLenderProducts([baseLender], [
       { id: 'P1', lender_id: 'L1', product_name: 'Term loan', is_active: true },
     ]);
     const result = evaluateLender(rows[0], {
