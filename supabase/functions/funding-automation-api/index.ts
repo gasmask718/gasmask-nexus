@@ -345,28 +345,43 @@ async function raiseCheckpoint(body: any, caller: Caller) {
   if (!job) return json({ error: 'Job not found' }, 404);
 
   const blocking = ['CAPTCHA', 'BOT_BLOCK'].includes(checkpoint_type);
-  const { data: cp, error } = await admin.from('automation_checkpoints').insert({
-    automation_job_id: job_id, checkpoint_type, reason, status: 'PENDING',
-  }).select().single();
-  if (error) return json({ error: error.message }, 400);
 
-  await admin.from('automation_jobs').update({
+  // Move the job FIRST. If the state machine rejects the transition the
+  // checkpoint must not exist — a pending checkpoint against an unchanged job
+  // is a false green that hides a stuck job from operators.
+  const { error: jobError } = await admin.from('automation_jobs').update({
     status: blocking ? 'BLOCKED' : 'HUMAN_CHECKPOINT',
     requires_human_action: true,
     human_action_type: checkpoint_type,
     failure_class: blocking ? checkpoint_type : null,
     failure_reason: blocking ? 'Bot protection encountered — automation stopped, no circumvention attempted' : null,
   }).eq('id', job_id);
+  if (jobError) {
+    await logEvent(job_id, job.application_id, 'CHECKPOINT_REJECTED',
+      `Checkpoint rejected by job state machine from ${job.status}: ${jobError.message}`,
+      { checkpoint_type, from_status: job.status }, 'error', caller.userId);
+    return json({ error: jobError.message, job_status: job.status }, 409);
+  }
+
+  const { data: cp, error } = await admin.from('automation_checkpoints').insert({
+    automation_job_id: job_id, checkpoint_type, reason, status: 'PENDING',
+  }).select().single();
+  if (error) return json({ error: error.message }, 400);
 
   await logEvent(job_id, job.application_id, 'HUMAN_CHECKPOINT',
     `${checkpoint_type} checkpoint — automation paused`, { checkpoint_type, reason }, 'warn');
 
   if (blocking) {
-    await admin.from('automation_jobs').update({ status: 'NEEDS_HUMAN_REVIEW' }).eq('id', job_id);
-    await logEvent(job_id, job.application_id, 'NEEDS_HUMAN_REVIEW', 'Escalated to human review', {}, 'warn');
+    const { error: escErr } = await admin.from('automation_jobs')
+      .update({ status: 'NEEDS_HUMAN_REVIEW' }).eq('id', job_id);
+    await logEvent(job_id, job.application_id,
+      escErr ? 'ESCALATION_FAILED' : 'NEEDS_HUMAN_REVIEW',
+      escErr ? `Escalation to human review failed: ${escErr.message}` : 'Escalated to human review',
+      {}, escErr ? 'error' : 'warn');
   }
   return json({ checkpoint: cp });
 }
+
 
 /** Operator confirms the human-only action was completed. Automation may resume. */
 async function resolveCheckpoint(body: any, caller: Caller) {
