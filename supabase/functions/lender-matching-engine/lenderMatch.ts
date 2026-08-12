@@ -240,6 +240,7 @@ export function evaluateLender(
 
   return {
     lender_id: lender.id,
+    product_id: lender.product_id ?? null,
     lender_name: lender.lender_name ?? null,
     product_name: lender.product_name ?? null,
     category: lender.category ?? null,
