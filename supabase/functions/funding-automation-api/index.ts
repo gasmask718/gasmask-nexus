@@ -475,7 +475,7 @@ async function submitResult(body: any, caller: Caller) {
   // Walk the job to READING_RESPONSE through legal transitions only. Manual
   // submissions sit in READY_TO_SUBMIT and must pass through SUBMITTING.
   if (job.status !== 'READING_RESPONSE') {
-    if (job.status === 'READY_TO_SUBMIT') {
+    if (job.status === 'READY_TO_SUBMIT' || job.status === 'HUMAN_CHECKPOINT') {
       const { error: subErr } = await admin.from('automation_jobs')
         .update({ status: 'SUBMITTING' }).eq('id', job.id);
       if (subErr) return json({ error: subErr.message, job_status: job.status }, 409);
