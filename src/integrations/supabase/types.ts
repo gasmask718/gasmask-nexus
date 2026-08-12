@@ -90266,6 +90266,27 @@ export type Database = {
           },
         ]
       }
+      qa_probe_results: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          result: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          result?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          result?: Json | null
+        }
+        Relationships: []
+      }
       raw_allocation_overrides: {
         Row: {
           changed_by: string | null
