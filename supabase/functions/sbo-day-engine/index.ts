@@ -624,11 +624,17 @@ serve(async (req) => {
         const { data, error } = await supabase.functions.invoke(step.fn, { body: { date } });
         if (error && step.required) throw error;
         const records = extractRecords(data);
+        // PHASE 8H: a non-required global step that errored used to record a
+        // bare `warning` with no note, which is how the 2026-08-10 fanout
+        // failure (duration_ms:1, records:0) left zero diagnosable evidence.
+        const errDetail = error ? await invokeErrorDetail(error) : null;
+        if (error) console.error(`[global] Step ${step.fn} invoke error:`, errDetail);
         await recordStep(step, {
           sport: 'global',
           status: error ? 'warning' : 'success',
           records,
           duration_ms: Date.now() - stepStart,
+          note: errDetail ? `invoke error: ${errDetail}` : undefined,
         });
         await new Promise(r => setTimeout(r, 500));
       } catch (e: any) {
