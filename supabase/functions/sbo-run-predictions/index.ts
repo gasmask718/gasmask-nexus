@@ -88,56 +88,103 @@ async function callAI(system: string, user: string): Promise<string> {
     return '{"score": 50, "reasoning": "AI service not configured"}';
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+  // PHASE 8F — Item 3: bound output + retry ONLY on transient provider errors.
+  // Before: no max_tokens (unbounded output on a per-prop x 3-brains x 72-runs/day
+  // path) and a catch-all retry that re-billed the ENTIRE call on parse errors and
+  // on timeouts (a timeout may mean the request already succeeded server-side).
+  const MAX_OUTPUT_TOKENS = 400;
 
-  try {
-    const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  const body = JSON.stringify({
+    model: 'google/gemini-2.5-flash',
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+    max_tokens: MAX_OUTPUT_TOKENS,
+  });
+
+  const post = async (signal?: AbortSignal) =>
+    await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user },
-        ],
-      }),
-      signal: controller.signal,
+      body,
+      signal,
     });
-    clearTimeout(timeout);
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content?.trim() || '';
+
+  // PHASE 8F — Item 3.3: code-side truncation/size signal. No paid call; this only
+  // reads the response we already paid for, so the first funded run can prove
+  // whether 400 output tokens is enough.
+  const readContent = (data: any): string => {
+    const usage = data?.usage ?? null;
+    const finish = data?.choices?.[0]?.finish_reason ?? null;
+    const content = data?.choices?.[0]?.message?.content?.trim() || '';
+    console.log(JSON.stringify({
+      tag: 'sbo_ai_usage',
+      fn: 'sbo-run-predictions',
+      model: 'google/gemini-2.5-flash',
+      max_tokens: MAX_OUTPUT_TOKENS,
+      finish_reason: finish,
+      output_chars: content.length,
+      prompt_tokens: usage?.prompt_tokens ?? null,
+      completion_tokens: usage?.completion_tokens ?? null,
+    }));
+    if (finish === 'length') {
+      console.warn(`[sbo-run-predictions] OUTPUT TRUNCATED at max_tokens=${MAX_OUTPUT_TOKENS} — raise the cap`);
+    }
+    return content;
+  };
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+  let res: Response;
+  try {
+    res = await post(controller.signal);
   } catch (e) {
     clearTimeout(timeout);
-    console.error('AI call failed, retrying once:', e);
-    // Retry once after 2s
+    // Network failure or 30s timeout. NOT retried: the upstream call may have
+    // completed and billed already. Fail closed with the neutral fallback.
+    console.error('AI call failed (no retry — transport/timeout, may already be billed):', e);
+    return '{"score": 50, "reasoning": "AI analysis unavailable — using fallback"}';
+  }
+  clearTimeout(timeout);
+
+  // Retry ONLY on transient provider errors (429 rate limit / 5xx).
+  if (res.status === 429 || res.status >= 500) {
+    console.error(`AI transient error ${res.status} — retrying once`);
     await new Promise(r => setTimeout(r, 2000));
     try {
-      const res2 = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: user },
-          ],
-        }),
-      });
-      const data2 = await res2.json();
-      return data2.choices?.[0]?.message?.content?.trim() || '';
+      const res2 = await post();
+      if (!res2.ok) {
+        console.error(`AI retry returned ${res2.status}`);
+        return '{"score": 50, "reasoning": "AI analysis unavailable — using fallback"}';
+      }
+      return readContent(await res2.json());
     } catch (e2) {
       console.error('AI retry also failed:', e2);
       return '{"score": 50, "reasoning": "AI analysis unavailable — using fallback"}';
     }
   }
+
+  if (!res.ok) {
+    // 4xx (402 out-of-credits, 400 bad request, 401/403 auth) — NOT retryable.
+    const errText = await res.text().catch(() => '');
+    console.error(`AI non-retryable error ${res.status}: ${errText.slice(0, 300)}`);
+    return '{"score": 50, "reasoning": "AI analysis unavailable — using fallback"}';
+  }
+
+  try {
+    return readContent(await res.json());
+  } catch (e) {
+    // Parse failure of a SUCCESSFUL (already billed) response — never re-bill.
+    console.error('AI response parse failed (no retry — already billed):', e);
+    return '{"score": 50, "reasoning": "AI analysis unavailable — using fallback"}';
+  }
 }
+
 
 async function runStatsBrain(ctx: any, supabase: any, calibrationText: string): Promise<{ score: number; reasoning: string; data_quality: string; ai_recommendation?: string; player_avg?: string; edge?: string }> {
   let statsContext = '';
