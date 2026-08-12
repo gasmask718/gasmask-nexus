@@ -338,9 +338,19 @@ async function reportEvent(body: any, caller: Caller) {
   return json({ ok: true });
 }
 
+/** Checkpoint kinds the schema accepts. Validated before the job is moved. */
+const CHECKPOINT_TYPES = [
+  'OTP', 'SMS_VERIFICATION', 'EMAIL_VERIFICATION', 'IDENTITY_VERIFICATION',
+  'SELFIE_VERIFICATION', 'E_SIGNATURE', 'CERTIFICATION', 'FINAL_ACCURACY_CONFIRMATION',
+  'CAPTCHA', 'BOT_BLOCK', 'AMBIGUOUS_RESPONSE',
+];
+
 /** Worker hit a human-only step, a CAPTCHA, or a bot block. Automation stops. */
 async function raiseCheckpoint(body: any, caller: Caller) {
   const { job_id, checkpoint_type, reason } = body;
+  if (!CHECKPOINT_TYPES.includes(checkpoint_type)) {
+    return json({ error: `Unknown checkpoint_type: ${checkpoint_type}`, allowed: CHECKPOINT_TYPES }, 400);
+  }
   const { data: job } = await admin.from('automation_jobs').select('*').eq('id', job_id).maybeSingle();
   if (!job) return json({ error: 'Job not found' }, 404);
 
@@ -366,7 +376,19 @@ async function raiseCheckpoint(body: any, caller: Caller) {
   const { data: cp, error } = await admin.from('automation_checkpoints').insert({
     automation_job_id: job_id, checkpoint_type, reason, status: 'PENDING',
   }).select().single();
-  if (error) return json({ error: error.message }, 400);
+  if (error) {
+    // Put the job back where it was so it never sits in a checkpoint state
+    // with no checkpoint for an operator to resolve.
+    await admin.from('automation_jobs').update({
+      status: job.status,
+      requires_human_action: job.requires_human_action,
+      human_action_type: job.human_action_type,
+      failure_class: job.failure_class,
+      failure_reason: job.failure_reason,
+    }).eq('id', job_id);
+    return json({ error: error.message }, 400);
+  }
+
 
   await logEvent(job_id, job.application_id, 'HUMAN_CHECKPOINT',
     `${checkpoint_type} checkpoint — automation paused`, { checkpoint_type, reason }, 'warn');
