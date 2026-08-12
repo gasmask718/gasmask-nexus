@@ -130,7 +130,9 @@ function isInSeason(sportKey: string, dateStr: string): boolean {
 // exactly how a dead upstream feed stayed invisible.
 function extractRecords(data: any): number {
   if (!data || typeof data !== 'object') return 0;
-  const explicit = data.records_synced ?? data.games_processed ?? data.inserted ?? data.props;
+  // PHASE 8H: sbo-sync-props-master reports `synced` (not records_synced), so
+  // the engine-internal fanout always logged 0 rows even on a clean 200.
+  const explicit = data.records_synced ?? data.synced ?? data.games_processed ?? data.inserted ?? data.props;
   if (typeof explicit === 'number') return explicit;
   const oddsTotal = (Number(data.games_inserted) || 0) + (Number(data.props_inserted) || 0);
   if (oddsTotal > 0) return oddsTotal;
@@ -622,11 +624,17 @@ serve(async (req) => {
         const { data, error } = await supabase.functions.invoke(step.fn, { body: { date } });
         if (error && step.required) throw error;
         const records = extractRecords(data);
+        // PHASE 8H: a non-required global step that errored used to record a
+        // bare `warning` with no note, which is how the 2026-08-10 fanout
+        // failure (duration_ms:1, records:0) left zero diagnosable evidence.
+        const errDetail = error ? await invokeErrorDetail(error) : null;
+        if (error) console.error(`[global] Step ${step.fn} invoke error:`, errDetail);
         await recordStep(step, {
           sport: 'global',
           status: error ? 'warning' : 'success',
           records,
           duration_ms: Date.now() - stepStart,
+          note: errDetail ? `invoke error: ${errDetail}` : undefined,
         });
         await new Promise(r => setTimeout(r, 500));
       } catch (e: any) {
