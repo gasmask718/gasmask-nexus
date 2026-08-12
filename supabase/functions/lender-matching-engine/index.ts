@@ -33,9 +33,8 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const client_id = body?.client_id;
-    // QA fixtures are opt-in, never on by default, and never submittable.
-    const includeQaFixtures = body?.include_qa_fixtures === true;
     if (!client_id) return json({ error: "client_id required" }, 400);
+
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -46,6 +45,13 @@ Deno.serve(async (req) => {
       .from("funding_clients").select("*").eq("id", client_id).maybeSingle();
     if (clientErr) return json({ error: clientErr.message, client_id }, 400);
     if (!client) return json({ error: "Client not found", client_id }, 404);
+
+    // QA isolation: a QA-fixture client is matched ONLY against QA-fixture
+    // lenders, and a real client is matched ONLY against real lenders. The
+    // caller cannot override this — it is derived from the client record.
+    const includeQaFixtures: boolean = client.is_qa_fixture === true;
+
+
 
     const score: number | null = client.credit_score_estimate ?? null;
     const monthlyRevenue: number | null =
@@ -72,12 +78,13 @@ Deno.serve(async (req) => {
       .map((d: { document_type: string | null }) => d.document_type ?? "")
       .filter(Boolean);
 
-    let lenderQuery = supabase
+    const lenderQuery = supabase
       .from("funding_lender_database")
       .select("*")
-      .eq("is_active", true);
-    if (!includeQaFixtures) lenderQuery = lenderQuery.eq("is_qa_fixture", false);
+      .eq("is_active", true)
+      .eq("is_qa_fixture", includeQaFixtures);
     const { data: lenders, error: lenderErr } = await lenderQuery;
+
     if (lenderErr) return json({ error: lenderErr.message, client_id }, 500);
 
     if (!lenders || lenders.length === 0) {
@@ -115,12 +122,13 @@ Deno.serve(async (req) => {
       missingPrereqs,
       { includeQaFixtures },
     );
-    // Persist only real lenders the client can actually pursue. QA fixtures are
-    // never written to the client's match record.
+    // Persist only lenders of the client's own class (real client -> real
+    // lenders; QA client -> QA fixtures). Mixing is impossible by construction.
     const persistable = results.filter(
-      (r) => !r.is_qa_fixture &&
+      (r) => r.is_qa_fixture === includeQaFixtures &&
         (r.verdict === "MATCHED" || r.verdict === "REQUIRES_PREREQUISITE"),
     );
+
 
     // funding_client_lender_matches is keyed by lender — persist the strongest
     // product per lender so a multi-product lender cannot collide on upsert.

@@ -50,38 +50,11 @@ async function logEvent(
   await admin.from('automation_jobs').update({ last_event_at: new Date().toISOString() }).eq('id', jobId);
 }
 
+// Status transitions are written by the public.record_application_status RPC so
+// the application row and its history entry always move together, with replay
+// protection on event_id.
 
-/**
- * Append a client-safe status-history row.
- * Idempotent: `event_id` carries a unique index, so a replayed automation
- * event produces exactly one transition record.
- */
-async function recordStatusHistory(args: {
-  applicationId: string | null;
-  clientId: string | null;
-  previousStatus: string | null;
-  newStatus: string;
-  jobId: string | null;
-  eventId: string | null;
-  message: string;
-}) {
-  if (!args.applicationId || !args.clientId) return;
-  if (args.previousStatus === args.newStatus && !args.eventId) return;
-  const { error } = await admin.from('funding_application_status_history').insert({
-    application_id: args.applicationId,
-    client_id: args.clientId,
-    previous_status: args.previousStatus,
-    new_status: args.newStatus,
-    source: 'automation',
-    automation_job_id: args.jobId,
-    event_id: args.eventId,
-    message: args.message,
-  });
-  // 23505 = duplicate event_id → already processed, safe to ignore.
-  if (error && error.code !== '23505') {
-    console.error('status history insert failed:', error.message);
-  }
-}
+
 
 interface Caller { kind: 'operator' | 'worker'; userId: string | null }
 
@@ -365,35 +338,83 @@ async function reportEvent(body: any, caller: Caller) {
   return json({ ok: true });
 }
 
+/** Checkpoint kinds the schema accepts. Validated before the job is moved. */
+const CHECKPOINT_TYPES = [
+  'OTP', 'SMS_VERIFICATION', 'EMAIL_VERIFICATION', 'IDENTITY_VERIFICATION',
+  'SELFIE_VERIFICATION', 'E_SIGNATURE', 'CERTIFICATION', 'FINAL_ACCURACY_CONFIRMATION',
+  'CAPTCHA', 'BOT_BLOCK', 'AMBIGUOUS_RESPONSE',
+];
+
 /** Worker hit a human-only step, a CAPTCHA, or a bot block. Automation stops. */
 async function raiseCheckpoint(body: any, caller: Caller) {
   const { job_id, checkpoint_type, reason } = body;
+  if (!CHECKPOINT_TYPES.includes(checkpoint_type)) {
+    return json({ error: `Unknown checkpoint_type: ${checkpoint_type}`, allowed: CHECKPOINT_TYPES }, 400);
+  }
   const { data: job } = await admin.from('automation_jobs').select('*').eq('id', job_id).maybeSingle();
   if (!job) return json({ error: 'Job not found' }, 404);
 
   const blocking = ['CAPTCHA', 'BOT_BLOCK'].includes(checkpoint_type);
-  const { data: cp, error } = await admin.from('automation_checkpoints').insert({
-    automation_job_id: job_id, checkpoint_type, reason, status: 'PENDING',
-  }).select().single();
-  if (error) return json({ error: error.message }, 400);
 
-  await admin.from('automation_jobs').update({
+  // Move the job FIRST. If the state machine rejects the transition the
+  // checkpoint must not exist — a pending checkpoint against an unchanged job
+  // is a false green that hides a stuck job from operators.
+  const { error: jobError } = await admin.from('automation_jobs').update({
     status: blocking ? 'BLOCKED' : 'HUMAN_CHECKPOINT',
     requires_human_action: true,
     human_action_type: checkpoint_type,
     failure_class: blocking ? checkpoint_type : null,
     failure_reason: blocking ? 'Bot protection encountered — automation stopped, no circumvention attempted' : null,
   }).eq('id', job_id);
+  if (jobError) {
+    await logEvent(job_id, job.application_id, 'CHECKPOINT_REJECTED',
+      `Checkpoint rejected by job state machine from ${job.status}: ${jobError.message}`,
+      { checkpoint_type, from_status: job.status }, 'error', caller.userId);
+    return json({ error: jobError.message, job_status: job.status }, 409);
+  }
+
+  const { data: cp, error } = await admin.from('automation_checkpoints').insert({
+    automation_job_id: job_id, checkpoint_type, reason, status: 'PENDING',
+  }).select().single();
+  if (error) {
+    // Put the job back where it was so it never sits in a checkpoint state
+    // with no checkpoint for an operator to resolve. If the state machine
+    // forbids the rewind, escalate instead of leaving it silently stuck.
+    const { error: rewindErr } = await admin.from('automation_jobs').update({
+      status: job.status,
+      requires_human_action: job.requires_human_action,
+      human_action_type: job.human_action_type,
+      failure_class: job.failure_class,
+      failure_reason: job.failure_reason,
+    }).eq('id', job_id);
+    if (rewindErr) {
+      await admin.from('automation_jobs').update({
+        status: 'NEEDS_HUMAN_REVIEW', requires_human_action: true,
+        failure_class: 'CHECKPOINT_WRITE_FAILED',
+        failure_reason: `Checkpoint could not be recorded: ${error.message}`,
+      }).eq('id', job_id);
+    }
+    await logEvent(job_id, job.application_id, 'CHECKPOINT_WRITE_FAILED',
+      `Checkpoint insert failed: ${error.message}`, { checkpoint_type }, 'error', caller.userId);
+    return json({ error: error.message }, 400);
+  }
+
+
 
   await logEvent(job_id, job.application_id, 'HUMAN_CHECKPOINT',
     `${checkpoint_type} checkpoint — automation paused`, { checkpoint_type, reason }, 'warn');
 
   if (blocking) {
-    await admin.from('automation_jobs').update({ status: 'NEEDS_HUMAN_REVIEW' }).eq('id', job_id);
-    await logEvent(job_id, job.application_id, 'NEEDS_HUMAN_REVIEW', 'Escalated to human review', {}, 'warn');
+    const { error: escErr } = await admin.from('automation_jobs')
+      .update({ status: 'NEEDS_HUMAN_REVIEW' }).eq('id', job_id);
+    await logEvent(job_id, job.application_id,
+      escErr ? 'ESCALATION_FAILED' : 'NEEDS_HUMAN_REVIEW',
+      escErr ? `Escalation to human review failed: ${escErr.message}` : 'Escalated to human review',
+      {}, escErr ? 'error' : 'warn');
   }
   return json({ checkpoint: cp });
 }
+
 
 /** Operator confirms the human-only action was completed. Automation may resume. */
 async function resolveCheckpoint(body: any, caller: Caller) {
@@ -403,6 +424,24 @@ async function resolveCheckpoint(body: any, caller: Caller) {
   if (cp.status !== 'PENDING') return json({ error: `Checkpoint already ${cp.status}` }, 409);
 
   const resume = body.resume !== false;
+  const { data: job } = await admin.from('automation_jobs').select('*').eq('id', cp.automation_job_id).maybeSingle();
+
+  // Move the job FIRST so a rejected transition cannot leave a checkpoint
+  // marked COMPLETED against a job that never moved.
+  if (job) {
+    const next = body.abandoned ? 'CANCELLED' : (resume ? (body.next_status ?? 'READY_TO_SUBMIT') : 'NEEDS_HUMAN_REVIEW');
+    const { error: jobError } = await admin.from('automation_jobs').update({
+      status: next, requires_human_action: false, human_action_type: null,
+      completed_at: next === 'CANCELLED' ? new Date().toISOString() : null,
+    }).eq('id', job.id);
+    if (jobError) {
+      await logEvent(job.id, job.application_id, 'CHECKPOINT_RESOLUTION_REJECTED',
+        `Job state machine rejected ${job.status} -> ${next}: ${jobError.message}`,
+        { from_status: job.status, next }, 'error', caller.userId);
+      return json({ error: jobError.message, job_status: job.status }, 409);
+    }
+  }
+
   await admin.from('automation_checkpoints').update({
     status: body.abandoned ? 'ABANDONED' : 'COMPLETED',
     completed_at: new Date().toISOString(),
@@ -412,18 +451,13 @@ async function resolveCheckpoint(body: any, caller: Caller) {
     resumed_at: resume && !body.abandoned ? new Date().toISOString() : null,
   }).eq('id', cp.id);
 
-  const { data: job } = await admin.from('automation_jobs').select('*').eq('id', cp.automation_job_id).maybeSingle();
   if (job) {
-    const next = body.abandoned ? 'CANCELLED' : (resume ? (body.next_status ?? 'READY_TO_SUBMIT') : 'NEEDS_HUMAN_REVIEW');
-    await admin.from('automation_jobs').update({
-      status: next, requires_human_action: false, human_action_type: null,
-      completed_at: next === 'CANCELLED' ? new Date().toISOString() : null,
-    }).eq('id', job.id);
     await logEvent(job.id, job.application_id, 'HUMAN_COMPLETED_CHECKPOINT',
       `${cp.checkpoint_type} completed by operator`, { checkpoint_type: cp.checkpoint_type, resumed: resume }, 'info', caller.userId);
   }
   return json({ ok: true });
 }
+
 
 /** Normalized result comes back and Funding Hub is updated. Never fabricated. */
 async function submitResult(body: any, caller: Caller) {
@@ -438,7 +472,24 @@ async function submitResult(body: any, caller: Caller) {
 
   const ambiguous = normalized.status === 'NEEDS_HUMAN_REVIEW' || normalized.confidence === 'low';
 
-  await admin.from('automation_jobs').update({ status: 'READING_RESPONSE' }).eq('id', job.id);
+  // Walk the job to READING_RESPONSE through legal transitions only. Manual
+  // submissions sit in READY_TO_SUBMIT and must pass through SUBMITTING.
+  if (job.status !== 'READING_RESPONSE') {
+    if (job.status === 'READY_TO_SUBMIT' || job.status === 'HUMAN_CHECKPOINT') {
+      const { error: subErr } = await admin.from('automation_jobs')
+        .update({ status: 'SUBMITTING' }).eq('id', job.id);
+      if (subErr) return json({ error: subErr.message, job_status: job.status }, 409);
+    }
+    const { error: readErr } = await admin.from('automation_jobs')
+      .update({ status: 'READING_RESPONSE' }).eq('id', job.id);
+    if (readErr) {
+      await logEvent(job.id, job.application_id, 'RESULT_REJECTED',
+        `Cannot record a result from status ${job.status}: ${readErr.message}`,
+        { from_status: job.status }, 'error', caller.userId);
+      return json({ error: readErr.message, job_status: job.status }, 409);
+    }
+  }
+
 
   const patch: Record<string, unknown> = {
     result_status: normalized.status,
@@ -461,34 +512,49 @@ async function submitResult(body: any, caller: Caller) {
   if (!ambiguous) {
     const hubStatus = toHubApplicationStatus(normalized.status as NormalizedStatus);
     if (hubStatus) {
-      // Read previous status BEFORE patching so the history entry is accurate.
-      const { data: priorApp } = await admin
-        .from('funding_applications').select('status, client_id').eq('id', job.application_id).maybeSingle();
-
-      const hubPatch: Record<string, unknown> = { status: hubStatus };
+      const patchFields: Record<string, unknown> = {};
       if (normalized.status === 'APPROVED' && normalized.approved_amount != null) {
-        hubPatch.approved_amount = normalized.approved_amount;
-        hubPatch.decision_date = normalized.decision_date ?? new Date().toISOString().slice(0, 10);
+        patchFields.approved_amount = normalized.approved_amount;
+        patchFields.decision_date = normalized.decision_date ?? new Date().toISOString().slice(0, 10);
       }
-      if (normalized.status === 'DECLINED') hubPatch.decision_date = normalized.decision_date ?? new Date().toISOString().slice(0, 10);
-      if (normalized.status === 'SUBMITTED') hubPatch.application_date = new Date().toISOString().slice(0, 10);
-      await admin.from('funding_applications').update(hubPatch).eq('id', job.application_id);
-      await recordStatusHistory({
-        applicationId: job.application_id,
-        clientId: priorApp?.client_id ?? null,
-        previousStatus: priorApp?.status ?? null,
-        newStatus: hubStatus,
-        jobId: job.id,
-        eventId: body.event_id ? String(body.event_id) : null,
-        message: `Lender response recorded: ${normalized.status}`,
+      if (normalized.status === 'DECLINED') {
+        patchFields.decision_date = normalized.decision_date ?? new Date().toISOString().slice(0, 10);
+      }
+      if (normalized.status === 'SUBMITTED') {
+        patchFields.application_date = new Date().toISOString().slice(0, 10);
+      }
+
+      // Atomic: application status + status-history row in one transaction, with
+      // replay protection keyed on event_id. A replayed lender event is a no-op.
+      const { data: applied, error: rpcError } = await admin.rpc('record_application_status', {
+        _application_id: job.application_id,
+        _new_status: hubStatus,
+        _source: 'automation',
+        _job_id: job.id,
+        _event_id: body.event_id ? String(body.event_id) : null,
+        _message: `Lender response recorded: ${normalized.status}`,
+        _patch: patchFields,
       });
-      await logEvent(job.id, job.application_id, 'FUNDING_HUB_UPDATED',
-        `Application set to ${hubStatus}`, hubPatch, 'info');
+
+      if (rpcError) {
+        await logEvent(job.id, job.application_id, 'HUB_UPDATE_FAILED',
+          `Funding Hub update failed: ${rpcError.message}`, {}, 'error');
+        return json({ error: `Funding Hub update failed: ${rpcError.message}` }, 409);
+      }
+
+      const wasApplied = (applied as { applied?: boolean } | null)?.applied === true;
+      await logEvent(job.id, job.application_id,
+        wasApplied ? 'FUNDING_HUB_UPDATED' : 'DUPLICATE_EVENT_IGNORED',
+        wasApplied
+          ? `Application set to ${hubStatus}`
+          : `Replayed event ${body.event_id} ignored — no duplicate transition`,
+        { hub_status: hubStatus, ...patchFields }, wasApplied ? 'info' : 'warn');
     }
   } else {
     await logEvent(job.id, job.application_id, 'HUB_UPDATE_SKIPPED',
       'Ambiguous lender response — Funding Hub not modified', {}, 'warn');
   }
+
 
 
   return json({ ok: true, normalized });

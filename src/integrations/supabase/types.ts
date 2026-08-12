@@ -60623,6 +60623,7 @@ export type Database = {
           grant_eligible: boolean | null
           id: string
           intake_status: string | null
+          is_qa_fixture: boolean
           last_name: string
           minority_owned: boolean | null
           monthly_income: number | null
@@ -60683,6 +60684,7 @@ export type Database = {
           grant_eligible?: boolean | null
           id?: string
           intake_status?: string | null
+          is_qa_fixture?: boolean
           last_name: string
           minority_owned?: boolean | null
           monthly_income?: number | null
@@ -60743,6 +60745,7 @@ export type Database = {
           grant_eligible?: boolean | null
           id?: string
           intake_status?: string | null
+          is_qa_fixture?: boolean
           last_name?: string
           minority_owned?: boolean | null
           monthly_income?: number | null
@@ -143256,6 +143259,18 @@ export type Database = {
       }
       recompute_all_funding_dfs: { Args: never; Returns: number }
       recompute_answer_rates: { Args: never; Returns: undefined }
+      record_application_status: {
+        Args: {
+          _application_id: string
+          _event_id?: string
+          _job_id?: string
+          _message?: string
+          _new_status: string
+          _patch?: Json
+          _source?: string
+        }
+        Returns: Json
+      }
       recover_stale_calls: { Args: { p_business_id: string }; Returns: Json }
       redeem_portal_invite: {
         Args: { p_token_hash: string; p_user_id: string }
