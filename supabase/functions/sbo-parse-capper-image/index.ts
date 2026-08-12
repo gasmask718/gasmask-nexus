@@ -211,6 +211,32 @@ RULES:
     const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content || '{}';
 
+    // PHASE 8F — Item 4: persist vision token usage so the first funded week can
+    // MEASURE whether max_tokens 6000 is over-provisioned. The cap itself is
+    // deliberately UNCHANGED this phase (vision output shape is unmeasured).
+    // No extra paid call: this only reads the response already received.
+    {
+      const finishReason = aiData?.choices?.[0]?.finish_reason ?? null;
+      const { error: usageLogErr } = await supabase.from('sbo_function_logs').insert({
+        function_name: 'sbo-parse-capper-image',
+        status: 'completed',
+        records_processed: 0,
+        completed_at: new Date().toISOString(),
+        metadata: {
+          phase: '8F',
+          provider: 'lovable_ai_gateway',
+          call: 'vision_extract',
+          model: aiData?.model ?? 'google/gemini-2.5-flash',
+          max_tokens_configured: 6000,
+          finish_reason: finishReason,
+          output_chars: String(content).length,
+          usage: aiData?.usage ?? null,
+        },
+      });
+      if (usageLogErr) console.error('usage log insert failed:', usageLogErr.message);
+    }
+
+
     let parsed: any;
     try {
       const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
