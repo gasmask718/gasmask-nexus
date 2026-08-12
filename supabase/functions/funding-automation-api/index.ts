@@ -378,16 +378,27 @@ async function raiseCheckpoint(body: any, caller: Caller) {
   }).select().single();
   if (error) {
     // Put the job back where it was so it never sits in a checkpoint state
-    // with no checkpoint for an operator to resolve.
-    await admin.from('automation_jobs').update({
+    // with no checkpoint for an operator to resolve. If the state machine
+    // forbids the rewind, escalate instead of leaving it silently stuck.
+    const { error: rewindErr } = await admin.from('automation_jobs').update({
       status: job.status,
       requires_human_action: job.requires_human_action,
       human_action_type: job.human_action_type,
       failure_class: job.failure_class,
       failure_reason: job.failure_reason,
     }).eq('id', job_id);
+    if (rewindErr) {
+      await admin.from('automation_jobs').update({
+        status: 'NEEDS_HUMAN_REVIEW', requires_human_action: true,
+        failure_class: 'CHECKPOINT_WRITE_FAILED',
+        failure_reason: `Checkpoint could not be recorded: ${error.message}`,
+      }).eq('id', job_id);
+    }
+    await logEvent(job_id, job.application_id, 'CHECKPOINT_WRITE_FAILED',
+      `Checkpoint insert failed: ${error.message}`, { checkpoint_type }, 'error', caller.userId);
     return json({ error: error.message }, 400);
   }
+
 
 
   await logEvent(job_id, job.application_id, 'HUMAN_CHECKPOINT',
