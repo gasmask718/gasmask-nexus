@@ -461,34 +461,49 @@ async function submitResult(body: any, caller: Caller) {
   if (!ambiguous) {
     const hubStatus = toHubApplicationStatus(normalized.status as NormalizedStatus);
     if (hubStatus) {
-      // Read previous status BEFORE patching so the history entry is accurate.
-      const { data: priorApp } = await admin
-        .from('funding_applications').select('status, client_id').eq('id', job.application_id).maybeSingle();
-
-      const hubPatch: Record<string, unknown> = { status: hubStatus };
+      const patchFields: Record<string, unknown> = {};
       if (normalized.status === 'APPROVED' && normalized.approved_amount != null) {
-        hubPatch.approved_amount = normalized.approved_amount;
-        hubPatch.decision_date = normalized.decision_date ?? new Date().toISOString().slice(0, 10);
+        patchFields.approved_amount = normalized.approved_amount;
+        patchFields.decision_date = normalized.decision_date ?? new Date().toISOString().slice(0, 10);
       }
-      if (normalized.status === 'DECLINED') hubPatch.decision_date = normalized.decision_date ?? new Date().toISOString().slice(0, 10);
-      if (normalized.status === 'SUBMITTED') hubPatch.application_date = new Date().toISOString().slice(0, 10);
-      await admin.from('funding_applications').update(hubPatch).eq('id', job.application_id);
-      await recordStatusHistory({
-        applicationId: job.application_id,
-        clientId: priorApp?.client_id ?? null,
-        previousStatus: priorApp?.status ?? null,
-        newStatus: hubStatus,
-        jobId: job.id,
-        eventId: body.event_id ? String(body.event_id) : null,
-        message: `Lender response recorded: ${normalized.status}`,
+      if (normalized.status === 'DECLINED') {
+        patchFields.decision_date = normalized.decision_date ?? new Date().toISOString().slice(0, 10);
+      }
+      if (normalized.status === 'SUBMITTED') {
+        patchFields.application_date = new Date().toISOString().slice(0, 10);
+      }
+
+      // Atomic: application status + status-history row in one transaction, with
+      // replay protection keyed on event_id. A replayed lender event is a no-op.
+      const { data: applied, error: rpcError } = await admin.rpc('record_application_status', {
+        _application_id: job.application_id,
+        _new_status: hubStatus,
+        _source: 'automation',
+        _job_id: job.id,
+        _event_id: body.event_id ? String(body.event_id) : null,
+        _message: `Lender response recorded: ${normalized.status}`,
+        _patch: patchFields,
       });
-      await logEvent(job.id, job.application_id, 'FUNDING_HUB_UPDATED',
-        `Application set to ${hubStatus}`, hubPatch, 'info');
+
+      if (rpcError) {
+        await logEvent(job.id, job.application_id, 'HUB_UPDATE_FAILED',
+          `Funding Hub update failed: ${rpcError.message}`, {}, 'error');
+        return json({ error: `Funding Hub update failed: ${rpcError.message}` }, 409);
+      }
+
+      const wasApplied = (applied as { applied?: boolean } | null)?.applied === true;
+      await logEvent(job.id, job.application_id,
+        wasApplied ? 'FUNDING_HUB_UPDATED' : 'DUPLICATE_EVENT_IGNORED',
+        wasApplied
+          ? `Application set to ${hubStatus}`
+          : `Replayed event ${body.event_id} ignored — no duplicate transition`,
+        { hub_status: hubStatus, ...patchFields }, wasApplied ? 'info' : 'warn');
     }
   } else {
     await logEvent(job.id, job.application_id, 'HUB_UPDATE_SKIPPED',
       'Ambiguous lender response — Funding Hub not modified', {}, 'warn');
   }
+
 
 
   return json({ ok: true, normalized });
