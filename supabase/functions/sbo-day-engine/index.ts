@@ -306,23 +306,30 @@ serve(async (req) => {
         note = 'Required step returned 0 records — feed may be stale, off-season, or misconfigured';
       }
 
+      // PHASE 8F — Item 5: NULL cost means "unknown", not "free". It contributes
+      // nothing to the run total (we refuse to invent a number) but is written to
+      // sbo_api_costs as NULL + note so the row never reads as a $0 AI step.
+      const knownCost = typeof costInfo?.cost_cents === 'number' ? costInfo.cost_cents : null;
       if (status === 'skipped') {
         skippedCount += 1;
       } else if (status !== 'error') {
         totalRecords += records;
         totalCalls += 1;
-        totalCostCents += costInfo?.cost_cents || 0;
+        totalCostCents += knownCost ?? 0;
       }
       if (status !== 'skipped') {
         await supabase.from('sbo_api_costs').insert({
           run_date: date,
           feed_name: step.fn,
           api_provider: costInfo?.provider || 'unknown',
-          endpoint_called: step.fn,
+          endpoint_called: costInfo && knownCost === null
+            ? `${step.fn} [cost:unknown usage-not-persisted]`
+            : step.fn,
           records_returned: records,
-          estimated_cost_cents: status === 'error' ? 0 : (costInfo?.cost_cents || 0),
+          estimated_cost_cents: status === 'error' ? 0 : knownCost,
           api_calls_made: 1,
           response_status: status === 'error' ? 'error' : 'success',
+
         });
       }
       const entry = {
