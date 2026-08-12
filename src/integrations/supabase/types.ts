@@ -60114,16 +60114,21 @@ export type Database = {
           apr: number | null
           client_id: string
           created_at: string
+          created_from_match_id: string | null
           decision_date: string | null
           denial_reason: string | null
           id: string
+          lender_id: string | null
           lender_name: string
+          lender_product_id: string | null
           monthly_payment: number | null
           notes: string | null
+          package_status: string | null
           product_type: string
           remediation_plan: string | null
           requested_amount: number
           status: string
+          submission_method: string | null
           term_months: number | null
           updated_at: string
         }
@@ -60133,16 +60138,21 @@ export type Database = {
           apr?: number | null
           client_id: string
           created_at?: string
+          created_from_match_id?: string | null
           decision_date?: string | null
           denial_reason?: string | null
           id?: string
+          lender_id?: string | null
           lender_name: string
+          lender_product_id?: string | null
           monthly_payment?: number | null
           notes?: string | null
+          package_status?: string | null
           product_type: string
           remediation_plan?: string | null
           requested_amount?: number
           status?: string
+          submission_method?: string | null
           term_months?: number | null
           updated_at?: string
         }
@@ -60152,16 +60162,21 @@ export type Database = {
           apr?: number | null
           client_id?: string
           created_at?: string
+          created_from_match_id?: string | null
           decision_date?: string | null
           denial_reason?: string | null
           id?: string
+          lender_id?: string | null
           lender_name?: string
+          lender_product_id?: string | null
           monthly_payment?: number | null
           notes?: string | null
+          package_status?: string | null
           product_type?: string
           remediation_plan?: string | null
           requested_amount?: number
           status?: string
+          submission_method?: string | null
           term_months?: number | null
           updated_at?: string
         }
@@ -60171,6 +60186,27 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_applications_created_from_match_id_fkey"
+            columns: ["created_from_match_id"]
+            isOneToOne: false
+            referencedRelation: "funding_client_lender_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_applications_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "funding_lender_database"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_applications_lender_product_id_fkey"
+            columns: ["lender_product_id"]
+            isOneToOne: false
+            referencedRelation: "funding_lender_products"
             referencedColumns: ["id"]
           },
         ]
