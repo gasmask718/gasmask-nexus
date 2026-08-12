@@ -12,7 +12,6 @@ import { useLenderMatches, useRunLenderMatching } from '@/hooks/useLenderMatches
 import { useFundingPlan } from '@/hooks/useFundingStrategy';
 import { useApplicationPackages } from '@/hooks/useApplicationPackage';
 import { useCreateApplicationFromPackage } from '@/hooks/useCreateApplicationFromPackage';
-import { useAutomationActions } from '@/hooks/useAutomationJobs';
 import { toast } from 'sonner';
 
 const money = (n: number) =>
@@ -79,7 +78,6 @@ export default function DynastyCapitalPage() {
   });
   const { data: packages, isLoading: packagesLoading } = useApplicationPackages(activeId, client);
   const createApplication = useCreateApplicationFromPackage();
-  const { createJob } = useAutomationActions();
 
 
 
