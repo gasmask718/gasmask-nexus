@@ -3,6 +3,7 @@ import {
   evaluateLender,
   matchLenders,
   isSubmittable,
+  expandLenderProducts,
   type LenderRow,
   type ClientProfile,
 } from '../../supabase/functions/lender-matching-engine/lenderMatch';
