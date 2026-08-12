@@ -17,6 +17,8 @@ export interface RuleResult {
 export interface LenderRow {
   id: string;
   lender_name: string | null;
+  /** funding_lender_products.id when this row came from a product record. */
+  product_id?: string | null;
   product_name?: string | null;
   category?: string | null;
   product_type?: string | null;
@@ -51,6 +53,8 @@ export interface ClientProfile {
 
 export interface MatchResult {
   lender_id: string;
+  /** Set when the evaluated requirements came from a funding_lender_products row. */
+  product_id: string | null;
   lender_name: string | null;
   product_name: string | null;
   category: string | null;
