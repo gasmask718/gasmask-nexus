@@ -110428,6 +110428,7 @@ export type Database = {
           email_notification_sent_at: string | null
           first_name: string | null
           foreclosure_date: string | null
+          holder_type: string | null
           id: string
           interest_level: string | null
           interest_score: number | null
@@ -110447,6 +110448,7 @@ export type Database = {
           phone_carrier: string | null
           phone_dnc: boolean | null
           phone_type: string | null
+          pool: string | null
           property_address: string | null
           recommended_action: string | null
           referrer: string | null
@@ -110508,6 +110510,7 @@ export type Database = {
           email_notification_sent_at?: string | null
           first_name?: string | null
           foreclosure_date?: string | null
+          holder_type?: string | null
           id?: string
           interest_level?: string | null
           interest_score?: number | null
@@ -110527,6 +110530,7 @@ export type Database = {
           phone_carrier?: string | null
           phone_dnc?: boolean | null
           phone_type?: string | null
+          pool?: string | null
           property_address?: string | null
           recommended_action?: string | null
           referrer?: string | null
@@ -110588,6 +110592,7 @@ export type Database = {
           email_notification_sent_at?: string | null
           first_name?: string | null
           foreclosure_date?: string | null
+          holder_type?: string | null
           id?: string
           interest_level?: string | null
           interest_score?: number | null
@@ -110607,6 +110612,7 @@ export type Database = {
           phone_carrier?: string | null
           phone_dnc?: boolean | null
           phone_type?: string | null
+          pool?: string | null
           property_address?: string | null
           recommended_action?: string | null
           referrer?: string | null

@@ -1,6 +1,7 @@
 // UT -> Dynasty OS transaction ingest (PIPE-01)
 // Auth: Authorization: Bearer ${UT_INGEST_SECRET}
-// Append-only. Refunds arrive as a NEW transaction_id with a negative amount.
+// Append-only. Refunds arrive as a NEW transaction_id with transaction_type 'refund',
+// a negative amount, and original_transaction_id (top level or in metadata).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -9,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const UT_TYPES = ['booking', 'shop_order', 'kit_order'] as const;
+const UT_TYPES = ['booking', 'shop_order', 'kit_order', 'refund'] as const;
 type UtType = typeof UT_TYPES[number];
 
 function json(body: unknown, status = 200) {
@@ -48,16 +49,28 @@ Deno.serve(async (req) => {
   if (!transaction_id) errors.push('transaction_id is required');
   if (!UT_TYPES.includes(transaction_type)) errors.push(`transaction_type must be one of ${UT_TYPES.join('|')}`);
   if (!Number.isFinite(amount)) errors.push('amount must be a number');
+  if (transaction_type === 'refund' && Number.isFinite(amount) && amount >= 0) {
+    errors.push('refund amount must be negative');
+  }
   if (!occurred || isNaN(occurred.getTime())) errors.push('occurred_at must be an ISO timestamp');
   if (errors.length) return json({ success: false, error: 'validation_failed', details: errors }, 400);
 
   const isRefund = amount < 0;
+  const bodyMeta = (typeof body.metadata === 'object' && body.metadata ? body.metadata as Record<string, unknown> : {});
+  const originalId = body.original_transaction_id ?? bodyMeta.original_transaction_id;
+  if (transaction_type === 'refund' && !originalId) {
+    return json({
+      success: false,
+      error: 'validation_failed',
+      details: ['refund requires original_transaction_id (top level or metadata)'],
+    }, 400);
+  }
   const entityId = body.entity_id == null ? null : String(body.entity_id);
   const metadata: Record<string, unknown> = {
-    ...(typeof body.metadata === 'object' && body.metadata ? body.metadata as Record<string, unknown> : {}),
+    ...bodyMeta,
     ut_transaction_type: transaction_type,
   };
-  if (body.original_transaction_id) metadata.original_transaction_id = String(body.original_transaction_id);
+  if (originalId) metadata.original_transaction_id = String(originalId);
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
