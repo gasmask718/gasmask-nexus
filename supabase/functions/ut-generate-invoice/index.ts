@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { sendEmail } from "../_shared/sendEmail.ts";
+import { errText } from "../_shared/errText.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true, invoice_path: fileName }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
-    console.error("generate-invoice error:", error);
+    console.error("generate-invoice error:", errText(error));
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

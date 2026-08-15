@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "check:sidebar": "node scripts/check-sidebar-routes.mjs",
     "check:view-grants": "node scripts/check-public-view-grants.mjs",
-    "prebuild": "node scripts/check-sidebar-routes.mjs && node scripts/check-public-view-grants.mjs"
+    "sync:errtext": "node scripts/sync-errtext.mjs",
+    "check:errtext": "node scripts/sync-errtext.mjs --check",
+    "prebuild": "node scripts/check-sidebar-routes.mjs && node scripts/check-public-view-grants.mjs && node scripts/sync-errtext.mjs --check"
   },
   "dependencies": {
     "@elevenlabs/react": "^0.14.1",

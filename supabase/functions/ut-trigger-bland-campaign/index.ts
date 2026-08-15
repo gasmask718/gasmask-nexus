@@ -24,6 +24,7 @@ import { logLeadSync, logLeadSyncBatch, logGateBlock } from "../_shared/dc_sync_
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 import { isOnDNC } from "../_shared/dnc.ts";
 import { fetchVoicemailTranscript } from "../_shared/voicemail_template.ts";
+import { errText } from "../_shared/errText.ts";
 
 const BUSINESS_UNIT_KEY = "unforgettable_times";
 const BUSINESS_NAME = "Unforgettable Times";
@@ -386,7 +387,7 @@ serve(async (req) => {
         }
       } catch (e: any) {
         blandError = blandError || e.message;
-        console.error("[bland call exception]", l.id, e);
+        console.error("[bland call exception]", l.id, errText(e));
       }
     }
 
@@ -453,7 +454,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error: any) {
-    console.error("[ut-trigger-bland-campaign] error", error);
+    console.error("[ut-trigger-bland-campaign] error", errText(error));
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

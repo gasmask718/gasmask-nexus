@@ -18,6 +18,7 @@ import {
   formatLastUpdated,
   money,
 } from './utRevenue';
+import { errText } from "@/lib/errText";
 
 export default function UTRevenueDashboard() {
   const {
@@ -85,7 +86,7 @@ export default function UTRevenueDashboard() {
   const kitStamp = formatLastUpdated(lastWritten(kitOrders));
 
   const err = (e: unknown) =>
-    e ? <p className="text-xs text-destructive">Query failed: {(e as any)?.message || String(e)}</p> : null;
+    e ? <p className="text-xs text-destructive">Query failed: {errText(e, 300)}</p> : null;
 
   const stamp = (text: string) => <p className="text-[11px] text-muted-foreground/70 mt-2">{text}</p>;
 

@@ -1,5 +1,6 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { errText } from "../_shared/errText.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -148,7 +149,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {
-    console.error('Lead scraper error:', err)
+    console.error('Lead scraper error:', errText(err))
     return new Response(
       JSON.stringify({ error: err.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

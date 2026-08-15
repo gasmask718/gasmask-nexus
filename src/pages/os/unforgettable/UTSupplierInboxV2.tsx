@@ -12,6 +12,7 @@ import { Mail, MessageSquare, Search, Send, Plus, Circle, Paperclip, FileText, C
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { errText } from "@/lib/errText";
 
 const MESSAGE_TEMPLATES = [
   { label: 'Initial Outreach', body: 'Hi [Supplier Name],\n\nI\'m reaching out from Unforgettable Times USA. We are an event rental and party supply company looking for a reliable supplier for [Product].\n\nCould you please send us:\n- Product catalog\n- MOQ and pricing\n- Branding/private label options\n- Shipping rates to USA\n\nThank you,\nUnforgettable Times Sourcing Team' },
@@ -107,7 +108,7 @@ export default function UTSupplierInboxV2() {
       setReplySubject('');
       fetchMessages(selectedThread.id);
     } catch (err) {
-      console.error(err);
+      console.error(errText(err));
       toast.error('Failed to send message');
     } finally {
       setSending(false);

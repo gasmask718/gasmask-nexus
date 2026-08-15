@@ -15,6 +15,7 @@ import {
   enforceBudgetGate,
   pausedResponse,
 } from "../_shared/places-client.ts";
+import { errText } from "../_shared/errText.ts";
 
 
 
@@ -113,7 +114,7 @@ serve(async (req) => {
         // noted the call before the fetch, so un-count it: Google does not bill
         // rejected requests and neither should our ledger. Then fail loudly.
         if (tracker.counts[SKU_TEXT_SEARCH]) tracker.counts[SKU_TEXT_SEARCH]--;
-        const msg = e instanceof Error ? e.message : String(e);
+        const msg = errText(e);
         console.error(`Page ${page} search error:`, msg);
         throw new Error(`Google Places search failed: ${msg}`);
       }

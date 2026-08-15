@@ -11,12 +11,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Building, Search, Star as StarIcon, Loader2, ChevronDown, Inbox } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { errText } from "@/lib/errText";
 
 const sendApprovalSms = async (phone: string, message: string) => {
   try {
     await supabase.functions.invoke('send-approval-sms', { body: { to: phone, message } });
   } catch (err) {
-    console.error('SMS notification failed (non-blocking):', err);
+    console.error('SMS notification failed (non-blocking):', errText(err));
   }
 };
 
@@ -70,7 +71,7 @@ export default function UTVenuesManagement() {
     mutationFn: async ({ id, updates, contactPhone }: { id: string; updates: Record<string, any>; contactPhone?: string }) => {
       const { error } = await supabase.from('event_halls').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
       if (error) {
-        console.error('UPDATE FAILED event_halls:', error);
+        console.error('UPDATE FAILED event_halls:', errText(error));
         throw error;
       }
       console.log('UPDATE SUCCESS event_halls:', id, updates);

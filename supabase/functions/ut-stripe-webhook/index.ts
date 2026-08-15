@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.14.0";
+import { errText } from "../_shared/errText.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -69,7 +70,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ received: true }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (error) {
-    console.error("stripe-webhook error:", error);
+    console.error("stripe-webhook error:", errText(error));
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 });

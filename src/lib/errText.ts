@@ -1,4 +1,17 @@
 /**
+ * MIRRORED FILE — two copies, one source of truth.
+ *
+ *   canonical : supabase/functions/_shared/errText.ts   (edit this one)
+ *   generated : src/lib/errText.ts                      (do not edit)
+ *
+ * The Deno edge runtime cannot import from src/, and the browser bundle cannot
+ * import a .ts path with an extension, so the same code has to exist twice.
+ * `npm run sync:errtext` regenerates the mirror from the canonical file; the
+ * prebuild step runs the same script in --check mode and fails the build if
+ * the two have drifted. Do not hand-edit the mirror — it will be overwritten.
+ */
+
+/**
  * errText — one legible string for any thrown value. Never throws.
  *
  * Supabase/Postgrest rejections are plain objects, not Errors, so the common

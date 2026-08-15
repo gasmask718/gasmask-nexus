@@ -14,6 +14,7 @@ import {
   enforceBudgetGate,
   pausedResponse,
 } from "../_shared/places-client.ts";
+import { errText } from "../_shared/errText.ts";
 
 // Google does not bill non-2xx responses. The tracker notes each call BEFORE
 // the fetch, so a rejected request must be un-counted or it lands in the ledger.
@@ -26,7 +27,7 @@ async function searchOrFail(query: string, apiKey: string, pageToken: string | u
     return await textSearch(query, apiKey, pageToken, tracker);
   } catch (e) {
     uncount(tracker, SKU_TEXT_SEARCH);
-    throw new Error(`Google Places search failed: ${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(`Google Places search failed: ${errText(e)}`);
   }
 }
 

@@ -3,6 +3,7 @@
 // Append-only. Refunds arrive as a NEW transaction_id with transaction_type 'refund',
 // a negative amount, and original_transaction_id (top level or in metadata).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { errText } from "../_shared/errText.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -115,7 +116,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
       return json({ success: true, id: existing?.id ?? null, duplicate: true });
     }
-    console.error('ut-ingest insert failed', error);
+    console.error('ut-ingest insert failed', errText(error));
     return json({ success: false, error: error.message }, 500);
   }
 
