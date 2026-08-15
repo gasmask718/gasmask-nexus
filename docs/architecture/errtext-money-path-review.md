@@ -1,7 +1,7 @@
 # Group A — money-path unread writes: per-function review
 
 Date: 2026-08-15
-Status: **REVIEW ONLY — no behaviour changed in these six functions yet**
+Status: **APPLIED 2026-08-15 — all ten decisions below are implemented in code**
 
 Six functions were pulled out of the 85-site Group A backlog because a swallowed
 write on them means money moved and the record didn't. Each is described below:
@@ -99,8 +99,15 @@ destructure `{ error }` and return 404/500 with an alert. Remaining gaps:
 | Write after an irreversible external commit | refund A, book-experience A | **Fail loudly + alert + say the external side succeeded** so nobody retries it |
 | Derived / cosmetic / notification | webhook C, booking-payment C, verify C, amb C, book-exp B/C, all emails and SMS | **Log with `errText`, return 200** |
 
-Two structural problems surfaced that logging cannot fix and that are out of
-scope for this pass:
+Two structural problems surfaced that logging cannot fix. Both are now their
+own tickets rather than a paragraph in this document:
 
-1. `ut-process-booking-payment` creates the Stripe intent before the rows.
-2. `ut_pub_ambassadors` accumulates totals instead of deriving them.
+1. `ut-process-booking-payment` creates the Stripe intent before the rows —
+   `docs/architecture/known-issues-payment-intent-before-rows.md`
+2. `ut_pub_ambassadors` accumulates totals instead of deriving them —
+   `docs/architecture/known-issues-accumulated-ambassador-totals.md`
+
+Note on refund A: the reason it returns 200 after a failed write is written at
+the branch in `ut-process-refund/index.ts`, not only here. A future reader sees
+a failed write and a 200 and will call it a bug; the comment explains that a
+retry would issue a second refund.
