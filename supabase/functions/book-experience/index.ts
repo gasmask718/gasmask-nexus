@@ -276,6 +276,7 @@ Deno.serve(async (req) => {
       { status: 400, headers: { ...CORS, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("book-experience error:", errText(err));
     const msg = err instanceof Error ? err.message : "Unknown error";
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,
@@ -284,6 +285,10 @@ Deno.serve(async (req) => {
   }
 });
 
+/**
+ * Alerting is the failure path's own reporting: if it throws, the alert about
+ * a failure destroys the error it was describing. It logs and never throws.
+ */
 async function logAlert(
   supabase: any,
   alert: {
@@ -295,5 +300,10 @@ async function logAlert(
     booking_id?: string;
   }
 ) {
-  await supabase.from("experience_alerts").insert(alert);
+  try {
+    const { error } = await supabase.from("experience_alerts").insert(alert);
+    if (error) console.error("book-experience logAlert insert failed:", errText(error), "| original alert:", JSON.stringify(alert));
+  } catch (e) {
+    console.error("book-experience logAlert threw:", errText(e), "| original alert:", JSON.stringify(alert));
+  }
 }
