@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, Search, Bot, Loader2, Trash2, RefreshCw } from 'lucide-react';
+import { errText } from "@/lib/errText";
 
 const STATUS_COLORS: Record<string, string> = {
   searching: 'text-red-400 border-red-400/50',
@@ -96,7 +97,7 @@ Focus on suppliers that can do private label branding for an event rental compan
       toast.success(`Suppliers found for ${need.product_name}`);
       fetchNeeds();
     } catch (err) {
-      console.error(err);
+      console.error(errText(err));
       toast.error('Failed to search');
     } finally {
       setSearchingId(null);

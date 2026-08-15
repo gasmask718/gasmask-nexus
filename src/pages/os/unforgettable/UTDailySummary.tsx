@@ -10,6 +10,7 @@ import { CalendarDays, Users, PartyPopper, AlertTriangle, Plus, FileSignature } 
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { isConfirmed, pipelineValue, contractedValue, lastWritten, formatLastUpdated, money } from './utRevenue';
+import { errText } from "@/lib/errText";
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -91,7 +92,7 @@ export default function UTDailySummary() {
           <CardContent className="space-y-1">
             {errors.map((e: any, i) => (
               <p key={i} className="text-xs text-destructive">
-                {e?.message || String(e)}
+                {errText(e)}
               </p>
             ))}
           </CardContent>

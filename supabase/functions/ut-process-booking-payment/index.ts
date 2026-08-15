@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import Stripe from "https://esm.sh/stripe@14.14.0";
+import { errText } from "../_shared/errText.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -78,7 +79,7 @@ Deno.serve(async (req) => {
       platform_fee: platformFee,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
-    console.error("process-booking-payment error:", error);
+    console.error("process-booking-payment error:", errText(error));
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Search, Plus, Loader2, Globe, MapPin } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { errText } from "@/lib/errText";
 
 export default function UTSupplierFinder() {
   const [product, setProduct] = useState('');
@@ -86,7 +87,7 @@ ${supplierType !== 'chinese' ? `## 🇺🇸 LOCAL US SOURCING STRATEGY
       if (response.error) throw response.error;
       setResults(response.data?.response || response.data?.message || 'No results generated');
     } catch (err) {
-      console.error(err);
+      console.error(errText(err));
       toast.error('Failed to generate supplier research');
       setResults('Error generating research. Please try again.');
     } finally {

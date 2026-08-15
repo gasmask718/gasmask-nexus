@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Calendar, DollarSign, Users, CheckCircle2, Loader2, XCircle, ChevronDown, ChevronRight, Mail, Phone, Sparkles, Inbox } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { errText } from "@/lib/errText";
 
 const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
   pending_payment: { label: '⏳ Pending Payment', classes: 'bg-amber-500/20 text-amber-300 border border-amber-500/40' },
@@ -57,7 +58,7 @@ export default function UTEventBookings() {
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', id);
       if (error) {
-        console.error('UPDATE FAILED ut_event_bookings:', error);
+        console.error('UPDATE FAILED ut_event_bookings:', errText(error));
         throw error;
       }
       console.log('UPDATE SUCCESS ut_event_bookings:', id, status);

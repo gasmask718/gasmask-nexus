@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import { useStaffMember, useUpdateStaff, useStaffCategories } from '@/hooks/useUnforgettableStaff';
 import { SimulationBadge } from '@/contexts/SimulationModeContext';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
+import { errText } from "@/lib/errText";
 
 const US_STATES = [
   'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware',
@@ -148,7 +149,7 @@ export default function UnforgettableStaffEdit() {
       });
       navigate(`/os/unforgettable/staff/${staffId}`);
     } catch (error) {
-      console.error('Staff update error:', error);
+      console.error('Staff update error:', errText(error));
       // Error handled by mutation
     }
   };

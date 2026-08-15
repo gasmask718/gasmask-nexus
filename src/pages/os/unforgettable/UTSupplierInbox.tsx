@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Inbox, Send, Mail, MessageSquare, Globe, Search, PaperclipIcon, Star, User, Bot, AlertTriangle, Tag, Shield, Zap, DollarSign, Package } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { errText } from "@/lib/errText";
 
 type AIAction = 'first_message' | 'counter_offer' | 'shipping_negotiation' | 'close_deal' | 'suggested_reply';
 
@@ -194,7 +195,7 @@ export default function UTSupplierInbox() {
 
       toast.success(`AI ${action.replace('_', ' ')} generated`);
     } catch (err) {
-      console.error(err);
+      console.error(errText(err));
       // Fallback templates
       const supplier = suppliers.find((s: any) => s.id === selectedSupplierId);
       const templates: Record<AIAction, string> = {

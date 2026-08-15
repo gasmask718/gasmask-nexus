@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { sendEmail } from "../_shared/sendEmail.ts";
+import { errText } from "../_shared/errText.ts";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
@@ -77,7 +78,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
-    console.error("send-booking-confirmation error:", error);
+    console.error("send-booking-confirmation error:", errText(error));
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

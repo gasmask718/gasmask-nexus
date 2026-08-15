@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, AlertTriangle } from 'lucide-react';
 import { useMemo } from 'react';
 import { isConfirmed, contractedValue, pipelineValue, lastWritten, formatLastUpdated, money } from './utRevenue';
+import { errText } from "@/lib/errText";
 
 const MIN_ROWS_FOR_INSIGHTS = 20;
 
@@ -105,7 +106,7 @@ export default function UTPerformanceInsights() {
           <CardContent className="space-y-1">
             {[bookingsError, ambassadorsError].filter(Boolean).map((e: any, i) => (
               <p key={i} className="text-xs text-destructive">
-                {e?.message || String(e)}
+                {errText(e)}
               </p>
             ))}
           </CardContent>

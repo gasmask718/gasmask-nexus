@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { errText } from "../_shared/errText.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -319,7 +320,7 @@ serve(async (req) => {
         })
         const aiData = await aiRes.json()
         dmList = JSON.parse(aiData.content[0].text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
-      } catch (e) { console.error('DM parse error:', e) }
+      } catch (e) { console.error('DM parse error:', errText(e)) }
     }
 
     for (const dm of dmList) {

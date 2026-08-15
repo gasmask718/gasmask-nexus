@@ -18,6 +18,7 @@ import {
   Gauge, HeartPulse, RefreshCw, Settings, Timer, Shield
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { errText } from "@/lib/errText";
 
 const PINK = '#E91E8C';
 const TABLE = 'unforgettable_ambassadors' as const;
@@ -82,7 +83,7 @@ export default function UTAmbassadorManagement() {
       if (ambRes.error) console.error('[UT Ambassador] Query error:', ambRes.error);
       if (ambRes.data) setAmbassadors(ambRes.data);
     } catch (err) {
-      console.error('[UT Ambassador] Fetch exception:', err);
+      console.error('[UT Ambassador] Fetch exception:', errText(err));
     }
 
     // Fetch supporting tables (may not exist yet, ignore errors)
@@ -102,7 +103,7 @@ export default function UTAmbassadorManagement() {
       if (opsRes.data) setOpsLogs(opsRes.data);
       if (configRes.data) setAlertConfig(configRes.data);
     } catch (err) {
-      console.warn('[UT Ambassador] Supporting tables fetch error (non-critical):', err);
+      console.warn('[UT Ambassador] Supporting tables fetch error (non-critical):', errText(err));
     }
 
     setLoading(false);
@@ -182,7 +183,7 @@ export default function UTAmbassadorManagement() {
           toast.success(`Auth account created — password setup email sent to ${amb.email}`);
         }
       } catch (e) {
-        console.error('Auth user creation error:', e);
+        console.error('Auth user creation error:', errText(e));
       }
 
       // Send SMS notification

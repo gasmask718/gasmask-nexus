@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
+import { errText } from "../_shared/errText.ts";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 const TIER_THRESHOLDS: Record<string, { min: number; rate: number }> = {
@@ -80,7 +81,7 @@ Deno.serve(async (req) => {
       tier_upgraded: newTier !== ambassador.tier,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
-    console.error("track-ambassador-sale error:", error);
+    console.error("track-ambassador-sale error:", errText(error));
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
