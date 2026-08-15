@@ -167,30 +167,53 @@ Deno.serve(async (req) => {
             if (viatorRes.ok) {
               const viatorData = await viatorRes.json();
               supplierConfirmation = viatorData.bookingRef || viatorData.id;
-              await supabase
+              // Viator has already committed a live booking. If we cannot store
+              // the reference, we hold a supplier booking we cannot identify —
+              // same class as the refund case, so it fails loudly and alerts.
+              const { error: confirmErr } = await supabase
                 .from("experience_bookings")
                 .update({
                   supplier_confirmation: supplierConfirmation,
                   booking_status: "confirmed",
                 })
                 .eq("id", booking.id);
+              if (confirmErr) {
+                await logAlert(supabase, {
+                  alert_type: "supplier_confirmation_lost",
+                  severity: "critical",
+                  title: "Viator booking confirmed but reference not stored",
+                  message: `Viator ref ${supplierConfirmation} for booking ${booking.id} could not be written: ${errText(confirmErr)}`,
+                  experience_id,
+                  booking_id: booking.id,
+                });
+                return new Response(
+                  JSON.stringify({
+                    error: "Supplier booking succeeded but the confirmation could not be recorded. Do not retry — the supplier booking exists.",
+                    supplier_booked: true,
+                    supplier_confirmation: supplierConfirmation,
+                    booking_id: booking.id,
+                    needs_manual_repair: true,
+                  }),
+                  { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
+                );
+              }
             } else {
-              const errText = await viatorRes.text();
+              const viatorBody = await viatorRes.text();
               await logAlert(supabase, {
                 alert_type: "api_failure",
                 severity: "warning",
                 title: "Viator booking API failed",
-                message: `Status ${viatorRes.status}: ${errText}`,
+                message: `Status ${viatorRes.status}: ${viatorBody}`,
                 experience_id,
                 booking_id: booking.id,
               });
             }
-          } catch (apiErr: any) {
+          } catch (apiErr: unknown) {
             await logAlert(supabase, {
               alert_type: "api_failure",
               severity: "warning",
               title: "Viator API connection error",
-              message: apiErr.message,
+              message: errText(apiErr),
               experience_id,
               booking_id: booking.id,
             });
