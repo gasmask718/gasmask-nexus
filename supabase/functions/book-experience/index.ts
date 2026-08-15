@@ -221,7 +221,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Upsert customer data
+      // Upsert customer data — CRM totals only, no money attached. Must never
+      // fail a booking that is already confirmed, so errors log and continue.
       if (customer_email) {
         const { data: existing } = await supabase
           .from("experience_customers")
@@ -230,7 +231,7 @@ Deno.serve(async (req) => {
           .single();
 
         if (existing) {
-          await supabase
+          const { error: custErr } = await supabase
             .from("experience_customers")
             .update({
               total_bookings: existing.total_bookings + 1,
@@ -243,8 +244,9 @@ Deno.serve(async (req) => {
               phone: customer_phone || undefined,
             })
             .eq("id", existing.id);
+          if (custErr) console.error("book-experience customer update failed:", errText(custErr));
         } else {
-          await supabase.from("experience_customers").insert({
+          const { error: custErr } = await supabase.from("experience_customers").insert({
             user_id,
             email: customer_email,
             phone: customer_phone,
@@ -254,6 +256,7 @@ Deno.serve(async (req) => {
             upsells_accepted: selected_addons.length,
             last_booking_at: new Date().toISOString(),
           });
+          if (custErr) console.error("book-experience customer insert failed:", errText(custErr));
         }
       }
 
