@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { errText } from "../_shared/errText.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -166,30 +167,53 @@ Deno.serve(async (req) => {
             if (viatorRes.ok) {
               const viatorData = await viatorRes.json();
               supplierConfirmation = viatorData.bookingRef || viatorData.id;
-              await supabase
+              // Viator has already committed a live booking. If we cannot store
+              // the reference, we hold a supplier booking we cannot identify —
+              // same class as the refund case, so it fails loudly and alerts.
+              const { error: confirmErr } = await supabase
                 .from("experience_bookings")
                 .update({
                   supplier_confirmation: supplierConfirmation,
                   booking_status: "confirmed",
                 })
                 .eq("id", booking.id);
+              if (confirmErr) {
+                await logAlert(supabase, {
+                  alert_type: "supplier_confirmation_lost",
+                  severity: "critical",
+                  title: "Viator booking confirmed but reference not stored",
+                  message: `Viator ref ${supplierConfirmation} for booking ${booking.id} could not be written: ${errText(confirmErr)}`,
+                  experience_id,
+                  booking_id: booking.id,
+                });
+                return new Response(
+                  JSON.stringify({
+                    error: "Supplier booking succeeded but the confirmation could not be recorded. Do not retry — the supplier booking exists.",
+                    supplier_booked: true,
+                    supplier_confirmation: supplierConfirmation,
+                    booking_id: booking.id,
+                    needs_manual_repair: true,
+                  }),
+                  { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
+                );
+              }
             } else {
-              const errText = await viatorRes.text();
+              const viatorBody = await viatorRes.text();
               await logAlert(supabase, {
                 alert_type: "api_failure",
                 severity: "warning",
                 title: "Viator booking API failed",
-                message: `Status ${viatorRes.status}: ${errText}`,
+                message: `Status ${viatorRes.status}: ${viatorBody}`,
                 experience_id,
                 booking_id: booking.id,
               });
             }
-          } catch (apiErr: any) {
+          } catch (apiErr: unknown) {
             await logAlert(supabase, {
               alert_type: "api_failure",
               severity: "warning",
               title: "Viator API connection error",
-              message: apiErr.message,
+              message: errText(apiErr),
               experience_id,
               booking_id: booking.id,
             });
@@ -197,7 +221,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Upsert customer data
+      // Upsert customer data — CRM totals only, no money attached. Must never
+      // fail a booking that is already confirmed, so errors log and continue.
       if (customer_email) {
         const { data: existing } = await supabase
           .from("experience_customers")
@@ -206,7 +231,7 @@ Deno.serve(async (req) => {
           .single();
 
         if (existing) {
-          await supabase
+          const { error: custErr } = await supabase
             .from("experience_customers")
             .update({
               total_bookings: existing.total_bookings + 1,
@@ -219,8 +244,9 @@ Deno.serve(async (req) => {
               phone: customer_phone || undefined,
             })
             .eq("id", existing.id);
+          if (custErr) console.error("book-experience customer update failed:", errText(custErr));
         } else {
-          await supabase.from("experience_customers").insert({
+          const { error: custErr } = await supabase.from("experience_customers").insert({
             user_id,
             email: customer_email,
             phone: customer_phone,
@@ -230,6 +256,7 @@ Deno.serve(async (req) => {
             upsells_accepted: selected_addons.length,
             last_booking_at: new Date().toISOString(),
           });
+          if (custErr) console.error("book-experience customer insert failed:", errText(custErr));
         }
       }
 
@@ -249,6 +276,7 @@ Deno.serve(async (req) => {
       { status: 400, headers: { ...CORS, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("book-experience error:", errText(err));
     const msg = err instanceof Error ? err.message : "Unknown error";
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,
@@ -257,6 +285,10 @@ Deno.serve(async (req) => {
   }
 });
 
+/**
+ * Alerting is the failure path's own reporting: if it throws, the alert about
+ * a failure destroys the error it was describing. It logs and never throws.
+ */
 async function logAlert(
   supabase: any,
   alert: {
@@ -268,5 +300,10 @@ async function logAlert(
     booking_id?: string;
   }
 ) {
-  await supabase.from("experience_alerts").insert(alert);
+  try {
+    const { error } = await supabase.from("experience_alerts").insert(alert);
+    if (error) console.error("book-experience logAlert insert failed:", errText(error), "| original alert:", JSON.stringify(alert));
+  } catch (e) {
+    console.error("book-experience logAlert threw:", errText(e), "| original alert:", JSON.stringify(alert));
+  }
 }

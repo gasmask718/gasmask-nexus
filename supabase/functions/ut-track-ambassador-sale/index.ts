@@ -29,8 +29,9 @@ Deno.serve(async (req) => {
     const tierData = TIER_THRESHOLDS[ambassador.tier] || TIER_THRESHOLDS.bronze;
     const commissionAmount = Math.round(order_amount * tierData.rate * 100) / 100;
 
-    // Insert referral record
-    await supabase.from("ut_pub_referrals").insert({
+    // Insert referral record. This row IS the commission owed — if it is lost,
+    // the ambassador is never paid and nobody finds out.
+    const { error: referralErr } = await supabase.from("ut_pub_referrals").insert({
       ambassador_id: ambassador.user_id,
       ref_code,
       order_id,
@@ -38,6 +39,7 @@ Deno.serve(async (req) => {
       commission_amount: commissionAmount,
       status: "pending",
     });
+    if (referralErr) throw new Error(`referral write failed for ${ref_code} order ${order_id}: ${errText(referralErr)}`);
 
     // Update ambassador totals
     const newTotalSales = (ambassador.total_sales || 0) + 1;
@@ -49,11 +51,17 @@ Deno.serve(async (req) => {
     else if (newTotalSales >= 25) newTier = "gold";
     else if (newTotalSales >= 10) newTier = "silver";
 
-    await supabase.from("ut_pub_ambassadors").update({
+    // KNOWN DEFECT — see docs/architecture/known-issues-accumulated-ambassador-totals.md
+    // This is a read-modify-write of a running total: racy under concurrent
+    // sales, and unrecomputable when a referral row is deleted upstream. The
+    // totals should be DERIVED from ut_pub_referrals, not accumulated here.
+    // Failing the request on error is the lesser problem, not the fix.
+    const { error: totalsErr } = await supabase.from("ut_pub_ambassadors").update({
       total_sales: newTotalSales,
       total_earned: newTotalEarned,
       tier: newTier,
     }).eq("id", ambassador.id);
+    if (totalsErr) throw new Error(`ambassador totals write failed for ${ref_code} (referral row committed): ${errText(totalsErr)}`);
 
     // SMS notification via Twilio connector gateway
     const { data: profile } = await supabase.from("ut_profiles").select("phone").eq("id", ambassador.user_id).single();
