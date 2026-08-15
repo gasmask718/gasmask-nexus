@@ -106,7 +106,7 @@ export default function UTPerformanceInsights() {
           <CardContent className="space-y-1">
             {[bookingsError, ambassadorsError].filter(Boolean).map((e: any, i) => (
               <p key={i} className="text-xs text-destructive">
-                {errText(e)}
+                {errText(e, 300)}
               </p>
             ))}
           </CardContent>

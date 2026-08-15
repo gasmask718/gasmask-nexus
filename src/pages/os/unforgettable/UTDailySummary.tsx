@@ -92,7 +92,7 @@ export default function UTDailySummary() {
           <CardContent className="space-y-1">
             {errors.map((e: any, i) => (
               <p key={i} className="text-xs text-destructive">
-                {errText(e)}
+                {errText(e, 300)}
               </p>
             ))}
           </CardContent>

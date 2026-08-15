@@ -92,7 +92,10 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    const msg = errText(error);
+    // Full detail goes to the log; the response body stays short so a stack
+    // never leaves the function.
+    console.error("ut-verify-payment error:", errText(error));
+    const msg = error instanceof Error ? error.message : "Unexpected error";
     return new Response(JSON.stringify({ error: msg }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
