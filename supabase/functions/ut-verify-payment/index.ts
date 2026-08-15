@@ -48,8 +48,11 @@ serve(async (req) => {
     if (session.payment_status === "paid") {
       const now = new Date().toISOString();
 
-      // Update the order
-      await supabaseAdmin
+      // Order first, then the payment row. This function is polled and
+      // early-returns on payment_status === 'paid', so failing here is safe:
+      // the next poll repairs it. Returning {status:"paid"} over a failed
+      // write is what made the client and the row disagree.
+      const { error: orderUpdateErr } = await supabaseAdmin
         .from("ut_orders")
         .update({
           payment_status: "paid",
@@ -59,9 +62,12 @@ serve(async (req) => {
           updated_at: now,
         })
         .eq("id", order.id);
+      if (orderUpdateErr) throw new Error(`order paid-status write failed: ${errText(orderUpdateErr)}`);
 
-      // Create payment record
-      await supabaseAdmin.from("ut_payments").insert({
+      // Payment record — the row the revenue surface reads. Written only after
+      // the order commits, so a retry hits the already_paid early return above
+      // rather than double-inserting.
+      const { error: paymentInsertErr } = await supabaseAdmin.from("ut_payments").insert({
         order_id: order.id,
         stripe_payment_intent_id: session.payment_intent as string,
         stripe_checkout_session_id: session.id,
@@ -74,13 +80,15 @@ serve(async (req) => {
           customer_name: session.customer_details?.name,
         },
       });
+      if (paymentInsertErr) throw new Error(`payment record write failed for order ${order.id}: ${errText(paymentInsertErr)}`);
 
-      // Update event request status
+      // Derived state — the order is the truth. Log, do not fail.
       if (order.event_request_id) {
-        await supabaseAdmin
+        const { error: reqErr } = await supabaseAdmin
           .from("ut_event_requests")
           .update({ status: "paid", updated_at: now })
           .eq("id", order.event_request_id);
+        if (reqErr) console.error("ut-verify-payment event request status update failed:", errText(reqErr));
       }
 
       return new Response(JSON.stringify({ status: "paid", order_id: order.id }), {
