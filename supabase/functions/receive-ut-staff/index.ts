@@ -16,6 +16,18 @@ serve(async (req) => {
     const expected = Deno.env.get('UT_OS_SHARED_SECRET');
     const ok = !!expected && !!secret && secret === expected;
     if (!ok) {
+      // Response stays a bare 401 for every failure mode; the reason is logged
+      // only, so the sender can be told why out-of-band without leaking it.
+      const reason = !expected
+        ? 'receiver_secret_not_configured (UT_OS_SHARED_SECRET is unset on this project)'
+        : secret === null
+          ? 'header_missing (no x-shared-secret header sent)'
+          : secret.length === 0
+            ? 'header_present_but_empty (x-shared-secret sent with empty value)'
+            : secret.length !== expected.length
+              ? `value_mismatch (length ${secret.length}, expected length ${expected.length})`
+              : 'value_mismatch (same length, different value)';
+      console.error(`[receive-ut-staff] 401 unauthorized: ${reason}`);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: corsHeaders }
