@@ -59,7 +59,28 @@ const FIELD_MAP: Record<string, string> = {
   // venue in the Gulf of Guinea.
   latitude: 'latitude',
   longitude: 'longitude',
+  // UT-side primary key, injected at UT's enqueue point.
+  ut_listing_id: 'ut_listing_id',
+  ut_entity_type: 'ut_entity_type',
 }
+
+/**
+ * Identity policy (2026-08-17):
+ *
+ * UT injects ut_listing_id + ut_entity_type at its single enqueue point, so
+ * every payload carries the sender-side primary key. It is the natural key
+ * here (unique index, nullable for pre-2026-08-17 rows) and the mirror
+ * upserts on it — replays are idempotent, not duplicate rows.
+ *
+ * The email 409 is scoped to the legacy path: it fires only when
+ * ut_listing_id is ABSENT. With an id present the upsert is the guard, so a
+ * replay reaches the write and the unknown_fields echo comes back; keeping
+ * the 409 on that path would reject before the upsert and tell us nothing.
+ *
+ * No ut_listing_id and no email => 400, never a blind insert. With neither
+ * key we cannot tell a replay from a new partner, and a silent duplicate is
+ * exactly the failure this pass exists to kill.
+ */
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -95,22 +116,44 @@ serve(async (req) => {
     )
 
     const body = await req.json()
+    const utListingId = body?.ut_listing_id != null && String(body.ut_listing_id).length > 0
+      ? String(body.ut_listing_id)
+      : null
 
-    const { data: existing } = await supabase
-      .from('event_halls')
-      .select('id')
-      .eq('contact_email', body?.contact_email)
-      .maybeSingle()
+    let existingId: string | null = null
 
-    if (existing) {
-      return new Response(
-        JSON.stringify({ error: 'Email already exists', code: 'DUPLICATE' }),
-        { status: 409, headers: corsHeaders }
-      )
+    if (utListingId) {
+      const { data: existing } = await supabase
+        .from('event_halls')
+        .select('id')
+        .eq('ut_listing_id', utListingId)
+        .maybeSingle()
+      existingId = existing?.id ?? null
+    } else {
+      const contactEmail = body?.contact_email || body?.email
+      if (!contactEmail) {
+        console.error('[receive-ut-venue] 400 unidentifiable: no ut_listing_id and no contact_email')
+        return new Response(
+          JSON.stringify({ error: 'ut_listing_id or contact_email required', code: 'UNIDENTIFIABLE' }),
+          { status: 400, headers: corsHeaders }
+        )
+      }
+      const { data: existing } = await supabase
+        .from('event_halls')
+        .select('id')
+        .eq('contact_email', contactEmail)
+        .maybeSingle()
+      if (existing) {
+        return new Response(
+          JSON.stringify({ error: 'Email already exists', code: 'DUPLICATE' }),
+          { status: 409, headers: corsHeaders }
+        )
+      }
     }
 
     // Partition: mapped keys become columns, everything else is kept.
-    const row: Record<string, unknown> = { status: 'pending' }
+    // status only on first sight — a replay must not reset an approved venue.
+    const row: Record<string, unknown> = existingId ? {} : { status: 'pending' }
     const extra: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(body ?? {})) {
       const column = FIELD_MAP[key]
@@ -119,6 +162,8 @@ serve(async (req) => {
     }
     // name is NOT NULL in practice; UT sends hall_name.
     if (row.name == null) row.name = body?.hall_name ?? body?.name
+    if (utListingId) row.ut_listing_id = utListingId
+    if (existingId) row.id = existingId
 
     const unknownKeys = Object.keys(extra)
     if (unknownKeys.length > 0) {
@@ -128,12 +173,13 @@ serve(async (req) => {
       )
     }
 
-    const { error: insertError } = await supabase
-      .from('event_halls')
-      .insert(row)
+    const table = supabase.from('event_halls')
+    const { error: insertError } = utListingId
+      ? await table.upsert(row, { onConflict: 'ut_listing_id' })
+      : await table.insert(row)
 
     if (insertError) {
-      console.error(`[receive-ut-venue] insert failed: ${insertError.message} (code ${insertError.code ?? 'n/a'})`)
+      console.error(`[receive-ut-venue] write failed: ${insertError.message} (code ${insertError.code ?? 'n/a'})`)
       return new Response(
         JSON.stringify({ error: insertError.message }),
         { status: 500, headers: corsHeaders }
@@ -141,7 +187,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, unknown_fields: unknownKeys }),
+      JSON.stringify({ success: true, unknown_fields: unknownKeys, mode: utListingId ? (existingId ? 'updated' : 'inserted') : 'inserted_legacy' }),
       { status: 200, headers: corsHeaders }
     )
 
