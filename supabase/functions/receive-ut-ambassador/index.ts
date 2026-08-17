@@ -21,7 +21,17 @@ const KNOWN_COLUMNS = new Set([
   'instagram_handle', 'tiktok_handle', 'youtube_handle',
   'why_ambassador', 'follower_range', 'event_types',
   'source', 'business_unit', 'auth_user_id',
+  // UT-side primary key, injected at UT's enqueue point. Natural key for upsert.
+  'ut_listing_id', 'ut_entity_type',
 ]);
+
+/**
+ * Identity policy (2026-08-17): ut_listing_id is the natural key and the
+ * mirror upserts on it, so replays are idempotent. The email 409 is scoped to
+ * the legacy path (no ut_listing_id) — on the id path the upsert is the guard
+ * and the 409 would block the unknown_fields echo. Neither key present => 400,
+ * never a blind insert.
+ */
 
 serve(async (req) => {
 
@@ -60,36 +70,59 @@ serve(async (req) => {
 
     const body = await req.json();
     const { full_name, email } = body ?? {};
+    const utListingId = body?.ut_listing_id != null && String(body.ut_listing_id).length > 0
+      ? String(body.ut_listing_id)
+      : null;
 
-    // Check for duplicate
-    const { data: existing } = await supabase
-      .from("unforgettable_ambassadors")
-      .select("id")
-      .eq("email", email)
-      .maybeSingle();
+    let existingId: string | null = null;
 
-    if (existing) {
-      return new Response(
-        JSON.stringify({ error: "Email already exists", code: "DUPLICATE" }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (utListingId) {
+      const { data: existing } = await supabase
+        .from("unforgettable_ambassadors")
+        .select("id")
+        .eq("ut_listing_id", utListingId)
+        .maybeSingle();
+      existingId = existing?.id ?? null;
+    } else {
+      if (!email) {
+        console.error('[receive-ut-ambassador] 400 unidentifiable: no ut_listing_id and no email');
+        return new Response(
+          JSON.stringify({ error: "ut_listing_id or email required", code: "UNIDENTIFIABLE" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const { data: existing } = await supabase
+        .from("unforgettable_ambassadors")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+      if (existing) {
+        return new Response(
+          JSON.stringify({ error: "Email already exists", code: "DUPLICATE" }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
-    // Generate referral code
-    const referral_code =
-      "UT-" +
-      String(full_name ?? "").split(" ")[0].toUpperCase().slice(0, 5) +
-      "-" +
-      Math.random().toString(36).substring(2, 6).toUpperCase();
-
-    // Partition the payload: known columns insert directly, everything else is
-    // preserved in mirror_extra rather than being dropped.
-    const row: Record<string, unknown> = { referral_code, status: "pending" };
+    // Referral code and status are first-sight only. A replay must not mint a
+    // new referral code for an ambassador who has already been sharing one.
+    const row: Record<string, unknown> = existingId
+      ? {}
+      : {
+          referral_code:
+            "UT-" +
+            String(full_name ?? "").split(" ")[0].toUpperCase().slice(0, 5) +
+            "-" +
+            Math.random().toString(36).substring(2, 6).toUpperCase(),
+          status: "pending",
+        };
     const extra: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(body ?? {})) {
       if (KNOWN_COLUMNS.has(key)) row[key] = value;
       else extra[key] = value;
     }
+    if (utListingId) row.ut_listing_id = utListingId;
+    if (existingId) row.id = existingId;
     const unknownKeys = Object.keys(extra);
     if (unknownKeys.length > 0) {
       row.mirror_extra = extra;
@@ -98,8 +131,10 @@ serve(async (req) => {
       );
     }
 
-    const { error: insertError } = await supabase
-      .from("unforgettable_ambassadors")
+    const utTable = supabase.from("unforgettable_ambassadors");
+    const { error: insertError } = utListingId
+      ? await utTable.upsert(row, { onConflict: "ut_listing_id" })
+      : await utTable
       .insert(row);
 
     if (insertError) {
