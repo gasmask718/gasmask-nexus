@@ -101264,6 +101264,30 @@ export type Database = {
           },
         ]
       }
+      sf_pool_map: {
+        Row: {
+          created_at: string
+          lead_source: string
+          notes: string | null
+          pool: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          lead_source: string
+          notes?: string | null
+          pool: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          lead_source?: string
+          notes?: string | null
+          pool?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shelf_corp_tracker: {
         Row: {
           activation_step_current: number | null
@@ -110511,7 +110535,7 @@ export type Database = {
           phone_carrier: string | null
           phone_dnc: boolean | null
           phone_type: string | null
-          pool: string | null
+          pool: string
           property_address: string | null
           recommended_action: string | null
           referrer: string | null
@@ -110593,7 +110617,7 @@ export type Database = {
           phone_carrier?: string | null
           phone_dnc?: boolean | null
           phone_type?: string | null
-          pool?: string | null
+          pool: string
           property_address?: string | null
           recommended_action?: string | null
           referrer?: string | null
@@ -110675,7 +110699,7 @@ export type Database = {
           phone_carrier?: string | null
           phone_dnc?: boolean | null
           phone_type?: string | null
-          pool?: string | null
+          pool?: string
           property_address?: string | null
           recommended_action?: string | null
           referrer?: string | null
@@ -143974,6 +143998,7 @@ export type Database = {
           total_surplus: number
         }[]
       }
+      sf_resolve_pool: { Args: { _lead_source: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       skip_payout_item: {
