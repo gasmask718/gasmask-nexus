@@ -322,7 +322,11 @@ export default function SFLeadPipeline() {
       return;
     }
 
-    const { data: inserted, error } = await supabase.from('surplus_funds_leads').insert(toInsert).select('id, state');
+    // `pool` is required but set server-side by trg_sf_leads_set_pool from lead_source
+    const { data: inserted, error } = await supabase
+      .from('surplus_funds_leads')
+      .insert(toInsert as any)
+      .select('id, state');
     if (error) { toast.error('Upload failed: ' + error.message); e.target.value = ''; return; }
     const skipped = inFileDupes + dbDupes;
     toast.success(
