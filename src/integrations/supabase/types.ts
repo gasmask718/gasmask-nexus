@@ -4169,6 +4169,42 @@ export type Database = {
         }
         Relationships: []
       }
+      account_review_staging: {
+        Row: {
+          id: string
+          new_phone: string | null
+          new_relationship_status: string | null
+          prior_gasmask_call_status: string | null
+          prior_health_status: string | null
+          prior_phone: string | null
+          prior_relationship_status: string | null
+          reviewed_at: string
+          run_id: string
+        }
+        Insert: {
+          id: string
+          new_phone?: string | null
+          new_relationship_status?: string | null
+          prior_gasmask_call_status?: string | null
+          prior_health_status?: string | null
+          prior_phone?: string | null
+          prior_relationship_status?: string | null
+          reviewed_at?: string
+          run_id: string
+        }
+        Update: {
+          id?: string
+          new_phone?: string | null
+          new_relationship_status?: string | null
+          prior_gasmask_call_status?: string | null
+          prior_health_status?: string | null
+          prior_phone?: string | null
+          prior_relationship_status?: string | null
+          reviewed_at?: string
+          run_id?: string
+        }
+        Relationships: []
+      }
       accounting_ledger: {
         Row: {
           amount: number
@@ -11791,6 +11827,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ar_confirmed_paid_staging: {
+        Row: {
+          confirmed_at: string
+          invoice_id: string
+          prior_amount_paid: number | null
+          prior_payment_status: string | null
+          run_id: string
+          total_amount: number | null
+        }
+        Insert: {
+          confirmed_at?: string
+          invoice_id: string
+          prior_amount_paid?: number | null
+          prior_payment_status?: string | null
+          run_id: string
+          total_amount?: number | null
+        }
+        Update: {
+          confirmed_at?: string
+          invoice_id?: string
+          prior_amount_paid?: number | null
+          prior_payment_status?: string | null
+          run_id?: string
+          total_amount?: number | null
+        }
+        Relationships: []
       }
       ar_phantom_paid_staging: {
         Row: {
