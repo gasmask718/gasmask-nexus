@@ -7,7 +7,24 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-shared-secret",
 };
 
+/**
+ * Schema-drift policy (2026-08-17) — same treatment as receive-ut-staff.
+ * Known keys map to columns; unknown keys land in mirror_extra, are logged by
+ * name, and are echoed in the 200. Dropping an unrecognised field is a
+ * decision, and a decision made by omission is one nobody made.
+ */
+const KNOWN_COLUMNS = new Set([
+  'full_name', 'email', 'phone', 'state',
+  // Promoted 2026-08-17: UT has been sending city and the table had nowhere
+  // to put it, so every ambassador city was discarded at the door.
+  'city',
+  'instagram_handle', 'tiktok_handle', 'youtube_handle',
+  'why_ambassador', 'follower_range', 'event_types',
+  'source', 'business_unit', 'auth_user_id',
+]);
+
 serve(async (req) => {
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
