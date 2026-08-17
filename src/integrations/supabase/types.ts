@@ -69450,6 +69450,45 @@ export type Database = {
           },
         ]
       }
+      invoice_dedupe_staging: {
+        Row: {
+          business_date: string | null
+          invoice_id: string
+          kept_invoice_id: string | null
+          prior_deleted_at: string | null
+          prior_payment_status: string | null
+          reason: string | null
+          removed_at: string
+          run_id: string
+          store_id: string | null
+          total_amount: number | null
+        }
+        Insert: {
+          business_date?: string | null
+          invoice_id: string
+          kept_invoice_id?: string | null
+          prior_deleted_at?: string | null
+          prior_payment_status?: string | null
+          reason?: string | null
+          removed_at?: string
+          run_id: string
+          store_id?: string | null
+          total_amount?: number | null
+        }
+        Update: {
+          business_date?: string | null
+          invoice_id?: string
+          kept_invoice_id?: string | null
+          prior_deleted_at?: string | null
+          prior_payment_status?: string | null
+          reason?: string | null
+          removed_at?: string
+          run_id?: string
+          store_id?: string | null
+          total_amount?: number | null
+        }
+        Relationships: []
+      }
       invoice_duplicate_candidates: {
         Row: {
           amount_a: number | null
