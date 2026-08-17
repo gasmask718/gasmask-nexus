@@ -21,6 +21,11 @@ const KNOWN_COLUMNS = new Set([
   'instagram_handle', 'tiktok_handle', 'youtube_handle',
   'why_ambassador', 'follower_range', 'event_types',
   'source', 'business_unit', 'auth_user_id',
+  // Promoted 2026-08-18: UT owns the referral code. The ambassador signs up
+  // there and the code is on their dashboard and in their emails before this
+  // row exists, so a locally minted one would be a second live code for the
+  // same person. We generate only when the payload carries none.
+  'referral_code',
   // UT-side primary key, injected at UT's enqueue point. Natural key for upsert.
   'ut_listing_id', 'ut_entity_type',
 ]);
@@ -104,22 +109,30 @@ serve(async (req) => {
       }
     }
 
-    // Referral code and status are first-sight only. A replay must not mint a
-    // new referral code for an ambassador who has already been sharing one.
-    const row: Record<string, unknown> = existingId
-      ? {}
-      : {
-          referral_code:
-            "UT-" +
-            String(full_name ?? "").split(" ")[0].toUpperCase().slice(0, 5) +
-            "-" +
-            Math.random().toString(36).substring(2, 6).toUpperCase(),
-          status: "pending",
-        };
+    // status is first-sight only: a replay must not reset an approved
+    // ambassador back to pending.
+    const row: Record<string, unknown> = existingId ? {} : { status: "pending" };
     const extra: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(body ?? {})) {
       if (KNOWN_COLUMNS.has(key)) row[key] = value;
       else extra[key] = value;
+    }
+    // UT owns referral_code. We take theirs when it arrives and only mint one
+    // as a fallback for a first-sight mirror that carries none — generating
+    // over a code the ambassador is already sharing gives one person two live
+    // codes, and each system believing its own.
+    const payloadCode = typeof row.referral_code === "string" ? row.referral_code.trim() : "";
+    if (payloadCode) {
+      row.referral_code = payloadCode;
+    } else {
+      delete row.referral_code;
+      if (!existingId) {
+        row.referral_code =
+          "UT-" +
+          String(full_name ?? "").split(" ")[0].toUpperCase().slice(0, 5) +
+          "-" +
+          Math.random().toString(36).substring(2, 6).toUpperCase();
+      }
     }
     if (utListingId) row.ut_listing_id = utListingId;
     if (existingId) row.id = existingId;
