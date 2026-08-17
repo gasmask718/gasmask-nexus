@@ -55132,6 +55132,7 @@ export type Database = {
           is_featured: boolean | null
           latitude: number | null
           longitude: number | null
+          mirror_extra: Json
           name: string
           owner_user_id: string | null
           parking_info: string | null
@@ -55174,6 +55175,7 @@ export type Database = {
           is_featured?: boolean | null
           latitude?: number | null
           longitude?: number | null
+          mirror_extra?: Json
           name: string
           owner_user_id?: string | null
           parking_info?: string | null
@@ -55216,6 +55218,7 @@ export type Database = {
           is_featured?: boolean | null
           latitude?: number | null
           longitude?: number | null
+          mirror_extra?: Json
           name?: string
           owner_user_id?: string | null
           parking_info?: string | null
@@ -92321,6 +92324,7 @@ export type Database = {
           geo_lat: number | null
           geo_lng: number | null
           id: string
+          mirror_extra: Json
           owner_name: string
           phone: string | null
           rating: number | null
@@ -92340,6 +92344,7 @@ export type Database = {
           geo_lat?: number | null
           geo_lng?: number | null
           id?: string
+          mirror_extra?: Json
           owner_name: string
           phone?: string | null
           rating?: number | null
@@ -92359,6 +92364,7 @@ export type Database = {
           geo_lat?: number | null
           geo_lng?: number | null
           id?: string
+          mirror_extra?: Json
           owner_name?: string
           phone?: string | null
           rating?: number | null
@@ -116007,6 +116013,7 @@ export type Database = {
           boost_reason: string | null
           boost_updated_at: string | null
           business_unit: string
+          city: string | null
           commission_rate: number
           conversion_rate: number | null
           created_at: string
@@ -116023,6 +116030,7 @@ export type Database = {
           last_insight_at: string | null
           last_payout_at: string | null
           last_reengagement_at: string | null
+          mirror_extra: Json
           payout_status: string | null
           performance_tier: string
           phone: string | null
@@ -116059,6 +116067,7 @@ export type Database = {
           boost_reason?: string | null
           boost_updated_at?: string | null
           business_unit?: string
+          city?: string | null
           commission_rate?: number
           conversion_rate?: number | null
           created_at?: string
@@ -116075,6 +116084,7 @@ export type Database = {
           last_insight_at?: string | null
           last_payout_at?: string | null
           last_reengagement_at?: string | null
+          mirror_extra?: Json
           payout_status?: string | null
           performance_tier?: string
           phone?: string | null
@@ -116111,6 +116121,7 @@ export type Database = {
           boost_reason?: string | null
           boost_updated_at?: string | null
           business_unit?: string
+          city?: string | null
           commission_rate?: number
           conversion_rate?: number | null
           created_at?: string
@@ -116127,6 +116138,7 @@ export type Database = {
           last_insight_at?: string | null
           last_payout_at?: string | null
           last_reengagement_at?: string | null
+          mirror_extra?: Json
           payout_status?: string | null
           performance_tier?: string
           phone?: string | null
