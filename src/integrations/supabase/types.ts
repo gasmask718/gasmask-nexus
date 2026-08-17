@@ -55148,6 +55148,8 @@ export type Database = {
           status: string | null
           tagline: string | null
           updated_at: string | null
+          ut_entity_type: string | null
+          ut_listing_id: string | null
           views_count: number | null
           website: string | null
           website_url: string | null
@@ -55191,6 +55193,8 @@ export type Database = {
           status?: string | null
           tagline?: string | null
           updated_at?: string | null
+          ut_entity_type?: string | null
+          ut_listing_id?: string | null
           views_count?: number | null
           website?: string | null
           website_url?: string | null
@@ -55234,6 +55238,8 @@ export type Database = {
           status?: string | null
           tagline?: string | null
           updated_at?: string | null
+          ut_entity_type?: string | null
+          ut_listing_id?: string | null
           views_count?: number | null
           website?: string | null
           website_url?: string | null
@@ -92333,6 +92339,8 @@ export type Database = {
           total_bookings: number | null
           updated_at: string | null
           user_id: string | null
+          ut_entity_type: string | null
+          ut_listing_id: string | null
           verified: boolean | null
         }
         Insert: {
@@ -92353,6 +92361,8 @@ export type Database = {
           total_bookings?: number | null
           updated_at?: string | null
           user_id?: string | null
+          ut_entity_type?: string | null
+          ut_listing_id?: string | null
           verified?: boolean | null
         }
         Update: {
@@ -92373,6 +92383,8 @@ export type Database = {
           total_bookings?: number | null
           updated_at?: string | null
           user_id?: string | null
+          ut_entity_type?: string | null
+          ut_listing_id?: string | null
           verified?: boolean | null
         }
         Relationships: []
@@ -103488,6 +103500,8 @@ export type Database = {
           travel_willing: boolean | null
           updated_at: string | null
           user_id: string | null
+          ut_entity_type: string | null
+          ut_listing_id: string | null
           views_count: number | null
           website: string | null
           years_experience: number | null
@@ -103535,6 +103549,8 @@ export type Database = {
           travel_willing?: boolean | null
           updated_at?: string | null
           user_id?: string | null
+          ut_entity_type?: string | null
+          ut_listing_id?: string | null
           views_count?: number | null
           website?: string | null
           years_experience?: number | null
@@ -103582,6 +103598,8 @@ export type Database = {
           travel_willing?: boolean | null
           updated_at?: string | null
           user_id?: string | null
+          ut_entity_type?: string | null
+          ut_listing_id?: string | null
           views_count?: number | null
           website?: string | null
           years_experience?: number | null
@@ -116054,6 +116072,8 @@ export type Database = {
           total_referrals: number | null
           total_revenue: number | null
           total_sales: number
+          ut_entity_type: string | null
+          ut_listing_id: string | null
           why_ambassador: string | null
           youtube_handle: string | null
         }
@@ -116108,6 +116128,8 @@ export type Database = {
           total_referrals?: number | null
           total_revenue?: number | null
           total_sales?: number
+          ut_entity_type?: string | null
+          ut_listing_id?: string | null
           why_ambassador?: string | null
           youtube_handle?: string | null
         }
@@ -116162,6 +116184,8 @@ export type Database = {
           total_referrals?: number | null
           total_revenue?: number | null
           total_sales?: number
+          ut_entity_type?: string | null
+          ut_listing_id?: string | null
           why_ambassador?: string | null
           youtube_handle?: string | null
         }
