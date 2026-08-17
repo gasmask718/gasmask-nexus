@@ -109,22 +109,30 @@ serve(async (req) => {
       }
     }
 
-    // Referral code and status are first-sight only. A replay must not mint a
-    // new referral code for an ambassador who has already been sharing one.
-    const row: Record<string, unknown> = existingId
-      ? {}
-      : {
-          referral_code:
-            "UT-" +
-            String(full_name ?? "").split(" ")[0].toUpperCase().slice(0, 5) +
-            "-" +
-            Math.random().toString(36).substring(2, 6).toUpperCase(),
-          status: "pending",
-        };
+    // status is first-sight only: a replay must not reset an approved
+    // ambassador back to pending.
+    const row: Record<string, unknown> = existingId ? {} : { status: "pending" };
     const extra: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(body ?? {})) {
       if (KNOWN_COLUMNS.has(key)) row[key] = value;
       else extra[key] = value;
+    }
+    // UT owns referral_code. We take theirs when it arrives and only mint one
+    // as a fallback for a first-sight mirror that carries none — generating
+    // over a code the ambassador is already sharing gives one person two live
+    // codes, and each system believing its own.
+    const payloadCode = typeof row.referral_code === "string" ? row.referral_code.trim() : "";
+    if (payloadCode) {
+      row.referral_code = payloadCode;
+    } else {
+      delete row.referral_code;
+      if (!existingId) {
+        row.referral_code =
+          "UT-" +
+          String(full_name ?? "").split(" ")[0].toUpperCase().slice(0, 5) +
+          "-" +
+          Math.random().toString(36).substring(2, 6).toUpperCase();
+      }
     }
     if (utListingId) row.ut_listing_id = utListingId;
     if (existingId) row.id = existingId;
