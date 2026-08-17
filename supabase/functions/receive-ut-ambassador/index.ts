@@ -21,6 +21,11 @@ const KNOWN_COLUMNS = new Set([
   'instagram_handle', 'tiktok_handle', 'youtube_handle',
   'why_ambassador', 'follower_range', 'event_types',
   'source', 'business_unit', 'auth_user_id',
+  // Promoted 2026-08-18: UT owns the referral code. The ambassador signs up
+  // there and the code is on their dashboard and in their emails before this
+  // row exists, so a locally minted one would be a second live code for the
+  // same person. We generate only when the payload carries none.
+  'referral_code',
   // UT-side primary key, injected at UT's enqueue point. Natural key for upsert.
   'ut_listing_id', 'ut_entity_type',
 ]);
