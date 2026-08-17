@@ -156,7 +156,17 @@ async function markOrderPaid(
   if (!existing.customer_email && fallbackEmail) {
     updatePayload.customer_email = fallbackEmail;
   }
-  await supabase.from("marketplace_orders").update(updatePayload).eq("id", orderId);
+  // The customer has already paid. Losing this write leaves a paid order
+  // reading "pending" forever, so fail the request and let Stripe retry — the
+  // `payment_status === "paid"` guard above makes the replay a no-op.
+  const { error: paidErr } = await supabase
+    .from("marketplace_orders")
+    .update(updatePayload)
+    .eq("id", orderId);
+  if (paidErr) {
+    console.error(`[dd-webhook] order ${orderId} not marked paid:`, paidErr.message);
+    throw new Error(`mark order paid failed: ${paidErr.message}`);
+  }
 
   // Decrement inventory for each line item via RPC. Best-effort: log failures
   // but do not block payment processing.
@@ -370,10 +380,19 @@ async function markOrderPaid(
               status: "pending",
             };
           });
-          await supabase.from("dd_partner_earnings").insert(rows);
+          // A lost earnings row means a partner is silently never paid. It is
+          // logged, not thrown: replaying this event would re-insert the
+          // commission (there is no dedup key here) and overpay instead.
+          const { error: earnErr } = await supabase.from("dd_partner_earnings").insert(rows);
+          if (earnErr) {
+            console.error(
+              `[dd-webhook] COMMISSION LOST order=${orderId} campaign=${c.id}:`,
+              earnErr.message,
+            );
+          }
         } else {
           // No line items resolvable — keep the legacy order-level record.
-          await supabase.from("dd_partner_earnings").insert({
+          const { error: earnErr } = await supabase.from("dd_partner_earnings").insert({
             ambassador_id: c.ambassador_id ?? linkRow?.ambassador_id ?? null,
             wholesaler_id: oc.campaign_wholesaler_id ?? null,
             campaign_id: c.id,
@@ -383,6 +402,12 @@ async function markOrderPaid(
             commission_amount: commission,
             status: "pending",
           });
+          if (earnErr) {
+            console.error(
+              `[dd-webhook] COMMISSION LOST (legacy path) order=${orderId} campaign=${c.id}:`,
+              earnErr.message,
+            );
+          }
         }
 
         await supabase
