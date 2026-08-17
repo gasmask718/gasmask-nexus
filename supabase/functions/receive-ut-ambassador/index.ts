@@ -59,11 +59,7 @@ serve(async (req) => {
     );
 
     const body = await req.json();
-    const {
-      full_name, email, phone, state, city,
-      instagram_handle, tiktok_handle, youtube_handle,
-      why_ambassador, follower_range, event_types
-    } = body;
+    const { full_name, email } = body ?? {};
 
     // Check for duplicate
     const { data: existing } = await supabase
@@ -82,30 +78,32 @@ serve(async (req) => {
     // Generate referral code
     const referral_code =
       "UT-" +
-      full_name.split(" ")[0].toUpperCase().slice(0, 5) +
+      String(full_name ?? "").split(" ")[0].toUpperCase().slice(0, 5) +
       "-" +
       Math.random().toString(36).substring(2, 6).toUpperCase();
 
-    // Insert ambassador
+    // Partition the payload: known columns insert directly, everything else is
+    // preserved in mirror_extra rather than being dropped.
+    const row: Record<string, unknown> = { referral_code, status: "pending" };
+    const extra: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(body ?? {})) {
+      if (KNOWN_COLUMNS.has(key)) row[key] = value;
+      else extra[key] = value;
+    }
+    const unknownKeys = Object.keys(extra);
+    if (unknownKeys.length > 0) {
+      row.mirror_extra = extra;
+      console.warn(
+        `[receive-ut-ambassador] schema drift: ${unknownKeys.length} unknown field(s) captured into mirror_extra: ${unknownKeys.join(", ")}`
+      );
+    }
+
     const { error: insertError } = await supabase
       .from("unforgettable_ambassadors")
-      .insert({
-        full_name,
-        email,
-        phone,
-        state,
-        city,
-        instagram_handle,
-        tiktok_handle,
-        youtube_handle,
-        why_ambassador,
-        follower_range,
-        event_types,
-        referral_code,
-        status: "pending",
-      });
+      .insert(row);
 
     if (insertError) {
+      console.error(`[receive-ut-ambassador] insert failed: ${insertError.message} (code ${insertError.code ?? 'n/a'})`);
       return new Response(
         JSON.stringify({ error: insertError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -113,9 +111,10 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, referral_code }),
+      JSON.stringify({ success: true, referral_code, unknown_fields: unknownKeys }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return new Response(
