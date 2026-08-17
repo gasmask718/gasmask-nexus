@@ -79,30 +79,67 @@ Deno.serve(async (req) => {
     if (pye || !payout) throw new Error("payout not found");
     if (payout.status === "paid") throw new Error("already paid");
 
-    await supabase.from("dd_partner_payouts")
-      .update({ status: "processing" }).eq("id", payout_id);
+    // Claim the payout BEFORE money moves. This is the only lock against a
+    // double transfer, so a failed claim must abort — it used to be unread.
+    const { data: claimed, error: claimErr } = await supabase
+      .from("dd_partner_payouts")
+      .update({ status: "processing" })
+      .eq("id", payout_id)
+      .neq("status", "paid")
+      .select("id");
+    if (claimErr) throw new Error(`payout claim failed: ${claimErr.message}`);
+    if (!claimed || claimed.length === 0) {
+      throw new Error("payout could not be claimed (already paid or not visible)");
+    }
 
-    const transfer = await stripe.transfers.create({
-      amount: Math.round(Number(amount) * 100),
-      currency: "usd",
-      destination: partner.stripe_connect_account_id,
-      transfer_group: payout_id,
-      metadata: { dd_payout_id: payout_id, dd_partner_id: partner_id },
-    });
+    const transfer = await stripe.transfers.create(
+      {
+        amount: Math.round(Number(amount) * 100),
+        currency: "usd",
+        destination: partner.stripe_connect_account_id,
+        transfer_group: payout_id,
+        metadata: { dd_payout_id: payout_id, dd_partner_id: partner_id },
+      },
+      // A retry of this request must not create a second transfer.
+      { idempotencyKey: `dd-payout-${payout_id}` },
+    );
 
-    await supabase.from("dd_partner_payouts").update({
+    // ── money has moved ────────────────────────────────────────────────────
+    // Everything below is bookkeeping. It must never throw: a 4xx/5xx here
+    // invites the caller to retry, and a retry re-pays the partner. Failures
+    // are logged loudly and reported in the response body instead.
+    let bookkeepingError: string | null = null;
+
+    const { error: paidErr } = await supabase.from("dd_partner_payouts").update({
       status: "paid",
       stripe_transfer_id: transfer.id,
       paid_at: new Date().toISOString(),
     }).eq("id", payout_id);
+    if (paidErr) {
+      bookkeepingError = `payout row not marked paid: ${paidErr.message}`;
+      console.error(`[dd-pay-partner] MONEY SENT (${transfer.id}) but ${bookkeepingError}`);
+    }
 
-    await supabase.from("dd_partner_profiles").update({
+    const { error: balErr } = await supabase.from("dd_partner_profiles").update({
       total_paid_lifetime: Number(partner.total_paid_lifetime ?? 0) + Number(amount),
       pending_balance: Math.max(Number(partner.pending_balance ?? 0) - Number(amount), 0),
     }).eq("id", partner_id);
+    if (balErr) {
+      bookkeepingError = `${bookkeepingError ? bookkeepingError + "; " : ""}partner balance not updated: ${balErr.message}`;
+      console.error(`[dd-pay-partner] MONEY SENT (${transfer.id}) but balance write failed:`, balErr.message);
+    }
 
     const period = `${payout.period_start} → ${payout.period_end}`;
-    await notifyPartner(partner, Number(amount), period);
+    try {
+      await notifyPartner(partner, Number(amount), period);
+    } catch (notifyErr) {
+      console.error("[dd-pay-partner] partner notification failed:", String(notifyErr));
+    }
+
+    return new Response(
+      JSON.stringify({ ok: true, transfer_id: transfer.id, bookkeeping_error: bookkeepingError }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
 
     return new Response(JSON.stringify({ ok: true, transfer_id: transfer.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
