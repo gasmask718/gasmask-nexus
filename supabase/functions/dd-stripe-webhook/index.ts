@@ -156,7 +156,17 @@ async function markOrderPaid(
   if (!existing.customer_email && fallbackEmail) {
     updatePayload.customer_email = fallbackEmail;
   }
-  await supabase.from("marketplace_orders").update(updatePayload).eq("id", orderId);
+  // The customer has already paid. Losing this write leaves a paid order
+  // reading "pending" forever, so fail the request and let Stripe retry — the
+  // `payment_status === "paid"` guard above makes the replay a no-op.
+  const { error: paidErr } = await supabase
+    .from("marketplace_orders")
+    .update(updatePayload)
+    .eq("id", orderId);
+  if (paidErr) {
+    console.error(`[dd-webhook] order ${orderId} not marked paid:`, paidErr.message);
+    throw new Error(`mark order paid failed: ${paidErr.message}`);
+  }
 
   // Decrement inventory for each line item via RPC. Best-effort: log failures
   // but do not block payment processing.
