@@ -134,8 +134,7 @@ serve(async (req) => {
     const utTable = supabase.from("unforgettable_ambassadors");
     const { error: insertError } = utListingId
       ? await utTable.upsert(row, { onConflict: "ut_listing_id" })
-      : await utTable
-      .insert(row);
+      : await utTable.insert(row);
 
     if (insertError) {
       console.error(`[receive-ut-ambassador] insert failed: ${insertError.message} (code ${insertError.code ?? 'n/a'})`);
@@ -146,7 +145,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, referral_code, unknown_fields: unknownKeys }),
+      JSON.stringify({ success: true, referral_code: row.referral_code ?? null, unknown_fields: unknownKeys, mode: utListingId ? (existingId ? 'updated' : 'inserted') : 'inserted_legacy' }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
