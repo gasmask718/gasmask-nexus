@@ -108,3 +108,28 @@ any number of redeliveries, and an ambassador keeps the referral code they
 have already been sharing.
 
 The 200 now carries `mode`: `inserted`, `updated`, or `inserted_legacy`.
+
+## Ownership of `referral_code` (2026-08-18)
+
+UT owns the string. The ambassador signs up there and the code is on their
+dashboard and in their emails before our row exists, so a locally minted code
+is a second live code for one person — worse than a dropped field, because
+each system believes its own.
+
+`receive-ut-ambassador` now takes `referral_code` from the payload. Generation
+is the fallback only, and only on first sight: no code in the payload and no
+existing row. A replay that carries no code leaves the stored one untouched.
+
+`status` remains first-sight-only on all four mirrors.
+
+## `rental_partners.user_id` is a reference, not a foreign key (2026-08-18)
+
+The `user_id` UT sends is a uuid in **UT's** auth, meaningless in ours. Only
+`rental_partners` carried an FK into `auth.users` on that column — venue and
+staff never did, which is why rental was the one path failing with
+`rental_partners_user_id_fkey`. The FK is dropped; the column is kept as a
+reference to UT's owner, the same idea `ut_listing_id` serves for the listing.
+
+Rule: mirror columns holding UT-side identifiers never get FKs into local
+tables. Proven by execution — insert plus conflicting re-insert with a uuid
+absent from `auth.users`, then cleanup.
