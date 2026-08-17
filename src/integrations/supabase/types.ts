@@ -103458,6 +103458,8 @@ export type Database = {
           is_featured: boolean | null
           languages: string[] | null
           languages_spoken: string[] | null
+          latitude: number | null
+          longitude: number | null
           mirror_extra: Json
           phone: string | null
           portfolio_photos: string[] | null
@@ -103503,6 +103505,8 @@ export type Database = {
           is_featured?: boolean | null
           languages?: string[] | null
           languages_spoken?: string[] | null
+          latitude?: number | null
+          longitude?: number | null
           mirror_extra?: Json
           phone?: string | null
           portfolio_photos?: string[] | null
@@ -103548,6 +103552,8 @@ export type Database = {
           is_featured?: boolean | null
           languages?: string[] | null
           languages_spoken?: string[] | null
+          latitude?: number | null
+          longitude?: number | null
           mirror_extra?: Json
           phone?: string | null
           portfolio_photos?: string[] | null
