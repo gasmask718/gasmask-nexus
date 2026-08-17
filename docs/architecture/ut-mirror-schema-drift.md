@@ -58,3 +58,42 @@ what UT sends today can only come from (a) UT's outbox rows, or (b) the
 was derived from column-versus-insert comparison and from rows that are NULL
 where they should not be. The echo is now on all four; from the next delivery
 onward the list is observed rather than inferred.
+
+## Identity and replay (2026-08-17, second pass)
+
+UT injects `ut_listing_id` + `ut_entity_type` at its single enqueue point.
+Every mirror table now has a nullable `ut_listing_id text` with a partial
+unique index (`WHERE ut_listing_id IS NOT NULL`), and all four functions
+`upsert(..., { onConflict: 'ut_listing_id' })` when the id is present.
+
+| table | UT source |
+|---|---|
+| `event_halls` | `event_halls.id` |
+| `rental_partners` | `rental_companies.id` |
+| `staff_members_ut` | `staff_members.id` |
+| `unforgettable_ambassadors` | `ambassadors.id` |
+
+### The email 409 — scoped, not removed
+
+It fires **only when `ut_listing_id` is absent**. With an id present the
+upsert is the guard; leaving the 409 on that path would reject a replay
+before the write and give back no `unknown_fields` echo, which is the whole
+point of replaying. Only one path is live per request — there is no branch
+where both run.
+
+### A mirror with no `ut_listing_id`
+
+- id absent, email present → legacy path: email 409 guard, then insert.
+- id absent, email absent → **400 `UNIDENTIFIABLE`**, never inserted. With
+  neither key we cannot tell a replay from a new partner, and a blind insert
+  is the silent duplicate this whole pass exists to prevent.
+
+### First-sight-only fields
+
+A replay must not undo human decisions. `status` (all four), `verified`
+(rental) and `referral_code` (ambassador) are written only when no row with
+that `ut_listing_id` exists yet. An approved partner stays approved across
+any number of redeliveries, and an ambassador keeps the referral code they
+have already been sharing.
+
+The 200 now carries `mode`: `inserted`, `updated`, or `inserted_legacy`.
