@@ -140,10 +140,6 @@ Deno.serve(async (req) => {
       JSON.stringify({ ok: true, transfer_id: transfer.id, bookkeeping_error: bookkeepingError }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-
-    return new Response(JSON.stringify({ ok: true, transfer_id: transfer.id }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
   } catch (e) {
     return new Response(JSON.stringify({ error: String((e as Error).message) }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },

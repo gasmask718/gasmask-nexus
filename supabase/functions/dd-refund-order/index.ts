@@ -60,7 +60,11 @@ serve(async (req) => {
       refundId = refund.id;
     }
 
-    await supabase
+    // ── money has moved ────────────────────────────────────────────────────
+    // If this write is lost the order still reads "paid" and an admin can
+    // refund a second time, so the failure has to be visible — but it must not
+    // 500, because a retry of this endpoint would issue another refund.
+    const { error: markErr } = await supabase
       .from("marketplace_orders")
       .update({
         payment_status: "refunded",
@@ -69,6 +73,17 @@ serve(async (req) => {
         notes: `Refunded by admin: ${reason ?? "fraud_review_cancelled"}`,
       })
       .eq("id", order_id);
+    if (markErr) {
+      console.error(
+        `[dd-refund-order] REFUND ISSUED (${refundId}) but order ${order_id} not marked refunded:`,
+        markErr.message,
+      );
+      return json({
+        success: true,
+        refund_id: refundId,
+        bookkeeping_error: `Refund succeeded but the order was not marked refunded (${markErr.message}). Do not refund again — fix the record manually.`,
+      });
+    }
 
     return json({ success: true, refund_id: refundId });
   } catch (err: any) {
