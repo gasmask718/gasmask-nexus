@@ -28,7 +28,11 @@ const KNOWN_COLUMNS = new Set([
   'instagram_handle', 'tiktok_handle', 'website', 'available_states',
   'contact_email', 'contact_phone', 'tagline', 'skills', 'price_per_hour',
   'price_per_event', 'price_type', 'languages_spoken', 'travel_willing',
+  // Promoted from mirror_extra 2026-08-17: geocoded signup coordinates.
+  // Nullable on purpose — an unresolved geocode must stay NULL, never 0,0.
+  'latitude', 'longitude',
 ])
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
