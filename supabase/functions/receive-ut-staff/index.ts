@@ -6,6 +6,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-shared-secret',
 }
 
+/**
+ * Schema-drift policy (decided deliberately, 2026-08-17):
+ *
+ * UT owns its signup form; we own this table. Every field UT adds lands here
+ * before we know about it. The previous behaviour spread the whole payload
+ * into the insert, so a single unrecognised key (custom_role_description)
+ * returned PGRST204 and 500'd the mirror — an outage-shaped failure for what
+ * is really a schema gap.
+ *
+ * New behaviour: known columns are inserted; anything else is captured into
+ * mirror_extra (jsonb) and logged by name. Nothing is lost, the mirror keeps
+ * flowing, and the log tells us which columns to promote. Unknown fields are
+ * never a reason to reject a staff signup.
+ */
+const KNOWN_COLUMNS = new Set([
+  'user_id', 'full_name', 'email', 'phone', 'bio', 'role_category',
+  'custom_role_description', 'specialties', 'city', 'state', 'hourly_rate',
+  'event_rate', 'profile_photo', 'portfolio_photos', 'portfolio_videos',
+  'demo_video_url', 'years_experience', 'languages', 'availability',
+  'instagram_handle', 'tiktok_handle', 'website', 'available_states',
+  'contact_email', 'contact_phone', 'tagline', 'skills', 'price_per_hour',
+  'price_per_event', 'price_type', 'languages_spoken', 'travel_willing',
+])
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -55,11 +79,28 @@ serve(async (req) => {
       )
     }
 
+    // Partition the payload: known columns insert directly, everything else is
+    // preserved in mirror_extra rather than failing the request.
+    const row: Record<string, unknown> = { status: 'pending' }
+    const extra: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(body ?? {})) {
+      if (KNOWN_COLUMNS.has(key)) row[key] = value
+      else extra[key] = value
+    }
+    const unknownKeys = Object.keys(extra)
+    if (unknownKeys.length > 0) {
+      row.mirror_extra = extra
+      console.warn(
+        `[receive-ut-staff] schema drift: ${unknownKeys.length} unknown field(s) captured into mirror_extra: ${unknownKeys.join(', ')}`
+      )
+    }
+
     const { error: insertError } = await supabase
       .from('staff_members_ut')
-      .insert({ ...body, status: 'pending' })
+      .insert(row)
 
     if (insertError) {
+      console.error(`[receive-ut-staff] insert failed: ${insertError.message} (code ${insertError.code ?? 'n/a'})`)
       return new Response(
         JSON.stringify({ error: insertError.message }),
         { status: 500, headers: corsHeaders }
@@ -67,13 +108,14 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, unknown_fields: unknownKeys }),
       { status: 200, headers: corsHeaders }
     )
 
   } catch (err) {
+    console.error(`[receive-ut-staff] unhandled: ${err instanceof Error ? err.message : String(err)}`)
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
       { status: 500, headers: corsHeaders }
     )
   }
