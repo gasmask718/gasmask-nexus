@@ -31,7 +31,27 @@ const KNOWN_COLUMNS = new Set([
   // Promoted from mirror_extra 2026-08-17: geocoded signup coordinates.
   // Nullable on purpose — an unresolved geocode must stay NULL, never 0,0.
   'latitude', 'longitude',
+  // UT-side primary key, injected at UT's enqueue point. Natural key for upsert.
+  'ut_listing_id', 'ut_entity_type',
 ])
+
+/**
+ * Identity policy (2026-08-17):
+ *
+ * UT now injects ut_listing_id + ut_entity_type at its single enqueue point,
+ * so every mirror payload carries the sender-side primary key. That key is the
+ * natural key for this table (unique index, nullable for pre-2026-08-17 rows)
+ * and the mirror upserts on it — replays are idempotent, not duplicate rows.
+ *
+ * The email 409 is scoped to the legacy path only: it fires when
+ * ut_listing_id is ABSENT. With an id present the upsert is the guard, so a
+ * replay reaches the write and the unknown_fields echo actually comes back.
+ * Keeping it on the id path would 409 before the upsert and give us no echo.
+ *
+ * A payload with NO ut_listing_id and NO email is rejected 400 rather than
+ * inserted: with neither key we cannot tell a replay from a new partner, and
+ * a silent duplicate is the failure mode this whole pass exists to kill.
+ */
 
 
 serve(async (req) => {
@@ -68,29 +88,53 @@ serve(async (req) => {
     )
 
     const body = await req.json()
-    const { contact_email } = body
+    const utListingId = body?.ut_listing_id != null && String(body.ut_listing_id).length > 0
+      ? String(body.ut_listing_id)
+      : null
+    const contact_email = body?.contact_email
 
-    const { data: existing } = await supabase
-      .from('staff_members_ut')
-      .select('id')
-      .eq('contact_email', contact_email)
-      .maybeSingle()
+    let existingId: string | null = null
 
-    if (existing) {
-      return new Response(
-        JSON.stringify({ error: 'Email already exists', code: 'DUPLICATE' }),
-        { status: 409, headers: corsHeaders }
-      )
+    if (utListingId) {
+      const { data: existing } = await supabase
+        .from('staff_members_ut')
+        .select('id')
+        .eq('ut_listing_id', utListingId)
+        .maybeSingle()
+      existingId = existing?.id ?? null
+    } else {
+      if (!contact_email) {
+        console.error('[receive-ut-staff] 400 unidentifiable: no ut_listing_id and no contact_email')
+        return new Response(
+          JSON.stringify({ error: 'ut_listing_id or contact_email required', code: 'UNIDENTIFIABLE' }),
+          { status: 400, headers: corsHeaders }
+        )
+      }
+      const { data: existing } = await supabase
+        .from('staff_members_ut')
+        .select('id')
+        .eq('contact_email', contact_email)
+        .maybeSingle()
+      if (existing) {
+        return new Response(
+          JSON.stringify({ error: 'Email already exists', code: 'DUPLICATE' }),
+          { status: 409, headers: corsHeaders }
+        )
+      }
     }
 
     // Partition the payload: known columns insert directly, everything else is
     // preserved in mirror_extra rather than failing the request.
-    const row: Record<string, unknown> = { status: 'pending' }
+    // status is set on first sight only — a replay must not reset an approved
+    // partner back to pending.
+    const row: Record<string, unknown> = existingId ? {} : { status: 'pending' }
     const extra: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(body ?? {})) {
       if (KNOWN_COLUMNS.has(key)) row[key] = value
       else extra[key] = value
     }
+    if (utListingId) row.ut_listing_id = utListingId
+    if (existingId) row.id = existingId
     const unknownKeys = Object.keys(extra)
     if (unknownKeys.length > 0) {
       row.mirror_extra = extra
@@ -99,12 +143,13 @@ serve(async (req) => {
       )
     }
 
-    const { error: insertError } = await supabase
-      .from('staff_members_ut')
-      .insert(row)
+    const table = supabase.from('staff_members_ut')
+    const { error: insertError } = utListingId
+      ? await table.upsert(row, { onConflict: 'ut_listing_id' })
+      : await table.insert(row)
 
     if (insertError) {
-      console.error(`[receive-ut-staff] insert failed: ${insertError.message} (code ${insertError.code ?? 'n/a'})`)
+      console.error(`[receive-ut-staff] write failed: ${insertError.message} (code ${insertError.code ?? 'n/a'})`)
       return new Response(
         JSON.stringify({ error: insertError.message }),
         { status: 500, headers: corsHeaders }
@@ -112,7 +157,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, unknown_fields: unknownKeys }),
+      JSON.stringify({ success: true, unknown_fields: unknownKeys, mode: utListingId ? (existingId ? 'updated' : 'inserted') : 'inserted_legacy' }),
       { status: 200, headers: corsHeaders }
     )
 
