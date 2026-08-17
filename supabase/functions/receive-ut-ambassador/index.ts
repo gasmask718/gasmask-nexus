@@ -7,7 +7,24 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-shared-secret",
 };
 
+/**
+ * Schema-drift policy (2026-08-17) — same treatment as receive-ut-staff.
+ * Known keys map to columns; unknown keys land in mirror_extra, are logged by
+ * name, and are echoed in the 200. Dropping an unrecognised field is a
+ * decision, and a decision made by omission is one nobody made.
+ */
+const KNOWN_COLUMNS = new Set([
+  'full_name', 'email', 'phone', 'state',
+  // Promoted 2026-08-17: UT has been sending city and the table had nowhere
+  // to put it, so every ambassador city was discarded at the door.
+  'city',
+  'instagram_handle', 'tiktok_handle', 'youtube_handle',
+  'why_ambassador', 'follower_range', 'event_types',
+  'source', 'business_unit', 'auth_user_id',
+]);
+
 serve(async (req) => {
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -42,11 +59,7 @@ serve(async (req) => {
     );
 
     const body = await req.json();
-    const {
-      full_name, email, phone, state, city,
-      instagram_handle, tiktok_handle, youtube_handle,
-      why_ambassador, follower_range, event_types
-    } = body;
+    const { full_name, email } = body ?? {};
 
     // Check for duplicate
     const { data: existing } = await supabase
@@ -65,30 +78,32 @@ serve(async (req) => {
     // Generate referral code
     const referral_code =
       "UT-" +
-      full_name.split(" ")[0].toUpperCase().slice(0, 5) +
+      String(full_name ?? "").split(" ")[0].toUpperCase().slice(0, 5) +
       "-" +
       Math.random().toString(36).substring(2, 6).toUpperCase();
 
-    // Insert ambassador
+    // Partition the payload: known columns insert directly, everything else is
+    // preserved in mirror_extra rather than being dropped.
+    const row: Record<string, unknown> = { referral_code, status: "pending" };
+    const extra: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(body ?? {})) {
+      if (KNOWN_COLUMNS.has(key)) row[key] = value;
+      else extra[key] = value;
+    }
+    const unknownKeys = Object.keys(extra);
+    if (unknownKeys.length > 0) {
+      row.mirror_extra = extra;
+      console.warn(
+        `[receive-ut-ambassador] schema drift: ${unknownKeys.length} unknown field(s) captured into mirror_extra: ${unknownKeys.join(", ")}`
+      );
+    }
+
     const { error: insertError } = await supabase
       .from("unforgettable_ambassadors")
-      .insert({
-        full_name,
-        email,
-        phone,
-        state,
-        city,
-        instagram_handle,
-        tiktok_handle,
-        youtube_handle,
-        why_ambassador,
-        follower_range,
-        event_types,
-        referral_code,
-        status: "pending",
-      });
+      .insert(row);
 
     if (insertError) {
+      console.error(`[receive-ut-ambassador] insert failed: ${insertError.message} (code ${insertError.code ?? 'n/a'})`);
       return new Response(
         JSON.stringify({ error: insertError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -96,9 +111,10 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, referral_code }),
+      JSON.stringify({ success: true, referral_code, unknown_fields: unknownKeys }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return new Response(
