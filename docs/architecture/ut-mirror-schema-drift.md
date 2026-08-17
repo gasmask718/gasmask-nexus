@@ -62,9 +62,20 @@ onward the list is observed rather than inferred.
 ## Identity and replay (2026-08-17, second pass)
 
 UT injects `ut_listing_id` + `ut_entity_type` at its single enqueue point.
-Every mirror table now has a nullable `ut_listing_id text` with a partial
-unique index (`WHERE ut_listing_id IS NOT NULL`), and all four functions
-`upsert(..., { onConflict: 'ut_listing_id' })` when the id is present.
+Every mirror table has a nullable `ut_listing_id text` with a **plain** unique
+index, and all four functions `upsert(..., { onConflict: 'ut_listing_id' })`
+when the id is present.
+
+The index must NOT be partial. A partial unique index
+(`WHERE ut_listing_id IS NOT NULL`) is only inferable when the statement
+repeats the predicate, which PostgREST's `onConflict` cannot express — every
+delivery 500s with *"no unique or exclusion constraint matching the ON CONFLICT
+specification"*, and the migration and typecheck both pass silently beforehand.
+A plain unique index is equivalent here: Postgres treats NULLs as distinct, so
+id-less legacy rows are still unconstrained. Any new mirror table gets a plain
+unique index plus one throwaway double-upsert executed against it before ship —
+this class of failure only appears at execution time.
+
 
 | table | UT source |
 |---|---|
