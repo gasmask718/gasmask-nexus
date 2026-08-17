@@ -103447,6 +103447,7 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string | null
+          custom_role_description: string | null
           demo_video_url: string | null
           email: string | null
           event_rate: number | null
@@ -103457,6 +103458,7 @@ export type Database = {
           is_featured: boolean | null
           languages: string[] | null
           languages_spoken: string[] | null
+          mirror_extra: Json
           phone: string | null
           portfolio_photos: string[] | null
           portfolio_videos: string[] | null
@@ -103490,6 +103492,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          custom_role_description?: string | null
           demo_video_url?: string | null
           email?: string | null
           event_rate?: number | null
@@ -103500,6 +103503,7 @@ export type Database = {
           is_featured?: boolean | null
           languages?: string[] | null
           languages_spoken?: string[] | null
+          mirror_extra?: Json
           phone?: string | null
           portfolio_photos?: string[] | null
           portfolio_videos?: string[] | null
@@ -103533,6 +103537,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          custom_role_description?: string | null
           demo_video_url?: string | null
           email?: string | null
           event_rate?: number | null
@@ -103543,6 +103548,7 @@ export type Database = {
           is_featured?: boolean | null
           languages?: string[] | null
           languages_spoken?: string[] | null
+          mirror_extra?: Json
           phone?: string | null
           portfolio_photos?: string[] | null
           portfolio_videos?: string[] | null
