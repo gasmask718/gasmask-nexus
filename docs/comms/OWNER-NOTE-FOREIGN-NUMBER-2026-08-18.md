@@ -14,7 +14,8 @@ We pay for the number and Twilio holds us responsible for what it does.
 Today we changed **one** thing: **text messages** now come back to us, so if someone
 texts STOP to that number we actually record it and stop messaging them. That was safe —
 the number has sent and received **zero** text messages in 120 days, so nothing live
-could break. **Phone calls were deliberately left alone.**
+could break. **Phone calls were left alone at that point** — later the same day, on your
+go-ahead, they were pointed at our handler too. See "Update, later the same day" below.
 
 ## The three findings, in plain words
 
@@ -75,10 +76,28 @@ Three options, and it is yours:
 - **Hand it back.** Move the number onto whoever runs Playboxxx now, so the bill and the
   responsibility sit with the same person.
 
-Until you choose, the position is: texts come to us and are handled properly; calls still
-go to Playboxxx, still loop, still record.
+## Update, later the same day: the calls now come to us too
 
-## On the calls: what redirecting them would actually cost
+You gave the go-ahead, so we made the change. **Incoming calls to +1 888-302-2514 now
+reach our own handler**, the same one the other 26 numbers use. We checked the setting
+again afterwards by reading it back from Twilio twice, rather than trusting our own
+"done" message.
+
+- Before: calls went to the Playboxxx script.
+- After: calls go to our standard answer-and-connect handler.
+- Everything else on the number was left untouched — texts, fallbacks, and their
+  status reporting.
+
+**The loop is over.** It can't happen again through our handler, because our handler never
+dials back the number that was called — it connects to a fixed destination we set. We
+checked that the destination isn't this number before making the change, and it isn't.
+Our handler also doesn't record calls, so the recording problem ends here as well.
+
+If a Playboxxx call flow *did* quietly depend on this number, it will now fail in our
+logs where we can see it, instead of silently in a system we can't. That was the point.
+Putting it back is one setting, and the old value is written down.
+
+## On the calls: what redirecting cost (written before the change, kept for the record)
 
 We have deliberately **not** touched the call handling, because Twilio shows us traffic, not
 intent. Zero calls in 120 days is equally consistent with "nobody uses this" and "a flow

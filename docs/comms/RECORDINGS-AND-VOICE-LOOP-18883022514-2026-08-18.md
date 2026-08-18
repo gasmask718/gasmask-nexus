@@ -144,3 +144,54 @@ the opposite of the silent break we have been refusing to inflict on people.
 numbers and robocallers. 120 days of history is $0.534 and 18 non-consensual recordings
 from two events. There is no reason to expect a third event to be larger, and no mechanism
 that would stop one.
+
+---
+
+## Voice repointed — 2026-08-18 17:43 UTC
+
+Owner decision: repoint. Executed via `comms-stop-audit?action=repoint_voice`
+(guarded by `confirm: "REPOINT_VOICE"`, writes `VoiceUrl` + `VoiceMethod` only).
+
+Number SID `PNddac669fba74a306bd4e2bf502191723`.
+
+| field | before | after |
+|---|---|---|
+| `voice_url` | `https://clrgkreqqgmycrskcmwq.supabase.co/functions/v1/twilio-twiml` | `https://qalaaroashbggynpvqct.supabase.co/functions/v1/dc-inbound-call` |
+| `voice_method` | POST | POST |
+| `voice_fallback_url` | (empty) | (empty) — unchanged |
+| `voice_application_sid` | (empty) | (empty) — unchanged |
+| `trunk_sid` | null | null — unchanged |
+| `sms_url` | `…/twilio-sms-webhook` (ours) | unchanged |
+| `status_callback` | `https://clrgkreqqgmycrskcmwq.supabase.co/functions/v1/twilio-webhook` | **left in place** |
+
+**Verified by re-reading, not by trusting the write.** The action re-fetches
+`IncomingPhoneNumbers` after the POST (`verified: true`), and a second, separate
+`number_probe` call afterwards independently returns the new `voice_url`. Two reads,
+one write.
+
+**status_callback left alone.** It is not part of the loop: the recursion lives in the
+TwiML *response body* served by `twilio-twiml`, which is what dials. A status callback is
+a one-way, fire-and-forget POST from Twilio reporting call state; it returns no TwiML and
+cannot originate a call. Leaving it is their telemetry at no cost to us — they now receive
+status events for calls our handler answers, and nothing more.
+
+**Can the loop recurse under our handler? No — by construction, with one caveat named.**
+`dc-inbound-call` never dials the `To` number. It resolves a *destination DID* in a fixed
+order — directory row (`v_phone_directory.assigned_agent_id`) → per-business env DID →
+global `BLAND_INBOUND_NUMBER` — and emits a single `<Dial><Number>{that DID}</Number></Dial>`.
+The dialled number is never derived from the caller or the called number, so there is no
+path by which the inbound leg re-enters itself.
+
+The one way it *could* produce the same shape is if the resolved DID were this number
+itself. The repoint action pre-checks exactly that and refuses if true. Result recorded at
+write time: `directory_row: null` (no row for this number), `global_env_did_set: true`,
+`resolved_did_matches_this_number: false`. So the live behaviour on the next inbound call
+is: one leg in, one `<Dial>` out to the global Bland DID, 20s timeout, then the
+"unable to connect" `<Say>` + `<Hangup/>`. If the DID were ever unset, the handler says
+"this line is not yet configured" and hangs up — no `<Dial>`, no recursion.
+
+Also note: `dc-inbound-call` emits **no `<Record>`**. The recording exposure ends with the
+repoint as well — nothing on our side will record this number again.
+
+**Reversal:** one POST setting `VoiceUrl` back to
+`https://clrgkreqqgmycrskcmwq.supabase.co/functions/v1/twilio-twiml` on `PNddac…1723`.
