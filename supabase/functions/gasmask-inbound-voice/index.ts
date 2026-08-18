@@ -15,8 +15,8 @@
  * so calls and texts share one timeline.
  */
 
-import {
-import { recordAttrFor } from "../_shared/recordingConsent.ts"; corsHeaders, readForm, verifyTwilio, xmlHeaders, escapeXml, canonicalUrl } from "../_shared/dialer.ts";
+import { corsHeaders, readForm, verifyTwilio, xmlHeaders, escapeXml, canonicalUrl } from "../_shared/dialer.ts";
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
 import { voicemailTwiml } from "../_shared/voicemailTwiml.ts";
 import {
   svcClient,

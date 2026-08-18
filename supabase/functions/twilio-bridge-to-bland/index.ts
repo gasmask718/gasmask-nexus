@@ -16,8 +16,8 @@
 //  - Bland API failures requeue the lead per campaign config
 //  - All paths logged into dialer_call_events with severity
 
-import {
 import { recordAttrFor } from "../_shared/recordingConsent.ts";
+import {
   corsHeaders,
   xmlHeaders,
   escapeXml,
