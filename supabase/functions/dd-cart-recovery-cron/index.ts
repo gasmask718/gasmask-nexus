@@ -2,11 +2,10 @@
 // shoppers who abandoned their Dynasty Direct cart.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { sendSms } from "../_shared/sendSms.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const TWILIO_SID = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
-const TWILIO_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
 const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER") ?? "";
 
 async function emailFor(admin: ReturnType<typeof createClient>, cart: any): Promise<string | null> {
@@ -22,18 +21,22 @@ async function phoneFor(admin: ReturnType<typeof createClient>, cart: any): Prom
   return (data as { phone?: string } | null)?.phone ?? null;
 }
 
-async function sendTwilio(to: string, body: string) {
-  if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_FROM) {
-    return { ok: false, error: "twilio_not_configured" };
-  }
-  const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`);
-  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
-    method: "POST",
-    headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ To: to, From: TWILIO_FROM, Body: body }),
+/** Routes through the canonical `send-sms` function (DNC, idempotency, logging). */
+async function sendRecoverySms(cartId: string, to: string, body: string) {
+  const result = await sendSms({
+    to,
+    body,
+    idempotencyKey: `dd-cart-${cartId}`,
+    from: TWILIO_FROM || undefined,
+    purpose: "dd_cart_recovery",
+    skipCooldown: true,
+    metadata: { cart_id: cartId },
   });
-  const data = await res.json();
-  return { ok: res.ok, data };
+  return {
+    ok: result.success,
+    error: result.success ? undefined : (result.errorMessage || result.status),
+    data: result.raw,
+  };
 }
 
 Deno.serve(async (req) => {
