@@ -145,3 +145,103 @@ truncated enrichment pass), 2026-01-23 through 2026-05-12.
 - Not deleted — pre-opt-out business records, and unlike the Playboxxx set none
   are from all-party states. Deletion is an owner call, not a compliance forcing
   function.
+
+## 8. The 29 — owner decision: KEEP
+
+Pre-opt-out, NJ (one-party), genuine business records. No compliance reason to
+delete and a records reason not to. Closed.
+
+## 9. The 13 all-party-state recordings — itemised
+
+Re-enumerated with full enrichment (206/206 detailed, not a truncated pass).
+All 13 are **dual-channel** (`record-from-answer-dual`) and all 13 are **outbound
+from us**: the parent leg reads `direction=inbound` because it originates from the
+browser Voice SDK into Twilio; the counterparty is the `To` on the dialed leg.
+The `From` values are our own Brandaro DIDs (`+19292389353` NY,
+`+18483588206` NJ, both in `dc_phone_numbers`) plus toll-free `+18776818621`.
+
+**The counterparty was the callee in every one of the 13. We placed the call,
+we recorded both channels, and no announcement was played.** Under CA Penal Code
+632/632.7 and FL 934.03 that is the exposed posture; there is no "they called us"
+mitigation available on any of these.
+
+| # | Date (UTC) | State | Dur | Counterparty (callee) | Our caller ID | Recording SID |
+|---|---|---|---|---|---|---|
+| 1 | 2026-05-14 16:41:14 | FL | 12s | +13054882037 | +18483588206 | RE6b75129ebcc5dbc9ed33e99adf1c5dbc |
+| 2 | 2026-05-14 16:43:31 | FL | 15s | +14072501292 | +18483588206 | REbd7b27f4a502c0d58340e0b10eae256f |
+| 3 | 2026-05-14 16:55:21 | CA | 4s | +16616952560 | +18483588206 | RE5719c70a09d558624268c41d1eb8060e |
+| 4 | 2026-05-14 16:56:08 | CA | 15s | +16614218658 | +18483588206 | RE9926259f950ab84e2e9c08bd080a233a |
+| 5 | 2026-05-14 16:57:18 | CA | 4s | +16614124595 | +18483588206 | RE733510d96a8fa0ab601a6fff39de78e9 |
+| 6 | 2026-05-14 17:00:04 | FL | 2s | +13054882037 | +18483588206 | RE73cf70daf931da725427000eefcc45c5 |
+| 7 | 2026-05-14 17:13:37 | FL | 54s | +17544224505 | +19292389353 | RE56011febafaba26f7313d78fc557197b |
+| 8 | 2026-05-15 01:10:05 | FL | 10s | +13054882037 | +19292389353 | RE26c2f7acce84a9b02a3be222d312ea65 |
+| 9 | 2026-05-15 01:11:41 | FL | 11s | +14072501292 | +19292389353 | REfaa2add1010531cad895aa969f7e3f93 |
+| 10 | 2026-08-06 20:22:27 | FL | 11s | +17542355408 | +18776818621 | RE8717eda959251b75092aed864cb3aebd |
+| 11 | 2026-08-06 20:23:18 | FL | 11s | +17542355408 | +18776818621 | REdfe416f59a9e6ef91462700bd1a5069e |
+| 12 | 2026-08-06 20:25:34 | FL | 30s | +17542355408 | +18776818621 | RE8a74f647e2cb12a6e4215b616971d244 |
+| 13 | 2026-08-06 21:58:46 | FL | 38s | +17542355408 | +18776818621 | RE0f7ca888a5043c29ee205350546b2224 |
+
+Totals: 10 FL, 3 CA. 217 seconds (3m37s) across all 13; longest 54s; 8 of 13 are
+≤15s (ring-outs, voicemail greetings, immediate hangups — thin conversational
+content, but a recorded call is a recorded call under both statutes). Three
+distinct FL callees on 2026-05-14/15, one FL callee (+17542355408) four times on
+2026-08-06, three CA callees in a 2-minute burst (661 = Bakersfield, consistent
+with a Places-sourced list, not a warm relationship).
+
+State is inferred from NPA. It is a hint: a ported mobile breaks it, and it is
+the *number's* state, not the person's location at the time — which is what CA
+632.7 actually turns on. Treat the 13 as a floor, not a census; 48 of 206
+recordings resolved to `unknown` NPA and were never checked at all.
+
+## 10. Consent gate — what it would actually need
+
+Current behaviour: `brandaro-call-twiml:144` and `va-power-dialer:46` both emit
+`record="record-from-answer-dual"` as a literal, unconditional string. There is
+no consent step, no per-state branch, and no way to turn it off short of a code
+change. Ten other functions carry the same literal
+(`ambassador-direct-call`, `field-portal-comms`, `gasmask-*`, `twilio-voice-*`,
+`transfer-campaign-call`, `twilio-bridge-to-bland`, `twilio-gather-webhook`,
+`twilio-human-queue-hold`, `twilio-transfer-choice-webhook`) — a gate that only
+covers the VA dialer leaves nine other paths recording unconditionally.
+
+A defensible gate needs four things, in order:
+
+1. **Recipient jurisdiction, per lead, stored.** This is the blocker, and it is
+   the *same* blocker as calling windows — see §5. Both questions are "where is
+   the person on the other end", asked once.
+2. **A policy table**, not a hardcoded `Set`. All-party status changes by statute
+   and by interpretation; it belongs in a `recording_consent_policy` row per
+   state (`all_party | one_party | prohibited`) with an effective date, not
+   inline in five functions.
+3. **A branch before the `record` attribute**: one-party → `record-from-answer-dual`
+   unchanged; all-party → either (a) a `<Say>` announcement before `<Dial>` plus
+   dual-channel, or (b) `record-from-answer` single-channel of our own leg only,
+   which several readings treat as materially safer, or (c) no recording. That is
+   a business choice, not a technical one — announcement kills answer rate,
+   single-channel kills the AI coaching/transcript product.
+4. **Fail closed on unknown.** If jurisdiction is unresolved, do NOT record. With
+   48/206 unknown today, a gate that defaults to recording on unknown is not a
+   gate.
+
+**On the shared-data point: yes, you're right.** Both features need one field:
+a real recipient jurisdiction/timezone on the lead. The data available now:
+
+- `store_master`: 3,152 rows, `state` populated on all of them and `zip`
+  populated on all of them — but **`state` is dirty**: 2,036 `NY`, **1,091 empty
+  strings**, plus `Queens`, `ny`, `New York`, `NY)`. Zero rows in any all-party
+  state, which is not reassuring — it means the 13 CA/FL callees are not in
+  `store_master` under a usable state at all.
+- `store_master.consent_source` / `consent_timestamp` exist and are **0/3,152
+  populated**. The columns for this already exist and have never been written.
+- `store_communication_preferences.timezone`: still **0 rows**.
+
+So the one prerequisite, shared by consent gating and calling windows:
+**derive a canonical `state` + IANA timezone per lead from `zip` (clean, 100%
+populated) rather than from the free-text `state` column or the area code, store
+it on the lead, and label the fallback explicitly.** Zip → state → timezone is a
+static lookup, no API, no cost. Once that lands, both the recording branch and
+the calling-window check read the same column and neither is a guess.
+
+Recommended order when you want it built: zip→jurisdiction backfill first, then
+the policy table, then the `record` branch (fail-closed), then windows. Nothing
+in this section is implemented — report only.
