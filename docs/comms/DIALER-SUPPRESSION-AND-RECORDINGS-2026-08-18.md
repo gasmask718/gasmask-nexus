@@ -340,3 +340,49 @@ gate in §10.3 prevents recurrence; it does not undo these.
 
 Separately: 107 recordings cannot be classified at all (§10.4), which is a
 second, unbounded exposure line rather than part of the 13.
+
+## §11 — Twilio recovery of the 107 unclassifiable recordings (2026-08-18)
+
+Job: `va-call-jurisdiction-recovery` (service-only). Reads `Calls/{call_sid}` at
+Twilio for every `va_call_logs` row with a recording and `lead_id IS NULL`,
+walks to the child `<Dial>` leg when the parent is `client:`, discards the
+platform-owned leg, then resolves jurisdiction via `resolve_recording_consent`.
+Writes `to_number`, `to_number_source='twilio_recovery'`, `derived_state`,
+`jurisdiction_recovery_status`, `jurisdiction_recovered_at`.
+
+Three outcomes, as required:
+
+| Outcome | Rows | Detail |
+|---|---|---|
+| matched (number + jurisdiction) | 61 | All NY. `2026-01-23` → `2026-05-15`. **Zero all-party.** |
+| matched, no jurisdiction | 45 | 41 = `+18776818621` (our own toll-free — internal/test traffic, no geography); 2 = `+19295007046`; 1 = `+19299194146`; 1 = `+17183069391`. NPA 929/718 are NYC but match no lead row, so they fail closed. |
+| no matching call_sid at Twilio | 1 | Row carried a recording with no usable `call_sid`; nothing to look up. |
+
+Net effect on the exposure: the 107 unclassifiable recordings are now 106
+classified + 1 permanently unclassifiable. No new all-party recordings surfaced.
+The all-party exposure remains the 13 logged in §9 (10 FL, 3 CA), unchanged:
+**we placed the call, recorded both sides dual-channel, announced nothing. No
+mitigation applied.**
+
+### Quick-dial write path (upstream fix)
+
+`va-initiate-call` had `leadPhone` in its request body at insert time and simply
+did not store it — `va_call_logs` had no counterparty column at all. That is how
+107 rows became unclassifiable, and it was still live. Fixed:
+
+- Migration added `to_number`, `to_number_source`, `derived_state`,
+  `jurisdiction_recovery_status`, `jurisdiction_recovered_at`, and a generated
+  `to_number_last10` (+ index) to `va_call_logs`.
+- `va-initiate-call` now writes `to_number: leadPhone` with
+  `to_number_source` = `lead` or `quick_dial`.
+
+No upstream gap remains: the number is available at write time on both paths.
+
+### Puerto Rico municipality map
+
+66 Brandaro leads stored a PR municipality in `state` and failed closed. All 78
+municipalities were loaded into `us_state_names` (accented and ASCII-stripped
+spellings, 94 rows; `FLORIDA` left mapped to FL by conflict precedence). After
+re-resolution: **66 rows now resolve to PR** (all-party, contested → recording
+stays off without an announcement). Remaining 101 unresolved are non-US
+(Dominican Republic 86, Mexico 14) or blank — correctly fail closed.

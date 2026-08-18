@@ -125611,6 +125611,7 @@ export type Database = {
           call_summary: string | null
           callback_scheduled_at: string | null
           called_at: string | null
+          derived_state: string | null
           direction: string
           disposition: string | null
           duration_seconds: number | null
@@ -125618,10 +125619,15 @@ export type Database = {
           follow_up_at: string | null
           follow_up_status: string | null
           id: string
+          jurisdiction_recovered_at: string | null
+          jurisdiction_recovery_status: string | null
           lead_id: string | null
           next_call_context: string | null
           recording_sid: string | null
           recording_url: string | null
+          to_number: string | null
+          to_number_last10: string | null
+          to_number_source: string | null
           transcript: string | null
           trend_analysis: Json | null
           twilio_number: string
@@ -125637,6 +125643,7 @@ export type Database = {
           call_summary?: string | null
           callback_scheduled_at?: string | null
           called_at?: string | null
+          derived_state?: string | null
           direction?: string
           disposition?: string | null
           duration_seconds?: number | null
@@ -125644,10 +125651,15 @@ export type Database = {
           follow_up_at?: string | null
           follow_up_status?: string | null
           id?: string
+          jurisdiction_recovered_at?: string | null
+          jurisdiction_recovery_status?: string | null
           lead_id?: string | null
           next_call_context?: string | null
           recording_sid?: string | null
           recording_url?: string | null
+          to_number?: string | null
+          to_number_last10?: string | null
+          to_number_source?: string | null
           transcript?: string | null
           trend_analysis?: Json | null
           twilio_number: string
@@ -125663,6 +125675,7 @@ export type Database = {
           call_summary?: string | null
           callback_scheduled_at?: string | null
           called_at?: string | null
+          derived_state?: string | null
           direction?: string
           disposition?: string | null
           duration_seconds?: number | null
@@ -125670,10 +125683,15 @@ export type Database = {
           follow_up_at?: string | null
           follow_up_status?: string | null
           id?: string
+          jurisdiction_recovered_at?: string | null
+          jurisdiction_recovery_status?: string | null
           lead_id?: string | null
           next_call_context?: string | null
           recording_sid?: string | null
           recording_url?: string | null
+          to_number?: string | null
+          to_number_last10?: string | null
+          to_number_source?: string | null
           transcript?: string | null
           trend_analysis?: Json | null
           twilio_number?: string

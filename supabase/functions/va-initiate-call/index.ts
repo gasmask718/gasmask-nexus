@@ -28,12 +28,17 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // The counterparty number is known here even when leadId is absent (quick
+    // dial). Persist it — a call log that cannot say who was called is a record
+    // of nothing, and it is what made 107 recordings unclassifiable.
     const { data: callLog, error: logError } = await supabaseAdmin
       .from("va_call_logs")
       .insert({
         lead_id: leadId || null,
         va_id: vaId,
         twilio_number: fromNumber,
+        to_number: leadPhone,
+        to_number_source: leadId ? "lead" : "quick_dial",
         call_status: "initiated",
       })
       .select("id")
