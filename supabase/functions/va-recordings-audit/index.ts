@@ -157,6 +157,14 @@ Deno.serve(async (req) => {
     by_state: byState,
     all_party_count: detail.filter((d) => d.all_party_consent_state).length,
     dual_channel_count: detail.filter((d) => Number(d.channels) === 2).length,
-    recordings: detail,
+    top_counterparties: Object.entries(detail.reduce((m: any, d: any) => { const k = d.to || d.from || "unknown"; m[k] = (m[k]||0)+1; return m; }, {})).sort((a: any, b: any) => b[1]-a[1]).slice(0, 15),
+    duration_buckets: {
+      "0-10s": detail.filter((d) => d.duration_s <= 10).length,
+      "11-60s": detail.filter((d) => d.duration_s > 10 && d.duration_s <= 60).length,
+      "61-300s": detail.filter((d) => d.duration_s > 60 && d.duration_s <= 300).length,
+      "300s+": detail.filter((d) => d.duration_s > 300).length,
+    },
+    date_range: [detail.map((d) => d.date_created).sort().slice(-1)[0], detail.map((d) => d.date_created).sort()[0]],
+    recordings: qp.get("summary") === "1" ? undefined : detail,
   }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 });
