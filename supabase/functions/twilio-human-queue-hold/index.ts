@@ -92,6 +92,12 @@ serve(async (req) => {
 
       const recordingCallback = `${supabaseUrl}/functions/v1/twilio-recording-callback`;
       const statusCallback = `${supabaseUrl}/functions/v1/twilio-call-status`;
+      // Recording consent gate on the external caller. Fails closed.
+      const { attr: recAttr, decision: recDecision } = await recordAttrFor(supabase, callerParty, {
+        mode: "record-from-answer-dual",
+        callbackUrl: recordingCallback,
+      });
+      console.log(`[twilio-human-queue-hold] recording=${recAttr ? "on" : "off"} (${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ""})`);
 
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
