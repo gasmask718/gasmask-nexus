@@ -100,8 +100,8 @@ Deno.serve(async (req) => {
     if (!phone) { smsRes.push({ id: cart.id, skipped: "no_phone" }); continue; }
 
     const msg = `👋 You left items in your Dynasty Direct cart!\n\n${cart.item_count} item(s) worth $${Number(cart.cart_total).toFixed(2)} are waiting for you.\n\nUse code COMEBACK10 for 10% off when you checkout:\ndynastydirect.com/cart`;
-    const r = await sendTwilio(phone, msg);
-    if (!r.ok) { smsRes.push({ id: cart.id, error: (r as any).error ?? "twilio_failed" }); continue; }
+    const r = await sendRecoverySms(cart.id, phone, msg);
+    if (!r.ok) { smsRes.push({ id: cart.id, error: r.error ?? "sms_failed" }); continue; }
     await admin
       .from("dd_abandoned_carts")
       .update({ recovery_sms_sent_at: new Date().toISOString() })

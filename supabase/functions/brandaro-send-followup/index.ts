@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms } from "../_shared/sendSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,27 +64,27 @@ Deno.serve(async (req) => {
         };
         const message = fu.message_template || templates[fu.sequence_step] || templates[1];
 
-        // Send via brandaro-send-demo function pattern
-        const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-        const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
+        // Route through the canonical send-sms chokepoint (DNC, idempotency, logging)
         const twilioFrom = Deno.env.get("BRANDARO_TWILIO_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER");
 
         let sendOk = false;
 
-        if (twilioSid && twilioAuth && twilioFrom && fu.channel === "sms") {
-          const resp = await fetch(
-            `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-            {
-              method: "POST",
-              headers: {
-                "Authorization": "Basic " + btoa(`${twilioSid}:${twilioAuth}`),
-                "Content-Type": "application/x-www-form-urlencoded",
-              },
-              body: new URLSearchParams({ To: lead.phone, From: twilioFrom, Body: message }),
-            }
-          );
-          sendOk = resp.ok;
-          await resp.text();
+        if (fu.channel === "sms") {
+          const result = await sendSms({
+            to: lead.phone,
+            body: message,
+            idempotencyKey: `brandaro-fu-${fu.id}`,
+            from: twilioFrom || undefined,
+            purpose: "brandaro_followup",
+            skipCooldown: true,
+            metadata: { followup_id: fu.id, lead_id: fu.lead_id, sequence_step: fu.sequence_step },
+          });
+          sendOk = result.success;
+          if (!sendOk) {
+            console.error(
+              `Follow-up ${fu.id} not sent (${result.status}): ${result.errorMessage || result.errorCode || "unknown"}`,
+            );
+          }
         }
 
         // Update follow-up status
