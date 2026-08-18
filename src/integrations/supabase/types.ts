@@ -23568,6 +23568,8 @@ export type Database = {
           demo_sent_at: string | null
           demo_status: string | null
           demo_url: string | null
+          derived_state: string | null
+          derived_timezone: string | null
           discovery_job_id: string | null
           email: string | null
           engagement_score: number | null
@@ -23579,6 +23581,9 @@ export type Database = {
           has_website: boolean | null
           id: string
           industry: string | null
+          jurisdiction_confidence: string | null
+          jurisdiction_resolved_at: string | null
+          jurisdiction_source: string | null
           last_call_at: string | null
           last_called_at: string | null
           last_dc_call_at: string | null
@@ -23589,6 +23594,7 @@ export type Database = {
           lead_status: string | null
           name_for_emails: string | null
           next_callback_at: string | null
+          phone_last10: string | null
           phone_number: string | null
           photos: Json | null
           pipeline_stage: string
@@ -23646,6 +23652,8 @@ export type Database = {
           demo_sent_at?: string | null
           demo_status?: string | null
           demo_url?: string | null
+          derived_state?: string | null
+          derived_timezone?: string | null
           discovery_job_id?: string | null
           email?: string | null
           engagement_score?: number | null
@@ -23657,6 +23665,9 @@ export type Database = {
           has_website?: boolean | null
           id?: string
           industry?: string | null
+          jurisdiction_confidence?: string | null
+          jurisdiction_resolved_at?: string | null
+          jurisdiction_source?: string | null
           last_call_at?: string | null
           last_called_at?: string | null
           last_dc_call_at?: string | null
@@ -23667,6 +23678,7 @@ export type Database = {
           lead_status?: string | null
           name_for_emails?: string | null
           next_callback_at?: string | null
+          phone_last10?: string | null
           phone_number?: string | null
           photos?: Json | null
           pipeline_stage?: string
@@ -23724,6 +23736,8 @@ export type Database = {
           demo_sent_at?: string | null
           demo_status?: string | null
           demo_url?: string | null
+          derived_state?: string | null
+          derived_timezone?: string | null
           discovery_job_id?: string | null
           email?: string | null
           engagement_score?: number | null
@@ -23735,6 +23749,9 @@ export type Database = {
           has_website?: boolean | null
           id?: string
           industry?: string | null
+          jurisdiction_confidence?: string | null
+          jurisdiction_resolved_at?: string | null
+          jurisdiction_source?: string | null
           last_call_at?: string | null
           last_called_at?: string | null
           last_dc_call_at?: string | null
@@ -23745,6 +23762,7 @@ export type Database = {
           lead_status?: string | null
           name_for_emails?: string | null
           next_callback_at?: string | null
+          phone_last10?: string | null
           phone_number?: string | null
           photos?: Json | null
           pipeline_stage?: string
@@ -116669,6 +116687,21 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      us_state_names: {
+        Row: {
+          name: string
+          state: string
+        }
+        Insert: {
+          name: string
+          state: string
+        }
+        Update: {
+          name?: string
+          state?: string
+        }
+        Relationships: []
       }
       user_badges: {
         Row: {

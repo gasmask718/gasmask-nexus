@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -127,6 +128,11 @@ Deno.serve(async (req) => {
       return data;
     };
 
+    // Recording consent gate on the prospect. Fails closed.
+    const { decision: recDecision } = await recordAttrFor(supabase, item.phone_number, {});
+    const confRecordAttr = recDecision.allowed ? 'record="record-from-start"' : "";
+    console.log(`[twilio-manual-call] conference recording=${confRecordAttr ? "on" : "off"} (${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ""})`);
+
     // Customer leg: short greeting, then join conference (start when agent joins).
     const customerTwiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -134,7 +140,7 @@ Deno.serve(async (req) => {
   <Dial>
     <Conference startConferenceOnEnter="false"
                 endConferenceOnExit="true"
-                record="record-from-start"
+                ${confRecordAttr}
                 recordingStatusCallback="${statusCallbackUrl}"
                 recordingStatusCallbackEvent="completed"
                 waitUrl="">${conferenceName}</Conference>

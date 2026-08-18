@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
 
 /**
  * DIALER BRIDGE AGENT
@@ -77,9 +78,15 @@ Deno.serve(async (req) => {
     // ── Conference name ──
     const conferenceName = `conf_${session_id}`;
 
+    // Recording consent gate: conference recording is dual-sided, so it needs
+    // the same gate as <Dial record=...>. Fails closed on unknown jurisdiction.
+    const { decision: recDecision } = await recordAttrFor(supabase, session.phone_number, {});
+    const confRecordAttr = recDecision.allowed ? ' record="record-from-start"' : "";
+    console.log(`[dialer-bridge-agent] conference recording=${confRecordAttr ? "on" : "off"} (${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ""})`);
+
     // ── Step 1: Move the target (customer) leg into a conference ──
     // Update the target call's TwiML to join a conference
-    const targetConferenceTwiml = `<Response><Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="true" record="record-from-start" beep="false" waitUrl="http://twimlets.com/holdmusic?Bucket=com.twilio.music.soft-rock">${conferenceName}</Conference></Dial></Response>`;
+    const targetConferenceTwiml = `<Response><Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="true"${confRecordAttr} beep="false" waitUrl="http://twimlets.com/holdmusic?Bucket=com.twilio.music.soft-rock">${conferenceName}</Conference></Dial></Response>`;
 
     await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${target_call_sid}.json`,
@@ -141,7 +148,7 @@ Deno.serve(async (req) => {
       if (whisperEnabled && whisperText) {
         agentTwiml += `<Say voice="Polly.Joanna">${whisperText}</Say><Pause length="1"/>`;
       }
-      agentTwiml += `<Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="true" record="record-from-start" beep="false">${conferenceName}</Conference></Dial></Response>`;
+      agentTwiml += `<Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="true"${confRecordAttr} beep="false">${conferenceName}</Conference></Dial></Response>`;
 
       // Create outbound call to browser client
       const params = new URLSearchParams();
@@ -175,7 +182,7 @@ Deno.serve(async (req) => {
       if (whisperEnabled && whisperText) {
         agentTwiml += `<Say voice="Polly.Joanna">${whisperText}</Say><Pause length="1"/>`;
       }
-      agentTwiml += `<Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="true" record="record-from-start" beep="false">${conferenceName}</Conference></Dial></Response>`;
+      agentTwiml += `<Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="true"${confRecordAttr} beep="false">${conferenceName}</Conference></Dial></Response>`;
 
       const params = new URLSearchParams();
       params.set("To", forwardPhone);
