@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { RecordingPlayer } from "@/components/phone/RecordingPlayer";
 
 const PAGE_SIZE = 10;
 
@@ -502,22 +503,7 @@ export default function AdminCallReview() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {(() => {
-                        const proxied = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/brandaro-recording-proxy?url=${encodeURIComponent(selectedCall.recording_url)}`;
-                        return (
-                          <>
-                            <audio controls className="w-full" src={proxied} />
-                            <a
-                              href={proxied}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 mt-2"
-                            >
-                              <Download className="h-3 w-3" /> Download Recording
-                            </a>
-                          </>
-                        );
-                      })()}
+                      <RecordingPlayer recordingUrl={selectedCall.recording_url} />
                     </CardContent>
                   </Card>
                 ) : selectedCall.call_sid ? (
