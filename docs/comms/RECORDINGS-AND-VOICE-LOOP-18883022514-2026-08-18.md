@@ -87,9 +87,8 @@ What deletion does **not** reach: whatever the Playboxxx project pulled down and
 its own bucket. Deleting the Twilio copy removes the copy we control and the copy Twilio
 would produce under subpoena against our account. It does not remove theirs.
 
-`comms-stop-audit?action=delete_recordings` is built and takes
-`{ "sids": ["RE…"], "confirm": "DELETE" }` — explicit SIDs only, no wildcard, no run yet.
-Say the word and it runs against the 18.
+`comms-stop-audit?action=delete_recordings` takes `{ "sids": ["RE…"], "confirm": "DELETE" }`
+— explicit SIDs only, no wildcard. **Executed 2026-08-18 against the 18; see section 3.**
 
 ## 4. The loop, and what changing VoiceUrl would break
 
