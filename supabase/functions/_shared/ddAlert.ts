@@ -42,6 +42,10 @@ function twAuthHeader(): string | null {
     return "Basic " + btoa(`${TWILIO_API_SID}:${TWILIO_API_SECRET}`);
   }
   if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
+    if (!TWILIO_ACCOUNT_SID.startsWith("AC")) {
+      console.error("[ddAlert] TWILIO_ACCOUNT_SID must start with 'AC'");
+      return null;
+    }
     return "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
   }
   return null;

@@ -8,6 +8,13 @@
 
 const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID")!;
 const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN")!;
+
+function ensureValidSid(): void {
+  if (!TWILIO_ACCOUNT_SID) throw new Error("[twilio-operator] TWILIO_ACCOUNT_SID not configured");
+  if (!TWILIO_ACCOUNT_SID.startsWith("AC")) {
+    throw new Error("[twilio-operator] TWILIO_ACCOUNT_SID must start with 'AC'");
+  }
+}
 const TWILIO_MESSAGING_SERVICE_SID = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID") || "";
 const VERIFIED_TOLL_FREE = Deno.env.get("TWILIO_VERIFIED_TOLL_FREE") || "+18776818621";
 const A2P_BYPASS = (Deno.env.get("TWILIO_A2P_BYPASS") || "").toLowerCase() === "true";
@@ -57,6 +64,7 @@ export function getOutboundRecipient(intendedTo: string): {
 }
 
 function authHeader(): string {
+  ensureValidSid();
   return `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`;
 }
 
