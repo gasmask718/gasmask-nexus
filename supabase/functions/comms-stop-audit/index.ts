@@ -573,6 +573,94 @@ async function repointSms(payload: any) {
   };
 }
 
+// WRITE (VOICE ONLY): repoint a number's VoiceUrl. StatusCallback, SmsUrl and
+// every other field are left exactly as-is. Guarded by confirm:"REPOINT_VOICE".
+// Includes a recursion pre-check: if our own handler would end up dialling the
+// SAME number back (directory row or global env DID pointing at itself), we
+// refuse — that would reproduce the loop under a different roof.
+async function repointVoice(payload: any) {
+  const number = String(payload.number || "");
+  const target = String(payload.voice_url || "");
+  if (payload.confirm !== "REPOINT_VOICE") return { error: 'confirm must be exactly "REPOINT_VOICE"' };
+  if (!number.startsWith("+") || !target.startsWith("https://")) {
+    return { error: "number (E.164) and voice_url (https) are required" };
+  }
+
+  const read = async () => {
+    const cfg = await tw(
+      `/2010-04-01/Accounts/${SID}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(number)}`,
+    );
+    const n = (cfg.body?.incoming_phone_numbers ?? [])[0];
+    if (!n) return null;
+    return {
+      sid: n.sid,
+      voice_url: n.voice_url,
+      voice_method: n.voice_method,
+      voice_fallback_url: n.voice_fallback_url,
+      voice_application_sid: n.voice_application_sid,
+      trunk_sid: n.trunk_sid,
+      status_callback: n.status_callback,
+      status_callback_method: n.status_callback_method,
+      sms_url: n.sms_url,
+      sms_method: n.sms_method,
+    };
+  };
+
+  const before = await read();
+  if (!before) return { error: "number not found on main account" };
+
+  // Recursion pre-check against our own handler's resolution order.
+  const last10 = number.replace(/\D/g, "").slice(-10);
+  const { data: dirRows } = await sb
+    .from("v_phone_directory")
+    .select("phone_e164, business, assigned_agent_id, is_active")
+    .eq("is_active", true)
+    .ilike("phone_e164", `%${last10}`)
+    .limit(1);
+  const dirRow = dirRows?.[0] || null;
+  const globalDid = Deno.env.get("BLAND_INBOUND_NUMBER") || "";
+  const resolvedDid = dirRow?.assigned_agent_id || globalDid || "";
+  const wouldSelfDial = !!resolvedDid && resolvedDid.replace(/\D/g, "").slice(-10) === last10;
+  const precheck = {
+    directory_row: dirRow ? { phone_e164: dirRow.phone_e164, business: dirRow.business, has_agent: !!dirRow.assigned_agent_id } : null,
+    global_env_did_set: !!globalDid,
+    resolved_did_matches_this_number: wouldSelfDial,
+    outcome_if_no_did: "Say 'line is not yet configured' + Hangup (no Dial, no recursion)",
+  };
+  if (wouldSelfDial) {
+    return { error: "refused: our handler would dial this same number back", precheck, before };
+  }
+
+  const upd = await tw(`/2010-04-01/Accounts/${SID}/IncomingPhoneNumbers/${before.sid}.json`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ VoiceUrl: target, VoiceMethod: "POST" }).toString(),
+  });
+
+  // Verify by RE-READING Twilio, not by trusting the write response.
+  const after = await read();
+  const untouched = before && after
+    ? {
+      status_callback: before.status_callback === after.status_callback,
+      sms_url: before.sms_url === after.sms_url,
+      voice_fallback_url: before.voice_fallback_url === after.voice_fallback_url,
+      voice_application_sid: before.voice_application_sid === after.voice_application_sid,
+      trunk_sid: before.trunk_sid === after.trunk_sid,
+    }
+    : null,
+  ;
+  return {
+    number,
+    precheck,
+    before,
+    after,
+    write_status: upd.status,
+    verified: after?.voice_url === target,
+    unchanged_fields: untouched,
+    error: upd.ok ? null : upd.body,
+  };
+}
+
 async function stopTest(payload: any) {
   const to = payload.to || "+18776818621";
   const from = payload.from;
