@@ -74,14 +74,27 @@ serve(async (req) => {
         msgBody = `(${i + 1}/${messages.length}) ` + msgBody;
       }
 
-      const result = await sendSMS(phone, msgBody);
-      sids.push(result.sid);
+      const result = await sendSms({
+        to: phone,
+        body: msgBody,
+        idempotencyKey: `sbo-brief-${briefing.id}-${i}`,
+        from: Deno.env.get('TWILIO_PHONE_NUMBER') || undefined,
+        purpose: 'sbo_daily_briefing',
+        skipCooldown: true,
+        metadata: { briefing_id: briefing.id, part: i + 1, parts: messages.length },
+      });
+
+      if (!result.success) {
+        throw new Error(`SMS send failed (${result.status}): ${result.errorMessage || result.errorCode || 'unknown'}`);
+      }
+
+      sids.push(result.providerMessageId ?? '');
 
       await supabase.from('sbo_sms_log').insert({
         direction: 'outbound',
         phone_number: phone,
         message_body: msgBody,
-        twilio_sid: result.sid,
+        twilio_sid: result.providerMessageId,
         briefing_id: briefing.id,
       });
 
