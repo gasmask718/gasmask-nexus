@@ -35,8 +35,8 @@ async function authorize(req: Request, url: URL): Promise<Response | null> {
     Deno.env.get('SUPABASE_ANON_KEY')!,
   );
 
-  const { data: claims, error } = await supabase.auth.getClaims(token);
-  const userId = claims?.claims?.sub as string | undefined;
+  const { data: userData, error } = await supabase.auth.getUser(token);
+  const userId = userData?.user?.id as string | undefined;
   if (error || !userId) return deny(401, 'Invalid or expired session');
 
   const admin = createClient(
