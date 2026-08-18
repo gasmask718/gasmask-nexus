@@ -142,7 +142,7 @@ serve(async (req: Request) => {
 
     // Recording consent gate: fail closed. We only record when the callee's
     // jurisdiction is known AND one-party. See _shared/recordingConsent.ts.
-    const consentClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const consentClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { attr: recAttr, decision: recDecision } = await recordAttrFor(consentClient, to, {
       mode: "record-from-answer-dual",
     });
