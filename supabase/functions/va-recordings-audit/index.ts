@@ -133,7 +133,21 @@ Deno.serve(async (req) => {
           );
           if (cr.ok) {
             const c = await cr.json();
-            return build(rec, c.to || "", c.from || "", c.direction || "");
+            let to = c.to || "", from = c.from || "";
+            // Browser-SDK parent legs are client:<identity> on BOTH sides; the
+            // real counterparty number lives on the child <Dial> leg.
+            if (!/^\+\d+$/.test(to) && !/^\+\d+$/.test(from)) {
+              const kids = await fetch(
+                `https://api.twilio.com/2010-04-01/Accounts/${sid}/Calls.json?ParentCallSid=${rec.call_sid}&PageSize=5`,
+                { headers: { Authorization: auth } },
+              );
+              if (kids.ok) {
+                const kj = await kids.json();
+                const kid = (kj.calls || []).find((k: any) => /^\+\d+$/.test(k.to || "")) || (kj.calls || [])[0];
+                if (kid) { to = kid.to || to; from = kid.from || from; }
+              }
+            }
+            return build(rec, to, from, c.direction || "");
           }
           // One retry — Twilio 429s under burst and an empty To/From would
           // silently become an "unknown" state in the compliance summary.
