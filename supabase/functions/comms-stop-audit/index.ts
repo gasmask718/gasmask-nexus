@@ -725,6 +725,8 @@ Deno.serve(async (req) => {
         );
       case "delete_recordings":
         return json(await deleteRecordings(payload));
+      case "repoint_voice":
+        return json(await repointVoice(payload));
       case "repoint_sms":
         return json(await repointSms(payload));
       case "snapshot":
