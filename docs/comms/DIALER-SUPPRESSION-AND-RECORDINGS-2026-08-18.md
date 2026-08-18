@@ -101,3 +101,47 @@ supports it.
 **Prerequisite before any window ships:** a real timezone stored on the lead,
 derived from state/address, with area code as an explicitly labelled fallback.
 A window we cannot defend is worse than a documented gap.
+
+## 6. Public recordings bucket — CLOSED 2026-08-18
+
+`call-recordings` (119 objects, 103 referenced by `va_call_logs.recording_url`)
+was `public = true`: anyone holding a URL fetched the audio unauthenticated.
+
+- Bucket flipped **private**. Proof: the same object URL returned **200** before,
+  **400** after (`.../object/public/call-recordings/brandaro/RE4e7db48….mp3`).
+- `play-twilio-recording` now also proxies objects in this bucket: it
+  authenticates the caller (`Authorization` header or `?token=`, role in
+  owner/admin/developer/va/staff), then mints a 300s service-role signed URL and
+  streams the bytes, honouring `Range`. Everything else still 400s — the
+  allow-list is twilio.com plus this one bucket. Its session check moved from
+  `auth.getClaims` (not present in supabase-js 2.45) to `auth.getUser`, which is
+  why the first deploy 500'd.
+  Proof: unauthenticated → 401; admin token → `200 audio/mpeg`, 477,623 bytes.
+- Players repointed to `RecordingPlayer` (which attaches the session token,
+  because `<audio src>` cannot send a header): `VAManagerPage` (×2),
+  `VACallHistory`, `VACallWrapUpModal`, `VAAICoachingHub`,
+  `BrandaroUnifiedCallHistory`, `AdminCallReview`,
+  `communication/intelligence/CallRecordingPlayer`. The raw `download` anchors on
+  the last two were removed — a `<a download>` cannot carry auth, and leaving it
+  would just reproduce the shareable-link problem.
+- Crawler/leak exposure: no sender writes a `call-recordings` URL into an SMS or
+  email body (grepped every `recording_url` egress path), no committed file
+  contains one, and `va_call_logs` has RLS on with admin/VA-scoped policies. The
+  residual risk is any URL a human copied out before today; those objects are now
+  private, so previously copied links are dead too.
+
+## 7. `+18484004179` — the suppressed number's recordings
+
+**29** recordings on the account involve this number (the earlier "24" was from a
+truncated enrichment pass), 2026-01-23 through 2026-05-12.
+
+- 18 `inbound` (they called us), 11 `outbound-api`.
+- 28 mono, 1 dual-channel. Total ≈ 7.5 minutes; the two longest are 130s and 138s
+  (both outbound, 2026-02-18); most are ≤10s.
+- NPA 848 → **NJ**, a one-party consent state. No all-party exposure here.
+- Timeline vs the opt-out: STOP landed **2026-08-18 16:24:17 UTC**; the newest
+  recording is **2026-05-12**. **Nothing was recorded after the opt-out**, and
+  with the `<Dial>` gate live nothing can be.
+- Not deleted — pre-opt-out business records, and unlike the Playboxxx set none
+  are from all-party states. Deletion is an owner call, not a compliance forcing
+  function.
