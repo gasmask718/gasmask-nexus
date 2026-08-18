@@ -15,7 +15,8 @@
  * so calls and texts share one timeline.
  */
 
-import { corsHeaders, readForm, verifyTwilio, xmlHeaders, escapeXml, canonicalUrl } from "../_shared/dialer.ts";
+import {
+import { recordAttrFor } from "../_shared/recordingConsent.ts"; corsHeaders, readForm, verifyTwilio, xmlHeaders, escapeXml, canonicalUrl } from "../_shared/dialer.ts";
 import { voicemailTwiml } from "../_shared/voicemailTwiml.ts";
 import {
   svcClient,
@@ -146,9 +147,14 @@ Deno.serve(async (req) => {
 
   const actionUrl = `${base}/gasmask-call-dial-complete?next=${nextStage}`;
   const recCb = `${base}/gasmask-call-recording-status`;
-  const recordAttrs = settings.recording_enabled
-    ? ` record="record-from-answer-dual" recordingStatusCallback="${escapeXml(recCb)}" recordingStatusCallbackMethod="POST" recordingStatusCallbackEvent="completed"`
-    : "";
+  // Recording consent gate: recording_enabled is necessary but NOT sufficient.
+  // The caller's jurisdiction must be known and one-party. Fails closed.
+  const { attr: consentAttr, decision: recDecision } = await recordAttrFor(supabase, from, {
+    mode: "record-from-answer-dual",
+    callbackUrl: recCb,
+  });
+  const recordAttrs = settings.recording_enabled ? consentAttr : "";
+  console.log(`[gasmask-inbound-voice] recording=${recordAttrs ? "on" : "off"} (enabled=${settings.recording_enabled}, ${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ""})`);
 
   // All legs live inside ONE <Dial> → Twilio rings them in parallel and
   // cancels the losers the moment someone answers.

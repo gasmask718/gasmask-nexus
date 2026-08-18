@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +27,7 @@ serve(async (req) => {
     const digits = formData.get("Digits")?.toString() || "";
     const speechResult = formData.get("SpeechResult")?.toString().toLowerCase() || "";
     const callSid = formData.get("CallSid")?.toString() || "";
+    const callerParty = formData.get("From")?.toString() || "";
 
     const url = new URL(req.url);
     const humanNumber = url.searchParams.get("phone_number") || "";
@@ -94,7 +96,7 @@ serve(async (req) => {
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Matthew">Great news! Our agent is now available. Connecting you now.</Say>
-  <Dial record="record-from-answer-dual" recordingStatusCallback="${recordingCallback}" recordingStatusCallbackMethod="POST" action="${supabaseUrl}/functions/v1/twilio-human-call-complete?phone_number=${encodeURIComponent(humanNumber)}&amp;queue_item_id=${encodeURIComponent(queueItemId)}" timeout="30">
+  <Dial${recAttr} action="${supabaseUrl}/functions/v1/twilio-human-call-complete?phone_number=${encodeURIComponent(humanNumber)}&amp;queue_item_id=${encodeURIComponent(queueItemId)}" timeout="30">
     <Number statusCallback="${statusCallback}" statusCallbackEvent="initiated ringing answered completed">${humanNumber}</Number>
   </Dial>
   <Say voice="Polly.Matthew">The agent was unavailable. Thank you for your time. Goodbye.</Say>

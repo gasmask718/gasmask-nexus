@@ -17,6 +17,7 @@
 //  - All paths logged into dialer_call_events with severity
 
 import {
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
   corsHeaders,
   xmlHeaders,
   escapeXml,
@@ -108,12 +109,17 @@ Deno.serve(async (req) => {
       });
       const fallbackUrl = `${SUPABASE_URL}/functions/v1/twilio-bridge-fallback?${ctx.toString()}`;
       const recCb = `${SUPABASE_URL}/functions/v1/twilio-recording-callback?call_session_id=${call_session_id || ""}`;
+      // Recording consent gate on the recipient. Fails closed.
+      const { attr: recAttr, decision: recDecision } = await recordAttrFor(supabase, calledTo, {
+        mode: "record-from-answer-dual",
+        callbackUrl: recCb,
+      });
+      console.log(`[twilio-bridge-to-bland] recording=${recAttr ? "on" : "off"} (${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ""})`);
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Dial timeout="${bridgeTimeout}" answerOnBridge="true"
         action="${escapeXml(fallbackUrl)}" method="POST"
-        record="record-from-answer-dual"
-        recordingStatusCallback="${escapeXml(recCb)}" recordingStatusCallbackMethod="POST">
+        ${recAttr}>
     <Number>${escapeXml(BLAND_INBOUND_NUMBER!)}</Number>
   </Dial>
 </Response>`;

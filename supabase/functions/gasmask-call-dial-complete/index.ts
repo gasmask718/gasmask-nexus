@@ -26,6 +26,7 @@ import {
   loadOnShiftClients,
 } from "../_shared/gasmaskVoice.ts";
 import { runMissedCallRecovery } from "../_shared/gasmaskMissedRecovery.ts";
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
 
 const ANSWERED = new Set(["completed", "answered"]);
 
@@ -100,9 +101,13 @@ Deno.serve(async (req) => {
       });
 
       const recCb = `${base}/gasmask-call-recording-status`;
-      const recordAttrs = settings.recording_enabled
-        ? ` record="record-from-answer-dual" recordingStatusCallback="${escapeXml(recCb)}" recordingStatusCallbackMethod="POST" recordingStatusCallbackEvent="completed"`
-        : "";
+      // Recording consent gate — same rule as gasmask-inbound-voice. Fails closed.
+      const { attr: consentAttr, decision: recDecision } = await recordAttrFor(supabase, from, {
+        mode: "record-from-answer-dual",
+        callbackUrl: recCb,
+      });
+      const recordAttrs = settings.recording_enabled ? consentAttr : "";
+      console.log(`[gasmask-call-dial-complete] recording=${recordAttrs ? "on" : "off"} (enabled=${settings.recording_enabled}, ${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ""})`);
       const legs = [
         ...legNumbers.map((n) => `<Number>${escapeXml(n)}</Number>`),
         ...legClients.map((c) => `<Client>${escapeXml(c)}</Client>`),
