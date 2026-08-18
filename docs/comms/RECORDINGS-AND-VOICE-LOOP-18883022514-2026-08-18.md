@@ -49,7 +49,35 @@ Two honest caveats, because this should not be overstated:
 **Named exposure:** the Maryland leg (+1 410-285-7278, 2026-08-13, 9 recordings) is the one
 worth naming. Maryland is the jurisdiction where this class of defect has criminal teeth.
 
-## 3. Can we delete them
+## 3. Deleted — all 18, 2026-08-18
+
+**Done.** `comms-stop-audit?action=delete_recordings` was run with the 18 explicit SIDs.
+Result: `attempted: 18, deleted: 18` — **every** recording returned HTTP `204`, none returned
+an error. A re-run of the `recordings` audit immediately afterwards returns
+`recording_count: 0`, `dual_channel_count: 0`, `total_recorded_seconds: 0` for the number
+over the same 120-day window. No partial delete, verified by re-read rather than by the
+delete call's own report.
+
+SIDs deleted (all 204):
+
+```
+RE0267faa185f1295a1c53dd2d0958dee4  RE0b9aef0ec4e25419da3d90806d8450b3
+RE0ff9c1dca6f6546177ced1dd265d7dd6  RE1d83826557809fab0de212e6d34bb797
+RE20893b8dfbfff8175a9f65e87b2b2606  RE258f87c78d52c04890275297d0ceb8af
+RE2e9fe66fe7e9c48fbf755386f1be1d50  RE3377e8ba6e6c2a005b8ff5d2104a3895
+RE76fafbacb3f5e7eae2ce408509740eab  RE81e401734b7833020da319794ad398da
+RE92ee4112e0499a1b3b5ed892a3070f31  REb05e6ee1ef0d6097f7eb12ff70a88745
+REc53dab47b92bf5bdc25193d65e5c92bb  REdf02f43df8d2eccfaf91c3cf32f13cb1
+REe185ed5c351fadd153f6c151124a8230  REefd6f1944c80be9470fffb9564e262e9
+REf0d9492787932c8adf44d1eea7be4a90  REfde76d2be28d2c9b7c631e0f0076e8ae
+```
+
+**What this does not reach.** Playboxxx's own copies — whatever that project pulled down
+into its own storage — are **untouched and outside our reach**. Deleting the Twilio copy
+narrows *our* exposure: it removes the copy we control and the copy Twilio would produce
+under subpoena against our account. It does not clean the record.
+
+## 3b. Original deletability finding (for reference)
 
 **Yes.** The recordings are resources on our own account SID, so
 `DELETE /2010-04-01/Accounts/{AC…}/Recordings/{RE…}.json` works from our credentials and
