@@ -143453,6 +143453,7 @@ export type Database = {
       }
       normalize_brand_name: { Args: { raw_brand: string }; Returns: string }
       normalize_phone: { Args: { raw_phone: string }; Returns: string }
+      normalize_phone_e164: { Args: { p_phone: string }; Returns: string }
       normalize_store_address: {
         Args: {
           p_city: string
