@@ -611,13 +611,10 @@ async function repointVoice(payload: any) {
 
   // Recursion pre-check against our own handler's resolution order.
   const last10 = number.replace(/\D/g, "").slice(-10);
-  const { data: dirRows } = await sb
-    .from("v_phone_directory")
-    .select("phone_e164, business, assigned_agent_id, is_active")
-    .eq("is_active", true)
-    .ilike("phone_e164", `%${last10}`)
-    .limit(1);
-  const dirRow = dirRows?.[0] || null;
+  const dirRes = await sb(
+    `v_phone_directory?select=phone_e164,business,assigned_agent_id,is_active&is_active=eq.true&phone_e164=ilike.*${last10}&limit=1`,
+  );
+  const dirRow = Array.isArray(dirRes.body) ? (dirRes.body[0] || null) : null;
   const globalDid = Deno.env.get("BLAND_INBOUND_NUMBER") || "";
   const resolvedDid = dirRow?.assigned_agent_id || globalDid || "";
   const wouldSelfDial = !!resolvedDid && resolvedDid.replace(/\D/g, "").slice(-10) === last10;
