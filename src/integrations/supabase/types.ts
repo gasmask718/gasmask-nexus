@@ -111331,6 +111331,39 @@ export type Database = {
           },
         ]
       }
+      template_row_quarantine: {
+        Row: {
+          prior_address: string | null
+          prior_health_status: string | null
+          prior_phone: string | null
+          prior_relationship_status: string | null
+          prior_store_name: string | null
+          quarantined_at: string
+          run_id: string
+          store_id: string
+        }
+        Insert: {
+          prior_address?: string | null
+          prior_health_status?: string | null
+          prior_phone?: string | null
+          prior_relationship_status?: string | null
+          prior_store_name?: string | null
+          quarantined_at?: string
+          run_id: string
+          store_id: string
+        }
+        Update: {
+          prior_address?: string | null
+          prior_health_status?: string | null
+          prior_phone?: string | null
+          prior_relationship_status?: string | null
+          prior_store_name?: string | null
+          quarantined_at?: string
+          run_id?: string
+          store_id?: string
+        }
+        Relationships: []
+      }
       term_sheets: {
         Row: {
           accepted_at: string | null
