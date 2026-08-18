@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { format, formatDistanceToNowStrict, isToday, isYesterday } from "date-fns";
+import { RecordingPlayer } from "@/components/phone/RecordingPlayer";
 
 const PAGE_SIZE = 10;
 
@@ -330,12 +331,9 @@ export function VACallHistory() {
 
                 {/* Recording (proxied through backend so users never see Twilio auth) */}
                 {c.recording_url && (
-                  <audio
-                    controls
-                    preload="none"
-                    src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/play-twilio-recording?url=${encodeURIComponent(c.recording_url)}`}
-                    className="w-full h-9 mt-3"
-                  />
+                  <div className="mt-3">
+                    <RecordingPlayer recordingUrl={c.recording_url} compact />
+                  </div>
                 )}
 
                 {/* AI summary preview */}
