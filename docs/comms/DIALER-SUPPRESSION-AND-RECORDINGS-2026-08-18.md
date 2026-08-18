@@ -245,3 +245,98 @@ the calling-window check read the same column and neither is a guess.
 Recommended order when you want it built: zip→jurisdiction backfill first, then
 the policy table, then the `record` branch (fail-closed), then windows. Nothing
 in this section is implemented — report only.
+
+---
+
+## 10. BUILT — jurisdiction backfill, policy table, fail-closed record branch (2026-08-18, later)
+
+### 10.1 Jurisdiction on the lead
+
+`zip_jurisdiction_ranges` (72 priority-weighted ZIP ranges) + `us_state_names`
+(full-name → code, incl. NYC boroughs) feed `resolve_zip_jurisdiction()` and
+`normalize_state_text()`. Both lead universes now carry
+`derived_state` / `derived_timezone` / `jurisdiction_source` /
+`jurisdiction_confidence`, maintained by triggers on insert/update.
+
+**`store_master` — 3,155 rows, 2,064 resolved (65%):**
+
+| source | confidence | rows |
+|---|---|---|
+| `zip` | high | 1,725 (55%) |
+| `state_text` | state_only | 339 (11%) |
+| `unresolved` | none | 1,091 (35%) |
+
+The 1,091: **1,090 have both `zip` and `state` empty** — there is no location
+data on those rows to derive from; 1 has `state = 'USA'` and no ZIP. This is not
+a lookup failure, it is absent source data. 330 of them do have a valid
+`phone_last10`, so they are recoverable later by enrichment, not by this backfill.
+
+**`brandaro_qualified_leads` — 532 rows, 365 resolved (69%), all `state_only`**
+(this table has no ZIP column at all). The 167 unresolved are **not US
+addresses**: 86 Dominican Republic (Distrito Nacional, Santo Domingo, San Pedro
+de Macorís), 14 Mexico (Quintana Roo), 66 Puerto Rico municipality names
+(San Juan, Bayamón, Guaynabo, Carolina, Cabo Rojo, Luquillo, Las Piedras,
+San Germán), 1 blank. The PR set is a known, listed gap: they are US
+jurisdiction but stored as municipality, not `PR`, so they fail closed (no
+recording) until a municipality→PR map is added.
+
+### 10.2 `recording_consent_policy` as a table
+
+State rules live in `recording_consent_policy` (`one_party` / `all_party` /
+`prohibited`, plus a `contested` flag), not a literal in code. Seeded with NV,
+CT, IL, MI, DE, OR, PR marked `all_party` + contested — the conservative read of
+the states that are moving or disputed. Changing a state's rule is now a row
+update, not a deploy.
+
+### 10.3 The record branch — 15 functions, fail closed
+
+`_shared/recordingConsent.ts` exposes `recordAttrFor()`, which resolves the
+counterparty's jurisdiction via `resolve_recording_consent(phone)` and returns
+the `record` attribute **only** when the state resolves to `one_party`.
+Unknown jurisdiction, all-party state, or a failed lookup all return an empty
+string — no recording. Applied to all 15 emitters, including the two conference
+paths that used `record="record-from-start"`:
+
+`brandaro-call-twiml`, `va-power-dialer`, `ambassador-direct-call`,
+`field-portal-comms`, `gasmask-inbound-voice`, `gasmask-call-dial-complete`,
+`twilio-voice-webhook`, `twilio-gather-webhook`, `twilio-human-queue-hold`,
+`twilio-transfer-choice-webhook`, `transfer-campaign-call`, `twilio-voice-twiml`,
+`twilio-bridge-to-bland`, `twilio-manual-call`, `dialer-bridge-agent`.
+
+Every call logs its decision and reason, so "why didn't this record" is
+answerable from function logs rather than inferred.
+
+### 10.4 Reclassifying the backlog
+
+146 `va_call_logs` rows carry a `recording_url`. With jurisdiction live:
+
+| state | rule | recordings |
+|---|---|---|
+| NY | one_party | 17 |
+| NC | one_party | 9 |
+| FL | **all_party** | 8 |
+| CA | **all_party** | 4 |
+| TX | one_party | 1 |
+| — | **unclassifiable** | **107** |
+
+**The 107 is its own line, not a rounding error.** Every one of them has
+`lead_id IS NULL` — the log row records the call and the recording but never
+recorded who was called. They are not "probably fine": we do not know the
+counterparty, so we do not know the state, so we cannot say whether recording
+them was lawful. Resolving them requires pulling the `To` number per `call_sid`
+from the Twilio API and matching it back — a separate job, not done here.
+
+### 10.5 Exposure, stated plainly
+
+**We placed the call, recorded both sides, and announced nothing.** For the 13
+recordings identified in §9 with counterparties in all-party-consent states
+(10 FL, 3 CA), the platform was the caller, `record="record-from-answer-dual"`
+captured both channels, and no consent language was played at any point in the
+call. There was no mitigation in place at the time — the attribute was a
+hardcoded literal in every emitter and no jurisdiction check existed. The 12
+DB-side rows above (8 FL + 4 CA) are the same exposure viewed from the log
+table. **No mitigation. Recorded as an exposure, not a resolved finding.** The
+gate in §10.3 prevents recurrence; it does not undo these.
+
+Separately: 107 recordings cannot be classified at all (§10.4), which is a
+second, unbounded exposure line rather than part of the 13.
