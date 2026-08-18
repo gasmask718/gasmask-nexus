@@ -22,6 +22,25 @@ serve(async (req) => {
       const callLogId = url.searchParams.get("callLogId") || "";
       const callerIdParam = url.searchParams.get("callerId") || "";
 
+      // Same enforcement rule as brandaro-call-twiml: this branch emits <Dial>,
+      // so it is a dialing gate and must check suppression itself. Fails closed.
+      const twimlSuppression = await isSuppressed(supabaseAdmin, leadPhoneParam);
+      if (twimlSuppression.blocked) {
+        console.warn(`[va-power-dialer] BLOCKED twiml dial to ${leadPhoneParam} — ${twimlSuppression.reason}`);
+        if (callLogId) {
+          try {
+            await supabaseAdmin
+              .from("va_call_logs")
+              .update({ call_status: "dnc_skipped", disposition: "dnc" })
+              .eq("id", callLogId);
+          } catch (_) { /* logging must not unblock the gate */ }
+        }
+        return new Response(
+          `<?xml version="1.0" encoding="UTF-8"?>\n<Response><Say>This number is on the do not call list. The call cannot be placed.</Say><Hangup/></Response>`,
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "text/xml" } },
+        );
+      }
+
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Dial callerId="${callerIdParam}" record="record-from-answer-dual" timeout="20"
