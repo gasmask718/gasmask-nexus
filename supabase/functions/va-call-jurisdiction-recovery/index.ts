@@ -131,8 +131,10 @@ Deno.serve(async (req) => {
           if (kid) { to = String(kid.to); from = String(kid.from || from); }
         }
       }
-      // Inbound calls: the counterparty is the From side.
-      const counterparty = isE164(to) ? to : (isE164(from) ? from : "");
+      // Pick the leg that isn't ours. On inbound calls the To side is a
+      // platform-owned number and the counterparty is the From side.
+      const cands = [to, from].filter(isE164);
+      const counterparty = cands.find((c) => !owned.has(last10(c))) || "";
 
       if (!counterparty) {
         return { ...base, status: "matched_no_jurisdiction", to_number: null, detail: "twilio has the call but no E.164 counterparty on any leg" };
