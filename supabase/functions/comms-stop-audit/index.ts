@@ -13,6 +13,7 @@
 // this is an operator tool, called with the service role key.
 
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { classifyNumber } from "./nanpa.ts";
 
 const SID = Deno.env.get("TWILIO_ACCOUNT_SID") || "";
 const TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") || "";
@@ -624,6 +625,22 @@ Deno.serve(async (req) => {
             Number(url.searchParams.get("days") || payload.days || 120),
           ),
         );
+      case "recordings":
+        return json(
+          await recordingsAudit(
+            url.searchParams.get("number") || payload.number || "",
+            Number(url.searchParams.get("days") || payload.days || 120),
+          ),
+        );
+      case "voice_impact":
+        return json(
+          await voiceImpact(
+            url.searchParams.get("number") || payload.number || "",
+            Number(url.searchParams.get("days") || payload.days || 120),
+          ),
+        );
+      case "delete_recordings":
+        return json(await deleteRecordings(payload));
       case "repoint_sms":
         return json(await repointSms(payload));
       case "snapshot":
