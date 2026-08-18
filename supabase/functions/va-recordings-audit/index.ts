@@ -95,24 +95,17 @@ Deno.serve(async (req) => {
   }
 
   // Enrich with the parent call's To/From so we can attribute a counterparty state.
-  const detail: any[] = [];
-  for (const rec of recordings) {
-    let to = "", from = "", callDir = "";
-    try {
-      const cr = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${sid}/Calls/${rec.call_sid}.json`,
-        { headers: { Authorization: auth } },
-      );
-      if (cr.ok) {
-        const c = await cr.json();
-        to = c.to || ""; from = c.from || ""; callDir = c.direction || "";
-      }
-    } catch (_) { /* best effort */ }
+  // Enrichment is one extra Twilio GET per recording, so it is opt-in and batched.
+  const qp = new URL(req.url).searchParams;
+  const enrich = qp.get("enrich") === "1";
+  const limit = Math.min(Number(qp.get("limit") || 400), 1000);
+  const slice = recordings.slice(0, limit);
 
+  const build = (rec: any, to = "", from = "", callDir = "") => {
     const counterparty = to || from;
     const npa = (counterparty.replace(/\D/g, "").replace(/^1/, "") || "").slice(0, 3);
     const state = NPA_STATE[npa] || "unknown";
-    detail.push({
+    return {
       sid: rec.sid,
       call_sid: rec.call_sid,
       date_created: rec.date_created,
@@ -120,7 +113,31 @@ Deno.serve(async (req) => {
       channels: rec.channels,
       to, from, direction: callDir,
       npa, state, all_party_consent_state: ALL_PARTY.has(state),
-    });
+    };
+  };
+
+  const detail: any[] = [];
+  if (!enrich) {
+    for (const rec of slice) detail.push(build(rec));
+  } else {
+    const BATCH = 12;
+    for (let i = 0; i < slice.length; i += BATCH) {
+      const chunk = slice.slice(i, i + BATCH);
+      const rows = await Promise.all(chunk.map(async (rec: any) => {
+        try {
+          const cr = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${sid}/Calls/${rec.call_sid}.json`,
+            { headers: { Authorization: auth } },
+          );
+          if (cr.ok) {
+            const c = await cr.json();
+            return build(rec, c.to || "", c.from || "", c.direction || "");
+          }
+        } catch (_) { /* best effort */ }
+        return build(rec);
+      }));
+      detail.push(...rows);
+    }
   }
 
   const byState: Record<string, number> = {};
@@ -132,7 +149,8 @@ Deno.serve(async (req) => {
 
   return new Response(JSON.stringify({
     account: sid, cred_used: used,
-    total_recordings: detail.length,
+    total_recordings_on_account: recordings.length,
+    detailed: detail.length,
     total_seconds: totalSeconds,
     total_minutes: Math.round(totalSeconds / 6) / 10,
     longest_s: detail.reduce((m, d) => Math.max(m, d.duration_s), 0),
