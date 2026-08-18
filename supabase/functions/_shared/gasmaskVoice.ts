@@ -331,6 +331,7 @@ export async function sendSms(opts: { from: string; to: string; body: string }):
   const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
   const token = Deno.env.get("TWILIO_AUTH_TOKEN");
   if (!sid || !token) throw new Error("twilio_credentials_missing");
+  if (!sid.startsWith("AC")) throw new Error("twilio_invalid_account_sid");
   const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
     method: "POST",
     headers: {
