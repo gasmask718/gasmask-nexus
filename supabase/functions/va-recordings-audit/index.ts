@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
   if (!enrich) {
     for (const rec of slice) detail.push(build(rec));
   } else {
-    const BATCH = 12;
+    const BATCH = 5;
     for (let i = 0; i < slice.length; i += BATCH) {
       const chunk = slice.slice(i, i + BATCH);
       const rows = await Promise.all(chunk.map(async (rec: any) => {
@@ -135,6 +135,18 @@ Deno.serve(async (req) => {
             const c = await cr.json();
             return build(rec, c.to || "", c.from || "", c.direction || "");
           }
+          // One retry — Twilio 429s under burst and an empty To/From would
+          // silently become an "unknown" state in the compliance summary.
+          await new Promise((r) => setTimeout(r, 400));
+          const cr2 = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${sid}/Calls/${rec.call_sid}.json`,
+            { headers: { Authorization: auth } },
+          );
+          if (cr2.ok) {
+            const c2 = await cr2.json();
+            return build(rec, c2.to || "", c2.from || "", c2.direction || "");
+          }
+          return { ...build(rec), fetch_status: cr2.status };
         } catch (_) { /* best effort */ }
         return build(rec);
       }));
