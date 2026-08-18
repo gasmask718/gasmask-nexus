@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Phone, Bot, Clock, FileText, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { RecordingPlayer } from "@/components/phone/RecordingPlayer";
 
 interface BrandaroUnifiedCallHistoryProps {
   leadId: string;
@@ -145,7 +146,7 @@ export function BrandaroUnifiedCallHistory({ leadId, className }: BrandaroUnifie
 
             {/* Recording */}
             {call.recording_url && (
-              <audio controls className="w-full h-8" src={call.recording_url} preload="none" />
+              <RecordingPlayer recordingUrl={call.recording_url} compact />
             )}
 
             {/* Transcript */}

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Play, Pause, Volume2, Download, Clock } from "lucide-react";
 import { CallRecording } from "@/hooks/useCallIntelligence";
 import { formatDistanceToNow } from "date-fns";
+import { RecordingPlayer } from "@/components/phone/RecordingPlayer";
 
 interface CallRecordingPlayerProps {
   recording: CallRecording | null;
@@ -47,11 +48,7 @@ export function CallRecordingPlayer({ recording, compact = false }: CallRecordin
           </div>
         </div>
         {recording.recording_url && (
-          <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
-            <a href={recording.recording_url} download>
-              <Download className="h-4 w-4" />
-            </a>
-          </Button>
+          <RecordingPlayer recordingUrl={recording.recording_url} compact />
         )}
       </div>
     );
@@ -73,15 +70,7 @@ export function CallRecordingPlayer({ recording, compact = false }: CallRecordin
       <CardContent className="space-y-3">
         {recording.recording_url ? (
           <>
-            <audio
-              controls
-              className="w-full h-10"
-              src={recording.recording_url}
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-            >
-              Your browser does not support the audio element.
-            </audio>
+            <RecordingPlayer recordingUrl={recording.recording_url} />
 
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
@@ -101,12 +90,7 @@ export function CallRecordingPlayer({ recording, compact = false }: CallRecordin
               </div>
             </div>
 
-            <Button variant="outline" size="sm" className="w-full gap-2" asChild>
-              <a href={recording.recording_url} download>
-                <Download className="h-4 w-4" />
-                Download Recording
-              </a>
-            </Button>
+
           </>
         ) : (
           <div className="text-sm text-muted-foreground text-center py-4">

@@ -20,6 +20,7 @@ import { Sparkles, Brain, Search, Loader2, Target, Lightbulb, TrendingUp, FileTe
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { VACoachingInbox } from './VACoachingInbox';
+import { RecordingPlayer } from "@/components/phone/RecordingPlayer";
 
 interface CallRow {
   id: string;
@@ -419,7 +420,7 @@ export function VAAICoachingHub() {
               {recordingProxyUrl(selected) && (
                 <div>
                   <p className="text-xs uppercase text-muted-foreground mb-1">Recording</p>
-                  <audio controls preload="none" className="w-full h-10" src={recordingProxyUrl(selected)!} />
+                  <RecordingPlayer recordingUrl={selected.recording_url} recordingSid={selected.recording_sid} />
                 </div>
               )}
 

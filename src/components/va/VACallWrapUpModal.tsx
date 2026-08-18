@@ -14,6 +14,7 @@ import {
 import { Sparkles, Save, Play, Phone, RotateCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { RecordingPlayer } from "@/components/phone/RecordingPlayer";
 
 export type FollowUpStatus =
   | 'won_back'
@@ -229,11 +230,7 @@ export function VACallWrapUpModal({
               <span className="text-sm font-medium">Recording</span>
             </div>
             {recordingUrl ? (
-              <audio
-                controls
-                src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/play-twilio-recording?url=${encodeURIComponent(recordingUrl)}`}
-                className="w-full"
-              />
+              <RecordingPlayer recordingUrl={recordingUrl} />
             ) : (
               <p className="text-xs text-slate-500">
                 {loadingCall ? 'Loading…' : 'Recording will appear after Twilio finishes processing (usually 1–2 min). Refresh the call list to fetch it.'}

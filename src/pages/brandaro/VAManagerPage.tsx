@@ -36,6 +36,7 @@ import {
   Brain, ArrowUpRight, ThermometerSun, Sparkles, Zap, BookOpen, BarChart3,
   Crosshair, DollarSign, Swords, Tag, UserCircle, Mic, FileText, PlayCircle, RefreshCw,
 } from "lucide-react";
+import { RecordingPlayer } from "@/components/phone/RecordingPlayer";
 
 export default function VAManagerPage() {
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<"today" | "week" | "month">("today");
@@ -1280,12 +1281,7 @@ export default function VAManagerPage() {
                             </span>
                           </div>
                         </div>
-                        <audio
-                          controls
-                          className="w-full h-8"
-                          src={call.recording_url}
-                          preload="none"
-                        />
+                        <RecordingPlayer recordingUrl={call.recording_url} compact />
                         {call.notes && <p className="text-xs text-muted-foreground">{call.notes}</p>}
                         {call.transcript && (
                           <Button
@@ -1348,7 +1344,7 @@ export default function VAManagerPage() {
                         {call.transcript}
                       </div>
                       {call.recording_url && (
-                        <audio controls className="w-full h-8" src={call.recording_url} preload="none" />
+                        <RecordingPlayer recordingUrl={call.recording_url} compact />
                       )}
                     </div>
                   ))}

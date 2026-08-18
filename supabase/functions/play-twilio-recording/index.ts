@@ -93,18 +93,53 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Only allow proxying twilio.com hosts
+    // Only allow proxying twilio.com hosts, or objects in our own private
+    // `call-recordings` storage bucket (103 legacy VA rows point there; the
+    // bucket was flipped private on 2026-08-18 so the raw URL now 400s).
     let parsed: URL;
     try { parsed = new URL(target); } catch {
       return new Response(JSON.stringify({ error: 'Invalid url' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const storageMatch = parsed.pathname.match(
+      /\/storage\/v1\/object\/(?:public|sign|authenticated)\/call-recordings\/(.+)$/,
+    );
+    if (storageMatch) {
+      // Caller is already authenticated and role-checked above. Sign a short
+      // lived URL with the service role and stream the bytes back.
+      const admin = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      );
+      const objectPath = decodeURIComponent(storageMatch[1].split('?')[0]);
+      const { data: signed, error: signErr } = await admin.storage
+        .from('call-recordings')
+        .createSignedUrl(objectPath, 300);
+      if (signErr || !signed?.signedUrl) {
+        return new Response(JSON.stringify({ error: signErr?.message || 'Recording not found' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const range = req.headers.get('range');
+      const up = await fetch(signed.signedUrl, range ? { headers: { Range: range } } : undefined);
+      const h = new Headers(corsHeaders);
+      for (const k of ['content-type', 'content-length', 'content-range', 'accept-ranges', 'etag']) {
+        const v = up.headers.get(k);
+        if (v) h.set(k, v);
+      }
+      if (!h.get('content-type')) h.set('content-type', 'audio/mpeg');
+      h.set('cache-control', 'private, max-age=300');
+      return new Response(up.body, { status: up.status, headers: h });
+    }
+
     if (!/(^|\.)twilio\.com$/.test(parsed.hostname)) {
-      return new Response(JSON.stringify({ error: 'Only twilio.com URLs allowed' }), {
+      return new Response(JSON.stringify({ error: 'Only twilio.com or call-recordings storage URLs allowed' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
 
     // Ensure mp3 extension if proxying a bare Recording resource URL
     if (/\/Recordings\/RE[a-f0-9]+$/i.test(parsed.pathname)) {
