@@ -14,7 +14,8 @@ We pay for the number and Twilio holds us responsible for what it does.
 Today we changed **one** thing: **text messages** now come back to us, so if someone
 texts STOP to that number we actually record it and stop messaging them. That was safe —
 the number has sent and received **zero** text messages in 120 days, so nothing live
-could break. **Phone calls were deliberately left alone.**
+could break. **Phone calls were left alone at that point** — later the same day, on your
+go-ahead, they were pointed at our handler too. See "Update, later the same day" below.
 
 ## The three findings, in plain words
 
