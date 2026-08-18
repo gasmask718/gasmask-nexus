@@ -644,8 +644,7 @@ async function repointVoice(payload: any) {
       voice_application_sid: before.voice_application_sid === after.voice_application_sid,
       trunk_sid: before.trunk_sid === after.trunk_sid,
     }
-    : null,
-  ;
+    : null;
   return {
     number,
     precheck,
