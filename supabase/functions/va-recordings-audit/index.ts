@@ -102,7 +102,9 @@ Deno.serve(async (req) => {
   const slice = recordings.slice(0, limit);
 
   const build = (rec: any, to = "", from = "", callDir = "") => {
-    const counterparty = to || from;
+    // The browser leg shows as "client:<identity>"; the real counterparty is
+    // whichever side is a dialable +E.164 number.
+    const counterparty = /^\+\d+$/.test(to) ? to : (/^\+\d+$/.test(from) ? from : (to || from));
     const npa = (counterparty.replace(/\D/g, "").replace(/^1/, "") || "").slice(0, 3);
     const state = NPA_STATE[npa] || "unknown";
     return {
@@ -157,7 +159,7 @@ Deno.serve(async (req) => {
     by_state: byState,
     all_party_count: detail.filter((d) => d.all_party_consent_state).length,
     dual_channel_count: detail.filter((d) => Number(d.channels) === 2).length,
-    top_counterparties: Object.entries(detail.reduce((m: any, d: any) => { const k = d.to || d.from || "unknown"; m[k] = (m[k]||0)+1; return m; }, {})).sort((a: any, b: any) => b[1]-a[1]).slice(0, 15),
+    top_counterparties: Object.entries(detail.reduce((m: any, d: any) => { const k = /^\+\d+$/.test(d.to) ? d.to : (/^\+\d+$/.test(d.from) ? d.from : (d.to || d.from || "unknown")); m[k] = (m[k]||0)+1; return m; }, {})).sort((a: any, b: any) => b[1]-a[1]).slice(0, 15),
     duration_buckets: {
       "0-10s": detail.filter((d) => d.duration_s <= 10).length,
       "11-60s": detail.filter((d) => d.duration_s > 10 && d.duration_s <= 60).length,
