@@ -18,12 +18,14 @@ could break. **Phone calls were deliberately left alone.**
 
 ## The three findings, in plain words
 
-**1. The number calls itself in a loop.**
-When someone phones it, the Playboxxx system answers by phoning the same number again.
-(Correction added 2026-08-18 after the recordings audit: the caller's own number is carried
-down each generation of the loop, so Twilio logs all 42 legs as *inbound calls from the two
-original callers*, not as calls the number placed. The behaviour is the same; the billing
-and the recordings are the same. Detail in RECORDINGS-AND-VOICE-LOOP-18883022514-2026-08-18.md.)
+**1. One incoming call turns into dozens.**
+When someone phones it, the Playboxxx call script answers by dialling the same number
+again — and again — each new leg still carrying the *original* caller's number, until
+Twilio's own limit cuts it off. (Earlier notes called this "the number calls itself." That
+label was wrong in a way that sends you looking in the wrong place: in Twilio's records all
+42 legs appear as **incoming calls from the two original callers**, not as calls our number
+placed. Same bill, same behaviour, different place to look. Detail in
+RECORDINGS-AND-VOICE-LOOP-18883022514-2026-08-18.md.)
 It has done this twice that we can see: **6 August** and **13 August** — 42 call legs in
 total, most of them inside a few seconds. Cost so far: **$0.53** over 120 days, 69 seconds
 of billed time. The money is trivial; the point is that it fires by itself and will fire
