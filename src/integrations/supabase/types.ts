@@ -51223,6 +51223,7 @@ export type Database = {
           id: string
           metadata: Json | null
           phone_e164: string | null
+          phone_last10: string | null
           phone_number: string
           reason: string | null
           source: string | null
@@ -51234,6 +51235,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           phone_e164?: string | null
+          phone_last10?: string | null
           phone_number: string
           reason?: string | null
           source?: string | null
@@ -51245,6 +51247,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           phone_e164?: string | null
+          phone_last10?: string | null
           phone_number?: string
           reason?: string | null
           source?: string | null
@@ -78452,6 +78455,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          phone_last10: string | null
           phone_number: string
           reason: string | null
           source: string | null
@@ -78459,6 +78463,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          phone_last10?: string | null
           phone_number: string
           reason?: string | null
           source?: string | null
@@ -78466,6 +78471,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          phone_last10?: string | null
           phone_number?: string
           reason?: string | null
           source?: string | null
