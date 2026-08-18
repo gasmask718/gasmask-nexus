@@ -376,6 +376,172 @@ async function callCost(numberRaw: string, days = 120) {
   };
 }
 
+// READ-ONLY: full recording inventory for calls touching a number, with the
+// legs of each parent call and a jurisdiction/consent classification.
+async function recordingsAudit(numberRaw: string, days = 120) {
+  const number = numberRaw.startsWith("+") ? numberRaw : `+${numberRaw.replace(/\D/g, "")}`;
+  const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+
+  // 1. every call leg touching the number
+  const calls: any[] = [];
+  for (const dir of ["To", "From"] as const) {
+    let url =
+      `/2010-04-01/Accounts/${SID}/Calls.json?${dir}=${encodeURIComponent(number)}&StartTime%3E=${since}&PageSize=100`;
+    let guard = 0;
+    while (url && guard++ < 10) {
+      const r = await tw(url);
+      if (!r.ok) break;
+      calls.push(...(r.body?.calls ?? []));
+      url = r.body?.next_page_uri || "";
+    }
+  }
+  const callById = new Map<string, any>();
+  for (const c of calls) callById.set(c.sid, c);
+
+  // 2. every recording on the account in the window, keep those whose call we know
+  const recs: any[] = [];
+  let rurl = `/2010-04-01/Accounts/${SID}/Recordings.json?DateCreated%3E=${since}&PageSize=100`;
+  let guard = 0;
+  while (rurl && guard++ < 20) {
+    const r = await tw(rurl);
+    if (!r.ok) break;
+    recs.push(...(r.body?.recordings ?? []));
+    rurl = r.body?.next_page_uri || "";
+  }
+  const mine = recs.filter((r) => callById.has(r.call_sid));
+
+  const rows = mine.map((r) => {
+    const c = callById.get(r.call_sid) || {};
+    const to = classifyNumber(c.to);
+    const from = classifyNumber(c.from);
+    return {
+      recording_sid: r.sid,
+      call_sid: r.call_sid,
+      date_created: r.date_created,
+      duration_seconds: Number(r.duration || 0),
+      channels: Number(r.channels || 1),
+      dual_channel: Number(r.channels || 1) === 2,
+      source: r.source,
+      status: r.status,
+      price: r.price,
+      call: {
+        from: c.from,
+        to: c.to,
+        direction: c.direction,
+        start_time: c.start_time,
+        call_duration: c.duration,
+        status: c.status,
+      },
+      called_party: { number: c.to, npa: to.npa, state: to.state, consent_regime: to.consent },
+      calling_party: { number: c.from, npa: from.npa, state: from.state, consent_regime: from.consent },
+      // Exposure = a recorded call whose called party sits in an all-party state.
+      exposure: to.consent === "all_party"
+        ? "all_party_state"
+        : to.consent === "conditional"
+        ? "conditional_state"
+        : to.consent === "n/a"
+        ? "toll_free_no_state"
+        : to.consent,
+      media_url: `https://api.twilio.com/2010-04-01/Accounts/${SID}/Recordings/${r.sid}.mp3`,
+      deletable_by_us: true, // owned by our account SID; DELETE is available on the REST resource
+    };
+  });
+
+  const byExposure: Record<string, number> = {};
+  for (const r of rows) byExposure[r.exposure] = (byExposure[r.exposure] || 0) + 1;
+
+  return {
+    number,
+    since,
+    recording_count: rows.length,
+    dual_channel_count: rows.filter((r) => r.dual_channel).length,
+    total_recorded_seconds: rows.reduce((s, r) => s + r.duration_seconds, 0),
+    exposure_summary: byExposure,
+    all_party_recordings: rows.filter((r) => r.exposure === "all_party_state"),
+    recordings: rows,
+  };
+}
+
+// WRITE (destructive, explicit): delete named recordings from OUR Twilio account.
+// Requires { sids: [...], confirm: "DELETE" }. Never deletes by wildcard.
+async function deleteRecordings(payload: any) {
+  const sids: string[] = Array.isArray(payload.sids) ? payload.sids.map(String) : [];
+  if (payload.confirm !== "DELETE") return { error: 'confirm must be exactly "DELETE"' };
+  if (!sids.length || sids.some((s) => !/^RE[0-9a-f]{32}$/i.test(s))) {
+    return { error: "sids must be a non-empty array of RE... recording SIDs" };
+  }
+  const results: any[] = [];
+  for (const sid of sids) {
+    const r = await tw(`/2010-04-01/Accounts/${SID}/Recordings/${sid}.json`, { method: "DELETE" });
+    results.push({ sid, ok: r.status === 204 || r.ok, status: r.status, error: r.status === 204 ? null : r.body });
+  }
+  return { deleted: results.filter((r) => r.ok).length, attempted: results.length, results };
+}
+
+// READ-ONLY: what would break if VoiceUrl changed. Who actually dials this
+// number, and is the traffic self-originated (the loop) or external?
+async function voiceImpact(numberRaw: string, days = 120) {
+  const number = numberRaw.startsWith("+") ? numberRaw : `+${numberRaw.replace(/\D/g, "")}`;
+  const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+  const cfg = await tw(
+    `/2010-04-01/Accounts/${SID}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(number)}`,
+  );
+  const n = (cfg.body?.incoming_phone_numbers ?? [])[0] || null;
+
+  const calls: any[] = [];
+  for (const dir of ["To", "From"] as const) {
+    let url =
+      `/2010-04-01/Accounts/${SID}/Calls.json?${dir}=${encodeURIComponent(number)}&StartTime%3E=${since}&PageSize=100`;
+    let guard = 0;
+    while (url && guard++ < 10) {
+      const r = await tw(url);
+      if (!r.ok) break;
+      calls.push(...(r.body?.calls ?? []));
+      url = r.body?.next_page_uri || "";
+    }
+  }
+  const seen = new Set<string>();
+  const uniq = calls.filter((c) => (seen.has(c.sid) ? false : (seen.add(c.sid), true)));
+
+  const selfLegs = uniq.filter((c) => c.from === number && c.to === number);
+  const inboundExternal = uniq.filter((c) => c.to === number && c.from !== number);
+  const outboundExternal = uniq.filter((c) => c.from === number && c.to !== number);
+
+  const externalCallers: Record<string, number> = {};
+  for (const c of inboundExternal) externalCallers[c.from] = (externalCallers[c.from] || 0) + 1;
+
+  return {
+    number,
+    since,
+    current_config: n
+      ? {
+        sid: n.sid,
+        voice_url: n.voice_url,
+        voice_method: n.voice_method,
+        voice_fallback_url: n.voice_fallback_url,
+        status_callback: n.status_callback,
+        voice_application_sid: n.voice_application_sid,
+        trunk_sid: n.trunk_sid,
+        sms_url: n.sms_url,
+      }
+      : null,
+    total_call_legs: uniq.length,
+    self_dial_legs: selfLegs.length,
+    inbound_external_legs: inboundExternal.length,
+    outbound_external_legs: outboundExternal.length,
+    distinct_external_callers: Object.keys(externalCallers).length,
+    external_callers: externalCallers,
+    external_call_samples: inboundExternal.slice(0, 20).map((c) => ({
+      sid: c.sid,
+      from: c.from,
+      start_time: c.start_time,
+      duration: c.duration,
+      status: c.status,
+    })),
+  };
+}
+
+
 // WRITE (SMS ONLY): repoint a number's SmsUrl. Voice is never touched here.
 async function repointSms(payload: any) {
   const number = String(payload.number || "");
