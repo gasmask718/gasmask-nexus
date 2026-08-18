@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { verifyTwilio } from "../_shared/dialer.ts";
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
 
 /**
  * TWILIO VOICE TWIML HANDLER
@@ -81,11 +82,18 @@ serve(async (req: Request) => {
     const projectId = supabaseUrl.replace("https://", "").split(".")[0];
     const statusCallbackUrl = `https://${projectId}.supabase.co/functions/v1/twilio-call-status`;
 
+    // Recording consent gate on the callee. Fails closed.
+    const consentClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { attr: recAttr, decision: recDecision } = await recordAttrFor(consentClient, to, {
+      mode: "record-from-answer-dual",
+    });
+    console.log(`[twilio-voice-twiml] recording=${recAttr ? "on" : "off"} (${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ""})`);
+
     // ── TEST CALL: Direct PSTN dial, no AI/agent routing ──
     if (isTestCall) {
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial ${callerIdAttr} record="record-from-answer-dual"
+  <Dial ${callerIdAttr}${recAttr}
         statusCallbackEvent="initiated ringing answered completed"
         statusCallback="${statusCallbackUrl}"
         statusCallbackMethod="POST">
@@ -109,7 +117,7 @@ serve(async (req: Request) => {
     // ── NORMAL ROUTING ──
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial ${callerIdAttr} record="record-from-answer-dual"
+  <Dial ${callerIdAttr}${recAttr}
         statusCallbackEvent="initiated ringing answered completed"
         statusCallback="${statusCallbackUrl}"
         statusCallbackMethod="POST">

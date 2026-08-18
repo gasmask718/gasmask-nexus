@@ -2,6 +2,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
 
 const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')!;
 const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')!;
@@ -59,14 +60,21 @@ Deno.serve(async (req) => {
 
     // TwiML to dial store when ambassador answers
     const callerId = amb.twilio_number || Deno.env.get('TWILIO_PHONE_NUMBER')!;
-    const twiml = `<Response><Say voice="Polly.Joanna">Connecting you to ${store.store_name.replace(/[<>&"']/g, '')}</Say><Dial callerId="${callerId}" record="record-from-answer" timeout="25"><Number>${store.phone}</Number></Dial></Response>`;
+    // Recording consent gate: fail closed unless the store's jurisdiction is
+    // known and one-party. See _shared/recordingConsent.ts.
+    const { attr: recAttr, decision: recDecision } = await recordAttrFor(admin, store.phone, {
+      mode: 'record-from-answer',
+    });
+    console.log(`[ambassador-direct-call] recording=${recAttr ? 'on' : 'off'} (${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ''})`);
+    const twiml = `<Response><Say voice="Polly.Joanna">Connecting you to ${store.store_name.replace(/[<>&"']/g, '')}</Say><Dial callerId="${callerId}"${recAttr} timeout="25"><Number>${store.phone}</Number></Dial></Response>`;
     const projectRef = SUPABASE_URL.split('//')[1].split('.')[0];
     const statusCb = `https://${projectRef}.functions.supabase.co/twilio-call-status?log_id=${log!.id}`;
 
     const form = new URLSearchParams({
       To: amb.personal_phone, From: callerId, Twiml: twiml,
       StatusCallback: statusCb,
-      Record: 'true',
+      // Outer-leg recording follows the same gate.
+      Record: recAttr ? 'true' : 'false',
     });
     ['initiated', 'ringing', 'answered', 'completed'].forEach((e) => form.append('StatusCallbackEvent', e));
 

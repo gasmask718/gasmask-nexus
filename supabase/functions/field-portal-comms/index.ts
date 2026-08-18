@@ -11,6 +11,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -251,9 +252,15 @@ Deno.serve(async (req) => {
       .single();
 
     const safeName = String(store.store_name || 'the store').replace(/[<>&"']/g, '');
+    // Recording consent gate: fail closed. The "this call is recorded" Say is
+    // heard by the worker leg only, so it is NOT an all-party announcement.
+    const { attr: recAttr, decision: recDecision } = await recordAttrFor(admin, storePhone, {
+      mode: 'record-from-answer',
+    });
+    console.log(`[field-portal-comms] recording=${recAttr ? 'on' : 'off'} (${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ''})`);
     const twiml =
-      `<Response><Say voice="Polly.Joanna">This call is recorded. Connecting you to ${safeName}.</Say>` +
-      `<Dial callerId="${fromNumber}" record="record-from-answer" timeout="25">` +
+      `<Response><Say voice="Polly.Joanna">${recAttr ? 'This call is recorded. ' : ''}Connecting you to ${safeName}.</Say>` +
+      `<Dial callerId="${fromNumber}"${recAttr} timeout="25">` +
       `<Number>${storePhone}</Number></Dial></Response>`;
 
     const projectRef = SUPABASE_URL.split('//')[1].split('.')[0];
@@ -262,7 +269,7 @@ Deno.serve(async (req) => {
       From: fromNumber,
       Twiml: twiml,
       StatusCallback: `https://${projectRef}.functions.supabase.co/twilio-call-status?log_id=${log?.id}`,
-      Record: 'true',
+      Record: recAttr ? 'true' : 'false',
     });
     ['initiated', 'ringing', 'answered', 'completed'].forEach((ev) =>
       form.append('StatusCallbackEvent', ev),

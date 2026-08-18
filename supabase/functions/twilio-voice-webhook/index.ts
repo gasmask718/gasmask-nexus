@@ -12,6 +12,7 @@ import {
   verifyTwilio,
 } from "../_shared/dialer.ts";
 import { TWILIO_SHARED_NUMBER } from "../_shared/twilio-operator.ts";
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
 
 function svc() {
   return createClient(
@@ -110,10 +111,17 @@ Deno.serve(async (req) => {
     return new Response(fallback, { headers: xmlHeaders });
   }
 
+  // Recording consent gate: fail closed on unknown jurisdiction or all-party state.
+  const { attr: recAttr, decision: recDecision } = await recordAttrFor(supabase, From, {
+    mode: "record-from-answer-dual",
+    callbackUrl: recordingCallback,
+  });
+  console.log(`[twilio-voice-webhook] recording=${recAttr ? "on" : "off"} (${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ""})`);
+
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna">This call may be recorded for quality and training. Please hold.</Say>
-  <Dial record="record-from-answer-dual" recordingStatusCallback="${escapeXml(recordingCallback)}" recordingStatusCallbackEvent="completed">
+  <Say voice="Polly.Joanna">${recAttr ? "This call may be recorded for quality and training. " : ""}Please hold.</Say>
+  <Dial${recAttr}>
     ${dialBody}
   </Dial>
 </Response>`;

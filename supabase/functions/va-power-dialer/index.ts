@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isSuppressed } from "../_shared/dnc.ts";
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,11 +42,21 @@ serve(async (req) => {
         );
       }
 
+      // Recording consent gate: fail closed (no record attribute) unless the
+      // callee's jurisdiction is known and one-party.
+      const { attr: recAttr, decision: recDecision } = await recordAttrFor(supabaseAdmin, leadPhoneParam, {
+        mode: "record-from-answer-dual",
+      });
+      const recCbAttrs = recAttr
+        ? ` recordingStatusCallback="${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}&event=recording" recordingStatusCallbackMethod="POST"`
+        : "";
+      console.log(
+        `[va-power-dialer] recording=${recAttr ? "on" : "off"} (${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ""})`,
+      );
+
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial callerId="${callerIdParam}" record="record-from-answer-dual" timeout="20"
-    recordingStatusCallback="${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}&event=recording"
-    recordingStatusCallbackMethod="POST"
+  <Dial callerId="${callerIdParam}"${recAttr}${recCbAttrs} timeout="20"
     action="${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}&event=dial-complete"
     method="POST">
     <Number statusCallback="${SUPABASE_URL}/functions/v1/brandaro-call-status?callLogId=${callLogId}&event=number-status"
@@ -53,6 +64,7 @@ serve(async (req) => {
       statusCallbackMethod="POST">${leadPhoneParam}</Number>
   </Dial>
 </Response>`;
+
 
       return new Response(twiml, {
         status: 200, headers: { ...corsHeaders, "Content-Type": "text/xml" },

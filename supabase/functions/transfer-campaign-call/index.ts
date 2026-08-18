@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -232,10 +233,17 @@ serve(async (req) => {
       const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${call_sid}.json`;
       const recordingCallback = `${supabaseUrl}/functions/v1/twilio-recording-callback`;
 
+      // Recording consent gate on the lead (external party). Fails closed.
+      const { attr: recAttr, decision: recDecision } = await recordAttrFor(supabase, toNumber, {
+        mode: "record-from-answer-dual",
+        callbackUrl: recordingCallback,
+      });
+      console.log(`[transfer-campaign-call] recording=${recAttr ? "on" : "off"} (${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ""})`);
+
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Matthew">Please hold while we connect you to an agent.</Say>
-  <Dial record="record-from-answer-dual" recordingStatusCallback="${recordingCallback}" recordingStatusCallbackMethod="POST" action="${supabaseUrl}/functions/v1/twilio-human-call-complete?phone_number=${encodeURIComponent(targetNumber)}&amp;queue_item_id=${encodeURIComponent(queue_item_id || "")}" timeout="30">
+  <Dial${recAttr} action="${supabaseUrl}/functions/v1/twilio-human-call-complete?phone_number=${encodeURIComponent(targetNumber)}&amp;queue_item_id=${encodeURIComponent(queue_item_id || "")}" timeout="30">
     <Number>${targetNumber}</Number>
   </Dial>
   <Say voice="Polly.Matthew">The agent was unavailable. Thank you for your time. Goodbye.</Say>

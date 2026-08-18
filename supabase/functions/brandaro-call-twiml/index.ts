@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { isSuppressed } from "../_shared/dnc.ts";
+import { recordAttrFor } from "../_shared/recordingConsent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -139,11 +140,22 @@ serve(async (req: Request) => {
     const actionCb = `${statusBase}&amp;event=dial-complete`;
     const numberCb = `${statusBase}&amp;event=number-status`;
 
+    // Recording consent gate: fail closed. We only record when the callee's
+    // jurisdiction is known AND one-party. See _shared/recordingConsent.ts.
+    const consentClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { attr: recAttr, decision: recDecision } = await recordAttrFor(consentClient, to, {
+      mode: "record-from-answer-dual",
+    });
+    const recCbAttrs = recAttr
+      ? ` recordingStatusCallback="${recordingCb}" recordingStatusCallbackMethod="POST"`
+      : "";
+    console.log(
+      `[brandaro-call-twiml] recording=${recAttr ? "on" : "off"} (${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ""})`,
+    );
+
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial callerId="${callerId}" record="record-from-answer-dual" timeout="30"
-    recordingStatusCallback="${recordingCb}"
-    recordingStatusCallbackMethod="POST"
+  <Dial callerId="${callerId}"${recAttr}${recCbAttrs} timeout="30"
     action="${actionCb}"
     method="POST">
     <Number statusCallback="${numberCb}"
@@ -151,6 +163,7 @@ serve(async (req: Request) => {
       statusCallbackMethod="POST">${to}</Number>
   </Dial>
 </Response>`;
+
 
     return new Response(twiml, {
       headers: { "Content-Type": "text/xml", ...corsHeaders },

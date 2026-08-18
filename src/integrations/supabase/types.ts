@@ -91653,6 +91653,36 @@ export type Database = {
           },
         ]
       }
+      recording_consent_policy: {
+        Row: {
+          consent_rule: string
+          contested: boolean
+          effective_from: string
+          notes: string | null
+          source: string | null
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          consent_rule: string
+          contested?: boolean
+          effective_from?: string
+          notes?: string | null
+          source?: string | null
+          state: string
+          updated_at?: string
+        }
+        Update: {
+          consent_rule?: string
+          contested?: boolean
+          effective_from?: string
+          notes?: string | null
+          source?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       refund_tickets: {
         Row: {
           ai_suggestion: string | null
@@ -105723,6 +105753,8 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           deleted_reason: string | null
+          derived_state: string | null
+          derived_timezone: string | null
           dialect_preference: string | null
           do_not_call: boolean | null
           do_not_call_reason: string | null
@@ -105748,6 +105780,9 @@ export type Database = {
           invoice_received_by: string | null
           is_historical: boolean
           is_simulation: boolean | null
+          jurisdiction_confidence: string | null
+          jurisdiction_resolved_at: string | null
+          jurisdiction_source: string | null
           language_preference: string | null
           languages: string[] | null
           last_contacted_at: string | null
@@ -105769,6 +105804,7 @@ export type Database = {
           personality_notes: string | null
           personality_profile_id: string | null
           phone: string | null
+          phone_last10: string | null
           phone_type: string | null
           phone_verified_at: string | null
           photo_url: string | null
@@ -105828,6 +105864,8 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           deleted_reason?: string | null
+          derived_state?: string | null
+          derived_timezone?: string | null
           dialect_preference?: string | null
           do_not_call?: boolean | null
           do_not_call_reason?: string | null
@@ -105853,6 +105891,9 @@ export type Database = {
           invoice_received_by?: string | null
           is_historical?: boolean
           is_simulation?: boolean | null
+          jurisdiction_confidence?: string | null
+          jurisdiction_resolved_at?: string | null
+          jurisdiction_source?: string | null
           language_preference?: string | null
           languages?: string[] | null
           last_contacted_at?: string | null
@@ -105874,6 +105915,7 @@ export type Database = {
           personality_notes?: string | null
           personality_profile_id?: string | null
           phone?: string | null
+          phone_last10?: string | null
           phone_type?: string | null
           phone_verified_at?: string | null
           photo_url?: string | null
@@ -105933,6 +105975,8 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           deleted_reason?: string | null
+          derived_state?: string | null
+          derived_timezone?: string | null
           dialect_preference?: string | null
           do_not_call?: boolean | null
           do_not_call_reason?: string | null
@@ -105958,6 +106002,9 @@ export type Database = {
           invoice_received_by?: string | null
           is_historical?: boolean
           is_simulation?: boolean | null
+          jurisdiction_confidence?: string | null
+          jurisdiction_resolved_at?: string | null
+          jurisdiction_source?: string | null
           language_preference?: string | null
           languages?: string[] | null
           last_contacted_at?: string | null
@@ -105979,6 +106026,7 @@ export type Database = {
           personality_notes?: string | null
           personality_profile_id?: string | null
           phone?: string | null
+          phone_last10?: string | null
           phone_type?: string | null
           phone_verified_at?: string | null
           photo_url?: string | null
@@ -132993,6 +133041,39 @@ export type Database = {
           },
         ]
       }
+      zip_jurisdiction_ranges: {
+        Row: {
+          created_at: string
+          id: number
+          priority: number
+          state: string
+          timezone: string
+          tz_precision: string
+          zip_end: number
+          zip_start: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          priority?: number
+          state: string
+          timezone: string
+          tz_precision: string
+          zip_end: number
+          zip_start: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          priority?: number
+          state?: string
+          timezone?: string
+          tz_precision?: string
+          zip_end?: number
+          zip_start?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       actor_directory_v: {
@@ -143460,6 +143541,7 @@ export type Database = {
       normalize_brand_name: { Args: { raw_brand: string }; Returns: string }
       normalize_phone: { Args: { raw_phone: string }; Returns: string }
       normalize_phone_e164: { Args: { p_phone: string }; Returns: string }
+      normalize_state_text: { Args: { p_state: string }; Returns: string }
       normalize_store_address: {
         Args: {
           p_city: string
@@ -143723,6 +143805,8 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           deleted_reason: string | null
+          derived_state: string | null
+          derived_timezone: string | null
           dialect_preference: string | null
           do_not_call: boolean | null
           do_not_call_reason: string | null
@@ -143748,6 +143832,9 @@ export type Database = {
           invoice_received_by: string | null
           is_historical: boolean
           is_simulation: boolean | null
+          jurisdiction_confidence: string | null
+          jurisdiction_resolved_at: string | null
+          jurisdiction_source: string | null
           language_preference: string | null
           languages: string[] | null
           last_contacted_at: string | null
@@ -143769,6 +143856,7 @@ export type Database = {
           personality_notes: string | null
           personality_profile_id: string | null
           phone: string | null
+          phone_last10: string | null
           phone_type: string | null
           phone_verified_at: string | null
           photo_url: string | null
@@ -143833,7 +143921,25 @@ export type Database = {
         }[]
       }
       resolve_previous_customers_count: { Args: never; Returns: number }
+      resolve_recording_consent: {
+        Args: { p_phone: string }
+        Returns: {
+          consent_rule: string
+          contested: boolean
+          source: string
+          state: string
+          timezone: string
+        }[]
+      }
       resolve_short_link: { Args: { p_code: string }; Returns: string }
+      resolve_zip_jurisdiction: {
+        Args: { p_zip: string }
+        Returns: {
+          state: string
+          timezone: string
+          tz_precision: string
+        }[]
+      }
       restore_deleted: {
         Args: { _record_id: string; _table_name: string }
         Returns: undefined
