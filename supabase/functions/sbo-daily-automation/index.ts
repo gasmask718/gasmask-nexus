@@ -533,24 +533,20 @@ serve(async (req) => {
         .eq('active', true);
 
       if (testRecipients?.length) {
-        const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')!;
-        const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')!;
-        const FROM = Deno.env.get('TWILIO_PHONE_NUMBER')!;
+        const FROM = Deno.env.get('TWILIO_PHONE_NUMBER') || undefined;
         const alertMsg = `⚠️ CHINGWORLD AUTOMATION ALERT\n${log.errors.length} step(s) failed:\n${log.errors.slice(0, 3).join('\n')}\nManual run may be needed today.`;
+        const alertDay = new Date().toISOString().split('T')[0];
+        const alertHash = await smsContentHash(alertMsg);
 
         for (const r of testRecipients) {
-          const res = await fetch(
-            `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': 'Basic ' + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`),
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              body: new URLSearchParams({ From: FROM, To: r.phone_number, Body: alertMsg }),
-            }
-          );
-          await res.text();
+          await sendSms({
+            to: r.phone_number,
+            body: alertMsg,
+            idempotencyKey: `sbo-auto-alert-${alertDay}-${alertHash}-${r.phone_number}`,
+            from: FROM,
+            purpose: 'sbo_automation_alert',
+            skipCooldown: true,
+          });
         }
       }
     } catch { /* alert sending is best-effort */ }
