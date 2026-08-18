@@ -280,6 +280,15 @@ Deno.serve(async (req) => {
         return json(await listNumbers());
       case "backfill":
         return json(await backfill());
+      case "number_probe":
+        return json(
+          await numberProbe(
+            url.searchParams.get("number") || payload.number || "",
+            Number(url.searchParams.get("days") || payload.days || 90),
+          ),
+        );
+      case "ownership":
+        return json(await ownership(url.searchParams.get("number") || payload.number || ""));
       case "snapshot":
         return json(await snapshot());
       case "stop_test":
