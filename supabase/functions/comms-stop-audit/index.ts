@@ -246,6 +246,166 @@ async function ownership(numberRaw: string) {
   };
 }
 
+const OURS = "qalaaroashbggynpvqct";
+
+function projectRef(u?: string | null): string | null {
+  if (!u) return null;
+  const m = String(u).match(/https?:\/\/([a-z0-9]{20})\.supabase\.co/i) ||
+    String(u).match(/https?:\/\/([a-z0-9-]+)\./i);
+  return m ? m[1] : null;
+}
+
+// READ-ONLY: every number on the main account + every subaccount, classified by
+// which Supabase project its sms/voice/status webhooks point at.
+async function foreignScan() {
+  const accountsRes = await tw(`/2010-04-01/Accounts.json?PageSize=50`);
+  const accounts = (accountsRes.body?.accounts ?? []).map((a: any) => ({
+    sid: a.sid,
+    friendly_name: a.friendly_name,
+    status: a.status,
+    is_main: a.sid === SID,
+  }));
+
+  const rows: any[] = [];
+  for (const acct of accounts) {
+    let url = `/2010-04-01/Accounts/${acct.sid}/IncomingPhoneNumbers.json?PageSize=100`;
+    let guard = 0;
+    while (url && guard++ < 10) {
+      const r = await tw(url);
+      if (!r.ok) {
+        rows.push({ account_sid: acct.sid, error: r.body });
+        break;
+      }
+      for (const n of r.body?.incoming_phone_numbers ?? []) {
+        const refs = {
+          sms: projectRef(n.sms_url),
+          voice: projectRef(n.voice_url),
+          status: projectRef(n.status_callback),
+        };
+        const foreign = Object.values(refs).filter((x) => x && x !== OURS) as string[];
+        rows.push({
+          account_sid: acct.sid,
+          account_name: acct.friendly_name,
+          is_main_account: acct.is_main,
+          phone_number: n.phone_number,
+          sid: n.sid,
+          date_created: n.date_created,
+          sms_url: n.sms_url || null,
+          voice_url: n.voice_url || null,
+          status_callback: n.status_callback || null,
+          refs,
+          foreign_refs: [...new Set(foreign)],
+          is_foreign: foreign.length > 0,
+        });
+      }
+      url = r.body?.next_page_uri || "";
+    }
+  }
+
+  const foreignRows = rows.filter((r) => r.is_foreign);
+  const byRef: Record<string, string[]> = {};
+  for (const r of foreignRows) {
+    for (const ref of r.foreign_refs) (byRef[ref] ||= []).push(r.phone_number);
+  }
+  return {
+    accounts,
+    total_numbers: rows.length,
+    foreign_count: foreignRows.length,
+    foreign_numbers_by_project: byRef,
+    foreign_numbers: foreignRows,
+    all_numbers: rows,
+  };
+}
+
+// READ-ONLY: billed cost + recordings for calls touching a number.
+async function callCost(numberRaw: string, days = 120) {
+  const number = numberRaw.startsWith("+") ? numberRaw : `+${numberRaw.replace(/\D/g, "")}`;
+  const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+  const calls: any[] = [];
+  for (const dir of ["To", "From"] as const) {
+    let url =
+      `/2010-04-01/Accounts/${SID}/Calls.json?${dir}=${encodeURIComponent(number)}&StartTime%3E=${since}&PageSize=100`;
+    let guard = 0;
+    while (url && guard++ < 10) {
+      const r = await tw(url);
+      if (!r.ok) break;
+      calls.push(...(r.body?.calls ?? []));
+      url = r.body?.next_page_uri || "";
+    }
+  }
+  const seen = new Set<string>();
+  const uniq = calls.filter((c) => (seen.has(c.sid) ? false : (seen.add(c.sid), true)));
+  const totalPrice = uniq.reduce((s, c) => s + Math.abs(Number(c.price || 0)), 0);
+  const totalSeconds = uniq.reduce((s, c) => s + Number(c.duration || 0), 0);
+
+  const recRes = await tw(
+    `/2010-04-01/Accounts/${SID}/Recordings.json?DateCreated%3E=${since}&PageSize=100`,
+  );
+  const callSids = new Set(uniq.map((c) => c.sid));
+  const recordings = (recRes.body?.recordings ?? [])
+    .filter((r: any) => callSids.has(r.call_sid))
+    .map((r: any) => ({
+      sid: r.sid,
+      call_sid: r.call_sid,
+      duration: r.duration,
+      channels: r.channels,
+      price: r.price,
+      date_created: r.date_created,
+      status: r.status,
+    }));
+
+  return {
+    number,
+    since,
+    call_count: uniq.length,
+    total_billed_usd: Number(totalPrice.toFixed(4)),
+    total_duration_seconds: totalSeconds,
+    recordings_on_our_account: recordings.length,
+    recordings,
+    calls: uniq.map((c) => ({
+      sid: c.sid,
+      from: c.from,
+      to: c.to,
+      direction: c.direction,
+      status: c.status,
+      start_time: c.start_time,
+      duration: c.duration,
+      price: c.price,
+      price_unit: c.price_unit,
+    })),
+  };
+}
+
+// WRITE (SMS ONLY): repoint a number's SmsUrl. Voice is never touched here.
+async function repointSms(payload: any) {
+  const number = String(payload.number || "");
+  const target = String(payload.sms_url || "");
+  if (!number.startsWith("+") || !target.startsWith("https://")) {
+    return { error: "number (E.164) and sms_url (https) are required" };
+  }
+  const cfg = await tw(
+    `/2010-04-01/Accounts/${SID}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(number)}`,
+  );
+  const n = (cfg.body?.incoming_phone_numbers ?? [])[0];
+  if (!n) return { error: "number not found on main account" };
+  const before = { sms_url: n.sms_url, sms_method: n.sms_method, voice_url: n.voice_url };
+  const upd = await tw(`/2010-04-01/Accounts/${SID}/IncomingPhoneNumbers/${n.sid}.json`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ SmsUrl: target, SmsMethod: "POST" }).toString(),
+  });
+  return {
+    number,
+    before,
+    after: upd.ok
+      ? { sms_url: upd.body?.sms_url, sms_method: upd.body?.sms_method, voice_url: upd.body?.voice_url }
+      : null,
+    ok: upd.ok,
+    status: upd.status,
+    error: upd.ok ? null : upd.body,
+  };
+}
+
 async function stopTest(payload: any) {
   const to = payload.to || "+18776818621";
   const from = payload.from;
