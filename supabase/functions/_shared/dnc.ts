@@ -1,6 +1,21 @@
 // Shared DNC enforcement + disposition helpers for Dynasty Connect edge functions.
 // Keep dependency-free — uses fetch + supabase REST so it works under any client.
 
+/**
+ * ONE normalization function, used by every suppression read AND write.
+ *
+ * dnc_list stores E.164 ("+17189222137"); lead tables store display format
+ * ("(347) 201-6324"). An exact string comparison between those never matches,
+ * so a DNC check written that way passes code review and cannot ever fire.
+ * Rather than pick a format and migrate ~1,900 lead rows, we normalize at both
+ * ends: dnc_list.phone_last10 / opt_out_events.phone_last10 are generated
+ * columns holding the same last-10 key this function produces.
+ */
+export function phoneLast10(raw: string | null | undefined): string {
+  const d = String(raw ?? "").replace(/\D/g, "");
+  return d.length >= 10 ? d.slice(-10) : "";
+}
+
 export function normalizeE164(raw: string | null | undefined): string {
   if (!raw) return "";
   let d = String(raw).replace(/\D/g, "");
@@ -23,10 +38,22 @@ export async function isOnDNC(
   // NOTE: we deliberately use .in() rather than .or() here. PostgREST `or=`
   // filter strings are sent raw, so the leading "+" in an E.164 number decodes
   // as a space and the match silently misses. .in() values are URL-encoded.
+  const last10 = phoneLast10(phone);
   const digits = e164.replace(/\D/g, "");
   const variants = Array.from(new Set([e164, digits, String(phone || "")].filter(Boolean)));
 
   try {
+    // Canonical key first — matches regardless of stored format.
+    if (last10) {
+      const { data, error } = await supabase
+        .from("dnc_list")
+        .select("reason")
+        .eq("phone_last10", last10)
+        .limit(1);
+      if (error) throw error;
+      const hit = Array.isArray(data) ? data[0] : data;
+      if (hit) return { blocked: true, reason: hit.reason || "dnc_list" };
+    }
     for (const col of ["phone_e164", "phone_number"]) {
       const { data, error } = await supabase
         .from("dnc_list")
@@ -110,14 +137,29 @@ export async function isSuppressed(
   const e164 = normalizeE164(phone);
   if (!e164) return { blocked: false };
   const digits = e164.replace(/\D/g, "");
+  const last10 = phoneLast10(phone);
 
   // NOTE: we deliberately use .in() rather than .or() here. PostgREST `or=`
   // filter strings are sent raw, so a leading "+" decodes as a space and an
   // E.164 match silently misses. .in() values are properly URL-encoded.
   const variants = Array.from(new Set([e164, digits, String(phone || "")].filter(Boolean)));
 
-  // 1) dnc_list — normalized column + legacy column (two encoded .in() queries).
+  // 1) dnc_list — canonical last-10 key first, then the legacy exact columns
+  //    (older rows predate the generated column backfill only in theory —
+  //    generated columns backfill on add — but the exact match is cheap).
   try {
+    if (last10) {
+      const { data, error } = await supabase
+        .from("dnc_list")
+        .select("reason")
+        .eq("phone_last10", last10)
+        .limit(1);
+      if (error) throw error;
+      const hit = Array.isArray(data) ? data[0] : data;
+      if (hit) {
+        return { blocked: true, reason: hit.reason || "dnc_list", source: "dnc_list" };
+      }
+    }
     for (const col of ["phone_e164", "phone_number"]) {
       const { data, error } = await supabase
         .from("dnc_list")
@@ -135,8 +177,18 @@ export async function isSuppressed(
     return { blocked: true, reason: "suppression_lookup_failed", source: "dnc_list" };
   }
 
-  // 2) opt_out_events — stores digits-only phone_number (see send-sms).
+  // 2) opt_out_events — canonical last-10 key, then legacy exact variants.
   try {
+    if (last10) {
+      const { data, error } = await supabase
+        .from("opt_out_events")
+        .select("id")
+        .eq("phone_last10", last10)
+        .limit(1);
+      if (error) throw error;
+      const hit = Array.isArray(data) ? data[0] : data;
+      if (hit) return { blocked: true, reason: "opted_out", source: "opt_out_events" };
+    }
     const { data, error } = await supabase
       .from("opt_out_events")
       .select("id")

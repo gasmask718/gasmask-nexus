@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isSuppressed } from "../_shared/dnc.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +21,25 @@ serve(async (req) => {
       const leadPhoneParam = url.searchParams.get("leadPhone") || "";
       const callLogId = url.searchParams.get("callLogId") || "";
       const callerIdParam = url.searchParams.get("callerId") || "";
+
+      // Same enforcement rule as brandaro-call-twiml: this branch emits <Dial>,
+      // so it is a dialing gate and must check suppression itself. Fails closed.
+      const twimlSuppression = await isSuppressed(supabaseAdmin, leadPhoneParam);
+      if (twimlSuppression.blocked) {
+        console.warn(`[va-power-dialer] BLOCKED twiml dial to ${leadPhoneParam} — ${twimlSuppression.reason}`);
+        if (callLogId) {
+          try {
+            await supabaseAdmin
+              .from("va_call_logs")
+              .update({ call_status: "dnc_skipped", disposition: "dnc" })
+              .eq("id", callLogId);
+          } catch (_) { /* logging must not unblock the gate */ }
+        }
+        return new Response(
+          `<?xml version="1.0" encoding="UTF-8"?>\n<Response><Say>This number is on the do not call list. The call cannot be placed.</Say><Hangup/></Response>`,
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "text/xml" } },
+        );
+      }
 
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -58,14 +78,25 @@ serve(async (req) => {
         });
       }
 
-      // DNC check
-      const { data: dncMatch } = await supabaseAdmin
-        .from("dnc_list")
-        .select("id")
-        .eq("phone_number", leadPhone)
-        .maybeSingle();
+      // SUPPRESSION — FAST UX SKIP ONLY. THIS IS NOT THE ENFORCEMENT POINT.
+      //
+      // This function does not place the call: the browser does, via the Twilio
+      // Voice SDK, and Twilio then fetches TwiML from `brandaro-call-twiml`.
+      // Everything we return here is a JSON response the client is *trusted* to
+      // honour, and a client cannot be trusted — a modified page, a stale tab, or
+      // a replayed TwiML App request reaches <Dial> without ever calling us.
+      // The gate that actually blocks the dial lives in `brandaro-call-twiml`,
+      // immediately before <Dial>. Keep this check: it saves the VA a wasted dial
+      // and produces the dnc_skipped log row. Do not treat it as compliance.
+      //
+      // Previously this did .eq("phone_number", leadPhone) against dnc_list.
+      // dnc_list stores E.164 and lead tables store "(347) 201-6324", so that
+      // comparison could never match — a check that reported "DNC checked" in
+      // review and was incapable of firing. isSuppressed() normalizes both ends
+      // (last-10 key) and also covers SMS opt-outs.
+      const suppression = await isSuppressed(supabaseAdmin, leadPhone);
 
-      if (dncMatch) {
+      if (suppression.blocked) {
         await supabaseAdmin.from("va_call_logs").insert({
           lead_id: leadId || null,
           va_id: vaId,
@@ -80,7 +111,11 @@ serve(async (req) => {
           });
         } catch (_) { /* leaderboard optional */ }
 
-        return new Response(JSON.stringify({ skipped: true, reason: "dnc" }), {
+        return new Response(JSON.stringify({
+          skipped: true,
+          reason: suppression.reason || "dnc",
+          source: suppression.source || "dnc_list",
+        }), {
           status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }

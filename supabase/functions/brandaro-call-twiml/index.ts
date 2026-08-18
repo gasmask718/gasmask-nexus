@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { isSuppressed } from "../_shared/dnc.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,6 +62,46 @@ serve(async (req: Request) => {
       return new Response(errorTwiml, {
         headers: { "Content-Type": "text/xml", ...corsHeaders },
       });
+    }
+
+    // ================== SUPPRESSION ENFORCEMENT (the real gate) ==================
+    // This is the last server-controlled point before a real phone rings, so the
+    // suppression check belongs HERE, not in va-power-dialer. va-power-dialer
+    // returns JSON the browser is trusted to honour; a modified client, a stale
+    // tab, or a replayed TwiML App request skips it entirely and lands straight
+    // on this endpoint. Twilio will not dial anything we do not put in the TwiML.
+    //
+    // Fails CLOSED: isSuppressed() returns blocked on lookup error, and a
+    // missing service-role key means we cannot check, so we refuse the dial.
+    {
+      const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      let blocked = true;
+      let reason = "suppression_check_unavailable";
+      if (SERVICE_ROLE_KEY) {
+        const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+        const result = await isSuppressed(admin, to);
+        blocked = result.blocked;
+        reason = result.reason || "suppressed";
+        if (blocked && callLogId) {
+          try {
+            await admin
+              .from("va_call_logs")
+              .update({ call_status: "dnc_skipped", disposition: "dnc" })
+              .eq("id", callLogId);
+          } catch (_) { /* logging must not unblock the gate */ }
+        }
+      }
+      if (blocked) {
+        console.warn(`[brandaro-call-twiml] BLOCKED dial to ${to} — ${reason}`);
+        const blockedTwiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say>This number is on the do not call list. The call cannot be placed.</Say>
+  <Hangup/>
+</Response>`;
+        return new Response(blockedTwiml, {
+          headers: { "Content-Type": "text/xml", ...corsHeaders },
+        });
+      }
     }
 
     // Use VA-selected From number when it's valid E.164 AND owned by us
