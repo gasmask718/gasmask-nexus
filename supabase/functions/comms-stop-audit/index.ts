@@ -449,6 +449,17 @@ Deno.serve(async (req) => {
         );
       case "ownership":
         return json(await ownership(url.searchParams.get("number") || payload.number || ""));
+      case "foreign_scan":
+        return json(await foreignScan());
+      case "call_cost":
+        return json(
+          await callCost(
+            url.searchParams.get("number") || payload.number || "",
+            Number(url.searchParams.get("days") || payload.days || 120),
+          ),
+        );
+      case "repoint_sms":
+        return json(await repointSms(payload));
       case "snapshot":
         return json(await snapshot());
       case "stop_test":
