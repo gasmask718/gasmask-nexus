@@ -159,6 +159,93 @@ async function snapshot() {
   };
 }
 
+// READ-ONLY: full config + recent message traffic for a single number.
+async function numberProbe(numberRaw: string, days = 90) {
+  const number = numberRaw.startsWith("+") ? numberRaw : `+${numberRaw.replace(/\D/g, "")}`;
+  const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+  const cfg = await tw(
+    `/2010-04-01/Accounts/${SID}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(number)}`,
+  );
+  const n = (cfg.body?.incoming_phone_numbers ?? [])[0] ?? null;
+
+  const grab = async (dir: "To" | "From") => {
+    const r = await tw(
+      `/2010-04-01/Accounts/${SID}/Messages.json?${dir}=${encodeURIComponent(number)}&DateSent%3E=${since}&PageSize=50`,
+    );
+    return (r.body?.messages ?? []).map((m: any) => ({
+      sid: m.sid,
+      direction: m.direction,
+      from: m.from,
+      to: m.to,
+      status: m.status,
+      error_code: m.error_code,
+      date_sent: m.date_sent,
+      num_segments: m.num_segments,
+      body_preview: String(m.body || "").slice(0, 60),
+    }));
+  };
+  const calls = await tw(
+    `/2010-04-01/Accounts/${SID}/Calls.json?StartTime%3E=${since}&PageSize=50`,
+  );
+
+  return {
+    number,
+    since,
+    config: n && {
+      sid: n.sid,
+      friendly_name: n.friendly_name,
+      date_created: n.date_created,
+      account_sid: n.account_sid,
+      sms_url: n.sms_url,
+      sms_method: n.sms_method,
+      sms_fallback_url: n.sms_fallback_url,
+      status_callback: n.status_callback,
+      voice_url: n.voice_url,
+      voice_application_sid: n.voice_application_sid,
+      sms_application_sid: n.sms_application_sid,
+      bundle_sid: n.bundle_sid,
+      trunk_sid: n.trunk_sid,
+      emergency_status: n.emergency_status,
+      capabilities: n.capabilities,
+    },
+    inbound_to_number: await grab("To"),
+    outbound_from_number: await grab("From"),
+    calls_involving_number: (calls.body?.calls ?? [])
+      .filter((c: any) => c.to === number || c.from === number)
+      .map((c: any) => ({ sid: c.sid, from: c.from, to: c.to, status: c.status, start_time: c.start_time })),
+  };
+}
+
+// READ-ONLY: which Messaging Service (if any) owns a number, and subaccount list.
+async function ownership(numberRaw: string) {
+  const number = numberRaw.startsWith("+") ? numberRaw : `+${numberRaw.replace(/\D/g, "")}`;
+  const svc = await tw(`/v1/Services?PageSize=50`);
+  const hits: any[] = [];
+  for (const s of svc.body?.services ?? []) {
+    const nums = await tw(`/v1/Services/${s.sid}/PhoneNumbers?PageSize=100`);
+    if ((nums.body?.phone_numbers ?? []).some((p: any) => p.phone_number === number)) {
+      hits.push({
+        sid: s.sid,
+        friendly_name: s.friendly_name,
+        inbound_request_url: s.inbound_request_url,
+        use_inbound_webhook_on_number: s.use_inbound_webhook_on_number,
+      });
+    }
+  }
+  const subs = await tw(`/2010-04-01/Accounts.json?PageSize=50`);
+  return {
+    number,
+    messaging_services: hits,
+    accounts: (subs.body?.accounts ?? []).map((a: any) => ({
+      sid: a.sid,
+      friendly_name: a.friendly_name,
+      status: a.status,
+      date_created: a.date_created,
+      is_main: a.sid === SID,
+    })),
+  };
+}
+
 async function stopTest(payload: any) {
   const to = payload.to || "+18776818621";
   const from = payload.from;
@@ -193,6 +280,15 @@ Deno.serve(async (req) => {
         return json(await listNumbers());
       case "backfill":
         return json(await backfill());
+      case "number_probe":
+        return json(
+          await numberProbe(
+            url.searchParams.get("number") || payload.number || "",
+            Number(url.searchParams.get("days") || payload.days || 90),
+          ),
+        );
+      case "ownership":
+        return json(await ownership(url.searchParams.get("number") || payload.number || ""));
       case "snapshot":
         return json(await snapshot());
       case "stop_test":
