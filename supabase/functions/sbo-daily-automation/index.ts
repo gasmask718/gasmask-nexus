@@ -221,30 +221,32 @@ serve(async (req) => {
 
       msg += `💡 Bet responsibly\nGood luck! 🎯`;
 
-      // Send via Twilio directly
-      const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')!;
-      const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')!;
-      const FROM = Deno.env.get('TWILIO_PHONE_NUMBER')!;
-      const authHeader = 'Basic ' + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`);
-      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`;
+      // Send through the canonical send-sms chokepoint
+      const FROM = Deno.env.get('TWILIO_PHONE_NUMBER') || undefined;
+      const today = new Date().toISOString().split('T')[0];
+      const bodyHash = await smsContentHash(msg);
 
       let sent = 0;
       let failed = 0;
 
       for (const recipient of recipients) {
         try {
-          const twilioRes = await fetch(twilioUrl, {
-            method: 'POST',
-            headers: { 'Authorization': authHeader, 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ From: FROM, To: recipient.phone_number, Body: msg }),
+          const result = await sendSms({
+            to: recipient.phone_number,
+            body: msg,
+            idempotencyKey: `sbo-auto-${today}-${bodyHash}-${recipient.phone_number}`,
+            from: FROM,
+            purpose: 'sbo_daily_automation',
+            metadata: { recipient_name: recipient.name },
           });
-          if (twilioRes.ok) {
-            await twilioRes.json();
+          if (result.success) {
             sent++;
             console.log(`SMS sent to ${recipient.name}`);
           } else {
-            const errText = await twilioRes.text();
-            console.error(`SMS failed for ${recipient.name}:`, errText);
+            console.error(
+              `SMS failed for ${recipient.name} (${result.status}):`,
+              result.errorMessage || result.errorCode || 'unknown',
+            );
             failed++;
           }
           await new Promise(r => setTimeout(r, 300));
