@@ -77,3 +77,21 @@ Three options, and it is yours:
 
 Until you choose, the position is: texts come to us and are handled properly; calls still
 go to Playboxxx, still loop, still record.
+
+## On the calls: what redirecting them would actually cost
+
+We have deliberately **not** touched the call handling, because Twilio shows us traffic, not
+intent. Zero calls in 120 days is equally consistent with "nobody uses this" and "a flow
+exists and hasn't fired yet." That is a question for you, not a guess for us.
+
+When you want it, here is the honest shape of the change:
+
+- It is **one API call** to point the calls at our own handler, and **one API call** to put
+  it back. The current settings are written down, so it is fully reversible.
+- It stops the loop immediately — our handler answers and does not dial the number back.
+- Nothing places outgoing calls from this number, so nothing outbound depends on it.
+- If a live Playboxxx call flow *does* expect calls here, it starts failing **visibly, in
+  our logs**, instead of silently in a system we cannot see. That is a better failure than
+  the one we have now.
+- Leaving it: the loop fires again on the next call in, including wrong numbers and
+  robocallers. 120 days of it cost 53 cents. Nothing stops a third event.
