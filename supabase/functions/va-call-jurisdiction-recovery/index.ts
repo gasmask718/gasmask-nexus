@@ -57,6 +57,16 @@ Deno.serve(async (req) => {
   const dryRun = String(body.dry_run ?? url.searchParams.get("dry_run") ?? "") === "1";
   const limit = Number(body.limit ?? url.searchParams.get("limit") ?? 500);
 
+  // Platform-owned numbers. On inbound calls the To side is ours, so the
+  // counterparty is the From side — picking blindly would classify our own
+  // toll-free as the callee.
+  const owned = new Set<string>();
+  const last10 = (v: string) => (v || "").replace(/\D/g, "").slice(-10);
+  for (const t of ["dc_phone_numbers", "va_phone_numbers"]) {
+    const { data } = await supabase.from(t).select("phone_number").limit(2000);
+    for (const r of data ?? []) if (r?.phone_number) owned.add(last10(r.phone_number));
+  }
+
   const { data: rows, error: rowsErr } = await supabase
     .from("va_call_logs")
     .select("id, call_sid, recording_sid, twilio_number, called_at, duration_seconds")
