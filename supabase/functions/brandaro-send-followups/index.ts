@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { errText } from "../_shared/errText.ts";
+import { sendSms } from "../_shared/sendSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,7 +76,13 @@ Deno.serve(async (req) => {
             messageContent += ` P.S. You can also grab a quick 15-min call here to see your demo live: ${calendlyLink}`;
           }
 
-          const result = await sendTwilioSms(phone, messageContent, lead.business_name);
+          const result = await sendBrandaroSms(
+            phone,
+            messageContent,
+            `brandaro-fus-${followup.id}-${followup.retry_count || 0}`,
+            "brandaro_followup_sequence",
+            { followup_id: followup.id, lead_id: followup.lead_id, business_name: lead.business_name },
+          );
           
           await supabase.from("brandaro_followup_sequences").update({
             status: "sent",
@@ -148,7 +155,13 @@ Deno.serve(async (req) => {
       const msg = nudgeMessages[nudgeIdx];
 
       try {
-        await sendTwilioSms(lead.phone_number, msg, lead.business_name);
+        await sendBrandaroSms(
+          lead.phone_number,
+          msg,
+          `brandaro-nudge-${deal.id}-${deal.nudge_count || 0}`,
+          "brandaro_close_nudge",
+          { deal_id: deal.id, lead_id: deal.lead_id, business_name: lead.business_name },
+        );
         
         await supabase.from("brandaro_close_pipeline").update({
           nudge_count: (deal.nudge_count || 0) + 1,
@@ -237,40 +250,35 @@ async function markFailed(supabase: any, id: string, reason: string) {
   }).eq("id", id);
 }
 
-async function sendTwilioSms(to: string, body: string, businessName?: string): Promise<{ sid?: string }> {
-  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const fromNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
+/**
+ * Routes through the canonical `send-sms` function so DNC/suppression,
+ * idempotency, cooldowns and the outbound_messages audit trail all apply.
+ * Throws on failure to preserve the caller's retry/backoff behavior.
+ */
+async function sendBrandaroSms(
+  to: string,
+  body: string,
+  idempotencyKey: string,
+  purpose: string,
+  metadata?: Record<string, unknown>,
+): Promise<{ sid?: string }> {
+  const result = await sendSms({
+    to: normalizePhone(to),
+    body,
+    idempotencyKey,
+    from: Deno.env.get("BRANDARO_TWILIO_NUMBER") || Deno.env.get("TWILIO_PHONE_NUMBER") || undefined,
+    purpose,
+    skipCooldown: true,
+    metadata,
+  });
 
-  if (!accountSid || !authToken || !fromNumber) {
-    throw new Error("Twilio credentials not configured");
+  if (!result.success) {
+    throw new Error(
+      `SMS send failed (${result.status}): ${result.errorMessage || result.errorCode || "unknown"}`,
+    );
   }
 
-  // Normalize phone to E.164
-  const normalizedTo = normalizePhone(to);
-
-  const response = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        To: normalizedTo,
-        From: fromNumber,
-        Body: body,
-      }),
-    }
-  );
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(`Twilio SMS failed [${response.status}]: ${JSON.stringify(data)}`);
-  }
-
-  return { sid: data.sid };
+  return { sid: result.providerMessageId ?? undefined };
 }
 
 async function sendSendGridEmail(to: string, businessName: string, content: string): Promise<{ messageId?: string }> {

@@ -1,34 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { sendSms } from '../_shared/sendSms.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-async function sendSMS(to: string, body: string): Promise<any> {
-  const ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')!;
-  const AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')!;
-  const FROM = Deno.env.get('TWILIO_PHONE_NUMBER')!;
-
-  const response = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${ACCOUNT_SID}/Messages.json`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Basic ' + btoa(`${ACCOUNT_SID}:${AUTH_TOKEN}`),
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({ To: to, From: FROM, Body: body }),
-    }
-  );
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Twilio error: ${response.status} — ${err}`);
-  }
-  return response.json();
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -97,14 +74,27 @@ serve(async (req) => {
         msgBody = `(${i + 1}/${messages.length}) ` + msgBody;
       }
 
-      const result = await sendSMS(phone, msgBody);
-      sids.push(result.sid);
+      const result = await sendSms({
+        to: phone,
+        body: msgBody,
+        idempotencyKey: `sbo-brief-${briefing.id}-${i}`,
+        from: Deno.env.get('TWILIO_PHONE_NUMBER') || undefined,
+        purpose: 'sbo_daily_briefing',
+        skipCooldown: true,
+        metadata: { briefing_id: briefing.id, part: i + 1, parts: messages.length },
+      });
+
+      if (!result.success) {
+        throw new Error(`SMS send failed (${result.status}): ${result.errorMessage || result.errorCode || 'unknown'}`);
+      }
+
+      sids.push(result.providerMessageId ?? '');
 
       await supabase.from('sbo_sms_log').insert({
         direction: 'outbound',
         phone_number: phone,
         message_body: msgBody,
-        twilio_sid: result.sid,
+        twilio_sid: result.providerMessageId,
         briefing_id: briefing.id,
       });
 
