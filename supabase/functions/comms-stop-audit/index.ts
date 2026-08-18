@@ -22,7 +22,9 @@ const SB_SR = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const basic = () => `Basic ${btoa(`${SID}:${TOKEN}`)}`;
 
 async function tw(path: string, init?: RequestInit) {
-  const r = await fetch(`https://api.twilio.com${path}`, {
+  // Messaging Services live on messaging.twilio.com; everything else on api.twilio.com.
+  const host = path.startsWith("/v1/Services") ? "https://messaging.twilio.com" : "https://api.twilio.com";
+  const r = await fetch(path.startsWith("http") ? path : `${host}${path}`, {
     ...init,
     headers: { Authorization: basic(), ...(init?.headers || {}) },
   });
@@ -45,7 +47,8 @@ async function sb(path: string, init?: RequestInit) {
 }
 
 async function listServices() {
-  const svc = await tw(`/2010-04-01/../v1/Services?PageSize=50`.replace("/2010-04-01/../", "/"));
+  const svc = await tw(`/v1/Services?PageSize=50`);
+  if (!svc.ok) return { error: svc.body, status: svc.status };
   const services = svc.body?.services ?? [];
   const out: any[] = [];
   for (const s of services) {
@@ -78,6 +81,7 @@ async function listNumbers() {
     if (!r.ok) return { error: r.body, fetched: all.length };
     all.push(...(r.body?.incoming_phone_numbers ?? []));
     url = r.body?.next_page_uri || "";
+    if (all.length > 500) break;
   }
   const db = await sb(
     "dc_phone_numbers?select=phone_number,sms_webhook_url,twilio_sid,sid,business,status,is_active",
