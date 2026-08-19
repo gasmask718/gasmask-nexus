@@ -271,7 +271,11 @@ async function retryJob(body: any, caller: Caller) {
 }
 
 /** Worker claims the next queued job with a lease (concurrency + worker recovery). */
-async function claimJob(body: any) {
+async function claimJob(body: any, caller: Caller) {
+  // Claiming both leases the job and returns the mapped client values. That is a
+  // worker-only capability: an operator session must never be able to steal a
+  // lease or pull a client's mapped application data out through this path.
+  if (caller.kind !== 'worker') return json({ error: 'Worker only' }, 403);
   const workerId = body.worker_id ?? 'worker';
   const now = new Date();
   const { data: candidates } = await admin.from('automation_jobs')
@@ -372,21 +376,29 @@ async function reportEvent(body: any, caller: Caller) {
   const { job_id, event_type, message, metadata, status, current_step } = body;
   const { data: job } = await admin.from('automation_jobs').select('*').eq('id', job_id).maybeSingle();
   if (!job) return json({ error: 'Job not found' }, 404);
+  const notMine = assertWorkerHoldsJob(job, body, caller);
+  if (notMine) return notMine;
 
-  // Last gate before anything is submitted: the client must still authorize it.
+  // Last gate before anything is submitted: the client must still authorize it,
+  // and the lender must still be authorized. Both are re-read here rather than
+  // trusted from claim time, because either can be withdrawn mid-run.
   if (['READY_TO_SUBMIT', 'SUBMITTING'].includes(String(status))) {
     const { data: client } = await admin.from('funding_clients')
       .select('id,consent_signed').eq('id', job.client_id).maybeSingle();
     const consent = checkConsent(client);
     if (consent) {
       await haltJob(job, 'CLIENT_CONSENT_REQUIRED', `Consent missing at ${status}`, 'BLOCKED');
-      await admin.from('automation_sessions').update({
-        status: 'FAILED', error_code: 'CLIENT_CONSENT_REVOKED',
-        termination_reason: `Consent withdrawn before ${status}`, ended_at: new Date().toISOString(),
-      }).eq('automation_job_id', job.id).in('status', LIVE_SESSION_STATES);
+      await failLiveSession(job.id, 'CLIENT_CONSENT_REVOKED', `Consent withdrawn before ${status}`);
       return json({ error: 'CLIENT_CONSENT_REVOKED', detail: consent }, 409);
     }
+    const lender = await reverifyLenderAuthorization(job);
+    if (lender) {
+      await haltJob(job, lender.code, `${lender.reason} (at ${status})`, 'BLOCKED');
+      await failLiveSession(job.id, lender.code, `${lender.reason} (at ${status})`);
+      return json({ error: lender.code, detail: lender.reason }, 409);
+    }
   }
+
 
   if (status || current_step) {
     const patch: Record<string, unknown> = {};
@@ -414,6 +426,8 @@ async function raiseCheckpoint(body: any, caller: Caller) {
   }
   const { data: job } = await admin.from('automation_jobs').select('*').eq('id', job_id).maybeSingle();
   if (!job) return json({ error: 'Job not found' }, 404);
+  const notMine = assertWorkerHoldsJob(job, body, caller);
+  if (notMine) return notMine;
 
   const blocking = ['CAPTCHA', 'BOT_BLOCK'].includes(checkpoint_type);
 
@@ -529,6 +543,10 @@ async function resolveCheckpoint(body: any, caller: Caller) {
 async function submitResult(body: any, caller: Caller) {
   const { data: job } = await admin.from('automation_jobs').select('*').eq('id', body.job_id).maybeSingle();
   if (!job) return json({ error: 'Job not found' }, 404);
+  // A lender result is the most consequential write in the system: only the
+  // worker actually holding this job's lease (or an operator) may record one.
+  const notMine = assertWorkerHoldsJob(job, body, caller);
+  if (notMine) return notMine;
 
   let normalized: NormalizedResult;
   if (body.api_response) normalized = normalizeApiResponse(body.api_response);
@@ -630,6 +648,20 @@ async function submitResult(body: any, caller: Caller) {
 async function reportFailure(body: any, caller: Caller) {
   const { data: job } = await admin.from('automation_jobs').select('*').eq('id', body.job_id).maybeSingle();
   if (!job) return json({ error: 'Job not found' }, 404);
+  // A worker that no longer holds the lease (already halted, cancelled or reaped)
+  // must not drive job state. Its report is still containment evidence — most
+  // importantly WORKSPACE_PURGE_FAILED — so it is recorded and escalated to a
+  // human rather than dropped on the floor with a 403.
+  const notMine = assertWorkerHoldsJob(job, body, caller);
+  if (notMine) {
+    const { error: flagErr } = await admin.from('automation_jobs')
+      .update({ requires_human_action: true, human_action_type: 'REVIEW_REQUIRED' }).eq('id', job.id);
+    await logEvent(job.id, job.application_id, 'UNLEASED_FAILURE_REPORT',
+      `Failure reported by a worker that does not hold this lease: ${body.failure_class ?? 'UNKNOWN'} — ` +
+      `${String(body.reason ?? '').slice(0, 300)}${flagErr ? ` (human-action flag failed: ${flagErr.message})` : ''}`,
+      { failure_class: body.failure_class ?? 'UNKNOWN' }, 'error');
+    return json({ ok: false, recorded: true, error: 'WORKER_NOT_LEASE_HOLDER' }, 202);
+  }
   const failureClass = body.failure_class ?? 'UNKNOWN';
   const retryable = RETRYABLE.includes(failureClass)
     && !job.submission_confirmed
@@ -756,6 +788,98 @@ async function enforceLiveConsent(sessionId: string, stage: string) {
   return json({ error: 'CLIENT_CONSENT_REVOKED', detail: consent }, 409);
 }
 
+/**
+ * A worker may only act on the job whose lease it currently holds. The worker
+ * token is shared by the fleet, so possession of the token alone must never be
+ * enough to drive, fail or record a result against an arbitrary client's job.
+ * Operators are exempt — job lifecycle control is their capability by design.
+ */
+function assertWorkerHoldsJob(job: any, body: any, caller: Caller): Response | null {
+  if (caller.kind !== 'worker') return null;
+  const claimedBy = body.worker_id ? String(body.worker_id) : null;
+  if (!job.worker_id || !claimedBy || job.worker_id !== claimedBy) {
+    return json({ error: 'WORKER_NOT_LEASE_HOLDER', detail: 'This job is not leased to the calling worker' }, 403);
+  }
+  if (job.lease_expires_at && new Date(job.lease_expires_at).getTime() < Date.now()) {
+    return json({ error: 'WORKER_LEASE_EXPIRED', detail: 'The lease on this job has expired' }, 409);
+  }
+  return null;
+}
+
+/** Terminate whatever live session a job still has. Used on every safety halt. */
+async function failLiveSession(jobId: string, code: string, reason: string) {
+  const { error } = await admin.from('automation_sessions').update({
+    status: 'FAILED', error_code: code.slice(0, 60),
+    termination_reason: reason.slice(0, 500), ended_at: new Date().toISOString(),
+  }).eq('automation_job_id', jobId).in('status', LIVE_SESSION_STATES);
+  if (error) console.error('SESSION_FORCE_CLOSE_FAILED', jobId, code, error.message);
+}
+
+/**
+ * Lender authorization and QA-fixture containment, re-read from the database at
+ * a later stage of the run. Authorization withdrawn after the claim must stop
+ * the job before anything else reaches the lender.
+ */
+async function reverifyLenderAuthorization(job: any): Promise<{ code: string; reason: string } | null> {
+  const { lender, config, client } = await loadContext(job.application_id);
+  if (resolveMethod(job.submission_method, config, lender) === 'manual') {
+    return { code: 'LENDER_NOT_AUTHORIZED', reason: 'Lender automation is no longer authorized/active' };
+  }
+  if (client?.is_qa_fixture && !config?.is_qa_fixture) {
+    return { code: 'QA_FIXTURE_CONTAINMENT', reason: 'QA fixture client cannot reach a non-fixture lender configuration' };
+  }
+  return null;
+}
+
+/**
+ * Worker heartbeat. Renews the lease ONLY while every safety precondition still
+ * holds: the worker owns the job, the ownership chain agrees, consent stands and
+ * the lender is still authorized. Any failure halts the job and returns 409 so
+ * the worker aborts instead of continuing against a lender.
+ */
+async function heartbeat(body: any, caller: Caller) {
+  if (caller.kind !== 'worker') return json({ error: 'Worker only' }, 403);
+  const { data: job } = await admin.from('automation_jobs').select('*').eq('id', body.job_id).maybeSingle();
+  if (!job) return json({ error: 'Job not found' }, 404);
+  const notMine = assertWorkerHoldsJob(job, body, caller);
+  if (notMine) return notMine;
+
+  const DRIVABLE = ['STARTING', 'RUNNING', 'FORM_DETECTED', 'FILLING', 'DOCUMENT_UPLOAD', 'READY_TO_SUBMIT', 'SUBMITTING', 'READING_RESPONSE'];
+  if (!DRIVABLE.includes(job.status)) {
+    return json({ error: 'JOB_NOT_DRIVABLE', job_status: job.status }, 409);
+  }
+
+  const { application, client } = await loadContext(job.application_id);
+  const chain = checkOwnershipChain(job, application);
+  if (chain) {
+    await haltJob(job, 'SESSION_CLIENT_MISMATCH', chain);
+    await failLiveSession(job.id, 'SESSION_CLIENT_MISMATCH', chain);
+    return json({ error: 'SESSION_CLIENT_MISMATCH', detail: chain }, 409);
+  }
+  const consent = checkConsent(client);
+  if (consent) {
+    await haltJob(job, 'CLIENT_CONSENT_REQUIRED', `Consent withdrawn mid-run: ${consent}`, 'BLOCKED');
+    await failLiveSession(job.id, 'CLIENT_CONSENT_REVOKED', 'Consent withdrawn mid-run');
+    return json({ error: 'CLIENT_CONSENT_REVOKED', detail: consent }, 409);
+  }
+  const lender = await reverifyLenderAuthorization(job);
+  if (lender) {
+    await haltJob(job, lender.code, lender.reason, 'BLOCKED');
+    await failLiveSession(job.id, lender.code, lender.reason);
+    return json({ error: lender.code, detail: lender.reason }, 409);
+  }
+
+  const leaseExpiresAt = new Date(Date.now() + 15 * 60_000).toISOString();
+  const { data: renewed, error } = await admin.from('automation_jobs')
+    .update({ lease_expires_at: leaseExpiresAt })
+    .eq('id', job.id).eq('worker_id', job.worker_id).select('id');
+  if (error) return json({ error: error.message }, 409);
+  if (!renewed?.length) return json({ error: 'WORKER_NOT_LEASE_HOLDER' }, 403);
+  return json({ ok: true, lease_expires_at: leaseExpiresAt });
+}
+
+
+
 /** Stop a claimed job cold, without retrying and without contacting a lender. */
 async function haltJob(job: any, code: string, reason: string, status = 'NEEDS_HUMAN_REVIEW') {
   const patch = {
@@ -803,6 +927,12 @@ async function openSession(body: any, caller: Caller) {
   if (chain) { await haltJob(job, 'SESSION_CLIENT_MISMATCH', chain); return json({ error: chain }, 409); }
   const consent = checkConsent(client);
   if (consent) { await haltJob(job, 'CLIENT_CONSENT_REQUIRED', consent, 'BLOCKED'); return json({ error: consent }, 409); }
+  // Lender authorization may have been withdrawn between claim and session open.
+  const lenderAuth = await reverifyLenderAuthorization(job);
+  if (lenderAuth) {
+    await haltJob(job, lenderAuth.code, lenderAuth.reason, 'BLOCKED');
+    return json({ error: lenderAuth.code, detail: lenderAuth.reason }, 409);
+  }
 
   const { data: live } = await admin.from('automation_sessions')
     .select('id,status').eq('automation_job_id', job.id)
@@ -935,7 +1065,8 @@ Deno.serve(async (req) => {
       case 'get-job': return await getJob(body, caller);
       case 'cancel-job': return await cancelJob(body, caller);
       case 'retry-job': return await retryJob(body, caller);
-      case 'claim-job': return await claimJob(body);
+      case 'claim-job': return await claimJob(body, caller);
+      case 'heartbeat': return await heartbeat(body, caller);
       case 'report-event': return await reportEvent(body, caller);
       case 'raise-checkpoint': return await raiseCheckpoint(body, caller);
       case 'resolve-checkpoint': return await resolveCheckpoint(body, caller);

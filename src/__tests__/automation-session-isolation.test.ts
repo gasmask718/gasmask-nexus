@@ -121,3 +121,63 @@ describe('workspace purge', () => {
     expect(result.purged).toBe(true); // already gone counts as purged
   });
 });
+
+describe('worker lease + live safety heartbeat', () => {
+  const jobId = '11111111-1111-1111-1111-111111111111';
+
+  async function loadWorker() {
+    process.env.AUTOMATION_API_URL = 'https://example.invalid/funding-automation-api';
+    process.env.AUTOMATION_WORKER_TOKEN = 'test-token';
+    process.env.WORKER_ID = 'worker-under-test';
+    return await import('../../automation-worker/worker');
+  }
+
+  it('identifies itself on every API call so the server can check the lease', async () => {
+    const { heartbeat } = await loadWorker();
+    let sent: any = null;
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (_url: string, init: any) => {
+      sent = JSON.parse(init.body);
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    }) as typeof fetch;
+    try {
+      await heartbeat(jobId);
+    } finally { globalThis.fetch = original; }
+    expect(sent.action).toBe('heartbeat');
+    expect(sent.job_id).toBe(jobId);
+    expect(typeof sent.worker_id).toBe('string');
+    expect(sent.worker_id.length).toBeGreaterThan(0);
+  });
+
+  it('aborts the run when the server revokes consent or authorization mid-job', async () => {
+    const { heartbeat, isAbortError } = await loadWorker();
+    const original = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ error: 'CLIENT_CONSENT_REVOKED' }), { status: 409 })) as typeof fetch;
+    try {
+      await heartbeat(jobId);
+      expect.unreachable();
+    } catch (e) {
+      expect(isAbortError(e)).toBe(true);
+      expect((e as Error).message).toMatch(/CLIENT_CONSENT_REVOKED/);
+    } finally { globalThis.fetch = original; }
+  });
+
+  it('treats a lost lease as an abort, never as a browser crash to be retried', async () => {
+    const { heartbeat, isAbortError } = await loadWorker();
+    const original = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ error: 'WORKER_NOT_LEASE_HOLDER' }), { status: 403 })) as typeof fetch;
+    try {
+      await heartbeat(jobId);
+      expect.unreachable();
+    } catch (e) {
+      expect(isAbortError(e)).toBe(true);
+    } finally { globalThis.fetch = original; }
+  });
+
+  it('does not treat a healthy heartbeat as an abort', async () => {
+    const { isAbortError } = await loadWorker();
+    expect(isAbortError(new Error('timeout'))).toBe(false);
+  });
+});

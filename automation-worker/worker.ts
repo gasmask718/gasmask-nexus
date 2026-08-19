@@ -39,7 +39,9 @@ async function api<T = any>(action: string, payload: Record<string, unknown> = {
   const res = await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-automation-worker-token': TOKEN },
-    body: JSON.stringify({ action, ...payload }),
+    // worker_id travels on every call: the API only lets the worker that holds
+    // the lease act on a job, so the shared fleet token alone is never enough.
+    body: JSON.stringify({ action, worker_id: WORKER_ID, ...payload }),
   });
   const text = await res.text();
   if (!res.ok) throw new Error(`[${res.status}] ${text}`);
@@ -48,6 +50,32 @@ async function api<T = any>(action: string, payload: Record<string, unknown> = {
 
 const event = (job_id: string, event_type: string, message: string, extra: Record<string, unknown> = {}) =>
   api('report-event', { job_id, event_type, message, ...extra });
+
+/**
+ * The server refused to let this run continue (consent withdrawn, lender
+ * authorization pulled, lease lost, job cancelled). The job has already been
+ * halted server-side, so the worker stops without reporting a second failure.
+ */
+export class WorkerAborted extends Error {
+  constructor(message: string) { super(message); this.name = 'WorkerAborted'; }
+}
+
+export function isAbortError(e: unknown): e is WorkerAborted {
+  return e instanceof WorkerAborted;
+}
+
+/**
+ * Renew the lease and re-verify every live safety precondition. Called before
+ * each stage that costs time or touches the lender, so a mid-run revocation is
+ * noticed instead of being discovered only after submission.
+ */
+export async function heartbeat(jobId: string): Promise<void> {
+  try {
+    await api('heartbeat', { job_id: jobId });
+  } catch (e) {
+    throw new WorkerAborted((e as Error).message);
+  }
+}
 
 /** Detect human-only checkpoints and bot protection. We stop; we never circumvent. */
 export async function detectCheckpoint(page: Page): Promise<string | null> {
@@ -159,6 +187,7 @@ async function runBrowserJob(claim: ClaimedJob) {
     await event(job.id, 'BROWSER_STARTED', 'Isolated browser session started', {
       status: 'RUNNING', metadata: { session_id: session.session_id, region: REGION, workspace },
     });
+    await heartbeat(job.id);
     await page.goto(config!.application_url!, { waitUntil: 'domcontentloaded' });
 
     let cp = await detectCheckpoint(page);
@@ -171,6 +200,9 @@ async function runBrowserJob(claim: ClaimedJob) {
     await adapter.detectForm(page);
     await event(job.id, 'FORM_DETECTED', 'Application form located', { status: 'FORM_DETECTED' });
 
+    // Nothing belonging to the client is typed into a lender page until the
+    // server confirms consent and lender authorization still stand.
+    await heartbeat(job.id);
     await event(job.id, 'FILLING', 'Filling authorized client data', { status: 'FILLING' });
     await adapter.fillFields(page, values, field_mappings);
 
@@ -197,6 +229,8 @@ async function runBrowserJob(claim: ClaimedJob) {
       return;
     }
 
+    // Final gate immediately before the irreversible action.
+    await heartbeat(job.id);
     await event(job.id, 'READY_TO_SUBMIT', 'Final review complete', { status: 'READY_TO_SUBMIT' });
     await event(job.id, 'SUBMITTING', 'Submitting authorized application', { status: 'SUBMITTING' });
     await adapter.submit(page);
@@ -207,14 +241,21 @@ async function runBrowserJob(claim: ClaimedJob) {
       session_id: session.session_id, status: 'COMPLETED', outcome: result?.result?.status ?? 'SUBMITTED',
     });
   } catch (err) {
-    await api('report-failure', {
-      job_id: job.id,
-      failure_class: /timeout/i.test((err as Error).message) ? 'API_TIMEOUT' : 'BROWSER_CRASH',
-      reason: (err as Error).message.slice(0, 400),
-    });
+    const aborted = isAbortError(err);
+    // An abort means the server already halted the job for a safety reason.
+    // Reporting a BROWSER_CRASH on top of it would overwrite the real
+    // failure_class and hide why the run was stopped.
+    if (!aborted) {
+      await api('report-failure', {
+        job_id: job.id,
+        failure_class: /timeout/i.test((err as Error).message) ? 'API_TIMEOUT' : 'BROWSER_CRASH',
+        reason: (err as Error).message.slice(0, 400),
+      }).catch(() => {});
+    }
     await closeSession({
       session_id: session.session_id, status: 'FAILED',
-      error_code: 'BROWSER_CRASH', termination_reason: (err as Error).message.slice(0, 400),
+      error_code: aborted ? 'HALTED_BY_SERVER' : 'BROWSER_CRASH',
+      termination_reason: (err as Error).message.slice(0, 400),
     }).catch(() => {});
   } finally {
     // Destroy the context first, then every byte of the job workspace.
@@ -245,18 +286,22 @@ async function runApiJob(claim: ClaimedJob) {
       id: job.id, application_id: job.application_id, funding_client_id: job.funding_client_id,
     });
     if (!adapter.submitViaApi) throw new Error(`Adapter ${job.adapter_key} has no authorized API integration`);
-    await event(job.id, 'SUBMITTING', 'Submitting via lender API', { status: 'RUNNING' });
+    // Final safety gate immediately before the irreversible lender API call.
+    await heartbeat(job.id);
+    await event(job.id, 'SUBMITTING', 'Submitting via lender API', { status: 'SUBMITTING' });
     const response = await adapter.submitViaApi(values, config);
     await api('submit-result', { job_id: job.id, api_response: response });
     await api('close-session', { session_id: session.session_id, status: 'COMPLETED', outcome: 'SUBMITTED' });
   } catch (err) {
     const isolation = err instanceof SessionIsolationError;
-    if (!isolation) {
-      await api('report-failure', { job_id: job.id, failure_class: 'LENDER_ERROR', reason: (err as Error).message.slice(0, 400) });
+    const aborted = isAbortError(err);
+    if (!isolation && !aborted) {
+      await api('report-failure', { job_id: job.id, failure_class: 'LENDER_ERROR', reason: (err as Error).message.slice(0, 400) })
+        .catch(() => {});
     }
     await api('close-session', {
       session_id: session.session_id, status: 'FAILED',
-      error_code: isolation ? (err as SessionIsolationError).code : 'LENDER_ERROR',
+      error_code: isolation ? (err as SessionIsolationError).code : aborted ? 'HALTED_BY_SERVER' : 'LENDER_ERROR',
       termination_reason: (err as Error).message.slice(0, 400), escalate: isolation,
     }).catch(() => {});
   }
@@ -264,7 +309,7 @@ async function runApiJob(claim: ClaimedJob) {
 
 export async function tick() {
   await api('reap-stale');
-  const claim = await api<ClaimedJob & { job: null }>('claim-job', { worker_id: WORKER_ID, methods: ['api', 'browser'] });
+  const claim = await api<{ job: ClaimedJob['job'] | null }>('claim-job', { worker_id: WORKER_ID, methods: ['api', 'browser'] });
   if (!claim.job) return false;
   if (claim.job.submission_method === 'api') await runApiJob(claim as unknown as ClaimedJob);
   else await runBrowserJob(claim as unknown as ClaimedJob);
