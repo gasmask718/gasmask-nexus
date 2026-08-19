@@ -74,3 +74,32 @@ application record. Automation failure never loses an application.
 | Job stuck `STARTING` | Worker died | `reap-stale` runs each worker tick; lease expires in 15 min |
 | Every job resolves to `manual` | Lender not authorized or no config row | Complete lender onboarding above |
 | 401 from the API | Missing JWT or non-operator role | Sign in as owner/admin/employee/accountant |
+
+## Session isolation (production)
+
+One job = one client = one throwaway browser session = one workspace.
+
+| Guarantee | Where it is enforced |
+|---|---|
+| Job → application → client chain agrees | `checkOwnershipChain()` at `claim-job` and `open-session` |
+| Client signed the automation authorization | `checkConsent()` — no consent, job goes `BLOCKED`, no lender contacted |
+| QA fixture clients never reach a real lender | fixture client + non-fixture config → `BLOCKED` |
+| One live session per job | partial check in `open-session` + `automation_sessions` DB trigger |
+| No inherited cookies/localStorage/cache | `openIsolatedContext()` — fresh context, no `storageState` |
+| Per-job workspace, destroyed on success *and* failure | `workspacePathFor()` + `purgeWorkspace()` in `finally` |
+| Dead worker cannot leave a session live | `reap-stale` force-closes `OPEN`/`RUNNING` sessions |
+| No credentials or PII in session rows | `assertNoSensitiveSessionFields()` |
+
+Violation codes: `SESSION_CLIENT_MISMATCH`, `SESSION_REUSE_VIOLATION`,
+`SESSION_TERMINATED_REUSE_REJECTED`, `CLIENT_CONSENT_REQUIRED`,
+`QA_FIXTURE_CONTAINMENT`. All halt the job for human review — none auto-retry.
+
+There is deliberately **no** proxy, IP rotation, user-agent spoofing, fingerprint
+fabrication, or CAPTCHA handling anywhere in the worker. Bot protection is a stop
+signal, not an obstacle.
+
+Set `INFRASTRUCTURE_REGION` on the worker host (e.g. `US-EAST`). It is recorded on
+every session row as an audit fact — it is never used to alter apparent location.
+
+Operator view: the job drawer at `/funding-machine/automation` lists every session
+with status, provider, region, owner, and any isolation error code.
