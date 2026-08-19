@@ -39,7 +39,9 @@ async function api<T = any>(action: string, payload: Record<string, unknown> = {
   const res = await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-automation-worker-token': TOKEN },
-    body: JSON.stringify({ action, ...payload }),
+    // worker_id travels on every call: the API only lets the worker that holds
+    // the lease act on a job, so the shared fleet token alone is never enough.
+    body: JSON.stringify({ action, worker_id: WORKER_ID, ...payload }),
   });
   const text = await res.text();
   if (!res.ok) throw new Error(`[${res.status}] ${text}`);
@@ -48,6 +50,32 @@ async function api<T = any>(action: string, payload: Record<string, unknown> = {
 
 const event = (job_id: string, event_type: string, message: string, extra: Record<string, unknown> = {}) =>
   api('report-event', { job_id, event_type, message, ...extra });
+
+/**
+ * The server refused to let this run continue (consent withdrawn, lender
+ * authorization pulled, lease lost, job cancelled). The job has already been
+ * halted server-side, so the worker stops without reporting a second failure.
+ */
+export class WorkerAborted extends Error {
+  constructor(message: string) { super(message); this.name = 'WorkerAborted'; }
+}
+
+export function isAbortError(e: unknown): e is WorkerAborted {
+  return e instanceof WorkerAborted;
+}
+
+/**
+ * Renew the lease and re-verify every live safety precondition. Called before
+ * each stage that costs time or touches the lender, so a mid-run revocation is
+ * noticed instead of being discovered only after submission.
+ */
+async function heartbeat(jobId: string): Promise<void> {
+  try {
+    await api('heartbeat', { job_id: jobId });
+  } catch (e) {
+    throw new WorkerAborted((e as Error).message);
+  }
+}
 
 /** Detect human-only checkpoints and bot protection. We stop; we never circumvent. */
 export async function detectCheckpoint(page: Page): Promise<string | null> {
