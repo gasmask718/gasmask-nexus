@@ -1190,6 +1190,110 @@ async function checkOutboundDispatch(): Promise<Result[]> {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// ALERT CHANNEL HEARTBEAT — watches for the ABSENCE of a positive signal.
+//
+// Both legs of the ops alert channel died within days of each other in
+// 2026-06/07 and nobody noticed for six weeks: an alerting channel fails
+// silently by definition, because silence is also what health looks like.
+// `ops-alert-heartbeat` sends one real ops email a day; this layer fails when
+// that row stops appearing. It reports into comms_health_checks (read by the
+// UI directly) so it never depends on the channel it is judging.
+// ────────────────────────────────────────────────────────────────────────────
+const HEARTBEAT_EVENT = "ops_alert:ops-alert-heartbeat";
+const HEARTBEAT_STALE_HOURS = 26; // daily cadence + 2h of slack
+
+async function checkAlertChannel(): Promise<Result[]> {
+  const supa = sb();
+  try {
+    const { data, error } = await supa
+      .from("admin_notifications_log")
+      .select("sent_at, status, channel, metadata")
+      .eq("event_type", HEARTBEAT_EVENT)
+      .order("sent_at", { ascending: false })
+      .limit(5);
+    if (error) {
+      return [{
+        provider: "resend",
+        layer: "alert_channel",
+        target: "ops_alert_heartbeat",
+        status: "fail",
+        message: `Cannot read admin_notifications_log: ${error.message}`,
+      }];
+    }
+
+    const rows = data || [];
+    const lastOk = rows.find((r: Record<string, unknown>) => r.status === "sent");
+    const lastAny = rows[0] as Record<string, unknown> | undefined;
+
+    if (!lastOk) {
+      return [{
+        provider: "resend",
+        layer: "alert_channel",
+        target: "ops_alert_heartbeat",
+        status: "fail",
+        message: lastAny
+          ? `Ops alert heartbeat has NEVER delivered — last attempt ${lastAny.sent_at} was "${lastAny.status}". Every alert the platform raises is going nowhere.`
+          : "No ops alert heartbeat has ever been recorded — the alert channel is unproven. Is the daily cron scheduled?",
+        detail: { last_attempt: lastAny ?? null, attempts_seen: rows.length },
+      }];
+    }
+
+    const ageH =
+      (Date.now() - new Date(String(lastOk.sent_at)).getTime()) / 3_600_000;
+    const detail = {
+      last_success_at: lastOk.sent_at,
+      age_hours: Math.round(ageH * 10) / 10,
+      stale_after_hours: HEARTBEAT_STALE_HOURS,
+      last_attempt_status: lastAny?.status ?? null,
+    };
+
+    if (ageH > HEARTBEAT_STALE_HOURS) {
+      return [{
+        provider: "resend",
+        layer: "alert_channel",
+        target: "ops_alert_heartbeat",
+        status: "fail",
+        message: `No ops alert has delivered in ${
+          Math.round(ageH)
+        }h (heartbeat is daily). The alert channel is DOWN — assume every other alert is silent too.`,
+        detail,
+      }];
+    }
+    if (ageH > 24) {
+      return [{
+        provider: "resend",
+        layer: "alert_channel",
+        target: "ops_alert_heartbeat",
+        status: "warn",
+        message: `Ops alert heartbeat is ${
+          Math.round(ageH)
+        }h old — cron may be late.`,
+        detail,
+      }];
+    }
+    return [{
+      provider: "resend",
+      layer: "alert_channel",
+      target: "ops_alert_heartbeat",
+      status: "pass",
+      message: `Ops alert channel delivered ${detail.age_hours}h ago.`,
+      detail,
+    }];
+  } catch (e) {
+    return [{
+      provider: "resend",
+      layer: "alert_channel",
+      target: "ops_alert_heartbeat",
+      status: "fail",
+      message: `Alert channel check threw: ${(e as Error).message}`,
+    }];
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+
+
+
 
 
 Deno.serve(async (req) => {
@@ -1211,6 +1315,9 @@ Deno.serve(async (req) => {
     { name: "checkBlandWebhooks", provider: "bland", fn: checkBlandWebhooks },
     { name: "checkBlandSynthetic", provider: "bland", fn: checkBlandSynthetic },
     { name: "checkOutboundDispatch", provider: "bland", fn: checkOutboundDispatch },
+    // Alerting channel — watches for the absence of the daily heartbeat.
+    { name: "checkAlertChannel", provider: "resend", fn: checkAlertChannel },
+
 
     // ElevenLabs
     { name: "checkElevenLabsCredentials", provider: "elevenlabs", fn: checkElevenLabsCredentials },
