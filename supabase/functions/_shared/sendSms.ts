@@ -86,6 +86,9 @@ export async function sendSms(opts: SendSmsOptions): Promise<SendSmsResult> {
   if (!opts.idempotencyKey) {
     return fail("invalid_request", "idempotencyKey is required");
   }
+  if (!opts.sendClass) {
+    return fail("invalid_request", "sendClass is required (campaign | transactional | workforce | conversational)");
+  }
 
   try {
     const res = await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
@@ -99,6 +102,8 @@ export async function sendSms(opts: SendSmsOptions): Promise<SendSmsResult> {
         to_number: opts.to,
         message_body: opts.body,
         idempotency_key: opts.idempotencyKey,
+        send_class: opts.sendClass,
+        campaign_max_sends: opts.campaignMaxSends ?? undefined,
         from_number: opts.from || undefined,
         explicit_provider: opts.provider ?? "twilio",
         skip_cooldown: opts.skipCooldown ?? false,
