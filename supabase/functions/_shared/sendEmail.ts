@@ -1,6 +1,14 @@
-// Shared email helper — uses nodemailer over Gmail SMTP.
-// Reads credentials from VA_GMAIL_USER / VA_GMAIL_APP_PASSWORD secrets.
+// Shared email helper.
+//
+// Resend is primary (RESEND_API_KEY). Gmail SMTP (VA_GMAIL_USER /
+// VA_GMAIL_APP_PASSWORD) is the fallback only — Gmail app passwords get
+// revoked silently (534-5.7.9 WebLoginRequired killed every ops email from
+// 2026-07-03 onward), so it must not be the only leg.
 import nodemailer from "npm:nodemailer@6.9.14";
+
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
+const RESEND_FROM = Deno.env.get("OPS_ALERT_FROM") ||
+  "Dynasty OS <onboarding@resend.dev>";
 
 export interface SendEmailParams {
   to: string | string[];
@@ -39,7 +47,45 @@ function getTransporter() {
   return { transporter: cachedTransporter, GMAIL_USER };
 }
 
+async function sendViaResend(params: SendEmailParams): Promise<SendEmailResult> {
+  const to = Array.isArray(params.to) ? params.to : [params.to];
+  const r = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: params.from || RESEND_FROM,
+      to,
+      cc: params.cc ? (Array.isArray(params.cc) ? params.cc : [params.cc]) : undefined,
+      bcc: params.bcc ? (Array.isArray(params.bcc) ? params.bcc : [params.bcc]) : undefined,
+      reply_to: params.replyTo,
+      subject: params.subject,
+      html: params.html,
+      text: params.text,
+    }),
+  });
+  const body = await r.text();
+  if (!r.ok) {
+    console.error(`[sendEmail] resend ${r.status}: ${body.slice(0, 300)}`);
+    return { success: false, error: `resend ${r.status}: ${body.slice(0, 200)}` };
+  }
+  let messageId: string | undefined;
+  try { messageId = JSON.parse(body)?.id; } catch { /* ignore */ }
+  console.log("[sendEmail] sent via resend:", messageId, "to:", params.to);
+  return { success: true, messageId };
+}
+
 export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
+  if (RESEND_API_KEY && !params.attachments?.length) {
+    const res = await sendViaResend(params).catch((e) => ({
+      success: false as const,
+      error: e instanceof Error ? e.message : String(e),
+    }));
+    if (res.success) return res;
+    console.warn("[sendEmail] resend failed, falling back to Gmail SMTP:", res.error);
+  }
   try {
     const { transporter, GMAIL_USER } = getTransporter();
     const fromAddr = params.from || `Brandaro <${GMAIL_USER}>`;
