@@ -300,6 +300,14 @@ async function claimJob(body: any) {
       continue;
     }
 
+    // Lender authorization is re-verified at claim time, not just at creation.
+    // Authorization withdrawn after the job was queued must stop the run.
+    if (resolveMethod(claimed.submission_method, config, lender) === 'manual') {
+      await haltJob(claimed, 'LENDER_NOT_AUTHORIZED',
+        'Lender automation is not authorized/active at claim time — manual submission required', 'BLOCKED');
+      continue;
+    }
+
     // QA fixture containment: a fixture client may only ever be pointed at a
     // fixture lender configuration. It must never reach a real lender.
     if (client?.is_qa_fixture && !config?.is_qa_fixture) {
@@ -358,6 +366,22 @@ async function reportEvent(body: any, caller: Caller) {
   const { job_id, event_type, message, metadata, status, current_step } = body;
   const { data: job } = await admin.from('automation_jobs').select('*').eq('id', job_id).maybeSingle();
   if (!job) return json({ error: 'Job not found' }, 404);
+
+  // Last gate before anything is submitted: the client must still authorize it.
+  if (['READY_TO_SUBMIT', 'SUBMITTING'].includes(String(status))) {
+    const { data: client } = await admin.from('funding_clients')
+      .select('id,consent_signed').eq('id', job.client_id).maybeSingle();
+    const consent = checkConsent(client);
+    if (consent) {
+      await haltJob(job, 'CLIENT_CONSENT_REQUIRED', `Consent missing at ${status}`, 'BLOCKED');
+      await admin.from('automation_sessions').update({
+        status: 'FAILED', error_code: 'CLIENT_CONSENT_REVOKED',
+        termination_reason: `Consent withdrawn before ${status}`, ended_at: new Date().toISOString(),
+      }).eq('automation_job_id', job.id).in('status', LIVE_SESSION_STATES);
+      return json({ error: 'CLIENT_CONSENT_REVOKED', detail: consent }, 409);
+    }
+  }
+
   if (status || current_step) {
     const patch: Record<string, unknown> = {};
     if (status) patch.status = status;
@@ -700,6 +724,32 @@ function checkConsent(client: any): string | null {
   return 'Client has not signed the automated submission authorization';
 }
 
+/**
+ * Re-verify the client's authorization for a session that is already running.
+ * Consent withdrawn mid-run halts the job and terminates the session; the worker
+ * receives a 409 and aborts before anything further is typed or submitted.
+ */
+async function enforceLiveConsent(sessionId: string, stage: string) {
+  const { data: session } = await admin.from('automation_sessions')
+    .select('id,status,automation_job_id,application_id,funding_client_id').eq('id', sessionId).maybeSingle();
+  if (!session) return json({ error: 'Session not found' }, 404);
+  const { data: client } = await admin.from('funding_clients')
+    .select('id,consent_signed').eq('id', session.funding_client_id).maybeSingle();
+  const consent = checkConsent(client);
+  if (!consent) return null;
+
+  if (LIVE_SESSION_STATES.includes(session.status)) {
+    await admin.from('automation_sessions').update({
+      status: 'FAILED', error_code: 'CLIENT_CONSENT_REVOKED',
+      termination_reason: `Consent withdrawn during execution (${stage})`,
+      ended_at: new Date().toISOString(),
+    }).eq('id', session.id).in('status', LIVE_SESSION_STATES);
+  }
+  const { data: job } = await admin.from('automation_jobs').select('*').eq('id', session.automation_job_id).maybeSingle();
+  if (job) await haltJob(job, 'CLIENT_CONSENT_REQUIRED', `Consent withdrawn during execution (${stage})`, 'BLOCKED');
+  return json({ error: 'CLIENT_CONSENT_REVOKED', detail: consent }, 409);
+}
+
 /** Stop a claimed job cold, without retrying and without contacting a lender. */
 async function haltJob(job: any, code: string, reason: string, status = 'NEEDS_HUMAN_REVIEW') {
   await admin.from('automation_jobs').update({
@@ -732,8 +782,8 @@ async function openSession(body: any, caller: Caller) {
 
   const { data: live } = await admin.from('automation_sessions')
     .select('id,status').eq('automation_job_id', job.id)
-    .in('status', ['CREATED', 'OPEN', 'RUNNING']).maybeSingle();
-  if (live) return json({ error: 'A live session already exists for this job', session_id: live.id }, 409);
+    .in('status', LIVE_SESSION_STATES).maybeSingle();
+  if (live) return json({ error: 'SESSION_ALREADY_LIVE', detail: 'A live session already exists for this job', session_id: live.id }, 409);
 
   const { data: session, error } = await admin.from('automation_sessions').insert({
     automation_job_id: job.id,
@@ -747,7 +797,12 @@ async function openSession(body: any, caller: Caller) {
     is_qa_fixture: client?.is_qa_fixture === true,
     status: 'OPEN',
   }).select().single();
-  if (error) return json({ error: error.message }, 409);
+  if (error) {
+    // The partial unique index is the real enforcement point; the check above is
+    // only an early exit. Report the race deterministically, never a raw DB string.
+    const raced = /uq_automation_sessions_live_job|duplicate key/i.test(error.message);
+    return json({ error: raced ? 'SESSION_ALREADY_LIVE' : error.message }, 409);
+  }
 
   await logEvent(job.id, job.application_id, 'SESSION_OPENED',
     `Isolated session opened by ${session.session_owner} in ${session.infrastructure_region}`,
@@ -765,16 +820,29 @@ async function openSession(body: any, caller: Caller) {
   });
 }
 
-/** Live (non-terminal) session states. Must mirror uq_automation_sessions_live_job. */
-const LIVE_SESSION_STATES = ['CREATED', 'OPEN', 'RUNNING'];
+/** Live (non-terminal) session states. Mirrors uq_automation_sessions_live_job exactly. */
+const LIVE_SESSION_STATES = ['CREATED', 'OPEN', 'RUNNING', 'HUMAN_CHECKPOINT'];
+/**
+ * States a worker may still drive. HUMAN_CHECKPOINT is deliberately excluded:
+ * a paused session is resumed by an authorized human, never by the worker.
+ */
+const WORKER_DRIVABLE_STATES = ['CREATED', 'OPEN', 'RUNNING'];
+const TERMINAL_SESSION_STATES = ['COMPLETED', 'FAILED', 'CLOSED', 'NEEDS_HUMAN_REVIEW'];
 
 async function setSessionStatus(body: any, caller: Caller) {
   if (caller.kind !== 'worker') return json({ error: 'Worker only' }, 403);
   const status = ['OPEN', 'RUNNING'].includes(body.status) ? body.status : 'RUNNING';
+
+  // Consent is re-verified on every worker heartbeat, not only at claim time.
+  // A client who withdraws authorization mid-run stops the run.
+  const revoked = await enforceLiveConsent(body.session_id, 'session-status');
+  if (revoked) return revoked;
+
   const { data, error } = await admin.from('automation_sessions')
-    .update({ status }).eq('id', body.session_id).in('status', LIVE_SESSION_STATES).select('id');
+    .update({ status }).eq('id', body.session_id).in('status', WORKER_DRIVABLE_STATES).select('id');
   if (error) return json({ error: error.message }, 409);
-  // A terminated session must never be walked back into a live state.
+  // A terminated or human-paused session must never be walked back into a live
+  // state by the worker.
   if (!data?.length) return json({ error: 'SESSION_TERMINATED_REUSE_REJECTED' }, 409);
   return json({ ok: true });
 }
@@ -785,16 +853,22 @@ async function closeSession(body: any, caller: Caller) {
   const { data: session } = await admin.from('automation_sessions')
     .select('*').eq('id', body.session_id).maybeSingle();
   if (!session) return json({ error: 'Session not found' }, 404);
+  // A closed session's record is evidence. It is never re-closed or rewritten.
+  if (TERMINAL_SESSION_STATES.includes(session.status)) {
+    return json({ error: 'SESSION_ALREADY_TERMINAL', session_status: session.status }, 409);
+  }
 
   const status = ['COMPLETED', 'FAILED', 'HUMAN_CHECKPOINT'].includes(body.status) ? body.status : 'FAILED';
-  await admin.from('automation_sessions').update({
+  const { data: closed, error: closeErr } = await admin.from('automation_sessions').update({
     status: status === 'HUMAN_CHECKPOINT' ? 'CLOSED' : status,
     outcome: body.outcome ? String(body.outcome).slice(0, 60) : null,
     error_code: body.error_code ? String(body.error_code).slice(0, 60) : null,
     termination_reason: body.termination_reason ? String(body.termination_reason).slice(0, 500) : null,
     human_checkpoint_count: session.human_checkpoint_count + (body.checkpoint ? 1 : 0),
     ended_at: new Date().toISOString(),
-  }).eq('id', session.id);
+  }).eq('id', session.id).in('status', LIVE_SESSION_STATES).select('id');
+  if (closeErr) return json({ error: closeErr.message }, 409);
+  if (!closed?.length) return json({ error: 'SESSION_ALREADY_TERMINAL' }, 409);
 
   await logEvent(session.automation_job_id, session.application_id, 'SESSION_CLOSED',
     `Session closed: ${status}${body.error_code ? ` (${body.error_code})` : ''}`,
