@@ -802,6 +802,10 @@ Deno.serve(async (req) => {
       case 'submit-result': return await submitResult(body, caller);
       case 'report-failure': return await reportFailure(body, caller);
       case 'switch-to-manual': return await switchToManual(body, caller);
+      case 'open-session': return await openSession(body, caller);
+      case 'session-status': return await setSessionStatus(body, caller);
+      case 'close-session': return await closeSession(body, caller);
+      case 'list-sessions': return await listSessions(body, caller);
       case 'reap-stale': return await reapStaleJobs();
       default: return json({ error: `Unknown action: ${action}` }, 400);
     }
