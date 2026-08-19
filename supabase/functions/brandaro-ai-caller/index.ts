@@ -266,7 +266,7 @@ serve(async (req) => {
         // 3) RPC throws -> emergency fallback to any active brandaro pool row (no bookkeeping)
         let fromNumber: string | null = null;
         let poolRowId: string | null = null;
-        let fromSource: "pool" | "emergency" = "pool";
+        let fromSource: string = "pool";
 
         try {
           const { data: sel, error: selErr } = await supabase.rpc(
