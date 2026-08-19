@@ -49,26 +49,14 @@ Deno.serve(async (req) => {
     const dateStr = yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const smsBody = `TT Daily Report ${dateStr}: ${totalBookings} bookings | $${paidRevenue.toLocaleString()} revenue | ${completed} completed | ${cancelled} cancelled | ${activeDrivers || 0} active drivers | ⭐${avgRating} avg rating`;
 
-    // Send SMS via Twilio
-    const twilioSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const twilioToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const ttPhone = Deno.env.get('TT_PHONE_NUMBER');
-    const davidPhone = Deno.env.get('DAVID_PHONE_NUMBER');
-
-    if (twilioSid && twilioToken && ttPhone && davidPhone) {
-      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
-      const smsRes = await fetch(twilioUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${twilioSid}:${twilioToken}`),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({ To: davidPhone, From: ttPhone, Body: smsBody }),
-      });
-      console.log('Nightly SMS sent:', smsRes.status);
-    } else {
-      console.log('Twilio not configured, skipping SMS. Report:', smsBody);
-    }
+    // Internal ops alert (Group A): email-first, SMS only as escalation.
+    await sendOpsAlert({
+      source: "tt-nightly-report",
+      severity: "info",
+      subject: `TopTier daily report ${dateStr}`,
+      message: smsBody,
+      context: { totalBookings, paidRevenue, completed, cancelled, activeDrivers, avgRating },
+    });
 
     return new Response(JSON.stringify({ success: true, report: smsBody }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

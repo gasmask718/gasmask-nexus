@@ -55,36 +55,20 @@ Deno.serve(async (req) => {
       .neq("status", "paid")
       .neq("status", "at_risk");
 
-    // Send SMS alerts for at-risk bills via Twilio if configured
+    // Internal ops alert (Group A): email-first via the canonical channel.
+    // This used to POST Twilio directly with ADMIN_PHONE_NUMBER — the dead
+    // credential that produced the 96% alert failure rate.
     if (atRiskBills.length > 0) {
-      const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-      const twilioToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-      const twilioFrom = Deno.env.get("TWILIO_PHONE_NUMBER");
-      const alertPhone = Deno.env.get("ADMIN_PHONE_NUMBER");
-
-      if (twilioSid && twilioToken && twilioFrom && alertPhone) {
-        for (const bill of atRiskBills) {
-          const dueDate = bill.due_date;
-          const amount = Number(bill.amount).toFixed(2);
-          const message = `⚠️ DYNASTY FUNDING: ${bill.bill_name} due ${dueDate} for $${amount} — card balance may be insufficient. Log in to resolve.`;
-
-          try {
-            // TWILIO_ACCOUNT_SID must be the real AC-prefixed Account SID (validated by check-twilio-health).
-            const sid = twilioSid;
-            
-            await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-              method: "POST",
-              headers: {
-                "Authorization": "Basic " + btoa(`${sid}:${twilioToken}`),
-                "Content-Type": "application/x-www-form-urlencoded",
-              },
-              body: new URLSearchParams({ To: alertPhone, From: twilioFrom, Body: message }),
-            });
-          } catch (smsErr) {
-            console.error("SMS alert failed:", smsErr);
-          }
-        }
-      }
+      const lines = atRiskBills.map((bill: Record<string, unknown>) =>
+        `• ${bill.bill_name} due ${bill.due_date} — $${Number(bill.amount).toFixed(2)}`
+      ).join("\n");
+      await sendOpsAlert({
+        source: "check-bill-balances",
+        severity: "critical",
+        subject: `Dynasty Funding: ${atRiskBills.length} bill(s) at risk`,
+        message: `Card balance may be insufficient for the following bills:\n${lines}`,
+        context: { at_risk_count: atRiskBills.length },
+      });
     }
 
     return new Response(JSON.stringify({
