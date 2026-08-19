@@ -4368,6 +4368,30 @@ export type Database = {
           },
         ]
       }
+      address_cleanup_staging: {
+        Row: {
+          cleaned_at: string | null
+          new_address: string | null
+          prior_address: string | null
+          run_id: string | null
+          store_id: string
+        }
+        Insert: {
+          cleaned_at?: string | null
+          new_address?: string | null
+          prior_address?: string | null
+          run_id?: string | null
+          store_id: string
+        }
+        Update: {
+          cleaned_at?: string | null
+          new_address?: string | null
+          prior_address?: string | null
+          run_id?: string | null
+          store_id?: string
+        }
+        Relationships: []
+      }
       address_extraction_staging: {
         Row: {
           confidence: string | null
@@ -11851,6 +11875,39 @@ export type Database = {
           prior_amount_paid?: number | null
           prior_payment_status?: string | null
           run_id?: string
+          total_amount?: number | null
+        }
+        Relationships: []
+      }
+      ar_match_staging: {
+        Row: {
+          applied_at: string | null
+          business_date: string | null
+          invoice_id: string
+          prior_amount_paid: number | null
+          prior_payment_status: string | null
+          run_id: string
+          store_id: string | null
+          total_amount: number | null
+        }
+        Insert: {
+          applied_at?: string | null
+          business_date?: string | null
+          invoice_id: string
+          prior_amount_paid?: number | null
+          prior_payment_status?: string | null
+          run_id: string
+          store_id?: string | null
+          total_amount?: number | null
+        }
+        Update: {
+          applied_at?: string | null
+          business_date?: string | null
+          invoice_id?: string
+          prior_amount_paid?: number | null
+          prior_payment_status?: string | null
+          run_id?: string
+          store_id?: string | null
           total_amount?: number | null
         }
         Relationships: []
@@ -69344,6 +69401,45 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_amount_repair: {
+        Row: {
+          invoice_id: string
+          new_status: string | null
+          new_total: number | null
+          prior_amount_paid: number | null
+          prior_status: string | null
+          prior_total: number | null
+          repaired_at: string | null
+          run_id: string
+          source_note: string | null
+          store_id: string | null
+        }
+        Insert: {
+          invoice_id: string
+          new_status?: string | null
+          new_total?: number | null
+          prior_amount_paid?: number | null
+          prior_status?: string | null
+          prior_total?: number | null
+          repaired_at?: string | null
+          run_id: string
+          source_note?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          invoice_id?: string
+          new_status?: string | null
+          new_total?: number | null
+          prior_amount_paid?: number | null
+          prior_status?: string | null
+          prior_total?: number | null
+          repaired_at?: string | null
+          run_id?: string
+          source_note?: string | null
+          store_id?: string | null
+        }
+        Relationships: []
+      }
       invoice_amount_writeback_staging: {
         Row: {
           applied_at: string | null
@@ -70045,6 +70141,45 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_neardate_dedupe: {
+        Row: {
+          business_date: string | null
+          gap_days: number | null
+          invoice_id: string
+          kept_date: string | null
+          kept_invoice_id: string | null
+          payment_status: string | null
+          removed_at: string | null
+          run_id: string
+          store_id: string | null
+          total_amount: number | null
+        }
+        Insert: {
+          business_date?: string | null
+          gap_days?: number | null
+          invoice_id: string
+          kept_date?: string | null
+          kept_invoice_id?: string | null
+          payment_status?: string | null
+          removed_at?: string | null
+          run_id: string
+          store_id?: string | null
+          total_amount?: number | null
+        }
+        Update: {
+          business_date?: string | null
+          gap_days?: number | null
+          invoice_id?: string
+          kept_date?: string | null
+          kept_invoice_id?: string | null
+          payment_status?: string | null
+          removed_at?: string | null
+          run_id?: string
+          store_id?: string | null
+          total_amount?: number | null
+        }
+        Relationships: []
+      }
       invoice_receipt_log: {
         Row: {
           created_at: string | null
@@ -70259,6 +70394,45 @@ export type Database = {
           repair_reason?: string
           repaired_at?: string
           repaired_by?: string | null
+        }
+        Relationships: []
+      }
+      invoice_sameday_dedupe: {
+        Row: {
+          amount_paid: number | null
+          business_date: string | null
+          invoice_id: string
+          kept_invoice_id: string | null
+          notes: string | null
+          payment_status: string | null
+          removed_at: string | null
+          run_id: string
+          store_id: string | null
+          total_amount: number | null
+        }
+        Insert: {
+          amount_paid?: number | null
+          business_date?: string | null
+          invoice_id: string
+          kept_invoice_id?: string | null
+          notes?: string | null
+          payment_status?: string | null
+          removed_at?: string | null
+          run_id: string
+          store_id?: string | null
+          total_amount?: number | null
+        }
+        Update: {
+          amount_paid?: number | null
+          business_date?: string | null
+          invoice_id?: string
+          kept_invoice_id?: string | null
+          notes?: string | null
+          payment_status?: string | null
+          removed_at?: string | null
+          run_id?: string
+          store_id?: string | null
+          total_amount?: number | null
         }
         Relationships: []
       }
@@ -81282,6 +81456,33 @@ export type Database = {
           },
         ]
       }
+      payment_terms_staging: {
+        Row: {
+          basis: string | null
+          new_value: string | null
+          prior_value: string | null
+          run_id: string
+          set_at: string | null
+          store_id: string
+        }
+        Insert: {
+          basis?: string | null
+          new_value?: string | null
+          prior_value?: string | null
+          run_id: string
+          set_at?: string | null
+          store_id: string
+        }
+        Update: {
+          basis?: string | null
+          new_value?: string | null
+          prior_value?: string | null
+          run_id?: string
+          set_at?: string | null
+          store_id?: string
+        }
+        Relationships: []
+      }
       payout_attempts: {
         Row: {
           attempt_no: number
@@ -83529,6 +83730,30 @@ export type Database = {
           severity?: string | null
           steps?: Json | null
           success?: boolean
+        }
+        Relationships: []
+      }
+      placeholder_zip_cleanup: {
+        Row: {
+          cleared_at: string | null
+          prior_city: string | null
+          prior_zip: string | null
+          run_id: string | null
+          store_id: string
+        }
+        Insert: {
+          cleared_at?: string | null
+          prior_city?: string | null
+          prior_zip?: string | null
+          run_id?: string | null
+          store_id: string
+        }
+        Update: {
+          cleared_at?: string | null
+          prior_city?: string | null
+          prior_zip?: string | null
+          run_id?: string | null
+          store_id?: string
         }
         Relationships: []
       }
@@ -106170,6 +106395,30 @@ export type Database = {
             referencedColumns: ["ambassador_id"]
           },
         ]
+      }
+      store_name_format_staging: {
+        Row: {
+          changed_at: string | null
+          new_store_name: string | null
+          prior_store_name: string | null
+          run_id: string
+          store_id: string
+        }
+        Insert: {
+          changed_at?: string | null
+          new_store_name?: string | null
+          prior_store_name?: string | null
+          run_id: string
+          store_id: string
+        }
+        Update: {
+          changed_at?: string | null
+          new_store_name?: string | null
+          prior_store_name?: string | null
+          run_id?: string
+          store_id?: string
+        }
+        Relationships: []
       }
       store_notes: {
         Row: {
@@ -133078,6 +133327,45 @@ export type Database = {
           },
         ]
       }
+      zip_backfill_staging: {
+        Row: {
+          basis: string | null
+          filled_at: string | null
+          new_city: string | null
+          new_state: string | null
+          new_zip: string | null
+          prior_city: string | null
+          prior_state: string | null
+          prior_zip: string | null
+          run_id: string
+          store_id: string
+        }
+        Insert: {
+          basis?: string | null
+          filled_at?: string | null
+          new_city?: string | null
+          new_state?: string | null
+          new_zip?: string | null
+          prior_city?: string | null
+          prior_state?: string | null
+          prior_zip?: string | null
+          run_id: string
+          store_id: string
+        }
+        Update: {
+          basis?: string | null
+          filled_at?: string | null
+          new_city?: string | null
+          new_state?: string | null
+          new_zip?: string | null
+          prior_city?: string | null
+          prior_state?: string | null
+          prior_zip?: string | null
+          run_id?: string
+          store_id?: string
+        }
+        Relationships: []
+      }
       zip_density: {
         Row: {
           city: string | null
@@ -133124,6 +133412,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      zip_from_places: {
+        Row: {
+          filled_at: string | null
+          new_city: string | null
+          new_zip: string | null
+          prior_city: string | null
+          prior_zip: string | null
+          resolved_address: string | null
+          run_id: string | null
+          store_id: string
+        }
+        Insert: {
+          filled_at?: string | null
+          new_city?: string | null
+          new_zip?: string | null
+          prior_city?: string | null
+          prior_zip?: string | null
+          resolved_address?: string | null
+          run_id?: string | null
+          store_id: string
+        }
+        Update: {
+          filled_at?: string | null
+          new_city?: string | null
+          new_zip?: string | null
+          prior_city?: string | null
+          prior_zip?: string | null
+          resolved_address?: string | null
+          run_id?: string | null
+          store_id?: string
+        }
+        Relationships: []
+      }
+      zip_from_text: {
+        Row: {
+          filled_at: string | null
+          new_address: string | null
+          new_city: string | null
+          new_zip: string | null
+          prior_address: string | null
+          prior_city: string | null
+          run_id: string | null
+          store_id: string
+        }
+        Insert: {
+          filled_at?: string | null
+          new_address?: string | null
+          new_city?: string | null
+          new_zip?: string | null
+          prior_address?: string | null
+          prior_city?: string | null
+          run_id?: string | null
+          store_id: string
+        }
+        Update: {
+          filled_at?: string | null
+          new_address?: string | null
+          new_city?: string | null
+          new_zip?: string | null
+          prior_address?: string | null
+          prior_city?: string | null
+          run_id?: string | null
+          store_id?: string
+        }
+        Relationships: []
       }
       zip_jurisdiction_ranges: {
         Row: {
