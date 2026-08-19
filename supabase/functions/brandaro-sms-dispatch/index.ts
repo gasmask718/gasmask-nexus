@@ -48,6 +48,23 @@ serve(async (req) => {
     let failed = 0;
     const results: Array<{ id: string; status: string; error?: string }> = [];
 
+    // Per-campaign ceiling. `campaign_id` is stamped on every pending row by a
+    // DB trigger (day + generating agent), so the loop guard applies here too:
+    // the cap is the number of rows that campaign ever had queued, meaning a
+    // worker that re-reads the same list is stopped at the cap, not at the
+    // daily budget. Counted once per batch, not per message.
+    const campaignIds = [...new Set(
+      pending.map((m: Record<string, unknown>) => m.campaign_id).filter(Boolean),
+    )] as string[];
+    const campaignCaps = new Map<string, number>();
+    for (const cid of campaignIds) {
+      const { count } = await supabase
+        .from("brandaro_pending_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", cid);
+      if (typeof count === "number") campaignCaps.set(cid, count);
+    }
+
     for (const msg of pending) {
       if (!msg.phone_number) {
         results.push({ id: msg.id, status: "skipped", error: "No phone number" });
