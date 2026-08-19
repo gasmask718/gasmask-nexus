@@ -309,13 +309,19 @@ serve(async (req) => {
           fromSource = "emergency";
         }
 
+        // Caller ID must be owned by the Bland account, not just by our Twilio pool.
+        const resolvedFrom = await resolveBlandFrom(BLAND_API_KEY, fromNumber);
+        fromNumber = resolvedFrom.from;
+        fromSource = resolvedFrom.source;
+
         // === BLAND DISPATCH (T7c-B-b Session 4) ===
         // Bland agent handles opening + conversation; we only pass context via metadata.
         const firstName = (lead.business_name || "").split(/\s+/)[0] || "there";
         const blandPayload: Record<string, unknown> = {
           phone_number: lead.phone,
-          from: fromNumber!,
+          ...(fromNumber ? { from: fromNumber } : {}),
           pathway_id: BRANDARO_SALES_PATHWAY_ID,
+
           webhook: `${supabaseUrl}/functions/v1/bland-agent-webhook`,
           metadata: {
             lead_id: lead.id,
