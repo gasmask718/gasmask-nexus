@@ -4,6 +4,7 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { canonicalizeDisposition } from "../_shared/dnc.ts";
 import { logLeadSync } from "../_shared/dc_sync_log.ts";
 import { verifiedInsert } from "../_shared/verifiedWrite.ts";
+import { isHealthProbe, healthProbeResponse } from "../_shared/healthProbe.ts";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -38,6 +39,8 @@ serve(async (req) => {
 
 
     const payload = await req.json();
+    // Liveness probe from comms-health-monitor — answer, never persist.
+    if (isHealthProbe(payload)) return healthProbeResponse("dc-bland-webhook", corsHeaders);
     const callId = payload.call_id || payload.callId || payload.id;
     if (!callId) throw new Error('No call_id in webhook');
 
