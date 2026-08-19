@@ -187,6 +187,7 @@ async function runBrowserJob(claim: ClaimedJob) {
     await event(job.id, 'BROWSER_STARTED', 'Isolated browser session started', {
       status: 'RUNNING', metadata: { session_id: session.session_id, region: REGION, workspace },
     });
+    await heartbeat(job.id);
     await page.goto(config!.application_url!, { waitUntil: 'domcontentloaded' });
 
     let cp = await detectCheckpoint(page);
@@ -199,6 +200,9 @@ async function runBrowserJob(claim: ClaimedJob) {
     await adapter.detectForm(page);
     await event(job.id, 'FORM_DETECTED', 'Application form located', { status: 'FORM_DETECTED' });
 
+    // Nothing belonging to the client is typed into a lender page until the
+    // server confirms consent and lender authorization still stand.
+    await heartbeat(job.id);
     await event(job.id, 'FILLING', 'Filling authorized client data', { status: 'FILLING' });
     await adapter.fillFields(page, values, field_mappings);
 
@@ -225,6 +229,8 @@ async function runBrowserJob(claim: ClaimedJob) {
       return;
     }
 
+    // Final gate immediately before the irreversible action.
+    await heartbeat(job.id);
     await event(job.id, 'READY_TO_SUBMIT', 'Final review complete', { status: 'READY_TO_SUBMIT' });
     await event(job.id, 'SUBMITTING', 'Submitting authorized application', { status: 'SUBMITTING' });
     await adapter.submit(page);
