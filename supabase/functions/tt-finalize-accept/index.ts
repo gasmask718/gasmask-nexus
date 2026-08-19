@@ -18,6 +18,8 @@
 // Behavior preserved verbatim. trigger_source is for logging only.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { sendSms as sendCanonicalSms } from '../_shared/sendSms.ts'
+import { sendOpsAlert } from '../_shared/opsAlert.ts'
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
@@ -165,23 +167,15 @@ serve(async (req) => {
                 },
               },
             }).catch((err: any) => console.error('admin-notify payment_failed failed', err));
-            // Also alert ops via SMS
-            const sid = Deno.env.get('TWILIO_ACCOUNT_SID')
-            const tok = Deno.env.get('TWILIO_AUTH_TOKEN')
-            const from = Deno.env.get('TT_PHONE_NUMBER')
-            const ops = Deno.env.get('DAVID_PHONE_NUMBER')
-            if (sid && tok && from && ops) {
-              try {
-                await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-                  method: 'POST',
-                  headers: { Authorization: `Basic ${btoa(`${sid}:${tok}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-                  body: new URLSearchParams({
-                    To: ops, From: from,
-                    Body: `⚠️ CAPTURE FAILED: ${bk.booking_reference} — partner accepted but card capture failed (${errMsg}). Manual action needed.`,
-                  }),
-                })
-              } catch (_) { /* non-critical */ }
-            }
+            // Group A (internal): capture failure is an ops escalation, so it
+            // goes to the ops distribution list, not one founder handset.
+            await sendOpsAlert({
+              source: 'tt-finalize-accept',
+              severity: 'critical',
+              subject: `CAPTURE FAILED: ${bk.booking_reference}`,
+              message: `⚠️ CAPTURE FAILED: ${bk.booking_reference} — partner accepted but card capture failed (${errMsg}). Manual action needed.`,
+              context: { booking_id: bk.id, booking_reference: bk.booking_reference },
+            })
           }
         }
       }
@@ -293,25 +287,21 @@ serve(async (req) => {
         ` Ref: ${dispatchRequest.booking_reference}.` +
         ` We'll send details shortly.`
 
-      const resp = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            To: dispatchRequest.customer_phone,
-            From: fromTwilio,
-            Body: customerMsg,
-          }),
-        }
-      )
-      if (!resp.ok) {
-        const t = await resp.text()
-        console.error('[tt-finalize-accept] customer SMS failed', resp.status, t)
-        errors.push(`customer_sms: ${resp.status} ${t.slice(0, 200)}`)
+      // Group C (transactional): the customer's own booking confirmation,
+      // sent to the number captured on that dispatch request.
+      const sent = await sendCanonicalSms({
+        to: dispatchRequest.customer_phone,
+        body: customerMsg,
+        sendClass: 'transactional',
+        purpose: 'tt_booking_confirmed',
+        idempotencyKey: `tt-accept-customer-${dispatchRequest.id}`,
+        from: fromTwilio,
+        skipCooldown: true,
+        metadata: { booking_reference: dispatchRequest.booking_reference },
+      })
+      if (!sent.success) {
+        console.error('[tt-finalize-accept] customer SMS failed', sent.status, sent.errorMessage ?? sent.status)
+        errors.push(`customer_sms: ${sent.status} ${(sent.errorMessage ?? sent.status ?? '').slice(0, 200)}`)
       } else {
         customer_sms_sent = true
       }
@@ -326,21 +316,14 @@ serve(async (req) => {
             ` Service: ${(dispatchRequest.service_type || '').replace(/_/g, ' ')}.` +
             ` Customer: ${dispatchRequest.customer_name || 'N/A'}.` +
             ` Partner: ${partner?.partner_name || 'N/A'}.`
-          const adminResp = await fetch(
-            `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              body: new URLSearchParams({
-                To: adminPhone,
-                From: fromTwilio,
-                Body: adminMsg,
-              }),
-            }
-          )
+          const adminAlert = await sendOpsAlert({
+            source: 'tt-finalize-accept',
+            severity: 'info',
+            subject: `Partner accepted ${dispatchRequest.booking_reference}`,
+            message: adminMsg,
+            context: { booking_reference: dispatchRequest.booking_reference },
+          })
+          const adminResp = { ok: adminAlert.emailSent || adminAlert.smsSent, text: async () => adminAlert.errors.join('; '), status: 0 }
           if (!adminResp.ok) {
             const t = await adminResp.text()
             console.error('[tt-finalize-accept] admin SMS failed', adminResp.status, t)
@@ -376,13 +359,18 @@ serve(async (req) => {
           `Pickup: ${dispatchRequest.pickup_location || 'TBD'}\n` +
           `Meet decorator first: ${meeting_point_address} @ ${mpDate}\n` +
           `Decorator will load decor for setup at venue.`
-        try {
-          await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
-            method: 'POST',
-            headers: { Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ To: driverPhone, From: fromTwilio, Body: driverMsg }),
-          })
-        } catch (e) { console.error('driver SMS failed:', e) }
+        // Group D (workforce): contracted driver, dispatch instruction.
+        const dr = await sendCanonicalSms({
+          to: driverPhone,
+          body: driverMsg,
+          sendClass: 'workforce',
+          purpose: 'tt_driver_dispatch',
+          idempotencyKey: `tt-accept-driver-${dispatchRequest.id}`,
+          from: fromTwilio,
+          skipCooldown: true,
+          metadata: { booking_reference: dispatchRequest.booking_reference },
+        })
+        if (!dr.success) console.error('driver SMS failed:', dr.errorMessage ?? dr.status)
       }
       // Decorator SMS: meeting point + driver name/phone
       if (decorRow) {
@@ -395,13 +383,18 @@ serve(async (req) => {
             `Meet: ${meeting_point_address} @ ${mpDate}\n` +
             `Driver: ${partner?.partner_name || 'Driver'} ${partner?.partner_phone || partner?.phone || ''}\n` +
             `Load decor onto truck at meeting point for venue setup.`
-          try {
-            await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
-              method: 'POST',
-              headers: { Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-              body: new URLSearchParams({ To: decorPhone, From: fromTwilio, Body: decorMsg }),
-            })
-          } catch (e) { console.error('decorator SMS failed:', e) }
+          // Group D (workforce): contracted decorator, dispatch instruction.
+          const dc = await sendCanonicalSms({
+            to: decorPhone,
+            body: decorMsg,
+            sendClass: 'workforce',
+            purpose: 'tt_decorator_dispatch',
+            idempotencyKey: `tt-accept-decorator-${dispatchRequest.id}`,
+            from: fromTwilio,
+            skipCooldown: true,
+            metadata: { booking_reference: dispatchRequest.booking_reference },
+          })
+          if (!dc.success) console.error('decorator SMS failed:', dc.errorMessage ?? dc.status)
         }
       }
     }

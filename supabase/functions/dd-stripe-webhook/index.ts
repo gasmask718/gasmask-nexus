@@ -7,6 +7,8 @@
 // off pi.metadata.order_id and will fire its split engine for both hosted
 // (checkout.session.completed → PaymentIntent) and express orders identically.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { sendSms as sendCanonicalSms } from "../_shared/sendSms.ts";
+import { sendOpsAlert } from "../_shared/opsAlert.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
@@ -250,23 +252,24 @@ async function markOrderPaid(
           .eq("id", result.referrer_user_id)
           .maybeSingle();
         const phone = (prof as { phone?: string | null } | null)?.phone ?? null;
-        const TWILIO_SID = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
-        const TWILIO_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
-        const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER") ?? "";
-        if (phone && TWILIO_SID && TWILIO_TOKEN && TWILIO_FROM) {
+        if (phone) {
           const { data: refStore } = await supabase
             .from("store_accounts")
             .select("business_name")
             .eq("id", storeAcct)
             .maybeSingle();
           const name = (refStore as { business_name?: string } | null)?.business_name ?? "Your referred store";
-          const msg = `🎉 Your referral earned you $50 in store credit!\n${name} just placed their first order.\nCredit added to your account.`;
-          const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`);
-          await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
-            method: "POST",
-            headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({ To: phone, From: TWILIO_FROM, Body: msg }),
-          }).catch((e) => console.error("[dd-webhook] referral sms failed", e?.message));
+          // Group C (transactional): store credit earned on the referrer's own account.
+          const sent = await sendCanonicalSms({
+            to: phone,
+            body: `🎉 Your referral earned you $50 in store credit!\n${name} just placed their first order.\nCredit added to your account.`,
+            sendClass: "transactional",
+            purpose: "dd_referral_credit",
+            idempotencyKey: `dd-referral-${orderId}-${storeAcct}`,
+            skipCooldown: true,
+            metadata: { order_id: orderId, store_account_id: storeAcct },
+          });
+          if (!sent.success) console.error("[dd-webhook] referral sms not sent:", sent.errorMessage ?? sent.status);
         }
       }
     }
@@ -449,19 +452,21 @@ async function markOrderPaid(
                 .maybeSingle();
               phone = (prof as any)?.phone ?? null;
             }
-            const TWILIO_SID = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
-
-            const TWILIO_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
-            const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER") ?? "";
-            if (phone && TWILIO_SID && TWILIO_TOKEN && TWILIO_FROM) {
+            if (phone) {
               const totalEarned = Number(linkRow?.total_earned ?? 0) + commission;
-              const msg = `💰 Campaign sale!\n${c.name} generated $${revenue.toFixed(2)}\nYou earned: $${commission.toFixed(2)}\nTotal earned: $${totalEarned.toFixed(2)}`;
-              const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`);
-              await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
-                method: "POST",
-                headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ To: phone, From: TWILIO_FROM, Body: msg }),
-              }).catch((e) => console.error("[dd-webhook] partner sms failed", e?.message));
+              // Group D (workforce): an ambassador's own earnings notice.
+              // Separate class from the customer receipt above on purpose —
+              // one helper per audience, so no exemption crosses over.
+              const sent = await sendCanonicalSms({
+                to: phone,
+                body: `💰 Campaign sale!\n${c.name} generated $${revenue.toFixed(2)}\nYou earned: $${commission.toFixed(2)}\nTotal earned: $${totalEarned.toFixed(2)}`,
+                sendClass: "workforce",
+                purpose: "dd_partner_earnings",
+                idempotencyKey: `dd-partner-earn-${orderId}-${ambId}`,
+                skipCooldown: true,
+                metadata: { order_id: orderId, ambassador_id: ambId },
+              });
+              if (!sent.success) console.error("[dd-webhook] partner sms not sent:", sent.errorMessage ?? sent.status);
             }
           }
         } catch (e: any) {
@@ -522,18 +527,14 @@ async function releaseOrderReserves(
 // 3DS / Stripe Radar risk capture + dispute handling
 // ────────────────────────────────────────────────────────────────────
 
+// Group A (internal). Fraud/dispute notices go to the ops distribution list,
+// not one handset, and email-first with SMS only as the critical escalation.
 async function sendSmsToAdmin(body: string) {
-  const TWILIO_SID = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
-  const TWILIO_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
-  const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER") ?? "";
-  const ADMIN_PHONE = Deno.env.get("DD_ADMIN_PHONE") ?? Deno.env.get("DAVID_PHONE") ?? "";
-  if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_FROM || !ADMIN_PHONE) return;
-  const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`);
-  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
-    method: "POST",
-    headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ To: ADMIN_PHONE, From: TWILIO_FROM, Body: body }),
-  }).catch((e) => console.error("[dd-webhook] admin sms failed", e?.message));
+  await sendOpsAlert({
+    source: "dd-stripe-webhook",
+    message: body,
+    severity: "critical",
+  });
 }
 
 async function captureRiskFromPaymentIntent(

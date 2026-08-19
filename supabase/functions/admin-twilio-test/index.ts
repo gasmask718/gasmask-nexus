@@ -8,6 +8,7 @@
 // Auth: requires caller to be admin or owner (checked via user_roles).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
+import { sendTwilioSms as sendTwilioSmsShared } from "../_shared/twilioSend.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,66 +33,43 @@ function randomToken(): string {
   return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+// Group B (test). The From-selection logic below is the point of this console
+// — it proves which sender identity the account actually uses — so it stays
+// here; only the HTTP call moves to the shared module, which gives every test
+// send the same audit row as production traffic.
 async function sendTwilioSms(to: string, body: string) {
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN");
   const envFrom = Deno.env.get("TWILIO_PHONE_NUMBER") || "";
   const messagingService = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID") || "";
-
-  if (!sid || !token) {
-    return {
-      success: false,
-      error_code: "MISSING_CREDS",
-      error_message: "TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN is not set",
-    };
-  }
-  if (!sid.startsWith("AC")) {
-    return {
-      success: false,
-      error_code: "INVALID_SID",
-      error_message: "TWILIO_ACCOUNT_SID must start with 'AC'",
-    };
-  }
 
   // Prefer toll-free for US destinations to bypass A2P 10DLC.
   const tollFreeRe = /^\+1(800|833|844|855|866|877|888)\d{7}$/;
   const fromIsTollFree = tollFreeRe.test(envFrom);
   const from = fromIsTollFree ? envFrom : VERIFIED_TOLL_FREE;
 
-  const form = new URLSearchParams();
-  form.append("To", to);
-  form.append("Body", body);
-  if (messagingService) form.append("MessagingServiceSid", messagingService);
-  else form.append("From", from);
+  const res = await sendTwilioSmsShared({
+    to,
+    body,
+    suppressionClass: "test",
+    source: "admin-twilio-test",
+    from: messagingService ? null : from,
+    messagingServiceSid: messagingService || null,
+  });
 
-  const auth = btoa(`${sid}:${token}`);
-  const resp = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: form,
-    },
-  );
-  const data = await resp.json();
-  if (!resp.ok) {
+  if (!res.success) {
     return {
       success: false,
-      error_code: String(data?.code || resp.status),
-      error_message: data?.message || "Twilio send failed",
-      raw: data,
+      error_code: res.errorCode || "SEND_FAILED",
+      error_message: res.errorMessage || "Twilio send failed",
     };
   }
   return {
     success: true,
-    message_sid: data.sid,
+    message_sid: res.sid,
     from,
     via: messagingService ? "messaging_service" : "from_number",
   };
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {

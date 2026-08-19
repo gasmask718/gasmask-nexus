@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms as sendCanonicalSms } from "../_shared/sendSms.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
@@ -143,34 +144,19 @@ Deno.serve(async (req) => {
     if (send_sms && lead?.phone) {
       const smsBody = `Hey ${businessName}! Your custom website is ready to go live. Here's the link to get started — we can have it live for you today:\n\n${checkoutUrl}`;
 
-      const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-      const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-      const fromNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
-
-      if (accountSid && authToken && fromNumber) {
-        const normalizedPhone = normalizePhone(lead.phone);
-        const twilioRes = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: new URLSearchParams({
-              To: normalizedPhone,
-              From: fromNumber,
-              Body: smsBody,
-            }),
-          }
-        );
-
-        if (!twilioRes.ok) {
-          const errData = await twilioRes.json();
-          console.error("Payment link SMS failed:", errData);
-        } else {
-          console.log(`💳 Payment link SMS sent to ${normalizedPhone}`);
-        }
+      // Group C (transactional): a payment link the lead asked us to send.
+      // Destination is the lead's own number, captured on that lead record.
+      const sent = await sendCanonicalSms({
+        to: normalizePhone(lead.phone),
+        body: smsBody,
+        sendClass: "transactional",
+        purpose: "brandaro_payment_link",
+        idempotencyKey: `brandaro-paylink-${deal.id}-${session.id}`,
+        skipCooldown: true,
+        metadata: { deal_id: deal.id },
+      });
+      if (!sent.success) {
+        console.error("Payment link SMS not sent:", sent.status, sent.errorMessage ?? sent.status);
       }
     }
 

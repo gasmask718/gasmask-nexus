@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { sendOpsAlert } from "../_shared/opsAlert.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import { z } from "https://esm.sh/zod@3.25.76";
@@ -88,27 +89,17 @@ serve(async (req) => {
       });
     }
 
-    // Send SMS notification via Twilio
+    // Group A (internal), reclassified: an owner ping about a new client is an
+    // ops alert. Note the body no longer carries the client's phone number —
+    // an alert channel is not a place to fan out client PII.
     try {
-      const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-      const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
-      const twilioFrom = Deno.env.get("TWILIO_FROM_NUMBER") || Deno.env.get("TWILIO_PHONE_NUMBER");
-      const davidPhone = Deno.env.get("DAVID_PHONE_NUMBER") || Deno.env.get("YOUR_PHONE_NUMBER");
-
-      if (twilioSid && twilioAuth && twilioFrom && davidPhone) {
-        // TWILIO_ACCOUNT_SID must be the real AC-prefixed Account SID. No rewriting — surface bad creds loudly.
-        const sid = twilioSid;
-        const smsBody = `🏦 DYNASTY FUNDING: New client submitted: ${clientData.full_name} — ${clientData.phone || "No phone"} — Score: ${clientData.credit_score_estimate || "N/A"}`;
-
-        await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-          method: "POST",
-          headers: {
-            "Authorization": "Basic " + btoa(`${sid}:${twilioAuth}`),
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({ To: davidPhone, From: twilioFrom, Body: smsBody }),
-        });
-      }
+      await sendOpsAlert({
+        source: "encrypt-client-ssn",
+        severity: "warn",
+        subject: "New funding client submitted",
+        message: `🏦 DYNASTY FUNDING: New client submitted: ${clientData.full_name} — Score: ${clientData.credit_score_estimate || "N/A"}`,
+        context: { client_id: client.id },
+      });
     } catch (smsErr) {
       console.error("SMS notification failed (non-blocking):", smsErr);
     }
