@@ -93896,6 +93896,36 @@ export type Database = {
           },
         ]
       }
+      route_run_20260817: {
+        Row: {
+          address: string | null
+          amount: number | null
+          created_at: string | null
+          invoice_id: string
+          run_id: string | null
+          status: string | null
+          store_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          amount?: number | null
+          created_at?: string | null
+          invoice_id: string
+          run_id?: string | null
+          status?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          amount?: number | null
+          created_at?: string | null
+          invoice_id?: string
+          run_id?: string | null
+          status?: string | null
+          store_id?: string | null
+        }
+        Relationships: []
+      }
       route_stops: {
         Row: {
           actual_arrival: string | null
