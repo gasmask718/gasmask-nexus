@@ -4,6 +4,7 @@
 // test scorecard.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { sendTwilioSms } from "../_shared/twilioSend.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,17 +119,18 @@ function renderScorecard(args: {
   return { subject, html };
 }
 
+// Supplier recipients are Group D (workforce: contracted wholesale partners,
+// marketing-DNC exempt, legal STOP absolute) — not internal alerts.
 async function sendSms(to: string, body: string): Promise<boolean> {
-  if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_FROM || !to) return false;
-  const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`);
-  try {
-    const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
-      method: "POST",
-      headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ To: to, From: TWILIO_FROM, Body: body }),
-    });
-    return r.ok;
-  } catch (e) { console.error("[scorecard sms]", e); return false; }
+  if (!to) return false;
+  const r = await sendTwilioSms({
+    to,
+    body,
+    suppressionClass: "workforce",
+    source: "dd-supplier-scorecard",
+  });
+  if (!r.success) console.error("[scorecard sms]", r.errorMessage);
+  return r.success;
 }
 
 async function sendEmail(to: string, subject: string, html: string): Promise<{ ok: boolean; id?: string; error?: string }> {

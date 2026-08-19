@@ -14,6 +14,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { SMS_TEMPLATES } from "../_shared/smsTemplates.ts";
 import { sendEmail } from "../_shared/sendEmail.ts";
+import { sendTwilioSms } from "../_shared/twilioSend.ts";
 
 type EventType =
   | "new_booking"
@@ -218,17 +219,17 @@ serve(async (req) => {
               ? slaDedupKey
               : (related_id ?? crypto.randomUUID());
           const idem = `admin-notify:${event_type}:${idemKey}:${r.address}`;
-          const resp = await supabase.functions.invoke("send-sms", {
-            body: {
-              to_number: r.address,
-              message_body: sms,
-              idempotency_key: idem,
-              purpose: "admin_alert",
-              metadata: { event_type, related_id, related_table },
-            },
+          // Group A: admin/staff recipients. In-process send with the class
+          // stated — these are internal alerts, not campaign traffic, and
+          // must not compete for the campaign daily budget.
+          const resp = await sendTwilioSms({
+            to: r.address,
+            body: sms,
+            suppressionClass: "internal",
+            source: "admin-notify",
+            metadata: { event_type, related_id, related_table, idempotency_key: idem },
           });
-          if (resp.error) throw new Error(resp.error.message);
-          if ((resp.data as any)?.error) throw new Error((resp.data as any).error);
+          if (!resp.success) throw new Error(resp.errorMessage || "sms failed");
         } else {
           const er = await sendEmail({ to: r.address, subject, text: emailBody });
           if (!er.success) throw new Error(er.error || "email failed");

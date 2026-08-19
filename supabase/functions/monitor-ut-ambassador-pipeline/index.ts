@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendOpsAlert } from "../_shared/opsAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -146,35 +147,21 @@ Deno.serve(async (req) => {
         const shouldAlert = !recentAlert || new Date(recentAlert.created_at) < throttleCutoff;
 
         if (shouldAlert) {
-          console.log(`MONITOR: Sending failure alert SMS (severity: ${severity})...`);
-          const adminPhone = configPhone || Deno.env.get("DAVID_PHONE_NUMBER") || Deno.env.get("YOUR_PHONE_NUMBER");
-          const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-          const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
-          const twilioFrom = Deno.env.get("TWILIO_FROM_NUMBER") || Deno.env.get("TWILIO_PHONE_NUMBER");
-
-          if (adminPhone && twilioSid && twilioAuth && twilioFrom) {
-            const smsBody = severity === "high"
-              ? `🚨 HIGH PRIORITY: UT Ambassador Pipeline repeatedly failing at [${testData.failure_point || "unknown"}]\n\nSeverity: HIGH\nOccurrences: 3+ in 2 hours\nTime: ${new Date().toLocaleString()}\n\nImmediate action required.`
-              : `🚨 UT Ambassador Pipeline FAILURE\n\nFailure Point: ${testData.failure_point || "unknown"}\nSeverity: ${severity.toUpperCase()}\nTime: ${new Date().toLocaleString()}\n\nAction required.`;
-
-            try {
-              const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
-              const smsResp = await fetch(twilioUrl, {
-                method: "POST",
-                headers: {
-                  Authorization: `Basic ${btoa(`${twilioSid}:${twilioAuth}`)}`,
-                  "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: new URLSearchParams({ To: adminPhone, From: twilioFrom, Body: smsBody }),
-              });
-              alertSent = smsResp.ok;
-              console.log("MONITOR: SMS alert result:", smsResp.ok ? "SENT" : "FAILED");
-            } catch (smsErr) {
-              console.error("MONITOR: SMS error:", smsErr);
-            }
-          } else {
-            console.warn("MONITOR: Missing Twilio or admin phone config, skipping SMS alert");
-          }
+          console.log(`MONITOR: Sending failure alert (severity: ${severity})...`);
+          const smsBody = severity === "high"
+            ? `HIGH PRIORITY: UT Ambassador Pipeline repeatedly failing at [${testData.failure_point || "unknown"}]\n\nSeverity: HIGH\nOccurrences: 3+ in 2 hours\nTime: ${new Date().toLocaleString()}\n\nImmediate action required.`
+            : `UT Ambassador Pipeline FAILURE\n\nFailure Point: ${testData.failure_point || "unknown"}\nSeverity: ${severity.toUpperCase()}\nTime: ${new Date().toLocaleString()}\n\nAction required.`;
+          // Group A: email-first internal alert. Previously a direct Twilio
+          // POST to DAVID_PHONE_NUMBER on the dead credential.
+          const alertRes = await sendOpsAlert({
+            source: "monitor-ut-ambassador-pipeline",
+            severity: severity === "high" ? "critical" : "error",
+            subject: `UT ambassador pipeline failure (${severity})`,
+            message: smsBody,
+            context: { failure_point: testData.failure_point ?? null, severity, configured_phone: configPhone ?? null },
+          });
+          alertSent = alertRes.emailSent || alertRes.smsSent;
+          console.log("MONITOR: alert result:", alertSent ? "SENT" : "FAILED", alertRes.errors);
         } else {
           console.log("MONITOR: Alert throttled");
         }

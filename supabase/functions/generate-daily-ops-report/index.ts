@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { sendEmail } from "../_shared/sendEmail.ts";
+import { sendTwilioSms } from "../_shared/twilioSend.ts";
 
 const fmtMoney = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -153,10 +154,16 @@ serve(async (req) => {
     const sentTo: string[] = [];
 
     if (adminPhone) {
-      try {
-        await supabase.functions.invoke("send-sms", { body: { to: adminPhone, body: smsBody } });
-        sentTo.push(`sms:${adminPhone}`);
-      } catch (e) { console.error("sms send failed", e); }
+      // Group A: staff-owned constant. In-process send, class stated
+      // explicitly — send-sms now refuses an unclassified send.
+      const r = await sendTwilioSms({
+        to: adminPhone,
+        body: smsBody,
+        suppressionClass: "internal",
+        source: "generate-daily-ops-report",
+      });
+      if (r.success) sentTo.push(`sms:${adminPhone}`);
+      else console.error("sms send failed", r.errorMessage);
     }
 
     if (adminEmail) {

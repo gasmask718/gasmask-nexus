@@ -4,6 +4,8 @@
 //
 // No DB writes for the probe path. SMS path inserts ONE row in communication_logs.
 
+import { sendTwilioSms } from "../_shared/twilioSend.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -64,19 +66,23 @@ async function runProbe() {
   return { summary: { total: results.length, purchased, phantom, errored }, results };
 }
 
+// Group B (test harness). Routed through the shared module so the class is
+// explicit and logged; the probe still reaches Twilio in process, because its
+// whole job is to test that credential.
 async function sendSms(to: string, from: string, body: string) {
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${SID}/Messages.json`;
-  const params = new URLSearchParams({ To: to, From: from, Body: body });
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: basic(),
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: params.toString(),
+  const r = await sendTwilioSms({
+    to,
+    body,
+    from,
+    suppressionClass: "test",
+    source: "comms-loop-probe",
   });
-  const j = await r.json().catch(() => ({}));
-  return { status: r.status, ok: r.ok, sid: (j as any)?.sid, body: j };
+  return {
+    status: r.success ? 201 : 0,
+    ok: r.success,
+    sid: r.sid,
+    body: { status: r.status, error: r.errorMessage ?? null, code: r.errorCode ?? null },
+  };
 }
 
 async function logComm(row: Record<string, unknown>) {

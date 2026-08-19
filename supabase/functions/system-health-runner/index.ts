@@ -8,6 +8,7 @@
 // Synthetic chain pulses are triggered separately via ?key=<chain_key>&synthetic=1.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendOpsAlert } from "../_shared/opsAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -264,23 +265,24 @@ async function runOne(client: ReturnType<typeof sb>, check: any): Promise<CheckR
 // ─── ESCALATION ─────────────────────────────────────────────────────────────
 async function maybeEscalate(client: ReturnType<typeof sb>, check: any, result: CheckResult) {
   if (result.status !== "fail") return;
-  if (!ESCALATION_PHONE) return;
   const { data: prev } = await client.from("health_check_alerts").select("last_alert_at").eq("check_key", check.check_key).maybeSingle();
   if (prev?.last_alert_at) {
     const ageHr = (Date.now() - new Date(prev.last_alert_at).getTime()) / 3600_000;
     if (ageHr < ALERT_DEDUPE_HOURS) return;
   }
-  const body = `🚨 [${check.business}/${check.floor ?? ''}] ${check.label}\n${result.message}`.slice(0, 320);
-  const auth = twAuthHeader();
-  if (!auth) return;
-  try {
-    await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`, {
-      method: "POST",
-      headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ To: ESCALATION_PHONE, From: ESCALATION_FROM, Body: body }),
-    });
+  const body = `[${check.business}/${check.floor ?? ''}] ${check.label}\n${result.message}`.slice(0, 1000);
+  // Group A: email-first ops channel. A failing health check used to be
+  // announced over the same Twilio credential the check was watching.
+  const alert = await sendOpsAlert({
+    source: "system-health-runner",
+    severity: "critical",
+    subject: `Health check FAIL: ${check.label}`,
+    message: body,
+    context: { check_key: check.check_key, business: check.business, floor: check.floor, details: result.details },
+  });
+  if (alert.emailSent || alert.smsSent) {
     await client.from("health_check_alerts").upsert({ check_key: check.check_key, last_alert_at: new Date().toISOString(), last_status: result.status, last_message: result.message });
-  } catch (e) { console.error("escalation failed", e); }
+  }
 }
 
 Deno.serve(async (req) => {

@@ -1,6 +1,8 @@
 // Dynasty Direct — Monthly partner payout generator.
 // Runs on the last day of each month (via pg_cron) or invoked manually.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendTwilioSms } from "../_shared/twilioSend.ts";
+import { sendOpsAlert } from "../_shared/opsAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,22 +14,17 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-async function sendSms(to: string | null | undefined, body: string) {
+// Partner-facing earnings notices are Group D (workforce: a contracted
+// relationship, marketing-DNC exempt, legal STOP absolute). The owner summary
+// at the end is Group A and goes to the ops channel instead.
+async function sendPartnerSms(to: string | null | undefined, body: string) {
   if (!to) return;
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const from = Deno.env.get("TWILIO_FROM_NUMBER") ?? Deno.env.get("TWILIO_PHONE_NUMBER");
-  if (!sid || !token || !from) return;
-  try {
-    await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-      method: "POST",
-      headers: {
-        Authorization: "Basic " + btoa(`${sid}:${token}`),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({ To: to, From: from, Body: body }),
-    });
-  } catch (_) { /* non-fatal */ }
+  await sendTwilioSms({
+    to,
+    body,
+    suppressionClass: "workforce",
+    source: "dd-generate-partner-payouts",
+  });
 }
 
 Deno.serve(async (req) => {
@@ -129,7 +126,7 @@ Deno.serve(async (req) => {
       processed.push({ partner_id: partner.id, amount: total });
 
       // SMS partner
-      await sendSms(
+      await sendPartnerSms(
         partner.phone,
         `📊 Your Dynasty Direct earnings for ${periodLabel} are ready!\n` +
         `Referral: $${Number(e.referral_earnings ?? 0).toFixed(2)}\n` +
@@ -140,16 +137,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // SMS David
-    const davidPhone = Deno.env.get("DAVID_PHONE") ?? Deno.env.get("ADMIN_PHONE");
-    if (payoutsCreated > 0 && davidPhone) {
-      await sendSms(
-        davidPhone,
-        `📊 Monthly partner payouts generated!\n` +
-        `Partners: ${payoutsCreated}\n` +
-        `Total owed: $${totalAmount.toFixed(2)}\n` +
-        `Review: /dynasty-direct/partners`,
-      );
+    // Owner summary → Group A ops channel (email-first).
+    if (payoutsCreated > 0) {
+      await sendOpsAlert({
+        source: "dd-generate-partner-payouts",
+        severity: "info",
+        subject: "Monthly partner payouts generated",
+        message: `Partners: ${payoutsCreated}\nTotal owed: $${totalAmount.toFixed(2)}\nReview: /dynasty-direct/partners`,
+        context: { payouts_created: payoutsCreated, total_amount: totalAmount },
+      });
     }
 
     return new Response(

@@ -22930,6 +22930,7 @@ export type Database = {
         Row: {
           ai_agent: string | null
           approved_at: string | null
+          campaign_id: string | null
           created_at: string | null
           id: string
           intent_score: number | null
@@ -22945,6 +22946,7 @@ export type Database = {
         Insert: {
           ai_agent?: string | null
           approved_at?: string | null
+          campaign_id?: string | null
           created_at?: string | null
           id?: string
           intent_score?: number | null
@@ -22960,6 +22962,7 @@ export type Database = {
         Update: {
           ai_agent?: string | null
           approved_at?: string | null
+          campaign_id?: string | null
           created_at?: string | null
           id?: string
           intent_score?: number | null
