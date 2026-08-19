@@ -15,11 +15,20 @@
  * the `send-sms` function.
  */
 
+/**
+ * The class a send belongs to. NO default — the caller must state it.
+ * `internal` / `test` traffic does NOT belong here: it goes through
+ * _shared/twilioSend.ts in-process, so alerting never queues behind campaigns.
+ */
+export type SendSmsClass = "campaign" | "transactional" | "workforce" | "conversational";
+
 export interface SendSmsOptions {
   to: string;
   body: string;
   /** Deterministic key so cron re-runs / retries do not double-send. */
   idempotencyKey: string;
+  /** Mandatory. Drives daily budget, cooldown scope and suppression depth. */
+  sendClass: SendSmsClass;
   /** Brand-scoped sender override (e.g. BRANDARO_TWILIO_NUMBER). */
   from?: string | null;
   /** Analytics tag, e.g. "sbo_picks", "dd_cart_recovery". */
@@ -31,7 +40,14 @@ export interface SendSmsOptions {
   provider?: "twilio" | "biztext";
   storeId?: string | null;
   campaignId?: string | null;
+  /**
+   * Ceiling for this campaign_id. Pass the recipient count: a loop bug that
+   * re-sends the same list gets stopped at the cap instead of at the daily
+   * budget (or not at all).
+   */
+  campaignMaxSends?: number | null;
 }
+
 
 export interface SendSmsResult {
   success: boolean;
