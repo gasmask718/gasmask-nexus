@@ -33477,6 +33477,24 @@ export type Database = {
         }
         Relationships: []
       }
+      cg_build: {
+        Row: {
+          grp: string | null
+          p: string | null
+          store_id: string | null
+        }
+        Insert: {
+          grp?: string | null
+          p?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          grp?: string | null
+          p?: string | null
+          store_id?: string | null
+        }
+        Relationships: []
+      }
       change_control_audit: {
         Row: {
           action: string
@@ -39240,6 +39258,33 @@ export type Database = {
             referencedColumns: ["intent_id"]
           },
         ]
+      }
+      connected_group_staging: {
+        Row: {
+          basis: string | null
+          linked_at: string | null
+          new_group: string | null
+          prior_group: string | null
+          run_id: string | null
+          store_id: string
+        }
+        Insert: {
+          basis?: string | null
+          linked_at?: string | null
+          new_group?: string | null
+          prior_group?: string | null
+          run_id?: string | null
+          store_id: string
+        }
+        Update: {
+          basis?: string | null
+          linked_at?: string | null
+          new_group?: string | null
+          prior_group?: string | null
+          run_id?: string | null
+          store_id?: string
+        }
+        Relationships: []
       }
       contact_compliance: {
         Row: {
