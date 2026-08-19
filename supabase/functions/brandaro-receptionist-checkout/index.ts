@@ -78,15 +78,14 @@ Deno.serve(async (req) => {
       lead = data;
     }
 
-    const email =
-      customer_email ??
-      lead?.email ??
-      lead?.contact_email ??
-      lead?.owner_email ??
-      undefined;
+    // Fallback chains below only reference columns that actually exist on
+    // brandaro_qualified_leads (verified against live schema 2026-08-19).
+    // Dead tails removed: contact_email, owner_email, owner_name, phone.
+    const email = customer_email ?? lead?.email ?? undefined;
     const displayBusiness = business_name ?? lead?.business_name ?? "Your Business";
-    const displayOwner = customer_name ?? lead?.owner_name ?? lead?.first_name ?? "";
-    const phone = lead?.phone_number ?? lead?.phone ?? null;
+    const displayOwner =
+      customer_name ?? lead?.full_name ?? lead?.first_name ?? "";
+    const phone = lead?.phone_number ?? null;
 
     // Use price IDs if the workspace preconfigured them, otherwise inline price_data
     const priceSetupId = Deno.env.get("STRIPE_PRICE_RECEPTIONIST_SETUP");
