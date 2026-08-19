@@ -13,6 +13,8 @@ export interface ClaimedJob {
   job: {
     id: string;
     application_id: string;
+    /** Ownership chain anchor — the worker refuses to run if this does not match its session. */
+    funding_client_id: string;
     submission_method: 'api' | 'browser' | 'manual';
     adapter_key: string;
     lender_name: string | null;

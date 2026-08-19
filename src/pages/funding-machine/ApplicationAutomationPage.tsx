@@ -255,6 +255,29 @@ export default function ApplicationAutomationPage() {
               )}
 
               <div>
+                <h3 className="text-sm font-medium mb-2">Isolated sessions</h3>
+                <p className="text-xs text-muted-foreground mb-2">
+                  One throwaway browser session per job, per client. No shared state, no reuse.
+                </p>
+                <div className="space-y-1">
+                  {(detail?.sessions ?? []).map((s: any) => (
+                    <div key={s.id} className="text-xs flex flex-wrap gap-3 border-b border-border/50 py-1">
+                      <Badge variant="outline" className={STATUS_TONE[s.status] ?? ''}>{s.status}</Badge>
+                      <span className="text-muted-foreground">{new Date(s.started_at).toLocaleString()}</span>
+                      <span className="font-mono">{s.provider}</span>
+                      <span className="text-muted-foreground">{s.infrastructure_region}</span>
+                      <span className="text-muted-foreground">owner: {s.session_owner}</span>
+                      {s.is_qa_fixture && <Badge variant="outline">QA fixture</Badge>}
+                      {s.error_code && <span className="text-destructive">{s.error_code}</span>}
+                    </div>
+                  ))}
+                  {(detail?.sessions ?? []).length === 0 && (
+                    <p className="text-xs text-muted-foreground">No session has been opened for this job.</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
                 <h3 className="text-sm font-medium mb-2">Audit trail</h3>
                 <div className="space-y-1 max-h-72 overflow-y-auto">
                   {(detail?.events ?? []).map((e: any) => (

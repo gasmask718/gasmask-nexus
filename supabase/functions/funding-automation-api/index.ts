@@ -278,6 +278,30 @@ async function claimJob(body: any) {
     if (!claimed) continue;
 
     const { application, client, profile, lender, config } = await loadContext(claimed.application_id);
+
+    // Ownership chain: job → application → client. A drift here means the job row
+    // and the Funding Hub disagree about whose application this is. Never guess.
+    const chain = checkOwnershipChain(claimed, application);
+    if (chain) {
+      await haltJob(claimed, 'SESSION_CLIENT_MISMATCH', chain);
+      continue;
+    }
+
+    // Consent gate: no submission attempt without a recorded client consent.
+    const consent = checkConsent(client);
+    if (consent) {
+      await haltJob(claimed, 'CLIENT_CONSENT_REQUIRED', consent, 'BLOCKED');
+      continue;
+    }
+
+    // QA fixture containment: a fixture client may only ever be pointed at a
+    // fixture lender configuration. It must never reach a real lender.
+    if (client?.is_qa_fixture && !config?.is_qa_fixture) {
+      await haltJob(claimed, 'QA_FIXTURE_CONTAINMENT',
+        'QA fixture client cannot be submitted to a non-fixture lender configuration', 'BLOCKED');
+      continue;
+    }
+
     const { data: mappings } = await admin.from('automation_field_mappings')
       .select('lender_field_label,canonical_field,field_kind,required,allowed_values,lender_selector,sort_order')
       .eq('lender_config_id', config?.id ?? '00000000-0000-0000-0000-000000000000').order('sort_order');
@@ -304,6 +328,7 @@ async function claimJob(body: any) {
       job: {
         id: claimed.id,
         application_id: claimed.application_id,
+        funding_client_id: application?.client_id ?? claimed.client_id,
         submission_method: claimed.submission_method,
         adapter_key: claimed.adapter_key,
         lender_name: claimed.lender_name,
@@ -615,8 +640,147 @@ async function reapStaleJobs() {
     await logEvent(j.id, j.application_id, 'LEASE_EXPIRED',
       uncertain ? 'Uncertain submission state — escalated' : 'Worker lease expired', {}, 'error');
     recovered++;
+    // A dead worker cannot close its own session — never leave one live.
+    await admin.from('automation_sessions').update({
+      status: 'FAILED', error_code: 'WORKER_LEASE_EXPIRED',
+      termination_reason: 'Worker lease expired; session force-closed and workspace considered destroyed',
+      ended_at: new Date().toISOString(),
+    }).eq('automation_job_id', j.id).in('status', ['OPEN', 'RUNNING']);
   }
   return json({ recovered });
+}
+
+// ------------------------- session isolation layer -------------------------
+
+/** Job → application → client must agree before any worker touches a lender. */
+function checkOwnershipChain(job: any, application: any): string | null {
+  if (!application) return 'Application row not found for this job';
+  if (job.application_id !== application.id) return 'Job application_id does not match the loaded application';
+  if (job.client_id && application.client_id && job.client_id !== application.client_id) {
+    return `Job client ${job.client_id} does not own application ${application.id}`;
+  }
+  if (!application.client_id) return 'Application has no owning client';
+  return null;
+}
+
+/** No submission attempt is made without a recorded client authorization. */
+function checkConsent(client: any): string | null {
+  if (!client) return 'Client record not found';
+  if (client.consent_signed === true) return null;
+  return 'Client has not signed the automated submission authorization';
+}
+
+/** Stop a claimed job cold, without retrying and without contacting a lender. */
+async function haltJob(job: any, code: string, reason: string, status = 'NEEDS_HUMAN_REVIEW') {
+  await admin.from('automation_jobs').update({
+    status, requires_human_action: true, human_action_type: 'REVIEW_REQUIRED',
+    failure_class: code, failure_reason: reason,
+    worker_id: null, lease_expires_at: null,
+  }).eq('id', job.id);
+  await logEvent(job.id, job.application_id, code, reason, {}, 'error');
+}
+
+/**
+ * Open the single session that a worker is allowed to run for this job.
+ * Refuses on: unknown job, non-running job, an already-live session,
+ * missing consent, or a broken ownership chain. The DB trigger is the
+ * last line of defence behind these checks.
+ */
+async function openSession(body: any, caller: Caller) {
+  if (caller.kind !== 'worker') return json({ error: 'Worker only' }, 403);
+  const { data: job } = await admin.from('automation_jobs').select('*').eq('id', body.job_id).maybeSingle();
+  if (!job) return json({ error: 'Job not found' }, 404);
+  if (!['STARTING', 'RUNNING'].includes(job.status)) {
+    return json({ error: `Job is ${job.status}; sessions may only open on a claimed job` }, 409);
+  }
+
+  const { application, client } = await loadContext(job.application_id);
+  const chain = checkOwnershipChain(job, application);
+  if (chain) { await haltJob(job, 'SESSION_CLIENT_MISMATCH', chain); return json({ error: chain }, 409); }
+  const consent = checkConsent(client);
+  if (consent) { await haltJob(job, 'CLIENT_CONSENT_REQUIRED', consent, 'BLOCKED'); return json({ error: consent }, 409); }
+
+  const { data: live } = await admin.from('automation_sessions')
+    .select('id,status').eq('automation_job_id', job.id)
+    .in('status', ['OPEN', 'RUNNING']).maybeSingle();
+  if (live) return json({ error: 'A live session already exists for this job', session_id: live.id }, 409);
+
+  const { data: session, error } = await admin.from('automation_sessions').insert({
+    automation_job_id: job.id,
+    application_id: job.application_id,
+    funding_client_id: application.client_id,
+    session_owner: String(body.worker_id ?? 'worker').slice(0, 120),
+    owner_kind: 'worker',
+    provider: String(body.provider ?? 'playwright-chromium').slice(0, 60),
+    infrastructure_region: String(body.infrastructure_region ?? 'UNVERIFIED').slice(0, 60),
+    workspace_path: `automation-runs/${job.id}`,
+    is_qa_fixture: client?.is_qa_fixture === true,
+    status: 'OPEN',
+  }).select().single();
+  if (error) return json({ error: error.message }, 409);
+
+  await logEvent(job.id, job.application_id, 'SESSION_OPENED',
+    `Isolated session opened by ${session.session_owner} in ${session.infrastructure_region}`,
+    { session_id: session.id, provider: session.provider }, 'info');
+
+  return json({
+    session: {
+      session_id: session.id,
+      automation_job_id: session.automation_job_id,
+      application_id: session.application_id,
+      funding_client_id: session.funding_client_id,
+      status: session.status,
+      workspace_path: session.workspace_path,
+    },
+  });
+}
+
+async function setSessionStatus(body: any, caller: Caller) {
+  if (caller.kind !== 'worker') return json({ error: 'Worker only' }, 403);
+  const status = ['OPEN', 'RUNNING'].includes(body.status) ? body.status : 'RUNNING';
+  const { error } = await admin.from('automation_sessions')
+    .update({ status }).eq('id', body.session_id).in('status', ['OPEN', 'RUNNING']);
+  if (error) return json({ error: error.message }, 409);
+  return json({ ok: true });
+}
+
+/** Terminal close. A closed session is never reopened or reused. */
+async function closeSession(body: any, caller: Caller) {
+  if (caller.kind !== 'worker' && caller.kind !== 'operator') return json({ error: 'Unauthorized' }, 403);
+  const { data: session } = await admin.from('automation_sessions')
+    .select('*').eq('id', body.session_id).maybeSingle();
+  if (!session) return json({ error: 'Session not found' }, 404);
+
+  const status = ['COMPLETED', 'FAILED', 'HUMAN_CHECKPOINT'].includes(body.status) ? body.status : 'FAILED';
+  await admin.from('automation_sessions').update({
+    status: status === 'HUMAN_CHECKPOINT' ? 'CLOSED' : status,
+    outcome: body.outcome ? String(body.outcome).slice(0, 60) : null,
+    error_code: body.error_code ? String(body.error_code).slice(0, 60) : null,
+    termination_reason: body.termination_reason ? String(body.termination_reason).slice(0, 500) : null,
+    human_checkpoint_count: session.human_checkpoint_count + (body.checkpoint ? 1 : 0),
+    ended_at: new Date().toISOString(),
+  }).eq('id', session.id);
+
+  await logEvent(session.automation_job_id, session.application_id, 'SESSION_CLOSED',
+    `Session closed: ${status}${body.error_code ? ` (${body.error_code})` : ''}`,
+    { session_id: session.id, outcome: body.outcome ?? null }, status === 'FAILED' ? 'error' : 'info');
+
+  // An isolation violation is never retried silently — a human reviews it.
+  if (body.escalate) {
+    const { data: job } = await admin.from('automation_jobs').select('*').eq('id', session.automation_job_id).maybeSingle();
+    if (job) await haltJob(job, String(body.error_code ?? 'SESSION_ISOLATION_VIOLATION'),
+      String(body.termination_reason ?? 'Session isolation violation'));
+  }
+  return json({ ok: true });
+}
+
+async function listSessions(body: any, caller: Caller) {
+  if (caller.kind !== 'operator') return json({ error: 'Operator only' }, 403);
+  let q = admin.from('automation_sessions').select('*').order('started_at', { ascending: false }).limit(200);
+  if (body.job_id) q = q.eq('automation_job_id', body.job_id);
+  const { data, error } = await q;
+  if (error) return json({ error: error.message }, 400);
+  return json({ sessions: data ?? [] });
 }
 
 // -------------------------------- router --------------------------------
@@ -644,6 +808,10 @@ Deno.serve(async (req) => {
       case 'submit-result': return await submitResult(body, caller);
       case 'report-failure': return await reportFailure(body, caller);
       case 'switch-to-manual': return await switchToManual(body, caller);
+      case 'open-session': return await openSession(body, caller);
+      case 'session-status': return await setSessionStatus(body, caller);
+      case 'close-session': return await closeSession(body, caller);
+      case 'list-sessions': return await listSessions(body, caller);
       case 'reap-stale': return await reapStaleJobs();
       default: return json({ error: `Unknown action: ${action}` }, 400);
     }
