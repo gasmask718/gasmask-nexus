@@ -20,7 +20,7 @@ function isUsTollFree(e164: string): boolean {
   return ["800", "833", "844", "855", "866", "877", "888"].includes(m[1]);
 }
 
-async function sendViaTwilio(to: string, body: string, fromOverride?: string): Promise<ProviderResult> {
+async function sendViaTwilio(to: string, body: string, fromOverride?: string, mediaUrls?: string[]): Promise<ProviderResult> {
   const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
   const token = Deno.env.get("TWILIO_AUTH_TOKEN");
   const apiSid = Deno.env.get("TWILIO_API_SID") || Deno.env.get("TWILIO_API_KEY") || undefined;
@@ -79,6 +79,9 @@ async function sendViaTwilio(to: string, body: string, fromOverride?: string): P
   if (messagingServiceSid) form.append("MessagingServiceSid", messagingServiceSid);
   else form.append("From", from);
   form.append("Body", body);
+  // MMS: Twilio accepts repeated MediaUrl params. Callers with attachments
+  // route through here too, so nothing is silently downgraded to text.
+  for (const m of mediaUrls ?? []) form.append("MediaUrl", m);
 
   // C5 STANDARD: TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN is the canonical pair.
   // The TWILIO_API_SID/TWILIO_API_SECRET ("connector" key) path is DEPRECATED
