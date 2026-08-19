@@ -910,7 +910,6 @@ async function closeSession(body: any, caller: Caller) {
 async function listSessions(body: any, caller: Caller) {
   // Session records are audit evidence: readable by operators, not by workers.
   if (caller.kind !== 'operator') return json({ error: 'Operator only' }, 403);
-  if (caller.kind !== 'operator') return json({ error: 'Operator only' }, 403);
   let q = admin.from('automation_sessions').select('*').order('started_at', { ascending: false }).limit(200);
   if (body.job_id) q = q.eq('automation_job_id', body.job_id);
   const { data, error } = await q;
