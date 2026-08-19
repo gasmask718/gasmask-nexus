@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isSuppressed } from "../_shared/dnc.ts";
+import { legalStopBlocked } from "../_shared/twilioSend.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
