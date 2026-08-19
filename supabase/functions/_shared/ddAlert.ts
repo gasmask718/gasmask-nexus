@@ -1,29 +1,20 @@
-// Dynasty Direct — shared error logging + SMS escalation.
+// Dynasty Direct — shared error logging + ops escalation.
 //
 // Every DD money-path failure (checkout, pricing, description, product save)
-// lands in public.dd_error_log. FAILURES on critical sources also SMS David,
+// lands in public.dd_error_log. FAILURES on critical sources also page ops,
 // deduped per (source, severity) for DD_ALERT_DEDUPE_MINUTES.
+//
+// Delivery is delegated to _shared/opsAlert.ts (email-first, SMS only on
+// severity=critical). This file no longer talks to Twilio directly — the
+// direct-SMS path is what produced a 96% silent failure rate in June/July.
 //
 // Never throws: alerting must not take down the path it is watching.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendOpsAlert } from "./opsAlert.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID") || "";
-const TWILIO_API_SID = Deno.env.get("TWILIO_API_SID") || "";
-const TWILIO_API_SECRET = Deno.env.get("TWILIO_API_SECRET") || "";
-const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") || "";
-const ESCALATION_PHONE =
-  Deno.env.get("HEALTH_ESCALATION_PHONE") ||
-  Deno.env.get("DAVID_PHONE_NUMBER") ||
-  Deno.env.get("ADMIN_ALERT_PHONE") ||
-  Deno.env.get("DAVID_PHONE") || "";
-const ESCALATION_FROM =
-  Deno.env.get("HEALTH_ESCALATION_FROM") ||
-  Deno.env.get("TWILIO_FROM_NUMBER") ||
-  Deno.env.get("TWILIO_PHONE_NUMBER") ||
-  "+18776818621";
 const DEDUPE_MINUTES = Number(Deno.env.get("DD_ALERT_DEDUPE_MINUTES") || "30");
 
 export type DdErrorSeverity = "warn" | "error";
@@ -33,51 +24,14 @@ export interface DdErrorInput {
   message: string;
   severity?: DdErrorSeverity;
   context?: Record<string, unknown>;
-  /** Set false to log without paging David (default true for severity=error). */
+  /** Set false to log without paging ops (default true for severity=error). */
   alert?: boolean;
-}
-
-function twAuthHeader(): string | null {
-  if (TWILIO_API_SID && TWILIO_API_SECRET) {
-    return "Basic " + btoa(`${TWILIO_API_SID}:${TWILIO_API_SECRET}`);
-  }
-  if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
-    if (!TWILIO_ACCOUNT_SID.startsWith("AC")) {
-      console.error("[ddAlert] TWILIO_ACCOUNT_SID must start with 'AC'");
-      return null;
-    }
-    return "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
-  }
-  return null;
-}
-
-async function sendSms(body: string): Promise<boolean> {
-  const auth = twAuthHeader();
-  if (!auth || !ESCALATION_PHONE) return false;
-  try {
-    const r = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: auth,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          To: ESCALATION_PHONE,
-          From: ESCALATION_FROM,
-          Body: body.slice(0, 320),
-        }),
-      },
-    );
-    return r.ok;
-  } catch (_e) {
-    return false;
-  }
+  /** Escalate to SMS as well as email (money-path outages). */
+  critical?: boolean;
 }
 
 /**
- * Log a Dynasty Direct failure and (for severity=error) page David over SMS.
+ * Log a Dynasty Direct failure and (for severity=error) page ops.
  * Returns the log row id when persisted, otherwise null. Never throws.
  */
 export async function logDdError(input: DdErrorInput): Promise<string | null> {
@@ -98,9 +52,14 @@ export async function logDdError(input: DdErrorInput): Promise<string | null> {
         .gte("created_at", cutoff)
         .limit(1);
       if (!recent || recent.length === 0) {
-        alerted = await sendSms(
-          `🚨 Dynasty Direct — ${input.source}\n${input.message}`,
-        );
+        const res = await sendOpsAlert({
+          source: input.source,
+          message: `🚨 Dynasty Direct — ${input.message}`,
+          severity: input.critical ? "critical" : severity,
+          subject: `[Dynasty Direct] ${input.source}`,
+          context: input.context,
+        });
+        alerted = res.emailSent || res.smsSent;
       }
     }
 
