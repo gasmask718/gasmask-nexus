@@ -301,7 +301,7 @@ async function runApiJob(claim: ClaimedJob) {
     }
     await api('close-session', {
       session_id: session.session_id, status: 'FAILED',
-      error_code: isolation ? (err as SessionIsolationError).code : 'LENDER_ERROR',
+      error_code: isolation ? (err as SessionIsolationError).code : aborted ? 'HALTED_BY_SERVER' : 'LENDER_ERROR',
       termination_reason: (err as Error).message.slice(0, 400), escalate: isolation,
     }).catch(() => {});
   }
