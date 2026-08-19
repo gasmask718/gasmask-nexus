@@ -5,21 +5,35 @@
  * Deploy it on an isolated container/VM with only:
  *   AUTOMATION_API_URL       https://<project>.functions.supabase.co/funding-automation-api
  *   AUTOMATION_WORKER_TOKEN  shared worker secret (server-side only)
+ *   INFRASTRUCTURE_REGION    e.g. US-EAST — recorded, never spoofed or rotated
  *
  * Compliance posture (hard rules, enforced in code below):
  *   - No CAPTCHA solving, no bot-detection evasion, no fingerprint/UA spoofing,
- *     no proxy or IP rotation.
+ *     no proxy or IP rotation, no fabricated human behaviour.
  *   - Human-only steps (OTP, identity, e-signature, final certification) pause the
  *     job and hand control to an authorized human.
  *   - The worker never sees the full client profile — only validated, mapped values.
+ *
+ * Session isolation posture:
+ *   - Exactly one throwaway BrowserContext per job. Never reused, never shared.
+ *   - Zero inherited storageState: no cookies, localStorage, sessionStorage, cache.
+ *   - Per-job workspace directory for downloads / screenshots / traces.
+ *   - Ownership gate (job → application → client → session) before any page opens.
+ *   - Context destroyed and workspace wiped on completion AND on failure.
  */
-import { chromium, type Page } from '@playwright/test';
+import { chromium, type Page, type BrowserContext } from '@playwright/test';
+import { promises as fs } from 'node:fs';
 import type { AutomationAdapter, ClaimedJob } from './adapters/types';
 import { adapters } from './adapters';
+import {
+  assertSessionOwnership, workspacePathFor, SessionIsolationError,
+  type SessionIdentity,
+} from './isolation';
 
 const API = process.env.AUTOMATION_API_URL!;
 const TOKEN = process.env.AUTOMATION_WORKER_TOKEN!;
 const WORKER_ID = process.env.WORKER_ID ?? `worker-${process.pid}`;
+const REGION = process.env.INFRASTRUCTURE_REGION ?? 'UNVERIFIED';
 
 async function api<T = any>(action: string, payload: Record<string, unknown> = {}): Promise<T> {
   const res = await fetch(API, {
@@ -48,21 +62,70 @@ export async function detectCheckpoint(page: Page): Promise<string | null> {
   return null;
 }
 
+/** Fresh, unshared context. No storageState, no proxy, no identity fabrication. */
+export async function openIsolatedContext(workspace: string): Promise<{ context: BrowserContext; close: () => Promise<void> }> {
+  await fs.mkdir(`${workspace}/downloads`, { recursive: true });
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ acceptDownloads: true });
+  return {
+    context,
+    close: async () => {
+      await context.close().catch(() => {});
+      await browser.close().catch(() => {});
+    },
+  };
+}
+
+/** Destroy every artifact of the job's workspace. Nothing survives into another client. */
+export async function purgeWorkspace(workspace: string): Promise<void> {
+  await fs.rm(workspace, { recursive: true, force: true }).catch(() => {});
+}
+
 async function runBrowserJob(claim: ClaimedJob) {
   const { job, config, values, field_mappings } = claim;
   const adapter: AutomationAdapter = adapters[job.adapter_key] ?? adapters.generic;
 
-  // Standard, unmodified browser identity. No spoofing, no proxy.
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext();
-  const page = await context.newPage();
+  // 1. Open a session record for THIS job only. The API refuses if the job
+  //    already has a live session, if consent is missing, or if the client
+  //    identity chain does not line up.
+  const opened = await api<{ session: SessionIdentity & { status: string } }>('open-session', {
+    job_id: job.id, worker_id: WORKER_ID, provider: 'playwright-chromium', infrastructure_region: REGION,
+  });
+  const session = opened.session;
+  const workspace = workspacePathFor(job.id);
 
+  // 2. Client-identity gate, worker side. Belt and braces with the API + DB trigger.
   try {
-    await event(job.id, 'BROWSER_STARTED', 'Browser session started', { status: 'RUNNING' });
+    assertSessionOwnership(session, {
+      id: job.id, application_id: job.application_id, funding_client_id: job.funding_client_id,
+    });
+  } catch (e) {
+    const code = e instanceof SessionIsolationError ? e.code : 'SESSION_CLIENT_MISMATCH';
+    await api('close-session', {
+      session_id: session.session_id, status: 'FAILED', error_code: code,
+      termination_reason: (e as Error).message, escalate: true,
+    });
+    return; // No lender page opened. No client data entered.
+  }
+
+  let closer: (() => Promise<void>) | null = null;
+  try {
+    const iso = await openIsolatedContext(workspace);
+    closer = iso.close;
+    const page = await iso.context.newPage();
+
+    await api('session-status', { session_id: session.session_id, status: 'RUNNING' });
+    await event(job.id, 'BROWSER_STARTED', 'Isolated browser session started', {
+      status: 'RUNNING', metadata: { session_id: session.session_id, region: REGION, workspace },
+    });
     await page.goto(config!.application_url!, { waitUntil: 'domcontentloaded' });
 
     let cp = await detectCheckpoint(page);
-    if (cp) { await api('raise-checkpoint', { job_id: job.id, checkpoint_type: cp, reason: 'Detected on page load' }); return; }
+    if (cp) {
+      await api('raise-checkpoint', { job_id: job.id, checkpoint_type: cp, reason: 'Detected on page load' });
+      await api('close-session', { session_id: session.session_id, status: 'HUMAN_CHECKPOINT', termination_reason: cp, checkpoint: true });
+      return;
+    }
 
     await adapter.detectForm(page);
     await event(job.id, 'FORM_DETECTED', 'Application form located', { status: 'FORM_DETECTED' });
@@ -76,15 +139,20 @@ async function runBrowserJob(claim: ClaimedJob) {
     }
 
     cp = await detectCheckpoint(page);
-    if (cp) { await api('raise-checkpoint', { job_id: job.id, checkpoint_type: cp, reason: 'Detected before submission' }); return; }
+    if (cp) {
+      await api('raise-checkpoint', { job_id: job.id, checkpoint_type: cp, reason: 'Detected before submission' });
+      await api('close-session', { session_id: session.session_id, status: 'HUMAN_CHECKPOINT', termination_reason: cp, checkpoint: true });
+      return;
+    }
 
     // Lender requires a human certification/signature: stop here, always.
     if (config?.requires_final_certification || config?.requires_signature || config?.requires_otp || config?.requires_identity_verification) {
+      const type = config.requires_final_certification ? 'FINAL_ACCURACY_CONFIRMATION' : 'E_SIGNATURE';
       await api('raise-checkpoint', {
-        job_id: job.id,
-        checkpoint_type: config.requires_final_certification ? 'FINAL_ACCURACY_CONFIRMATION' : 'E_SIGNATURE',
+        job_id: job.id, checkpoint_type: type,
         reason: 'Lender configuration requires authorized human confirmation before submission',
       });
+      await api('close-session', { session_id: session.session_id, status: 'HUMAN_CHECKPOINT', termination_reason: type, checkpoint: true });
       return;
     }
 
@@ -93,28 +161,53 @@ async function runBrowserJob(claim: ClaimedJob) {
     await adapter.submit(page);
 
     const text = await adapter.readResponse(page);
-    await api('submit-result', { job_id: job.id, page_text: text });
+    const result = await api<{ result?: { status?: string } }>('submit-result', { job_id: job.id, page_text: text });
+    await api('close-session', {
+      session_id: session.session_id, status: 'COMPLETED', outcome: result?.result?.status ?? 'SUBMITTED',
+    });
   } catch (err) {
     await api('report-failure', {
       job_id: job.id,
       failure_class: /timeout/i.test((err as Error).message) ? 'API_TIMEOUT' : 'BROWSER_CRASH',
       reason: (err as Error).message.slice(0, 400),
     });
+    await api('close-session', {
+      session_id: session.session_id, status: 'FAILED',
+      error_code: 'BROWSER_CRASH', termination_reason: (err as Error).message.slice(0, 400),
+    }).catch(() => {});
   } finally {
-    await browser.close().catch(() => {});
+    // Destroy the context first, then every byte of the job workspace.
+    if (closer) await closer();
+    await purgeWorkspace(workspace);
   }
 }
 
 async function runApiJob(claim: ClaimedJob) {
   const { job, config, values } = claim;
   const adapter = adapters[job.adapter_key] ?? adapters.generic;
+  const opened = await api<{ session: SessionIdentity & { status: string } }>('open-session', {
+    job_id: job.id, worker_id: WORKER_ID, provider: 'lender-api', infrastructure_region: REGION,
+  });
+  const session = opened.session;
   try {
+    assertSessionOwnership(session, {
+      id: job.id, application_id: job.application_id, funding_client_id: job.funding_client_id,
+    });
     if (!adapter.submitViaApi) throw new Error(`Adapter ${job.adapter_key} has no authorized API integration`);
     await event(job.id, 'SUBMITTING', 'Submitting via lender API', { status: 'RUNNING' });
     const response = await adapter.submitViaApi(values, config);
     await api('submit-result', { job_id: job.id, api_response: response });
+    await api('close-session', { session_id: session.session_id, status: 'COMPLETED', outcome: 'SUBMITTED' });
   } catch (err) {
-    await api('report-failure', { job_id: job.id, failure_class: 'LENDER_ERROR', reason: (err as Error).message.slice(0, 400) });
+    const isolation = err instanceof SessionIsolationError;
+    if (!isolation) {
+      await api('report-failure', { job_id: job.id, failure_class: 'LENDER_ERROR', reason: (err as Error).message.slice(0, 400) });
+    }
+    await api('close-session', {
+      session_id: session.session_id, status: 'FAILED',
+      error_code: isolation ? (err as SessionIsolationError).code : 'LENDER_ERROR',
+      termination_reason: (err as Error).message.slice(0, 400), escalate: isolation,
+    }).catch(() => {});
   }
 }
 
