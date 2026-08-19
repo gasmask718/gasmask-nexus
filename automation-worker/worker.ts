@@ -241,14 +241,21 @@ async function runBrowserJob(claim: ClaimedJob) {
       session_id: session.session_id, status: 'COMPLETED', outcome: result?.result?.status ?? 'SUBMITTED',
     });
   } catch (err) {
-    await api('report-failure', {
-      job_id: job.id,
-      failure_class: /timeout/i.test((err as Error).message) ? 'API_TIMEOUT' : 'BROWSER_CRASH',
-      reason: (err as Error).message.slice(0, 400),
-    });
+    const aborted = isAbortError(err);
+    // An abort means the server already halted the job for a safety reason.
+    // Reporting a BROWSER_CRASH on top of it would overwrite the real
+    // failure_class and hide why the run was stopped.
+    if (!aborted) {
+      await api('report-failure', {
+        job_id: job.id,
+        failure_class: /timeout/i.test((err as Error).message) ? 'API_TIMEOUT' : 'BROWSER_CRASH',
+        reason: (err as Error).message.slice(0, 400),
+      }).catch(() => {});
+    }
     await closeSession({
       session_id: session.session_id, status: 'FAILED',
-      error_code: 'BROWSER_CRASH', termination_reason: (err as Error).message.slice(0, 400),
+      error_code: aborted ? 'HALTED_BY_SERVER' : 'BROWSER_CRASH',
+      termination_reason: (err as Error).message.slice(0, 400),
     }).catch(() => {});
   } finally {
     // Destroy the context first, then every byte of the job workspace.
@@ -298,7 +305,7 @@ async function runApiJob(claim: ClaimedJob) {
 
 export async function tick() {
   await api('reap-stale');
-  const claim = await api<ClaimedJob & { job: null }>('claim-job', { worker_id: WORKER_ID, methods: ['api', 'browser'] });
+  const claim = await api<{ job: ClaimedJob['job'] | null }>('claim-job', { worker_id: WORKER_ID, methods: ['api', 'browser'] });
   if (!claim.job) return false;
   if (claim.job.submission_method === 'api') await runApiJob(claim as unknown as ClaimedJob);
   else await runBrowserJob(claim as unknown as ClaimedJob);
