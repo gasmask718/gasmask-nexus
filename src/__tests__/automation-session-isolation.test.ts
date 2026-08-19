@@ -3,6 +3,9 @@ import {
   assertSessionOwnership, workspacePathFor, contextOptionsFor,
   assertNoSensitiveSessionFields, SessionIsolationError,
 } from '../../automation-worker/isolation';
+import {
+  isReportableStatus, isResumableStatus, decideOpenJob, RESUMABLE_STATUSES,
+} from '../../supabase/functions/_shared/automation/policy';
 
 const job = {
   id: '11111111-1111-1111-1111-111111111111',
@@ -179,5 +182,70 @@ describe('worker lease + live safety heartbeat', () => {
   it('does not treat a healthy heartbeat as an abort', async () => {
     const { isAbortError } = await loadWorker();
     expect(isAbortError(new Error('timeout'))).toBe(false);
+  });
+});
+
+// --------------------------------------------------------------------------
+// Regression coverage for the 2026-08-20 pass: report-event / resolve-checkpoint
+// status allow-lists and the fail-closed duplicate-job guard.
+// --------------------------------------------------------------------------
+
+describe('report-event status allow-list', () => {
+  it('accepts every legitimate progress state', () => {
+    for (const s of ['RUNNING', 'FORM_DETECTED', 'FILLING', 'DOCUMENT_UPLOAD', 'READY_TO_SUBMIT', 'SUBMITTING', 'READING_RESPONSE']) {
+      expect(isReportableStatus(s)).toBe(true);
+    }
+  });
+
+  it('never lets a worker declare a job COMPLETED without a lender result', () => {
+    expect(isReportableStatus('COMPLETED')).toBe(false);
+  });
+
+  it('keeps failure, checkpoint and cancellation on their own endpoints', () => {
+    for (const s of ['FAILED', 'BLOCKED', 'CANCELLED', 'HUMAN_CHECKPOINT', 'NEEDS_HUMAN_REVIEW', 'NEEDS_INFORMATION', 'QUEUED']) {
+      expect(isReportableStatus(s)).toBe(false);
+    }
+  });
+
+  it('rejects junk and empty values', () => {
+    expect(isReportableStatus('completed')).toBe(false);
+    expect(isReportableStatus(undefined)).toBe(false);
+    expect(isReportableStatus({})).toBe(false);
+  });
+});
+
+describe('checkpoint resume allow-list', () => {
+  it('allows only states a worker or human can continue from', () => {
+    expect(RESUMABLE_STATUSES).toEqual(['FILLING', 'DOCUMENT_UPLOAD', 'READY_TO_SUBMIT', 'NEEDS_HUMAN_REVIEW']);
+  });
+
+  it('never lets a checkpoint resolution fabricate a result', () => {
+    for (const s of ['COMPLETED', 'SUBMITTING', 'READING_RESPONSE', 'QUEUED']) {
+      expect(isResumableStatus(s)).toBe(false);
+    }
+  });
+});
+
+describe('duplicate job guard fails closed', () => {
+  it('allows creation when no open job exists', () => {
+    expect(decideOpenJob({ data: [], error: null }).allow).toBe(true);
+    expect(decideOpenJob({ data: null, error: null }).allow).toBe(true);
+  });
+
+  it('blocks a second open job for the same application', () => {
+    const d = decideOpenJob({ data: [{ id: 'j1', status: 'RUNNING' }], error: null });
+    expect(d).toMatchObject({ allow: false, reason: 'JOB_ALREADY_OPEN', job_id: 'j1' });
+  });
+
+  it('refuses to create when the open-job probe itself failed', () => {
+    // A swallowed error here used to read as "no open job" and permitted a
+    // duplicate submission against the same lender.
+    const d = decideOpenJob({ data: null, error: { message: 'multiple rows returned' } });
+    expect(d).toMatchObject({ allow: false, reason: 'QUERY_FAILED' });
+  });
+
+  it('reports how many open jobs were found', () => {
+    const d = decideOpenJob({ data: [{ id: 'j1', status: 'RUNNING' }, { id: 'j2', status: 'QUEUED' }], error: null });
+    expect(d).toMatchObject({ allow: false, count: 2 });
   });
 });

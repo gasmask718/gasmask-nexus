@@ -16,6 +16,10 @@ import {
   normalizeApiResponse, normalizePageText, toHubApplicationStatus,
   type NormalizedResult, type NormalizedStatus,
 } from '../_shared/automation/normalize.ts';
+import {
+  REPORTABLE_STATUSES, RESUMABLE_STATUSES, isReportableStatus, isResumableStatus,
+  decideOpenJob,
+} from '../_shared/automation/policy.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -137,10 +141,19 @@ async function createJob(body: any, caller: Caller) {
   const { application, client, profile, lender, config } = await loadContext(applicationId);
 
   // Idempotency: never allow a second open job for the same application.
-  const { data: open } = await admin.from('automation_jobs')
+  // Fail CLOSED: maybeSingle() errors when more than one open job exists, and a
+  // swallowed error there would silently permit a duplicate lender submission.
+  const { data: openJobs, error: openErr } = await admin.from('automation_jobs')
     .select('id,status').eq('application_id', applicationId)
-    .not('status', 'in', '("COMPLETED","FAILED","CANCELLED")').maybeSingle();
-  if (open) return json({ error: 'An automation job is already open for this application', job_id: open.id, status: open.status }, 409);
+    .not('status', 'in', '("COMPLETED","FAILED","CANCELLED")')
+    .order('created_at', { ascending: false }).limit(5);
+  const openDecision = decideOpenJob({ data: openJobs, error: openErr });
+  if (!openDecision.allow) {
+    return json({
+      error: openDecision.detail, reason: openDecision.reason,
+      job_id: openDecision.job_id, status: openDecision.status, open_job_count: openDecision.count,
+    }, 409);
+  }
 
   // Already submitted upstream? Do not risk a duplicate submission.
   const { data: prior } = await admin.from('automation_jobs')
@@ -379,6 +392,17 @@ async function reportEvent(body: any, caller: Caller) {
   const notMine = assertWorkerHoldsJob(job, body, caller);
   if (notMine) return notMine;
 
+  if (status && !isReportableStatus(status)) {
+    await logEvent(job_id, job.application_id, 'ILLEGAL_STATUS_REPORT',
+      `Rejected attempt to set status ${status} through report-event`,
+      { attempted_status: status, from_status: job.status }, 'error', caller.userId);
+    return json({
+      error: 'STATUS_NOT_REPORTABLE',
+      detail: `report-event may only set progress states; ${status} must come from its own endpoint`,
+      allowed: REPORTABLE_STATUSES,
+    }, 400);
+  }
+
   // Last gate before anything is submitted: the client must still authorize it,
   // and the lender must still be authorized. Both are re-read here rather than
   // trusted from claim time, because either can be withdrawn mid-run.
@@ -499,6 +523,12 @@ async function resolveCheckpoint(body: any, caller: Caller) {
   if (cp.status !== 'PENDING') return json({ error: `Checkpoint already ${cp.status}` }, 409);
 
   const resume = body.resume !== false;
+  // An operator resuming a checkpoint may only hand the job back to a state the
+  // worker can legitimately continue from. COMPLETED / result states are never
+  // reachable this way: a result must come from the lender via submit-result.
+  if (body.next_status && !isResumableStatus(body.next_status)) {
+    return json({ error: 'NEXT_STATUS_NOT_ALLOWED', allowed: RESUMABLE_STATUSES }, 400);
+  }
   const { data: job } = await admin.from('automation_jobs').select('*').eq('id', cp.automation_job_id).maybeSingle();
 
   // Move the job FIRST so a rejected transition cannot leave a checkpoint
@@ -806,6 +836,20 @@ function assertWorkerHoldsJob(job: any, body: any, caller: Caller): Response | n
   return null;
 }
 
+/**
+ * The session equivalent of assertWorkerHoldsJob. A session id is not a
+ * capability: the fleet worker token must not be able to drive, terminate or
+ * escalate a session belonging to a job another worker holds — that would let a
+ * stray worker fail (or halt) another client's live run.
+ */
+async function assertWorkerOwnsSession(session: any, body: any, caller: Caller): Promise<Response | null> {
+  if (caller.kind !== 'worker') return null;
+  const { data: job } = await admin.from('automation_jobs')
+    .select('id,worker_id,lease_expires_at').eq('id', session.automation_job_id).maybeSingle();
+  if (!job) return json({ error: 'SESSION_JOB_NOT_FOUND' }, 404);
+  return assertWorkerHoldsJob(job, body, caller);
+}
+
 /** Terminate whatever live session a job still has. Used on every safety halt. */
 async function failLiveSession(jobId: string, code: string, reason: string) {
   const { error } = await admin.from('automation_sessions').update({
@@ -987,6 +1031,12 @@ async function setSessionStatus(body: any, caller: Caller) {
   if (caller.kind !== 'worker') return json({ error: 'Worker only' }, 403);
   const status = ['OPEN', 'RUNNING'].includes(body.status) ? body.status : 'RUNNING';
 
+  const { data: target } = await admin.from('automation_sessions')
+    .select('id,automation_job_id').eq('id', body.session_id).maybeSingle();
+  if (!target) return json({ error: 'Session not found' }, 404);
+  const notMineS = await assertWorkerOwnsSession(target, body, caller);
+  if (notMineS) return notMineS;
+
   // Consent is re-verified on every worker heartbeat, not only at claim time.
   // A client who withdraws authorization mid-run stops the run.
   const revoked = await enforceLiveConsent(body.session_id, 'session-status');
@@ -1007,6 +1057,8 @@ async function closeSession(body: any, caller: Caller) {
   const { data: session } = await admin.from('automation_sessions')
     .select('*').eq('id', body.session_id).maybeSingle();
   if (!session) return json({ error: 'Session not found' }, 404);
+  const notMineC = await assertWorkerOwnsSession(session, body, caller);
+  if (notMineC) return notMineC;
   // A closed session's record is evidence. It is never re-closed or rewritten.
   if (TERMINAL_SESSION_STATES.includes(session.status)) {
     return json({ error: 'SESSION_ALREADY_TERMINAL', session_status: session.status }, 409);
