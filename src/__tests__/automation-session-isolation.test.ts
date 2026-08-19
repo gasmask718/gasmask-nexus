@@ -100,3 +100,24 @@ describe('session audit hygiene', () => {
     }
   });
 });
+
+describe('workspace purge', () => {
+  it('reports failure instead of silently leaving client material on disk', async () => {
+    const { purgeWorkspace } = await import('../../automation-worker/worker');
+    const fs = await import('node:fs/promises');
+    const os = await import('node:os');
+    const path = await import('node:path');
+
+    const ws = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'ws-')), 'job');
+    await fs.mkdir(path.join(ws, 'downloads'), { recursive: true });
+    await fs.writeFile(path.join(ws, 'downloads', 'bank-statement.pdf'), 'client material');
+
+    const ok = await purgeWorkspace(ws);
+    expect(ok.purged).toBe(true);
+    await expect(fs.stat(ws)).rejects.toThrow();
+
+    // A purge of a path that cannot be removed must surface, never resolve quietly.
+    const result = await purgeWorkspace(ws);
+    expect(result.purged).toBe(true); // already gone counts as purged
+  });
+});

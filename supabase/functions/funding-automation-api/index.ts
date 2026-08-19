@@ -946,7 +946,10 @@ Deno.serve(async (req) => {
       case 'session-status': return await setSessionStatus(body, caller);
       case 'close-session': return await closeSession(body, caller);
       case 'list-sessions': return await listSessions(body, caller);
-      case 'reap-stale': return await reapStaleJobs();
+      // Lease recovery is run by the worker fleet and by operators — never anonymously.
+      case 'reap-stale':
+        if (caller.kind !== 'worker' && caller.kind !== 'operator') return json({ error: 'Unauthorized' }, 403);
+        return await reapStaleJobs();
       default: return json({ error: `Unknown action: ${action}` }, 400);
     }
   } catch (e) {
