@@ -286,14 +286,18 @@ async function runApiJob(claim: ClaimedJob) {
       id: job.id, application_id: job.application_id, funding_client_id: job.funding_client_id,
     });
     if (!adapter.submitViaApi) throw new Error(`Adapter ${job.adapter_key} has no authorized API integration`);
-    await event(job.id, 'SUBMITTING', 'Submitting via lender API', { status: 'RUNNING' });
+    // Final safety gate immediately before the irreversible lender API call.
+    await heartbeat(job.id);
+    await event(job.id, 'SUBMITTING', 'Submitting via lender API', { status: 'SUBMITTING' });
     const response = await adapter.submitViaApi(values, config);
     await api('submit-result', { job_id: job.id, api_response: response });
     await api('close-session', { session_id: session.session_id, status: 'COMPLETED', outcome: 'SUBMITTED' });
   } catch (err) {
     const isolation = err instanceof SessionIsolationError;
-    if (!isolation) {
-      await api('report-failure', { job_id: job.id, failure_class: 'LENDER_ERROR', reason: (err as Error).message.slice(0, 400) });
+    const aborted = isAbortError(err);
+    if (!isolation && !aborted) {
+      await api('report-failure', { job_id: job.id, failure_class: 'LENDER_ERROR', reason: (err as Error).message.slice(0, 400) })
+        .catch(() => {});
     }
     await api('close-session', {
       session_id: session.session_id, status: 'FAILED',
