@@ -20,16 +20,9 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
+  // Credentials live in send-sms now; this worker only needs the sender id.
   const twilioFrom = Deno.env.get("TWILIO_PHONE_NUMBER");
 
-  if (!twilioSid || !twilioAuth || !twilioFrom) {
-    return new Response(
-      JSON.stringify({ error: "Missing Twilio credentials" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
