@@ -752,12 +752,30 @@ async function enforceLiveConsent(sessionId: string, stage: string) {
 
 /** Stop a claimed job cold, without retrying and without contacting a lender. */
 async function haltJob(job: any, code: string, reason: string, status = 'NEEDS_HUMAN_REVIEW') {
-  await admin.from('automation_jobs').update({
+  const patch = {
     status, requires_human_action: true, human_action_type: 'REVIEW_REQUIRED',
     failure_class: code, failure_reason: reason,
     worker_id: null, lease_expires_at: null,
-  }).eq('id', job.id);
+  };
+  const { data, error } = await admin.from('automation_jobs').update(patch).eq('id', job.id).select('id');
+
+  if (error || !data?.length) {
+    // A halt that does not persist leaves an unauthorized job live and claimable.
+    // Retry without the fields most likely to be rejected (failure_class check
+    // constraint / illegal transition), so the job is ALWAYS taken off the queue.
+    const { error: fallbackErr } = await admin.from('automation_jobs').update({
+      requires_human_action: true, human_action_type: 'REVIEW_REQUIRED',
+      failure_reason: `${code}: ${reason}`,
+      worker_id: null, lease_expires_at: null,
+    }).eq('id', job.id);
+    await logEvent(job.id, job.application_id, 'HALT_WRITE_FAILED',
+      `Halt (${code}) could not be fully applied from status ${job.status}: ${error?.message ?? 'no row updated'}` +
+      (fallbackErr ? ` — fallback also failed: ${fallbackErr.message}` : ' — job flagged for human action and unassigned'),
+      { code, attempted_status: status }, 'error');
+    return false;
+  }
   await logEvent(job.id, job.application_id, code, reason, {}, 'error');
+  return true;
 }
 
 /**
