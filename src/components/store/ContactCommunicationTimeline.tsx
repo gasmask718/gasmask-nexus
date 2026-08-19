@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { CallTranscriptViewer } from "@/components/communication/CallTranscriptViewer";
 import { CallAnalysisPanel } from "@/components/communication/CallAnalysisPanel";
+import { RecordingPlayer } from "@/components/phone/RecordingPlayer";
+
 
 interface Props {
   storeId: string;
@@ -28,7 +30,7 @@ type Entry = {
   ts: string;
   direction: "inbound" | "outbound" | "system";
   channel: string; // call, sms, ai_call, voicemail, email, va_call, bland
-  source: "communication_logs" | "communication_messages" | "dynasty_ai_calls";
+  source: string;  // source_table from v_store_comms_detail
   who: string | null;
   duration: number | null;
   outcome: string | null;
@@ -39,6 +41,7 @@ type Entry = {
   status: string | null;
   call_id?: string | null; // Bland/dynasty call_id for transcript+analysis lookup
 };
+
 
 const normalize = (p?: string | null) => (p || "").replace(/\D/g, "").slice(-10);
 
@@ -78,123 +81,57 @@ export function ContactCommunicationTimeline({
   const qc = useQueryClient();
   const phoneTail = normalize(contactPhone);
 
+  // SINGLE SOURCE: public.v_store_comms_detail — the merge happens in SQL,
+  // not here. (Retires the old four-query client-side merge.)
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["contact-comm-timeline", contactId, phoneTail],
+    queryKey: ["contact-comm-timeline", storeId, contactId, phoneTail],
+    enabled: !!contactId && !!storeId,
     queryFn: async (): Promise<Entry[]> => {
-      const phoneLike = phoneTail ? `%${phoneTail}%` : null;
-
-      // 1. communication_logs — by contact_id OR by phone match scoped to store
-      const logsByContact = supabase
-        .from("communication_logs")
+      let q = (supabase as any)
+        .from("v_store_comms_detail")
         .select("*")
-        .eq("contact_id", contactId)
-        .order("created_at", { ascending: false })
-        .limit(100);
+        .eq("store_id", storeId)
+        .order("occurred_at", { ascending: false })
+        .limit(200);
 
-      const logsByPhone = phoneLike
-        ? supabase
-            .from("communication_logs")
-            .select("*")
-            .eq("store_id", storeId)
-            .is("contact_id", null)
-            .or(`recipient_phone.ilike.${phoneLike},sender_phone.ilike.${phoneLike}`)
-            .order("created_at", { ascending: false })
-            .limit(100)
-        : Promise.resolve({ data: [], error: null } as any);
+      // Contact-owned rows, plus anything on this contact's number that never
+      // got a contact_id stamped on it.
+      q = phoneTail
+        ? q.or(`contact_id.eq.${contactId},phone.ilike.%${phoneTail}%`)
+        : q.eq("contact_id", contactId);
 
-      // 2. communication_messages — by contact_id
-      const messagesByContact = supabase
-        .from("communication_messages")
-        .select("*")
-        .eq("contact_id", contactId)
-        .order("created_at", { ascending: false })
-        .limit(100);
+      const { data: rows, error } = await q;
+      if (error) throw error;
 
-      // 3. dynasty_ai_calls — match by phone (no FK to store_contacts)
-      const aiCalls = phoneLike
-        ? (supabase as any)
-            .from("dynasty_ai_calls")
-            .select("*")
-            .or(`to_number.ilike.${phoneLike},from_number.ilike.${phoneLike}`)
-            .order("call_started_at", { ascending: false })
-            .limit(50)
-        : Promise.resolve({ data: [], error: null } as any);
+      const entries: Entry[] = (rows || []).map((r: any) => ({
+        id: `${r.source_table}-${r.source_id}`,
+        ts: r.occurred_at,
+        direction: (r.direction as any) || "outbound",
+        channel:
+          r.is_ai && (r.channel === "call" || !r.channel) ? "ai_call" : r.channel || "sms",
+        source: r.source_table,
+        who: r.performed_by || (r.is_ai ? "AI" : null),
+        duration: r.duration_seconds ?? null,
+        outcome: r.outcome,
+        summary: r.summary,
+        body: r.body,
+        transcript: r.transcript,
+        recording_url: r.recording_url,
+        status: r.status,
+        call_id: r.source_table === "dynasty_ai_calls" ? r.provider_sid : null,
+      }));
 
-      const [logsA, logsB, msgs, ai] = await Promise.all([
-        logsByContact, logsByPhone, messagesByContact, aiCalls,
-      ]);
-
-      const entries: Entry[] = [];
-
-      for (const r of (logsA.data || []).concat(logsB.data || [])) {
-        entries.push({
-          id: `cl-${r.id}`,
-          ts: r.started_at || r.created_at,
-          direction: (r.direction as any) || "outbound",
-          channel: r.channel || "sms",
-          source: "communication_logs",
-          who: r.performed_by || (r.ai_assisted ? "AI" : null),
-          duration: r.duration_seconds ?? r.call_duration ?? null,
-          outcome: r.outcome,
-          summary: r.summary,
-          body: r.message_content || r.full_message,
-          transcript: r.transcript || r.transcription,
-          recording_url: r.recording_url,
-          status: r.delivery_status || r.status,
-        });
-      }
-
-      for (const m of (msgs.data || [])) {
-        entries.push({
-          id: `cm-${m.id}`,
-          ts: m.created_at,
-          direction: m.direction as any,
-          channel: m.channel || "sms",
-          source: "communication_messages",
-          who: m.ai_generated ? "AI" : m.actor_type || null,
-          duration: null,
-          outcome: null,
-          summary: null,
-          body: m.content,
-          transcript: null,
-          recording_url: null,
-          status: m.status,
-        });
-      }
-
-      for (const c of (ai.data || [])) {
-        entries.push({
-          id: `ai-${c.id}`,
-          ts: c.call_started_at || c.created_at,
-          direction: (c.direction as any) || "outbound",
-          channel: "ai_call",
-          source: "dynasty_ai_calls",
-          who: c.agent_name || c.agent_id,
-          duration: c.duration_seconds,
-          outcome: c.outcome,
-          summary: c.next_action,
-          body: null,
-          transcript: c.transcript,
-          recording_url: c.recording_url,
-          status: c.outcome,
-          call_id: c.call_id,
-        });
-      }
-
-      // dedupe (logs + messages might overlap on same twilio sid — best-effort by ts+body)
+      // Same call can be mirrored into more than one source table.
       const seen = new Set<string>();
-      const deduped = entries.filter((e) => {
+      return entries.filter((e) => {
         const key = `${e.ts}|${e.direction}|${(e.body || "").slice(0, 40)}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
       });
-
-      deduped.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
-      return deduped;
     },
-    enabled: !!contactId,
   });
+
 
   // realtime — refresh on new comm_logs for this store
   useEffect(() => {
@@ -327,7 +264,7 @@ export function ContactCommunicationTimeline({
               )}
 
               {e.recording_url && (
-                <audio controls className="w-full h-7" src={e.recording_url} preload="none" />
+                <RecordingPlayer recordingUrl={e.recording_url} recordingSid={e.call_id} />
               )}
 
               {e.source === "dynasty_ai_calls" && e.call_id ? (

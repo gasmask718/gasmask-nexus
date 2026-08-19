@@ -1061,8 +1061,136 @@ async function escalateFailures(results: Result[]): Promise<number> {
   return due.length;
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// LAYER: Outbound dispatch health — failure RATE over a rolling window.
+//
+// brandaro_ai_calls writes a row BEFORE dispatch, so a row count proves
+// nothing: the table sat at a 100% dispatch failure rate for two months while
+// three dashboards rendered it as volume. This check reads outcomes, not rows.
+//   fail  → >=50% of attempts in the window failed to dispatch
+//   warn  → >=20%, or the whole window is empty when the 7d window is not
+//   pass  → below 20%
+// ────────────────────────────────────────────────────────────────────────────
+const DISPATCH_FAIL_STATUSES = ["failed", "error", "rejected", "canceled", "cancelled"];
+
+async function checkOutboundDispatch(): Promise<Result[]> {
+  const out: Result[] = [];
+  const supa = sb();
+
+  const windows: Array<{ target: string; hours: number; minAttempts: number }> = [
+    { target: "brandaro_ai_calls_24h", hours: 24, minAttempts: 5 },
+    { target: "brandaro_ai_calls_7d", hours: 24 * 7, minAttempts: 10 },
+  ];
+
+  for (const w of windows) {
+    try {
+      const since = new Date(Date.now() - w.hours * 3600 * 1000).toISOString();
+      const { data, error } = await supa
+        .from("brandaro_ai_calls")
+        .select("status, outcome, created_at")
+        .gte("created_at", since)
+        .limit(5000);
+
+      if (error) {
+        out.push({
+          provider: "bland",
+          layer: "dispatch_health",
+          target: w.target,
+          status: "warn",
+          message: `Could not query brandaro_ai_calls: ${error.message}`,
+        });
+        continue;
+      }
+
+      const rows = data || [];
+      const attempts = rows.length;
+      const failures = rows.filter((r: Record<string, unknown>) =>
+        DISPATCH_FAIL_STATUSES.includes(String(r.status || "").toLowerCase()),
+      );
+      const rate = attempts ? failures.length / attempts : 0;
+
+      // Most common failure reason, for the alert body.
+      const reasons: Record<string, number> = {};
+      for (const f of failures) {
+        const o = (f as Record<string, unknown>).outcome as Record<string, unknown> | string | null;
+        let reason = "unknown";
+        let parsed: unknown = o;
+        if (typeof o === "string") {
+          try { parsed = JSON.parse(o); } catch { reason = o.slice(0, 120); }
+        }
+        const p = parsed as Record<string, unknown> | null;
+        if (p && typeof p === "object") {
+          const resp = (p.bland_response || {}) as Record<string, unknown>;
+          reason = String(p.reason || p.message || resp.message || resp.code || p.code || "unknown").slice(0, 120);
+        }
+        reasons[reason] = (reasons[reason] || 0) + 1;
+      }
+      const topReason = Object.entries(reasons).sort((a, b) => b[1] - a[1])[0];
+
+      const detail = {
+        window_hours: w.hours,
+        attempts,
+        failures: failures.length,
+        failure_rate_pct: Math.round(rate * 100),
+        top_reason: topReason ? { reason: topReason[0], count: topReason[1] } : null,
+      };
+
+      if (attempts === 0) {
+        out.push({
+          provider: "bland",
+          layer: "dispatch_health",
+          target: w.target,
+          status: w.hours >= 24 * 7 ? "warn" : "pass",
+          message:
+            w.hours >= 24 * 7
+              ? "No AI dial attempts at all in the last 7 days — campaigns are idle or not firing."
+              : "No AI dial attempts in the last 24h.",
+          detail,
+        });
+      } else if (attempts >= w.minAttempts && rate >= 0.5) {
+        out.push({
+          provider: "bland",
+          layer: "dispatch_health",
+          target: w.target,
+          status: "fail",
+          message: `${detail.failure_rate_pct}% of ${attempts} AI dial attempts failed to dispatch in the last ${w.hours}h${topReason ? ` — top reason: "${topReason[0]}" (${topReason[1]}x)` : ""}. Rows are written before dispatch, so dashboards will still show volume.`,
+          detail,
+        });
+      } else if (attempts >= w.minAttempts && rate >= 0.2) {
+        out.push({
+          provider: "bland",
+          layer: "dispatch_health",
+          target: w.target,
+          status: "warn",
+          message: `${detail.failure_rate_pct}% of ${attempts} AI dial attempts failed to dispatch in the last ${w.hours}h${topReason ? ` — top reason: "${topReason[0]}"` : ""}.`,
+          detail,
+        });
+      } else {
+        out.push({
+          provider: "bland",
+          layer: "dispatch_health",
+          target: w.target,
+          status: "pass",
+          message: `${attempts} AI dial attempts, ${failures.length} dispatch failures (${detail.failure_rate_pct}%) in the last ${w.hours}h.`,
+          detail,
+        });
+      }
+    } catch (e) {
+      out.push({
+        provider: "bland",
+        layer: "dispatch_health",
+        target: w.target,
+        status: "fail",
+        message: `Dispatch health check threw: ${(e as Error).message}`,
+      });
+    }
+  }
+
+  return out;
+}
 
 // ────────────────────────────────────────────────────────────────────────────
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -1082,6 +1210,8 @@ Deno.serve(async (req) => {
     { name: "checkBlandAgents", provider: "bland", fn: checkBlandAgents },
     { name: "checkBlandWebhooks", provider: "bland", fn: checkBlandWebhooks },
     { name: "checkBlandSynthetic", provider: "bland", fn: checkBlandSynthetic },
+    { name: "checkOutboundDispatch", provider: "bland", fn: checkOutboundDispatch },
+
     // ElevenLabs
     { name: "checkElevenLabsCredentials", provider: "elevenlabs", fn: checkElevenLabsCredentials },
     { name: "checkElevenLabsAgents", provider: "elevenlabs", fn: checkElevenLabsAgents },
