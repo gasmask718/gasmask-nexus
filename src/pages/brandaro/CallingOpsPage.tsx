@@ -109,6 +109,9 @@ export default function CallingOpsPage() {
   });
 
   // Today's stats — SOURCE OF TRUTH: brandaro_ai_calls
+  // A row is written BEFORE dispatch, so row count = attempts, not outcomes.
+  // These tiles count outcomes; attempts are shown separately with the
+  // failure rate, so a 100% dispatch failure can never read as healthy volume.
   const { data: todayStats } = useQuery({
     queryKey: ["brandaro-ai-calls-stats-today"],
     queryFn: async () => {
@@ -119,10 +122,15 @@ export default function CallingOpsPage() {
         .gte("created_at", today);
       if (error) throw error;
       const rows = data || [];
-      const total = rows.length;
+      const attempted = rows.length;
+      const failed = rows.filter((r: any) => {
+        const s = String(r.status || "").toLowerCase();
+        return ["failed", "error", "rejected", "canceled", "cancelled"].includes(s);
+      }).length;
       const answered = rows.filter((r: any) =>
         ["completed", "connected", "answered", "in-progress"].includes(String(r.status || "").toLowerCase())
       ).length;
+      const dispatched = attempted - failed;
       const interested = rows.filter((r: any) => {
         const o = String(r.outcome || "").toLowerCase();
         const i = String(r.interest_level || "").toLowerCase();
@@ -133,8 +141,19 @@ export default function CallingOpsPage() {
         return o.includes("demo");
       }).length;
       const conversations = rows.filter((r: any) => (r.duration_seconds || 0) > 20).length;
-      return { total, answered, interested, demoTriggered, conversations };
+      return {
+        attempted,
+        dispatched,
+        failed,
+        failureRate: attempted ? Math.round((failed / attempted) * 100) : 0,
+        total: dispatched, // legacy field: now outcomes, not attempts
+        answered,
+        interested,
+        demoTriggered,
+        conversations,
+      };
     },
+
     refetchInterval: 30000,
   });
 
@@ -341,17 +360,25 @@ export default function CallingOpsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <Card>
+        <Card className={todayStats?.failed ? "border-destructive/50" : undefined}>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
               <Phone className="h-5 w-5 text-primary" />
               <div>
-                <p className="text-2xl font-bold">{todayStats?.total || 0}</p>
-                <p className="text-xs text-muted-foreground">Calls Today</p>
+                <p className="text-2xl font-bold">{todayStats?.dispatched || 0}</p>
+                <p className="text-xs text-muted-foreground">
+                  Dialed Today · {todayStats?.attempted || 0} attempted
+                </p>
+                {!!todayStats?.failed && (
+                  <p className="text-xs font-medium text-destructive">
+                    {todayStats.failed} failed to dispatch ({todayStats.failureRate}%)
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
+
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">

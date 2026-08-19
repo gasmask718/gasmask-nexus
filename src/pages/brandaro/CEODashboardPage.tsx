@@ -91,7 +91,18 @@ export default function CEODashboardPage() {
 
       {/* Today's Activity (T5) */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <MetricCard icon={Bot} label="AI Dials Today" value={stats.aiDialsToday} sub="brandaro_ai_calls" color="text-cyan-500" />
+        <MetricCard
+          icon={Bot}
+          label="AI Dials Today"
+          value={stats.aiDialsToday}
+          sub={
+            stats.aiDialsFailedToday
+              ? `${stats.aiDialsAttemptedToday} attempted · ${stats.aiDialsFailedToday} failed to dispatch (${stats.aiDialFailureRate}%)`
+              : `${stats.aiDialsAttemptedToday || 0} attempted · all dispatched`
+          }
+          color={stats.aiDialsFailedToday ? "text-destructive" : "text-cyan-500"}
+        />
+
         <MetricCard icon={Phone} label="Human Dials Today" value={stats.humanDialsToday} sub="va_call_logs" color="text-green-500" />
         <MetricCard icon={Users} label="Leads Worked Today" value={stats.leadsWorkedToday} sub="Distinct lead_id" color="text-blue-500" />
         <MetricCard icon={MessageSquare} label="Texts Today" value={stats.textsToday} sub="pending_messages → sent" color="text-amber-500" />

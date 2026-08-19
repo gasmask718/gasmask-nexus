@@ -129,7 +129,12 @@ function useSaraTodaySnapshot() {
         outcome: string | null;
         duration_seconds: number | null;
       }[];
-      const total = rows.length;
+      // Rows are written before dispatch — attempts, not outcomes.
+      const attempted = rows.length;
+      const failed = rows.filter(r =>
+        ["failed", "error", "rejected", "canceled", "cancelled"].includes((r.status || "").toLowerCase()),
+      ).length;
+      const dispatched = attempted - failed;
       const connected = rows.filter(r =>
         ["completed", "connected", "answered"].includes((r.status || "").toLowerCase()),
       ).length;
@@ -137,10 +142,20 @@ function useSaraTodaySnapshot() {
         ["interested", "booked", "callback", "hot"].includes((r.outcome || "").toLowerCase()),
       ).length;
       const totalSec = rows.reduce((s, r) => s + Number(r.duration_seconds || 0), 0);
-      return { total, connected, positive, avgSec: total ? Math.round(totalSec / total) : 0 };
+      return {
+        attempted,
+        dispatched,
+        failed,
+        failureRate: attempted ? Math.round((failed / attempted) * 100) : 0,
+        total: dispatched,
+        connected,
+        positive,
+        avgSec: connected ? Math.round(totalSec / connected) : 0,
+      };
     },
   });
 }
+
 
 /* ── 4. Recent activity feed ──────────────────────────────────────── */
 type Activity = {
@@ -302,11 +317,19 @@ export function WarRoomLiveSnapshot() {
           ) : (
             <>
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Calls today</p>
-                <p className="text-2xl font-bold tabular-nums text-purple-600">
-                  {sara.data?.total || 0}
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Dialed today · {sara.data?.attempted || 0} attempted
                 </p>
+                <p className="text-2xl font-bold tabular-nums text-purple-600">
+                  {sara.data?.dispatched || 0}
+                </p>
+                {!!sara.data?.failed && (
+                  <p className="text-[10px] font-medium text-destructive">
+                    {sara.data.failed} failed to dispatch ({sara.data.failureRate}%)
+                  </p>
+                )}
               </div>
+
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div>
                   <p className="text-muted-foreground">Connected</p>

@@ -1,0 +1,2 @@
+ALTER TABLE public.comms_health_checks DROP CONSTRAINT comms_health_checks_layer_check;
+ALTER TABLE public.comms_health_checks ADD CONSTRAINT comms_health_checks_layer_check CHECK (layer = ANY (ARRAY['credentials'::text, 'webhook_config'::text, 'function_deployment'::text, 'a2p_sending'::text, 'signature_verify'::text, 'synthetic_loop'::text, 'feature_mode'::text, 'dispatch_health'::text]));

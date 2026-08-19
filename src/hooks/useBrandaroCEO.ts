@@ -45,10 +45,13 @@ export function useCEODashboard() {
       ] = await Promise.all([
         sb.from('brandaro_qualified_leads').select('*', { count: 'exact', head: true }),
         sb.from('brandaro_qualified_leads').select('*', { count: 'exact', head: true }).not('assigned_va', 'is', null),
-        sb.from('brandaro_ai_calls').select('*', { count: 'exact', head: true }).gte('created_at', startOfDayISO),
+        // Rows land in brandaro_ai_calls BEFORE dispatch, so a plain count is
+        // attempts, not dials. Pull status and split the two facts apart.
+        sb.from('brandaro_ai_calls').select('lead_id, status').gte('created_at', startOfDayISO),
         sb.from('va_call_logs').select('*', { count: 'exact', head: true }).gte('called_at', startOfDayISO),
-        sb.from('brandaro_ai_calls').select('lead_id').gte('created_at', startOfDayISO),
+        sb.from('brandaro_ai_calls').select('lead_id, status').gte('created_at', startOfDayISO),
         sb.from('va_call_logs').select('lead_id').gte('called_at', startOfDayISO),
+
         sb.from('brandaro_pending_messages').select('*', { count: 'exact', head: true }).gte('sent_at', startOfDayISO),
         sb.from('brandaro_qualified_leads').select('*', { count: 'exact', head: true })
           .eq('converted', true).gte('conversion_date', startOfDayISO),
@@ -63,14 +66,27 @@ export function useCEODashboard() {
       const leadsAssigned = assignedLeadsRes.count || 0;
       const leadsUnassigned = Math.max(0, totalLeads - leadsAssigned);
 
-      const aiDialsToday = aiDialsRes.count || 0;
+      const AI_FAIL = ['failed', 'error', 'rejected', 'canceled', 'cancelled'];
+      const aiRows = ((aiDialsRes.data || []) as any[]);
+      const aiDialsAttemptedToday = aiRows.length;
+      const aiDialsFailedToday = aiRows.filter(
+        (r) => AI_FAIL.includes(String(r.status || '').toLowerCase()),
+      ).length;
+      const aiDialsToday = aiDialsAttemptedToday - aiDialsFailedToday; // dispatched
+      const aiDialFailureRate = aiDialsAttemptedToday
+        ? Math.round((aiDialsFailedToday / aiDialsAttemptedToday) * 100)
+        : 0;
       const humanDialsToday = humanDialsRes.count || 0;
       const callsToday = aiDialsToday + humanDialsToday;
 
+      // A lead whose only dial never left the building was not worked.
       const workedLeadSet = new Set<string>();
-      ((aiCallLeadIdsRes.data || []) as any[]).forEach((r) => { if (r.lead_id) workedLeadSet.add(r.lead_id); });
+      ((aiCallLeadIdsRes.data || []) as any[]).forEach((r) => {
+        if (r.lead_id && !AI_FAIL.includes(String(r.status || '').toLowerCase())) workedLeadSet.add(r.lead_id);
+      });
       ((humanCallLeadIdsRes.data || []) as any[]).forEach((r) => { if (r.lead_id) workedLeadSet.add(r.lead_id); });
       const leadsWorkedToday = workedLeadSet.size;
+
 
       const textsToday = textsTodayRes.count || 0;
       const closesToday = closesTodayRes.count || 0;
@@ -99,6 +115,10 @@ export function useCEODashboard() {
       return {
         // ── New operational KPIs (T5) ──
         aiDialsToday,
+        aiDialsAttemptedToday,
+        aiDialsFailedToday,
+        aiDialFailureRate,
+
         humanDialsToday,
         leadsWorkedToday,
         textsToday,
