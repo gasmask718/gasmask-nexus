@@ -129,6 +129,8 @@ function resolveMethod(requested: string | undefined, config: Record<string, any
 // ------------------------------- handlers -------------------------------
 
 async function createJob(body: any, caller: Caller) {
+  // Jobs are created by operators (or the Funding Hub UI acting as one).
+  if (caller.kind !== 'operator') return json({ error: 'Operator only' }, 403);
   const applicationId = body.application_id;
   if (!applicationId) return json({ error: 'application_id is required' }, 400);
 
@@ -232,6 +234,8 @@ async function getJob(body: any, caller: Caller) {
 }
 
 async function cancelJob(body: any, caller: Caller) {
+  // Job lifecycle control belongs to authorized humans, never to a worker token.
+  if (caller.kind !== 'operator') return json({ error: 'Operator only' }, 403);
   const { data: job } = await admin.from('automation_jobs').select('*').eq('id', body.job_id).maybeSingle();
   if (!job) return json({ error: 'Job not found' }, 404);
   if (['COMPLETED', 'CANCELLED'].includes(job.status)) return json({ error: `Job is ${job.status}` }, 409);
@@ -243,6 +247,8 @@ async function cancelJob(body: any, caller: Caller) {
 }
 
 async function retryJob(body: any, caller: Caller) {
+  // A worker must never be able to put its own failed job back on the queue.
+  if (caller.kind !== 'operator') return json({ error: 'Operator only' }, 403);
   const { data: job } = await admin.from('automation_jobs').select('*').eq('id', body.job_id).maybeSingle();
   if (!job) return json({ error: 'Job not found' }, 404);
   if (job.submission_confirmed) {
@@ -902,6 +908,8 @@ async function closeSession(body: any, caller: Caller) {
 }
 
 async function listSessions(body: any, caller: Caller) {
+  // Session records are audit evidence: readable by operators, not by workers.
+  if (caller.kind !== 'operator') return json({ error: 'Operator only' }, 403);
   if (caller.kind !== 'operator') return json({ error: 'Operator only' }, 403);
   let q = admin.from('automation_sessions').select('*').order('started_at', { ascending: false }).limit(200);
   if (body.job_id) q = q.eq('automation_job_id', body.job_id);
