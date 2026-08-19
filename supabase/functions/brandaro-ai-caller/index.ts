@@ -123,19 +123,16 @@ serve(async (req) => {
           .limit(1);
         testFrom = fbRows?.[0]?.phone_number ?? null;
       }
-      if (!testFrom) {
-        return new Response(
-          JSON.stringify({ success: false, error: "No active brandaro from-number available" }),
-          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      const testResolved = await resolveBlandFrom(BLAND_API_KEY, testFrom);
+      testFrom = testResolved.from;
 
       const testPayload: Record<string, unknown> = {
         phone_number: test_phone,
-        from: testFrom,
+        ...(testFrom ? { from: testFrom } : {}),
         pathway_id: BRANDARO_SALES_PATHWAY_ID,
         metadata: { campaign: "brandaro-ai-caller-test", test: true },
       };
+
 
       const tRes = await fetch("https://api.bland.ai/v1/calls", {
         method: "POST",
