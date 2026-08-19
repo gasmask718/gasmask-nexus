@@ -278,6 +278,30 @@ async function claimJob(body: any) {
     if (!claimed) continue;
 
     const { application, client, profile, lender, config } = await loadContext(claimed.application_id);
+
+    // Ownership chain: job → application → client. A drift here means the job row
+    // and the Funding Hub disagree about whose application this is. Never guess.
+    const chain = checkOwnershipChain(claimed, application);
+    if (chain) {
+      await haltJob(claimed, 'SESSION_CLIENT_MISMATCH', chain);
+      continue;
+    }
+
+    // Consent gate: no submission attempt without a recorded client consent.
+    const consent = checkConsent(client);
+    if (consent) {
+      await haltJob(claimed, 'CLIENT_CONSENT_REQUIRED', consent, 'BLOCKED');
+      continue;
+    }
+
+    // QA fixture containment: a fixture client may only ever be pointed at a
+    // fixture lender configuration. It must never reach a real lender.
+    if (client?.is_qa_fixture && !config?.is_qa_fixture) {
+      await haltJob(claimed, 'QA_FIXTURE_CONTAINMENT',
+        'QA fixture client cannot be submitted to a non-fixture lender configuration', 'BLOCKED');
+      continue;
+    }
+
     const { data: mappings } = await admin.from('automation_field_mappings')
       .select('lender_field_label,canonical_field,field_kind,required,allowed_values,lender_selector,sort_order')
       .eq('lender_config_id', config?.id ?? '00000000-0000-0000-0000-000000000000').order('sort_order');
