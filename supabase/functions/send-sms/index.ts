@@ -198,7 +198,10 @@ interface SendRequest {
   idempotency_key: string;
   /** REQUIRED. See SendClass. */
   send_class: SendClass;
+  /** MMS attachments (Twilio only — BizText fallback is skipped when set). */
+  media_urls?: string[];
   store_id?: string;
+
   campaign_id?: string;
   /** Recipient count the campaign was created with — becomes its hard ceiling. */
   campaign_max_sends?: number;
