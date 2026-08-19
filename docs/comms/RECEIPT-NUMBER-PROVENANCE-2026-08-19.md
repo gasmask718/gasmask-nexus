@@ -64,13 +64,33 @@ small but the path is live, and a manager receiving an invoice is a different
 consent than an owner receiving one — a worker receiving one is not defensible
 at all.
 
+### Retroactive action on the 21 already sent — none, deliberately
+
+Stated explicitly so the next reader does not have to infer it: **no
+notification, apology, or deletion is owed for the 21 receipts already
+delivered.** The content was a billing receipt for the store the recipient
+worked at — transactional, not marketing, no personal data about the recipient,
+no financial exposure to them, and nothing that triggers a notice obligation.
+The finding is a consent-hygiene defect in how the destination was chosen, not
+a harm event. The fix below is forward-only and that is the complete remedy.
+
+**One exception worth naming separately.** One of the 21 went to `john`, role
+`Inactive`, at 538 Hegeman Ave / MOHAMMED, on 2026-02-19 — a person who no
+longer worked at the store received that store's billing information. That is a
+different failure from the other twenty: not "wrong person at the business" but
+"person outside the business". Still a single receipt, still no action taken,
+but it is the one that would have mattered had the volume been higher, and it
+is the reason the role filter alone is not the whole lesson — a stale contact
+with a billing-shaped role would pass the new filter. Contact staleness is not
+currently modelled anywhere; recorded here as the open gap.
+
 ### Fix applied
 
 `send-invoice-receipt` no longer takes "oldest contact with a phone". The
 `store_contacts` fallback now requires `is_primary = true` or a billing role
 (`owner`, `billing`, `manager`, `accounting`); otherwise it is skipped and the
 store's own line is used. Also removed a read of `store_master.contact_phone`,
-a column that does not exist — that fallback branch was erroring silently.
+a column that does not exist — see section 6.
 
 ## 3. profiles.phone / auth.users.phone — decision recorded
 
