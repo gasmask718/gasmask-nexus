@@ -234,20 +234,18 @@ describe('duplicate job guard fails closed', () => {
 
   it('blocks a second open job for the same application', () => {
     const d = decideOpenJob({ data: [{ id: 'j1', status: 'RUNNING' }], error: null });
-    expect(d.allow).toBe(false);
-    if (!d.allow) { expect(d.reason).toBe('JOB_ALREADY_OPEN'); expect(d.job_id).toBe('j1'); }
+    expect(d).toMatchObject({ allow: false, reason: 'JOB_ALREADY_OPEN', job_id: 'j1' });
   });
 
   it('refuses to create when the open-job probe itself failed', () => {
     // A swallowed error here used to read as "no open job" and permitted a
     // duplicate submission against the same lender.
     const d = decideOpenJob({ data: null, error: { message: 'multiple rows returned' } });
-    expect(d.allow).toBe(false);
-    if (!d.allow) expect(d.reason).toBe('QUERY_FAILED');
+    expect(d).toMatchObject({ allow: false, reason: 'QUERY_FAILED' });
   });
 
   it('reports how many open jobs were found', () => {
     const d = decideOpenJob({ data: [{ id: 'j1', status: 'RUNNING' }, { id: 'j2', status: 'QUEUED' }], error: null });
-    if (!d.allow) expect(d.count).toBe(2);
+    expect(d).toMatchObject({ allow: false, count: 2 });
   });
 });
