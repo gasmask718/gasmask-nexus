@@ -2,6 +2,7 @@
 // Shortens a Stripe checkout URL via TinyURL and sends it to the customer
 // via Twilio SMS. Logs every send (success or failure) to communication_logs.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { sendSms as sendCanonicalSms } from "../_shared/sendSms.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 interface Payload {
@@ -135,19 +136,21 @@ Deno.serve(async (req) => {
     const label = invoice_number ? ` ${invoice_number}` : "";
     const message = `${greeting}, here's your invoice${label}: ${shortUrl}`;
 
-    // ---- Send via Twilio ----
-    const twilioRes = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: "Basic " + btoa(`${sid}:${authToken}`),
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({ To: to, From: from, Body: message }),
-      },
-    );
-    const twilioData = await twilioRes.json();
+    // ---- Send via Twilio (Group C, transactional) ----
+    // The destination is the number supplied with the invoice itself, not a
+    // profile lookup, so consent travels with the transaction.
+    const sent = await sendCanonicalSms({
+      to,
+      body: message,
+      sendClass: "transactional",
+      purpose: "invoice_sms",
+      idempotencyKey: `invoice-sms-${invoice_id ?? shortUrl}-${to}`,
+      from,
+      skipCooldown: true,
+      metadata: { invoice_id: invoice_id ?? null, business_id: business_id ?? null },
+    });
+    const twilioRes = { ok: sent.success };
+    const twilioData = { sid: sent.providerMessageId, message: sent.errorMessage };
     // ---- Log to communication_logs via service role (bypass RLS) ----
 
     await admin.from("communication_logs").insert({
@@ -176,13 +179,16 @@ Deno.serve(async (req) => {
     }
 
     if (!twilioRes.ok) {
-      return json(502, {
-        error: "Twilio rejected the message",
-        twilio_status: twilioRes.status,
-        twilio_message: twilioData?.message ?? null,
-        twilio_code: twilioData?.code ?? null,
+      // A legal STOP is a refusal, not a Twilio rejection — say which it was.
+      return json(sent.blocked ? 409 : 502, {
+        error: sent.blocked ? "Recipient has opted out of SMS" : "Twilio rejected the message",
+        twilio_status: sent.status,
+        twilio_message: sent.errorMessage,
+        twilio_code: sent.errorCode,
+        blocked: sent.blocked,
       });
     }
+
 
     return json(200, {
       success: true,

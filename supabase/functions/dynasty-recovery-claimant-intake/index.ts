@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { sendOpsAlert } from '../_shared/opsAlert.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   drCorsHeaders as corsHeaders,
@@ -153,26 +154,21 @@ serve(async (req) => {
       console.error('Email error:', e)
     }
 
-    // SMS via Twilio
+    // Group A (internal), reclassified: a website-lead ping to the owner is an
+    // ops alert, not customer traffic.
     try {
-      const sid = Deno.env.get('TWILIO_ACCOUNT_SID')
-      const tok = Deno.env.get('TWILIO_AUTH_TOKEN')
-      const from = Deno.env.get('TWILIO_FROM_NUMBER')
-      const to = Deno.env.get('DAVID_PHONE_NUMBER')
-      if (sid && tok && from && to) {
-        const body = `🔥 WEBSITE LEAD\n${formData.full_name} — ${formData.state}\n${formData.phone}\n${formData.property_address}\nID: ${lead.id.slice(0, 8)}`
-        const auth = btoa(`${sid}:${tok}`)
-        const smsRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-          method: 'POST',
-          headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ To: to, From: from, Body: body }),
-        })
-        if (smsRes.ok) {
-          await supabase
-            .from('surplus_funds_leads')
-            .update({ sms_notification_sent: true, sms_notification_sent_at: new Date().toISOString() })
-            .eq('id', lead.id)
-        }
+      const alert = await sendOpsAlert({
+        source: 'dynasty-recovery-claimant-intake',
+        severity: 'warn',
+        subject: `New surplus-funds lead — ${formData.state}`,
+        message: `🔥 WEBSITE LEAD\n${formData.full_name} — ${formData.state}\n${formData.phone}\n${formData.property_address}\nID: ${lead.id.slice(0, 8)}`,
+        context: { lead_id: lead.id },
+      })
+      if (alert.emailSent || alert.smsSent) {
+        await supabase
+          .from('surplus_funds_leads')
+          .update({ sms_notification_sent: true, sms_notification_sent_at: new Date().toISOString() })
+          .eq('id', lead.id)
       }
     } catch (e) {
       console.error('SMS error:', e)

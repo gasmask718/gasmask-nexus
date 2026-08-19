@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { sendOpsAlert } from '../_shared/opsAlert.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -70,33 +71,20 @@ serve(async (req) => {
       )
     }
 
-    // Send admin SMS alert (non-blocking)
+    // Group A (internal), reclassified. This was filed as a booking
+    // notification, but the only recipient is a hard-coded ops handset — it is
+    // an internal lead alert, so it goes to the ops distribution list and
+    // email-first, not to one phone.
     try {
-      const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID')
-      const authToken = Deno.env.get('TWILIO_AUTH_TOKEN')
-      const fromNumber = Deno.env.get('TWILIO_FROM_NUMBER') || Deno.env.get('TWILIO_PHONE_NUMBER')
-
-      if (accountSid && authToken && fromNumber) {
-        const smsBody = `💰 NEW EVENT BOOKING\nEvent: ${body.event_type || 'N/A'}\nDate: ${body.event_date || 'TBD'}\nCity: ${body.city || 'N/A'}\nGuests: ${body.guest_count || 'N/A'}\nPackage: ${body.package_name || 'Custom'}\nDeposit Due: $${body.deposit_amount || 0}\nName: ${body.name}\nPhone: ${body.phone}\nEmail: ${body.email}`
-
-        const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`
-        const credentials = btoa(`${accountSid}:${authToken}`)
-
-        await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${credentials}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            To: '+19295007046',
-            From: fromNumber,
-            Body: smsBody,
-          }),
-        })
-      }
+      await sendOpsAlert({
+        source: 'receive-event-booking',
+        severity: 'warn',
+        subject: `New event booking — ${body.name}`,
+        message: `💰 NEW EVENT BOOKING\nEvent: ${body.event_type || 'N/A'}\nDate: ${body.event_date || 'TBD'}\nCity: ${body.city || 'N/A'}\nGuests: ${body.guest_count || 'N/A'}\nPackage: ${body.package_name || 'Custom'}\nDeposit Due: $${body.deposit_amount || 0}\nName: ${body.name}\nPhone: ${body.phone}\nEmail: ${body.email}`,
+        context: { booking_id: inserted?.id },
+      })
     } catch (smsErr) {
-      console.error('SMS alert failed (non-blocking):', smsErr)
+      console.error('Ops alert failed (non-blocking):', smsErr)
     }
 
     return new Response(

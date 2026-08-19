@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { sendSms as sendCanonicalSms } from "../_shared/sendSms.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -211,27 +212,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Send SMS via Twilio
-    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
-    const twilioAuth = btoa(`${twilioAccountSid}:${twilioAuthToken}`);
-
-    const formData = new URLSearchParams();
-    formData.append('MessagingServiceSid', twilioMessagingServiceSid);
-    formData.append('To', normalizedPhone);
-    formData.append('Body', messageBody);
-
-    const twilioResponse = await fetch(twilioUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${twilioAuth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData.toString(),
+    // Send SMS via Twilio (Group C, transactional).
+    const sent = await sendCanonicalSms({
+      to: normalizedPhone,
+      body: messageBody,
+      sendClass: 'transactional',
+      purpose: 'invoice_receipt',
+      idempotencyKey: `invoice-receipt-${invoiceTableId ?? request.invoice_id}-${normalizedPhone}${request.manual_resend ? `-resend-${Date.now()}` : ''}`,
+      skipCooldown: true,
+      storeId: request.store_id ?? null,
+      metadata: { invoice_id: invoiceTableId, store_id: request.store_id ?? null, phone_source: phoneSource },
     });
-
-    const twilioResult = await twilioResponse.json();
-    const messageSid = twilioResult.sid || null;
-    const sendSuccess = twilioResponse.ok;
+    const twilioResult = { sid: sent.providerMessageId, message: sent.errorMessage };
+    const messageSid = sent.providerMessageId;
+    const sendSuccess = sent.success;
 
     // Log to invoice_receipt_log
     await supabase.from('invoice_receipt_log').insert({

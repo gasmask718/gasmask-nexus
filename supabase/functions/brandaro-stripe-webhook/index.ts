@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { sendSms as sendCanonicalSms } from "../_shared/sendSms.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
@@ -139,24 +140,26 @@ serve(async (req) => {
             .single();
 
           if (lead?.phone) {
-            const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-            const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-            const fromNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
-            if (accountSid && authToken && fromNumber) {
-              const digits = lead.phone.replace(/\D/g, "");
-              const normalizedPhone = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith("1") ? `+${digits}` : lead.phone;
-              await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-                method: "POST",
-                headers: {
-                  Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-                  "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: new URLSearchParams({
-                  To: normalizedPhone,
-                  From: fromNumber,
-                  Body: `🎉 Payment confirmed! We're getting started on ${lead.business_name}'s website right now. Our team will reach out within 24 hours with your first draft. Welcome aboard!`,
-                }),
-              }).catch(e => console.error("Congrats SMS failed:", e));
+            const digits = lead.phone.replace(/\D/g, "");
+            const normalizedPhone = digits.length === 10
+              ? `+1${digits}`
+              : digits.length === 11 && digits.startsWith("1")
+              ? `+${digits}`
+              : lead.phone;
+            // Group C (transactional): payment confirmation for a completed purchase.
+            // Stripe retries webhooks; the idempotency key is what keeps a
+            // retry from re-texting the customer.
+            const sent = await sendCanonicalSms({
+              to: normalizedPhone,
+              body: `🎉 Payment confirmed! We're getting started on ${lead.business_name}'s website right now. Our team will reach out within 24 hours with your first draft. Welcome aboard!`,
+              sendClass: "transactional",
+              purpose: "brandaro_payment_confirmed",
+              idempotencyKey: `brandaro-paid-${leadId}`,
+              skipCooldown: true,
+              metadata: { lead_id: leadId },
+            });
+            if (!sent.success) {
+              console.error("Congrats SMS not sent:", sent.status, sent.errorMessage ?? sent.status);
             }
           }
         }

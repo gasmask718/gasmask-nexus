@@ -2,6 +2,7 @@
 // Invoked by dd-stripe-webhook (confirmed), dd-grabba-bridge (processing),
 // DDPurchaseOrders (shipped), and DDOrderDetail manual panel (any event).
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { sendSms as sendCanonicalSms } from "../_shared/sendSms.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -38,32 +39,24 @@ function buildTrackingUrl(carrier: string | undefined, tracking: string | undefi
   return map[carrier] ?? "#";
 }
 
-async function sendSms(to: string, body: string): Promise<boolean> {
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const tok = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const from = Deno.env.get("TWILIO_FROM_NUMBER") ?? Deno.env.get("TWILIO_PHONE_NUMBER");
-  if (!sid || !tok || !from) {
-    console.warn("[dd-notify] twilio not configured — skipping sms");
+// Group C (transactional). Order-status updates are customer-initiated by the
+// purchase, so they are not marketing-suppressed — but a legal STOP is
+// absolute, and the shared module is the only place that rule is written.
+async function sendSms(to: string, body: string, idemSuffix: string): Promise<boolean> {
+  const res = await sendCanonicalSms({
+    to,
+    body,
+    sendClass: "transactional",
+    purpose: "dd_order_update",
+    idempotencyKey: `dd-order-update-${idemSuffix}`,
+    skipCooldown: true,
+  });
+  if (res.blocked) {
+    console.warn(`[dd-notify] sms suppressed: ${res.status}`);
     return false;
   }
-  try {
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-      method: "POST",
-      headers: {
-        Authorization: "Basic " + btoa(`${sid}:${tok}`),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({ To: to, From: from, Body: body }).toString(),
-    });
-    if (!res.ok) {
-      console.error("[dd-notify] twilio failed", res.status, await res.text());
-      return false;
-    }
-    return true;
-  } catch (e: any) {
-    console.error("[dd-notify] sms threw", e?.message);
-    return false;
-  }
+  if (!res.success) console.error(`[dd-notify] sms failed: ${res.errorMessage}`);
+  return res.success;
 }
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
@@ -221,7 +214,7 @@ serve(async (req) => {
 
   let smsSent = false;
   let emailSent = false;
-  if (customerPhone) smsSent = await sendSms(customerPhone, msg.sms);
+  if (customerPhone) smsSent = await sendSms(customerPhone, msg.sms, `${order.id}-${event_type}`);
   if (customerEmail) emailSent = await sendEmail(customerEmail, msg.subject, msg.html);
 
   const log = Array.isArray(order.notification_log) ? (order.notification_log as any[]) : [];

@@ -7,6 +7,7 @@
 //      payment method. On success, bump next_order_date by the cadence.
 //      On failure, pause the subscription + send recovery SMS.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { sendSms as sendCanonicalSms } from "../_shared/sendSms.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
@@ -28,20 +29,21 @@ function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
-async function sendSms(to: string, body: string) {
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const tok = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const from = Deno.env.get("TWILIO_PHONE_NUMBER") ?? Deno.env.get("TWILIO_FROM");
-  if (!sid || !tok || !from || !to) return;
-  const params = new URLSearchParams({ To: to, From: from, Body: body });
-  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-    method: "POST",
-    headers: {
-      Authorization: "Basic " + btoa(`${sid}:${tok}`),
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: params.toString(),
-  }).catch(() => {});
+// Group C (transactional). Auto-reorder receipts and payment-failure notices
+// are consequences of the customer's own subscription.
+async function sendSms(to: string, body: string, idemKey: string) {
+  if (!to) return;
+  const res = await sendCanonicalSms({
+    to,
+    body,
+    sendClass: "transactional",
+    purpose: "dd_subscription",
+    idempotencyKey: `dd-sub-${idemKey}`,
+    skipCooldown: true,
+  });
+  if (!res.success) {
+    console.warn(`[dd-subscription-fulfillment] sms ${res.status}: ${res.errorMessage ?? res.status}`);
+  }
 }
 
 serve(async (req) => {
@@ -189,7 +191,7 @@ serve(async (req) => {
         const { data: userRes2 } = await supabase.auth.admin.getUserById(sub.user_id);
         const phone = (userRes2?.user?.phone as string) || null;
         if (phone) {
-          await sendSms(phone, `🔄 Auto-reorder placed! Your ${sub.name ?? "subscription"} order for $${(subtotalCents/100).toFixed(2)} is in. Order #${orderId.slice(0,8)}. View: ${PUBLIC_ORIGIN}/order/${orderId}`);
+          await sendSms(phone, `🔄 Auto-reorder placed! Your ${sub.name ?? "subscription"} order for $${(subtotalCents/100).toFixed(2)} is in. Order #${orderId.slice(0,8)}. View: ${PUBLIC_ORIGIN}/order/${orderId}`, `reorder-${orderId}`);
         }
         results.push({ id: sub.id, ok: true, order_id: orderId, amount: subtotalCents / 100 });
       } else {
@@ -201,7 +203,7 @@ serve(async (req) => {
         const { data: userRes2 } = await supabase.auth.admin.getUserById(sub.user_id);
         const phone = (userRes2?.user?.phone as string) || null;
         if (phone) {
-          await sendSms(phone, `⚠️ Auto-reorder failed (${failMsg}). Update your payment to resume: ${PUBLIC_ORIGIN}/store/dashboard`);
+          await sendSms(phone, `⚠️ Auto-reorder failed (${failMsg}). Update your payment to resume: ${PUBLIC_ORIGIN}/store/dashboard`, `reorder-fail-${sub.id}-${new Date().toISOString().slice(0, 10)}`);
         }
         results.push({ id: sub.id, ok: false, order_id: orderId, reason: failMsg });
       }

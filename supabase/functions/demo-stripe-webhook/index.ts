@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms as sendCanonicalSms } from "../_shared/sendSms.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { isSuppressed } from "../_shared/dnc.ts";
 import { callDurable, BUILD_JOB_REF_PREFIX } from "../_shared/durable.ts";
@@ -298,36 +299,26 @@ Deno.serve(async (req) => {
             `Payment confirmed! We're building your site now. ` +
             `Complete your intake form to get started: ${intakeUrl}`;
 
-          const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-          const auth = Deno.env.get("TWILIO_AUTH_TOKEN");
-          const from =
-            Deno.env.get("BRANDARO_TWILIO_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER");
-
-          let status = "failed";
-          let providerId: string | null = null;
-          let failure: string | null = "twilio not configured";
-
-          if (sid && auth && from) {
-            const resp = await fetch(
-              `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
-              {
-                method: "POST",
-                headers: {
-                  Authorization: "Basic " + btoa(`${sid}:${auth}`),
-                  "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: new URLSearchParams({ To: phone, From: from, Body: body }),
-              },
-            );
-            const tw = await resp.json().catch(() => ({}));
-            if (resp.ok) {
-              status = "sent";
-              providerId = tw.sid ?? null;
-              failure = null;
-            } else {
-              failure = tw?.message || `twilio ${resp.status}`;
-              console.error("[demo-stripe-webhook] twilio send failed:", failure);
-            }
+          // Group C (transactional): post-payment intake link. The marketing
+          // suppression check above already ran; the shared module adds the
+          // legal-STOP gate that applies to every class.
+          const sent = await sendCanonicalSms({
+            to: phone,
+            body,
+            sendClass: "transactional",
+            purpose: "brandaro_intake_link",
+            idempotencyKey: `demo-paid-intake-${demo_id}`,
+            from: Deno.env.get("BRANDARO_TWILIO_NUMBER") ?? null,
+            skipCooldown: true,
+            metadata: { lead_id, demo_id },
+          });
+          const status = sent.success ? "sent" : sent.blocked ? "blocked" : "failed";
+          const providerId = sent.providerMessageId;
+          const failure = sent.success
+            ? null
+            : (sent.errorMessage ?? sent.status ?? "send failed");
+          if (!sent.success) {
+            console.error("[demo-stripe-webhook] sms not sent:", failure);
           }
 
           await supabase.from("brandaro_message_log").insert({

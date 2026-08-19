@@ -3,6 +3,7 @@
 // (setup fee + first month) and optionally SMS-es the checkout URL to the lead.
 // Called by the VA from the Brandaro dashboard during a live call.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms as sendCanonicalSms } from "../_shared/sendSms.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
@@ -150,34 +151,23 @@ Deno.serve(async (req) => {
     let sms_error: string | null = null;
     if (send_sms && phone) {
       try {
-        const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-        const twilioTok = Deno.env.get("TWILIO_AUTH_TOKEN");
-        const twilioFrom = Deno.env.get("TWILIO_MESSAGING_FROM") ?? Deno.env.get("TWILIO_PHONE_NUMBER");
-        if (twilioSid && twilioTok && twilioFrom) {
-          const smsBody =
-            `Hi ${displayOwner || "there"}! Here's your AI Receptionist for ${displayBusiness}. ` +
-            `Setup + first month: $${((pricing.setup + pricing.monthly) / 100).toFixed(0)}. ` +
-            `Complete signup here: ${session.url}`;
-          const resp = await fetch(
-            `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Basic ${btoa(`${twilioSid}:${twilioTok}`)}`,
-                "Content-Type": "application/x-www-form-urlencoded",
-              },
-              body: new URLSearchParams({
-                To: phone,
-                From: twilioFrom,
-                Body: smsBody,
-              }),
-            },
-          );
-          sms_sent = resp.ok;
-          if (!resp.ok) sms_error = await resp.text();
-        } else {
-          sms_error = "Twilio not configured";
-        }
+        const smsBody =
+          `Hi ${displayOwner || "there"}! Here's your AI Receptionist for ${displayBusiness}. ` +
+          `Setup + first month: $${((pricing.setup + pricing.monthly) / 100).toFixed(0)}. ` +
+          `Complete signup here: ${session.url}`;
+        // Group C (transactional): checkout link for a signup in progress.
+        const sent = await sendCanonicalSms({
+          to: phone,
+          body: smsBody,
+          sendClass: "transactional",
+          purpose: "brandaro_receptionist_checkout",
+          idempotencyKey: `brandaro-receptionist-${session.id}`,
+          from: Deno.env.get("TWILIO_MESSAGING_FROM") ?? null,
+          skipCooldown: true,
+          metadata: { session_id: session.id, plan },
+        });
+        sms_sent = sent.success;
+        if (!sent.success) sms_error = sent.errorMessage ?? sent.status ?? sent.status;
       } catch (e) {
         sms_error = String((e as Error)?.message ?? e);
       }

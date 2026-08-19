@@ -1,9 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms as sendCanonicalSms } from "../_shared/sendSms.ts";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { sendEmail } from "../_shared/sendEmail.ts";
 import { errText } from "../_shared/errText.ts";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -62,17 +62,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    // SMS to customer via Twilio connector gateway
+    // SMS to customer — Group C (transactional): booking confirmation for the
+    // customer's own booking, sent to the number on that booking's customer
+    // record.
     if (customer?.phone) {
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
-      const TWILIO_PHONE = Deno.env.get("TWILIO_PHONE_NUMBER");
-      if (LOVABLE_API_KEY && TWILIO_API_KEY && TWILIO_PHONE) {
-        await fetch(`${GATEWAY_URL}/Messages.json`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "X-Connection-Api-Key": TWILIO_API_KEY, "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({ To: customer.phone, From: TWILIO_PHONE, Body: (await import("../_shared/smsTemplates.ts")).buildSmsTemplate("booking_confirmed_generic", { service_name: "booking", vendor_name: booking.ut_vendors?.business_name || "vendor", date: booking.event_date, total: booking.total_amount }) })
-        });
+      const { buildSmsTemplate } = await import("../_shared/smsTemplates.ts");
+      const sent = await sendCanonicalSms({
+        to: customer.phone,
+        body: buildSmsTemplate("booking_confirmed_generic", {
+          service_name: "booking",
+          vendor_name: booking.ut_vendors?.business_name || "vendor",
+          date: booking.event_date,
+          total: booking.total_amount,
+        }),
+        sendClass: "transactional",
+        purpose: "ut_booking_confirmation",
+        idempotencyKey: `ut-booking-confirm-${booking.id}`,
+        skipCooldown: true,
+        metadata: { booking_id: booking.id },
+      });
+      if (!sent.success) {
+        console.error("[ut-send-booking-confirmation] sms not sent:", sent.status, sent.errorMessage ?? sent.status);
       }
     }
 

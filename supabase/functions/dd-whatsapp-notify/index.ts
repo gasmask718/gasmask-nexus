@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { legalStopBlocked } from "../_shared/twilioSend.ts";
 // Dynasty Direct — Send a WhatsApp message via Twilio.
 // Non-blocking: returns success: false instead of throwing when Twilio is unconfigured.
 
@@ -41,6 +43,21 @@ Deno.serve(async (req) => {
     }
 
     const to = normalizeWhatsApp(String(to_whatsapp));
+
+    // Different channel, same handset. twilioSend is SMS-shaped (it normalizes
+    // to E.164 and would mangle the `whatsapp:` prefix), so this one stays on
+    // the direct call — but the one cross-class rule still applies: a STOP on
+    // the number revokes consent for WhatsApp too.
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const stop = await legalStopBlocked(supabase, String(to_whatsapp));
+    if (stop.blocked) {
+      console.warn(`[dd-whatsapp-notify] blocked: ${stop.reason}`);
+      return json({ success: false, blocked: true, reason: stop.reason, wholesaler_id });
+    }
+
     const res = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
       {
