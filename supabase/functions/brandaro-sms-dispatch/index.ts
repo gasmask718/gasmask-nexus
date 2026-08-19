@@ -69,7 +69,6 @@ serve(async (req) => {
           idempotencyKey: `brandaro-dispatch-${msg.id}`,
           sendClass: "campaign",
           from: TWILIO_FROM || undefined,
-          campaignId: msg.campaign_id ?? null,
           purpose: "brandaro_dispatch",
           metadata: { pending_message_id: msg.id, lead_id: msg.lead_id },
         });
