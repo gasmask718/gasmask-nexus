@@ -69,7 +69,7 @@ export function isAbortError(e: unknown): e is WorkerAborted {
  * each stage that costs time or touches the lender, so a mid-run revocation is
  * noticed instead of being discovered only after submission.
  */
-async function heartbeat(jobId: string): Promise<void> {
+export async function heartbeat(jobId: string): Promise<void> {
   try {
     await api('heartbeat', { job_id: jobId });
   } catch (e) {
