@@ -64,13 +64,33 @@ small but the path is live, and a manager receiving an invoice is a different
 consent than an owner receiving one — a worker receiving one is not defensible
 at all.
 
+### Retroactive action on the 21 already sent — none, deliberately
+
+Stated explicitly so the next reader does not have to infer it: **no
+notification, apology, or deletion is owed for the 21 receipts already
+delivered.** The content was a billing receipt for the store the recipient
+worked at — transactional, not marketing, no personal data about the recipient,
+no financial exposure to them, and nothing that triggers a notice obligation.
+The finding is a consent-hygiene defect in how the destination was chosen, not
+a harm event. The fix below is forward-only and that is the complete remedy.
+
+**One exception worth naming separately.** One of the 21 went to `john`, role
+`Inactive`, at 538 Hegeman Ave / MOHAMMED, on 2026-02-19 — a person who no
+longer worked at the store received that store's billing information. That is a
+different failure from the other twenty: not "wrong person at the business" but
+"person outside the business". Still a single receipt, still no action taken,
+but it is the one that would have mattered had the volume been higher, and it
+is the reason the role filter alone is not the whole lesson — a stale contact
+with a billing-shaped role would pass the new filter. Contact staleness is not
+currently modelled anywhere; recorded here as the open gap.
+
 ### Fix applied
 
 `send-invoice-receipt` no longer takes "oldest contact with a phone". The
 `store_contacts` fallback now requires `is_primary = true` or a billing role
 (`owner`, `billing`, `manager`, `accounting`); otherwise it is skipped and the
 store's own line is used. Also removed a read of `store_master.contact_phone`,
-a column that does not exist — that fallback branch was erroring silently.
+a column that does not exist — see section 6.
 
 ## 3. profiles.phone / auth.users.phone — decision recorded
 
@@ -99,3 +119,39 @@ was caught mid-pass and re-routed. Same failure shape as a docstring advertising
 a feature that does not exist, except an index is read *before* the code and so
 actively directs work. Rule: when a summary and the system disagree, the summary
 is the defect — fix it in the same commit that discovers it, before continuing.
+
+## 6. `store_master.contact_phone` — and a sweep for the same shape
+
+The receipt resolver ended in `?? store.contact_phone`. That column has never
+existed on `store_master`. The chain was written to *guarantee* a destination,
+and its guarantee step was inert — the only reason it never bit is that an
+earlier step always matched. Same family as an `expand` that returns zero: a
+fallback that cannot fire is indistinguishable at runtime from one that was
+never needed.
+
+So the check was run across the whole backend: every `?? someRow.column`
+fallback in `supabase/functions/**`, tied to the nearest preceding
+`.from("table")`, validated against `information_schema.columns` on the live
+database.
+
+- 114 fallback sites matched a table.
+- After discarding matches where the left side is a JSON payload, Stripe
+  object, or config blob rather than a DB row (`prefs`, `body`, `call`,
+  `session`, joined aliases), **one live resolution chain had the same defect**:
+
+  `brandaro-receptionist-checkout` selects `*` from `brandaro_qualified_leads`
+  and then resolves
+  `lead.contact_email ?? lead.owner_email`, `lead.owner_name`, and `lead.phone`.
+  None of those four columns exist on that table. Real columns are `email`,
+  `full_name` / `first_name`, `phone_number`. Every dead tail sat *after* a step
+  that always matched, so nothing ever surfaced — identical to `contact_phone`.
+
+  Fixed: the chains now reference only columns that exist, with `full_name`
+  added as the real intermediate name fallback.
+
+The remaining flagged pairs are heuristic false positives (nearest-`from`
+attribution onto non-row objects) and were checked by hand, not dismissed.
+
+**Standing check.** Any resolution chain whose purpose is to *guarantee* a
+value must have every step validated against the live schema when written. A
+`select("*")` plus optional chaining will never tell you a step is dead.
