@@ -70,10 +70,17 @@ export async function openIsolatedContext(workspace: string): Promise<{ context:
   await fs.mkdir(opts.downloadsPath, { recursive: true });
   await fs.mkdir(opts.screenshotDir, { recursive: true });
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    storageState: opts.storageState,
-    acceptDownloads: opts.acceptDownloads,
-  });
+  let context: BrowserContext;
+  try {
+    context = await browser.newContext({
+      storageState: opts.storageState,
+      acceptDownloads: opts.acceptDownloads,
+    });
+  } catch (e) {
+    // Never leave an orphan browser holding one client's process/profile alive.
+    await browser.close().catch(() => {});
+    throw e;
+  }
   return {
     context,
     close: async () => {
@@ -89,9 +96,30 @@ function jobIdFromWorkspace(workspace: string): string {
 }
 
 
-/** Destroy every artifact of the job's workspace. Nothing survives into another client. */
-export async function purgeWorkspace(workspace: string): Promise<void> {
-  await fs.rm(workspace, { recursive: true, force: true }).catch(() => {});
+/**
+ * Destroy every artifact of the job's workspace and PROVE it is gone.
+ * A silent purge failure would leave one client's documents, screenshots and
+ * trace on disk for the next job, so the failure is surfaced, never swallowed.
+ */
+export async function purgeWorkspace(workspace: string): Promise<{ purged: boolean; error?: string }> {
+  try {
+    await fs.rm(workspace, { recursive: true, force: true });
+  } catch (e) {
+    return { purged: false, error: (e as Error).message };
+  }
+  try {
+    await fs.stat(workspace);
+    return { purged: false, error: 'Workspace still present after purge' };
+  } catch {
+    return { purged: true };
+  }
+}
+
+/** Closing an already-terminal session is a 409, not a job failure. */
+async function closeSession(payload: Record<string, unknown>) {
+  try { await api('close-session', payload); } catch (e) {
+    if (!/SESSION_ALREADY_TERMINAL|\[404\]/.test((e as Error).message)) throw e;
+  }
 }
 
 async function runBrowserJob(claim: ClaimedJob) {
@@ -114,7 +142,7 @@ async function runBrowserJob(claim: ClaimedJob) {
     });
   } catch (e) {
     const code = e instanceof SessionIsolationError ? e.code : 'SESSION_CLIENT_MISMATCH';
-    await api('close-session', {
+    await closeSession({
       session_id: session.session_id, status: 'FAILED', error_code: code,
       termination_reason: (e as Error).message, escalate: true,
     });
@@ -136,7 +164,7 @@ async function runBrowserJob(claim: ClaimedJob) {
     let cp = await detectCheckpoint(page);
     if (cp) {
       await api('raise-checkpoint', { job_id: job.id, checkpoint_type: cp, reason: 'Detected on page load' });
-      await api('close-session', { session_id: session.session_id, status: 'HUMAN_CHECKPOINT', termination_reason: cp, checkpoint: true });
+      await closeSession({ session_id: session.session_id, status: 'HUMAN_CHECKPOINT', termination_reason: cp, checkpoint: true });
       return;
     }
 
@@ -154,7 +182,7 @@ async function runBrowserJob(claim: ClaimedJob) {
     cp = await detectCheckpoint(page);
     if (cp) {
       await api('raise-checkpoint', { job_id: job.id, checkpoint_type: cp, reason: 'Detected before submission' });
-      await api('close-session', { session_id: session.session_id, status: 'HUMAN_CHECKPOINT', termination_reason: cp, checkpoint: true });
+      await closeSession({ session_id: session.session_id, status: 'HUMAN_CHECKPOINT', termination_reason: cp, checkpoint: true });
       return;
     }
 
@@ -165,7 +193,7 @@ async function runBrowserJob(claim: ClaimedJob) {
         job_id: job.id, checkpoint_type: type,
         reason: 'Lender configuration requires authorized human confirmation before submission',
       });
-      await api('close-session', { session_id: session.session_id, status: 'HUMAN_CHECKPOINT', termination_reason: type, checkpoint: true });
+      await closeSession({ session_id: session.session_id, status: 'HUMAN_CHECKPOINT', termination_reason: type, checkpoint: true });
       return;
     }
 
@@ -175,7 +203,7 @@ async function runBrowserJob(claim: ClaimedJob) {
 
     const text = await adapter.readResponse(page);
     const result = await api<{ result?: { status?: string } }>('submit-result', { job_id: job.id, page_text: text });
-    await api('close-session', {
+    await closeSession({
       session_id: session.session_id, status: 'COMPLETED', outcome: result?.result?.status ?? 'SUBMITTED',
     });
   } catch (err) {
@@ -184,14 +212,24 @@ async function runBrowserJob(claim: ClaimedJob) {
       failure_class: /timeout/i.test((err as Error).message) ? 'API_TIMEOUT' : 'BROWSER_CRASH',
       reason: (err as Error).message.slice(0, 400),
     });
-    await api('close-session', {
+    await closeSession({
       session_id: session.session_id, status: 'FAILED',
       error_code: 'BROWSER_CRASH', termination_reason: (err as Error).message.slice(0, 400),
     }).catch(() => {});
   } finally {
     // Destroy the context first, then every byte of the job workspace.
     if (closer) await closer();
-    await purgeWorkspace(workspace);
+    const purge = await purgeWorkspace(workspace);
+    if (!purge.purged) {
+      // Client material may still be on disk: this is a containment incident and
+      // is escalated to a human instead of being logged and forgotten.
+      await api('report-failure', {
+        job_id: job.id, failure_class: 'WORKSPACE_PURGE_FAILED', retryable: false,
+        reason: `Workspace ${workspace} could not be purged: ${purge.error}`,
+      }).catch(() => {});
+      await event(job.id, 'WORKSPACE_PURGE_FAILED',
+        `Workspace ${workspace} could not be purged: ${purge.error}`, { level: 'error' }).catch(() => {});
+    }
   }
 }
 
