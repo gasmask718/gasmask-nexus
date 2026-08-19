@@ -88,6 +88,10 @@ serve(async (req) => {
           from: TWILIO_FROM || undefined,
           purpose: "brandaro_dispatch",
           metadata: { pending_message_id: msg.id, lead_id: msg.lead_id },
+          campaignId: msg.campaign_id ?? null,
+          campaignMaxSends: msg.campaign_id
+            ? campaignCaps.get(msg.campaign_id) ?? null
+            : null,
         });
 
         if (res.success) {
