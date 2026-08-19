@@ -394,7 +394,7 @@ serve(async (req: Request) => {
     };
 
 
-    // ── 7. Message Hash (Duplicate content detection) ────────────────
+    // ── 8. Message Hash (Duplicate content detection) ────────────────
     const msgHash = await sha256Hex(formattedTo + message_body);
     const hashCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const { data: hashDup } = await supabase
@@ -406,16 +406,17 @@ serve(async (req: Request) => {
       .limit(1);
 
     if (hashDup && hashDup.length > 0) {
+      await releaseReservation();
       return respond(409, {
         error: "Duplicate message detected within 10-minute window",
         status: "duplicate",
       });
     }
 
-    // ── 8. Resolve Provider ──────────────────────────────────────────
+    // ── 9. Resolve Provider ──────────────────────────────────────────
     const chosenProvider: "twilio" | "biztext" = explicit_provider || (defaultProvider as "twilio" | "biztext");
 
-    // ── 9. Insert Pending Row ────────────────────────────────────────
+    // ── 10. Insert Pending Row ───────────────────────────────────────
     // Extract created_by from auth header if available
     let createdBy: string | null = null;
     const authHeader = req.headers.get("authorization");
@@ -438,6 +439,7 @@ serve(async (req: Request) => {
         idempotency_key,
         to_number: formattedTo,
         message_body,
+        send_class,
         provider: chosenProvider,
         status: "pending",
         store_id: store_id || null,
@@ -447,6 +449,7 @@ serve(async (req: Request) => {
         metadata: {
           ...enrichedMetadata,
           cost_estimate: costEstimate,
+          reservation: reservation,
           provider_rate: chosenProvider === "twilio" ? "twilio_standard" : "biztext_standard",
         },
       })
@@ -455,8 +458,10 @@ serve(async (req: Request) => {
 
     if (insertErr) {
       console.error("❌ Insert pending row failed:", insertErr);
+      await releaseReservation();
       return respond(500, { error: insertErr.message });
     }
+
 
     console.log(`📱 Sending SMS via ${chosenProvider} to ${formattedTo} [${pendingRow.id}]`);
 
