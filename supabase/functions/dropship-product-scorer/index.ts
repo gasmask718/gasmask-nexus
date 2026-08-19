@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendOpsAlert } from "../_shared/opsAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -278,36 +279,14 @@ ${JSON.stringify(batch, null, 2)}`;
       completed_at: new Date().toISOString(),
     }).eq("id", runId);
 
-    // Send SMS notification via Twilio
-    if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_FROM_NUMBER && DAVID_PHONE_NUMBER) {
-      try {
-        const smsBody = `Dynasty OS - Dropship Scan Complete\nProducts analyzed: ${products.length}\nApproved for publishing: ${approvedCount}\nTop scorer: ${topProduct?.product_name || "N/A"} (${topProduct?.ai_score || 0}/10)`;
-
-        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
-        const twilioAuth = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
-
-        const smsResponse = await fetch(twilioUrl, {
-          method: "POST",
-          headers: {
-            Authorization: `Basic ${twilioAuth}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            To: DAVID_PHONE_NUMBER,
-            From: TWILIO_FROM_NUMBER,
-            Body: smsBody,
-          }),
-        });
-
-        if (!smsResponse.ok) {
-          const smsErr = await smsResponse.text();
-          console.error("Twilio SMS failed:", smsErr);
-        } else {
-          console.log("SMS notification sent successfully");
-        }
-      } catch (smsError) {
-        console.error("SMS notification error:", smsError);
-      }
+    // Group A internal notification: email-first ops channel.
+    await sendOpsAlert({
+      source: "dropship-product-scorer",
+      severity: "info",
+      subject: "Dropship scan complete",
+      message: `Products analyzed: ${products.length}\nApproved for publishing: ${approvedCount}\nTop scorer: ${topProduct?.product_name || "N/A"} (${topProduct?.ai_score || 0}/10)`,
+      context: { run_id: runId, analyzed: products.length, approved: approvedCount },
+    });
     }
 
     return new Response(
