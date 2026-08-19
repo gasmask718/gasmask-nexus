@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
+import { sendOpsAlert } from "../_shared/opsAlert.ts";
 
 interface IncomingLead {
   claimant_first_name?: string;
@@ -44,23 +45,16 @@ async function attomEnrich(address: string, county: string, state: string) {
   }
 }
 
-async function sendDavidSms(message: string) {
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN") || Deno.env.get("TWILIO_API_SECRET");
-  const from = Deno.env.get("TWILIO_PHONE_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER");
-  const to = Deno.env.get("DAVID_PHONE_NUMBER");
-  if (!sid || !token || !from || !to) return;
-  try {
-    const body = new URLSearchParams({ To: to, From: from, Body: message });
-    await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-      method: "POST",
-      headers: {
-        Authorization: "Basic " + btoa(`${sid}:${token}`),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body,
-    });
-  } catch (_e) { /* swallow */ }
+// Internal ops notification (Group A). Email-first: this is a staff status
+// report, not customer traffic, so it never touches the SMS suppression path
+// and never queues behind campaign volume.
+async function notifyOps(message: string) {
+  await sendOpsAlert({
+    source: "sf-lead-import",
+    subject: "SF Lead Import Complete",
+    message,
+    severity: "info",
+  });
 }
 
 serve(async (req) => {
@@ -168,7 +162,7 @@ serve(async (req) => {
 
     // SMS David
     if (inserted > 0) {
-      await sendDavidSms(
+      await notifyOps(
         `📋 SF Lead Import Complete!\nNew leads: ${inserted}\nSkipped (dupes): ${skipped}\nCalls starting: ${callsTriggered}\nSource: ${sourceTag}`
       );
     }
