@@ -287,7 +287,7 @@ ${JSON.stringify(batch, null, 2)}`;
       message: `Products analyzed: ${products.length}\nApproved for publishing: ${approvedCount}\nTop scorer: ${topProduct?.product_name || "N/A"} (${topProduct?.ai_score || 0}/10)`,
       context: { run_id: runId, analyzed: products.length, approved: approvedCount },
     });
-    }
+
 
     return new Response(
       JSON.stringify({
