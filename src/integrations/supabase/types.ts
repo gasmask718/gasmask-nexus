@@ -39482,6 +39482,13 @@ export type Database = {
             foreignKeyName: "contact_interactions_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "v_contact_line_intel"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "v_contact_responsiveness_summary"
             referencedColumns: ["contact_id"]
           },
@@ -80888,6 +80895,13 @@ export type Database = {
             foreignKeyName: "outreach_plan_items_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "v_contact_line_intel"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "outreach_plan_items_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "v_contact_responsiveness_summary"
             referencedColumns: ["contact_id"]
           },
@@ -81138,6 +81152,39 @@ export type Database = {
           response?: string | null
           scope?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      owner_confirmed_paid: {
+        Row: {
+          business_date: string | null
+          confirmed_at: string | null
+          invoice_id: string
+          prior_amount_paid: number | null
+          prior_status: string | null
+          run_id: string | null
+          store_id: string | null
+          total_amount: number | null
+        }
+        Insert: {
+          business_date?: string | null
+          confirmed_at?: string | null
+          invoice_id: string
+          prior_amount_paid?: number | null
+          prior_status?: string | null
+          run_id?: string | null
+          store_id?: string | null
+          total_amount?: number | null
+        }
+        Update: {
+          business_date?: string | null
+          confirmed_at?: string | null
+          invoice_id?: string
+          prior_amount_paid?: number | null
+          prior_status?: string | null
+          run_id?: string | null
+          store_id?: string | null
+          total_amount?: number | null
         }
         Relationships: []
       }
@@ -83757,6 +83804,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "v_contact_cadence_intelligence"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "pinned_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_line_intel"
             referencedColumns: ["contact_id"]
           },
           {
@@ -104397,6 +104451,13 @@ export type Database = {
             foreignKeyName: "store_additional_stores_log_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "v_contact_line_intel"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "store_additional_stores_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "v_contact_responsiveness_summary"
             referencedColumns: ["contact_id"]
           },
@@ -115826,6 +115887,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      twilio_lookup_results: {
+        Row: {
+          carrier: string | null
+          checked_on: string | null
+          line_type: string | null
+          phone10: string
+          source: string
+          status: string | null
+          updated_at: string
+          valid: boolean | null
+        }
+        Insert: {
+          carrier?: string | null
+          checked_on?: string | null
+          line_type?: string | null
+          phone10: string
+          source?: string
+          status?: string | null
+          updated_at?: string
+          valid?: boolean | null
+        }
+        Update: {
+          carrier?: string | null
+          checked_on?: string | null
+          line_type?: string | null
+          phone10?: string
+          source?: string
+          status?: string | null
+          updated_at?: string
+          valid?: boolean | null
+        }
+        Relationships: []
       }
       uben_activity_log: {
         Row: {
@@ -138252,6 +138346,65 @@ export type Database = {
           },
         ]
       }
+      v_contact_line_intel: {
+        Row: {
+          carrier: string | null
+          contact_id: string | null
+          contact_name: string | null
+          is_mobile_line: boolean | null
+          is_premises_line: boolean | null
+          is_primary: boolean | null
+          line_check_age_days: number | null
+          line_check_stale: boolean | null
+          line_checked_on: string | null
+          line_status: string | null
+          line_survives: boolean | null
+          line_type: string | null
+          line_valid: boolean | null
+          opted_out: boolean | null
+          phone: string | null
+          phone_last10: string | null
+          responsiveness_status: string | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_gm_cadence_due"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_merge_orphan_candidates"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_targets"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       v_contact_responsiveness_summary: {
         Row: {
           call_answer_rate: number | null
@@ -140759,6 +140912,24 @@ export type Database = {
             referencedColumns: ["store_id"]
           },
         ]
+      }
+      v_store_line_coverage: {
+        Row: {
+          checked_numbers: number | null
+          last_checked_on: string | null
+          lost_all_numbers: boolean | null
+          mobile_only: boolean | null
+          open_balance: number | null
+          overdue_amount: number | null
+          stop_numbers: number | null
+          store_id: string | null
+          store_name: string | null
+          surviving_mobile: number | null
+          surviving_numbers: number | null
+          surviving_premises: number | null
+          total_numbers: number | null
+        }
+        Relationships: []
       }
       v_store_order_baseline: {
         Row: {
