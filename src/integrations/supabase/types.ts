@@ -15587,6 +15587,78 @@ export type Database = {
           },
         ]
       }
+      bland_call_logs_quarantine: {
+        Row: {
+          agent_type: string | null
+          call_id: string | null
+          call_outcome: string | null
+          created_at: string
+          delivery_requested: boolean | null
+          id: string
+          intent_summary: string | null
+          is_reactivation_lead: boolean | null
+          lead_id: string | null
+          preferred_day: string | null
+          preferred_window: string | null
+          quarantine_reason: string
+          quarantined_at: string
+          raw_payload: Json | null
+          recording_url: string | null
+          source_business: string | null
+          source_id: string | null
+          source_table: string | null
+          structured_outcome_received_at: string | null
+          transcript: string | null
+          urgency: string | null
+        }
+        Insert: {
+          agent_type?: string | null
+          call_id?: string | null
+          call_outcome?: string | null
+          created_at?: string
+          delivery_requested?: boolean | null
+          id?: string
+          intent_summary?: string | null
+          is_reactivation_lead?: boolean | null
+          lead_id?: string | null
+          preferred_day?: string | null
+          preferred_window?: string | null
+          quarantine_reason?: string
+          quarantined_at?: string
+          raw_payload?: Json | null
+          recording_url?: string | null
+          source_business?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          structured_outcome_received_at?: string | null
+          transcript?: string | null
+          urgency?: string | null
+        }
+        Update: {
+          agent_type?: string | null
+          call_id?: string | null
+          call_outcome?: string | null
+          created_at?: string
+          delivery_requested?: boolean | null
+          id?: string
+          intent_summary?: string | null
+          is_reactivation_lead?: boolean | null
+          lead_id?: string | null
+          preferred_day?: string | null
+          preferred_window?: string | null
+          quarantine_reason?: string
+          quarantined_at?: string
+          raw_payload?: Json | null
+          recording_url?: string | null
+          source_business?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          structured_outcome_received_at?: string | null
+          transcript?: string | null
+          urgency?: string | null
+        }
+        Relationships: []
+      }
       bland_call_mirror: {
         Row: {
           answered_by: string | null
@@ -138452,6 +138524,21 @@ export type Database = {
           provider: string | null
           status: string | null
           target: string | null
+        }
+        Relationships: []
+      }
+      v_comms_touch_stream: {
+        Row: {
+          business_unit: string | null
+          channel: string | null
+          direction: string | null
+          occurred_at: string | null
+          outcome: string | null
+          phone_e164: string | null
+          phone_last10: string | null
+          provider_sid: string | null
+          source_id: string | null
+          source_table: string | null
         }
         Relationships: []
       }
