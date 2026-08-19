@@ -640,6 +640,12 @@ async function reapStaleJobs() {
     await logEvent(j.id, j.application_id, 'LEASE_EXPIRED',
       uncertain ? 'Uncertain submission state — escalated' : 'Worker lease expired', {}, 'error');
     recovered++;
+    // A dead worker cannot close its own session — never leave one live.
+    await admin.from('automation_sessions').update({
+      status: 'FAILED', error_code: 'WORKER_LEASE_EXPIRED',
+      termination_reason: 'Worker lease expired; session force-closed and workspace considered destroyed',
+      ended_at: new Date().toISOString(),
+    }).eq('automation_job_id', j.id).in('status', ['OPEN', 'RUNNING']);
   }
   return json({ recovered });
 }
