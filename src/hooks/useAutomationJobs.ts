@@ -67,15 +67,18 @@ export function useAutomationJobDetail(jobId: string | null) {
     queryKey: ['automation-job', jobId],
     enabled: !!jobId,
     queryFn: async () => {
-      const [events, checkpoints] = await Promise.all([
+      const [events, checkpoints, sessions] = await Promise.all([
         supabase.from('automation_events').select('*').eq('automation_job_id', jobId!)
           .order('created_at', { ascending: false }).limit(200),
         supabase.from('automation_checkpoints').select('*').eq('automation_job_id', jobId!)
           .order('detected_at', { ascending: false }),
+        supabase.from('automation_sessions').select('*').eq('automation_job_id', jobId!)
+          .order('started_at', { ascending: false }),
       ]);
       if (events.error) throw events.error;
       if (checkpoints.error) throw checkpoints.error;
-      return { events: events.data ?? [], checkpoints: checkpoints.data ?? [] };
+      if (sessions.error) throw sessions.error;
+      return { events: events.data ?? [], checkpoints: checkpoints.data ?? [], sessions: sessions.data ?? [] };
     },
     refetchInterval: 10_000,
   });
