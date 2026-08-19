@@ -242,7 +242,7 @@ serve(async (req: Request) => {
   try {
     // ── 1. Parse & Validate ──────────────────────────────────────────
     const body: SendRequest = await req.json();
-    const { to_number, message_body, idempotency_key, store_id, campaign_id, explicit_provider, skip_cooldown, metadata, from_number, purpose, template_id } = body;
+    const { to_number, message_body, idempotency_key, send_class, store_id, campaign_id, campaign_max_sends, explicit_provider, skip_cooldown, metadata, from_number, purpose, template_id } = body;
     const fromOverride = from_number ? normalizePhone(from_number) : undefined;
     // Merge purpose/template_id into metadata so downstream analytics see them
     const enrichedMetadata: Record<string, any> = {
@@ -255,14 +255,47 @@ serve(async (req: Request) => {
       return respond(400, { error: "Missing required fields: to_number, message_body, idempotency_key" });
     }
 
+    // send_class is mandatory and has NO default. A caller that doesn't say
+    // what kind of message this is doesn't get to send it.
+    if (!send_class || !VALID_CLASSES.includes(send_class)) {
+      return respond(400, {
+        error: `send_class is required and must be one of: ${VALID_CLASSES.join(", ")}. ` +
+               `internal/test traffic must use _shared/twilioSend.ts, not send-sms.`,
+        status: "missing_send_class",
+      });
+    }
+
     if (message_body.length > 1600) {
       return respond(400, { error: "message_body exceeds 1600 character limit" });
     }
 
     const formattedTo = normalizePhone(to_number);
 
-    // ── 2. Unified Suppression Check (dnc_list + opt_out_events) ─────
-    const suppression = await isSuppressed(supabase, formattedTo);
+    // ── 2. Load class config ─────────────────────────────────────────
+    const { data: classCfg, error: classErr } = await supabase
+      .from("messaging_class_limits")
+      .select("*")
+      .eq("send_class", send_class)
+      .maybeSingle();
+
+    if (classErr || !classCfg) {
+      return respond(500, { error: `Unknown or unreadable send_class '${send_class}'`, status: "config_error" });
+    }
+    if (classCfg.enabled === false) {
+      return respond(429, { error: `send_class '${send_class}' is disabled`, status: "class_disabled" });
+    }
+
+    // ── 3. Suppression ───────────────────────────────────────────────
+    // Legal STOP is absolute for EVERY class that reaches send-sms — one
+    // function, called once. Marketing suppression is class-scoped on top.
+    const stop = await legalStopBlocked(supabase, formattedTo);
+    let suppression: { blocked: boolean; reason?: string | null; source?: string | null } =
+      stop.blocked ? { blocked: true, reason: stop.reason, source: "legal_stop" } : { blocked: false };
+
+    if (!suppression.blocked && classCfg.suppression_check) {
+      const s = await isSuppressed(supabase, formattedTo);
+      if (s.blocked) suppression = { blocked: true, reason: s.reason, source: s.source };
+    }
 
     if (suppression.blocked) {
       // Log blocked attempt
@@ -270,6 +303,7 @@ serve(async (req: Request) => {
         idempotency_key,
         to_number: formattedTo,
         message_body,
+        send_class,
         provider: explicit_provider || "biztext",
         status: "blocked",
         error_message: `Suppressed (${suppression.source || "unknown"}): ${suppression.reason || "blocked"}`,
@@ -285,7 +319,7 @@ serve(async (req: Request) => {
       });
     }
 
-    // ── 3. Idempotency Check ─────────────────────────────────────────
+    // ── 4. Idempotency Check ─────────────────────────────────────────
     const { data: existing } = await supabase
       .from("outbound_messages")
       .select("*")
@@ -303,49 +337,62 @@ serve(async (req: Request) => {
       });
     }
 
-    // ── 4. Load Settings ─────────────────────────────────────────────
+    // ── 5. Provider settings (limits now live per-class) ─────────────
     const { data: settings } = await supabase
       .from("messaging_settings")
       .select("*")
       .limit(1)
       .maybeSingle();
 
-    const dailyLimit = settings?.daily_send_limit ?? 1000;
-    const cooldownMinutes = settings?.per_number_cooldown_minutes ?? 60;
     const defaultProvider = settings?.default_sms_provider ?? "biztext";
     const fallbackProvider = settings?.fallback_provider ?? null;
 
-    // ── 5. Daily Send Limit ──────────────────────────────────────────
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const { count: todayCount } = await supabase
-      .from("outbound_messages")
-      .select("id", { count: "exact", head: true })
-      .gte("created_at", todayStart.toISOString())
-      .in("status", ["sent", "pending"]);
-
-    if ((todayCount ?? 0) >= dailyLimit) {
-      return respond(429, { error: `Daily send limit of ${dailyLimit} reached`, status: "rate_limited" });
-    }
-
-    // ── 6. Per-Number Cooldown (skipped for manual/conversation sends) ─
-    if (!skip_cooldown) {
-      const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
-      const { data: recentToNumber } = await supabase
-        .from("outbound_messages")
-        .select("id")
-        .eq("to_number", formattedTo)
-        .eq("status", "sent")
-        .gte("created_at", cooldownCutoff)
-        .limit(1);
-
-      if (recentToNumber && recentToNumber.length > 0) {
+    // ── 6. Class-scoped cooldown ─────────────────────────────────────
+    // A campaign text can no longer block that customer's receipt: the
+    // cooldown only looks at prior traffic of the SAME class.
+    if (!skip_cooldown && classCfg.cooldown_scope === "class" && (classCfg.cooldown_minutes ?? 0) > 0) {
+      const { data: cdActive } = await supabase.rpc("sms_cooldown_active", {
+        p_send_class: send_class,
+        p_to_number: formattedTo,
+      });
+      if (cdActive === true) {
         return respond(429, {
-          error: `Cooldown active: last message to ${formattedTo} within ${cooldownMinutes} minutes`,
+          error: `Cooldown active: last ${send_class} message to ${formattedTo} within ${classCfg.cooldown_minutes} minutes`,
           status: "cooldown",
+          send_class,
         });
       }
     }
+
+    // ── 7. Atomic reservation (the claim, not a read-then-act check) ──
+    const { data: reservation, error: reserveErr } = await supabase.rpc("reserve_sms_send", {
+      p_send_class: send_class,
+      p_campaign_id: campaign_id || null,
+      p_campaign_max: campaign_max_sends ?? null,
+    });
+
+    if (reserveErr) {
+      console.error("❌ reserve_sms_send failed:", reserveErr.message);
+      return respond(500, { error: `Reservation failed: ${reserveErr.message}`, status: "reservation_error" });
+    }
+    if (!reservation?.allowed) {
+      console.warn(`⛔ Send refused: ${reservation?.reason} (class=${send_class} campaign=${campaign_id ?? "none"})`);
+      return respond(429, {
+        error: reservation?.reason === "campaign_cap_reached"
+          ? `Campaign ${campaign_id} has reached its recipient-count ceiling`
+          : `Daily limit for class '${send_class}' reached (${reservation?.daily_limit ?? "?"})`,
+        status: "rate_limited",
+        reason: reservation?.reason,
+        send_class,
+      });
+    }
+    const releaseReservation = async () => {
+      await supabase.rpc("release_sms_reservation", {
+        p_send_class: send_class,
+        p_campaign_id: campaign_id || null,
+      });
+    };
+
 
     // ── 7. Message Hash (Duplicate content detection) ────────────────
     const msgHash = await sha256Hex(formattedTo + message_body);
