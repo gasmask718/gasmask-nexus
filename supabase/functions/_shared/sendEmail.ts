@@ -1,6 +1,14 @@
-// Shared email helper — uses nodemailer over Gmail SMTP.
-// Reads credentials from VA_GMAIL_USER / VA_GMAIL_APP_PASSWORD secrets.
+// Shared email helper.
+//
+// Resend is primary (RESEND_API_KEY). Gmail SMTP (VA_GMAIL_USER /
+// VA_GMAIL_APP_PASSWORD) is the fallback only — Gmail app passwords get
+// revoked silently (534-5.7.9 WebLoginRequired killed every ops email from
+// 2026-07-03 onward), so it must not be the only leg.
 import nodemailer from "npm:nodemailer@6.9.14";
+
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
+const RESEND_FROM = Deno.env.get("OPS_ALERT_FROM") ||
+  "Dynasty OS <onboarding@resend.dev>";
 
 export interface SendEmailParams {
   to: string | string[];
