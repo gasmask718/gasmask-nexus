@@ -10,6 +10,54 @@ const corsHeaders = {
 
 const BUSINESS_UNIT_KEY = "brandaro";
 
+/**
+ * FIX (2026-08-19): every Bland dispatch since 2026-08-03 died with
+ * "Invalid 'from' - you might not own this number". Root cause: the from-number
+ * cascade hands Bland a *Twilio*-owned number out of dc_phone_numbers
+ * (business='brandaro'), but Bland only accepts caller IDs registered inside the
+ * Bland account. We now resolve the caller ID against Bland's own inventory and
+ * fall back to letting Bland pick one (omit `from`) rather than sending a number
+ * the provider will always reject.
+ */
+async function resolveBlandFrom(
+  apiKey: string,
+  preferred: string | null,
+): Promise<{ from: string | null; source: string }> {
+  const envFrom = Deno.env.get("BLAND_FROM_NUMBER");
+  let owned: string[] = [];
+  try {
+    const res = await fetch("https://api.bland.ai/v1/inbound", {
+      headers: { Authorization: apiKey },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      owned = (data?.inbound_numbers ?? [])
+        .map((n: any) => n?.phone_number)
+        .filter((n: any) => typeof n === "string");
+    } else {
+      console.error(`[brandaro-ai-caller] bland inbound lookup http=${res.status}`);
+    }
+  } catch (e) {
+    console.error("[brandaro-ai-caller] bland inbound lookup failed:", e);
+  }
+
+  if (preferred && owned.includes(preferred)) return { from: preferred, source: "pool_bland_owned" };
+  if (envFrom && (owned.length === 0 || owned.includes(envFrom))) {
+    return { from: envFrom, source: "env_bland_from_number" };
+  }
+  if (owned.length > 0) {
+    if (preferred) {
+      console.warn(
+        `[brandaro-ai-caller] pool number ${preferred} is not owned by the Bland account — substituting ${owned[0]}`,
+      );
+    }
+    return { from: owned[0], source: "bland_inventory" };
+  }
+  console.warn("[brandaro-ai-caller] no Bland-owned caller ID available — letting Bland assign one");
+  return { from: null, source: "bland_assigned" };
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
