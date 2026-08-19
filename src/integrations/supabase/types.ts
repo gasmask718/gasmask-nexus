@@ -15587,6 +15587,51 @@ export type Database = {
           },
         ]
       }
+      bland_call_mirror: {
+        Row: {
+          answered_by: string | null
+          call_ended_by: string | null
+          call_id: string
+          call_length: number | null
+          fetched_at: string
+          from_number: string | null
+          inbound: boolean | null
+          price: number | null
+          raw: Json
+          recording_url: string | null
+          status: string | null
+          to_number: string | null
+        }
+        Insert: {
+          answered_by?: string | null
+          call_ended_by?: string | null
+          call_id: string
+          call_length?: number | null
+          fetched_at?: string
+          from_number?: string | null
+          inbound?: boolean | null
+          price?: number | null
+          raw: Json
+          recording_url?: string | null
+          status?: string | null
+          to_number?: string | null
+        }
+        Update: {
+          answered_by?: string | null
+          call_ended_by?: string | null
+          call_id?: string
+          call_length?: number | null
+          fetched_at?: string
+          from_number?: string | null
+          inbound?: boolean | null
+          price?: number | null
+          raw?: Json
+          recording_url?: string | null
+          status?: string | null
+          to_number?: string | null
+        }
+        Relationships: []
+      }
       bland_leads: {
         Row: {
           business_id: string | null
@@ -53168,6 +53213,114 @@ export type Database = {
         Row: {
           agent_id: string
           agent_name: string | null
+          answered_by: string | null
+          assigned_at: string | null
+          assigned_closer_id: string | null
+          business_unit: string
+          call_ended_at: string | null
+          call_ended_by: string | null
+          call_id: string
+          call_started_at: string | null
+          call_type: string | null
+          company_name: string | null
+          contact_name: string | null
+          cost_cents: number | null
+          created_at: string | null
+          direction: string | null
+          duration_seconds: number | null
+          estimated_deal_value_cents: number | null
+          from_number: string | null
+          id: string
+          lead_quality: string | null
+          next_action: string | null
+          outcome: string | null
+          provider: string | null
+          provider_synced_at: string | null
+          recording_url: string | null
+          source_business: string | null
+          source_id: string | null
+          source_lead_id: string | null
+          source_table: string | null
+          to_number: string | null
+          transcript: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id: string
+          agent_name?: string | null
+          answered_by?: string | null
+          assigned_at?: string | null
+          assigned_closer_id?: string | null
+          business_unit: string
+          call_ended_at?: string | null
+          call_ended_by?: string | null
+          call_id: string
+          call_started_at?: string | null
+          call_type?: string | null
+          company_name?: string | null
+          contact_name?: string | null
+          cost_cents?: number | null
+          created_at?: string | null
+          direction?: string | null
+          duration_seconds?: number | null
+          estimated_deal_value_cents?: number | null
+          from_number?: string | null
+          id?: string
+          lead_quality?: string | null
+          next_action?: string | null
+          outcome?: string | null
+          provider?: string | null
+          provider_synced_at?: string | null
+          recording_url?: string | null
+          source_business?: string | null
+          source_id?: string | null
+          source_lead_id?: string | null
+          source_table?: string | null
+          to_number?: string | null
+          transcript?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string
+          agent_name?: string | null
+          answered_by?: string | null
+          assigned_at?: string | null
+          assigned_closer_id?: string | null
+          business_unit?: string
+          call_ended_at?: string | null
+          call_ended_by?: string | null
+          call_id?: string
+          call_started_at?: string | null
+          call_type?: string | null
+          company_name?: string | null
+          contact_name?: string | null
+          cost_cents?: number | null
+          created_at?: string | null
+          direction?: string | null
+          duration_seconds?: number | null
+          estimated_deal_value_cents?: number | null
+          from_number?: string | null
+          id?: string
+          lead_quality?: string | null
+          next_action?: string | null
+          outcome?: string | null
+          provider?: string | null
+          provider_synced_at?: string | null
+          recording_url?: string | null
+          source_business?: string | null
+          source_id?: string | null
+          source_lead_id?: string | null
+          source_table?: string | null
+          to_number?: string | null
+          transcript?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dynasty_ai_calls_quarantine: {
+        Row: {
+          agent_id: string
+          agent_name: string | null
           assigned_at: string | null
           assigned_closer_id: string | null
           business_unit: string
@@ -53187,6 +53340,8 @@ export type Database = {
           lead_quality: string | null
           next_action: string | null
           outcome: string | null
+          quarantine_reason: string
+          quarantined_at: string
           recording_url: string | null
           source_business: string | null
           source_id: string | null
@@ -53218,6 +53373,8 @@ export type Database = {
           lead_quality?: string | null
           next_action?: string | null
           outcome?: string | null
+          quarantine_reason?: string
+          quarantined_at?: string
           recording_url?: string | null
           source_business?: string | null
           source_id?: string | null
@@ -53249,6 +53406,8 @@ export type Database = {
           lead_quality?: string | null
           next_action?: string | null
           outcome?: string | null
+          quarantine_reason?: string
+          quarantined_at?: string
           recording_url?: string | null
           source_business?: string | null
           source_id?: string | null

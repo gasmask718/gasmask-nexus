@@ -16,6 +16,7 @@ import {
   recordWebhookDelivery,
 } from "../_shared/dialer.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { isHealthProbe, healthProbeResponse } from "../_shared/healthProbe.ts";
 
 const BlandOutcomeSchema = z.object({
   delivery_requested: z.boolean(),
@@ -79,6 +80,8 @@ Deno.serve(async (req) => {
     }
 
     const payload = await req.json().catch(() => ({}));
+    // Liveness probe from comms-health-monitor — answer, never persist.
+    if (isHealthProbe(payload)) return healthProbeResponse("bland-agent-webhook", corsHeaders);
     console.log("Bland webhook payload:", JSON.stringify(payload).slice(0, 1500));
 
     const call_id = payload.call_id || payload.c_id || null;

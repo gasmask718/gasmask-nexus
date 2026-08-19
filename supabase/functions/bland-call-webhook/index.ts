@@ -1,6 +1,7 @@
 // Bland.ai webhook: writes transcript, analyzes via Anthropic Haiku.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
+import { isHealthProbe, healthProbeResponse } from "../_shared/healthProbe.ts";
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -9,6 +10,8 @@ const ANTHROPIC_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 Deno.serve(async (req) => {
   try {
     const payload = await req.json();
+    // Liveness probe from comms-health-monitor — answer, never persist.
+    if (isHealthProbe(payload)) return healthProbeResponse("bland-call-webhook", {});
     const callId = payload.call_id || payload.c_id;
     const metaLogId = payload.metadata?.log_id;
     if (!callId && !metaLogId) return new Response('missing identifiers', { status: 400 });
