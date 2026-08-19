@@ -7,14 +7,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
+import { sendSms } from "../_shared/sendSms.ts";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 const MAX_RUNTIME_MS = 140_000; // stay under 150s edge limit; pause and resume via cron
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
 const DEFAULT_FROM = Deno.env.get("TWILIO_DEFAULT_FROM") || Deno.env.get("TWILIO_PHONE_NUMBER");
 
 function json(body: unknown, status = 200) {
@@ -163,29 +161,36 @@ Deno.serve(async (req) => {
       };
       const finalBody = hydrate(baseBody, vars);
 
-      // Send via Twilio gateway
+      // Send through the canonical chokepoint. This is campaign traffic:
+      // it gets marketing suppression, the campaign daily budget and a
+      // per-campaign ceiling equal to the job's own recipient count, so a
+      // loop bug re-sending the same list stops at the cap.
       let twilioSid: string | null = null;
       let providerStatus = "queued";
       let providerError: string | null = null;
-      if (LOVABLE_API_KEY && TWILIO_API_KEY && fromNumber && finalBody) {
-        try {
-          const params = new URLSearchParams({ To: store!.phone!, From: fromNumber, Body: finalBody });
-          const r = await fetch(`${GATEWAY_URL}/Messages.json`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
-              "X-Connection-Api-Key": TWILIO_API_KEY,
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: params,
-          });
-          const td = await r.json();
-          if (!r.ok) { providerStatus = "failed"; providerError = td?.message || `Twilio ${r.status}`; }
-          else { twilioSid = td.sid; providerStatus = td.status || "sent"; }
-        } catch (e) { providerStatus = "failed"; providerError = (e as Error).message; }
+      if (finalBody) {
+        const res = await sendSms({
+          to: store!.phone!,
+          body: finalBody,
+          idempotencyKey: `bulk-${job_id}-${item.id}`,
+          sendClass: "campaign",
+          from: fromNumber || undefined,
+          storeId: store!.id,
+          campaignId: job_id,
+          campaignMaxSends: job.total_count ?? null,
+          purpose: "ambassador_bulk",
+          metadata: { bulk_job_id: job_id, item_id: item.id, ambassador_id: amb.id },
+        });
+        if (res.success) {
+          twilioSid = res.providerMessageId;
+          providerStatus = "sent";
+        } else {
+          providerStatus = res.blocked ? "blocked" : "failed";
+          providerError = res.errorMessage || res.status;
+        }
       } else {
         providerStatus = "failed";
-        providerError = !finalBody ? "empty_body" : !fromNumber ? "no_from_number" : "twilio_not_configured";
+        providerError = "empty_body";
       }
 
       // Persist message row

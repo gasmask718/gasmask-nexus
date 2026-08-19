@@ -1,12 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms } from "../_shared/sendSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -16,8 +15,6 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
     const TWILIO_FROM = Deno.env.get("TWILIO_PHONE_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER");
 
     // Parse body safely
@@ -28,20 +25,9 @@ serve(async (req) => {
     const batchSize = Number(body.batch_size) || 25;
     const dryRun = body.dry_run === true;
 
-    // Check if we can use gateway or fallback to direct Twilio
-    const useGateway = !!(LOVABLE_API_KEY && TWILIO_API_KEY);
-    const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const useDirect = !!(twilioSid && twilioAuth);
-
-    if (!useGateway && !useDirect) {
-      throw new Error("No Twilio credentials available (neither gateway nor direct)");
-    }
-    if (!TWILIO_FROM) {
-      throw new Error("TWILIO_PHONE_NUMBER or TWILIO_FROM_NUMBER not configured");
-    }
-
-    console.log(`📱 Starting SMS dispatch (batch=${batchSize}, dryRun=${dryRun}, mode=${useGateway ? 'gateway' : 'direct'})`);
+    // Credentials, provider fallback and suppression now live in send-sms;
+    // this worker only decides WHAT to send and to whom.
+    console.log(`Starting SMS dispatch (batch=${batchSize}, dryRun=${dryRun})`);
 
     // Fetch pending messages
     const { data: pending, error: fetchErr } = await supabase
@@ -76,48 +62,23 @@ serve(async (req) => {
       }
 
       try {
-        let response: Response;
+        // Campaign class: marketing suppression + the campaign daily budget.
+        const res = await sendSms({
+          to: msg.phone_number,
+          body: msg.message_body || "Hello from Brandaro Digital",
+          idempotencyKey: `brandaro-dispatch-${msg.id}`,
+          sendClass: "campaign",
+          from: TWILIO_FROM || undefined,
+          purpose: "brandaro_dispatch",
+          metadata: { pending_message_id: msg.id, lead_id: msg.lead_id },
+        });
 
-        if (useGateway) {
-          response = await fetch(`${GATEWAY_URL}/Messages.json`, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-              "X-Connection-Api-Key": TWILIO_API_KEY!,
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: new URLSearchParams({
-              To: msg.phone_number,
-              From: TWILIO_FROM,
-              Body: msg.message_body || "Hello from Brandaro Digital",
-            }),
-          });
-        } else {
-          const authHeader = btoa(`${twilioSid}:${twilioAuth}`);
-          response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
-            method: "POST",
-            headers: {
-              "Authorization": `Basic ${authHeader}`,
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: new URLSearchParams({
-              To: msg.phone_number,
-              From: TWILIO_FROM,
-              Body: msg.message_body || "Hello from Brandaro Digital",
-            }),
-          });
-        }
-
-        const data = await response.json();
-
-        if (response.ok) {
-          // Update message status
+        if (res.success) {
           await supabase
             .from("brandaro_pending_messages")
             .update({ status: "sent", sent_at: new Date().toISOString() })
             .eq("id", msg.id);
 
-          // Log in message_log
           await supabase.from("brandaro_message_log").insert({
             lead_id: msg.lead_id,
             channel: "sms",
@@ -125,19 +86,25 @@ serve(async (req) => {
             destination: msg.phone_number,
             message_body: msg.message_body,
             send_status: "delivered",
-            provider_message_id: data.sid || null,
+            provider_message_id: res.providerMessageId,
             sent_at: new Date().toISOString(),
           });
 
           results.push({ id: msg.id, status: "sent" });
           sent++;
         } else {
-          const errMsg = data.message || JSON.stringify(data);
+          // A suppressed recipient is terminal, not a retryable failure —
+          // mark it so the batch never picks the row up again.
+          const terminal = res.blocked;
           await supabase
             .from("brandaro_pending_messages")
-            .update({ status: "failed" })
+            .update({ status: terminal ? "blocked" : "failed" })
             .eq("id", msg.id);
-          results.push({ id: msg.id, status: "failed", error: errMsg });
+          results.push({
+            id: msg.id,
+            status: terminal ? "blocked" : "failed",
+            error: res.errorMessage || res.status,
+          });
           failed++;
         }
 

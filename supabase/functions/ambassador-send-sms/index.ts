@@ -6,8 +6,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
+import { sendSms, smsContentHash } from "../_shared/sendSms.ts";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
 interface Body {
   store_id: string;
@@ -29,8 +29,6 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -84,40 +82,28 @@ Deno.serve(async (req) => {
   let providerStatus = "queued";
   let providerError: string | null = null;
 
-  // 4. Send via Twilio gateway (if creds present)
-  if (LOVABLE_API_KEY && TWILIO_API_KEY && fromNumber) {
-    try {
-      const params = new URLSearchParams({
-        To: body.to_phone,
-        From: fromNumber,
-        Body: body.body,
-      });
-      (body.media_urls || []).forEach((u) => params.append("MediaUrl", u));
+  // 4. Send through the canonical chokepoint.
+  //    Class = conversational: a rep typing to one assigned store. It still
+  //    honours suppression and the legal STOP, but it is not bulk marketing,
+  //    so it does not sit behind the campaign cooldown or campaign budget.
+  const sendRes = await sendSms({
+    to: body.to_phone,
+    body: body.body,
+    idempotencyKey: `amb-sms-${amb.id}-${body.store_id}-${await smsContentHash(body.body + Date.now())}`,
+    sendClass: "conversational",
+    from: fromNumber || undefined,
+    mediaUrls: body.media_urls || [],
+    storeId: body.store_id,
+    purpose: "ambassador",
+    metadata: { ambassador_id: amb.id, template_id: body.template_id || null },
+  });
 
-      const twilioRes = await fetch(`${GATEWAY_URL}/Messages.json`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "X-Connection-Api-Key": TWILIO_API_KEY,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: params,
-      });
-      const tData = await twilioRes.json();
-      if (!twilioRes.ok) {
-        providerError = tData?.message || `Twilio ${twilioRes.status}`;
-        providerStatus = "failed";
-      } else {
-        twilioSid = tData.sid;
-        providerStatus = tData.status || "sent";
-      }
-    } catch (e) {
-      providerError = (e as Error).message;
-      providerStatus = "failed";
-    }
+  if (sendRes.success) {
+    twilioSid = sendRes.providerMessageId;
+    providerStatus = "sent";
   } else {
-    providerStatus = "queued"; // No Twilio configured — still log the message
-    providerError = !fromNumber ? "no_from_number" : "twilio_not_configured";
+    providerStatus = sendRes.blocked ? "blocked" : "failed";
+    providerError = sendRes.errorMessage || sendRes.status;
   }
 
   // 5. Persist message row (service role bypasses RLS but we set ambassador_id correctly)

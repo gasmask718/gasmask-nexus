@@ -37,6 +37,7 @@ serve(async (req) => {
         to: phone,
         body: message,
         idempotencyKey: `sbo-picks-${today}-${bodyHash}-${phone}`,
+        sendClass: "campaign",
         from: fromNumber,
         purpose: 'sbo_picks_broadcast',
         metadata: { send_type },

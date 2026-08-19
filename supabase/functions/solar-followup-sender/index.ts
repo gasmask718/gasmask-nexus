@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms } from "../_shared/sendSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,16 +20,9 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
+  // Credentials live in send-sms now; this worker only needs the sender id.
   const twilioFrom = Deno.env.get("TWILIO_PHONE_NUMBER");
 
-  if (!twilioSid || !twilioAuth || !twilioFrom) {
-    return new Response(
-      JSON.stringify({ error: "Missing Twilio credentials" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -135,26 +129,19 @@ serve(async (req) => {
           console.warn("AI generator failed, using static message:", aiErr);
         }
 
-        // Send via Twilio REST API
-        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
-        const authHeader = btoa(`${twilioSid}:${twilioAuth}`);
-
-        const smsResponse = await fetch(twilioUrl, {
-          method: "POST",
-          headers: {
-            Authorization: `Basic ${authHeader}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            To: phone,
-            From: twilioFrom,
-            Body: messageToSend,
-          }),
+        // Campaign class: solar follow-ups are marketing outreach, so they
+        // carry full suppression and count against the campaign day budget.
+        const res = await sendSms({
+          to: phone,
+          body: messageToSend,
+          idempotencyKey: `solar-fu-${followup.id}-${followup.retry_count || 0}`,
+          sendClass: "campaign",
+          from: twilioFrom || undefined,
+          purpose: "solar_followup",
+          metadata: { followup_id: followup.id, lead_id: followup.lead_id },
         });
 
-        const smsResult = await smsResponse.json();
-
-        if (smsResponse.ok) {
+        if (res.success) {
           await supabase
             .from("solar_followups")
             .update({
@@ -164,8 +151,20 @@ serve(async (req) => {
             })
             .eq("id", followup.id);
           sent++;
+        } else if (res.blocked) {
+          // Opted out: terminal. Retrying a suppressed number is illegal,
+          // not just useless — stop the row instead of scheduling a retry.
+          await supabase
+            .from("solar_followups")
+            .update({
+              status: "blocked",
+              delivery_status: "blocked",
+              error_message: res.errorMessage || "suppressed",
+            })
+            .eq("id", followup.id);
+          failed++;
         } else {
-          throw new Error(smsResult.message || `Twilio error ${smsResponse.status}`);
+          throw new Error(res.errorMessage || res.status);
         }
       } catch (smsError: any) {
         const retryCount = (followup.retry_count || 0) + 1;

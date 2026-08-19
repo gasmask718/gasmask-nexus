@@ -15,11 +15,20 @@
  * the `send-sms` function.
  */
 
+/**
+ * The class a send belongs to. NO default — the caller must state it.
+ * `internal` / `test` traffic does NOT belong here: it goes through
+ * _shared/twilioSend.ts in-process, so alerting never queues behind campaigns.
+ */
+export type SendSmsClass = "campaign" | "transactional" | "workforce" | "conversational";
+
 export interface SendSmsOptions {
   to: string;
   body: string;
   /** Deterministic key so cron re-runs / retries do not double-send. */
   idempotencyKey: string;
+  /** Mandatory. Drives daily budget, cooldown scope and suppression depth. */
+  sendClass: SendSmsClass;
   /** Brand-scoped sender override (e.g. BRANDARO_TWILIO_NUMBER). */
   from?: string | null;
   /** Analytics tag, e.g. "sbo_picks", "dd_cart_recovery". */
@@ -31,7 +40,16 @@ export interface SendSmsOptions {
   provider?: "twilio" | "biztext";
   storeId?: string | null;
   campaignId?: string | null;
+  /** MMS attachments. Twilio-only; the BizText fallback is skipped when set. */
+  mediaUrls?: string[];
+  /**
+   * Ceiling for this campaign_id. Pass the recipient count: a loop bug that
+   * re-sends the same list gets stopped at the cap instead of at the daily
+   * budget (or not at all).
+   */
+  campaignMaxSends?: number | null;
 }
+
 
 export interface SendSmsResult {
   success: boolean;
@@ -70,6 +88,9 @@ export async function sendSms(opts: SendSmsOptions): Promise<SendSmsResult> {
   if (!opts.idempotencyKey) {
     return fail("invalid_request", "idempotencyKey is required");
   }
+  if (!opts.sendClass) {
+    return fail("invalid_request", "sendClass is required (campaign | transactional | workforce | conversational)");
+  }
 
   try {
     const res = await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
@@ -83,6 +104,9 @@ export async function sendSms(opts: SendSmsOptions): Promise<SendSmsResult> {
         to_number: opts.to,
         message_body: opts.body,
         idempotency_key: opts.idempotencyKey,
+        send_class: opts.sendClass,
+        media_urls: opts.mediaUrls?.length ? opts.mediaUrls : undefined,
+        campaign_max_sends: opts.campaignMaxSends ?? undefined,
         from_number: opts.from || undefined,
         explicit_provider: opts.provider ?? "twilio",
         skip_cooldown: opts.skipCooldown ?? false,

@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
             to: lead.phone,
             body: message,
             idempotencyKey: `brandaro-fu-${fu.id}`,
+            sendClass: "campaign",
             from: twilioFrom || undefined,
             purpose: "brandaro_followup",
             skipCooldown: true,

@@ -76924,6 +76924,33 @@ export type Database = {
           },
         ]
       }
+      messaging_campaign_caps: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          max_sends: number
+          reserved: number
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          max_sends: number
+          reserved?: number
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          max_sends?: number
+          reserved?: number
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messaging_campaigns: {
         Row: {
           ai_enabled: boolean | null
@@ -77003,6 +77030,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      messaging_class_limits: {
+        Row: {
+          cooldown_minutes: number
+          cooldown_scope: string
+          created_at: string
+          daily_limit: number
+          enabled: boolean
+          notes: string | null
+          send_class: string
+          suppression_check: boolean
+          updated_at: string
+        }
+        Insert: {
+          cooldown_minutes?: number
+          cooldown_scope?: string
+          created_at?: string
+          daily_limit: number
+          enabled?: boolean
+          notes?: string | null
+          send_class: string
+          suppression_check?: boolean
+          updated_at?: string
+        }
+        Update: {
+          cooldown_minutes?: number
+          cooldown_scope?: string
+          created_at?: string
+          daily_limit?: number
+          enabled?: boolean
+          notes?: string | null
+          send_class?: string
+          suppression_check?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       messaging_messages: {
         Row: {
@@ -77105,6 +77168,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      messaging_send_counters: {
+        Row: {
+          send_class: string
+          send_date: string
+          updated_at: string
+          used: number
+        }
+        Insert: {
+          send_class: string
+          send_date: string
+          updated_at?: string
+          used?: number
+        }
+        Update: {
+          send_class?: string
+          send_date?: string
+          updated_at?: string
+          used?: number
+        }
+        Relationships: []
       }
       messaging_settings: {
         Row: {
@@ -80916,8 +81000,10 @@ export type Database = {
           message_body: string
           message_hash: string | null
           metadata: Json | null
+          phone_last10: string | null
           provider: Database["public"]["Enums"]["sms_provider"]
           provider_message_id: string | null
+          send_class: string | null
           sent_at: string | null
           status: string
           store_id: string | null
@@ -80934,8 +81020,10 @@ export type Database = {
           message_body: string
           message_hash?: string | null
           metadata?: Json | null
+          phone_last10?: string | null
           provider: Database["public"]["Enums"]["sms_provider"]
           provider_message_id?: string | null
+          send_class?: string | null
           sent_at?: string | null
           status?: string
           store_id?: string | null
@@ -80952,8 +81040,10 @@ export type Database = {
           message_body?: string
           message_hash?: string | null
           metadata?: Json | null
+          phone_last10?: string | null
           provider?: Database["public"]["Enums"]["sms_provider"]
           provider_message_id?: string | null
+          send_class?: string | null
           sent_at?: string | null
           status?: string
           store_id?: string | null
@@ -145635,6 +145725,10 @@ export type Database = {
         Args: { p_product_id: string; p_qty: number; p_wholesaler_id: string }
         Returns: boolean
       }
+      release_sms_reservation: {
+        Args: { p_campaign_id?: string; p_send_class: string }
+        Returns: undefined
+      }
       reopen_ops_task: { Args: { p_task_id: string }; Returns: undefined }
       repair_invoice_units: {
         Args: { p_invoice_id: string; p_reason: string; p_user_id?: string }
@@ -145670,6 +145764,14 @@ export type Database = {
       reserve_marketplace_inventory: {
         Args: { p_product_id: string; p_qty: number; p_wholesaler_id: string }
         Returns: boolean
+      }
+      reserve_sms_send: {
+        Args: {
+          p_campaign_id?: string
+          p_campaign_max?: number
+          p_send_class: string
+        }
+        Returns: Json
       }
       reset_daily_number_counts: { Args: never; Returns: undefined }
       reset_daily_number_counts_v2: { Args: never; Returns: undefined }
@@ -146126,6 +146228,10 @@ export type Database = {
       skip_payout_item: {
         Args: { p_item_id: string; p_reason: string }
         Returns: undefined
+      }
+      sms_cooldown_active: {
+        Args: { p_send_class: string; p_to_number: string }
+        Returns: boolean
       }
       snapshot_agent_distribution: {
         Args: { p_business_id: string }

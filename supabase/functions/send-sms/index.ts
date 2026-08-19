@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isSuppressed } from "../_shared/dnc.ts";
+import { legalStopBlocked } from "../_shared/twilioSend.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +20,7 @@ function isUsTollFree(e164: string): boolean {
   return ["800", "833", "844", "855", "866", "877", "888"].includes(m[1]);
 }
 
-async function sendViaTwilio(to: string, body: string, fromOverride?: string): Promise<ProviderResult> {
+async function sendViaTwilio(to: string, body: string, fromOverride?: string, mediaUrls?: string[]): Promise<ProviderResult> {
   const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
   const token = Deno.env.get("TWILIO_AUTH_TOKEN");
   const apiSid = Deno.env.get("TWILIO_API_SID") || Deno.env.get("TWILIO_API_KEY") || undefined;
@@ -78,6 +79,9 @@ async function sendViaTwilio(to: string, body: string, fromOverride?: string): P
   if (messagingServiceSid) form.append("MessagingServiceSid", messagingServiceSid);
   else form.append("From", from);
   form.append("Body", body);
+  // MMS: Twilio accepts repeated MediaUrl params. Callers with attachments
+  // route through here too, so nothing is silently downgraded to text.
+  for (const m of mediaUrls ?? []) form.append("MediaUrl", m);
 
   // C5 STANDARD: TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN is the canonical pair.
   // The TWILIO_API_SID/TWILIO_API_SECRET ("connector" key) path is DEPRECATED
@@ -175,12 +179,32 @@ interface ProviderResult {
   raw_response?: any;
 }
 
+/**
+ * Message class. MANDATORY — there is no default, by design.
+ * A function that lands in the wrong bucket should fail to compile / fail at
+ * the door, not send silently under someone else's budget.
+ *   transactional  — customer-initiated (receipts, confirmations, codes)
+ *   workforce      — contracted staff / partner dispatch
+ *   conversational — 1:1 human-initiated rep→customer message
+ *   campaign       — marketing / outreach (suppression + cooldown + caps)
+ * internal / test never come through here; they use _shared/twilioSend.ts.
+ */
+type SendClass = "transactional" | "workforce" | "conversational" | "campaign";
+const VALID_CLASSES: SendClass[] = ["transactional", "workforce", "conversational", "campaign"];
+
 interface SendRequest {
   to_number: string;
   message_body: string;
   idempotency_key: string;
+  /** REQUIRED. See SendClass. */
+  send_class: SendClass;
+  /** MMS attachments (Twilio only — BizText fallback is skipped when set). */
+  media_urls?: string[];
   store_id?: string;
+
   campaign_id?: string;
+  /** Recipient count the campaign was created with — becomes its hard ceiling. */
+  campaign_max_sends?: number;
   explicit_provider?: "twilio" | "biztext";
   skip_cooldown?: boolean;
   metadata?: Record<string, any>;
@@ -191,6 +215,7 @@ interface SendRequest {
   /** Optional template identifier — purely metadata, the caller pre-renders message_body */
   template_id?: string;
 }
+
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -224,7 +249,7 @@ serve(async (req: Request) => {
   try {
     // ── 1. Parse & Validate ──────────────────────────────────────────
     const body: SendRequest = await req.json();
-    const { to_number, message_body, idempotency_key, store_id, campaign_id, explicit_provider, skip_cooldown, metadata, from_number, purpose, template_id } = body;
+    const { to_number, message_body, idempotency_key, send_class, media_urls, store_id, campaign_id, campaign_max_sends, explicit_provider, skip_cooldown, metadata, from_number, purpose, template_id } = body;
     const fromOverride = from_number ? normalizePhone(from_number) : undefined;
     // Merge purpose/template_id into metadata so downstream analytics see them
     const enrichedMetadata: Record<string, any> = {
@@ -237,14 +262,47 @@ serve(async (req: Request) => {
       return respond(400, { error: "Missing required fields: to_number, message_body, idempotency_key" });
     }
 
+    // send_class is mandatory and has NO default. A caller that doesn't say
+    // what kind of message this is doesn't get to send it.
+    if (!send_class || !VALID_CLASSES.includes(send_class)) {
+      return respond(400, {
+        error: `send_class is required and must be one of: ${VALID_CLASSES.join(", ")}. ` +
+               `internal/test traffic must use _shared/twilioSend.ts, not send-sms.`,
+        status: "missing_send_class",
+      });
+    }
+
     if (message_body.length > 1600) {
       return respond(400, { error: "message_body exceeds 1600 character limit" });
     }
 
     const formattedTo = normalizePhone(to_number);
 
-    // ── 2. Unified Suppression Check (dnc_list + opt_out_events) ─────
-    const suppression = await isSuppressed(supabase, formattedTo);
+    // ── 2. Load class config ─────────────────────────────────────────
+    const { data: classCfg, error: classErr } = await supabase
+      .from("messaging_class_limits")
+      .select("*")
+      .eq("send_class", send_class)
+      .maybeSingle();
+
+    if (classErr || !classCfg) {
+      return respond(500, { error: `Unknown or unreadable send_class '${send_class}'`, status: "config_error" });
+    }
+    if (classCfg.enabled === false) {
+      return respond(429, { error: `send_class '${send_class}' is disabled`, status: "class_disabled" });
+    }
+
+    // ── 3. Suppression ───────────────────────────────────────────────
+    // Legal STOP is absolute for EVERY class that reaches send-sms — one
+    // function, called once. Marketing suppression is class-scoped on top.
+    const stop = await legalStopBlocked(supabase, formattedTo);
+    let suppression: { blocked: boolean; reason?: string | null; source?: string | null } =
+      stop.blocked ? { blocked: true, reason: stop.reason, source: "legal_stop" } : { blocked: false };
+
+    if (!suppression.blocked && classCfg.suppression_check) {
+      const s = await isSuppressed(supabase, formattedTo);
+      if (s.blocked) suppression = { blocked: true, reason: s.reason, source: s.source };
+    }
 
     if (suppression.blocked) {
       // Log blocked attempt
@@ -252,6 +310,7 @@ serve(async (req: Request) => {
         idempotency_key,
         to_number: formattedTo,
         message_body,
+        send_class,
         provider: explicit_provider || "biztext",
         status: "blocked",
         error_message: `Suppressed (${suppression.source || "unknown"}): ${suppression.reason || "blocked"}`,
@@ -267,7 +326,7 @@ serve(async (req: Request) => {
       });
     }
 
-    // ── 3. Idempotency Check ─────────────────────────────────────────
+    // ── 4. Idempotency Check ─────────────────────────────────────────
     const { data: existing } = await supabase
       .from("outbound_messages")
       .select("*")
@@ -285,51 +344,64 @@ serve(async (req: Request) => {
       });
     }
 
-    // ── 4. Load Settings ─────────────────────────────────────────────
+    // ── 5. Provider settings (limits now live per-class) ─────────────
     const { data: settings } = await supabase
       .from("messaging_settings")
       .select("*")
       .limit(1)
       .maybeSingle();
 
-    const dailyLimit = settings?.daily_send_limit ?? 1000;
-    const cooldownMinutes = settings?.per_number_cooldown_minutes ?? 60;
     const defaultProvider = settings?.default_sms_provider ?? "biztext";
     const fallbackProvider = settings?.fallback_provider ?? null;
 
-    // ── 5. Daily Send Limit ──────────────────────────────────────────
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const { count: todayCount } = await supabase
-      .from("outbound_messages")
-      .select("id", { count: "exact", head: true })
-      .gte("created_at", todayStart.toISOString())
-      .in("status", ["sent", "pending"]);
-
-    if ((todayCount ?? 0) >= dailyLimit) {
-      return respond(429, { error: `Daily send limit of ${dailyLimit} reached`, status: "rate_limited" });
-    }
-
-    // ── 6. Per-Number Cooldown (skipped for manual/conversation sends) ─
-    if (!skip_cooldown) {
-      const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
-      const { data: recentToNumber } = await supabase
-        .from("outbound_messages")
-        .select("id")
-        .eq("to_number", formattedTo)
-        .eq("status", "sent")
-        .gte("created_at", cooldownCutoff)
-        .limit(1);
-
-      if (recentToNumber && recentToNumber.length > 0) {
+    // ── 6. Class-scoped cooldown ─────────────────────────────────────
+    // A campaign text can no longer block that customer's receipt: the
+    // cooldown only looks at prior traffic of the SAME class.
+    if (!skip_cooldown && classCfg.cooldown_scope === "class" && (classCfg.cooldown_minutes ?? 0) > 0) {
+      const { data: cdActive } = await supabase.rpc("sms_cooldown_active", {
+        p_send_class: send_class,
+        p_to_number: formattedTo,
+      });
+      if (cdActive === true) {
         return respond(429, {
-          error: `Cooldown active: last message to ${formattedTo} within ${cooldownMinutes} minutes`,
+          error: `Cooldown active: last ${send_class} message to ${formattedTo} within ${classCfg.cooldown_minutes} minutes`,
           status: "cooldown",
+          send_class,
         });
       }
     }
 
-    // ── 7. Message Hash (Duplicate content detection) ────────────────
+    // ── 7. Atomic reservation (the claim, not a read-then-act check) ──
+    const { data: reservation, error: reserveErr } = await supabase.rpc("reserve_sms_send", {
+      p_send_class: send_class,
+      p_campaign_id: campaign_id || null,
+      p_campaign_max: campaign_max_sends ?? null,
+    });
+
+    if (reserveErr) {
+      console.error("❌ reserve_sms_send failed:", reserveErr.message);
+      return respond(500, { error: `Reservation failed: ${reserveErr.message}`, status: "reservation_error" });
+    }
+    if (!reservation?.allowed) {
+      console.warn(`⛔ Send refused: ${reservation?.reason} (class=${send_class} campaign=${campaign_id ?? "none"})`);
+      return respond(429, {
+        error: reservation?.reason === "campaign_cap_reached"
+          ? `Campaign ${campaign_id} has reached its recipient-count ceiling`
+          : `Daily limit for class '${send_class}' reached (${reservation?.daily_limit ?? "?"})`,
+        status: "rate_limited",
+        reason: reservation?.reason,
+        send_class,
+      });
+    }
+    const releaseReservation = async () => {
+      await supabase.rpc("release_sms_reservation", {
+        p_send_class: send_class,
+        p_campaign_id: campaign_id || null,
+      });
+    };
+
+
+    // ── 8. Message Hash (Duplicate content detection) ────────────────
     const msgHash = await sha256Hex(formattedTo + message_body);
     const hashCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const { data: hashDup } = await supabase
@@ -341,16 +413,17 @@ serve(async (req: Request) => {
       .limit(1);
 
     if (hashDup && hashDup.length > 0) {
+      await releaseReservation();
       return respond(409, {
         error: "Duplicate message detected within 10-minute window",
         status: "duplicate",
       });
     }
 
-    // ── 8. Resolve Provider ──────────────────────────────────────────
+    // ── 9. Resolve Provider ──────────────────────────────────────────
     const chosenProvider: "twilio" | "biztext" = explicit_provider || (defaultProvider as "twilio" | "biztext");
 
-    // ── 9. Insert Pending Row ────────────────────────────────────────
+    // ── 10. Insert Pending Row ───────────────────────────────────────
     // Extract created_by from auth header if available
     let createdBy: string | null = null;
     const authHeader = req.headers.get("authorization");
@@ -373,6 +446,7 @@ serve(async (req: Request) => {
         idempotency_key,
         to_number: formattedTo,
         message_body,
+        send_class,
         provider: chosenProvider,
         status: "pending",
         store_id: store_id || null,
@@ -382,6 +456,7 @@ serve(async (req: Request) => {
         metadata: {
           ...enrichedMetadata,
           cost_estimate: costEstimate,
+          reservation: reservation,
           provider_rate: chosenProvider === "twilio" ? "twilio_standard" : "biztext_standard",
         },
       })
@@ -390,15 +465,17 @@ serve(async (req: Request) => {
 
     if (insertErr) {
       console.error("❌ Insert pending row failed:", insertErr);
+      await releaseReservation();
       return respond(500, { error: insertErr.message });
     }
+
 
     console.log(`📱 Sending SMS via ${chosenProvider} to ${formattedTo} [${pendingRow.id}]`);
 
     // ── 10. Call Provider ────────────────────────────────────────────
     let result: ProviderResult;
     if (chosenProvider === "twilio") {
-      result = await sendViaTwilio(formattedTo, message_body, fromOverride);
+      result = await sendViaTwilio(formattedTo, message_body, fromOverride, media_urls);
     } else {
       result = await sendViaBizText(formattedTo, message_body);
     }
@@ -409,11 +486,15 @@ serve(async (req: Request) => {
     if (!result.success && fallbackProvider && fallbackProvider !== chosenProvider) {
       console.log(`⚠️ Primary ${chosenProvider} failed, falling back to ${fallbackProvider}`);
       if (fallbackProvider === "twilio") {
-        result = await sendViaTwilio(formattedTo, message_body, fromOverride);
+        result = await sendViaTwilio(formattedTo, message_body, fromOverride, media_urls);
+      } else if (media_urls && media_urls.length) {
+        // BizText carries no media. Falling back would silently drop the
+        // attachment, so keep the Twilio failure instead of half-sending.
+        console.warn("⚠️ Skipping BizText fallback: message has media attachments");
       } else {
         result = await sendViaBizText(formattedTo, message_body);
       }
-      actualProviderUsed = fallbackProvider as "twilio" | "biztext";
+      actualProviderUsed = result.success ? (fallbackProvider as "twilio" | "biztext") : chosenProvider;
 
       if (result.success) {
         // Update provider to reflect fallback used
@@ -465,6 +546,9 @@ serve(async (req: Request) => {
           },
         })
         .eq("id", pendingRow.id);
+
+      // The provider refused it, so it never consumed budget — give the slot back.
+      await releaseReservation();
 
       console.error(`❌ SMS failed: ${result.error_message}`);
       return respond(500, {

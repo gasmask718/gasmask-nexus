@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms } from "../_shared/sendSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,14 +21,8 @@ serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Twilio credentials
-    const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
-    const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;
-    const twilioMessagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID")!;
-
-    if (!twilioAccountSid || !twilioAuthToken || !twilioMessagingServiceSid) {
-      throw new Error("Twilio credentials not configured");
-    }
+    // Twilio credentials, provider fallback and suppression are owned by
+    // send-sms. This worker only picks targets and records outcomes.
 
     // 1. Get campaign
     const { data: campaign, error: campaignError } = await supabase
@@ -68,8 +63,14 @@ serve(async (req: Request) => {
 
     let sentCount = 0;
     let failCount = 0;
-    const twilioApiUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
-    const authHeader = "Basic " + btoa(`${twilioAccountSid}:${twilioAuthToken}`);
+
+    // The campaign ceiling is its own recipient count. If this worker ever
+    // re-queues the same targets, the cap stops it at one pass per person
+    // instead of letting it eat the whole daily campaign budget.
+    const { count: campaignTargetCount } = await supabase
+      .from("messaging_targets")
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaign_id);
 
     for (const target of targets) {
       try {
@@ -89,32 +90,24 @@ serve(async (req: Request) => {
           continue;
         }
 
-        // Send via Twilio
-        const formData = new URLSearchParams({
-          To: `+1${phone}`,
-          Body: message,
-          MessagingServiceSid: twilioMessagingServiceSid,
+        const res = await sendSms({
+          to: `+1${phone}`,
+          body: message,
+          idempotencyKey: `msgworker-${campaign_id}-${target.id}`,
+          sendClass: "campaign",
+          campaignId: campaign_id,
+          campaignMaxSends: campaignTargetCount ?? null,
+          storeId: target.store_id ?? null,
+          purpose: "messaging_campaign",
+          metadata: { target_id: target.id, campaign: campaign.name },
         });
 
-        const response = await fetch(twilioApiUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": authHeader,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: formData.toString(),
-        });
+        const isError = !res.success;
 
-        const responseText = await response.text();
-        let responseData: any;
-        try { responseData = JSON.parse(responseText); } catch { responseData = { raw: responseText.trim() }; }
-
-        const isError = !response.ok || responseData?.status === "failed" || responseData?.error_code;
-
-        // Update target status
+        // Update target status. A suppressed number is terminal, not failed.
         await supabase.from("messaging_targets").update({
-          status: isError ? "failed" : "sent",
-          sent_at: isError ? null : new Date().toISOString(),
+          status: res.success ? "sent" : res.blocked ? "blocked" : "failed",
+          sent_at: res.success ? new Date().toISOString() : null,
         }).eq("id", target.id);
 
         // Insert message record
@@ -125,14 +118,14 @@ serve(async (req: Request) => {
           direction: "outbound",
           body: message,
           ai_generated: campaign.mode === "ai_campaign",
-          status: isError ? "failed" : "sent",
+          status: res.success ? "sent" : res.blocked ? "blocked" : "failed",
           phone,
-          biztext_response: responseData,
+          biztext_response: res.raw,
         });
 
         if (isError) {
           failCount++;
-          console.error(`❌ Twilio failed for ${phone}:`, responseData?.message || responseText.substring(0, 200));
+          console.error(`❌ Send refused for ${phone}: ${res.status} ${res.errorMessage ?? ""}`);
         } else {
           sentCount++;
         }
