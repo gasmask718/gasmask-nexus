@@ -246,7 +246,7 @@ serve(async (req: Request) => {
   try {
     // ── 1. Parse & Validate ──────────────────────────────────────────
     const body: SendRequest = await req.json();
-    const { to_number, message_body, idempotency_key, send_class, store_id, campaign_id, campaign_max_sends, explicit_provider, skip_cooldown, metadata, from_number, purpose, template_id } = body;
+    const { to_number, message_body, idempotency_key, send_class, media_urls, store_id, campaign_id, campaign_max_sends, explicit_provider, skip_cooldown, metadata, from_number, purpose, template_id } = body;
     const fromOverride = from_number ? normalizePhone(from_number) : undefined;
     // Merge purpose/template_id into metadata so downstream analytics see them
     const enrichedMetadata: Record<string, any> = {
@@ -472,7 +472,7 @@ serve(async (req: Request) => {
     // ── 10. Call Provider ────────────────────────────────────────────
     let result: ProviderResult;
     if (chosenProvider === "twilio") {
-      result = await sendViaTwilio(formattedTo, message_body, fromOverride);
+      result = await sendViaTwilio(formattedTo, message_body, fromOverride, media_urls);
     } else {
       result = await sendViaBizText(formattedTo, message_body);
     }
@@ -483,11 +483,15 @@ serve(async (req: Request) => {
     if (!result.success && fallbackProvider && fallbackProvider !== chosenProvider) {
       console.log(`⚠️ Primary ${chosenProvider} failed, falling back to ${fallbackProvider}`);
       if (fallbackProvider === "twilio") {
-        result = await sendViaTwilio(formattedTo, message_body, fromOverride);
+        result = await sendViaTwilio(formattedTo, message_body, fromOverride, media_urls);
+      } else if (media_urls && media_urls.length) {
+        // BizText carries no media. Falling back would silently drop the
+        // attachment, so keep the Twilio failure instead of half-sending.
+        console.warn("⚠️ Skipping BizText fallback: message has media attachments");
       } else {
         result = await sendViaBizText(formattedTo, message_body);
       }
-      actualProviderUsed = fallbackProvider as "twilio" | "biztext";
+      actualProviderUsed = result.success ? (fallbackProvider as "twilio" | "biztext") : chosenProvider;
 
       if (result.success) {
         // Update provider to reflect fallback used
