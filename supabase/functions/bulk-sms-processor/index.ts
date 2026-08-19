@@ -9,13 +9,10 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 import { sendSms } from "../_shared/sendSms.ts";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 const MAX_RUNTIME_MS = 140_000; // stay under 150s edge limit; pause and resume via cron
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
 const DEFAULT_FROM = Deno.env.get("TWILIO_DEFAULT_FROM") || Deno.env.get("TWILIO_PHONE_NUMBER");
 
 function json(body: unknown, status = 200) {
