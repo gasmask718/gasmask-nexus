@@ -328,6 +328,7 @@ async function claimJob(body: any) {
       job: {
         id: claimed.id,
         application_id: claimed.application_id,
+        funding_client_id: application?.client_id ?? claimed.client_id,
         submission_method: claimed.submission_method,
         adapter_key: claimed.adapter_key,
         lender_name: claimed.lender_name,
