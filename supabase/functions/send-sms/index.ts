@@ -175,12 +175,29 @@ interface ProviderResult {
   raw_response?: any;
 }
 
+/**
+ * Message class. MANDATORY — there is no default, by design.
+ * A function that lands in the wrong bucket should fail to compile / fail at
+ * the door, not send silently under someone else's budget.
+ *   transactional  — customer-initiated (receipts, confirmations, codes)
+ *   workforce      — contracted staff / partner dispatch
+ *   conversational — 1:1 human-initiated rep→customer message
+ *   campaign       — marketing / outreach (suppression + cooldown + caps)
+ * internal / test never come through here; they use _shared/twilioSend.ts.
+ */
+type SendClass = "transactional" | "workforce" | "conversational" | "campaign";
+const VALID_CLASSES: SendClass[] = ["transactional", "workforce", "conversational", "campaign"];
+
 interface SendRequest {
   to_number: string;
   message_body: string;
   idempotency_key: string;
+  /** REQUIRED. See SendClass. */
+  send_class: SendClass;
   store_id?: string;
   campaign_id?: string;
+  /** Recipient count the campaign was created with — becomes its hard ceiling. */
+  campaign_max_sends?: number;
   explicit_provider?: "twilio" | "biztext";
   skip_cooldown?: boolean;
   metadata?: Record<string, any>;
@@ -191,6 +208,7 @@ interface SendRequest {
   /** Optional template identifier — purely metadata, the caller pre-renders message_body */
   template_id?: string;
 }
+
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
