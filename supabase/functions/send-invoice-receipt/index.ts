@@ -92,31 +92,43 @@ Deno.serve(async (req) => {
       }
     }
 
-    // For store invoices, try store contacts then store record
+    // For store invoices: only a billing-appropriate contact may receive a
+    // receipt. The old "oldest contact with a phone" fallback sent 21 receipts
+    // to store workers whose numbers were captured for ops/visits, not billing
+    // (audit 2026-08-19). Anything that is not the owner/billing/primary contact
+    // is skipped and we fall through to the store's own line.
+    const BILLING_ROLES = ['owner', 'billing', 'manager', 'accounting'];
     if (!phoneNumber && request.store_id) {
       const { data: contacts } = await supabase
         .from('store_contacts')
-        .select('phone, name, role')
+        .select('phone, name, role, is_primary')
         .is('deleted_at', null)
         .eq('store_id', request.store_id)
         .not('phone', 'is', null)
-        .order('created_at', { ascending: true })
-        .limit(1);
-      if (contacts && contacts.length > 0 && contacts[0].phone) {
-        phoneNumber = contacts[0].phone;
-        phoneSource = `store_contact:${contacts[0].name || 'unknown'}`;
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: true });
+      const eligible = (contacts || []).find(
+        (c: { role?: string | null; is_primary?: boolean | null }) =>
+          c.is_primary === true || BILLING_ROLES.includes(String(c.role || '').toLowerCase()),
+      );
+      if (eligible?.phone) {
+        phoneNumber = eligible.phone;
+        phoneSource = `store_contact:${eligible.name || 'unknown'}`;
+      } else if ((contacts || []).length > 0) {
+        console.log('ℹ️ store_contacts present but none billing-eligible — skipping contact fallback');
       }
     }
 
     if (!phoneNumber && request.store_id) {
       const { data: storeData } = await supabase
         .from('store_master')
-        .select('phone, contact_phone')
+        .select('phone')
         .eq('id', request.store_id)
         .single();
-      phoneNumber = storeData?.contact_phone || storeData?.phone;
+      phoneNumber = storeData?.phone;
       if (phoneNumber) phoneSource = 'store_record';
     }
+
 
     if (!phoneNumber) {
       console.log('⚠️ No phone number found - receipt skipped');
