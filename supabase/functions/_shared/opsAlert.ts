@@ -93,7 +93,10 @@ async function sendOpsEmail(
   if (!OPS_ALERT_EMAIL) {
     return { ok: false, error: "OPS_ALERT_EMAIL/ADMIN_ALERT_EMAIL not set" };
   }
-  const to = OPS_ALERT_EMAIL.split(",").map((s) => s.trim()).filter(Boolean);
+  // Resend matches the sandbox recipient case-sensitively — normalise.
+  const to = OPS_ALERT_EMAIL.split(",").map((s) => s.trim().toLowerCase()).filter(
+    Boolean,
+  );
   try {
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
