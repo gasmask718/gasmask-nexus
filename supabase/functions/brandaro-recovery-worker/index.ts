@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms } from "../_shared/sendSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,13 +27,7 @@ serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
-    const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;
-    const twilioMessagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID")!;
-
-    if (!twilioAccountSid || !twilioAuthToken || !twilioMessagingServiceSid) {
-      throw new Error("Twilio credentials not configured");
-    }
+    // Credentials, suppression and budgets live in send-sms.
 
     // 1. Get pending recovery messages that are due
     const { data: pendingMessages, error: fetchError } = await supabase
@@ -51,9 +46,6 @@ serve(async (req: Request) => {
     }
 
     console.log(`🔄 Processing ${pendingMessages.length} recovery messages`);
-
-    const twilioApiUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
-    const authHeader = "Basic " + btoa(`${twilioAccountSid}:${twilioAuthToken}`);
 
     let sentCount = 0;
     let failCount = 0;
@@ -86,36 +78,26 @@ serve(async (req: Request) => {
           continue;
         }
 
-        // Send SMS via Twilio
-        const formData = new URLSearchParams({
-          To: `+1${normalized}`,
-          Body: msg.message_content,
-          MessagingServiceSid: twilioMessagingServiceSid,
+        // Payment recovery chasing an unpaid order the customer started:
+        // transactional in nature, but it runs as a batch loop, so it goes
+        // through the HTTP chokepoint rather than the in-process module.
+        const res = await sendSms({
+          to: `+1${normalized}`,
+          body: msg.message_content,
+          idempotencyKey: `brandaro-recovery-${msg.id}`,
+          sendClass: "transactional",
+          purpose: "brandaro_payment_recovery",
+          metadata: { recovery_id: msg.id, step: msg.step, session_id: msg.session_id },
         });
 
-        const response = await fetch(twilioApiUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": authHeader,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: formData.toString(),
-        });
-
-        const responseText = await response.text();
-        let responseData: any;
-        try { responseData = JSON.parse(responseText); } catch { responseData = { raw: responseText }; }
-
-        const isError = !response.ok || responseData?.error_code;
-
-        // Update recovery record
+        // Update recovery record. Suppressed = terminal, never re-queued.
         await supabase.from("brandaro_payment_recovery").update({
-          status: isError ? "failed" : "sent",
-          sent_at: isError ? null : new Date().toISOString(),
+          status: res.success ? "sent" : res.blocked ? "blocked" : "failed",
+          sent_at: res.success ? new Date().toISOString() : null,
         }).eq("id", msg.id);
 
-        if (isError) {
-          console.log(`❌ Recovery SMS failed for ${msg.id}: ${responseData?.message || "unknown"}`);
+        if (!res.success) {
+          console.log(`❌ Recovery SMS ${res.blocked ? "blocked" : "failed"} for ${msg.id}: ${res.errorMessage ?? res.status}`);
           failCount++;
         } else {
           console.log(`✅ Recovery SMS sent for ${msg.id} (step ${msg.step})`);
@@ -129,18 +111,17 @@ serve(async (req: Request) => {
           }
 
           // Log to communication_logs for unified inbox
-          await supabase.from("communication_logs").insert({
+          const { error: logErr } = await supabase.from("communication_logs").insert({
             direction: "outbound",
             channel: "sms",
             phone_number: `+1${normalized}`,
             message_body: msg.message_content,
             status: "sent",
             provider: "twilio",
-            provider_message_id: responseData?.sid,
+            provider_message_id: res.providerMessageId,
             metadata: { source: "brandaro_payment_recovery", step: msg.step, session_id: msg.session_id },
-          }).then(({ error }) => {
-            if (error) console.log("⚠️ Failed to log to communication_logs:", error.message);
           });
+          if (logErr) console.log("⚠️ Failed to log to communication_logs:", logErr.message);
         }
       } catch (innerError) {
         console.error(`❌ Error processing recovery ${msg.id}:`, innerError);
