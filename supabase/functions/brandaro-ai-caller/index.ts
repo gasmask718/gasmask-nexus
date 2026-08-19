@@ -10,6 +10,54 @@ const corsHeaders = {
 
 const BUSINESS_UNIT_KEY = "brandaro";
 
+/**
+ * FIX (2026-08-19): every Bland dispatch since 2026-08-03 died with
+ * "Invalid 'from' - you might not own this number". Root cause: the from-number
+ * cascade hands Bland a *Twilio*-owned number out of dc_phone_numbers
+ * (business='brandaro'), but Bland only accepts caller IDs registered inside the
+ * Bland account. We now resolve the caller ID against Bland's own inventory and
+ * fall back to letting Bland pick one (omit `from`) rather than sending a number
+ * the provider will always reject.
+ */
+async function resolveBlandFrom(
+  apiKey: string,
+  preferred: string | null,
+): Promise<{ from: string | null; source: string }> {
+  const envFrom = Deno.env.get("BLAND_FROM_NUMBER");
+  let owned: string[] = [];
+  try {
+    const res = await fetch("https://api.bland.ai/v1/inbound", {
+      headers: { Authorization: apiKey },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      owned = (data?.inbound_numbers ?? [])
+        .map((n: any) => n?.phone_number)
+        .filter((n: any) => typeof n === "string");
+    } else {
+      console.error(`[brandaro-ai-caller] bland inbound lookup http=${res.status}`);
+    }
+  } catch (e) {
+    console.error("[brandaro-ai-caller] bland inbound lookup failed:", e);
+  }
+
+  if (preferred && owned.includes(preferred)) return { from: preferred, source: "pool_bland_owned" };
+  if (envFrom && (owned.length === 0 || owned.includes(envFrom))) {
+    return { from: envFrom, source: "env_bland_from_number" };
+  }
+  if (owned.length > 0) {
+    if (preferred) {
+      console.warn(
+        `[brandaro-ai-caller] pool number ${preferred} is not owned by the Bland account — substituting ${owned[0]}`,
+      );
+    }
+    return { from: owned[0], source: "bland_inventory" };
+  }
+  console.warn("[brandaro-ai-caller] no Bland-owned caller ID available — letting Bland assign one");
+  return { from: null, source: "bland_assigned" };
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -75,19 +123,16 @@ serve(async (req) => {
           .limit(1);
         testFrom = fbRows?.[0]?.phone_number ?? null;
       }
-      if (!testFrom) {
-        return new Response(
-          JSON.stringify({ success: false, error: "No active brandaro from-number available" }),
-          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      const testResolved = await resolveBlandFrom(BLAND_API_KEY, testFrom);
+      testFrom = testResolved.from;
 
       const testPayload: Record<string, unknown> = {
         phone_number: test_phone,
-        from: testFrom,
+        ...(testFrom ? { from: testFrom } : {}),
         pathway_id: BRANDARO_SALES_PATHWAY_ID,
         metadata: { campaign: "brandaro-ai-caller-test", test: true },
       };
+
 
       const tRes = await fetch("https://api.bland.ai/v1/calls", {
         method: "POST",
@@ -221,7 +266,7 @@ serve(async (req) => {
         // 3) RPC throws -> emergency fallback to any active brandaro pool row (no bookkeeping)
         let fromNumber: string | null = null;
         let poolRowId: string | null = null;
-        let fromSource: "pool" | "emergency" = "pool";
+        let fromSource: string = "pool";
 
         try {
           const { data: sel, error: selErr } = await supabase.rpc(
@@ -264,13 +309,19 @@ serve(async (req) => {
           fromSource = "emergency";
         }
 
+        // Caller ID must be owned by the Bland account, not just by our Twilio pool.
+        const resolvedFrom = await resolveBlandFrom(BLAND_API_KEY, fromNumber);
+        fromNumber = resolvedFrom.from;
+        fromSource = resolvedFrom.source;
+
         // === BLAND DISPATCH (T7c-B-b Session 4) ===
         // Bland agent handles opening + conversation; we only pass context via metadata.
         const firstName = (lead.business_name || "").split(/\s+/)[0] || "there";
         const blandPayload: Record<string, unknown> = {
           phone_number: lead.phone,
-          from: fromNumber!,
+          ...(fromNumber ? { from: fromNumber } : {}),
           pathway_id: BRANDARO_SALES_PATHWAY_ID,
+
           webhook: `${supabaseUrl}/functions/v1/bland-agent-webhook`,
           metadata: {
             lead_id: lead.id,
