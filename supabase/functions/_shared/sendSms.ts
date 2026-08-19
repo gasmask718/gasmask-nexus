@@ -40,6 +40,8 @@ export interface SendSmsOptions {
   provider?: "twilio" | "biztext";
   storeId?: string | null;
   campaignId?: string | null;
+  /** MMS attachments. Twilio-only; the BizText fallback is skipped when set. */
+  mediaUrls?: string[];
   /**
    * Ceiling for this campaign_id. Pass the recipient count: a loop bug that
    * re-sends the same list gets stopped at the cap instead of at the daily
@@ -103,6 +105,7 @@ export async function sendSms(opts: SendSmsOptions): Promise<SendSmsResult> {
         message_body: opts.body,
         idempotency_key: opts.idempotencyKey,
         send_class: opts.sendClass,
+        media_urls: opts.mediaUrls?.length ? opts.mediaUrls : undefined,
         campaign_max_sends: opts.campaignMaxSends ?? undefined,
         from_number: opts.from || undefined,
         explicit_provider: opts.provider ?? "twilio",
