@@ -537,6 +537,9 @@ serve(async (req: Request) => {
         })
         .eq("id", pendingRow.id);
 
+      // The provider refused it, so it never consumed budget — give the slot back.
+      await releaseReservation();
+
       console.error(`❌ SMS failed: ${result.error_message}`);
       return respond(500, {
         success: false,
