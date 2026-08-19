@@ -26,7 +26,7 @@ import { promises as fs } from 'node:fs';
 import type { AutomationAdapter, ClaimedJob } from './adapters/types';
 import { adapters } from './adapters';
 import {
-  assertSessionOwnership, workspacePathFor, SessionIsolationError,
+  assertSessionOwnership, workspacePathFor, contextOptionsFor, SessionIsolationError,
   type SessionIdentity,
 } from './isolation';
 
@@ -64,9 +64,16 @@ export async function detectCheckpoint(page: Page): Promise<string | null> {
 
 /** Fresh, unshared context. No storageState, no proxy, no identity fabrication. */
 export async function openIsolatedContext(workspace: string): Promise<{ context: BrowserContext; close: () => Promise<void> }> {
-  await fs.mkdir(`${workspace}/downloads`, { recursive: true });
+  // contextOptionsFor is the single source of truth for isolation options, so
+  // the options the tests assert on are the options the worker actually uses.
+  const opts = contextOptionsFor(jobIdFromWorkspace(workspace));
+  await fs.mkdir(opts.downloadsPath, { recursive: true });
+  await fs.mkdir(opts.screenshotDir, { recursive: true });
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ acceptDownloads: true });
+  const context = await browser.newContext({
+    storageState: opts.storageState,
+    acceptDownloads: opts.acceptDownloads,
+  });
   return {
     context,
     close: async () => {
@@ -75,6 +82,12 @@ export async function openIsolatedContext(workspace: string): Promise<{ context:
     },
   };
 }
+
+/** The workspace path is always `<root>/<job id>`; recover the id for option building. */
+function jobIdFromWorkspace(workspace: string): string {
+  return workspace.split('/').filter(Boolean).pop() ?? '';
+}
+
 
 /** Destroy every artifact of the job's workspace. Nothing survives into another client. */
 export async function purgeWorkspace(workspace: string): Promise<void> {

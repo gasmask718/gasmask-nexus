@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public._session_isolation_qa;

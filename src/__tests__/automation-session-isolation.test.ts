@@ -70,7 +70,22 @@ describe('workspace isolation', () => {
     expect(o).not.toHaveProperty('userAgent');
     expect(o.downloadsPath).toContain(job.id);
   });
+
+  it('pins downloads, traces and screenshots inside the job workspace', () => {
+    const o = contextOptionsFor(job.id) as unknown as Record<string, string>;
+    const ws = workspacePathFor(job.id);
+    for (const p of [o.downloadsPath, o.tracePath, o.screenshotDir]) {
+      expect(p.startsWith(`${ws}/`)).toBe(true);
+    }
+  });
+
+  it('accepts the live session states the API actually writes', () => {
+    for (const status of ['CREATED', 'OPEN', 'RUNNING', 'HUMAN_CHECKPOINT']) {
+      expect(() => assertSessionOwnership({ ...session, status }, job)).not.toThrow();
+    }
+  });
 });
+
 
 describe('session audit hygiene', () => {
   it('accepts non-sensitive session metadata', () => {

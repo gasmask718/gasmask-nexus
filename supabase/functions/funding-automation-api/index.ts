@@ -645,7 +645,7 @@ async function reapStaleJobs() {
       status: 'FAILED', error_code: 'WORKER_LEASE_EXPIRED',
       termination_reason: 'Worker lease expired; session force-closed and workspace considered destroyed',
       ended_at: new Date().toISOString(),
-    }).eq('automation_job_id', j.id).in('status', ['OPEN', 'RUNNING']);
+    }).eq('automation_job_id', j.id).in('status', ['CREATED', 'OPEN', 'RUNNING', 'HUMAN_CHECKPOINT']);
   }
   return json({ recovered });
 }
@@ -702,7 +702,7 @@ async function openSession(body: any, caller: Caller) {
 
   const { data: live } = await admin.from('automation_sessions')
     .select('id,status').eq('automation_job_id', job.id)
-    .in('status', ['OPEN', 'RUNNING']).maybeSingle();
+    .in('status', ['CREATED', 'OPEN', 'RUNNING']).maybeSingle();
   if (live) return json({ error: 'A live session already exists for this job', session_id: live.id }, 409);
 
   const { data: session, error } = await admin.from('automation_sessions').insert({
@@ -735,12 +735,17 @@ async function openSession(body: any, caller: Caller) {
   });
 }
 
+/** Live (non-terminal) session states. Must mirror uq_automation_sessions_live_job. */
+const LIVE_SESSION_STATES = ['CREATED', 'OPEN', 'RUNNING'];
+
 async function setSessionStatus(body: any, caller: Caller) {
   if (caller.kind !== 'worker') return json({ error: 'Worker only' }, 403);
   const status = ['OPEN', 'RUNNING'].includes(body.status) ? body.status : 'RUNNING';
-  const { error } = await admin.from('automation_sessions')
-    .update({ status }).eq('id', body.session_id).in('status', ['OPEN', 'RUNNING']);
+  const { data, error } = await admin.from('automation_sessions')
+    .update({ status }).eq('id', body.session_id).in('status', LIVE_SESSION_STATES).select('id');
   if (error) return json({ error: error.message }, 409);
+  // A terminated session must never be walked back into a live state.
+  if (!data?.length) return json({ error: 'SESSION_TERMINATED_REUSE_REJECTED' }, 409);
   return json({ ok: true });
 }
 
