@@ -90766,6 +90766,42 @@ export type Database = {
         }
         Relationships: []
       }
+      qa_session_isolation_evidence: {
+        Row: {
+          action: string
+          actual: string
+          area: string
+          created_at: string
+          expected: string
+          id: string
+          run_label: string
+          status: string
+          test_id: string
+        }
+        Insert: {
+          action: string
+          actual: string
+          area: string
+          created_at?: string
+          expected: string
+          id?: string
+          run_label: string
+          status: string
+          test_id: string
+        }
+        Update: {
+          action?: string
+          actual?: string
+          area?: string
+          created_at?: string
+          expected?: string
+          id?: string
+          run_label?: string
+          status?: string
+          test_id?: string
+        }
+        Relationships: []
+      }
       raw_allocation_overrides: {
         Row: {
           changed_by: string | null
