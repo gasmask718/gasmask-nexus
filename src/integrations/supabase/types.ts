@@ -13377,6 +13377,80 @@ export type Database = {
           },
         ]
       }
+      automation_sessions: {
+        Row: {
+          application_id: string
+          automation_job_id: string
+          created_at: string
+          ended_at: string | null
+          error_code: string | null
+          funding_client_id: string
+          human_checkpoint_count: number
+          id: string
+          infrastructure_region: string
+          is_qa_fixture: boolean
+          outcome: string | null
+          owner_kind: string
+          provider: string
+          session_owner: string
+          started_at: string
+          status: string
+          termination_reason: string | null
+          updated_at: string
+          workspace_path: string | null
+        }
+        Insert: {
+          application_id: string
+          automation_job_id: string
+          created_at?: string
+          ended_at?: string | null
+          error_code?: string | null
+          funding_client_id: string
+          human_checkpoint_count?: number
+          id?: string
+          infrastructure_region?: string
+          is_qa_fixture?: boolean
+          outcome?: string | null
+          owner_kind?: string
+          provider?: string
+          session_owner: string
+          started_at?: string
+          status?: string
+          termination_reason?: string | null
+          updated_at?: string
+          workspace_path?: string | null
+        }
+        Update: {
+          application_id?: string
+          automation_job_id?: string
+          created_at?: string
+          ended_at?: string | null
+          error_code?: string | null
+          funding_client_id?: string
+          human_checkpoint_count?: number
+          id?: string
+          infrastructure_region?: string
+          is_qa_fixture?: boolean
+          outcome?: string | null
+          owner_kind?: string
+          provider?: string
+          session_owner?: string
+          started_at?: string
+          status?: string
+          termination_reason?: string | null
+          updated_at?: string
+          workspace_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_sessions_automation_job_id_fkey"
+            columns: ["automation_job_id"]
+            isOneToOne: false
+            referencedRelation: "automation_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_settings: {
         Row: {
           created_at: string
