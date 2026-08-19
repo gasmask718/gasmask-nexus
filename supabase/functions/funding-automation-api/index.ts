@@ -38,7 +38,7 @@ async function logEvent(
   message: string, metadata: Record<string, unknown> = {}, level: 'info' | 'warn' | 'error' = 'info',
   actor?: string | null,
 ) {
-  await admin.from('automation_events').insert({
+  const { error: evErr } = await admin.from('automation_events').insert({
     automation_job_id: jobId,
     application_id: applicationId,
     event_type: eventType,
@@ -47,6 +47,8 @@ async function logEvent(
     metadata: redact(metadata),
     actor_user_id: actor ?? null,
   });
+  // An audit row that silently fails to persist is a false green: surface it.
+  if (evErr) console.error('AUDIT_WRITE_FAILED', jobId, eventType, evErr.message);
   await admin.from('automation_jobs').update({ last_event_at: new Date().toISOString() }).eq('id', jobId);
 }
 
@@ -206,7 +208,10 @@ async function createJob(body: any, caller: Caller) {
   return json({ job: updated ?? job, missing_fields: missing, invalid_fields: invalid });
 }
 
-async function listJobs(body: any) {
+async function listJobs(body: any, caller: Caller) {
+  // Workers receive only the single job they claimed. Enumerating every client's
+  // jobs is an operator capability, never a worker one.
+  if (caller.kind !== 'operator') return json({ error: 'Operator only' }, 403);
   let q = admin.from('automation_jobs').select('*').order('created_at', { ascending: false }).limit(body.limit ?? 200);
   if (body.status) q = q.eq('status', body.status);
   if (body.application_id) q = q.eq('application_id', body.application_id);
@@ -215,7 +220,8 @@ async function listJobs(body: any) {
   return json({ jobs: data ?? [] });
 }
 
-async function getJob(body: any) {
+async function getJob(body: any, caller: Caller) {
+  if (caller.kind !== 'operator') return json({ error: 'Operator only' }, 403);
   const { data: job, error } = await admin.from('automation_jobs').select('*').eq('id', body.job_id).maybeSingle();
   if (error || !job) return json({ error: error?.message ?? 'Job not found' }, 404);
   const [{ data: events }, { data: checkpoints }] = await Promise.all([
@@ -467,7 +473,7 @@ async function resolveCheckpoint(body: any, caller: Caller) {
     }
   }
 
-  await admin.from('automation_checkpoints').update({
+  const { error: cpErr } = await admin.from('automation_checkpoints').update({
     status: body.abandoned ? 'ABANDONED' : 'COMPLETED',
     completed_at: new Date().toISOString(),
     completed_by: caller.userId,
@@ -475,6 +481,11 @@ async function resolveCheckpoint(body: any, caller: Caller) {
     automation_resumed: resume && !body.abandoned,
     resumed_at: resume && !body.abandoned ? new Date().toISOString() : null,
   }).eq('id', cp.id);
+  if (cpErr) {
+    await logEvent(cp.automation_job_id, job?.application_id ?? null, 'CHECKPOINT_CLOSE_FAILED',
+      `Checkpoint could not be closed: ${cpErr.message}`, {}, 'error', caller.userId);
+    return json({ error: cpErr.message }, 409);
+  }
 
   if (job) {
     await logEvent(job.id, job.application_id, 'HUMAN_COMPLETED_CHECKPOINT',
@@ -594,12 +605,18 @@ async function reportFailure(body: any, caller: Caller) {
     && !job.submission_confirmed
     && job.attempt_count < job.max_attempts;
 
-  await admin.from('automation_jobs').update({
+  const { error: failErr } = await admin.from('automation_jobs').update({
     status: retryable ? 'FAILED' : 'NEEDS_HUMAN_REVIEW',
     failure_class: failureClass,
     failure_reason: String(body.reason ?? '').slice(0, 500),
     requires_human_action: !retryable,
   }).eq('id', job.id);
+  if (failErr) {
+    await logEvent(job.id, job.application_id, 'FAILURE_RECORD_REJECTED',
+      `Job state machine rejected the failure transition from ${job.status}: ${failErr.message}`,
+      { failure_class: failureClass }, 'error', caller.userId);
+    return json({ error: failErr.message, job_status: job.status }, 409);
+  }
   await logEvent(job.id, job.application_id, 'JOB_FAILED',
     `${failureClass}: ${body.reason ?? ''}`, { retryable }, 'error', caller.userId);
   return json({ ok: true, retryable });
@@ -610,10 +627,11 @@ async function switchToManual(body: any, caller: Caller) {
   if (caller.kind !== 'operator') return json({ error: 'Operator only' }, 403);
   const { data: job } = await admin.from('automation_jobs').select('*').eq('id', body.job_id).maybeSingle();
   if (!job) return json({ error: 'Job not found' }, 404);
-  await admin.from('automation_jobs').update({
+  const { error: manErr } = await admin.from('automation_jobs').update({
     submission_method: 'manual', requires_human_action: true, human_action_type: 'MANUAL_SUBMISSION',
     status: ['COMPLETED', 'CANCELLED'].includes(job.status) ? job.status : 'NEEDS_HUMAN_REVIEW',
   }).eq('id', job.id);
+  if (manErr) return json({ error: manErr.message, job_status: job.status }, 409);
   await logEvent(job.id, job.application_id, 'SWITCHED_TO_MANUAL',
     'Assigned to a human operator for manual submission', {}, 'warn', caller.userId);
   return json({ ok: true });
@@ -626,10 +644,11 @@ async function reapStaleJobs() {
     .lt('lease_expires_at', new Date().toISOString())
     .in('status', ['STARTING', 'RUNNING', 'FORM_DETECTED', 'FILLING', 'DOCUMENT_UPLOAD', 'SUBMITTING', 'READING_RESPONSE']);
   let recovered = 0;
+  const failures: string[] = [];
   for (const j of stale ?? []) {
     // If the job died anywhere near submission, a human must confirm — never auto-resubmit.
     const uncertain = ['SUBMITTING', 'READING_RESPONSE'].includes(j.status);
-    await admin.from('automation_jobs').update({
+    const { error: reapErr } = await admin.from('automation_jobs').update({
       status: uncertain ? 'NEEDS_HUMAN_REVIEW' : 'FAILED',
       failure_class: uncertain ? 'UNKNOWN' : 'BROWSER_CRASH',
       failure_reason: uncertain
@@ -637,17 +656,28 @@ async function reapStaleJobs() {
         : 'Worker lease expired',
       requires_human_action: uncertain, worker_id: null, lease_expires_at: null,
     }).eq('id', j.id);
-    await logEvent(j.id, j.application_id, 'LEASE_EXPIRED',
-      uncertain ? 'Uncertain submission state — escalated' : 'Worker lease expired', {}, 'error');
-    recovered++;
+    if (reapErr) {
+      failures.push(j.id);
+      await logEvent(j.id, j.application_id, 'LEASE_RECOVERY_FAILED',
+        `Stale lease could not be recovered from ${j.status}: ${reapErr.message}`, {}, 'error');
+    } else {
+      await logEvent(j.id, j.application_id, 'LEASE_EXPIRED',
+        uncertain ? 'Uncertain submission state — escalated' : 'Worker lease expired', {}, 'error');
+      recovered++;
+    }
     // A dead worker cannot close its own session — never leave one live.
-    await admin.from('automation_sessions').update({
+    const { error: sessErr } = await admin.from('automation_sessions').update({
       status: 'FAILED', error_code: 'WORKER_LEASE_EXPIRED',
       termination_reason: 'Worker lease expired; session force-closed and workspace considered destroyed',
       ended_at: new Date().toISOString(),
-    }).eq('automation_job_id', j.id).in('status', ['CREATED', 'OPEN', 'RUNNING', 'HUMAN_CHECKPOINT']);
+    }).eq('automation_job_id', j.id).in('status', LIVE_SESSION_STATES);
+    if (sessErr) {
+      failures.push(`${j.id}:session`);
+      await logEvent(j.id, j.application_id, 'SESSION_REAP_FAILED',
+        `Orphan session could not be force-closed: ${sessErr.message}`, {}, 'error');
+    }
   }
-  return json({ recovered });
+  return json({ recovered, failures }, failures.length ? 207 : 200);
 }
 
 // ------------------------- session isolation layer -------------------------
@@ -802,8 +832,8 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case 'create-job': return await createJob(body, caller);
-      case 'list-jobs': return await listJobs(body);
-      case 'get-job': return await getJob(body);
+      case 'list-jobs': return await listJobs(body, caller);
+      case 'get-job': return await getJob(body, caller);
       case 'cancel-job': return await cancelJob(body, caller);
       case 'retry-job': return await retryJob(body, caller);
       case 'claim-job': return await claimJob(body);
