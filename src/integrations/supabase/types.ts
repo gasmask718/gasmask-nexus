@@ -72306,6 +72306,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ledger_dedupe_aug: {
+        Row: {
+          amount: number | null
+          invoice_id: string
+          reason: string | null
+          removed_at: string | null
+          run_id: string | null
+          store_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          invoice_id: string
+          reason?: string | null
+          removed_at?: string | null
+          run_id?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          invoice_id?: string
+          reason?: string | null
+          removed_at?: string | null
+          run_id?: string | null
+          store_id?: string | null
+        }
+        Relationships: []
+      }
       ledger_note_import: {
         Row: {
           address: string | null
@@ -72327,6 +72354,36 @@ export type Database = {
           matched_store_id?: string | null
           note_written?: boolean | null
           run_id?: string | null
+        }
+        Relationships: []
+      }
+      ledger_orders_lastweek: {
+        Row: {
+          address: string | null
+          amount: number | null
+          created_at: string | null
+          invoice_id: string
+          run_id: string | null
+          status: string | null
+          store_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          amount?: number | null
+          created_at?: string | null
+          invoice_id: string
+          run_id?: string | null
+          status?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          amount?: number | null
+          created_at?: string | null
+          invoice_id?: string
+          run_id?: string | null
+          status?: string | null
+          store_id?: string | null
         }
         Relationships: []
       }
