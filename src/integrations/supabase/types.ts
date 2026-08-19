@@ -81141,6 +81141,39 @@ export type Database = {
         }
         Relationships: []
       }
+      owner_confirmed_paid: {
+        Row: {
+          business_date: string | null
+          confirmed_at: string | null
+          invoice_id: string
+          prior_amount_paid: number | null
+          prior_status: string | null
+          run_id: string | null
+          store_id: string | null
+          total_amount: number | null
+        }
+        Insert: {
+          business_date?: string | null
+          confirmed_at?: string | null
+          invoice_id: string
+          prior_amount_paid?: number | null
+          prior_status?: string | null
+          run_id?: string | null
+          store_id?: string | null
+          total_amount?: number | null
+        }
+        Update: {
+          business_date?: string | null
+          confirmed_at?: string | null
+          invoice_id?: string
+          prior_amount_paid?: number | null
+          prior_status?: string | null
+          run_id?: string | null
+          store_id?: string | null
+          total_amount?: number | null
+        }
+        Relationships: []
+      }
       owner_mission_activity: {
         Row: {
           action: string
@@ -115826,6 +115859,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      twilio_lookup_results: {
+        Row: {
+          carrier: string | null
+          checked_on: string | null
+          line_type: string | null
+          phone10: string
+          status: string | null
+        }
+        Insert: {
+          carrier?: string | null
+          checked_on?: string | null
+          line_type?: string | null
+          phone10: string
+          status?: string | null
+        }
+        Update: {
+          carrier?: string | null
+          checked_on?: string | null
+          line_type?: string | null
+          phone10?: string
+          status?: string | null
+        }
+        Relationships: []
       }
       uben_activity_log: {
         Row: {
