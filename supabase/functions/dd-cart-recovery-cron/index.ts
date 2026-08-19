@@ -27,6 +27,7 @@ async function sendRecoverySms(cartId: string, to: string, body: string) {
     to,
     body,
     idempotencyKey: `dd-cart-${cartId}`,
+    sendClass: "campaign",
     from: TWILIO_FROM || undefined,
     purpose: "dd_cart_recovery",
     skipCooldown: true,

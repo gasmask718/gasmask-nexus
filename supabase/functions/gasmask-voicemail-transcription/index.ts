@@ -60,6 +60,8 @@ Deno.serve(async (req) => {
       await sendSms({
         from: to,
         to: settings.owner_forward_number,
+        idempotencyKey: `gm-vm-${callSid ?? crypto.randomUUID()}`,
+        sendClass: "workforce",
         body: `📞 Missed call + voicemail from ${who} (${from}):\n\n"${text.slice(0, 700)}"`,
       });
       console.log("[gasmask-voicemail-transcription] owner notified");

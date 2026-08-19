@@ -266,6 +266,7 @@ async function sendBrandaroSms(
     to: normalizePhone(to),
     body,
     idempotencyKey,
+    sendClass: "campaign",
     from: Deno.env.get("BRANDARO_TWILIO_NUMBER") || Deno.env.get("TWILIO_PHONE_NUMBER") || undefined,
     purpose,
     skipCooldown: true,

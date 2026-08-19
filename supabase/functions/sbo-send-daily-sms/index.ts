@@ -78,6 +78,7 @@ serve(async (req) => {
         to: phone,
         body: msgBody,
         idempotencyKey: `sbo-brief-${briefing.id}-${i}`,
+        sendClass: "campaign",
         from: Deno.env.get('TWILIO_PHONE_NUMBER') || undefined,
         purpose: 'sbo_daily_briefing',
         skipCooldown: true,
