@@ -345,9 +345,7 @@ export function useUploadEvidence() {
       
       if (uploadError) throw uploadError;
       
-      const { data: { publicUrl } } = supabase.storage
-        .from('dispute-evidence')
-        .getPublicUrl(filePath);
+      // dispute-evidence is private: persist the object path, sign it at read time.
       
       // Create evidence record
       const { data, error } = await supabase
@@ -355,7 +353,7 @@ export function useUploadEvidence() {
         .insert({
           dispute_id: disputeId,
           uploaded_by_ambassador_id: ambassador?.id || null,
-          file_url: publicUrl,
+          file_url: filePath,
           file_name: file.name,
           mime_type: file.type,
         })

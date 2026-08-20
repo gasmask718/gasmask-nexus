@@ -55,10 +55,8 @@ export default function AssetUploadModal({ partnerId, open, onOpenChange, onSucc
       
       if (uploadError) throw uploadError;
       
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('partner-assets')
-        .getPublicUrl(filePath);
+      // partner-assets is private: the object path is the durable reference.
+      const publicUrl = filePath;
       
       return { path: filePath, url: publicUrl, name: selectedFile.name };
     },

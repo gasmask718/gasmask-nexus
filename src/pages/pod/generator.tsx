@@ -8,6 +8,7 @@ import { Zap, Loader2, Sparkles, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { SignedImage } from '@/components/ui/signed-image';
 
 export default function PODGenerate() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -101,8 +102,9 @@ export default function PODGenerate() {
           <CardHeader><CardTitle>Result</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {lastResult.design.design_image_url && (
-              <img src={lastResult.design.design_image_url} alt={lastResult.design.title}
-                   className="w-full max-w-sm rounded-lg border" />
+              <SignedImage bucket="pod-designs" path={lastResult.design.design_image_url}
+                           alt={lastResult.design.title}
+                           className="w-full max-w-sm rounded-lg border" />
             )}
             <div className="text-sm space-y-1">
               <div><span className="text-muted-foreground">Design ID:</span> <code>{lastResult.design.id}</code></div>
