@@ -94,7 +94,7 @@ export default function TwilioTestConsole() {
 
   const runVoiceDiscovery = async () => {
     setBusy("voice");
-    const { data, error } = await supabase.functions.invoke("discover-twiml-apps", { body: {} });
+    const { data, error } = await supabase.functions.invoke("twilio-admin-list-twiml-apps", { body: {} });
     const ok = !error && !data?.error && !data?.twilio_api_error;
     const r: Result = { ok, data: error ? { error: error.message } : data };
     setVoiceResult(r);

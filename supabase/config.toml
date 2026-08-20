@@ -245,7 +245,7 @@ verify_jwt = false
 [functions.validate-twilio-credentials]
 verify_jwt = false
 
-[functions.discover-twiml-apps]
+[functions.twilio-admin-list-twiml-apps]
 verify_jwt = false
 
 [functions.system-health]

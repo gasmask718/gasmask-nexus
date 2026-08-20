@@ -71,7 +71,7 @@ export function VoiceInfrastructureAudit() {
     setError(null);
     setResult(null);
     try {
-      const { data, error: invokeErr } = await supabase.functions.invoke("discover-twiml-apps", { body: {} });
+      const { data, error: invokeErr } = await supabase.functions.invoke("twilio-admin-list-twiml-apps", { body: {} });
       if (invokeErr) { setError(invokeErr.message || String(invokeErr)); return; }
       if (data?.error) { setError(data.error); return; }
       setResult(data as DiscoveryResult);
