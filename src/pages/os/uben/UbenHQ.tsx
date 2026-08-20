@@ -905,11 +905,11 @@ function DocumentVaultTab() {
       const filePath = `${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage.from('uben-docs').upload(filePath, file);
       if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('uben-docs').getPublicUrl(filePath);
+      // uben-docs is private: persist the object path, sign it at read time.
       await supabase.from('uben_documents').insert({
         name: fd.get('name') as string || file.name,
         category: fd.get('category') as string,
-        file_url: urlData.publicUrl,
+        file_url: filePath,
         file_size: file.size,
         uploaded_by: fd.get('uploaded_by') as string || 'Admin',
       });
@@ -980,9 +980,13 @@ function DocumentVaultTab() {
                 <TableCell>{format(new Date(d.created_at), 'MMM d, yyyy')}</TableCell>
                 <TableCell>{d.file_size ? `${(d.file_size / 1024).toFixed(1)} KB` : '—'}</TableCell>
                 <TableCell>
-                  <a href={d.file_url} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="ghost"><Download className="h-4 w-4" /></Button>
-                  </a>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => openSignedStorageObject('uben-docs', d.file_url).catch((e: any) => toast.error(e.message || 'Could not open document'))}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

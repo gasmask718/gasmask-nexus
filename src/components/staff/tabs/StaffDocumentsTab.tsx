@@ -12,6 +12,7 @@ import { useStaffDocuments, UTStaffDocument, useDeleteStaffDocument } from '@/ho
 import { format, parseISO, isPast, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
 import UploadDocumentModal from './UploadDocumentModal';
+import { openSignedStorageObject } from '@/lib/storageLinks';
 
 interface StaffDocumentsTabProps { staffId: string; }
 
@@ -95,8 +96,8 @@ export default function StaffDocumentsTab({ staffId }: StaffDocumentsTabProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     {getStatusBadge(doc.status, doc.expiry_date)}
-                    <Button variant="ghost" size="icon" disabled={!doc.file_url} onClick={() => doc.file_url && window.open(doc.file_url, '_blank')}><Eye className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" disabled={!doc.file_url} onClick={() => doc.file_url && window.open(doc.file_url, '_blank')}><Download className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" disabled={!doc.file_url} onClick={() => doc.file_url && openSignedStorageObject('ut-staff-documents', doc.file_url).catch((e: any) => toast.error(e.message || 'Could not open document'))}><Eye className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" disabled={!doc.file_url} onClick={() => doc.file_url && openSignedStorageObject('ut-staff-documents', doc.file_url).catch((e: any) => toast.error(e.message || 'Could not open document'))}><Download className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDelete(doc)} disabled={deleteDocument.isPending}><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </div>

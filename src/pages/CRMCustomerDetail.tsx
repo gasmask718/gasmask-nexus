@@ -30,6 +30,7 @@ import {
 import { useCall } from '@/components/communication/CallProvider';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
+import { openSignedStorageObject, storageObjectPath } from '@/lib/storageLinks';
 
 const CRMCustomerDetail = () => {
   const { id } = useParams();
@@ -153,10 +154,8 @@ const CRMCustomerDetail = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('customer-documents')
-        .getPublicUrl(filePath);
+      // Private bucket: store the object PATH. Reads mint a short-lived signed URL.
+      const publicUrl = filePath;
 
       // Save metadata to appropriate table
       if (uploadType === 'invoice') {
@@ -221,7 +220,7 @@ const CRMCustomerDetail = () => {
   const deleteFile = useMutation({
     mutationFn: async ({ fileUrl, table, fileId }: { fileUrl: string; table: 'customer_files' | 'customer_invoices' | 'customer_receipts'; fileId: string }) => {
       // Extract file path from URL
-      const path = fileUrl.split('/customer-documents/')[1];
+      const path = storageObjectPath('customer-documents', fileUrl);
       
       // Delete from storage
       if (path) {
@@ -643,7 +642,7 @@ const CRMCustomerDetail = () => {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => window.open(invoice.pdf_url, '_blank')}
+                              onClick={() => openSignedStorageObject('customer-documents', invoice.pdf_url).catch((e: any) => toast({ title: 'Could not open document', description: e.message, variant: 'destructive' }))}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -704,7 +703,7 @@ const CRMCustomerDetail = () => {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => window.open(receipt.pdf_url, '_blank')}
+                              onClick={() => openSignedStorageObject('customer-documents', receipt.pdf_url).catch((e: any) => toast({ title: 'Could not open document', description: e.message, variant: 'destructive' }))}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -765,7 +764,7 @@ const CRMCustomerDetail = () => {
                         <Button 
                           size="sm" 
                           variant="outline"
-                          onClick={() => window.open(file.file_url, '_blank')}
+                          onClick={() => openSignedStorageObject('customer-documents', file.file_url).catch((e: any) => toast({ title: 'Could not open document', description: e.message, variant: 'destructive' }))}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
