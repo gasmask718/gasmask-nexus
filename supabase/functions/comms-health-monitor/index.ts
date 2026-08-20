@@ -165,6 +165,51 @@ async function checkCredentials(): Promise<Result[]> {
   return out;
 }
 
+// Probe cache — one HTTP call per function name per monitor run.
+const deployProbeCache = new Map<string, { deployed: boolean; detail: string }>();
+
+/**
+ * Is this edge function actually deployed and answering?
+ *
+ * 2026-08-20: this used to be assumed rather than measured — any Supabase URL
+ * whose handler name wasn't in ACCEPTED_ALTERNATES was reported as "not
+ * deployed". That is wrong for every signature-verifying webhook: they answer
+ * 403 to an unsigned probe, which is the CORRECT answer and proves the handler
+ * is live. As signature verification rolls out across the Twilio-signable
+ * webhooks, treating 403 as missing would manufacture a wave of false alarms in
+ * the one system meant to tell us when something is really broken.
+ *
+ * Deployed = anything our code answered: 2xx, 401/403 (auth/signature reject),
+ * 400/405/422 (reached the handler, bad input). Not deployed = 404, or a 5xx
+ * with an HTML body (gateway/stale build).
+ */
+async function probeDeployed(fn: string): Promise<{ deployed: boolean; detail: string }> {
+  const hit = deployProbeCache.get(fn);
+  if (hit) return hit;
+  let result: { deployed: boolean; detail: string };
+  try {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "From=%2B10000000000&To=%2B10000000000&Body=healthcheck&MessageSid=SMhealth",
+    });
+    const body = (await r.text()).slice(0, 200);
+    const ourCode =
+      (r.status >= 200 && r.status < 300) ||
+      r.status === 400 || r.status === 401 || r.status === 403 ||
+      r.status === 405 || r.status === 422 ||
+      body.startsWith("<?xml");
+    result = {
+      deployed: ourCode,
+      detail: `HTTP ${r.status}${r.status === 403 ? " (signature reject — handler live)" : ""}`,
+    };
+  } catch (e) {
+    result = { deployed: false, detail: `unreachable: ${(e as Error).message}` };
+  }
+  deployProbeCache.set(fn, result);
+  return result;
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // LAYER 2: Webhook config — phone numbers + messaging services
 // ────────────────────────────────────────────────────────────────────────────
@@ -181,20 +226,22 @@ async function checkWebhookConfig(): Promise<Result[]> {
       });
     } else {
       const d = await r.json();
-      const classifyUrl = (url: string | null | undefined, canonical: string, hasAppSid: boolean):
-        { status: "pass" | "warn" | "fail"; msg: string } => {
+      const classifyUrl = async (url: string | null | undefined, canonical: string, hasAppSid: boolean):
+        Promise<{ status: "pass" | "warn" | "fail"; msg: string }> => {
         if (hasAppSid) return { status: "pass", msg: "Routed via TwiML App SID" };
         if (!url) return { status: "warn", msg: "EMPTY — Messaging Service must override or inbound will be dropped" };
         if (url === canonical) return { status: "pass", msg: `Canonical webhook` };
         if (url.startsWith(`${SUPABASE_URL}/functions/v1/`)) {
-          const fn = url.split("/functions/v1/")[1] || "";
+          const fn = (url.split("/functions/v1/")[1] || "").split("?")[0];
           if (ACCEPTED_ALTERNATES.has(fn)) {
             return { status: "pass", msg: `Routed to accepted alternate '${fn}' (intentional split)` };
           }
-          // Acknowledged alternate route — Supabase-hosted but handler not (yet)
-          // deployed under this name. Won't silently corrupt traffic, but inbound
-          // would 404 until the function ships. Surface as WARN, not FAIL.
-          return { status: "warn", msg: `Acknowledged alternate route '${fn}' — Supabase function not currently deployed; inbound to this URL would 404 until handler ships` };
+          // Measure, don't assume. A 403 here means the handler is deployed and
+          // verifying signatures — healthy, not missing.
+          const probe = await probeDeployed(fn);
+          return probe.deployed
+            ? { status: "pass", msg: `Alternate route '${fn}' — deployed and answering (${probe.detail})` }
+            : { status: "warn", msg: `Alternate route '${fn}' — handler did not answer (${probe.detail}); inbound to this URL would 404 until it ships` };
         }
         if (/twilio\.com\/(welcome|demo)/i.test(url)) {
           return { status: "fail", msg: `Twilio demo URL — replace with your webhook` };
@@ -203,8 +250,8 @@ async function checkWebhookConfig(): Promise<Result[]> {
       };
       for (const n of d.incoming_phone_numbers || []) {
         const num = n.phone_number;
-        const smsC = classifyUrl(n.sms_url, CANONICAL.sms, !!n.sms_application_sid);
-        const voiceC = classifyUrl(n.voice_url, CANONICAL.voice, !!n.voice_application_sid);
+        const smsC = await classifyUrl(n.sms_url, CANONICAL.sms, !!n.sms_application_sid);
+        const voiceC = await classifyUrl(n.voice_url, CANONICAL.voice, !!n.voice_application_sid);
         out.push({
           layer: "webhook_config",
           target: `${num}/sms`,
@@ -221,6 +268,7 @@ async function checkWebhookConfig(): Promise<Result[]> {
         });
       }
     }
+
 
     // Messaging Services — this is the layer that bit us with GMA CUSTOMERSERVICE
     const ms = await fetch(`https://messaging.twilio.com/v1/Services?PageSize=50`, {
