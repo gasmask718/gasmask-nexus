@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 const AmbassadorNetworkTab = lazy(() => import('./AmbassadorNetworkTab'));
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { openSignedStorageObject } from '@/lib/storageLinks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
