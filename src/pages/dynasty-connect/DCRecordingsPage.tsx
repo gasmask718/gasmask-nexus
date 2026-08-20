@@ -6,7 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronDown, ChevronRight, ChevronLeft, Download, Volume2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronLeft, Volume2 } from 'lucide-react';
+import { RecordingPlayer } from '@/components/phone/RecordingPlayer';
+
 
 const BU_LABEL: Record<string, string> = {
   top_tier: 'TopTier',
@@ -173,24 +175,16 @@ export default function DCRecordingsPage() {
                               {/* Player */}
                               <div className="space-y-2">
                                 <div className="text-xs text-muted-foreground">Playback</div>
-                                <audio
-                                  controls
-                                  className="w-full h-10"
-                                  src={r.recording_url}
-                                  preload="none"
-                                >
-                                  Your browser does not support audio playback.
-                                </audio>
+                                <RecordingPlayer
+                                  recordingUrl={r.recording_url}
+                                  recordingSid={r.call_sid || r.id}
+                                />
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                   <span>Duration: {formatDur(r.duration_seconds)}</span>
                                   <span>•</span>
                                   <span>Agent: {r.agent_name || r.agent_id || '—'}</span>
-                                  <Button size="sm" variant="outline" className="ml-auto h-7" asChild>
-                                    <a href={r.recording_url} target="_blank" rel="noreferrer" download>
-                                      <Download className="h-3 w-3 mr-1" /> Download
-                                    </a>
-                                  </Button>
                                 </div>
+
                               </div>
 
                               {/* Transcript */}
