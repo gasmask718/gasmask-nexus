@@ -72,8 +72,9 @@ Deno.serve(async (req) => {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const { data: pub } = supabase.storage.from('pod-designs').getPublicUrl(fileName);
-    const imageUrl = pub.publicUrl;
+    // pod-designs is a PRIVATE bucket: store the object path. Any consumer
+    // (UI, channel publisher) mints a signed URL from it at use time.
+    const imageUrl = fileName;
 
     // 3. Insert pod_designs row
     const { data: design, error: designErr } = await supabase.from('pod_designs').insert({

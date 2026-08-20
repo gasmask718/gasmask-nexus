@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Package, Eye, CheckCircle, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SignedImage } from '@/components/ui/signed-image';
 
 export default function PODDesigns() {
   const [designs, setDesigns] = useState<any[]>([]);
@@ -121,8 +122,9 @@ export default function PODDesigns() {
           <Card key={design.id} className="overflow-hidden">
             <div className="aspect-square bg-muted flex items-center justify-center">
               {design.design_image_url ? (
-                <img
-                  src={design.design_image_url}
+                <SignedImage
+                  bucket="pod-designs"
+                  path={design.design_image_url}
                   alt={design.title}
                   className="w-full h-full object-cover"
                 />
