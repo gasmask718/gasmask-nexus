@@ -108123,6 +108123,7 @@ export type Database = {
           consent_source: string | null
           consent_timestamp: string | null
           contact_name: string | null
+          corridor: string | null
           country: string | null
           country_of_origin: string | null
           created_at: string | null
@@ -108242,6 +108243,7 @@ export type Database = {
           consent_source?: string | null
           consent_timestamp?: string | null
           contact_name?: string | null
+          corridor?: string | null
           country?: string | null
           country_of_origin?: string | null
           created_at?: string | null
@@ -108361,6 +108363,7 @@ export type Database = {
           consent_source?: string | null
           consent_timestamp?: string | null
           contact_name?: string | null
+          corridor?: string | null
           country?: string | null
           country_of_origin?: string | null
           created_at?: string | null
@@ -146669,6 +146672,17 @@ export type Database = {
         }
         Returns: string
       }
+      create_route_from_template: {
+        Args: {
+          p_assigned_to?: string
+          p_date?: string
+          p_max_stops?: number
+          p_only_with_signal?: boolean
+          p_template_id: string
+          p_worker_name?: string
+        }
+        Returns: string
+      }
       create_short_link: {
         Args: {
           p_context?: Json
@@ -148112,6 +148126,7 @@ export type Database = {
         Returns: Json
       }
       refresh_merge_analysis_cache: { Args: never; Returns: Json }
+      refresh_stop_reasons: { Args: { p_route_id?: string }; Returns: number }
       refresh_store_intelligence: { Args: never; Returns: undefined }
       refresh_store_invoice_activity: { Args: never; Returns: undefined }
       reinstate_user_access: { Args: { _invite_id: string }; Returns: boolean }
@@ -148228,6 +148243,7 @@ export type Database = {
           consent_source: string | null
           consent_timestamp: string | null
           contact_name: string | null
+          corridor: string | null
           country: string | null
           country_of_origin: string | null
           created_at: string | null
