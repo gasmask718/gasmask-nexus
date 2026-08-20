@@ -28,6 +28,8 @@ import { format } from "date-fns";
 import { CallTranscriptViewer } from "@/components/communication/CallTranscriptViewer";
 import { CallAnalysisPanel } from "@/components/communication/CallAnalysisPanel";
 import { LeadIntelligencePanel } from "@/components/communication/LeadIntelligencePanel";
+import { RecordingPlayer } from "@/components/phone/RecordingPlayer";
+
 import { cn } from "@/lib/utils";
 
 type FinishedCall = {
@@ -514,17 +516,16 @@ export function FinishedCallsBoard({
               {isOpen && (
                 <div className="border-t border-border bg-muted/10 p-3 space-y-3">
                   {c.recording_url ? (
-                    <audio
-                      controls
-                      preload="none"
-                      className="w-full h-9"
-                      src={c.recording_url}
+                    <RecordingPlayer
+                      recordingUrl={c.recording_url}
+                      recordingSid={c.call_id}
                     />
                   ) : (
                     <p className="text-[11px] text-muted-foreground italic">
                       No recording available.
                     </p>
                   )}
+
 
                   <div className="grid gap-3 md:grid-cols-2">
                     <div>
