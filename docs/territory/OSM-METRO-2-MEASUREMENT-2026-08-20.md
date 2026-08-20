@@ -98,3 +98,10 @@ and no line-type check, and mobile-only is the known problem on this store class
 Document storage is temporarily unavailable, so the filtered 577 was not written to a
 file. It is reproducible from the pull; say the word once storage is back and I will
 export it.
+
+## One-time pull, not a job
+
+This measurement is a **one-time pull per metro**. It is not scheduled and must not be turned
+into a cron, runner, or ingestion lane. OSM is a supplement everywhere — including Brooklyn.
+Refreshes happen deliberately, by hand, with a dated doc. Line-check results and the callable
+list: `docs/territory/OSM-BROOKLYN-LINE-CHECK-2026-08-20.md`.

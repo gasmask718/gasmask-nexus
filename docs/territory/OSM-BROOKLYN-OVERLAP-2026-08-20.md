@@ -83,3 +83,10 @@ database must be offered under ODbL with attribution. Any table that ingests
 this must carry `source = 'osm'` per row so a derived-list obligation can be
 traced, and OSM-sourced rows must never be included in `show_on_public_site`
 surfaces or in any list sold or handed to a partner.
+
+## One-time pull, not a job
+
+This measurement is a **one-time pull per metro**. It is not scheduled and must not be turned
+into a cron, runner, or ingestion lane. OSM is a supplement everywhere — including Brooklyn.
+Refreshes happen deliberately, by hand, with a dated doc. Line-check results and the callable
+list: `docs/territory/OSM-BROOKLYN-LINE-CHECK-2026-08-20.md`.
