@@ -1008,13 +1008,13 @@ async function sendAlertSms(body: string): Promise<boolean> {
 async function escalateFailures(results: Result[]): Promise<number> {
   const failures = results.filter((r) => r.status === "fail");
   if (failures.length === 0) return 0;
-  if (!SLACK_WEBHOOK && !ALERT_SMS_TO) {
-    console.warn(
-      `[comms-health] ${failures.length} FAILING checks and NO alert destination configured ` +
-      `(set COMMS_ALERT_SLACK_WEBHOOK and/or COMMS_ALERT_SMS_TO).`,
-    );
-    return 0;
-  }
+  // NOTE (2026-08-20): this function used to return early when neither Slack
+  // nor an SMS number was configured — which is exactly what happened for
+  // weeks: correct detection, zero notification. sendOpsAlert() is the
+  // canonical internal sink (email-first, always logged to
+  // admin_notifications_log) and needs no per-monitor configuration, so it
+  // ALWAYS runs. Slack/SMS remain optional extras on top of it.
+
 
   const supa = sb();
   const keys = failures.map((f) => `${f.layer}:${f.target}`);
