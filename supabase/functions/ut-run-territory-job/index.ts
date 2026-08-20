@@ -192,6 +192,7 @@ serve(async (req) => {
       }
 
       const placeRecord: Record<string, unknown> = {
+        business: 'ut',
         external_place_id: p.id,
         business_name: p.displayName?.text || 'Unknown',
         category: job.category,

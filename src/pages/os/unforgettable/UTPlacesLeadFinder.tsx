@@ -247,6 +247,7 @@ export default function UTPlacesLeadFinder() {
         return;
       }
       const record: Record<string, unknown> = {
+        business: "ut",
         external_place_id: p.place_id,
         business_name: p.name,
         category: p.ut_category,
