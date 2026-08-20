@@ -325,45 +325,32 @@ async function checkWebhookConfig(): Promise<Result[]> {
 // ────────────────────────────────────────────────────────────────────────────
 async function checkFunctionDeployment(): Promise<Result[]> {
   const out: Result[] = [];
-  const fns = ["twilio-sms-webhook", "twilio-voice-webhook", "twilio-sms-status"];
+  // Signature-verified webhooks answer 403 to this unsigned probe — that is the
+  // correct, healthy answer. probeDeployed() is the single shared rule.
+  const fns = [
+    "twilio-sms-webhook",
+    "twilio-voice-webhook",
+    "twilio-sms-status",
+    "dc-call-status",
+    "va-dialer-status",
+    "twilio-gather-webhook",
+    "brandaro-call-twiml",
+  ];
   for (const fn of fns) {
-    try {
-      const r = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "From=%2B10000000000&To=%2B10000000000&Body=healthcheck&MessageSid=SMhealth",
-      });
-      // Reachable + our code answered. 403 (signature reject) is expected/healthy.
-      // 200 also ok. 404 / 5xx with HTML body = stale or broken build.
-      const body = await r.text();
-      const ct = r.headers.get("content-type") || "";
-      const reachable = r.status >= 200 && r.status < 500;
-      const looksLikeOurCode =
-        r.status === 403 ||
-        r.status === 200 ||
-        body.startsWith("<?xml") ||
-        body.toLowerCase().includes("forbidden");
-      const status = reachable && looksLikeOurCode ? "pass" : "fail";
-      out.push({
-        layer: "function_deployment",
-        target: fn,
-        status,
-        message: status === "pass"
-          ? `Reachable (HTTP ${r.status})`
-          : `Unhealthy: HTTP ${r.status}, content-type ${ct}, body preview: ${body.slice(0, 120)}`,
-        detail: { http_status: r.status, content_type: ct, body_preview: body.slice(0, 200) },
-      });
-    } catch (e) {
-      out.push({
-        layer: "function_deployment",
-        target: fn,
-        status: "fail",
-        message: `Unreachable: ${(e as Error).message}`,
-      });
-    }
+    const probe = await probeDeployed(fn);
+    out.push({
+      layer: "function_deployment",
+      target: fn,
+      status: probe.deployed ? "pass" : "fail",
+      message: probe.deployed
+        ? `Deployed and answering (${probe.detail})`
+        : `Unhealthy: ${probe.detail}`,
+      detail: { probe: probe.detail },
+    });
   }
   return out;
 }
+
 
 // ────────────────────────────────────────────────────────────────────────────
 // LAYER 4: A2P / sending — every active From is A2P-safe
