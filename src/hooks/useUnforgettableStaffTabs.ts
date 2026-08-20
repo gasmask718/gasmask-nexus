@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
+import { storageObjectPath } from '@/lib/storageLinks';
 
 // ============================================
 // TYPES
@@ -409,10 +410,7 @@ export function useUploadStaffDocument() {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('ut-staff-documents')
-        .getPublicUrl(fileName);
+      // ut-staff-documents is private: persist the object path, sign it at read time.
 
       // Insert document record
       const { data, error } = await supabase
@@ -422,7 +420,7 @@ export function useUploadStaffDocument() {
           business_slug: businessSlug,
           document_name: documentName,
           document_type: documentType,
-          file_url: urlData.publicUrl,
+          file_url: fileName,
           file_size: file.size,
           mime_type: file.type,
           uploaded_at: new Date().toISOString(),
@@ -453,7 +451,7 @@ export function useDeleteStaffDocument() {
     mutationFn: async ({ id, staffId, fileUrl }: { id: string; staffId: string; fileUrl?: string }) => {
       // Delete file from storage if URL exists
       if (fileUrl) {
-        const path = fileUrl.split('/ut-staff-documents/').pop();
+        const path = storageObjectPath('ut-staff-documents', fileUrl);
         if (path) {
           await supabase.storage.from('ut-staff-documents').remove([path]);
         }
