@@ -78,8 +78,8 @@ export default function PODUpload() {
         contentType: file.type || "image/png",
       });
       if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from("pod-designs").getPublicUrl(path);
-      const design = await createDesignWithListings(pub.publicUrl, title, "manual_upload");
+      // pod-designs is private: store the object path; reads mint a signed URL.
+      const design = await createDesignWithListings(path, title, "manual_upload");
       toast.success(`Design "${design.title}" uploaded · 5 draft listings created`);
       setFile(null);
       setTitle("");

@@ -38,6 +38,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
+import { toast } from 'sonner';
+import { openSignedStorageObject } from '@/lib/storageLinks';
   useDispute,
   useDisputeMessages,
   useDisputeEvidence,
@@ -458,18 +460,17 @@ export default function AdminDisputeDetail() {
               ) : (
                 <div className="space-y-2">
                   {evidence.map((e) => (
-                    <a
+                    <button
                       key={e.id}
-                      href={e.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                      type="button"
+                      onClick={() => openSignedStorageObject('dispute-evidence', e.file_url).catch((err: any) => toast.error(err.message || 'Could not open attachment'))}
+                      className="w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                     >
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm truncate flex-1">
                         {e.file_name || 'Attachment'}
                       </span>
-                    </a>
+                    </button>
                   ))}
                 </div>
               )}

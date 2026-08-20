@@ -55,10 +55,8 @@ export default function MediaUploadModal({ partnerId, open, onOpenChange, onSucc
         
         if (uploadError) throw uploadError;
         
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('partner-media')
-          .getPublicUrl(filePath);
+        // partner-media is private: the object path is the durable reference.
+        const publicUrl = filePath;
         
         return { path: filePath, url: publicUrl, name: file.name };
       });
