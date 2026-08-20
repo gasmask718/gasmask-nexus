@@ -111740,6 +111740,27 @@ export type Database = {
           },
         ]
       }
+      stores_delete_sync_log: {
+        Row: {
+          master_deleted_at: string | null
+          run_id: string | null
+          store_id: string
+          synced_at: string | null
+        }
+        Insert: {
+          master_deleted_at?: string | null
+          run_id?: string | null
+          store_id: string
+          synced_at?: string | null
+        }
+        Update: {
+          master_deleted_at?: string | null
+          run_id?: string | null
+          store_id?: string
+          synced_at?: string | null
+        }
+        Relationships: []
+      }
       style_boundary_rules: {
         Row: {
           applies_to: string
@@ -142687,6 +142708,35 @@ export type Database = {
         }
         Relationships: []
       }
+      v_route_command_center: {
+        Row: {
+          address: string | null
+          already_on_a_route: boolean | null
+          assigned_ambassador: string | null
+          bags_on_hand: number | null
+          candidate_type: string | null
+          city: string | null
+          contact_name: string | null
+          last_seen: string | null
+          owed: number | null
+          phone: string | null
+          priority: number | null
+          reason: string | null
+          relationship_status: string | null
+          route_flagged: boolean | null
+          signal_at: string | null
+          signal_source: string | null
+          source_row_id: string | null
+          store_id: string | null
+          store_name: string | null
+          tubes_as_of: string | null
+          tubes_on_hand: number | null
+          value: number | null
+          why: string | null
+          zip: string | null
+        }
+        Relationships: []
+      }
       v_sales_funnel: {
         Row: {
           campaign_id: string | null
@@ -144525,6 +144575,16 @@ export type Database = {
         Args: { p_alert_id: string; p_user_id?: string }
         Returns: undefined
       }
+      add_store_to_route: {
+        Args: {
+          p_opportunity_ids?: string[]
+          p_planned_order?: number
+          p_reason?: string
+          p_route_id: string
+          p_store_id: string
+        }
+        Returns: string
+      }
       addr_key: { Args: { a: string }; Returns: string }
       admin_activate_plan: {
         Args: { p_admin_user_id?: string; p_plan_id: string }
@@ -145167,6 +145227,10 @@ export type Database = {
         }[]
       }
       complete_ops_task: { Args: { p_task_id: string }; Returns: undefined }
+      complete_route_stop: {
+        Args: { p_notes?: string; p_stop_id: string }
+        Returns: undefined
+      }
       complete_territory_task: {
         Args: { p_outcome: Json; p_task_id: string }
         Returns: undefined
