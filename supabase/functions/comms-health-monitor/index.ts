@@ -1039,11 +1039,29 @@ async function escalateFailures(results: Result[]): Promise<number> {
   const slackText = [header, ...lines].join("\n").slice(0, 3800);
   const smsText = [header, ...lines.slice(0, 5)].join("\n") + (due.length > 5 ? `\n…+${due.length - 5} more` : "");
 
+  // Canonical sink first, then the optional extras.
+  const ops = await sendOpsAlert({
+    source: "comms-health-monitor",
+    severity: "critical",
+    subject: header,
+    message: [header, ...lines].join("\n").slice(0, 6000),
+    context: {
+      new_failures: due.length,
+      failing_total: failures.length,
+      keys: due.map((f) => `${f.layer}:${f.target}`).slice(0, 40),
+    },
+  });
   const [slackOk, smsOk] = await Promise.all([sendSlack(slackText), sendAlertSms(smsText)]);
-  if (!slackOk && !smsOk) {
-    console.error("[comms-health] all alert channels failed — not marking as alerted");
-    return 0;
+  // Dedupe keys on the ATTEMPT, not on success: a monitor that only records
+  // itself as "alerted" when delivery succeeded goes quiet exactly when the
+  // comms estate is broken. Delivery failures are visible in
+  // admin_notifications_log and in this log line.
+  if (!ops.emailSent && !ops.smsSent && !slackOk && !smsOk) {
+    console.error(
+      `[comms-health] alert attempted but ALL channels failed: ${ops.errors.join("; ")}`,
+    );
   }
+
 
   const now = new Date().toISOString();
   const { error } = await supa.from("comms_health_alerts").upsert(
