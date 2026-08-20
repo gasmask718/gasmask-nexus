@@ -1,9 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { readForm, verifyTwilio } from "../_shared/dialer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-twilio-signature, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -19,12 +20,21 @@ serve(async (req) => {
     const callLogId = url.searchParams.get("callLogId");
     const eventType = url.searchParams.get("event");
 
-    // Parse form data from Twilio webhook
-    const formData = await req.formData();
-    const params: Record<string, string> = {};
-    for (const [key, value] of formData.entries()) {
-      params[key] = value.toString();
+    // Parse form data from Twilio webhook — read ONCE, feeds both the
+    // signature check and the logic below.
+    const params: Record<string, string> = await readForm(req);
+
+    // ── SIGNATURE VERIFICATION — fails closed ──
+    // VA dialer calls can originate on the Brandaro sub-account, whose
+    // callbacks are signed with that account's auth token.
+    const v = verifyTwilio(req, params, {
+      extraTokenEnvVars: ["BRANDARO_TWILIO_AUTH_TOKEN"],
+    });
+    if (!v.ok) {
+      console.error(`[va-dialer-status] signature invalid: ${v.reason}`);
+      return new Response("Forbidden", { status: 403, headers: corsHeaders });
     }
+
 
     const callSid = params.CallSid || "";
     const callStatus = params.CallStatus || "";
