@@ -75,9 +75,9 @@ serve(async (req) => {
 
     if (!signature) return json({ ok: false, error: "missing signature" }, 401);
 
-    const secret = Deno.env.get("PUBLIC_SITE_WEBHOOK_SECRET");
+    const secret = Deno.env.get("TOPTIER_ONBOARD_WEBHOOK_SECRET");
     if (!secret) {
-      console.error("PUBLIC_SITE_WEBHOOK_SECRET not configured");
+      console.error("TOPTIER_ONBOARD_WEBHOOK_SECRET not configured");
       return json({ ok: false, error: "server misconfigured" }, 500);
     }
 
