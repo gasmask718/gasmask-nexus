@@ -108158,6 +108158,7 @@ export type Database = {
           invoice_received_by: string | null
           is_historical: boolean
           is_simulation: boolean | null
+          is_wholesaler: boolean | null
           jurisdiction_confidence: string | null
           jurisdiction_resolved_at: string | null
           jurisdiction_source: string | null
@@ -108223,6 +108224,9 @@ export type Database = {
           total_attempts: number | null
           updated_at: string | null
           updated_by: string | null
+          wholesale_ask: string | null
+          wholesale_last_action: string | null
+          wholesale_status: string | null
           zip: string
         }
         Insert: {
@@ -108273,6 +108277,7 @@ export type Database = {
           invoice_received_by?: string | null
           is_historical?: boolean
           is_simulation?: boolean | null
+          is_wholesaler?: boolean | null
           jurisdiction_confidence?: string | null
           jurisdiction_resolved_at?: string | null
           jurisdiction_source?: string | null
@@ -108338,6 +108343,9 @@ export type Database = {
           total_attempts?: number | null
           updated_at?: string | null
           updated_by?: string | null
+          wholesale_ask?: string | null
+          wholesale_last_action?: string | null
+          wholesale_status?: string | null
           zip: string
         }
         Update: {
@@ -108388,6 +108396,7 @@ export type Database = {
           invoice_received_by?: string | null
           is_historical?: boolean
           is_simulation?: boolean | null
+          is_wholesaler?: boolean | null
           jurisdiction_confidence?: string | null
           jurisdiction_resolved_at?: string | null
           jurisdiction_source?: string | null
@@ -108453,6 +108462,9 @@ export type Database = {
           total_attempts?: number | null
           updated_at?: string | null
           updated_by?: string | null
+          wholesale_ask?: string | null
+          wholesale_last_action?: string | null
+          wholesale_status?: string | null
           zip?: string
         }
         Relationships: [
@@ -136677,14 +136689,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -145618,6 +145630,54 @@ export type Database = {
         }
         Relationships: []
       }
+      v_wholesale_register: {
+        Row: {
+          action_rank: number | null
+          address: string | null
+          city: string | null
+          contact_name: string | null
+          last_seen: string | null
+          owed: number | null
+          phone: string | null
+          sales: number | null
+          state: string | null
+          store_name: string | null
+          wholesale_ask: string | null
+          wholesale_last_action: string | null
+          wholesale_status: string | null
+        }
+        Insert: {
+          action_rank?: never
+          address?: string | null
+          city?: string | null
+          contact_name?: string | null
+          last_seen?: never
+          owed?: never
+          phone?: string | null
+          sales?: never
+          state?: string | null
+          store_name?: string | null
+          wholesale_ask?: string | null
+          wholesale_last_action?: string | null
+          wholesale_status?: string | null
+        }
+        Update: {
+          action_rank?: never
+          address?: string | null
+          city?: string | null
+          contact_name?: string | null
+          last_seen?: never
+          owed?: never
+          phone?: string | null
+          sales?: never
+          state?: string | null
+          store_name?: string | null
+          wholesale_ask?: string | null
+          wholesale_last_action?: string | null
+          wholesale_status?: string | null
+        }
+        Relationships: []
+      }
       vendor_fulfillment_view: {
         Row: {
           carrier: string | null
@@ -148203,6 +148263,7 @@ export type Database = {
           invoice_received_by: string | null
           is_historical: boolean
           is_simulation: boolean | null
+          is_wholesaler: boolean | null
           jurisdiction_confidence: string | null
           jurisdiction_resolved_at: string | null
           jurisdiction_source: string | null
@@ -148268,6 +148329,9 @@ export type Database = {
           total_attempts: number | null
           updated_at: string | null
           updated_by: string | null
+          wholesale_ask: string | null
+          wholesale_last_action: string | null
+          wholesale_status: string | null
           zip: string
         }
         SetofOptions: {
