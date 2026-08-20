@@ -1076,7 +1076,7 @@ async function escalateFailures(results: Result[]): Promise<number> {
     { onConflict: "alert_key" },
   );
   if (error) console.error("[comms-health] alert state upsert failed:", error.message);
-  console.log(`[comms-health] alerted on ${due.length} failures (slack=${slackOk} sms=${smsOk})`);
+  console.log(`[comms-health] alerted on ${due.length} failures (ops_email=${ops.emailSent} ops_sms=${ops.smsSent} slack=${slackOk} sms=${smsOk})`);
   return due.length;
 }
 
