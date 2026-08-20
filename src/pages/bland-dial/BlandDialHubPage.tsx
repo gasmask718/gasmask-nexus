@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { RecordingPlayer } from "@/components/phone/RecordingPlayer";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -398,7 +399,7 @@ function DialPanel() {
                   {activeLog.recording_url && (
                     <div>
                       <Label className="text-xs uppercase text-muted-foreground">Recording</Label>
-                      <audio controls src={activeLog.recording_url} className="w-full mt-1" />
+                      <RecordingPlayer recordingUrl={activeLog.recording_url} recordingSid={activeLog.call_id} />
                     </div>
                   )}
                   {activeLog.intent_summary && (
@@ -733,10 +734,7 @@ function HistoryPanel() {
               {open.recording_url && (
                 <div>
                   <Label className="text-xs uppercase tracking-wide text-muted-foreground">Recording</Label>
-                  <audio controls src={open.recording_url} className="w-full mt-1" />
-                  <a href={open.recording_url} target="_blank" rel="noreferrer" className="text-xs text-primary inline-flex items-center gap-1 mt-1">
-                    Open in new tab <ExternalLink className="h-3 w-3" />
-                  </a>
+                  <RecordingPlayer recordingUrl={open.recording_url} recordingSid={open.call_id} />
                 </div>
               )}
               {open.intent_summary && (
