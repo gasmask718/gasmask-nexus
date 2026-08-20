@@ -90,3 +90,39 @@ never be sold or handed to a partner. Publishing a derived list triggers share-a
 
 `brooklyn_osm_callable_linechecked_2026-08-20.csv` — 578 rows, sorted desk lines first,
 with `status`, `line_type`, `carrier`, `source = osm`.
+
+## Suppression check — RAN 2026-08-20
+
+All 578 rows were run against the same gate a dialer hits: `dnc_list` and
+`opt_out_events`, matched on the last-10 key (`phone_last10`) plus the legacy
+`phone_number` / `phone_e164` columns, i.e. the exact logic of
+`supabase/functions/_shared/dnc.ts → isSuppressed()`.
+
+| source | hits |
+|---|---|
+| dnc_list (last-10) | 0 |
+| dnc_list (legacy columns) | 0 |
+| opt_out_events (last-10) | 0 |
+| opt_out_events (legacy) | 0 |
+| **total dropped** | **0** |
+
+Zero is the expected number — suppression currently holds two rows total — but the
+gate ran, and that is the last check before a human dials. It does not replace the
+runtime gate: the TwiML endpoint still enforces suppression before `<Dial>`, fail-closed.
+
+## Batching — 480 now, 19 held
+
+The nonFixedVoip 19 are **not** the tail of batch 1. A VA works a list top to bottom and
+does not reorder it; nineteen weak-provenance numbers at the bottom of a 480-row list get
+dialled at the end of a bad afternoon and colour the whole exercise. Separate list,
+separate decision.
+
+- `brooklyn_batch1_desk_lines_480_2026-08-20.csv` — **the deliverable.** 480 desk lines
+  (fixedVoip 282 + landline 198), suppression-clear, sorted landline first.
+- `brooklyn_hold_nonfixedvoip_19_2026-08-20.csv` — held, not queued.
+- 78 mobile and 1 dead number remain out of both.
+
+Every row in both files carries a `dial_caveat` column stating in plain language that a
+line type says the number is **assigned**, not that the business still holds it — so the
+first three calls reaching a different business reads as expected decay, not a bad list.
+The VA sees the caveat on the row; it does not live only in this doc.
