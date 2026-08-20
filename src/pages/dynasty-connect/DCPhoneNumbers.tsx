@@ -35,7 +35,7 @@ export default function DCPhoneNumbers() {
       // Use a real number from our list to validate credentials
       const { data: nums } = await (supabase as any).from('dc_phone_numbers').select('phone_number').limit(1);
       const testNum = nums?.[0]?.phone_number || '+18484004179';
-      const { data, error } = await supabase.functions.invoke('dc-configure-webhook', {
+      const { data, error } = await supabase.functions.invoke('twilio-admin-set-number-webhook', {
         body: { phone_number: testNum }
       });
       if (data?.credential_issue) return { checked: true, error: data.error, credentialIssue: true };
@@ -46,7 +46,7 @@ export default function DCPhoneNumbers() {
 
   const configureWebhook = useMutation({
     mutationFn: async (phone: any) => {
-      const { data, error } = await supabase.functions.invoke('dc-configure-webhook', {
+      const { data, error } = await supabase.functions.invoke('twilio-admin-set-number-webhook', {
         body: { phone_number: phone.phone_number, phone_number_id: phone.id }
       });
       if (error) throw new Error(error.message);

@@ -1,10 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { recordAttrFor } from "../_shared/recordingConsent.ts";
+import { readForm, verifyTwilio } from "../_shared/dialer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-twilio-signature",
 };
 
 serve(async (req) => {
@@ -17,12 +18,28 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    const formData = await req.formData();
-    const digits = formData.get("Digits")?.toString() || "";
-    const speechResult = formData.get("SpeechResult")?.toString().toLowerCase() || "";
-    const callSid = formData.get("CallSid")?.toString() || "";
-    const twilioFrom = formData.get("From")?.toString() || "";
-    const twilioTo = formData.get("To")?.toString() || "";
+    // Read the body ONCE — same params feed verification and the logic below.
+    const formData = await readForm(req);
+
+    // ── SIGNATURE VERIFICATION — fails closed ──
+    // This webhook steers a LIVE call (agent selection, live handoff target),
+    // so a forged POST is worse than a corrupted disposition. Brandaro
+    // sub-account token included: gather callbacks on calls placed from that
+    // account are signed with that account's auth token.
+    const v = verifyTwilio(req, formData, {
+      extraTokenEnvVars: ["BRANDARO_TWILIO_AUTH_TOKEN"],
+    });
+    if (!v.ok) {
+      console.error(`[twilio-gather-webhook] signature invalid: ${v.reason}`);
+      return new Response("Forbidden", { status: 403, headers: corsHeaders });
+    }
+
+    const digits = formData.Digits || "";
+    const speechResult = (formData.SpeechResult || "").toLowerCase();
+    const callSid = formData.CallSid || "";
+    const twilioFrom = formData.From || "";
+    const twilioTo = formData.To || "";
+
 
     const url = new URL(req.url);
     let agentId = url.searchParams.get("agent_id") || "";

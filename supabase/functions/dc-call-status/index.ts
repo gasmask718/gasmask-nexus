@@ -1,9 +1,12 @@
 // Twilio outbound call status callback for dc-outbound-call pool.
 // T7b.1: now writes answered_by + derives outcome so recompute_answer_rates
 // has a real composite signal to work with. Mirrors twilio-call-status mapping.
+// 2026-08-20: X-Twilio-Signature verification added (fails closed, 403).
+import { readForm, verifyTwilio } from '../_shared/dialer.ts'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-twilio-signature',
 }
 
 Deno.serve(async (req) => {
@@ -12,12 +15,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const formData = await req.formData()
-    const callSid = String(formData.get('CallSid') || '')
-    const callStatus = String(formData.get('CallStatus') || '')
-    const callDuration = String(formData.get('CallDuration') || '0')
-    const answeredBy = String(formData.get('AnsweredBy') || '')
-    const recordingUrl = String(formData.get('RecordingUrl') || '')
+    // Read the body ONCE — the same params feed verification and the logic below.
+    const formData = await readForm(req)
+
+    // ── SIGNATURE VERIFICATION — fails closed ──
+    // Brandaro sub-account token included: some pool numbers dial from that
+    // account and Twilio signs the callback with THAT account's auth token.
+    const v = verifyTwilio(req, formData, {
+      extraTokenEnvVars: ['BRANDARO_TWILIO_AUTH_TOKEN'],
+    })
+    if (!v.ok) {
+      console.error(`[dc-call-status] signature invalid: ${v.reason}`)
+      return new Response('Forbidden', { status: 403, headers: corsHeaders })
+    }
+
+    const callSid = String(formData.CallSid || '')
+    const callStatus = String(formData.CallStatus || '')
+    const callDuration = String(formData.CallDuration || '0')
+    const answeredBy = String(formData.AnsweredBy || '')
+    const recordingUrl = String(formData.RecordingUrl || '')
+
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
     const SUPABASE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
