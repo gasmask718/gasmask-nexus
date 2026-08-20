@@ -2,15 +2,23 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { isSuppressed } from "../_shared/dnc.ts";
 import { recordAttrFor } from "../_shared/recordingConsent.ts";
+import { readForm, verifyTwilio } from "../_shared/dialer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-twilio-signature",
 };
 
 /**
  * Brandaro TwiML endpoint — called by Twilio when a browser SDK call is placed.
  * Returns TwiML to dial the target number with recording enabled.
+ *
+ * AUTHENTICATION (added 2026-08-20): this endpoint is the point of dial — the
+ * suppression gate below is only meaningful if the request genuinely came from
+ * Twilio. Every request MUST carry a valid X-Twilio-Signature, computed with
+ * either the main account or the Brandaro sub-account auth token. Unsigned or
+ * mis-signed callers get 403 and no TwiML: without TwiML Twilio dials nothing.
  */
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -21,26 +29,36 @@ serve(async (req: Request) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const DEFAULT_CALLER_ID = "+19298225712";
 
-    // Parse form data from Twilio
+    // Read the form ONCE (the body can only be consumed once) — the same params
+    // feed both signature verification and the business logic below.
+    const isForm = (req.headers.get("content-type") || "").includes(
+      "application/x-www-form-urlencoded",
+    );
+    const params: Record<string, string> = isForm ? await readForm(req) : {};
+
+    // ── SIGNATURE VERIFICATION — fails closed ──
+    const v = verifyTwilio(req, params, {
+      extraTokenEnvVars: ["BRANDARO_TWILIO_AUTH_TOKEN"],
+    });
+    if (!v.ok) {
+      console.error(`[brandaro-call-twiml] signature invalid: ${v.reason}`);
+      return new Response("Forbidden", { status: 403, headers: corsHeaders });
+    }
+
     let to = "";
     let callLogId = "";
     let fromCallerId = "";
 
-    if (req.headers.get("content-type")?.includes("application/x-www-form-urlencoded")) {
-      const formData = await req.formData();
-      to = (formData.get("To") as string) || "";
-      callLogId = (formData.get("callLogId") as string) || "";
+    if (isForm) {
+      to = params.To || "";
+      callLogId = params.callLogId || "";
       // Prefer custom CallerId param (browser SDK passes user-selected number).
       // "From" is overwritten by Twilio to "client:identity" for browser SDK calls,
       // so we cannot rely on it as caller-ID source.
-      fromCallerId =
-        (formData.get("CallerId") as string) ||
-        (formData.get("callerId") as string) ||
-        (formData.get("From") as string) ||
-        "";
+      fromCallerId = params.CallerId || params.callerId || params.From || "";
 
       if (!to.startsWith("+")) {
-        to = (formData.get("phone") as string) || to;
+        to = params.phone || to;
       }
     } else {
       const url = new URL(req.url);
@@ -52,6 +70,7 @@ serve(async (req: Request) => {
         url.searchParams.get("From") ||
         "";
     }
+
 
     if (!to || !to.startsWith("+")) {
       console.error("[brandaro-call-twiml] Invalid To number:", to);

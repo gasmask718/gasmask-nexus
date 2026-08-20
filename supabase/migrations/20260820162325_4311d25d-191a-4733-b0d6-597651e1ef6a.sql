@@ -1,0 +1,1 @@
+UPDATE public.comms_health_alerts SET last_alert_at = now() - interval '48 hours' WHERE alert_key IN ('credentials:elevenlabs_account','dispatch_health:brandaro_ai_calls_7d');
