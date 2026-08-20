@@ -133970,6 +133970,33 @@ export type Database = {
           },
         ]
       }
+      wholesaler_sweep: {
+        Row: {
+          already_flagged: boolean | null
+          evidence: string | null
+          evidence_type: string | null
+          found_at: string | null
+          run_id: string | null
+          store_id: string
+        }
+        Insert: {
+          already_flagged?: boolean | null
+          evidence?: string | null
+          evidence_type?: string | null
+          found_at?: string | null
+          run_id?: string | null
+          store_id: string
+        }
+        Update: {
+          already_flagged?: boolean | null
+          evidence?: string | null
+          evidence_type?: string | null
+          found_at?: string | null
+          run_id?: string | null
+          store_id?: string
+        }
+        Relationships: []
+      }
       wholesaler_territory_coverage: {
         Row: {
           borough: string | null
