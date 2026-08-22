@@ -319,6 +319,7 @@ serve(async (req) => {
       }
 
       const notifications: any[] = [];
+      const suppressedPartners: any[] = [];
       const startTime = Date.now();
 
       for (const partner of partners) {
