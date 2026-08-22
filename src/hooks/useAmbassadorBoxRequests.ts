@@ -1,8 +1,15 @@
 /**
  * useAmbassadorBoxRequests — Ambassador stock request queue.
- * Ambassadors request boxes by product; admins approve (creates a purchase
- * exactly like the admin-initiated flow) or decline with a reason.
- * RLS: ambassadors see/create only their own; admin/owner see and review all.
+ *
+ * Requests live in the EXISTING purchase tables, not a parallel table:
+ *   ambassador_purchases row with status='requested', order_source='ambassador_request'
+ *   + ambassador_purchase_items rows priced at 0 until an admin approves.
+ * Approve = stamp the live wholesale price onto the item and flip the purchase
+ * to 'draft' (entering the normal admin order flow). Decline = status 'declined'
+ * + decline_reason (visible to the ambassador).
+ *
+ * RLS: ambassadors insert only their own 'requested' rows and see only their
+ * own purchases; admin/owner see and update all.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,24 +20,38 @@ export type BoxRequestStatus = 'pending' | 'approved' | 'declined';
 
 export interface AmbassadorBoxRequest {
   id: string;
-  ambassador_id: string;
+  ambassador_id: string | null;
   ambassador_user_id: string;
+  item_id: string | null;
   product_id: string | null;
   product_name: string;
   quantity: number;
   note: string | null;
   status: BoxRequestStatus;
   decline_reason: string | null;
-  created_purchase_id: string | null;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
   created_at: string;
   ambassador_name?: string | null;
 }
 
 const KEY = 'ambassador-box-requests';
-// Table predates regenerated types in some environments — keep the handle loose.
-const table = () => (supabase.from as any)('ambassador_box_requests');
+
+function mapPurchase(p: any): AmbassadorBoxRequest {
+  const items = p.ambassador_purchase_items || [];
+  const first = items[0] || null;
+  return {
+    id: p.id,
+    ambassador_id: p.ambassador_id ?? null,
+    ambassador_user_id: p.ambassador_user_id,
+    item_id: first?.id ?? null,
+    product_id: first?.product_id ?? null,
+    product_name: first?.product_name_snapshot ?? 'Boxes',
+    quantity: items.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0),
+    note: p.notes ?? null,
+    status: p.status === 'requested' ? 'pending' : p.status === 'declined' ? 'declined' : 'approved',
+    decline_reason: p.decline_reason ?? null,
+    created_at: p.created_at,
+  };
+}
 
 export function useMyBoxRequests() {
   const { user } = useAuth();
@@ -38,12 +59,14 @@ export function useMyBoxRequests() {
     queryKey: [KEY, 'mine', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await table()
-        .select('*')
+      const { data, error } = await supabase
+        .from('ambassador_purchases')
+        .select('*, ambassador_purchase_items(*)')
         .eq('ambassador_user_id', user.id)
+        .eq('order_source', 'ambassador_request')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data || []) as AmbassadorBoxRequest[];
+      return (data || []).map(mapPurchase);
     },
     enabled: !!user?.id,
   });
@@ -53,15 +76,28 @@ export function useAllBoxRequests() {
   return useQuery({
     queryKey: [KEY, 'all'],
     queryFn: async () => {
-      const { data, error } = await table()
-        .select('*, ambassadors:ambassador_id(name)')
+      const { data, error } = await supabase
+        .from('ambassador_purchases')
+        .select('*, ambassador_purchase_items(*)')
+        .eq('order_source', 'ambassador_request')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return ((data || []) as any[]).map(r => ({
+      const rows = (data || []).map(mapPurchase);
+
+      const ids = [...new Set(rows.map(r => r.ambassador_id).filter(Boolean))] as string[];
+      let names: Record<string, string | null> = {};
+      if (ids.length > 0) {
+        const { data: ambs, error: ambErr } = await supabase
+          .from('ambassadors')
+          .select('id, name')
+          .in('id', ids);
+        if (ambErr) throw ambErr;
+        names = Object.fromEntries((ambs || []).map(a => [a.id, a.name]));
+      }
+      return rows.map(r => ({
         ...r,
-        ambassador_name: r.ambassadors?.name ?? null,
-        ambassadors: undefined,
-      })) as AmbassadorBoxRequest[];
+        ambassador_name: r.ambassador_id ? names[r.ambassador_id] ?? null : null,
+      }));
     },
   });
 }
@@ -85,15 +121,37 @@ export function useCreateBoxRequest() {
       if (ambErr) throw ambErr;
       if (!amb) throw new Error('No active ambassador profile found');
 
-      const { error } = await table().insert({
-        ambassador_id: amb.id,
-        ambassador_user_id: user.id,
-        product_id: input.product_id,
-        product_name: input.product_name,
-        quantity: input.quantity,
-        note: input.note || null,
-      });
-      if (error) throw error;
+      // Un-priced request row — admin sets the real price at approval time.
+      const { data: purchase, error: pErr } = await supabase
+        .from('ambassador_purchases')
+        .insert({
+          ambassador_user_id: user.id,
+          ambassador_id: amb.id,
+          order_source: 'ambassador_request',
+          status: 'requested',
+          created_by_user_id: user.id,
+          created_for_user_id: user.id,
+          notes: input.note || null,
+          subtotal: 0,
+          tax: 0,
+          discount_total: 0,
+          total: 0,
+        })
+        .select()
+        .single();
+      if (pErr) throw pErr;
+
+      const { error: iErr } = await supabase
+        .from('ambassador_purchase_items')
+        .insert({
+          purchase_id: purchase.id,
+          product_id: input.product_id,
+          product_name_snapshot: input.product_name,
+          unit_price_snapshot: 0,
+          quantity: input.quantity,
+          line_total: 0,
+        });
+      if (iErr) throw iErr;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [KEY] });
@@ -105,12 +163,9 @@ export function useCreateBoxRequest() {
 
 export function useReviewBoxRequest() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   const approve = useMutation({
     mutationFn: async (request: AmbassadorBoxRequest) => {
-      if (!user?.id) throw new Error('Not authenticated');
-
       // Price from the live catalog at approval time (wholesale first)
       let unit = 0;
       if (request.product_id) {
@@ -123,47 +178,22 @@ export function useReviewBoxRequest() {
       }
       const subtotal = unit * request.quantity;
 
-      // Create the purchase exactly like the admin-initiated flow
+      if (request.item_id) {
+        const { error: iErr } = await supabase
+          .from('ambassador_purchase_items')
+          .update({ unit_price_snapshot: unit, line_total: subtotal })
+          .eq('id', request.item_id);
+        if (iErr) throw iErr;
+      }
+
+      // Flip into the normal admin order flow as a draft
       const { data: purchase, error: pErr } = await supabase
         .from('ambassador_purchases')
-        .insert({
-          ambassador_user_id: request.ambassador_user_id,
-          ambassador_id: request.ambassador_id,
-          order_source: 'ambassador_request',
-          status: 'draft',
-          created_by_user_id: user.id,
-          created_for_user_id: request.ambassador_user_id,
-          notes: `Box request ${request.id.slice(0, 8)}${request.note ? ` — ${request.note}` : ''}`,
-          subtotal,
-          tax: 0,
-          discount_total: 0,
-          total: subtotal,
-        } as any)
+        .update({ status: 'draft', subtotal, total: subtotal })
+        .eq('id', request.id)
         .select()
         .single();
       if (pErr) throw pErr;
-
-      const { error: iErr } = await supabase
-        .from('ambassador_purchase_items')
-        .insert({
-          purchase_id: purchase.id,
-          product_id: request.product_id,
-          product_name_snapshot: request.product_name,
-          unit_price_snapshot: unit,
-          quantity: request.quantity,
-          line_total: subtotal,
-        } as any);
-      if (iErr) throw iErr;
-
-      const { error: uErr } = await table()
-        .update({
-          status: 'approved',
-          created_purchase_id: purchase.id,
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq('id', request.id);
-      if (uErr) throw uErr;
 
       return purchase;
     },
@@ -171,6 +201,7 @@ export function useReviewBoxRequest() {
       queryClient.invalidateQueries({ queryKey: [KEY] });
       queryClient.invalidateQueries({ queryKey: ['ambassador-purchases'] });
       queryClient.invalidateQueries({ queryKey: ['ambassador-purchase-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-outstanding-balances'] });
       toast.success('Request approved — order created', {
         description: purchase?.order_number ? `Order ${purchase.order_number}` : undefined,
       });
@@ -180,21 +211,17 @@ export function useReviewBoxRequest() {
 
   const decline = useMutation({
     mutationFn: async ({ requestId, reason }: { requestId: string; reason: string }) => {
-      if (!user?.id) throw new Error('Not authenticated');
       if (!reason.trim()) throw new Error('A reason is required when declining');
 
-      const { error } = await table()
-        .update({
-          status: 'declined',
-          decline_reason: reason.trim(),
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
-        })
+      const { error } = await supabase
+        .from('ambassador_purchases')
+        .update({ status: 'declined', decline_reason: reason.trim() })
         .eq('id', requestId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [KEY] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-outstanding-balances'] });
       toast.success('Request declined');
     },
     onError: (err: Error) => toast.error(err.message),
