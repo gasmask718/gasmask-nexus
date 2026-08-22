@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms, type SendSmsClass } from "../_shared/sendSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,23 +11,33 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// ── SMS via Twilio ──────────────────────────────────────────────────────
-async function sendSMS(to: string, body: string): Promise<{ success: boolean; sid?: string; error?: string }> {
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const from = Deno.env.get("TWILIO_PHONE_NUMBER") || "+18484004179";
-  if (!sid || !token) return { success: false, error: "Missing Twilio credentials" };
-
-  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({ To: to, From: from, Body: body }),
+// ── SMS via send-sms (tt-* dispatch pattern) ────────────────────────────
+// All outbound SMS routes through the send-sms chokepoint: suppression
+// (dnc_list + opt_out_events + legal STOP), idempotency, and an
+// outbound_messages audit row. A suppression-blocked send returns
+// `suppressed: true` so the caller can log a named outcome instead of a
+// silent skip — same silent-failure problem as tt-smart-dispatch.
+async function sendSMS(
+  to: string,
+  body: string,
+  opts: { sendClass: SendSmsClass; idempotencyKey: string; purpose: string; skipCooldown?: boolean },
+): Promise<{ success: boolean; sid?: string; error?: string; suppressed?: boolean }> {
+  const r = await sendSms({
+    to,
+    body,
+    // Sender parity: previously TWILIO_PHONE_NUMBER || +18484004179.
+    from: Deno.env.get("TWILIO_PHONE_NUMBER") || "+18484004179",
+    sendClass: opts.sendClass,
+    idempotencyKey: opts.idempotencyKey,
+    skipCooldown: opts.skipCooldown ?? false,
+    purpose: opts.purpose,
   });
-  const data = await res.json();
-  return res.ok ? { success: true, sid: data.sid } : { success: false, error: data.message };
+  return {
+    success: r.success,
+    sid: r.providerMessageId ?? undefined,
+    error: r.errorMessage ?? undefined,
+    suppressed: r.blocked,
+  };
 }
 
 // ── Email via SendGrid ──────────────────────────────────────────────────
