@@ -238,7 +238,10 @@ export function EditStoreInvoiceModal({
           Number(prev.total) !== Number(item.line_subtotal) ||
           prev.product_id !== item.product_id ||
           prev.brand_id !== item.brand_id ||
-          (prev.unit_kind ?? null) !== item.unit_kind;
+          (prev.unit_kind ?? null) !== item.unit_kind ||
+          (prev.discount_type ?? 'none') !== item.discount_type ||
+          Number(prev.discount_value ?? 0) !== Number(item.discount_value) ||
+          (prev.discount_reason ?? '') !== (item.discount_reason || '');
         if (!changed) continue; // preserve provenance untouched
 
         const { invoice_id: _ignored, line_source: _src, ...updatePayload } = toLineItemRow(
@@ -355,8 +358,8 @@ export function EditStoreInvoiceModal({
             <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
               <p className="font-medium text-amber-500">This invoice is finalized.</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Finalized invoices are locked against line-item changes. Reopen it with a
-                reason to make corrections — it will be re-finalized when you save.
+                Reopening it will let you correct the lines. Please give a reason — a full
+                snapshot is saved to the amendment log, and it will be re-finalized when you save.
               </p>
             </div>
             <div className="space-y-2">
