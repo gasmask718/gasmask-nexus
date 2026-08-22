@@ -12,6 +12,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 import { recordAttrFor } from "../_shared/recordingConsent.ts";
+import { sendSms } from "../_shared/sendSms.ts";
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -44,6 +45,12 @@ function isQuietHours(): boolean {
   // Approximate US Eastern: allow 8am–9pm.
   const local = (new Date().getUTCHours() - 5 + 24) % 24;
   return local < 8 || local >= 21;
+}
+
+function shortHash(s: string): string {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h).toString(36);
 }
 
 Deno.serve(async (req) => {
@@ -147,26 +154,62 @@ Deno.serve(async (req) => {
         return json({ error: 'daily_sms_limit_reached', limit: MAX_SMS_PER_DAY }, 429);
       }
 
-      const params = new URLSearchParams({ To: toPhone, From: fromNumber, Body: message });
-      const tw = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Basic ${twilioAuth}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: params,
-        },
-      );
-      const twData = await tw.json();
-      if (!tw.ok) {
-        console.error('[field-portal-comms] twilio sms failed', tw.status, twData);
+      // All egress through send-sms: suppression (dnc_list + opt_out_events +
+      // legal STOP), idempotency, outbound_messages audit row. Conversational:
+      // a human worker types each message per tap; skipCooldown because the
+      // 60/day cap above is the pacing control, not a class cooldown.
+      const hourBucket = new Date().toISOString().slice(0, 13);
+      const smsResult = await sendSms({
+        to: toPhone,
+        from: fromNumber,
+        body: message,
+        sendClass: 'conversational',
+        idempotencyKey: `fpc-${userId}-${storeId}-${shortHash(message)}-${hourBucket}`,
+        skipCooldown: true,
+        purpose: 'field_portal_sms',
+        storeId,
+        metadata: { source: 'field_portal', actor_name: actorName, contact_id: body.contact_id || null },
+      });
+
+      if (smsResult.blocked) {
+        // A suppressed text is a NAMED outcome, not a silent skip: the store
+        // opted out, the message did not go out, and the worker is told to
+        // call instead (an SMS STOP does not block voice).
+        console.warn(`[field-portal-comms] BLOCKED ${toPhone} — ${smsResult.errorMessage}`);
+        await admin.from('communication_logs').insert({
+          store_id: storeId,
+          contact_id: body.contact_id || null,
+          channel: 'sms',
+          direction: 'outbound',
+          status: 'blocked',
+          delivery_status: 'blocked',
+          message_content: message,
+          sender_phone: fromNumber,
+          recipient_phone: toPhone,
+          created_by: userId,
+          ambassador_id: amb?.id || null,
+          driver_id: driver?.id || null,
+          outcome: 'field_sms_suppressed',
+          notes: `Suppressed: ${smsResult.errorMessage}. Store is still reachable by call.`,
+          metadata: { source: 'field_portal', actor_name: actorName, blocker: smsResult.errorCode },
+        });
+        return json({
+          ok: false,
+          suppressed: true,
+          reason: smsResult.errorMessage,
+          message: 'This store has opted out of texts. The message was not sent — call instead.',
+        }, 200);
+      }
+
+      if (!smsResult.success) {
+        console.error('[field-portal-comms] send-sms failed', smsResult.status, smsResult.errorMessage);
         return json(
-          { error: 'twilio_error', status: tw.status, details: twData?.message || twData },
-          tw.status,
+          { error: 'sms_failed', status: smsResult.status, details: smsResult.errorMessage || 'send failed' },
+          502,
         );
       }
+
+      const twData = { status: 'sent', sid: smsResult.providerMessageId };
 
       const { data: log, error: logErr } = await admin
         .from('communication_logs')

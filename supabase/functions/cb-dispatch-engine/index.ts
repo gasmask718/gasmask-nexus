@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms, type SendSmsClass } from "../_shared/sendSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,23 +11,33 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// ── SMS via Twilio ──────────────────────────────────────────────────────
-async function sendSMS(to: string, body: string): Promise<{ success: boolean; sid?: string; error?: string }> {
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const from = Deno.env.get("TWILIO_PHONE_NUMBER") || "+18484004179";
-  if (!sid || !token) return { success: false, error: "Missing Twilio credentials" };
-
-  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({ To: to, From: from, Body: body }),
+// ── SMS via send-sms (tt-* dispatch pattern) ────────────────────────────
+// All outbound SMS routes through the send-sms chokepoint: suppression
+// (dnc_list + opt_out_events + legal STOP), idempotency, and an
+// outbound_messages audit row. A suppression-blocked send returns
+// `suppressed: true` so the caller can log a named outcome instead of a
+// silent skip — same silent-failure problem as tt-smart-dispatch.
+async function sendSMS(
+  to: string,
+  body: string,
+  opts: { sendClass: SendSmsClass; idempotencyKey: string; purpose: string; skipCooldown?: boolean },
+): Promise<{ success: boolean; sid?: string; error?: string; suppressed?: boolean }> {
+  const r = await sendSms({
+    to,
+    body,
+    // Sender parity: previously TWILIO_PHONE_NUMBER || +18484004179.
+    from: Deno.env.get("TWILIO_PHONE_NUMBER") || "+18484004179",
+    sendClass: opts.sendClass,
+    idempotencyKey: opts.idempotencyKey,
+    skipCooldown: opts.skipCooldown ?? false,
+    purpose: opts.purpose,
   });
-  const data = await res.json();
-  return res.ok ? { success: true, sid: data.sid } : { success: false, error: data.message };
+  return {
+    success: r.success,
+    sid: r.providerMessageId ?? undefined,
+    error: r.errorMessage ?? undefined,
+    suppressed: r.blocked,
+  };
 }
 
 // ── Email via SendGrid ──────────────────────────────────────────────────
@@ -308,6 +319,7 @@ serve(async (req) => {
       }
 
       const notifications: any[] = [];
+      const suppressedPartners: any[] = [];
       const startTime = Date.now();
 
       for (const partner of partners) {
@@ -345,18 +357,35 @@ serve(async (req) => {
           })
           .select("id, response_token").single();
 
-        // SMS
+        // SMS — partners = workforce. One request = one offer per partner.
         if (partner.phone) {
           const smsBody = buildDispatchSMS(request, responseUrl);
-          const smsResult = await sendSMS(partner.phone, smsBody);
+          const smsResult = await sendSMS(partner.phone, smsBody, {
+            sendClass: "workforce",
+            idempotencyKey: `cb-dispatch-${request.id}-${partner.id}`,
+            purpose: "cb_dispatch_sms",
+            skipCooldown: true,
+          });
+          if (smsResult.suppressed) {
+            // Not a silent skip: named outcome in cb_communication_logs and
+            // the response payload so ops can see WHICH partner was
+            // unreachable and why. STOP is absolute — workforce skips
+            // cooldown, never consent.
+            suppressedPartners.push({
+              partner_id: partner.id, name: partner.name, phone: partner.phone,
+              reason: smsResult.error || "suppressed",
+            });
+          }
           notifications.push({ type: "sms", partner: partner.name, ...smsResult });
 
           await logComm(supabase, request.id, partner.id, "outbound", "sms",
-            "cb_dispatch_sms", smsBody, smsResult.success ? "sent" : "failed", smsResult.sid);
+            "cb_dispatch_sms", smsBody,
+            smsResult.suppressed ? "suppressed" : smsResult.success ? "sent" : "failed", smsResult.sid);
 
           if (dispatch) {
             await supabase.from("cb_request_partner_dispatches")
-              .update({ status: smsResult.success ? "sent" : "failed", sent_at: new Date().toISOString(),
+              .update({ status: smsResult.suppressed ? "suppressed" : smsResult.success ? "sent" : "failed",
+                sent_at: new Date().toISOString(),
                 failure_reason: smsResult.error || null })
               .eq("id", dispatch.id);
           }
@@ -394,6 +423,9 @@ serve(async (req) => {
         success: true,
         dispatched: partners.length,
         notifications,
+        // tt-* pattern: suppression-skipped partners are named, not silent.
+        suppressed: suppressedPartners.length,
+        suppressed_partners: suppressedPartners.length ? suppressedPartners : undefined,
         elapsed_ms: Date.now() - startTime,
       });
     }
@@ -510,10 +542,16 @@ serve(async (req) => {
 
       if (sendChannels.includes("sms") && request.customer_phone) {
         const smsBody = `🚌 Your Coach Bus is Available!\n${request.pickup_city} → ${request.dropoff_city}\n${request.trip_date || "TBD"}\nPrice: $${margin?.final_customer_price || quote?.quoted_price}\n\nConfirm: ${approveUrl}`;
-        const smsResult = await sendSMS(request.customer_phone, smsBody);
+        // Customer, post-quote = transactional. One request = one offer.
+        const smsResult = await sendSMS(request.customer_phone, smsBody, {
+          sendClass: "transactional",
+          idempotencyKey: `cb-offer-${request.id}`,
+          purpose: "cb_customer_offer_sms",
+          skipCooldown: true,
+        });
         results.push({ channel: "sms", ...smsResult });
         await logComm(supabase, request.id, null, "outbound", "sms", "cb_customer_offer_sms",
-          smsBody, smsResult.success ? "sent" : "failed", smsResult.sid);
+          smsBody, smsResult.suppressed ? "suppressed" : smsResult.success ? "sent" : "failed", smsResult.sid);
       }
 
       if (sendChannels.includes("email") && request.customer_email) {
@@ -745,10 +783,16 @@ serve(async (req) => {
 
       if (request.customer_phone) {
         const smsBody = `🚌 Your Coach Bus is Available!\n${request.pickup_city} → ${request.dropoff_city}\n${request.trip_date || "TBD"}\nPrice: $${finalCustomerPrice.toLocaleString()}\n\nConfirm: ${approveUrl}`;
-        const smsResult = await sendSMS(request.customer_phone, smsBody);
+        // Customer, post-quote = transactional. One request = one auto-offer.
+        const smsResult = await sendSMS(request.customer_phone, smsBody, {
+          sendClass: "transactional",
+          idempotencyKey: `cb-auto-offer-${request.id}`,
+          purpose: "cb_auto_customer_offer_sms",
+          skipCooldown: true,
+        });
         offerResults.push({ channel: "sms", ...smsResult });
         await logComm(supabase, request.id, null, "outbound", "sms", "cb_auto_customer_offer_sms",
-          smsBody, smsResult.success ? "sent" : "failed", smsResult.sid);
+          smsBody, smsResult.suppressed ? "suppressed" : smsResult.success ? "sent" : "failed", smsResult.sid);
       }
 
       if (request.customer_email) {
