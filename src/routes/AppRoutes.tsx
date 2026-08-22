@@ -1557,7 +1557,7 @@ export default function AppRoutes() {
         <Route path="/gasmask/products" element={<Products />} />
         <Route path="/gasmask/inventory" element={<Products />} />
         <Route path="/gasmask/inventory-ops" element={<GasMaskInventoryOps />} />
-        <Route path="/gasmask/map" element={<MapPage />} />
+        <Route path="/gasmask/map" element={<Navigate to="/map" replace />} />
         <Route path="/gasmask/live-map" element={<LiveMap />} />
         <Route path="/gasmask/ambassadors" element={<Ambassadors />} />
         <Route path="/gasmask/ambassador-payouts" element={<AmbassadorPayouts />} />
@@ -1736,12 +1736,12 @@ export default function AppRoutes() {
         <Route path="/stores/order" element={<StoreOrder />} />
         {/* T3 K1: All Routes redirected to Route Manager (canonical) */}
         <Route path="/routes" element={<Navigate to="/grabba/routes" replace />} />
-        <Route path="/routes/optimizer" element={<RouteOptimizer />} />
-        <Route path="/routes/ops-center" element={<RouteOpsCenterEnhanced />} />
+        <Route path="/routes/optimizer" element={<Navigate to="/routes/command-center" replace />} />
+        <Route path="/routes/ops-center" element={<Navigate to="/route-ops-center" replace />} />
         <Route path="/routes/command-center" element={<RouteCommandCenter />} />
-        <Route path="/routes/command" element={<RouteCommandCenter />} />
-        <Route path="/gasmask/routes/command" element={<RouteCommandCenter />} />
-        <Route path="/dispatch/command" element={<RouteCommandCenter />} />
+        <Route path="/routes/command" element={<Navigate to="/routes/command-center" replace />} />
+        <Route path="/gasmask/routes/command" element={<Navigate to="/routes/command-center" replace />} />
+        <Route path="/dispatch/command" element={<Navigate to="/routes/command-center" replace />} />
         <Route path="/route-ops-center" element={<RouteOpsCenterEnhanced />} />
         <Route path="/ops-command-center" element={<OpsCommandCenter />} />
         {/* Route Optimizer - Floor 4 Planning Intelligence */}
@@ -2402,7 +2402,7 @@ export default function AppRoutes() {
         <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
         <Route path="/biker/home" element={<Navigate to="/portal/biker" replace />} />
         <Route path="/biker/admin" element={<BikerDashboard />} />
-        <Route path="/biker/route" element={<BikerTodaysRoutesPage />} />
+        <Route path="/biker/route" element={<Navigate to="/biker/routes" replace />} />
         <Route path="/biker/routes" element={<BikerTodaysRoutesPage />} />
 
         {/* Legacy payouts aliases (keep old links working) */}
@@ -2411,16 +2411,16 @@ export default function AppRoutes() {
 
         {/* Delivery & Logistics Department */}
         <Route path="/delivery" element={<DeliveryDashboard />} />
-        <Route path="/delivery/dashboard" element={<DeliveryDashboard />} />
+        <Route path="/delivery/dashboard" element={<Navigate to="/delivery" replace />} />
         <Route path="/delivery/deliveries" element={<DeliveriesBoard />} />
         <Route path="/delivery/orders" element={<OrdersDeliveriesPage />} />
         <Route path="/delivery/pool" element={<LiveDeliveryPool />} />
         <Route path="/delivery/multi-brand" element={<MultiBrandDeliveryPage />} />
         <Route path="/delivery/route-manager" element={<RouteManagerPage />} />
         <Route path="/delivery/routes/all" element={<AllRoutesPage />} />
-        <Route path="/delivery/route-optimizer" element={<RouteOptimizerPage />} />
+        <Route path="/delivery/route-optimizer" element={<Navigate to="/routes/command-center" replace />} />
         <Route path="/delivery/route-ops" element={<DeliveryRouteOpsCenter />} />
-        <Route path="/delivery/live-map" element={<LiveMapCommandCenter />} />
+        <Route path="/delivery/live-map" element={<Navigate to="/live-map" replace />} />
         <Route path="/delivery/autonomy-console" element={<AutonomyConsole />} />
         <Route path="/delivery/capacity" element={<DeliveryCapacityCommand />} />
         <Route path="/delivery-capacity" element={<Navigate to="/delivery/capacity" replace />} />
@@ -2747,11 +2747,11 @@ export default function AppRoutes() {
         <Route path="/driver/my-route/:deliveryId" element={<Navigate to="/delivery/my-route/:deliveryId" replace />} />
         <Route path="/me/home" element={<WorkerHome />} />
         <Route path="/me/driver" element={<WorkerHome />} />
-        <Route path="/operations/live-map" element={<LiveMapCommandCenter />} />
+        <Route path="/operations/live-map" element={<Navigate to="/live-map" replace />} />
         <Route path="/live-map" element={<LiveMapCommandCenter />} />
         <Route path="/wallet" element={<WalletPage />} />
         <Route path="/subscriptions" element={<Subscriptions />} />
-        <Route path="/expansion/capacity" element={<DeliveryCapacity />} />
+        <Route path="/expansion/capacity" element={<Navigate to="/delivery/capacity" replace />} />
 
         {/* Grabba Financial (no layout, stays in ProtectedNoLayout) */}
         <Route path="/grabba/financial-dashboard" element={<FinancialDashboard />} />
