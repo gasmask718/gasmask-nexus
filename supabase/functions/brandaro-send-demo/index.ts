@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 import { isSuppressed } from "../_shared/dnc.ts";
+import { sendSms } from "../_shared/sendSms.ts";
 
 
 const corsHeaders = {
@@ -130,14 +131,15 @@ Deno.serve(async (req) => {
       provider: channel === "sms" ? "twilio" : "email",
       destination,
       message_body: message,
-      send_status: sendResult.success ? "sent" : "failed",
+      send_status: sendResult.blocked ? "blocked" : sendResult.success ? "sent" : "failed",
       provider_message_id: sendResult.provider_message_id || null,
       failure_reason: sendResult.error || null,
       sent_at: sendResult.success ? new Date().toISOString() : null,
     });
 
-    // Log failure for retry if needed
-    if (!sendResult.success) {
+    // Log failure for retry if needed — but NEVER retry a suppression block:
+    // the recipient opted out, and a retry loop would keep hammering the gate.
+    if (!sendResult.success && !sendResult.blocked) {
       await supabase.from("brandaro_job_failures").insert({
         job_type: "send_demo",
         entity_type: "demo",
