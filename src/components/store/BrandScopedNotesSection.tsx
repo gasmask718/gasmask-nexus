@@ -72,8 +72,24 @@ interface CleanStoreNote {
   note_text: string;
   raw_note: string | null;
   brand_scope: string | null;
+  created_at: string | null;
   profile?: { name: string; role?: string } | null;
 }
+
+/** Category chip colors. Keep semantic and consistent across the OS. */
+const CATEGORY_CHIP: Record<string, string> = {
+  'owner confirmed': 'bg-green-500/15 text-green-700 border-green-500/30 hover:bg-green-500/20',
+  'correction': 'bg-amber-500/15 text-amber-700 border-amber-500/30 hover:bg-amber-500/20',
+  'route ledger': 'bg-blue-500/15 text-blue-700 border-blue-500/30 hover:bg-blue-500/20',
+  'field visit': 'bg-purple-500/15 text-purple-700 border-purple-500/30 hover:bg-purple-500/20',
+  'visit form': 'bg-indigo-500/15 text-indigo-700 border-indigo-500/30 hover:bg-indigo-500/20',
+  'verified online': 'bg-cyan-500/15 text-cyan-700 border-cyan-500/30 hover:bg-cyan-500/20',
+  'admin review': 'bg-rose-500/15 text-rose-700 border-rose-500/30 hover:bg-rose-500/20',
+  'note': 'bg-muted text-muted-foreground border-border',
+};
+
+const categoryChipClass = (category?: string | null) =>
+  CATEGORY_CHIP[(category || '').toLowerCase()] || 'bg-muted text-muted-foreground border-border';
 
 interface BrandScopedNotesSectionProps {
   storeId: string;
@@ -111,7 +127,7 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
           .eq('store_id', storeMasterId),
         supabase
           .from('store_notes')
-          .select('id, brand_scope, created_by, profile:profiles(name, role)')
+          .select('id, brand_scope, created_at, created_by, profile:profiles(name, role)')
           .eq('store_id', storeMasterId)
           .is('deleted_at', null),
       ]);
@@ -122,6 +138,7 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
       const rows = ((cleanRes.data || []) as any[]).map((n) => ({
         ...n,
         brand_scope: metaById.get(n.id)?.brand_scope ?? null,
+        created_at: metaById.get(n.id)?.created_at ?? null,
         profile: metaById.get(n.id)?.profile ?? null,
       })) as CleanStoreNote[];
 
@@ -434,7 +451,7 @@ function NotesList({
 
           {group.notes.map((note) => {
             const brandConfig = BRAND_SCOPES.find((b) => b.key === note.brand_scope) || BRAND_SCOPES[0];
-            const inferredDate = note.date_confidence !== 'explicit';
+            const inferredDate = note.date_confidence === 'import';
             return (
               <div
                 key={note.id}
@@ -448,16 +465,26 @@ function NotesList({
                         {brandConfig.icon} {brandConfig.label}
                       </Badge>
                       {note.category && (
-                        <Badge variant="outline" className="text-xs capitalize">
+                        <Badge
+                          variant="outline"
+                          className={`text-xs capitalize ${categoryChipClass(note.category)}`}
+                        >
                           {note.category}
                         </Badge>
                       )}
                     </div>
                     <NoteContentDisplay content={note.note_text} asHtml collapsedLines={4} className="text-base" />
                   </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Button variant="ghost" size="lg" className="h-10 w-10 p-0" onClick={() => onEdit(note)} title="Edit note">
-                      <Pencil className="h-5 w-5" />
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => onEdit(note)}
+                      title="Edit note"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      Edit
                     </Button>
                     <Button
                       variant="ghost"
