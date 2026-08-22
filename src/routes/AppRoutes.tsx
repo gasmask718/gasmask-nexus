@@ -1338,14 +1338,13 @@ export default function AppRoutes() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/about" element={<AboutPage />} />
-        <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/affiliates" element={<AffiliateProgramPage />} />
-        <Route path="/affiliates/dashboard" element={<AffiliateProgramPage />} />
+        <Route path="/affiliates/dashboard" element={<Navigate to="/affiliates" replace />} />
 
-        <Route path="/gasmask/locations" element={<GasMaskStoreLocator />} />
+        <Route path="/gasmask/locations" element={<Navigate to="/locations" replace />} />
         <Route path="/locations" element={<GasMaskStoreLocator />} />
       </Route>
 
@@ -1390,13 +1389,13 @@ export default function AppRoutes() {
       <Route path="/portal/login" element={<PortalLogin />} />
       {/* Client-facing portal: intentionally NOT staff-guarded — clients authenticate here and RLS scopes them to their own row */}
       <Route path="/funding-machine/portal" element={<FundingClientPortal />} />
-      <Route path="/funding-portal" element={<FundingClientPortal />} />
+      <Route path="/funding-portal" element={<Navigate to="/funding-machine/portal" replace />} />
       <Route path="/portal/register" element={<PortalRegister />} />
       <Route path="/portal/driver/login" element={<DriverLogin />} />
       <Route path="/portal/biker/login" element={<BikerLogin />} />
       {/* Public Ambassador Application Form */}
       <Route path="/apply" element={<ClipperApplication />} />
-      <Route path="/apply/clipper" element={<ClipperApplication />} />
+      <Route path="/apply/clipper" element={<Navigate to="/apply" replace />} />
       {/* Clipper Nation portal (approved clippers only — gated inside ClipperPortal) */}
       <Route path="/clipper/login" element={<ClipperLogin />} />
       <Route path="/clipper/portal" element={<ClipperPortal />} />
@@ -1483,7 +1482,7 @@ export default function AppRoutes() {
         <Route path="/security/audit" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/ambassador-requests" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><AmbassadorRequests /></RequireRole>} />
         <Route path="/admin/pending-users" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><PendingUsers /></RequireRole>} />
-        <Route path="/security/pending-users" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><PendingUsers /></RequireRole>} />
+        <Route path="/security/pending-users" element={<Navigate to="/admin/pending-users" replace />} />
 
         {/* Territory Control Center (Floor 0-2 visibility — read-only) */}
         <Route path="/territory" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryOverview /></RequireRole>} />
@@ -1518,56 +1517,56 @@ export default function AppRoutes() {
         {/* GasMask Brand Routes */}
         <Route path="/gasmask" element={<Dashboard />} />
         <Route path="/gasmask/driver" element={<Driver />} />
-        <Route path="/gasmask/team" element={<Team />} />
-        <Route path="/gasmask/training" element={<Training />} />
-        <Route path="/gasmask/missions" element={<Missions />} />
+        <Route path="/gasmask/team" element={<Navigate to="/team" replace />} />
+        <Route path="/gasmask/training" element={<Navigate to="/training" replace />} />
+        <Route path="/gasmask/missions" element={<Navigate to="/missions" replace />} />
         <Route path="/gasmask/leaderboard" element={<Leaderboard />} />
-        <Route path="/gasmask/rewards" element={<Rewards />} />
+        <Route path="/gasmask/rewards" element={<Navigate to="/rewards" replace />} />
         <Route path="/gasmask/territories" element={<Territories />} />
-        <Route path="/gasmask/expansion" element={<Expansion />} />
-        <Route path="/gasmask/expansion/regions" element={<ExpansionRegions />} />
-        <Route path="/gasmask/expansion/heatmap" element={<ExpansionHeatmap />} />
-        <Route path="/gasmask/templates" element={<Templates />} />
-        <Route path="/gasmask/reminders" element={<Reminders />} />
-        <Route path="/gasmask/sales" element={<Sales />} />
-        <Route path="/gasmask/sales/prospects" element={<SalesProspects />} />
-        <Route path="/gasmask/sales/prospects/new" element={<SalesProspectNew />} />
-        <Route path="/gasmask/sales/prospects/:id" element={<SalesProspectDetail />} />
-        <Route path="/gasmask/sales/report" element={<SalesReport />} />
-        <Route path="/gasmask/billing" element={<Billing />} />
+        <Route path="/gasmask/expansion" element={<Navigate to="/expansion" replace />} />
+        <Route path="/gasmask/expansion/regions" element={<Navigate to="/expansion/regions" replace />} />
+        <Route path="/gasmask/expansion/heatmap" element={<Navigate to="/expansion/heatmap" replace />} />
+        <Route path="/gasmask/templates" element={<Navigate to="/templates" replace />} />
+        <Route path="/gasmask/reminders" element={<Navigate to="/communications/reminders" replace />} />
+        <Route path="/gasmask/sales" element={<Navigate to="/sales" replace />} />
+        <Route path="/gasmask/sales/prospects" element={<Navigate to="/sales/prospects" replace />} />
+        <Route path="/gasmask/sales/prospects/new" element={<Navigate to="/sales/prospects/new" replace />} />
+        <Route path="/gasmask/sales/prospects/:id" element={<Navigate to="/sales/prospects" replace />} />
+        <Route path="/gasmask/sales/report" element={<Navigate to="/sales/report" replace />} />
+        <Route path="/gasmask/billing" element={<Navigate to="/billing" replace />} />
         <Route path="/billing" element={<Billing />} />
         <Route path="/collections" element={<CollectionsPage />} />
-        <Route path="/gasmask/billing-center" element={<BillingCenter />} />
-        <Route path="/gasmask/billing/invoices" element={<BillingInvoices />} />
-        <Route path="/gasmask/billing/invoices/new" element={<BillingInvoiceNew />} />
-        <Route path="/gasmask/payroll" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Payroll /></RequireRole>} />
-        <Route path="/gasmask/biker-payouts" element={<BikerPayouts />} />
+        <Route path="/gasmask/billing-center" element={<Navigate to="/billing-center" replace />} />
+        <Route path="/gasmask/billing/invoices" element={<Navigate to="/billing/invoices" replace />} />
+        <Route path="/gasmask/billing/invoices/new" element={<Navigate to="/billing/invoices/new" replace />} />
+        <Route path="/gasmask/payroll" element={<Navigate to="/payroll" replace />} />
+        <Route path="/gasmask/biker-payouts" element={<Navigate to="/payouts/bikers" replace />} />
         <Route path="/gasmask/delivery-capacity" element={<Navigate to="/delivery/capacity" replace />} />
-        <Route path="/gasmask/subscriptions" element={<Subscriptions />} />
-        <Route path="/gasmask/wallet" element={<WalletPage />} />
-        <Route path="/gasmask/analytics" element={<Analytics />} />
+        <Route path="/gasmask/subscriptions" element={<Navigate to="/subscriptions" replace />} />
+        <Route path="/gasmask/wallet" element={<Navigate to="/wallet" replace />} />
+        <Route path="/gasmask/analytics" element={<Navigate to="/analytics" replace />} />
         <Route path="/gasmask/routes" element={<RoutesPage />} />
         <Route path="/gasmask/routes/optimizer" element={<Navigate to="/routes/command-center" replace />} />
         <Route path="/gasmask/routes/ops-center" element={<RouteOpsCenter />} />
         <Route path="/gasmask/routes/:id" element={<GasMaskRouteIdRedirect />} />
-        <Route path="/gasmask/stores" element={<Stores />} />
-        <Route path="/gasmask/stores/:id" element={<StoreDetail />} />
-        <Route path="/gasmask/stores/:id/order" element={<StoreOrder />} />
-        <Route path="/gasmask/store-performance" element={<StorePerformance />} />
+        <Route path="/gasmask/stores" element={<Navigate to="/stores" replace />} />
+        <Route path="/gasmask/stores/:id" element={<Navigate to="/stores" replace />} />
+        <Route path="/gasmask/stores/:id/order" element={<Navigate to="/stores/order" replace />} />
+        <Route path="/gasmask/store-performance" element={<Navigate to="/stores/performance" replace />} />
         <Route path="/gasmask/store-intelligence" element={<StoreIntelligencePage />} />
-        <Route path="/gasmask/products" element={<Products />} />
-        <Route path="/gasmask/inventory" element={<Products />} />
+        <Route path="/gasmask/products" element={<Navigate to="/products" replace />} />
+        <Route path="/gasmask/inventory" element={<Navigate to="/products" replace />} />
         <Route path="/gasmask/inventory-ops" element={<GasMaskInventoryOps />} />
         <Route path="/gasmask/map" element={<Navigate to="/map" replace />} />
         <Route path="/gasmask/live-map" element={<LiveMap />} />
         <Route path="/gasmask/ambassadors" element={<Ambassadors />} />
-        <Route path="/gasmask/ambassador-payouts" element={<AmbassadorPayouts />} />
+        <Route path="/gasmask/ambassador-payouts" element={<Navigate to="/payouts/ambassadors" replace />} />
         <Route path="/gasmask/ambassador-regions" element={<AmbassadorRegions />} />
-        <Route path="/gasmask/wholesale" element={<Wholesale />} />
-        <Route path="/gasmask/wholesale/marketplace" element={<WholesaleMarketplace />} />
-        <Route path="/gasmask/wholesale/fulfillment" element={<WholesaleFulfillment />} />
-        <Route path="/gasmask/wholesale/:id" element={<WholesalerDetail />} />
-        <Route path="/gasmask/communications" element={<Communications />} />
+        <Route path="/gasmask/wholesale" element={<Navigate to="/wholesale" replace />} />
+        <Route path="/gasmask/wholesale/marketplace" element={<Navigate to="/wholesale/marketplace" replace />} />
+        <Route path="/gasmask/wholesale/fulfillment" element={<Navigate to="/wholesale/fulfillment" replace />} />
+        <Route path="/gasmask/wholesale/:id" element={<Navigate to="/wholesale" replace />} />
+        <Route path="/gasmask/communications" element={<Navigate to="/communications" replace />} />
         <Route path="/gasmask/settings" element={<BrandPlaceholder />} />
         <Route path="/gasmask/route-engine" element={<RouteEnginePage />} />
         <Route path="/gasmask/driver-route" element={<GasmaskDriverRoutePage />} />
@@ -1583,13 +1582,13 @@ export default function AppRoutes() {
         <Route path="/finance" element={<Navigate to="/funding-machine" replace />} />
         <Route path="/finance/funding" element={<Navigate to="/funding-machine" replace />} />
         <Route path="/finance/funding-requests" element={<FundingRequests />} />
-        <Route path="/finance/grants" element={<GrantsDashboard />} />
+        <Route path="/finance/grants" element={<Navigate to="/os/grants" replace />} />
         <Route path="/finance/credit-repair" element={<Navigate to="/funding-machine/credit-repair" replace />} />
         <Route path="/finance/chexsystems" element={<Navigate to="/funding-machine" replace />} />
-        <Route path="/finance/investment" element={<WealthEngineDashboard />} />
-        <Route path="/finance/trading" element={<WealthEngineDashboard />} />
-        <Route path="/finance/economic-analytics" element={<EconomicAnalytics />} />
-        <Route path="/finance/revenue-brain" element={<RevenueBrain />} />
+        <Route path="/finance/investment" element={<Navigate to="/os/wealth-engine" replace />} />
+        <Route path="/finance/trading" element={<Navigate to="/os/wealth-engine" replace />} />
+        <Route path="/finance/economic-analytics" element={<Navigate to="/analytics/economics" replace />} />
+        <Route path="/finance/revenue-brain" element={<Navigate to="/analytics/revenue-brain" replace />} />
         <Route path="/finance/opportunity-radar" element={<Navigate to="/opportunities" replace />} />
         <Route path="/finance/*" element={<BrandPlaceholder />} />
         <Route path="/loan-products" element={<LoanProducts />} />
@@ -1602,7 +1601,7 @@ export default function AppRoutes() {
 
         {/* Holdings */}
         <Route path="/holdings" element={<HoldingsOverview />} />
-        <Route path="/holdings/overview" element={<HoldingsOverview />} />
+        <Route path="/holdings/overview" element={<Navigate to="/holdings" replace />} />
         <Route path="/holdings/assets" element={<HoldingsAssets />} />
         <Route path="/holdings/airbnb" element={<HoldingsAirbnb />} />
         <Route path="/holdings/tenants" element={<HoldingsTenants />} />
@@ -1619,7 +1618,7 @@ export default function AppRoutes() {
         {/* T3 K10: Missions HQ shell → real Penthouse Mission Control */}
         <Route path="/missions-hq" element={<Navigate to="/penthouse/missions" replace />} />
         {/* T3 K11: orphan comm pages — redirect to canonical hub */}
-        <Route path="/communication-automation" element={<Navigate to="/settings/automation/communications" replace />} />
+        <Route path="/communication-automation" element={<Navigate to="/settings/automation" replace />} />
         <Route path="/communications-ai" element={<Navigate to="/communication/agents" replace />} />
         <Route path="/communication-insights" element={<Navigate to="/communication/analytics" replace />} />
         <Route path="/dynasty-automations" element={<DynastyAutomations />} />
@@ -1630,14 +1629,14 @@ export default function AppRoutes() {
 
         {/* Call Center */}
         <Route path="/call-center" element={<CallCenterDashboard />} />
-        <Route path="/call-center/dashboard" element={<CallCenterDashboard />} />
+        <Route path="/call-center/dashboard" element={<Navigate to="/call-center" replace />} />
         <Route path="/call-center/dialer" element={<CallCenterDialer />} />
         <Route path="/call-center/logs" element={<CallLogs />} />
         <Route path="/call-center/analytics" element={<CallCenterAnalytics />} />
         <Route path="/call-center/ai-agents" element={<AIAgents />} />
-        <Route path="/call-center/phone-numbers" element={<PhoneNumbers />} />
+        <Route path="/call-center/phone-numbers" element={<Navigate to="/call-center/numbers" replace />} />
         <Route path="/call-center/numbers" element={<PhoneNumbers />} />
-        <Route path="/call-center/monitoring" element={<LiveMonitoring />} />
+        <Route path="/call-center/monitoring" element={<Navigate to="/call-center/live-monitoring" replace />} />
         <Route path="/call-center/live-monitoring" element={<LiveMonitoring />} />
         <Route path="/call-center/messages" element={<Messages />} />
         <Route path="/call-center/emails" element={<Emails />} />
@@ -1648,7 +1647,7 @@ export default function AppRoutes() {
 
         {/* Legacy /callcenter/* → canonical /call-center/* (Pass 1B redirects; bookmarks preserved) */}
         <Route path="/callcenter" element={<Navigate to="/call-center" replace />} />
-        <Route path="/callcenter/dashboard" element={<Navigate to="/call-center/dashboard" replace />} />
+        <Route path="/callcenter/dashboard" element={<Navigate to="/call-center" replace />} />
         <Route path="/callcenter/numbers" element={<Navigate to="/call-center/numbers" replace />} />
         <Route path="/callcenter/logs" element={<Navigate to="/call-center/logs" replace />} />
         <Route path="/callcenter/ai" element={<Navigate to="/call-center/ai-agents" replace />} />
@@ -1726,7 +1725,7 @@ export default function AppRoutes() {
         {/* T3 K6: HR Payroll merged into Floor 5 Payroll Manager */}
         <Route path="/hr/payroll" element={<Navigate to="/grabba/payroll-manager" replace />} />
         <Route path="/my-hr" element={<MyHR />} />
-        <Route path="/me/hr" element={<MyHR />} />
+        <Route path="/me/hr" element={<Navigate to="/my-hr" replace />} />
 
         {/* Legacy Routes */}
         <Route path="/stores" element={<Stores />} />
@@ -1784,15 +1783,15 @@ export default function AppRoutes() {
         <Route path="/ambassadors/box-requests" element={<AmbassadorBoxRequests />} />
         <Route path="/ambassador-regions" element={<AmbassadorRegionsPage />} />
         <Route path="/ambassador-payouts" element={<Floor8PayoutsPage />} />
-        <Route path="/ambassadors/regions" element={<AmbassadorRegionsPage />} />
-        <Route path="/ambassadors/payouts" element={<Floor8PayoutsPage />} />
+        <Route path="/ambassadors/regions" element={<Navigate to="/ambassador-regions" replace />} />
+        <Route path="/ambassadors/payouts" element={<Navigate to="/ambassador-payouts" replace />} />
         <Route path="/expansion" element={<Expansion />} />
         <Route path="/expansion/regions" element={<ExpansionRegions />} />
         <Route path="/expansion/heatmap" element={<ExpansionHeatmap />} />
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/driver" element={<Navigate to="/delivery/driver" replace />} />
-        <Route path="/drivers/leaderboard" element={<Leaderboard />} />
-        <Route path="/drivers/payroll" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Payroll /></RequireRole>} />
+        <Route path="/drivers/leaderboard" element={<Navigate to="/gasmask/leaderboard" replace />} />
+        <Route path="/drivers/payroll" element={<Navigate to="/payroll" replace />} />
         {/* T2: de-dup Meta AI; /meta-ai is canonical (line 1448). Legacy /ai/meta redirects. */}
         <Route path="/ai/meta" element={<Navigate to="/meta-ai" replace />} />
         {/* T2 legacy sidebar redirects (kept so old bookmarks still resolve) */}
@@ -1802,7 +1801,7 @@ export default function AppRoutes() {
         <Route path="/brand-dashboard" element={<Navigate to="/brand/gasmask" replace />} />
         <Route path="/ai-ceo" element={<Navigate to="/system-operations/ai-ceo-control-room" replace />} />
         <Route path="/automation-settings" element={<Navigate to="/settings/automation" replace />} />
-        <Route path="/crm/backup" element={<Navigate to="/crm/data/backup" replace />} />
+        <Route path="/crm/backup" element={<Navigate to="/crm/data" replace />} />
         <Route path="/pod/generator" element={<Navigate to="/pod/generate" replace />} />
         <Route path="/communication/follow-up" element={<Navigate to="/communication/follow-ups" replace />} />
         <Route path="/influencer-campaigns" element={<Navigate to="/influencers/campaigns" replace />} />
@@ -1818,14 +1817,14 @@ export default function AppRoutes() {
         <Route path="/payouts/bikers" element={<BikerPayouts />} />
         {/* Floor 5 - Finance & Orders */}
         <Route path="/floor5" element={<Floor5Dashboard />} />
-        <Route path="/floor5/dashboard" element={<Floor5Dashboard />} />
-        <Route path="/floor5/invoices" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingInvoices /></RequireRole>} />
-        <Route path="/floor5/billing" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingCenter /></RequireRole>} />
-        <Route path="/floor5/payroll" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Payroll /></RequireRole>} />
-        <Route path="/floor5/unpaid" element={<UnpaidAccounts />} />
-        <Route path="/floor5/fulfillment" element={<WholesaleFulfillment />} />
+        <Route path="/floor5/dashboard" element={<Navigate to="/floor5" replace />} />
+        <Route path="/floor5/invoices" element={<Navigate to="/billing/invoices" replace />} />
+        <Route path="/floor5/billing" element={<Navigate to="/billing-center" replace />} />
+        <Route path="/floor5/payroll" element={<Navigate to="/payroll" replace />} />
+        <Route path="/floor5/unpaid" element={<Navigate to="/unpaid-accounts" replace />} />
+        <Route path="/floor5/fulfillment" element={<Navigate to="/wholesale/fulfillment" replace />} />
         <Route path="/billing" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Billing /></RequireRole>} />
-        <Route path="/billing/center" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingCenter /></RequireRole>} />
+        <Route path="/billing/center" element={<Navigate to="/billing-center" replace />} />
         <Route path="/billing-center" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingCenter /></RequireRole>} />
         <Route path="/billing/invoices" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingInvoices /></RequireRole>} />
         <Route path="/billing/invoices/new" element={<RequireRole allowedRoles={['owner','admin']} showLocked><BillingInvoiceNew /></RequireRole>} />
@@ -1848,7 +1847,7 @@ export default function AppRoutes() {
         <Route path="/crm/settings" element={<CRMSettingsPage />} />
         <Route path="/crm/user-access" element={<CRMUserAccessPage />} />
         <Route path="/crm/accept-invite" element={<AcceptCRMInvite />} />
-        <Route path="/crm/global" element={<GlobalCRMDashboard />} />
+        <Route path="/crm/global" element={<Navigate to="/crm" replace />} />
         <Route path="/crm/legacy" element={<GlobalCRM />} />
         <Route path="/crm/contact-management" element={<ContactManagementPage />} />
         <Route path="/crm/relationship-health" element={<RelationshipHealthRollup />} />
@@ -1863,7 +1862,7 @@ export default function AppRoutes() {
         {/* TopTier Partner CRM Routes */}
         <Route path="/crm/toptier-experience/partners" element={<TopTierPartnerDashboard />} />
         <Route path="/crm/toptier-experience/partners/all" element={<TopTierAllPartners />} />
-        <Route path="/crm/toptier-experience/partners/new" element={<TopTierAddPartner />} />
+        <Route path="/crm/toptier-experience/partners/new" element={<Navigate to="/crm/toptier-experience/partner/new" replace />} />
         <Route path="/crm/toptier-experience/partner/new" element={<TopTierAddPartner />} />
         <Route path="/crm/toptier-experience/partners/states" element={<TopTierPartnersByState />} />
         <Route path="/crm/toptier-experience/partners/profile/:partnerId" element={<TopTierPartnerProfile />} />
@@ -1887,10 +1886,10 @@ export default function AppRoutes() {
         <Route path="/crm/toptier-experience/deals/:dealId" element={<TopTierDealDetail />} />
         <Route path="/crm/toptier-experience/campaigns/:campaignId" element={<TopTierCampaignDetail />} />
         <Route path="/crm/toptier-experience/bookings" element={<TopTierRecentBookings />} />
-        <Route path="/crm/toptier-experience/bookings/new" element={<TopTierNewDeal />} />
-        <Route path="/crm/toptier-experience/bookings/recent" element={<TopTierRecentBookings />} />
+        <Route path="/crm/toptier-experience/bookings/new" element={<Navigate to={'/crm/toptier-experience/deals/new' + window.location.search} replace />} />
+        <Route path="/crm/toptier-experience/bookings/recent" element={<Navigate to="/crm/toptier-experience/bookings" replace />} />
         <Route path="/crm/toptier-experience/requests" element={<TopTierCustomerRequests />} />
-        <Route path="/crm/toptier-experience/requests/new" element={<TopTierCustomerRequests />} />
+        <Route path="/crm/toptier-experience/requests/new" element={<Navigate to="/crm/toptier-experience/requests" replace />} />
         <Route path="/crm/toptier-experience/requests/:requestId" element={<TopTierRequestDetail />} />
         <Route path="/crm/toptier-experience/assets/:assetId" element={<TopTierAssetDetail />} />
         
@@ -1946,7 +1945,6 @@ export default function AppRoutes() {
         {/* Companies */}
         <Route path="/companies" element={<Companies />} />
         <Route path="/companies/:id" element={<CompanyProfile />} />
-        <Route path="/unpaid-accounts" element={<UnpaidAccounts />} />
         <Route path="/driver-debt-collection" element={<DriverDebtCollection />} />
         <Route path="/brand/:brand" element={<BrandDashboard />} />
 
@@ -1968,7 +1966,7 @@ export default function AppRoutes() {
 
         {/* OS Procurement & Warehouse */}
         <Route path="/os/procurement" element={<ProcurementDashboard />} />
-        <Route path="/os/procurement/dashboard" element={<ProcurementDashboard />} />
+        <Route path="/os/procurement/dashboard" element={<Navigate to="/os/procurement" replace />} />
         <Route path="/os/procurement/suppliers" element={<ProcurementSuppliersPage />} />
         <Route path="/os/procurement/suppliers/:id" element={<ProcurementSupplierDetailPage />} />
         <Route path="/os/procurement/purchase-orders" element={<ProcurementPurchaseOrdersPage />} />
@@ -1978,7 +1976,7 @@ export default function AppRoutes() {
 
         {/* OS Inventory */}
         <Route path="/os/inventory" element={<InventoryDashboard />} />
-        <Route path="/os/inventory/dashboard" element={<InventoryDashboard />} />
+        <Route path="/os/inventory/dashboard" element={<Navigate to="/os/inventory" replace />} />
         <Route path="/os/inventory/products" element={<ProductsPage />} />
         <Route path="/os/inventory/product-inventory" element={<ProductInventoryPage />} />
         <Route path="/os/inventory/products/:productId" element={<ProductDetailPage />} />
@@ -2267,7 +2265,7 @@ export default function AppRoutes() {
         <Route path="/os/special-needs" element={<SpecialNeedsDashboard />} />
         {/* /os/funding removed — orphan mock page, real system is /funding-machine */}
         <Route path="/os/grants" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantsDashboard /></RequireRole>} />
-        <Route path="/os/grants/dashboard" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantsDashboard /></RequireRole>} />
+        <Route path="/os/grants/dashboard" element={<Navigate to="/os/grants" replace />} />
         <Route path="/os/grants/opportunities" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantOpportunities /></RequireRole>} />
         <Route path="/os/grants/applications" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantApplicationsPage /></RequireRole>} />
         <Route path="/os/grants/approved" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantApplicationsPage /></RequireRole>} />
@@ -2276,7 +2274,7 @@ export default function AppRoutes() {
         <Route path="/os/grants/businesses" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantBusinessProfiles /></RequireRole>} />
         <Route path="/os/grants/businesses/:id" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantBusinessProfileDetail /></RequireRole>} />
         <Route path="/os/grants/eligibility" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantEligibilityMatrix /></RequireRole>} />
-        <Route path="/os/grants/eligibility-matrix" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantEligibilityMatrix /></RequireRole>} />
+        <Route path="/os/grants/eligibility-matrix" element={<Navigate to="/os/grants/eligibility" replace />} />
         <Route path="/os/grants/apply/:packageId" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantApplicationPackage /></RequireRole>} />
         <Route path="/os/grants/:id" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantApplicationDetail /></RequireRole>} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
@@ -2295,7 +2293,7 @@ export default function AppRoutes() {
         <Route path="/funding-machine/velocity" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineVelocity /></RequireRole>} />
         <Route path="/funding-machine/tradeline-vault" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineTradelineVault /></RequireRole>} />
         <Route path="/funding-machine/tasks" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineTaskCards /></RequireRole>} />
-        <Route path="/funding-machine/morning-briefing" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineMorningBriefing /></RequireRole>} />
+        <Route path="/funding-machine/morning-briefing" element={<Navigate to="/funding-machine/briefing" replace />} />
         <Route path="/funding-machine/bill-guardian" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineBillGuardian /></RequireRole>} />
         <Route path="/funding-machine/deletion-letters" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineDeletionLetterEngine /></RequireRole>} />
         <Route path="/funding-machine/secure-intake" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineSecureIntake /></RequireRole>} />
@@ -2306,11 +2304,11 @@ export default function AppRoutes() {
         <Route path="/funding-machine/revenue" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineRevenue /></RequireRole>} />
         <Route path="/funding-machine/automation" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingApplicationAutomation /></RequireRole>} />
         {/* Validation-aligned route aliases + new module registrations */}
-        <Route path="/funding-machine/lenders" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineFundingMatrix /></RequireRole>} />
+        <Route path="/funding-machine/lenders" element={<Navigate to="/funding-machine/funding-matrix" replace />} />
         <Route path="/funding-machine/tradelines" element={<Navigate to="/funding-machine/tradeline-vault" replace />} />
         <Route path="/funding-machine/credit-unions" element={<Navigate to="/funding-machine/credit-union-intel" replace />} />
         <Route path="/funding-machine/briefing" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineMorningBriefing /></RequireRole>} />
-        <Route path="/funding-machine/grants" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><GrantFunderCRMPage /></RequireRole>} />
+        <Route path="/funding-machine/grants" element={<Navigate to="/os/grants/funder-crm" replace />} />
         <Route path="/funding-machine/clients" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineClientsList /></RequireRole>} />
         <Route path="/funding-machine/credit-stacking" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="Credit Stacking" description="Sequenced multi-lender credit stacking playbook" /></RequireRole>} />
         <Route path="/funding-machine/sba" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="SBA Loans" description="SBA 7(a), 504, and microloan pipeline" /></RequireRole>} />
@@ -2779,7 +2777,7 @@ export default function AppRoutes() {
         {/* Legacy ambassador route - redirect to new UI */}
         <Route path="/portal/ambassador" element={<Navigate to="/ambassador/dashboard" replace />} />
         <Route path="/portal/store" element={<StoreDashboard />} />
-        <Route path="/portal/store/dashboard" element={<StoreDashboard />} />
+        <Route path="/portal/store/dashboard" element={<Navigate to="/portal/store" replace />} />
         <Route path="/portal/store/products" element={<StoreProducts />} />
         <Route path="/portal/store/products/:productId" element={<StoreProducts />} />
         <Route path="/portal/store/cart" element={<StoreCart />} />
@@ -2889,7 +2887,7 @@ export default function AppRoutes() {
       <Route path="/grabba/communications" element={<Navigate to="/grabba/communication" replace />} />
       <Route path="/grabba/unified-upload" element={
         <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee']} showLocked>
+          <RequireRole allowedRoles={['admin', 'employee', 'wholesale', 'wholesaler']} showLocked>
             <Layout><GrabbaLayout><UnifiedUploadCenter /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
@@ -3058,13 +3056,7 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
-      <Route path="/grabba/store-master" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'driver', 'csr']}>
-            <Layout><GrabbaLayout><GrabbaCRM /></GrabbaLayout></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
+      <Route path="/grabba/store-master" element={<Navigate to="/grabba/crm" replace />} />
       <Route path="/grabba/brand" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
@@ -3072,13 +3064,7 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
-      <Route path="/grabba/brand-crm" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><GrabbaLayout><BrandSelector /></GrabbaLayout></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
+      <Route path="/grabba/brand-crm" element={<Navigate to="/grabba/brand" replace />} />
       <Route path="/grabba/brand/:brand" element={
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
@@ -3148,13 +3134,7 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
-      <Route path="/grabba/delivery-runs" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'driver', 'biker']}>
-            <Layout><GrabbaLayout><MultiBrandDelivery /></GrabbaLayout></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
+      <Route path="/grabba/delivery-runs" element={<Navigate to="/grabba/multi-brand-delivery" replace />} />
       {/* Multi-Brand Delivery canonical route */}
       <Route path="/grabba/multi-brand-delivery" element={
         <ProtectedRoute>
@@ -3197,13 +3177,7 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
-      <Route path="/grabba/upload-center" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'wholesale', 'wholesaler']}>
-            <Layout><GrabbaLayout><UnifiedUploadCenter /></GrabbaLayout></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
+      <Route path="/grabba/upload-center" element={<Navigate to="/grabba/unified-upload" replace />} />
 
       {/* Floor 8 — Ambassadors */}
       <Route path="/grabba/ambassadors" element={
@@ -4012,7 +3986,7 @@ export default function AppRoutes() {
           <Route path="analytics" element={<UTAnalytics />} />
           <Route path="ai-calling" element={<UnforgettableAICalling />} />
           <Route path="ai-calling/:callId" element={<UnforgettableAICallDetail />} />
-          <Route path="dashboard" element={<UnforgettableDashboard />} />
+          <Route path="dashboard" element={<Navigate to="/os/unforgettable" replace />} />
           <Route path="customer-service" element={<UnforgettableCustomerService />} />
           <Route path="media" element={<UnforgettableMedia />} />
           <Route path="media/:mediaId" element={<UnforgettableMediaDetail />} />
