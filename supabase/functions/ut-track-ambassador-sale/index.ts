@@ -63,22 +63,30 @@ Deno.serve(async (req) => {
     }).eq("id", ambassador.id);
     if (totalsErr) throw new Error(`ambassador totals write failed for ${ref_code} (referral row committed): ${errText(totalsErr)}`);
 
-    // SMS notification via Twilio connector gateway
+    // SMS notification via the send-sms chokepoint (suppression + legal-STOP,
+    // idempotency, outbound_messages). Transactional class: commission-earned
+    // notice for a sale that already happened.
+    // NOTE: this function cannot currently succeed in Nexus —
+    // ut_pub_ambassadors / ut_pub_referrals exist here but hold 0 rows; the
+    // live ambassador data is in UT's own backend project. See
+    // docs/comms/AMBASSADOR-SMS-CONVERSION-2026-08-22.md.
     const { data: profile } = await supabase.from("ut_profiles").select("phone").eq("id", ambassador.user_id).single();
     if (profile?.phone) {
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
       const TWILIO_PHONE = Deno.env.get("TWILIO_PHONE_NUMBER");
-      if (LOVABLE_API_KEY && TWILIO_API_KEY && TWILIO_PHONE) {
-        await fetch(`${GATEWAY_URL}/Messages.json`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "X-Connection-Api-Key": TWILIO_API_KEY, "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            To: profile.phone,
-            From: TWILIO_PHONE,
-            Body: `💰 You earned $${commissionAmount.toFixed(2)} commission! Total earned: $${newTotalEarned.toFixed(2)}${newTier !== ambassador.tier ? ` 🎉 Upgraded to ${newTier.toUpperCase()} tier!` : ""}`,
-          })
+      if (TWILIO_PHONE) {
+        const sms = await sendSms({
+          to: profile.phone,
+          body: `💰 You earned $${commissionAmount.toFixed(2)} commission! Total earned: $${newTotalEarned.toFixed(2)}${newTier !== ambassador.tier ? ` 🎉 Upgraded to ${newTier.toUpperCase()} tier!` : ""}`,
+          from: TWILIO_PHONE,
+          idempotencyKey: `ut-amb-sale-${order_id}-${ambassador.user_id}`,
+          sendClass: "transactional",
+          skipCooldown: true,
+          purpose: "ut_ambassador_sale_commission",
+          metadata: { order_id, ambassador_id: ambassador.user_id },
         });
+        if (!sms.success) {
+          console.error("SMS via send-sms:", sms.status, sms.errorMessage);
+        }
       }
     }
 
