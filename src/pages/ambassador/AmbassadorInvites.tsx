@@ -31,6 +31,14 @@ function InvitesContent() {
   const sendInvite = useSendAmbassadorInvite();
   const resendInvite = useResendAmbassadorInvite();
 
+  const inviteIds = useMemo(() => invites.map(i => i.id), [invites]);
+  const { data: sendEvents = [] } = useInviteSendEvents(inviteIds);
+  const eventsByInvite = useMemo(() => {
+    const map: Record<string, typeof sendEvents> = {};
+    for (const e of sendEvents) (map[e.invite_id] ||= []).push(e);
+    return map;
+  }, [sendEvents]);
+
   const stats = {
     total: invites.length,
     pending: invites.filter(i => i.status === 'pending').length,
@@ -50,6 +58,10 @@ function InvitesContent() {
       phone: phone || undefined,
       channel,
     });
+    const failed = (result?.send_log || []).filter((l: any) => !l.ok);
+    if (failed.length) {
+      toast.warning(`Some channels failed: ${failed.map((l: any) => l.channel).join(', ')}`);
+    }
     if (result?.link) setGeneratedLink(result.link);
   };
 
@@ -135,6 +147,7 @@ function InvitesContent() {
                 <TableHead>Contact</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead>Delivered</TableHead>
                 <TableHead>Expires</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -142,11 +155,11 @@ function InvitesContent() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : invites.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No invites yet. Create your first invite to start recruiting.
                   </TableCell>
                 </TableRow>
@@ -160,6 +173,9 @@ function InvitesContent() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDistanceToNow(new Date(invite.created_at), { addSuffix: true })}
+                  </TableCell>
+                  <TableCell>
+                    <InviteDeliveryInfo events={eventsByInvite[invite.id] || []} />
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {invite.status === 'pending'
