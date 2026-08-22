@@ -104,8 +104,14 @@ export function useSendFieldSms(storeId?: string) {
         to_phone: vars.to_phone ?? null,
         contact_id: vars.contact_id ?? null,
       }),
-    onSuccess: () => {
-      toast.success('Text sent');
+    onSuccess: (data: any) => {
+      // Suppression is a named outcome, not an error: the worker must know the
+      // text did NOT go out and that a call is the honest fallback.
+      if (data?.suppressed) {
+        toast.warning(data.message || 'Store has opted out of texts — not sent. Call instead.');
+      } else {
+        toast.success('Text sent');
+      }
       qc.invalidateQueries({ queryKey: ['field-store-comms', storeId] });
     },
     onError: (e: Error) => toast.error(e.message || 'Could not send text'),
