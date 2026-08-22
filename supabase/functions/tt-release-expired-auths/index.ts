@@ -11,6 +11,8 @@
 // so ops captures or releases before Stripe's ~7-day auth limit.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms } from "../_shared/sendSms.ts";
+import { recordDispatchSuppressed } from "../_shared/dispatchOutcome.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,20 +42,35 @@ async function cancelPI(stripeKey: string, pi: string): Promise<{ ok: boolean; s
   }
 }
 
-async function smsCustomer(to: string, body: string) {
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const tok = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const from = Deno.env.get("TT_PHONE_NUMBER");
-  if (!sid || !tok || !from || !to) return;
-  try {
-    await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-      method: "POST",
-      headers: { Authorization: `Basic ${btoa(`${sid}:${tok}`)}`, "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ To: to, From: from, Body: body }),
+// Group C (transactional): "no provider found, card not charged" notice to
+// the booking's own customer, sent to the number captured on that booking.
+// Routes through send-sms (suppression + idempotency + outbound_messages row).
+async function smsCustomer(supabase: any, bk: any, body: string, idemKey: string) {
+  if (!bk.client_phone) return { skipped: true, blocked: false };
+  const res = await sendSms({
+    to: bk.client_phone,
+    body,
+    sendClass: "transactional",
+    purpose: "tt_auth_released",
+    idempotencyKey: idemKey,
+    from: Deno.env.get("TT_PHONE_NUMBER"),
+    skipCooldown: true,
+    metadata: { booking_reference: bk.booking_reference },
+  });
+  if (res.blocked) {
+    // Suppression-skipped, made visible — not an alert, a queryable row.
+    await recordDispatchSuppressed(supabase, {
+      bookingId: bk.id,
+      bookingReference: bk.booking_reference,
+      recipientPhone: bk.client_phone,
+      recipientName: "customer",
+      sendClass: "transactional",
+      reason: res.errorMessage || res.status,
     });
-  } catch (e) {
-    console.error("[tt-release-expired-auths] customer SMS failed:", e);
+  } else if (!res.success) {
+    console.error("[tt-release-expired-auths] customer SMS failed:", res.status, res.errorMessage);
   }
+  return res;
 }
 
 Deno.serve(async (req) => {
@@ -65,7 +82,7 @@ Deno.serve(async (req) => {
   );
 
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-  const summary = { released: 0, skipped: 0, errored: 0, stale_alerted: 0 };
+  const summary = { released: 0, skipped: 0, errored: 0, stale_alerted: 0, customer_sms_blocked: 0 };
 
   if (!stripeKey) {
     return new Response(JSON.stringify({ error: "STRIPE_SECRET_KEY missing" }), {
@@ -106,10 +123,13 @@ Deno.serve(async (req) => {
         message: `Released auth for ${bk.booking_reference} (PI ${bk.stripe_payment_intent_id}) — no partner accepted within window.`,
       });
       if (bk.client_phone) {
-        await smsCustomer(
-          bk.client_phone,
+        const smsRes: any = await smsCustomer(
+          supabase,
+          bk,
           `TopTier: We couldn't confirm a provider for your ${bk.service_name || "booking"} ${bk.scheduled_at ? "on " + new Date(bk.scheduled_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }) : ""}. Your card was not charged. Ref ${bk.booking_reference}.`,
+          `tt-auth-release-${bk.id}`,
         );
+        if (smsRes?.blocked) summary.customer_sms_blocked++;
       }
       summary.released++;
     }
@@ -144,10 +164,13 @@ Deno.serve(async (req) => {
         message: `Released auth for ${bk.booking_reference} — all partners declined.`,
       });
       if (bk.client_phone) {
-        await smsCustomer(
-          bk.client_phone,
+        const smsRes: any = await smsCustomer(
+          supabase,
+          bk,
           `TopTier: We couldn't secure a provider for ${bk.booking_reference}. Your card was not charged.`,
+          `tt-auth-release-declined-${bk.id}`,
         );
+        if (smsRes?.blocked) summary.customer_sms_blocked++;
       }
       summary.released++;
     }

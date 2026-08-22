@@ -210,6 +210,40 @@ async function probeDeployed(fn: string): Promise<{ deployed: boolean; detail: s
   return result;
 }
 
+/**
+ * Same deployed/not-deployed rule as probeDeployed, but for JSON APIs.
+ * send-sms is the outbound chokepoint for campaign/transactional/workforce
+ * traffic — dispatch now fails if it 5xx's — but it expects a JSON body, so
+ * the form-encoded webhook probe would get a 500 from `req.json()` throwing
+ * and read a LIVE function as missing. POSTing `{}` gets a 400 ("Missing
+ * required fields") from live code: that is the healthy answer.
+ */
+async function probeDeployedJson(fn: string): Promise<{ deployed: boolean; detail: string }> {
+  const key = `json:${fn}`;
+  const hit = deployProbeCache.get(key);
+  if (hit) return hit;
+  let result: { deployed: boolean; detail: string };
+  try {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    const ourCode =
+      (r.status >= 200 && r.status < 300) ||
+      r.status === 400 || r.status === 401 || r.status === 403 ||
+      r.status === 405 || r.status === 422;
+    result = {
+      deployed: ourCode,
+      detail: `HTTP ${r.status}${r.status === 400 ? " (schema reject — handler live)" : ""}`,
+    };
+  } catch (e) {
+    result = { deployed: false, detail: `unreachable: ${(e as Error).message}` };
+  }
+  deployProbeCache.set(key, result);
+  return result;
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // LAYER 2: Webhook config — phone numbers + messaging services
 // ────────────────────────────────────────────────────────────────────────────
@@ -348,6 +382,19 @@ async function checkFunctionDeployment(): Promise<Result[]> {
       detail: { probe: probe.detail },
     });
   }
+  // send-sms: the outbound chokepoint every campaign/transactional/workforce
+  // send routes through. Dispatch fails when it 5xx's, so it gets watched
+  // like the webhooks. JSON probe — see probeDeployedJson.
+  const smsProbe = await probeDeployedJson("send-sms");
+  out.push({
+    layer: "function_deployment",
+    target: "send-sms",
+    status: smsProbe.deployed ? "pass" : "fail",
+    message: smsProbe.deployed
+      ? `Deployed and answering (${smsProbe.detail})`
+      : `Unhealthy: ${smsProbe.detail} — ALL outbound SMS (dispatch included) is down`,
+    detail: { probe: smsProbe.detail },
+  });
   return out;
 }
 

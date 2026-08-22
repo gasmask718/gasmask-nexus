@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms } from "../_shared/sendSms.ts";
+import { sendTwilioSms } from "../_shared/twilioSend.ts";
+import { recordDispatchSuppressed } from "../_shared/dispatchOutcome.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -90,38 +93,67 @@ function scorePartner(
   return Math.round(score * 10) / 10;
 }
 
-async function sendSMS(
-  sid: string,
-  token: string,
-  from: string,
+// Group D (workforce): dispatch offers to contracted/approved partners.
+// Routes through send-sms: legal-STOP suppression, idempotency, and the
+// outbound_messages audit row. A suppression-skipped offer is recorded as a
+// named outcome (tt_notifications_log: dispatch_suppressed), not dropped.
+async function sendPartnerSms(
+  supabase: any,
+  booking: any,
   to: string,
-  body: string
-) {
-  // TWILIO_ACCOUNT_SID must be the real AC-prefixed Account SID (no rewriting).
-  const fixedSid = sid;
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${fixedSid}/Messages.json`;
-  const auth = btoa(`${fixedSid}:${token}`);
-  await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({ To: to, From: from, Body: body }),
+  partnerName: string | null,
+  partnerId: string | null,
+  body: string,
+  idemKey: string
+): Promise<{ sent: boolean; blocked: boolean; status: string }> {
+  const fromPhone = Deno.env.get("TT_PHONE_NUMBER");
+  if (!fromPhone) {
+    console.error("[tt-auto-dispatch] TT_PHONE_NUMBER not set, partner SMS not sent");
+    return { sent: false, blocked: false, status: "from_missing" };
+  }
+  const r = await sendSms({
+    to,
+    body,
+    sendClass: "workforce",
+    purpose: "tt_dispatch_offer",
+    idempotencyKey: idemKey,
+    from: fromPhone,
+    skipCooldown: true,
+    metadata: { booking_reference: booking.booking_reference },
   });
+  if (r.blocked) {
+    await recordDispatchSuppressed(supabase, {
+      bookingId: booking.id,
+      bookingReference: booking.booking_reference,
+      recipientPhone: to,
+      recipientName: partnerName,
+      partnerId,
+      sendClass: "workforce",
+      reason: r.errorMessage || r.status,
+    });
+  } else if (!r.success) {
+    console.error("[tt-auto-dispatch] partner SMS failed:", r.status, r.errorMessage);
+  }
+  return { sent: r.success, blocked: r.blocked, status: r.status };
 }
 
-async function alertDavid(
-  sid: string | undefined,
-  token: string | undefined,
-  from: string | undefined,
-  davidPhone: string | undefined,
-  msg: string
-) {
-  if (sid && token && from && davidPhone) {
-    await sendSMS(sid, token, from, davidPhone, msg);
-  } else {
-    console.log("[DAVID ALERT — no creds]", msg);
+// Group A (internal): ops escalations to a staff handset — twilioSend
+// in-process, so alerts never queue behind campaign traffic.
+async function alertDavid(msg: string) {
+  const davidPhone = Deno.env.get("DAVID_PHONE_NUMBER");
+  if (!davidPhone) {
+    console.log("[DAVID ALERT — no phone]", msg);
+    return;
+  }
+  const r = await sendTwilioSms({
+    to: davidPhone,
+    body: msg,
+    suppressionClass: "internal",
+    source: "tt-auto-dispatch",
+    from: Deno.env.get("TT_PHONE_NUMBER"),
+  });
+  if (!r.success) {
+    console.error("[tt-auto-dispatch] David alert failed:", r.status, r.errorMessage);
   }
 }
 
@@ -157,11 +189,7 @@ async function tryBackupOrFallback(
   pickupCity: string,
   bookingValue: number,
   payoutAmount: number,
-  excludePartnerId: string,
-  twilioSid: string | undefined,
-  twilioToken: string | undefined,
-  fromPhone: string | undefined,
-  davidPhone: string | undefined
+  excludePartnerId: string
 ): Promise<Response> {
   // ── Try backup partner ──
   if (
@@ -178,7 +206,6 @@ async function tryBackupOrFallback(
 
     if (backup?.phone) {
       await alertDavid(
-        twilioSid, twilioToken, fromPhone, davidPhone,
         `🔄 BACKUP DISPATCH\n` +
         `Vehicle: ${vehicle.name}\n` +
         `Primary declined/expired\n` +
@@ -191,9 +218,10 @@ async function tryBackupOrFallback(
       const expiresAt = new Date(Date.now() + 20 * 60 * 1000).toISOString();
       const msg = buildPartnerSMS(booking, serviceType, payoutAmount, true, 20);
 
-      if (twilioSid && twilioToken && fromPhone) {
-        await sendSMS(twilioSid, twilioToken, fromPhone, backup.phone, msg);
-      }
+      const backupSms = await sendPartnerSms(
+        supabase, booking, backup.phone, backup.business_name, backup.id,
+        msg, `tt-auto-backup-${booking.id}-${backup.id}`
+      );
 
       const { data: dispatchReq } = await supabase
         .from("tt_dispatch_requests")
@@ -240,6 +268,8 @@ async function tryBackupOrFallback(
           payout: payoutAmount,
           expires_at: expiresAt,
           dispatch_request_id: dispatchReq?.id,
+          partner_sms: backupSms.status,
+          partner_sms_blocked: backupSms.blocked,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -248,7 +278,6 @@ async function tryBackupOrFallback(
 
   // ── No backup — alert David ──
   await alertDavid(
-    twilioSid, twilioToken, fromPhone, davidPhone,
     `⚠️ VEHICLE DISPATCH FALLBACK\n` +
     `Vehicle: ${vehicle.name}\n` +
     `Primary + backup both unavailable\n` +
@@ -298,7 +327,6 @@ async function tryBackupOrFallback(
       .eq("id", booking.id);
 
     await alertDavid(
-      twilioSid, twilioToken, fromPhone, davidPhone,
       `🚨 ALL DISPATCH PATHS EXHAUSTED\n` +
       `Vehicle: ${vehicle.name}\n` +
       `Ref: ${booking.booking_reference}\n` +
@@ -320,9 +348,12 @@ async function tryBackupOrFallback(
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
   const msg = buildPartnerSMS(booking, serviceType, payoutAmount, true, 15);
 
-  if (twilioSid && twilioToken && fromPhone && fallback.phone) {
-    await sendSMS(twilioSid, twilioToken, fromPhone, fallback.phone, msg);
-  }
+  const fallbackSms = fallback.phone
+    ? await sendPartnerSms(
+        supabase, booking, fallback.phone, fallback.business_name, fallback.id,
+        msg, `tt-auto-fallback-${booking.id}-${fallback.id}`
+      )
+    : { sent: false, blocked: false, status: "no_phone" };
 
   const { data: dispatchReq } = await supabase
     .from("tt_dispatch_requests")
@@ -365,7 +396,7 @@ async function tryBackupOrFallback(
     channel: "sms",
     recipient: fallback.phone,
     message: `Fallback dispatch to ${fallback.business_name}`,
-    status: "sent",
+    status: fallbackSms.sent ? "sent" : fallbackSms.blocked ? "blocked" : "failed",
   });
 
   return new Response(
@@ -379,6 +410,8 @@ async function tryBackupOrFallback(
       expires_at: expiresAt,
       window_minutes: 15,
       dispatch_request_id: dispatchReq?.id,
+      partner_sms: fallbackSms.status,
+      partner_sms_blocked: fallbackSms.blocked,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
@@ -403,10 +436,8 @@ serve(async (req) => {
     Deno.env.get("PUBLIC_SITE_SERVICE_ROLE_KEY")!
   );
 
-  const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const twilioToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const fromPhone = Deno.env.get("TT_PHONE_NUMBER");
-  const davidPhone = Deno.env.get("DAVID_PHONE_NUMBER");
+  // Twilio credentials + sender live in send-sms / twilioSend now; this
+  // function no longer reads them directly.
 
   try {
     const { booking_id, exclude_partner_id } = await req.json();
@@ -466,15 +497,13 @@ serve(async (req) => {
           return await tryBackupOrFallback(
             supabase, publicClient, booking, vehicle,
             serviceType, pickupCity, bookingValue,
-            payoutAmount, exclude_partner_id,
-            twilioSid, twilioToken, fromPhone, davidPhone
+            payoutAmount, exclude_partner_id
           );
         }
 
         if (dispatchPhone) {
           // Alert David
           await alertDavid(
-            twilioSid, twilioToken, fromPhone, davidPhone,
             `🚗 VEHICLE DIRECT DISPATCH\n` +
             `Vehicle: ${vehicle.name}\n` +
             `Partner: ${vehicle.partner_name}\n` +
@@ -491,9 +520,10 @@ serve(async (req) => {
           const partnerMsg = buildPartnerSMS(booking, serviceType, payoutAmount, false, 30);
 
           // Send SMS to vehicle partner
-          if (twilioSid && twilioToken && fromPhone && dispatchPhone) {
-            await sendSMS(twilioSid, twilioToken, fromPhone, dispatchPhone, partnerMsg);
-          }
+          const vehicleSms = await sendPartnerSms(
+            supabase, booking, dispatchPhone, vehicle.partner_name, vehicle.partner_id,
+            partnerMsg, `tt-auto-vehicle-${booking.id}-${vehicle.partner_id}`
+          );
 
           // Log dispatch request
           const { data: dispatchReq } = await supabase
@@ -539,7 +569,7 @@ serve(async (req) => {
             channel: "sms",
             recipient: dispatchPhone,
             message: `Direct dispatch to ${vehicle.partner_name} for ${vehicle.name}`,
-            status: "sent",
+            status: vehicleSms.sent ? "sent" : vehicleSms.blocked ? "blocked" : "failed",
           });
 
           return new Response(
@@ -554,6 +584,8 @@ serve(async (req) => {
               expires_at: expiresAt,
               window_minutes: 30,
               dispatch_request_id: dispatchReq?.id,
+              partner_sms: vehicleSms.status,
+              partner_sms_blocked: vehicleSms.blocked,
             }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
@@ -561,7 +593,6 @@ serve(async (req) => {
 
         // Phone missing — alert David
         await alertDavid(
-          twilioSid, twilioToken, fromPhone, davidPhone,
           `⚠️ DISPATCH PHONE MISSING\n` +
           `Vehicle: ${vehicle.name}\n` +
           `Partner: ${vehicle.partner_name}\n` +
@@ -574,7 +605,6 @@ serve(async (req) => {
       // Vehicle found but no partner assigned
       if (vehicle && !vehicle.partner_id) {
         await alertDavid(
-          twilioSid, twilioToken, fromPhone, davidPhone,
           `⚠️ NO PARTNER ASSIGNED\n` +
           `Vehicle: ${vehicle.name} has no partner.\n` +
           `Booking: ${booking.booking_reference}\n` +
@@ -617,7 +647,6 @@ serve(async (req) => {
 
     // Alert David
     await alertDavid(
-      twilioSid, twilioToken, fromPhone, davidPhone,
       `🔔 NEW TOPTIER BOOKING\n` +
       `Service: ${serviceType.replace(/_/g, " ").toUpperCase()}\n` +
       `Client: ${booking.client_name}\n` +
@@ -697,9 +726,12 @@ serve(async (req) => {
       .select()
       .single();
 
-    if (twilioSid && twilioToken && fromPhone && bestPartner.phone) {
-      await sendSMS(twilioSid, twilioToken, fromPhone, bestPartner.phone, partnerMsg);
-    }
+    const categorySms = bestPartner.phone
+      ? await sendPartnerSms(
+          supabase, booking, bestPartner.phone, bestPartner.business_name, bestPartner.id,
+          partnerMsg, `tt-auto-category-${booking.id}-${bestPartner.id}`
+        )
+      : { sent: false, blocked: false, status: "no_phone" };
 
     await supabase
       .from("tt_bookings")
@@ -716,7 +748,7 @@ serve(async (req) => {
       channel: "sms",
       recipient: bestPartner.phone,
       message: `Auto-dispatched ${booking.booking_reference} to ${bestPartner.business_name}`,
-      status: "sent",
+      status: categorySms.sent ? "sent" : categorySms.blocked ? "blocked" : "failed",
     });
 
     return new Response(
@@ -730,6 +762,8 @@ serve(async (req) => {
         expires_at: expiresAt,
         window_minutes: expiryMinutes,
         dispatch_request_id: dispatchReq?.id,
+        partner_sms: categorySms.status,
+        partner_sms_blocked: categorySms.blocked,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
