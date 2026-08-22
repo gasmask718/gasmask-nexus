@@ -320,11 +320,22 @@ async function checkWebhookConfig(): Promise<Result[]> {
         } else if (!url) {
           status = "fail";
           msg = `inbound_request_url EMPTY and use_inbound_webhook_on_number=false — inbound will be dropped`;
-        } else if (url === CANONICAL.sms) {
-          msg = `Inbound → canonical SMS webhook`;
+        } else if (url === CANONICAL.sms || url.split("?")[0] === CANONICAL.sms) {
+          // Path-only match: canonical function carrying a ?biz= routing param
+          // is still canonical — the param selects the brand, not the handler.
+          const biz = new URLSearchParams(url.split("?")[1] || "").get("biz");
+          msg = biz
+            ? `Inbound → canonical SMS webhook (biz='${biz}')`
+            : `Inbound → canonical SMS webhook`;
         } else if (url.includes("supabase.co/functions/v1/")) {
-          status = "warn";
-          msg = `Inbound → '${url}' (non-canonical Supabase function)`;
+          const foreignRef = url.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1] || "";
+          const ownership = INTENTIONAL_FOREIGN_MS_DESTINATIONS[foreignRef];
+          if (ownership) {
+            msg = `Inbound → ${ownership} (intentional foreign project — documented, do not "fix")`;
+          } else {
+            status = "warn";
+            msg = `Inbound → '${url}' (non-canonical Supabase function)`;
+          }
         } else {
           status = "fail";
           msg = `Inbound → '${url}' (NOT a Supabase function — Twilio will get HTML and 12200)`;
