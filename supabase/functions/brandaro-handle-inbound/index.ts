@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
         sender_phone: senderPhone,
         intent_detected: intent,
         requires_va: requiresVa,
-        ai_auto_responded: !!aiResponse,
+        ai_auto_responded: autoReplySent,
         ai_response: aiResponse,
       })
       .select()
@@ -238,13 +238,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // For Twilio webhook, return TwiML
+    // For Twilio webhook, return EMPTY TwiML. The reply already went (or was
+    // deliberately suppressed) through send-sms above — a TwiML <Message>
+    // here would bypass the suppression gate and double-send.
     if (contentType.includes("application/x-www-form-urlencoded")) {
-      const twiml = aiResponse
-        ? `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(aiResponse)}</Message></Response>`
-        : `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`;
-      
-      return new Response(twiml, {
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`, {
         headers: { ...corsHeaders, "Content-Type": "text/xml" },
       });
     }
