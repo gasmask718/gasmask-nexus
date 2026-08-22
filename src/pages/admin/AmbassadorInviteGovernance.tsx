@@ -185,6 +185,7 @@ export default function AmbassadorInviteGovernance() {
                 <TableHead>Invited By</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead>Delivered</TableHead>
                 <TableHead>Expires</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -192,11 +193,11 @@ export default function AmbassadorInviteGovernance() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">Loading...</TableCell>
+                  <TableCell colSpan={7} className="text-center py-8">Loading...</TableCell>
                 </TableRow>
               ) : filteredInvites.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No invites found
                   </TableCell>
                 </TableRow>
@@ -213,6 +214,9 @@ export default function AmbassadorInviteGovernance() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {format(new Date(inv.created_at), 'MMM d, yyyy HH:mm')}
+                  </TableCell>
+                  <TableCell>
+                    <InviteDeliveryInfo events={eventsByInvite[inv.id] || []} />
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {inv.status === 'pending'
@@ -274,6 +278,51 @@ export default function AmbassadorInviteGovernance() {
             <Button variant="outline" onClick={() => setRevokeTarget(null)}>Cancel</Button>
             <Button variant="destructive" onClick={handleRevoke} disabled={revokeInvite.isPending}>
               {revokeInvite.isPending ? 'Revoking...' : 'Revoke Invite'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create & Send Dialog */}
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Ambassador Invite</DialogTitle>
+            <DialogDescription>
+              Creates a single-use invite (expires in 48 hours) and delivers the link over the channels you pick.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Name (optional)</Label>
+              <Input placeholder="Invitee name" value={newName} onChange={e => setNewName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input placeholder="email@example.com" type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input placeholder="+1..." type="tel" value={newPhone} onChange={e => setNewPhone(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Send via</Label>
+              <select
+                value={newChannel}
+                onChange={e => setNewChannel(e.target.value as 'sms' | 'email' | 'both')}
+                className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+              >
+                <option value="sms">SMS</option>
+                <option value="email">Email</option>
+                <option value="both">Both</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button onClick={handleCreateSend} disabled={sendInvite.isPending}>
+              <Send className="h-4 w-4 mr-2" />
+              {sendInvite.isPending ? 'Sending...' : 'Create & Send'}
             </Button>
           </DialogFooter>
         </DialogContent>
