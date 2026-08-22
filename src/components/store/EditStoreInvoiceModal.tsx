@@ -271,7 +271,14 @@ export function EditStoreInvoiceModal({
         if (error) throw new Error(`Line removal failed: ${error.message}`);
       }
 
-
+      // If this invoice was finalized and we reopened it to edit, lock it again.
+      if (reopened) {
+        const { error: finErr } = await (supabase as any).rpc('finalize_invoice', {
+          p_invoice_id: invoice.id,
+          p_user_id: user?.id ?? 'manual',
+        });
+        if (finErr) throw new Error(`Changes saved, but re-finalize failed: ${finErr.message}`);
+      }
 
       return invoice.id;
     },
