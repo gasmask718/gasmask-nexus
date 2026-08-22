@@ -423,6 +423,9 @@ serve(async (req) => {
         success: true,
         dispatched: partners.length,
         notifications,
+        // tt-* pattern: suppression-skipped partners are named, not silent.
+        suppressed: suppressedPartners.length,
+        suppressed_partners: suppressedPartners.length ? suppressedPartners : undefined,
         elapsed_ms: Date.now() - startTime,
       });
     }
@@ -780,10 +783,16 @@ serve(async (req) => {
 
       if (request.customer_phone) {
         const smsBody = `🚌 Your Coach Bus is Available!\n${request.pickup_city} → ${request.dropoff_city}\n${request.trip_date || "TBD"}\nPrice: $${finalCustomerPrice.toLocaleString()}\n\nConfirm: ${approveUrl}`;
-        const smsResult = await sendSMS(request.customer_phone, smsBody);
+        // Customer, post-quote = transactional. One request = one auto-offer.
+        const smsResult = await sendSMS(request.customer_phone, smsBody, {
+          sendClass: "transactional",
+          idempotencyKey: `cb-auto-offer-${request.id}`,
+          purpose: "cb_auto_customer_offer_sms",
+          skipCooldown: true,
+        });
         offerResults.push({ channel: "sms", ...smsResult });
         await logComm(supabase, request.id, null, "outbound", "sms", "cb_auto_customer_offer_sms",
-          smsBody, smsResult.success ? "sent" : "failed", smsResult.sid);
+          smsBody, smsResult.suppressed ? "suppressed" : smsResult.success ? "sent" : "failed", smsResult.sid);
       }
 
       if (request.customer_email) {
