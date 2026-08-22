@@ -29,6 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format, formatDistanceToNow } from 'date-fns';
 import { PortfolioSection } from '@/components/ambassador/PortfolioSection';
 import { InviteAmbassadorCard } from '@/components/ambassador/InviteAmbassadorCard';
+import { ReferralLinkCard } from '@/components/ambassador/ReferralLinkCard';
 import { DashboardPurchasesCard } from '@/components/ambassador/purchases/DashboardPurchasesCard';
 import {
   Sheet,
@@ -396,8 +397,9 @@ function DashboardContent() {
         <div className="md:col-span-2">
           <PortfolioSection />
         </div>
-        <div>
+        <div className="space-y-6">
           <InviteAmbassadorCard />
+          <ReferralLinkCard />
         </div>
       </div>
 
