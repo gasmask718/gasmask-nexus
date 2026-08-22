@@ -1,6 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { errText } from "../_shared/errText.ts";
+import { sendSms } from "../_shared/sendSms.ts";
+import { sendTwilioSms } from "../_shared/twilioSend.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,20 +22,14 @@ serve(async (req) => {
   const body = await req.json()
   const { action, audience_type, channel, campaign_id, limit = 50 } = body
 
-  const twilioSid = Deno.env.get('TWILIO_ACCOUNT_SID')
-  const twilioAuth = Deno.env.get('TWILIO_AUTH_TOKEN')
   const twilioFrom = Deno.env.get('TWILIO_FROM_NUMBER') || Deno.env.get('TWILIO_PHONE_NUMBER')
   const sendgridKey = Deno.env.get('SENDGRID_API_KEY')
   const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
 
   // ─── ACTION: run_sms_outreach ───
+  // Recruitment cold outreach → campaign class. Routes through send-sms:
+  // suppression + legal-STOP gate, idempotency, campaign cap, cooldown.
   if (action === 'run_sms_outreach') {
-    if (!twilioSid || !twilioAuth || !twilioFrom) {
-      return new Response(
-        JSON.stringify({ error: 'Twilio not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
 
     const { data: campaign } = await supabase
       .from('ut_campaigns')
