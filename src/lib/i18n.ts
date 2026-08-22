@@ -227,6 +227,9 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'ambassador.nav.payouts': 'Payouts',
     'ambassador.nav.earnings': 'Earnings',
     'ambassador.nav.feedback': 'Feedback',
+    'ambassador.nav.dd_order': 'DD Catalog',
+    'ambassador.nav.tasks': 'Tasks',
+    'ambassador.nav.end_of_day': 'End-of-Day',
     'ambassador.nav.home': 'Home',
     'ambassador.nav.inbox': 'Inbox',
     
@@ -1268,6 +1271,9 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'ambassador.nav.payouts': 'Pagos',
     'ambassador.nav.earnings': 'Ganancias',
     'ambassador.nav.feedback': 'Comentarios',
+    'ambassador.nav.dd_order': 'Catálogo DD',
+    'ambassador.nav.tasks': 'Tareas',
+    'ambassador.nav.end_of_day': 'Fin del Día',
     'ambassador.nav.home': 'Inicio',
     'ambassador.nav.inbox': 'Bandeja',
     

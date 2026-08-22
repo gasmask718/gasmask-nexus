@@ -97530,6 +97530,51 @@ export type Database = {
           },
         ]
       }
+      roadmap_steps: {
+        Row: {
+          blocked_by: string | null
+          detail: string | null
+          done_on: string | null
+          id: number
+          owner: string | null
+          started_on: string | null
+          status: string | null
+          step_no: number
+          system_note: string | null
+          system_ready: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          blocked_by?: string | null
+          detail?: string | null
+          done_on?: string | null
+          id?: number
+          owner?: string | null
+          started_on?: string | null
+          status?: string | null
+          step_no: number
+          system_note?: string | null
+          system_ready?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          blocked_by?: string | null
+          detail?: string | null
+          done_on?: string | null
+          id?: number
+          owner?: string | null
+          started_on?: string | null
+          status?: string | null
+          step_no?: number
+          system_note?: string | null
+          system_ready?: boolean | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string | null
@@ -149209,6 +149254,22 @@ export type Database = {
           unknown_count: number | null
           verified_store_count: number | null
           wholesaler_count: number | null
+        }
+        Relationships: []
+      }
+      v_text_campaign: {
+        Row: {
+          address: string | null
+          borough: string | null
+          contact: string | null
+          last_order: string | null
+          neighborhood: string | null
+          owed: number | null
+          phone_e164: string | null
+          phone10: string | null
+          segment: string | null
+          store_name: string | null
+          wave: string | null
         }
         Relationships: []
       }
