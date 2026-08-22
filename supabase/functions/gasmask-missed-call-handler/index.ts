@@ -74,20 +74,9 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  // Respect opt-outs
-  try {
-    const { data: optOut } = await supabase
-      .from("opt_out_events")
-      .select("phone_number")
-      .eq("phone_number", caller)
-      .maybeSingle();
-    if (optOut) {
-      console.log(`[gasmask-missed-call] caller ${caller} is opted out — skipping SMS`);
-      return respond();
-    }
-  } catch (e) {
-    console.error("[gasmask-missed-call] opt-out check failed", (e as Error).message);
-  }
+  // Suppression is enforced at the send-sms chokepoint (dnc_list +
+  // opt_out_events + legal STOP, last-10 normalized) — no local pre-check,
+  // so there is exactly one gate and one audit trail.
 
   // De-dupe: don't send if we already auto-texted this caller in the last 6h
   try {
@@ -108,11 +97,9 @@ Deno.serve(async (req) => {
     console.error("[gasmask-missed-call] dedupe check failed", (e as Error).message);
   }
 
+  // Match store (if known)
+  let storeId: string | null = null;
   try {
-    const sent = await sendTwilioSms({ from: businessNumber, to: caller, body: RECOVERY_MESSAGE });
-    console.log(`[gasmask-missed-call] ✅ recovery SMS sent sid=${sent.sid}`);
-
-    // Match store (if known)
     const last10 = caller.replace(/\D/g, "").slice(-10);
     const { data: store } = await supabase
       .from("stores")
@@ -120,23 +107,69 @@ Deno.serve(async (req) => {
       .ilike("phone", `%${last10}`)
       .limit(1)
       .maybeSingle();
-
-    await supabase.from("communication_logs").insert({
-      store_id: store?.id ?? null,
-      contact_id: null,
-      channel: "sms",
-      direction: "outbound",
-      message_content: RECOVERY_MESSAGE,
-      sender_phone: businessNumber,
-      recipient_phone: caller,
-      twilio_sid: sent.sid,
-      summary: "GasMask missed-call auto-text-back",
-      delivery_status: "queued",
-      performed_by: "system",
-      outcome: "missed_call_recovery",
-    });
+    storeId = store?.id ?? null;
   } catch (e) {
-    console.error("[gasmask-missed-call] SMS send failed:", (e as Error).message);
+    console.error("[gasmask-missed-call] store match failed", (e as Error).message);
+  }
+
+  const callSid = params.CallSid || "";
+  const result = await sendSms({
+    to: caller,
+    from: businessNumber, // sender parity: text back from the number they called
+    body: RECOVERY_MESSAGE,
+    sendClass: "conversational",
+    idempotencyKey: `gasmask-missed-${callSid || `${caller}-${new Date().toISOString().slice(0, 13)}`}`,
+    skipCooldown: true, // one missed call = one recovery text
+    purpose: "gasmask_missed_call_recovery",
+    storeId,
+    metadata: { dial_status: dialStatus, business_number: businessNumber, business },
+  });
+
+  if (result.success) {
+    console.log(`[gasmask-missed-call] ✅ recovery SMS sent sid=${result.providerMessageId}`);
+    try {
+      await supabase.from("communication_logs").insert({
+        store_id: storeId,
+        contact_id: null,
+        channel: "sms",
+        direction: "outbound",
+        message_content: RECOVERY_MESSAGE,
+        sender_phone: businessNumber,
+        recipient_phone: caller,
+        twilio_sid: result.providerMessageId,
+        summary: "GasMask missed-call auto-text-back",
+        delivery_status: "queued",
+        performed_by: "system",
+        outcome: "missed_call_recovery",
+      });
+    } catch (e) {
+      console.error("[gasmask-missed-call] log insert failed:", (e as Error).message);
+    }
+  } else if (result.blocked) {
+    // Caller asked not to be texted. Honour it — but do NOT let the missed
+    // call vanish: log a named outcome so a human can ring back (a voice
+    // callback is not blocked by an SMS STOP).
+    console.log(`[gasmask-missed-call] recovery SMS SUPPRESSED for ${caller}: ${result.errorMessage}`);
+    try {
+      await supabase.from("communication_logs").insert({
+        store_id: storeId,
+        contact_id: null,
+        channel: "sms",
+        direction: "outbound",
+        message_content: RECOVERY_MESSAGE,
+        sender_phone: businessNumber,
+        recipient_phone: caller,
+        twilio_sid: null,
+        summary: "GasMask missed-call auto-text-back SUPPRESSED",
+        delivery_status: "blocked",
+        performed_by: "system",
+        outcome: "missed_call_recovery_suppressed",
+      });
+    } catch (e) {
+      console.error("[gasmask-missed-call] suppressed-outcome log failed:", (e as Error).message);
+    }
+  } else {
+    console.error(`[gasmask-missed-call] SMS send failed: ${result.status} ${result.errorMessage}`);
   }
 
   return respond();
