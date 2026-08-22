@@ -5159,6 +5159,13 @@ export type Database = {
             foreignKeyName: "agent_assignments_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "agent_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -5326,6 +5333,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "agent_store_memory_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -6525,6 +6539,13 @@ export type Database = {
             foreignKeyName: "ai_call_logs_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ai_call_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -6885,6 +6906,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ai_call_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -10411,6 +10439,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "fk_ambassador_assignments_store"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -14398,6 +14433,13 @@ export type Database = {
             foreignKeyName: "bag_sale_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -15341,6 +15383,13 @@ export type Database = {
             foreignKeyName: "biker_assignments_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "biker_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -15481,6 +15530,13 @@ export type Database = {
             columns: ["location_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "biker_issues_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -15834,6 +15890,13 @@ export type Database = {
             columns: ["store_master_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "biker_routes_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -16577,6 +16640,13 @@ export type Database = {
             columns: ["store_master_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "brand_contact_store_links_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -29401,6 +29471,13 @@ export type Database = {
             foreignKeyName: "call_analytics_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "call_analytics_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -31234,6 +31311,13 @@ export type Database = {
             foreignKeyName: "call_prediction_snapshots_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "call_prediction_snapshots_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -31518,6 +31602,13 @@ export type Database = {
             foreignKeyName: "call_quality_scores_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "call_quality_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -31657,6 +31748,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "call_reasons_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -31837,6 +31935,13 @@ export type Database = {
             foreignKeyName: "call_recordings_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "call_recordings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -31959,6 +32064,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "call_revenue_attribution_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -32108,6 +32220,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "call_revenue_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -32752,6 +32871,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "campaign_call_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -34963,6 +35089,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "change_lists_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -37538,6 +37671,13 @@ export type Database = {
             foreignKeyName: "commission_disputes_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -37893,6 +38033,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -38074,6 +38221,13 @@ export type Database = {
             columns: ["source_store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_override_assignments_source_store_id_fkey"
+            columns: ["source_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -38642,6 +38796,13 @@ export type Database = {
             foreignKeyName: "communication_alerts_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "communication_alerts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -39011,6 +39172,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "communication_escalations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -39703,6 +39871,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "communication_messages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -40989,6 +41164,13 @@ export type Database = {
             foreignKeyName: "contact_enrichment_candidates_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "contact_enrichment_candidates_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -41154,6 +41336,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "contact_interactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -41572,6 +41761,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "conversation_routing_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -49118,6 +49314,13 @@ export type Database = {
             foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
             columns: ["store_master_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -49440,6 +49643,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "deals_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -51998,6 +52208,13 @@ export type Database = {
             foreignKeyName: "dialer_followups_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dialer_followups_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -52919,6 +53136,13 @@ export type Database = {
             foreignKeyName: "dispatch_triggers_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dispatch_triggers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -53416,6 +53640,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "driver_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -57045,6 +57276,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "engagement_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -60796,6 +61034,13 @@ export type Database = {
             foreignKeyName: "field_submissions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "field_submissions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -61449,6 +61694,13 @@ export type Database = {
             foreignKeyName: "follow_up_audit_log_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "follow_up_audit_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -61573,6 +61825,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "follow_up_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -61888,6 +62147,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "follow_up_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -65114,6 +65380,13 @@ export type Database = {
             foreignKeyName: "generated_assets_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "generated_assets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -65439,6 +65712,13 @@ export type Database = {
             columns: ["matched_store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gm_discovered_pois_matched_store_id_fkey"
+            columns: ["matched_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -70751,6 +71031,13 @@ export type Database = {
             foreignKeyName: "inventory_audit_log_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "inventory_audit_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -72840,6 +73127,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "invoice_receipt_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -74943,6 +75237,13 @@ export type Database = {
             foreignKeyName: "live_call_sessions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "live_call_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -75135,6 +75436,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "live_calls_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -75994,6 +76302,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "manual_call_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -79265,6 +79580,13 @@ export type Database = {
             foreignKeyName: "messaging_messages_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "messaging_messages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -79456,6 +79778,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "messaging_targets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -80976,6 +81305,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "note_cleaning_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -82654,6 +82990,13 @@ export type Database = {
             foreignKeyName: "outbound_call_queue_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "outbound_call_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -83497,6 +83840,13 @@ export type Database = {
             foreignKeyName: "outbound_personalized_scripts_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "outbound_personalized_scripts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -83636,6 +83986,13 @@ export type Database = {
             foreignKeyName: "outbound_predictions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "outbound_predictions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -83757,6 +84114,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "outbound_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -84203,6 +84567,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "outreach_plans_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -85589,6 +85960,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "pending_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -87240,6 +87618,13 @@ export type Database = {
             foreignKeyName: "pinned_notes_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "pinned_notes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -88525,6 +88910,13 @@ export type Database = {
             foreignKeyName: "portal_invites_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "portal_invites_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -89011,6 +89403,13 @@ export type Database = {
             foreignKeyName: "predictive_actions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "predictive_actions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -89130,6 +89529,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "predictive_autopilot_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -89298,6 +89704,13 @@ export type Database = {
             foreignKeyName: "predictive_opportunity_scores_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "predictive_opportunity_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -89410,6 +89823,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "predictive_risk_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -89604,6 +90024,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "proactive_outreach_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -90036,6 +90463,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "product_store_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -95949,6 +96383,13 @@ export type Database = {
             foreignKeyName: "refund_tickets_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "refund_tickets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -97883,6 +98324,13 @@ export type Database = {
             columns: ["location_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "route_suggestion_stops_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -108335,6 +108783,54 @@ export type Database = {
           },
         ]
       }
+      store_ai_briefing: {
+        Row: {
+          analyzed_at: string
+          analyzed_by: string | null
+          briefing: string
+          created_at: string | null
+          is_stale: boolean | null
+          model: string | null
+          refresh_count: number | null
+          source_last_invoice_on: string | null
+          source_last_note_on: string | null
+          source_note_count: number | null
+          source_owed: number | null
+          source_tubes: number | null
+          store_id: string
+        }
+        Insert: {
+          analyzed_at?: string
+          analyzed_by?: string | null
+          briefing: string
+          created_at?: string | null
+          is_stale?: boolean | null
+          model?: string | null
+          refresh_count?: number | null
+          source_last_invoice_on?: string | null
+          source_last_note_on?: string | null
+          source_note_count?: number | null
+          source_owed?: number | null
+          source_tubes?: number | null
+          store_id: string
+        }
+        Update: {
+          analyzed_at?: string
+          analyzed_by?: string | null
+          briefing?: string
+          created_at?: string | null
+          is_stale?: boolean | null
+          model?: string | null
+          refresh_count?: number | null
+          source_last_invoice_on?: string | null
+          source_last_note_on?: string | null
+          source_note_count?: number | null
+          source_owed?: number | null
+          source_tubes?: number | null
+          store_id?: string
+        }
+        Relationships: []
+      }
       store_ai_insights: {
         Row: {
           brand: Database["public"]["Enums"]["brand_type"] | null
@@ -108408,6 +108904,13 @@ export type Database = {
             columns: ["store_master_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_ai_insights_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -108619,6 +109122,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: true
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_answer_profile_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -108888,6 +109398,13 @@ export type Database = {
             foreignKeyName: "store_brand_accounts_store_master_id_fkey"
             columns: ["store_master_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_brand_accounts_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -109011,6 +109528,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_brand_relationships_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -109201,6 +109725,13 @@ export type Database = {
             foreignKeyName: "store_brand_stickers_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_brand_stickers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -109327,6 +109858,13 @@ export type Database = {
             foreignKeyName: "store_cadence_policy_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: true
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_cadence_policy_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -109444,6 +109982,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: true
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_call_intelligence_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -110202,6 +110747,13 @@ export type Database = {
             foreignKeyName: "store_escalations_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_escalations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -110417,6 +110969,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_inventory_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -111125,6 +111684,13 @@ export type Database = {
             foreignKeyName: "store_notes_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_notes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -111298,6 +111864,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_opportunities_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -111829,6 +112402,13 @@ export type Database = {
             foreignKeyName: "store_people_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_people_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -112046,6 +112626,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_product_predictions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -112355,6 +112942,13 @@ export type Database = {
             foreignKeyName: "store_questionnaire_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: true
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_questionnaire_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -112498,6 +113092,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_revenue_recommendations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -112668,6 +113269,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_revenue_scores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -112885,6 +113493,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_samples_given_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -113131,6 +113746,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_status_history_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -113668,6 +114290,13 @@ export type Database = {
             foreignKeyName: "store_tube_inventory_status_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_tube_inventory_status_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -113791,6 +114420,13 @@ export type Database = {
             foreignKeyName: "store_tube_switches_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_tube_switches_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -113899,6 +114535,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_vertical_permissions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -114044,6 +114687,13 @@ export type Database = {
             foreignKeyName: "store_visits_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_visits_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -114158,6 +114808,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_voice_notes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -114344,6 +115001,13 @@ export type Database = {
             foreignKeyName: "store_wholesaler_associations_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_wholesaler_associations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -114487,6 +115151,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_wholesaler_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -120935,6 +121606,13 @@ export type Database = {
             foreignKeyName: "tube_sale_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -122600,6 +123278,13 @@ export type Database = {
             foreignKeyName: "user_invitations_assigned_store_id_fkey"
             columns: ["assigned_store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "user_invitations_assigned_store_id_fkey"
+            columns: ["assigned_store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -122817,6 +123502,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "user_store_map_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -139269,6 +139961,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -139646,6 +140345,13 @@ export type Database = {
             foreignKeyName: "fk_ambassador_assignments_store"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "fk_ambassador_assignments_store"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -139952,6 +140658,13 @@ export type Database = {
             columns: ["store_master_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dd_wholesaler_store_link_store_master_id_fkey"
+            columns: ["store_master_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -141317,6 +142030,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -141416,6 +142136,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -141945,6 +142672,13 @@ export type Database = {
             foreignKeyName: "store_samples_given_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_samples_given_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -142082,6 +142816,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -143666,6 +144407,13 @@ export type Database = {
             foreignKeyName: "bag_sale_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -144183,6 +144931,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -147124,6 +147879,36 @@ export type Database = {
           },
         ]
       }
+      v_store_briefing_input: {
+        Row: {
+          address: string | null
+          ambassador_name: string | null
+          analyzed_at: string | null
+          bags: number | null
+          borough: string | null
+          brands_they_buy: string[] | null
+          brands_to_offer: string[] | null
+          cached_briefing: string | null
+          contact_name: string | null
+          days_since_last_order: number | null
+          facts: string | null
+          is_stale: boolean | null
+          last_order_date: string | null
+          lifetime_value: number | null
+          neighborhood: string | null
+          owed: number | null
+          phone: string | null
+          recent_invoices: string | null
+          recent_notes: string | null
+          relationship_status: string | null
+          store_id: string | null
+          store_name: string | null
+          total_sales: number | null
+          tubes: number | null
+          tubes_as_of: string | null
+        }
+        Relationships: []
+      }
       v_store_commission_performance: {
         Row: {
           ambassadors_involved: number | null
@@ -147373,6 +148158,13 @@ export type Database = {
             foreignKeyName: "store_notes_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_notes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -147599,6 +148391,13 @@ export type Database = {
             foreignKeyName: "store_answer_profile_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: true
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_answer_profile_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
           },
@@ -147769,6 +148568,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_tube_inventory_status_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
@@ -148865,6 +149671,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
             referencedColumns: ["store_id"]
           },
           {
