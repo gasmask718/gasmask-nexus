@@ -4,13 +4,15 @@
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, ArrowRight, RefreshCw, Plus } from 'lucide-react';
+import { ShoppingBag, ArrowRight, RefreshCw, Plus, Package } from 'lucide-react';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
 import { Button } from '@/components/ui/button';
 import { useMyPurchases, useAmbassadorPurchaseSummary } from '@/hooks/useAmbassadorPurchases';
 import { useAuth } from '@/contexts/AuthContext';
 import { AmbassadorPurchasesTable, PurchaseSummaryKPIs, PurchaseFiltersBar } from '@/components/ambassador/purchases';
+import { RequestBoxesModal } from '@/components/ambassador/purchases/RequestBoxesModal';
+import { MyBoxRequests } from '@/components/ambassador/purchases/MyBoxRequests';
 import type { PurchaseFilters } from '@/hooks/useAmbassadorPurchases';
 import { format } from 'date-fns';
 
@@ -18,20 +20,27 @@ function PurchasesContent() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [filters, setFilters] = useState<PurchaseFilters>({});
+  const [showRequestModal, setShowRequestModal] = useState(false);
   const { data: purchases = [], isLoading, dataUpdatedAt, refetch } = useMyPurchases(filters);
   const { data: summary, isLoading: summaryLoading } = useAmbassadorPurchaseSummary(user?.id);
 
   return (
     <div className="space-y-6">
       {/* Header CTA */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="text-sm text-muted-foreground">
-          Browse the product catalog to start a new purchase.
+          Browse the product catalog, or request boxes for admin approval.
         </p>
-        <Button onClick={() => navigate('/ambassador/catalog')}>
-          <Plus className="h-4 w-4 mr-1" />
-          New Purchase
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowRequestModal(true)}>
+            <Package className="h-4 w-4 mr-1" />
+            Request Boxes
+          </Button>
+          <Button onClick={() => navigate('/ambassador/catalog')}>
+            <Plus className="h-4 w-4 mr-1" />
+            New Purchase
+          </Button>
+        </div>
       </div>
 
       {/* Summary KPIs */}
@@ -39,6 +48,9 @@ function PurchasesContent() {
         summary={summary as any}
         isLoading={summaryLoading}
       />
+
+      {/* My box requests */}
+      <MyBoxRequests />
 
       {/* Filters + Refresh */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -64,6 +76,9 @@ function PurchasesContent() {
         isLoading={isLoading}
         showSource
       />
+
+      {/* Request Boxes Modal */}
+      <RequestBoxesModal open={showRequestModal} onOpenChange={setShowRequestModal} />
     </div>
   );
 }
