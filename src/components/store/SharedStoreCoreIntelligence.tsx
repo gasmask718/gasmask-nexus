@@ -12,6 +12,7 @@
  */
 
 import { ActionsNeededCard } from '@/components/delivery/ActionsNeededCard';
+import { StoreAccountSummaryCard } from '@/components/store/StoreAccountSummaryCard';
 import { LastOrderSnapshotPanel } from '@/components/store/LastOrderSnapshotPanel';
 import { StoreHealthScoreCard } from '@/components/delivery/StoreHealthScoreCard';
 import { VisitSummaryCard } from '@/components/delivery/VisitSummaryCard';
@@ -70,6 +71,9 @@ export function SharedStoreCoreIntelligence({
 }: SharedStoreCoreIntelligenceProps) {
   return (
     <>
+      {/* ══════════════ Account Summary (v_store_summary) ══════════════ */}
+      <StoreAccountSummaryCard storeId={storeId} />
+
       {/* ══════════════ Health & Governance ══════════════ */}
       <ActionsNeededCard storeId={storeId} />
       <StoreHealthScoreCard storeId={storeId} />
