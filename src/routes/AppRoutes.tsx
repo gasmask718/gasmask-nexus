@@ -4,7 +4,13 @@
  * Performance: ALL page components are lazy-loaded
  */
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
+import { Routes, Route, Outlet, Navigate, useParams } from 'react-router-dom';
+
+// Param-preserving redirect: /gasmask/routes/:id -> /routes/:id (Floor 4 route dedupe)
+const GasMaskRouteIdRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/routes/${id}`} replace />;
+};
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { RoleRouteGuard } from '@/components/security/RoleRouteGuard';
 import { RequireRole } from '@/components/security/RequireRole';
@@ -1535,14 +1541,14 @@ export default function AppRoutes() {
         <Route path="/gasmask/billing/invoices/new" element={<BillingInvoiceNew />} />
         <Route path="/gasmask/payroll" element={<RequireRole allowedRoles={['owner','admin']} showLocked><Payroll /></RequireRole>} />
         <Route path="/gasmask/biker-payouts" element={<BikerPayouts />} />
-        <Route path="/gasmask/delivery-capacity" element={<DeliveryCapacity />} />
+        <Route path="/gasmask/delivery-capacity" element={<Navigate to="/delivery/capacity" replace />} />
         <Route path="/gasmask/subscriptions" element={<Subscriptions />} />
         <Route path="/gasmask/wallet" element={<WalletPage />} />
         <Route path="/gasmask/analytics" element={<Analytics />} />
         <Route path="/gasmask/routes" element={<RoutesPage />} />
-        <Route path="/gasmask/routes/optimizer" element={<RouteOptimizer />} />
+        <Route path="/gasmask/routes/optimizer" element={<Navigate to="/routes/command-center" replace />} />
         <Route path="/gasmask/routes/ops-center" element={<RouteOpsCenter />} />
-        <Route path="/gasmask/routes/:id" element={<RouteDetail />} />
+        <Route path="/gasmask/routes/:id" element={<GasMaskRouteIdRedirect />} />
         <Route path="/gasmask/stores" element={<Stores />} />
         <Route path="/gasmask/stores/:id" element={<StoreDetail />} />
         <Route path="/gasmask/stores/:id/order" element={<StoreOrder />} />
