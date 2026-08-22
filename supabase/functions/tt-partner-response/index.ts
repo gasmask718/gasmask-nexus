@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { sendSms } from "../_shared/sendSms.ts"
+import { sendTwilioSms } from "../_shared/twilioSend.ts"
+import { recordDispatchSuppressed } from "../_shared/dispatchOutcome.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -129,21 +132,34 @@ serve(async (req) => {
         .eq('token', claimToken)
         .maybeSingle()
       if (!tokRow || tokRow.notified_taken_at) return
-      const sid = Deno.env.get('TWILIO_ACCOUNT_SID')
-      const tok = Deno.env.get('TWILIO_AUTH_TOKEN')
       const from = Deno.env.get('TT_PHONE_NUMBER')
       const to = tokRow.partner_phone || from_phone
-      if (sid && tok && from && to) {
-        try {
-          await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-            method: 'POST',
-            headers: { Authorization: `Basic ${btoa(`${sid}:${tok}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              To: to, From: from,
-              Body: `TopTier ${dispatchRequest.booking_reference}: this job was already claimed by another driver. No action needed.`,
-            }),
+      if (from && to) {
+        // Group D (workforce): contracted driver, dispatch outcome notice.
+        const r = await sendSms({
+          to,
+          body: `TopTier ${dispatchRequest.booking_reference}: this job was already claimed by another driver. No action needed.`,
+          sendClass: 'workforce',
+          purpose: 'tt_dispatch_taken',
+          idempotencyKey: `tt-taken-${claimToken}`,
+          from,
+          skipCooldown: true,
+          metadata: { booking_reference: dispatchRequest.booking_reference },
+        })
+        if (r.blocked) {
+          // Suppression-skipped, made visible: driver thinks he was told.
+          await recordDispatchSuppressed(supabase, {
+            bookingId: dispatchRequest.booking_id,
+            bookingReference: dispatchRequest.booking_reference,
+            recipientPhone: to,
+            recipientName: partner?.partner_name || partner?.name || null,
+            partnerId: resolvedPartnerId,
+            sendClass: 'workforce',
+            reason: r.errorMessage || r.status,
           })
-        } catch (e) { console.error('already-taken SMS failed:', e) }
+        } else if (!r.success) {
+          console.error('already-taken SMS failed:', r.status, r.errorMessage)
+        }
       }
       await supabase.from('tt_dispatch_tokens')
         .update({ notified_taken_at: new Date().toISOString() })
@@ -288,27 +304,23 @@ serve(async (req) => {
           .update({ status: 'needs_dispatch' })
           .eq('id', dispatchRequest.booking_id)
 
-        const twilioSid = Deno.env.get('TWILIO_ACCOUNT_SID')
-        const twilioToken = Deno.env.get('TWILIO_AUTH_TOKEN')
         const fromTwilio = Deno.env.get('TT_PHONE_NUMBER')
         const davidPhone = Deno.env.get('DAVID_PHONE_NUMBER')
 
-        if (twilioSid && twilioToken && fromTwilio && davidPhone) {
-          await fetch(
-            `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Basic ${btoa(`${twilioSid}:${twilioToken}`)}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              body: new URLSearchParams({
-                To: davidPhone,
-                From: fromTwilio,
-                Body: `⚠️ ALERT: All partners declined booking ${dispatchRequest.booking_reference} (${dispatchRequest.service_type}). Manual assignment needed.`,
-              }),
-            }
-          )
+        if (davidPhone) {
+          // Group A (internal): all-declined is an ops escalation to a staff
+          // handset — twilioSend in-process, never queued behind campaigns.
+          const alert = await sendTwilioSms({
+            to: davidPhone,
+            body: `⚠️ ALERT: All partners declined booking ${dispatchRequest.booking_reference} (${dispatchRequest.service_type}). Manual assignment needed.`,
+            suppressionClass: 'internal',
+            source: 'tt-partner-response',
+            from: fromTwilio,
+            metadata: { booking_reference: dispatchRequest.booking_reference },
+          })
+          if (!alert.success) {
+            console.error('[tt-partner-response] all-declined alert failed:', alert.status, alert.errorMessage)
+          }
         }
       }
 

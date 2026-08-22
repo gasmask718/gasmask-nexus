@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { resolveRouting } from "../_shared/serviceRouter.ts"
+import { sendSms } from "../_shared/sendSms.ts"
+import { recordDispatchSuppressed } from "../_shared/dispatchOutcome.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -364,12 +366,14 @@ async function insertDispatchAndBroadcast(
     attempted: 0,
     sent: 0,
     failed: 0,
+    suppressed: 0,
+    suppressed_partners: [] as any[],
     errors: [] as string[],
     sms_template_key: configuredTemplateKey,
   }
   if (meta.status === 'sent') {
-    const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
-    const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
+    // Credentials + sender live in send-sms now; this function only needs the
+    // TT sender override to pass through.
     const fromPhone = Deno.env.get('TT_PHONE_NUMBER')
 
     const scheduledDate = booking.scheduled_at
@@ -378,10 +382,6 @@ async function insertDispatchAndBroadcast(
 
     if (!fromPhone) {
       const errMsg = 'TT_PHONE_NUMBER not set, SMS not sent'
-      console.error('[tt-smart-dispatch] ' + errMsg)
-      smsResults.errors.push(errMsg)
-    } else if (!TWILIO_SID || !TWILIO_TOKEN) {
-      const errMsg = 'TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN missing, SMS not sent'
       console.error('[tt-smart-dispatch] ' + errMsg)
       smsResults.errors.push(errMsg)
     } else {
@@ -412,27 +412,42 @@ async function insertDispatchAndBroadcast(
         const msg = baseMsg +
           `${acceptLine}\n` +
           `Expires in 30 minutes.${flagSuffix}`
-        try {
-          const resp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Basic ${btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)}`,
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({ To: r.partner_phone, From: fromPhone, Body: msg }),
+        // Group D (workforce): contracted partner/driver dispatch offer.
+        const smsRes = await sendSms({
+          to: r.partner_phone,
+          body: msg,
+          sendClass: 'workforce',
+          purpose: 'tt_dispatch_offer',
+          idempotencyKey: `tt-dispatch-${dispatchReq?.id}-${r.id ?? r.partner_phone}`,
+          from: fromPhone,
+          skipCooldown: true,
+          metadata: { booking_reference: booking.booking_reference, sms_template_key: configuredTemplateKey },
+        })
+        if (smsRes.blocked) {
+          // Suppression-skipped, made visible: named outcome per partner in
+          // the payload + a queryable tt_notifications_log row. No alert.
+          smsResults.suppressed++
+          smsResults.suppressed_partners.push({
+            partner_id: r.id ?? null,
+            partner_name: r.partner_name || r.name || r.business_name || null,
+            phone: r.partner_phone,
+            reason: smsRes.errorMessage || smsRes.status,
           })
-          if (!resp.ok) {
-            const body = await resp.text()
-            smsResults.failed++
-            smsResults.errors.push(`${r.partner_phone}: ${resp.status} ${body.slice(0,200)}`)
-            console.error('[tt-smart-dispatch] SMS failed', resp.status, body)
-          } else {
-            smsResults.sent++
-          }
-        } catch (smsErr) {
+          await recordDispatchSuppressed(supabase, {
+            bookingId: booking.id,
+            bookingReference: booking.booking_reference,
+            recipientPhone: r.partner_phone,
+            recipientName: r.partner_name || r.name || r.business_name || null,
+            partnerId: r.id ?? null,
+            sendClass: 'workforce',
+            reason: smsRes.errorMessage || smsRes.status,
+          })
+        } else if (!smsRes.success) {
           smsResults.failed++
-          smsResults.errors.push(`${r.partner_phone}: ${(smsErr as Error).message}`)
-          console.error('SMS to partner failed:', smsErr)
+          smsResults.errors.push(`${r.partner_phone}: ${smsRes.status} ${(smsRes.errorMessage ?? '').slice(0, 200)}`)
+          console.error('[tt-smart-dispatch] SMS failed', smsRes.status, smsRes.errorMessage)
+        } else {
+          smsResults.sent++
         }
       }
     }
@@ -886,21 +901,15 @@ async function selectLegacyScored(ctx: any) {
     .select()
     .single()
 
-  const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
-  const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
   const fromPhone = Deno.env.get('TT_PHONE_NUMBER')
 
   const scheduledDate = booking.scheduled_at
     ? new Date(booking.scheduled_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
     : 'TBD'
 
-  const smsResults: any = { attempted: 0, sent: 0, failed: 0, errors: [] as string[] }
+  const smsResults: any = { attempted: 0, sent: 0, failed: 0, suppressed: 0, suppressed_partners: [] as any[], errors: [] as string[] }
   if (!fromPhone) {
     const errMsg = 'TT_PHONE_NUMBER not set, SMS not sent'
-    console.error('[tt-smart-dispatch:legacy] ' + errMsg)
-    smsResults.errors.push(errMsg)
-  } else if (!TWILIO_SID || !TWILIO_TOKEN) {
-    const errMsg = 'TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN missing, SMS not sent'
     console.error('[tt-smart-dispatch:legacy] ' + errMsg)
     smsResults.errors.push(errMsg)
   } else {
@@ -915,27 +924,41 @@ async function selectLegacyScored(ctx: any) {
         `Ref: ${booking.booking_reference || 'N/A'}\n\n` +
         `Reply YES to accept or NO to decline.\n` +
         `Expires in 30 minutes.`
-      try {
-        const resp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({ To: partner.partner_phone, From: fromPhone, Body: msg }),
+      // Group D (workforce): contracted partner dispatch offer.
+      const smsRes = await sendSms({
+        to: partner.partner_phone,
+        body: msg,
+        sendClass: 'workforce',
+        purpose: 'tt_dispatch_offer',
+        idempotencyKey: `tt-dispatch-legacy-${dispatchReq?.id}-${partner.id ?? partner.partner_phone}`,
+        from: fromPhone,
+        skipCooldown: true,
+        metadata: { booking_reference: booking.booking_reference },
+      })
+      if (smsRes.blocked) {
+        // Suppression-skipped, made visible: named outcome, not silence.
+        smsResults.suppressed++
+        smsResults.suppressed_partners.push({
+          partner_id: partner.id ?? null,
+          partner_name: partner.partner_name || null,
+          phone: partner.partner_phone,
+          reason: smsRes.errorMessage || smsRes.status,
         })
-        if (!resp.ok) {
-          const body = await resp.text()
-          smsResults.failed++
-          smsResults.errors.push(`${partner.partner_phone}: ${resp.status} ${body.slice(0,200)}`)
-          console.error('[tt-smart-dispatch:legacy] SMS failed', resp.status, body)
-        } else {
-          smsResults.sent++
-        }
-      } catch (smsErr) {
+        await recordDispatchSuppressed(supabase, {
+          bookingId: booking.id,
+          bookingReference: booking.booking_reference,
+          recipientPhone: partner.partner_phone,
+          recipientName: partner.partner_name || null,
+          partnerId: partner.id ?? null,
+          sendClass: 'workforce',
+          reason: smsRes.errorMessage || smsRes.status,
+        })
+      } else if (!smsRes.success) {
         smsResults.failed++
-        smsResults.errors.push(`${partner.partner_phone}: ${(smsErr as Error).message}`)
-        console.error('SMS to partner failed:', smsErr)
+        smsResults.errors.push(`${partner.partner_phone}: ${smsRes.status} ${(smsRes.errorMessage ?? '').slice(0, 200)}`)
+        console.error('[tt-smart-dispatch:legacy] SMS failed', smsRes.status, smsRes.errorMessage)
+      } else {
+        smsResults.sent++
       }
     }
   }

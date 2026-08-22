@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
+import { sendSms } from "../_shared/sendSms.ts";
+import { recordDispatchSuppressed } from "../_shared/dispatchOutcome.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,23 +13,36 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// ── SMS via Twilio ──────────────────────────────────────────────────────
-async function sendSMS(to: string, body: string) {
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN");
+// ── SMS via the canonical chokepoint (send-sms) ─────────────────────────
+// Group D (workforce): approved/contracted partners receiving booking
+// requests and quote broadcasts. Suppression-skipped sends are recorded as
+// named outcomes (tt_notifications_log: dispatch_suppressed), not dropped.
+async function sendPartnerSMS(supabase: any, booking: any, partner: any, body: string, idemKey: string) {
   const from = Deno.env.get("TWILIO_PHONE_NUMBER") || "+18484004179";
-  if (!sid || !token) return { success: false, error: "Missing Twilio credentials" };
-
-  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({ To: to, From: from, Body: body }),
+  const res = await sendSms({
+    to: partner.phone,
+    body,
+    sendClass: "workforce",
+    purpose: "tt_partner_offer",
+    idempotencyKey: idemKey,
+    from,
+    skipCooldown: true,
+    metadata: { booking_reference: booking.booking_reference },
   });
-  const data = await res.json();
-  return res.ok ? { success: true, sid: data.sid } : { success: false, error: data.message };
+  if (res.blocked) {
+    await recordDispatchSuppressed(supabase, {
+      bookingId: booking.id,
+      bookingReference: booking.booking_reference,
+      recipientPhone: partner.phone,
+      recipientName: partner.name || partner.business_name || null,
+      partnerId: partner.id,
+      sendClass: "workforce",
+      reason: res.errorMessage || res.status,
+    });
+  }
+  return res.success
+    ? { success: true, sid: res.providerMessageId }
+    : { success: false, blocked: res.blocked, status: res.status, error: res.errorMessage };
 }
 
 // ── Email via SendGrid ──────────────────────────────────────────────────
@@ -214,7 +229,7 @@ serve(async (req) => {
       const declineUrl = `${baseUrl}/partner/confirm?id=${confirmReq?.id}&action=decline`;
 
       if (partner.phone) {
-        const smsResult = await sendSMS(partner.phone, buildRequestConfirmSMS(booking));
+        const smsResult = await sendPartnerSMS(supabase, booking, partner, buildRequestConfirmSMS(booking), `tt-reqconfirm-${confirmReq?.id ?? booking.id}`);
         results.notifications.push({ type: "sms", partner: partner.name, ...smsResult });
       }
       if (partner.email) {
@@ -296,7 +311,7 @@ serve(async (req) => {
             });
 
             if (partner.phone) {
-              const smsResult = await sendSMS(partner.phone, buildCoachBusSMS(booking));
+              const smsResult = await sendPartnerSMS(supabase, booking, partner, buildCoachBusSMS(booking), `tt-coach-quote-${booking.id}-${partner.id}`);
               results.notifications.push({ type: "sms", partner: partner.name, ...smsResult });
             }
             if (partner.email) {
@@ -342,7 +357,7 @@ serve(async (req) => {
             });
 
             if (partner.phone) {
-              const smsResult = await sendSMS(partner.phone, buildGenericQuoteSMS(booking));
+              const smsResult = await sendPartnerSMS(supabase, booking, partner, buildGenericQuoteSMS(booking), `tt-quote-${booking.id}-${partner.id}`);
               results.notifications.push({ type: "sms", partner: partner.name, ...smsResult });
             }
             if (partner.email) {
