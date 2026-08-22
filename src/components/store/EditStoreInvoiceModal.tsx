@@ -108,6 +108,32 @@ export function EditStoreInvoiceModal({
   const [receivedByName, setReceivedByName] = useState(invoice.received_by || '');
   const [photos, setPhotos] = useState<string[]>(invoice.delivery_photos || []);
 
+  // Finalized invoices are locked by a DB trigger ("Cannot modify line items
+  // on a finalized invoice"). Reopen with a reason, then re-finalize on save.
+  const isFinalized = invoice.status === 'finalized';
+  const [reopened, setReopened] = useState(false);
+  const [reopenReason, setReopenReason] = useState('');
+
+  const reopenMutation = useMutation({
+    mutationFn: async () => {
+      const reason = reopenReason.trim();
+      if (!reason) throw new Error('Enter a reason for reopening');
+      const { error } = await (supabase as any).rpc('reopen_invoice', {
+        p_invoice_id: invoice.id,
+        p_reason: reason,
+        p_user_id: user?.id ?? 'admin',
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setReopened(true);
+      toast.success('Invoice reopened — it will be re-finalized when you save');
+    },
+    onError: (error: any) => {
+      toast.error(`Could not reopen invoice: ${error.message}`);
+    },
+  });
+
   // Fetch existing line items
   const { data: existingLineItems = [] } = useQuery({
     queryKey: ['invoice-line-items', invoice.id],
