@@ -1,6 +1,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { verifyTwilio } from "../_shared/dialer.ts";
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
+import { sendSms, smsContentHash } from "../_shared/sendSms.ts";
+
+// Auto-replies route through send-sms (conversational class): suppression,
+// idempotency, and an outbound_messages row. An inbound text from someone
+// who previously sent STOP does NOT re-consent them — if send-sms blocks the
+// reply we record the suppressed outcome in brandaro_message_log and the
+// inbound message still lands in brandaro_inbound_messages for a human.
+// (Whether an inbound text legally re-opens SMS contact is a legal question,
+// not a technical one — the code takes the conservative answer.)
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,6 +46,8 @@ Deno.serve(async (req) => {
     let senderPhone = "";
     let channel = "sms";
     let isTwilioForm = false;
+    let inboundSid = "";
+    let receivingNumber = ""; // the brandaro number they texted — reply sender
 
     if (contentType.includes("application/x-www-form-urlencoded")) {
       // Twilio webhook format
@@ -68,6 +79,8 @@ Deno.serve(async (req) => {
 
       messageText = sigParams.Body || "";
       senderPhone = sigParams.From || "";
+      inboundSid = sigParams.MessageSid || "";
+      receivingNumber = sigParams.To || "";
       channel = "sms";
     } else {
       const body = await req.json();
@@ -78,6 +91,7 @@ Deno.serve(async (req) => {
       }
       messageText = body.message || body.Body || "";
       senderPhone = body.sender_phone || body.From || "";
+      receivingNumber = body.To || body.to_number || "";
       channel = body.channel || "sms";
     }
 
@@ -130,16 +144,40 @@ Deno.serve(async (req) => {
     const requiresVa = ["objection", "question_complex", "complaint", "unknown"].includes(intent);
 
     let aiResponse: string | null = null;
+    let autoReplySent = false;
 
     if (autoRespondable) {
       aiResponse = await generateAutoResponse(intent, messageText, lead?.business_name);
 
-      // Send auto-response via SMS
+      // Send auto-response via send-sms (conversational). A blocked result
+      // means the sender previously STOPped: honour it, record the suppressed
+      // outcome, and leave the inbound for a human — an inbound text is NOT
+      // treated as re-consent (flagged as a legal question in the doc).
       if (senderPhone && aiResponse) {
-        try {
-          await sendAutoReply(normalizedPhone, aiResponse);
-        } catch (e) {
-          console.error("Auto-reply send failed:", e);
+        const reply = await sendAutoReply(
+          normalizedPhone,
+          aiResponse,
+          receivingNumber,
+          inboundSid || `manual-${await smsContentHash(`${normalizedPhone}|${messageText}`)}`,
+        );
+        autoReplySent = reply.sent;
+        if (reply.blocked) {
+          console.warn(`[brandaro-handle-inbound] auto-reply SUPPRESSED for ${normalizedPhone}: ${reply.reason}`);
+          try {
+            await supabase.from("brandaro_message_log").insert({
+              lead_id: lead?.id || null,
+              channel: "sms",
+              provider: "twilio",
+              destination: normalizedPhone,
+              message_body: aiResponse,
+              send_status: "suppressed",
+              sent_at: null,
+            });
+          } catch (e) {
+            console.error("[brandaro-handle-inbound] suppressed-outcome log failed:", (e as Error).message);
+          }
+        } else if (!reply.sent) {
+          console.error(`[brandaro-handle-inbound] auto-reply failed: ${reply.reason}`);
         }
       }
     }
@@ -154,7 +192,7 @@ Deno.serve(async (req) => {
         sender_phone: senderPhone,
         intent_detected: intent,
         requires_va: requiresVa,
-        ai_auto_responded: !!aiResponse,
+        ai_auto_responded: autoReplySent,
         ai_response: aiResponse,
       })
       .select()
@@ -200,13 +238,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // For Twilio webhook, return TwiML
+    // For Twilio webhook, return EMPTY TwiML. The reply already went (or was
+    // deliberately suppressed) through send-sms above — a TwiML <Message>
+    // here would bypass the suppression gate and double-send.
     if (contentType.includes("application/x-www-form-urlencoded")) {
-      const twiml = aiResponse
-        ? `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(aiResponse)}</Message></Response>`
-        : `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`;
-      
-      return new Response(twiml, {
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`, {
         headers: { ...corsHeaders, "Content-Type": "text/xml" },
       });
     }
@@ -215,7 +251,7 @@ Deno.serve(async (req) => {
       success: true,
       inbound_id: inbound.id,
       intent_detected: intent,
-      auto_responded: !!aiResponse,
+      auto_responded: autoReplySent,
       requires_va: requiresVa,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -324,25 +360,26 @@ function getFallbackResponse(intent: string, businessName?: string): string {
 }
 
 // ─── SMS SEND ─────────────────────────────────────────────────────────
+// Routes through send-sms (conversational). Sender parity: the number the
+// lead actually texted, falling back to TWILIO_PHONE_NUMBER (the previous
+// helper's sender). Never throws — the webhook must always answer Twilio.
 
-async function sendAutoReply(to: string, body: string): Promise<void> {
-  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const fromNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
-
-  if (!accountSid || !authToken || !fromNumber) return;
-
-  await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({ To: to, From: fromNumber, Body: body }),
-    }
-  );
+async function sendAutoReply(
+  to: string,
+  body: string,
+  receivingNumber: string,
+  dedupeId: string,
+): Promise<{ sent: boolean; blocked: boolean; reason: string | null }> {
+  const res = await sendSms({
+    to,
+    from: receivingNumber || Deno.env.get("TWILIO_PHONE_NUMBER"),
+    body,
+    sendClass: "conversational",
+    idempotencyKey: `brandaro-ar-${dedupeId}`,
+    skipCooldown: true, // one inbound text = one reply
+    purpose: "brandaro_inbound_autoreply",
+  });
+  return { sent: res.success, blocked: res.blocked, reason: res.errorMessage };
 }
 
 function normalizePhone(phone: string): string {
@@ -350,8 +387,4 @@ function normalizePhone(phone: string): string {
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
   return phone.startsWith("+") ? phone : `+${digits}`;
-}
-
-function escapeXml(str: string): string {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
