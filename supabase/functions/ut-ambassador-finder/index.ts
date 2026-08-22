@@ -108,30 +108,20 @@ ${JSON.stringify(prospects)}`,
       .order("score", { ascending: false })
       .limit(5);
 
-    const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const fromNumber = Deno.env.get("TWILIO_FROM_NUMBER") || Deno.env.get("TWILIO_PHONE_NUMBER");
-
-    if (accountSid && authToken && fromNumber && topProspects?.length) {
+    // Internal operator alert — twilioSend, internal class (STOP-exempt by
+    // design, never queues behind campaign traffic).
+    if (topProspects?.length) {
       const topList = topProspects
         .map((p: any) => `@${p.username} (${p.platform}) ${p.followers_count?.toLocaleString()} followers`)
         .join("\n");
 
-      await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            To: "+19295007046",
-            From: fromNumber,
-            Body: `🔥 TOP AMBASSADOR PROSPECTS\n${topList}\nView all in Dynasty OS → Ambassador Finder`,
-          }),
-        }
-      );
+      await sendTwilioSms({
+        to: "+19295007046",
+        from: Deno.env.get("TWILIO_FROM_NUMBER") || Deno.env.get("TWILIO_PHONE_NUMBER"),
+        body: `🔥 TOP AMBASSADOR PROSPECTS\n${topList}\nView all in Dynasty OS → Ambassador Finder`,
+        suppressionClass: "internal",
+        source: "ut-ambassador-finder:dm_alert",
+      });
     }
 
     return new Response(
