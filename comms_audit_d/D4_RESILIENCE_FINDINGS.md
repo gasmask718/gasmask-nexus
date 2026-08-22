@@ -24,6 +24,14 @@
 Slack, no email, no push. The monitor has been correctly detecting a wall of
 502s for weeks and no human was told.
 
+> **Amended 2026-08-21 — this paragraph is no longer true.** As of 2026-08-20
+> `comms-health-monitor` is wired to `sendOpsAlert()` (6h dedupe per target);
+> a red check now leaves the database. Same day, the `function_deployment`
+> layer was fixed to treat HTTP 403 as healthy (`probeDeployed()`), so
+> signature-verified webhooks no longer report as "not deployed". Left here
+> because this is a dated audit snapshot — current state lives in
+> `docs/comms/OPEN-WORK-2026-08-20.md` item 5.
+
 ### Current live failures (last 2h, verbatim)
 1. **Nine outbound call dispatchers return HTTP 502 (handler crashed)** [V]:
    `ambassador-ai-call`, `bland-start-call`, `brandaro-ai-caller`,
