@@ -88,39 +88,37 @@ Deno.serve(async (req) => {
     let sendResult: any = { success: false, error: "No send provider configured" };
 
     if (channel === "sms") {
-      // Attempt Twilio send via existing infrastructure
-      const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-      const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
-      const twilioFrom = Deno.env.get("BRANDARO_TWILIO_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER");
+      // Outbound via send-sms. Class: campaign — this is demo outreach to a
+      // lead, and the same function serves BOTH the human-picked sends
+      // (SendDemoModal / LeadDatabasePage) and the unattended ones
+      // (brandaro-generate-demo auto-send, brandaro-retry-jobs), so it takes
+      // full suppression + campaign cooldown. The isSuppressed pre-check above
+      // stays for the brandaro-side blocked row; send-sms is the single gate
+      // (legal STOP included) and writes the outbound_messages audit row.
+      // Sender parity: BRANDARO_TWILIO_NUMBER || TWILIO_FROM_NUMBER.
+      const smsResult = await sendSms({
+        to: destination,
+        from: Deno.env.get("BRANDARO_TWILIO_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER") || null,
+        body: message,
+        sendClass: "campaign",
+        idempotencyKey: `send-demo-${demo_id}${force ? `-force-${new Date().toISOString().slice(0, 13)}` : ""}`,
+        purpose: "brandaro_demo_invite",
+        metadata: { demo_id, lead_id: lead_id || null, force: !!force },
+      });
 
-      if (twilioSid && twilioAuth && twilioFrom) {
-        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
-        const resp = await fetch(twilioUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": "Basic " + btoa(`${twilioSid}:${twilioAuth}`),
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            To: destination,
-            From: twilioFrom,
-            Body: message,
-          }),
-        });
-        const data = await resp.json().catch(() => ({}));
-        // Genuine success = Twilio 2xx AND a real message SID AND a non-failed status.
-        const badStatus = data?.status === "failed" || data?.status === "undelivered";
-        if (resp.ok && data?.sid && !badStatus) {
-          sendResult = { success: true, provider_message_id: data.sid };
-        } else {
-          sendResult = {
-            success: false,
-            error: data?.message || (resp.ok ? `twilio_status_${data?.status || "no_sid"}` : `twilio_http_${resp.status}`),
-            twilio_code: data?.code ?? null,
-          };
-        }
+      if (smsResult.success && smsResult.providerMessageId) {
+        sendResult = { success: true, provider_message_id: smsResult.providerMessageId };
+      } else if (smsResult.blocked) {
+        // Second-line defence: the pre-check above normally catches this; if
+        // send-sms blocks (e.g. legal STOP), record it as blocked, not failed,
+        // and do NOT queue a retry — retrying a suppression block is wrong.
+        sendResult = { success: false, blocked: true, error: `suppressed:${smsResult.errorMessage}`, twilio_code: null };
       } else {
-        sendResult = { success: false, error: "twilio_credentials_missing" };
+        sendResult = {
+          success: false,
+          error: smsResult.errorMessage || "send_failed",
+          twilio_code: smsResult.errorCode ?? null,
+        };
       }
     }
 
