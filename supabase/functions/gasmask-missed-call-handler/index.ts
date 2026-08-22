@@ -17,6 +17,7 @@ import { corsHeaders, readForm, verifyTwilio, xmlHeaders } from "../_shared/dial
 import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
 import { voicemailTwiml } from "../_shared/voicemailTwiml.ts";
 import { canonicalUrl } from "../_shared/dialer.ts";
+import { sendSms } from "../_shared/sendSms.ts";
 
 const EMPTY = `<?xml version="1.0" encoding="UTF-8"?>\n<Response></Response>`;
 
@@ -24,21 +25,11 @@ const RECOVERY_MESSAGE = buildSmsTemplate("gasmask_missed_call_callback", {});
 
 const MISSED_STATUSES = new Set(["no-answer", "busy", "failed", "canceled"]);
 
-async function sendTwilioSms(opts: { from: string; to: string; body: string }) {
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN");
-  if (!sid || !token) throw new Error("twilio_credentials_missing");
-  const auth = btoa(`${sid}:${token}`);
-  const params = new URLSearchParams({ To: opts.to, From: opts.from, Body: opts.body });
-  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-    method: "POST",
-    headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(`twilio_${res.status}_${json?.message || "send_failed"}`);
-  return json;
-}
+// Outbound SMS routes through send-sms (suppression, idempotency,
+// outbound_messages audit row). A legal STOP on the caller blocks the
+// text-back — that is correct — and the blocked outcome is logged to
+// communication_logs as `missed_call_recovery_suppressed` so a human can
+// return the call by voice instead (an SMS STOP does not block calls).
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
