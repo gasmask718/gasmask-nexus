@@ -77,7 +77,7 @@ interface CleanStoreNote {
 }
 
 /** Category chip colors. Keep semantic and consistent across the OS. */
-const CATEGORY_CHIP: Record<string, string> = {
+export const CATEGORY_CHIP: Record<string, string> = {
   'owner confirmed': 'bg-green-500/15 text-green-700 border-green-500/30 hover:bg-green-500/20',
   'correction': 'bg-amber-500/15 text-amber-700 border-amber-500/30 hover:bg-amber-500/20',
   'route ledger': 'bg-blue-500/15 text-blue-700 border-blue-500/30 hover:bg-blue-500/20',
@@ -88,7 +88,7 @@ const CATEGORY_CHIP: Record<string, string> = {
   'note': 'bg-muted text-muted-foreground border-border',
 };
 
-const categoryChipClass = (category?: string | null) =>
+export const categoryChipClass = (category?: string | null) =>
   CATEGORY_CHIP[(category || '').toLowerCase()] || 'bg-muted text-muted-foreground border-border';
 
 interface BrandScopedNotesSectionProps {

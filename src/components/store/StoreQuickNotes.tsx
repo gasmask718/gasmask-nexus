@@ -1,8 +1,14 @@
 /**
- * StoreQuickNotes — Lightweight notes block that writes to `store_notes`,
- * the same table the profile "ALL NOTES" section reads. Quick notes are
- * prefixed with `[quick]` so they can be visually distinguished but stay
- * in the single unified stream. Also stamps store_master.updated_at.
+ * StoreQuickNotes — Lightweight notes block for the store profile.
+ *
+ * READS: v_store_notes_clean (canonical clean view) — grouped by observed_on
+ * (the real date the thing happened), newest first. Each note shows the
+ * category as a colored chip, written_on (small/grey), and a warning icon when
+ * date_confidence === 'import' (date inferred from import). Author and edit
+ * metadata are merged from store_notes because the view does not carry them.
+ *
+ * WRITES: still inserts to store_notes with a [quick] prefix so quick notes
+ * stay in the unified stream.
  */
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,79 +16,113 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, StickyNote, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, StickyNote, Trash2, Pencil, AlertTriangle } from 'lucide-react';
 import { verifiedInsert, verifiedUpdate, mutationErrorMessage } from '@/lib/verifiedMutation';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { Button as UIButton } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { dynastyStampWithRelative } from '@/lib/dates';
+import { dynastyDateAbsolute, dynastyDateTime } from '@/lib/dates';
+import { AddNoteModal } from './AddNoteModal';
+import { format, parseISO } from 'date-fns';
+import { CATEGORY_CHIP } from './BrandScopedNotesSection';
 
 interface Props {
   storeId: string;
+  storeName?: string;
   compact?: boolean;
   limit?: number;
 }
 
 const QUICK_PREFIX = '[quick]';
 
-export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) {
+interface CleanQuickNote {
+  id: string;
+  store_id: string;
+  observed_on: string | null;
+  date_confidence: string | null;
+  written_on: string | null;
+  source: string | null;
+  edited_at: string | null;
+  edited_by: string | null;
+  category: string | null;
+  note_text: string;
+  raw_note: string | null;
+  created_by: string | null;
+  created_at: string | null;
+  author_name: string | null;
+}
+
+const categoryChipClass = (category?: string | null) =>
+  CATEGORY_CHIP[(category || '').toLowerCase()] || 'bg-muted text-muted-foreground border-border';
+
+const formatDayHeader = (d: string | null) =>
+  d ? format(parseISO(d), 'MMM d, yyyy') : 'Undated';
+
+export function StoreQuickNotes({ storeId, storeName: storeNameProp, compact = false, limit = 3 }: Props) {
   const qc = useQueryClient();
   const { user } = useAuth();
   const [body, setBody] = useState('');
   const [pendingDelete, setPendingDelete] = useState<{ id: string; text: string } | null>(null);
+  const [editingNote, setEditingNote] = useState<CleanQuickNote | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const { data: storeName = storeNameProp || '' } = useQuery({
+    queryKey: ['store-name-for-quick-notes', storeId],
+    queryFn: async () => {
+      if (storeNameProp) return storeNameProp;
+      const { data, error } = await supabase
+        .from('store_master')
+        .select('store_name')
+        .eq('id', storeId)
+        .single();
+      if (error) throw error;
+      return data?.store_name || '';
+    },
+    enabled: !!storeId && !storeNameProp,
+    staleTime: 5 * 60_000,
+  });
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['store-notes-quick', storeId, limit],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('store_notes')
-        .select('id, note_text, created_by, created_at')
-        .eq('store_id', storeId)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      if (error) throw error;
-      const rows = (data || []) as Array<{
-        id: string;
-        note_text: string;
-        created_by: string | null;
-        created_at: string;
-      }>;
-      // Defensive: always newest-first regardless of server ordering.
-      // Many legacy/imported notes share an identical created_at (bulk import),
-      // so tie-break on a leading date written inside the note text
-      // (e.g. "• 10/10/2025 - Paid 140$").
-      const textDate = (t: string): number => {
-        const m = t.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
-        if (!m) return 0;
-        const [, mm, dd, yy] = m;
-        const year = yy.length === 2 ? 2000 + Number(yy) : Number(yy);
-        const d = new Date(year, Number(mm) - 1, Number(dd));
-        return isNaN(d.getTime()) ? 0 : d.getTime();
-      };
-      return rows.slice().sort((a, b) => {
-        const diff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        if (diff !== 0) return diff;
-        return textDate(b.note_text || '') - textDate(a.note_text || '');
+      // Fetch the canonical clean view plus the author metadata it doesn't carry.
+      const [cleanRes, metaRes] = await Promise.all([
+        supabase
+          .from('v_store_notes_clean')
+          .select('id, store_id, observed_on, date_confidence, written_on, source, edited_at, edited_by, category, note_text, raw_note')
+          .eq('store_id', storeId)
+          .order('observed_on', { ascending: false })
+          .limit(limit),
+        supabase
+          .from('store_notes')
+          .select('id, created_by, created_at, profile:profiles(name)')
+          .eq('store_id', storeId)
+          .is('deleted_at', null),
+      ]);
+
+      if (cleanRes.error) throw cleanRes.error;
+      if (metaRes.error) throw metaRes.error;
+
+      const metaById = new Map<string, any>((metaRes.data || []).map((m: any) => [m.id, m]));
+      const rows = ((cleanRes.data || []) as any[]).map((n) => {
+        const meta = metaById.get(n.id);
+        return {
+          ...n,
+          created_by: meta?.created_by ?? null,
+          created_at: meta?.created_at ?? null,
+          author_name: meta?.profile?.name || meta?.created_by || null,
+        } as CleanQuickNote;
+      });
+
+      // Newest-first by observed_on; undated sinks to the bottom.
+      return rows.sort((a, b) => {
+        const aDate = a.observed_on ? new Date(a.observed_on).getTime() : 0;
+        const bDate = b.observed_on ? new Date(b.observed_on).getTime() : 0;
+        return bDate - aDate;
       });
     },
     staleTime: 30_000,
-  });
-
-  const authorIds = Array.from(new Set(notes.map((n) => n.created_by).filter(Boolean))) as string[];
-  const { data: authors = {} } = useQuery({
-    queryKey: ['store-notes-quick-authors', authorIds.sort().join(',')],
-    queryFn: async () => {
-      if (!authorIds.length) return {};
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, name')
-        .in('id', authorIds);
-      if (error) throw error;
-      return Object.fromEntries((data || []).map((p: any) => [p.id, p.name])) as Record<string, string>;
-    },
-    enabled: authorIds.length > 0,
-    staleTime: 5 * 60_000,
   });
 
   const addNote = useMutation({
@@ -111,7 +151,6 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
       setBody('');
       toast.success('Note added');
       qc.invalidateQueries({ queryKey: ['store-notes-quick', storeId] });
-      // Profile "ALL NOTES" section reads store_notes keyed by store_master.id
       qc.invalidateQueries({ queryKey: ['store-notes'] });
     },
     onError: (e: any) => toast.error(mutationErrorMessage(e)),
@@ -137,9 +176,27 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
     onError: (e: any) => toast.error(mutationErrorMessage(e)),
   });
 
+  const handleEdit = (note: CleanQuickNote) => {
+    setEditingNote(note);
+    setEditModalOpen(true);
+  };
+
   const headingClass = compact
     ? 'text-[10px] font-semibold uppercase tracking-wider text-muted-foreground'
     : 'text-xs font-semibold uppercase tracking-wider text-muted-foreground';
+
+  // Group notes by observed_on date for date headers.
+  const grouped = notes.reduce<Record<string, CleanQuickNote[]>>((acc, note) => {
+    const key = note.observed_on || '__undated__';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(note);
+    return acc;
+  }, {});
+  const groupKeys = Object.keys(grouped).sort((a, b) => {
+    if (a === '__undated__') return 1;
+    if (b === '__undated__') return -1;
+    return new Date(b).getTime() - new Date(a).getTime();
+  });
 
   return (
     <div className={compact ? 'space-y-2 border-t border-border/50 pt-3' : 'space-y-3'}>
@@ -157,34 +214,67 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
           No notes yet
         </p>
       ) : (
-        <ul className="space-y-1.5">
-          {notes.map((n) => (
-            <li
-              key={n.id}
-              className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5"
-            >
-              <p className={(compact ? 'text-xs' : 'text-sm') + ' whitespace-pre-wrap break-words leading-relaxed text-foreground [overflow-wrap:anywhere]'}>
-                {n.note_text}
+        <div className="space-y-3">
+          {groupKeys.map((key) => (
+            <div key={key} className="space-y-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {formatDayHeader(key === '__undated__' ? null : key)}
               </p>
-              <div className="mt-0.5 flex items-start justify-between gap-2">
-                <p className="text-[10px] leading-relaxed text-muted-foreground break-words [overflow-wrap:anywhere]">
-                  {(n.created_by && authors[n.created_by]) || n.created_by || 'unknown'} ·{' '}
-                  {dynastyStampWithRelative(n.created_at)}
-                </p>
-                <UIButton
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  aria-label="Delete note"
-                  className="h-5 w-5 shrink-0"
-                  onClick={() => setPendingDelete({ id: n.id, text: n.note_text })}
-                >
-                  <Trash2 className="h-3 w-3 text-destructive" />
-                </UIButton>
-              </div>
-            </li>
+              <ul className="space-y-1.5">
+                {grouped[key].map((n) => (
+                  <li
+                    key={n.id}
+                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5"
+                  >
+                    <div className="flex items-start gap-2">
+                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 shrink-0 ${categoryChipClass(n.category)}`}>
+                        {n.category || 'NOTE'}
+                      </Badge>
+                      {n.date_confidence === 'import' && (
+                        <span title="Date inferred from import">
+                          <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0" />
+                        </span>
+                      )}
+                    </div>
+                    <p className={(compact ? 'text-xs' : 'text-sm') + ' mt-1 whitespace-pre-wrap break-words leading-relaxed text-foreground [overflow-wrap:anywhere]'}>
+                      {n.note_text}
+                    </p>
+                    <div className="mt-0.5 flex items-start justify-between gap-2">
+                      <p className="text-[10px] leading-relaxed text-muted-foreground break-words [overflow-wrap:anywhere]">
+                        {n.author_name || 'unknown'} · {n.written_on ? `Written ${dynastyDateAbsolute(n.written_on)}` : dynastyDateTime(n.created_at)}
+                        {n.edited_at && (
+                          <span className="text-amber-600"> · edited</span>
+                        )}
+                      </p>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <UIButton
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          aria-label="Edit note"
+                          className="h-5 w-5"
+                          onClick={() => handleEdit(n)}
+                        >
+                          <Pencil className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                        </UIButton>
+                        <UIButton
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          aria-label="Delete note"
+                          className="h-5 w-5"
+                          onClick={() => setPendingDelete({ id: n.id, text: n.note_text })}
+                        >
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </UIButton>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
       <div className="space-y-1.5">
@@ -217,6 +307,31 @@ export function StoreQuickNotes({ storeId, compact = false, limit = 3 }: Props) 
           if (pendingDelete) await deleteNote.mutateAsync(pendingDelete.id);
         }}
       />
+
+      {storeName && (
+        <AddNoteModal
+          open={editModalOpen}
+          onOpenChange={(open) => {
+            setEditModalOpen(open);
+            if (!open) setEditingNote(null);
+          }}
+          storeId={storeId}
+          storeName={storeName}
+          onSuccess={() => {
+            qc.invalidateQueries({ queryKey: ['store-notes-quick', storeId] });
+            qc.invalidateQueries({ queryKey: ['store-notes'] });
+          }}
+          editingNote={
+            editingNote
+              ? {
+                  id: editingNote.id,
+                  note_text: editingNote.note_text,
+                  created_at: editingNote.created_at || undefined,
+                }
+              : null
+          }
+        />
+      )}
     </div>
   );
 }
