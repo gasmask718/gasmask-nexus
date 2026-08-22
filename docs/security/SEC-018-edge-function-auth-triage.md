@@ -1,7 +1,7 @@
 # SEC-018 — Edge Function Authentication Triage
 
 Date: 2026-08-11  
-Status: OPEN — remediation started, not complete.  
+Status: OPEN — remediation started, not complete. Last updated 2026-08-21.  
 Scope: every function under `supabase/functions/`.
 
 ## Why this exists
@@ -30,7 +30,7 @@ work for bucket 2 must land before those functions are gated.
 
 | Bucket | Count |
 | --- | --- |
-| UNSIGNED_WEBHOOK | 125 |
+| UNSIGNED_WEBHOOK | 116 (was 125; nine remediated entries removed 2026-08-21) |
 | MISSING_GATE | 198 |
 | CRON | 66 |
 | HAS_JWT | 73 |
@@ -43,6 +43,31 @@ work for bucket 2 must land before those functions are gated.
 - `twilio-recording-callback` — verifyTwilio() wired, accepts the Brandaro token too; forged → 403 (verified live)
 - `twilio-call-events` — form path verifyTwilio(); JSON path now requires the service-role bearer; unsigned form → 403 and bogus bearer → 401 (both verified live)
 - `apply-call-disposition` — **not** a Twilio callback (it is invoked from the browser dialer console), so it got a JWT gate plus a rep-ownership check, not a signature check. Anonymous and forged-JWT calls → 401 (verified live). The authenticated success path is UNVERIFIED pending a signed-in session.
+
+**2026-08-20** (all verified live: HTTP 403 on an unsigned POST; all four removed from Bucket 1 below):
+
+- `brandaro-call-twiml` — verifyTwilio() wired. This one is the dial-suppression enforcement point (the gate before `<Dial>`), so an unsigned caller could previously walk around suppression by posting TwiML requests directly.
+- `dc-call-status` — verifyTwilio() wired.
+- `va-dialer-status` — verifyTwilio() wired.
+- `twilio-gather-webhook` — verifyTwilio() wired; a forged POST here can steer a live call.
+
+All four use `verifyTwilio()` from `_shared/dialer.ts` with
+`extraTokenEnvVars: ["BRANDARO_TWILIO_AUTH_TOKEN"]` so callbacks signed by the
+Brandaro sub-account verify against that account's own token. Carry that
+sub-account handling into every remaining Twilio-signable fix — it is the piece
+that breaks quietly.
+
+Also 2026-08-20: four admin tools were **renamed** off the webhook namespace
+(they need a JWT + role gate, never a signature check): `dc-configure-webhook`
+→ `twilio-admin-set-number-webhook`, `dc-configure-webhooks-bulk` →
+`twilio-admin-set-number-webhooks-bulk`, `discover-twiml-apps` →
+`twilio-admin-list-twiml-apps`, `fix-twiml-voice-url` →
+`twilio-admin-fix-twiml-voice-url`. Old deployments deleted. Entries below use
+the new names.
+
+Monitor note: `comms-health-monitor` treats **403 as healthy** for these
+(`probeDeployed()`, fixed 2026-08-20) — hardening one of the remaining
+endpoints will not produce a false "not deployed" alarm.
 
 `supabase/functions/twilio-call-status/signature_test.ts` proves the signature
 algorithm against a throwaway token: genuine signature accepted, forged rejected,
