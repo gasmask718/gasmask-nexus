@@ -251,7 +251,7 @@ Deno.serve(async (req) => {
       success: true,
       inbound_id: inbound.id,
       intent_detected: intent,
-      auto_responded: !!aiResponse,
+      auto_responded: autoReplySent,
       requires_va: requiresVa,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -360,25 +360,26 @@ function getFallbackResponse(intent: string, businessName?: string): string {
 }
 
 // ─── SMS SEND ─────────────────────────────────────────────────────────
+// Routes through send-sms (conversational). Sender parity: the number the
+// lead actually texted, falling back to TWILIO_PHONE_NUMBER (the previous
+// helper's sender). Never throws — the webhook must always answer Twilio.
 
-async function sendAutoReply(to: string, body: string): Promise<void> {
-  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const fromNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
-
-  if (!accountSid || !authToken || !fromNumber) return;
-
-  await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({ To: to, From: fromNumber, Body: body }),
-    }
-  );
+async function sendAutoReply(
+  to: string,
+  body: string,
+  receivingNumber: string,
+  dedupeId: string,
+): Promise<{ sent: boolean; blocked: boolean; reason: string | null }> {
+  const res = await sendSms({
+    to,
+    from: receivingNumber || Deno.env.get("TWILIO_PHONE_NUMBER"),
+    body,
+    sendClass: "conversational",
+    idempotencyKey: `brandaro-ar-${dedupeId}`,
+    skipCooldown: true, // one inbound text = one reply
+    purpose: "brandaro_inbound_autoreply",
+  });
+  return { sent: res.success, blocked: res.blocked, reason: res.errorMessage };
 }
 
 function normalizePhone(phone: string): string {
