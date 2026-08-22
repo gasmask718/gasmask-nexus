@@ -56,7 +56,9 @@ export default function AmbassadorLogin() {
       }
 
       toast.success('Welcome back!');
-      navigate('/ut/ambassador/dashboard');
+      // Nexus ambassadors (user_roles) land on the real ambassador portal;
+      // legacy UT-only accounts (unforgettable_ambassadors match) keep the UT dashboard.
+      navigate(hasAmbassadorRole || isElevated ? '/ambassador/dashboard' : '/ut/ambassador/dashboard');
     } catch (err: any) {
       if (err.message?.includes('Invalid login')) {
         toast.error('Invalid email or password');

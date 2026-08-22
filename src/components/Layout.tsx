@@ -375,6 +375,7 @@ const DYNASTY_NAVIGATION = {
       items: [
         { path: '/grabba/ambassadors', label: 'Ambassador Dashboard', icon: Award },
         { path: '/ambassadors', label: 'All Ambassadors', icon: Users },
+        { path: '/ambassadors/tasks', label: 'Ambassador Tasks', icon: ClipboardList },
         { path: '/ambassador-regions', label: 'Ambassador Regions', icon: Map },
         { path: '/ambassador-payouts', label: 'Ambassador Payouts', icon: DollarSign },
         { path: '/influencers', label: 'Influencers', icon: Star },
