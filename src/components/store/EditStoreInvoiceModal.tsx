@@ -515,24 +515,30 @@ export function EditStoreInvoiceModal({
               />
             </div>
 
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={updateMutation.isPending || lineItems.length === 0}
-                className="flex-1"
-              >
-                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
           </form>
+        )}
+        </div>
+
+        {/* Fixed footer */}
+        {showForm && (
+          <div className="flex gap-3 px-6 py-4 border-t shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="edit-invoice-form"
+              disabled={updateMutation.isPending || lineItems.length === 0}
+              className="flex-1"
+            >
+              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
         )}
       </DialogContent>
     </Dialog>
