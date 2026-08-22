@@ -388,7 +388,3 @@ function normalizePhone(phone: string): string {
   if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
   return phone.startsWith("+") ? phone : `+${digits}`;
 }
-
-function escapeXml(str: string): string {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
