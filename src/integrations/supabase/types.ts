@@ -126229,6 +126229,8 @@ export type Database = {
           phone: string
           preferences: string | null
           quote_id: string | null
+          source: string | null
+          source_booking_id: string | null
           status: string | null
           stripe_payment_intent_id: string | null
           updated_at: string | null
@@ -126256,6 +126258,8 @@ export type Database = {
           phone: string
           preferences?: string | null
           quote_id?: string | null
+          source?: string | null
+          source_booking_id?: string | null
           status?: string | null
           stripe_payment_intent_id?: string | null
           updated_at?: string | null
@@ -126283,6 +126287,8 @@ export type Database = {
           phone?: string
           preferences?: string | null
           quote_id?: string | null
+          source?: string | null
+          source_booking_id?: string | null
           status?: string | null
           stripe_payment_intent_id?: string | null
           updated_at?: string | null

@@ -53,20 +53,36 @@ export default function UTEventBookings() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const updates: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+      // Marking payment as received must set the paid flag, otherwise the
+      // row claims money arrived while deposit_paid says it didn't.
+      if (status === 'deposit_received') updates.deposit_paid = true;
       const { error } = await supabase
         .from('ut_event_bookings')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update(updates)
         .eq('id', id);
       if (error) {
         console.error('UPDATE FAILED ut_event_bookings:', errText(error));
         throw error;
       }
       console.log('UPDATE SUCCESS ut_event_bookings:', id, status);
+
+      // MON-03 settlement loop: a fully-paid booking flipping to
+      // confirmed/completed settles into business_transactions via ut-ingest.
+      // Idempotent — the ledger dedupes on the booking-derived transaction id.
+      let settlement: { settled?: boolean; duplicate?: boolean; error?: string } | null = null;
+      if (status === 'confirmed' || status === 'completed') {
+        const { data, error: sErr } = await supabase.functions.invoke('settle-event-booking', {
+          body: { booking_id: id },
+        });
+        settlement = sErr ? { error: sErr.message } : data?.settlement ?? (data?.ok === false ? { error: data?.error } : data);
+      }
+      return settlement;
     },
     onMutate: async ({ id }) => {
       setLoadingId(id);
     },
-    onSuccess: (_, { id, status }) => {
+    onSuccess: (settlement, { id, status }) => {
       queryClient.invalidateQueries({ queryKey: ['ut-event-bookings'] });
       const name = bookings.find(b => b.id === id)?.name || 'Booking';
       const msgs: Record<string, string> = {
@@ -76,6 +92,13 @@ export default function UTEventBookings() {
         cancelled: `❌ ${name}'s booking cancelled`,
       };
       toast.success(msgs[status] || 'Updated!');
+      if (settlement?.settled && !settlement?.duplicate) {
+        toast.success('💵 Settled to ledger (business_transactions)');
+      } else if (settlement?.duplicate) {
+        toast.info('Already settled in ledger — no duplicate posted');
+      } else if (settlement?.error) {
+        toast.warning(`Ledger settlement failed: ${settlement.error}`);
+      }
     },
     onError: (err: any, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['ut-event-bookings'] });
