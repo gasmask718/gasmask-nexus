@@ -1,4 +1,6 @@
 // Bridges an ambassador's personal phone to a store via Twilio.
+// No calling time window — ambassadors call on their own schedule (2026-08-22
+// decision). Daily volume cap (300/day) kept purely as a runaway-loop safety net.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
@@ -10,11 +12,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-const isQuietHours = () => {
-  const h = new Date().getUTCHours() - 5; // ET approx
-  const local = (h + 24) % 24;
-  return local < 8 || local >= 21;
-};
+const DAILY_CALL_LIMIT = 300;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -44,12 +42,16 @@ Deno.serve(async (req) => {
     if (isAssigned !== true) return new Response(JSON.stringify({ error: 'Store not assigned to you' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     if (!store.phone) return new Response(JSON.stringify({ error: 'Store missing phone number' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     if (store.status === 'blacklisted') return new Response(JSON.stringify({ error: 'Store is blacklisted' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    if (isQuietHours()) return new Response(JSON.stringify({ error: 'Quiet hours — calls allowed 8am–9pm ET' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-    // Daily limit
+    // Daily limit — safety net against runaway loops only; not a calling window.
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { count } = await admin.from('communication_logs').select('*', { count: 'exact', head: true }).eq('ambassador_id', amb.id).eq('call_type', 'direct').gte('created_at', since);
-    if ((count ?? 0) >= 30) return new Response(JSON.stringify({ error: 'Daily direct call limit reached (30)' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if ((count ?? 0) >= DAILY_CALL_LIMIT) {
+      return new Response(
+        JSON.stringify({ error: `Daily direct call limit reached — ambassadors are capped at ${DAILY_CALL_LIMIT} calls per 24 hours. Contact an admin if you believe this is wrong.` }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     // Pre-create log row
     const { data: log } = await admin.from('communication_logs').insert({
