@@ -33,6 +33,7 @@ import {
   listPriceForUnit,
   summarize,
   tubesPerBox,
+  withDiscount,
   withPrice,
   withQuantity,
   UNIT_KIND_ICONS,
@@ -40,6 +41,7 @@ import {
   type BuilderBrand,
   type BuilderLine,
   type BuilderProduct,
+  type DiscountType,
   type SaleChannel,
   type SaleUnitKind,
 } from '@/lib/invoice/lineMath';
