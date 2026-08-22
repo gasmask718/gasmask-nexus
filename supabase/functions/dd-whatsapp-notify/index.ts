@@ -1,7 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { legalStopBlocked } from "../_shared/twilioSend.ts";
+import { smsContentHash } from "../_shared/sendSms.ts";
 // Dynasty Direct — Send a WhatsApp message via Twilio.
 // Non-blocking: returns success: false instead of throwing when Twilio is unconfigured.
+//
+// Stays on the direct Twilio call (send-sms/twilioSend are SMS-shaped and
+// would mangle the `whatsapp:` prefix), but carries the rest of the standard:
+// legal STOP gate (below), a deterministic idempotency key checked against
+// outbound_messages before sending, and an outbound_messages audit row for
+// every outcome — sent, failed, blocked.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

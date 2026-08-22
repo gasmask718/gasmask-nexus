@@ -46,6 +46,8 @@ Deno.serve(async (req) => {
     let senderPhone = "";
     let channel = "sms";
     let isTwilioForm = false;
+    let inboundSid = "";
+    let receivingNumber = ""; // the brandaro number they texted — reply sender
 
     if (contentType.includes("application/x-www-form-urlencoded")) {
       // Twilio webhook format

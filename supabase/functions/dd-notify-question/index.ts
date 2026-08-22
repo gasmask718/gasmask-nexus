@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { sendTwilioSms } from "../_shared/twilioSend.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,35 +18,19 @@ interface Body {
   user_id?: string;
 }
 
+// Operator alert to a staff-owned handset → internal class via twilioSend
+// (no send-sms hop; logged to admin_notifications_log by the helper).
 async function sendSms(to: string, body: string): Promise<boolean> {
-  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const from = Deno.env.get("TWILIO_PHONE_NUMBER");
-  if (!sid || !token || !from) {
-    console.warn("[dd-notify-question] Twilio not configured, skipping SMS");
-    return false;
+  const res = await sendTwilioSms({
+    to,
+    body,
+    suppressionClass: "internal",
+    source: "dd-notify-question",
+  });
+  if (!res.success) {
+    console.warn(`[dd-notify-question] SMS not sent: ${res.status} ${res.errorMessage}`);
   }
-  try {
-    const res = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({ To: to, From: from, Body: body }),
-      },
-    );
-    if (!res.ok) {
-      console.error("[dd-notify-question] Twilio error", res.status, await res.text());
-      return false;
-    }
-    return true;
-  } catch (e) {
-    console.error("[dd-notify-question] SMS exception", e);
-    return false;
-  }
+  return res.success;
 }
 
 async function sendEmail(
