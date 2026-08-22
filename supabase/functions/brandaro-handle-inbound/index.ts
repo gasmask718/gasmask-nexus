@@ -144,16 +144,40 @@ Deno.serve(async (req) => {
     const requiresVa = ["objection", "question_complex", "complaint", "unknown"].includes(intent);
 
     let aiResponse: string | null = null;
+    let autoReplySent = false;
 
     if (autoRespondable) {
       aiResponse = await generateAutoResponse(intent, messageText, lead?.business_name);
 
-      // Send auto-response via SMS
+      // Send auto-response via send-sms (conversational). A blocked result
+      // means the sender previously STOPped: honour it, record the suppressed
+      // outcome, and leave the inbound for a human — an inbound text is NOT
+      // treated as re-consent (flagged as a legal question in the doc).
       if (senderPhone && aiResponse) {
-        try {
-          await sendAutoReply(normalizedPhone, aiResponse);
-        } catch (e) {
-          console.error("Auto-reply send failed:", e);
+        const reply = await sendAutoReply(
+          normalizedPhone,
+          aiResponse,
+          receivingNumber,
+          inboundSid || `manual-${await smsContentHash(`${normalizedPhone}|${messageText}`)}`,
+        );
+        autoReplySent = reply.sent;
+        if (reply.blocked) {
+          console.warn(`[brandaro-handle-inbound] auto-reply SUPPRESSED for ${normalizedPhone}: ${reply.reason}`);
+          try {
+            await supabase.from("brandaro_message_log").insert({
+              lead_id: lead?.id || null,
+              channel: "sms",
+              provider: "twilio",
+              destination: normalizedPhone,
+              message_body: aiResponse,
+              send_status: "suppressed",
+              sent_at: null,
+            });
+          } catch (e) {
+            console.error("[brandaro-handle-inbound] suppressed-outcome log failed:", (e as Error).message);
+          }
+        } else if (!reply.sent) {
+          console.error(`[brandaro-handle-inbound] auto-reply failed: ${reply.reason}`);
         }
       }
     }
