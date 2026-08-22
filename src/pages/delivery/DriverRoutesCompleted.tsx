@@ -123,7 +123,8 @@ const DriverRoutesCompleted: React.FC = () => {
         `)
         .eq('assigned_to', user.id)
         .eq('status', 'completed')
-        .order('date', { ascending: false });
+        .order('date', { ascending: false })
+        .returns<any[]>();
       if (error) return [];
       return data || [];
     },
