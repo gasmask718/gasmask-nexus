@@ -115,16 +115,15 @@ const DriverRoutesCompleted: React.FC = () => {
     queryKey: ['driver-completed-routes', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from('routes')
+      const { data, error } = await (supabase
+        .from('routes') as any)
         .select(`
           id, date, status, territory,
           route_stops (id, store_id, status, completed_at, store:store_master(id, store_name, address))
         `)
         .eq('assigned_to', user.id)
         .eq('status', 'completed')
-        .order('date', { ascending: false })
-        .returns<any[]>();
+        .order('date', { ascending: false });
       if (error) return [];
       return data || [];
     },
