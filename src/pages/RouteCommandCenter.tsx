@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useRouteCandidates, type CandidateType, type RouteCandidate } from '@/hooks/useRouteCandidates';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+import { RouteTemplateBuilder } from '@/components/delivery/RouteTemplateBuilder';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -206,6 +207,9 @@ export default function RouteCommandCenter() {
         </Card>
       )}
 
+
+      {/* Route Templates — saved coverage maps (borough / corridor / special) */}
+      <RouteTemplateBuilder />
 
       {/* Summary strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
