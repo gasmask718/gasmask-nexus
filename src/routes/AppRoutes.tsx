@@ -667,7 +667,7 @@ const MarketplaceAdmin = lazy(() => import('@/pages/portal/MarketplaceAdmin'));
 // New Role Portals
 const DriverPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.DriverPortalPage })));
 const BikerPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.BikerPortalPage })));
-const AmbassadorPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.AmbassadorPortalPage })));
+// AmbassadorPortalPage (mock simulation) removed — /portals/ambassador redirects to /ambassador/dashboard
 const StorePortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.StorePortalPage })));
 const WholesalerPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.WholesalerPortalPage })));
 const ProductionPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.ProductionPortalPage })));
@@ -2819,7 +2819,8 @@ export default function AppRoutes() {
         {/* NEW ROLE PORTALS - Enterprise-grade (/portals/*) */}
         <Route path="/portals/driver" element={<DriverPortalPage />} />
         <Route path="/portals/biker" element={<BikerPortalPage />} />
-        <Route path="/portals/ambassador" element={<AmbassadorPortalPage />} />
+        {/* /portals/ambassador was a mock simulation page with hardcoded data — the real portal is /ambassador/dashboard */}
+        <Route path="/portals/ambassador" element={<Navigate to="/ambassador/dashboard" replace />} />
         <Route path="/portals/store" element={<StorePortalPage />} />
         <Route path="/portals/wholesaler" element={<WholesalerPortalPage />} />
         <Route path="/portals/production" element={<ProductionPortalPage />} />
