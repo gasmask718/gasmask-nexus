@@ -1,8 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { errText } from "../_shared/errText.ts";
+import { sendSms } from "../_shared/sendSms.ts";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 const TIER_THRESHOLDS: Record<string, { min: number; rate: number }> = {
   bronze: { min: 0, rate: 0.08 },
   silver: { min: 10, rate: 0.10 },
