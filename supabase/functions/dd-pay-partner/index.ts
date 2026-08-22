@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
 
     const period = `${payout.period_start} → ${payout.period_end}`;
     try {
-      await notifyPartner(partner, Number(amount), period);
+      await notifyPartner(partner, Number(amount), period, payout_id);
     } catch (notifyErr) {
       console.error("[dd-pay-partner] partner notification failed:", String(notifyErr));
     }

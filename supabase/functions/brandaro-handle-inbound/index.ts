@@ -79,6 +79,8 @@ Deno.serve(async (req) => {
 
       messageText = sigParams.Body || "";
       senderPhone = sigParams.From || "";
+      inboundSid = sigParams.MessageSid || "";
+      receivingNumber = sigParams.To || "";
       channel = "sms";
     } else {
       const body = await req.json();
@@ -89,6 +91,7 @@ Deno.serve(async (req) => {
       }
       messageText = body.message || body.Body || "";
       senderPhone = body.sender_phone || body.From || "";
+      receivingNumber = body.To || body.to_number || "";
       channel = body.channel || "sms";
     }
 
