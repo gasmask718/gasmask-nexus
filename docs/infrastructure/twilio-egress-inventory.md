@@ -50,7 +50,7 @@ These 8 functions route through `https://connector-gateway.lovable.dev/twilio` u
 - `brandaro-call-twiml`
 - `brandaro-closer-action`
 - `brandaro-execute-calls`
-- `brandaro-handle-inbound`
+- `brandaro-handle-inbound` — SMS egress converted to `send-sms` (2026-08-22); Twilio API contact now limited to `verifyTwilio` ingress verification
 - `brandaro-provision-receptionist`
 - `brandaro-recording-proxy`
 - `brandaro-retell-webhook`
@@ -71,7 +71,7 @@ These 8 functions route through `https://connector-gateway.lovable.dev/twilio` u
 - `gasmask-call-dial-complete`
 - `gasmask-call-recording-status`
 - `gasmask-inbound-voice`
-- `gasmask-missed-call-handler`
+- `gasmask-missed-call-handler` — recovery SMS converted to `send-sms` (2026-08-22); no direct message egress remains
 - `gasmask-trigger-bland-campaign`
 - `gasmask-voicemail-complete`
 - `gasmask-voicemail-transcription`
@@ -125,7 +125,7 @@ These 8 functions route through `https://connector-gateway.lovable.dev/twilio` u
 - `batch-phone-detection`
 - `brandaro-create-payment-link`
 - `brandaro-fetch-recordings`
-- `brandaro-handle-inbound`
+- `brandaro-handle-inbound` — converted to `send-sms` (2026-08-22); TwiML `<Message>` reply removed, all egress gated
 - `brandaro-recovery-worker`
 - `brandaro-receptionist-checkout`
 - `brandaro-send-demo`
@@ -139,12 +139,12 @@ These 8 functions route through `https://connector-gateway.lovable.dev/twilio` u
 - `dd-cart-recovery-cron`
 - `dd-generate-partner-payouts`
 - `dd-notify-customer-order-update`
-- `dd-notify-question`
-- `dd-pay-partner`
+- `dd-notify-question` — converted to `_shared/twilioSend` internal class (2026-08-22)
+- `dd-pay-partner` — converted to `send-sms` transactional (2026-08-22)
 - `dd-stripe-webhook`
 - `dd-subscription-fulfillment`
 - `dd-supplier-scorecard`
-- `dd-whatsapp-notify`
+- `dd-whatsapp-notify` — keeps its direct WhatsApp-shaped call, but now carries legal-STOP gate + idempotency + `outbound_messages` audit (2026-08-22)
 - `demo-stripe-webhook`
 - `detect-number-type`
 - `dropship-product-scorer`
