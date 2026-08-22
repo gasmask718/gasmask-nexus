@@ -64,7 +64,7 @@ serve(async (req) => {
 
     let sent = 0
     let failed = 0
-    const logs: any[] = []
+    let blocked = 0
 
     for (const lead of leads) {
       try {
