@@ -58,6 +58,18 @@ const ACCEPTED_ALTERNATES = new Set<string>([
   "sbo-inbound-sms",
 ]);
 
+// Messaging-Service inbound destinations hosted on a FOREIGN Supabase project
+// that are deliberate, not leaks. Key: project ref from the URL host. A service
+// pointing here reports pass — the destination is owned by a system we control
+// elsewhere, and warning on it trains people to ignore the monitor.
+const INTENTIONAL_FOREIGN_MS_DESTINATIONS: Record<string, string> = {
+  // UT Platform. Service "Unforgettable Times" (MGcb31bd…) points its inbound
+  // at UT's own twilio-inbound-sms. Brought up 2026-08-15 with a same-day
+  // four-STOP bring-up test against +19294990837; handler probed and answers.
+  // See docs/comms/ITEMS-3-4-5-REPORT-2026-08-20.md.
+  pxylmrmwqmxotqffejbe: "UT Platform inbound (owned since 2026-08-15)",
+};
+
 // Toll-free / short-code prefixes that are A2P-safe without registration.
 const TOLL_FREE_PREFIXES = ["800", "833", "844", "855", "866", "877", "888"];
 
