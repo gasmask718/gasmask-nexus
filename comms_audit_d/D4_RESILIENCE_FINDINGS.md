@@ -51,6 +51,23 @@ Slack, no email, no push. The monitor has been correctly detecting a wall of
    dropped"* [V]. Created 2026-06-24. Any inbound SMS landing on those services
    is discarded silently.
 
+> **Amended 2026-08-22 — closed, and already stale when this snapshot was
+> written.** The June trio's empty-URL defect was fixed **2026-07-31 ~15:00
+> UTC** (Playboxxx quarantine session): monitor history shows the same three
+> SIDs `fail` at 14:40 and pointed/renamed at 15:00. Drop window: **2026-06-24
+> → 2026-07-31, 37 days, closed.** Keep the signature of this failure class:
+> inbound SMS in `communication_logs` fell **510 (June) → 6 (July)** while
+> outbound held steady (396 → 403) — that divergence is how you spot
+> silent-dropped inbound next time. The `MS:Unforgettable Times` row that
+> resembles this finding is a **fourth** service (`MGcb31bd…`), first seen
+> 2026-08-15, pointing at UT Platform (`pxylmrmwqmxotqffejbe`) — deliberate:
+> handler probed and answering, same-day four-STOP bring-up test against
+> +19294990837. `comms-health-monitor` now treats that destination as
+> intentional so it stops warning on a correct configuration. Detail:
+> `docs/comms/ITEMS-3-4-5-REPORT-2026-08-20.md`. One inference remains
+> unproven: which service actually *holds* +19294990837 (one Twilio
+> `Services/{sid}/PhoneNumbers` call — scheduled, not yet run).
+
 ### False positive worth knowing
 The monitor reports `dc-inbound-call` as *"Supabase function not currently
 deployed; inbound would 404"* on 17 numbers [V]. **This is wrong.** Direct probe:
