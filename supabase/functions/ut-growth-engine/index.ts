@@ -1,6 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { errText } from "../_shared/errText.ts";
+import { sendSms } from "../_shared/sendSms.ts";
+import { sendTwilioSms } from "../_shared/twilioSend.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,20 +22,14 @@ serve(async (req) => {
   const body = await req.json()
   const { action, audience_type, channel, campaign_id, limit = 50 } = body
 
-  const twilioSid = Deno.env.get('TWILIO_ACCOUNT_SID')
-  const twilioAuth = Deno.env.get('TWILIO_AUTH_TOKEN')
   const twilioFrom = Deno.env.get('TWILIO_FROM_NUMBER') || Deno.env.get('TWILIO_PHONE_NUMBER')
   const sendgridKey = Deno.env.get('SENDGRID_API_KEY')
   const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
 
   // ─── ACTION: run_sms_outreach ───
+  // Recruitment cold outreach → campaign class. Routes through send-sms:
+  // suppression + legal-STOP gate, idempotency, campaign cap, cooldown.
   if (action === 'run_sms_outreach') {
-    if (!twilioSid || !twilioAuth || !twilioFrom) {
-      return new Response(
-        JSON.stringify({ error: 'Twilio not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
 
     const { data: campaign } = await supabase
       .from('ut_campaigns')
@@ -68,6 +64,7 @@ serve(async (req) => {
 
     let sent = 0
     let failed = 0
+    let blocked = 0
     const logs: any[] = []
 
     for (const lead of leads) {
@@ -101,36 +98,39 @@ serve(async (req) => {
           } catch (_e) { console.log('AI personalization failed, using template') }
         }
 
-        const smsRes = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Basic ${btoa(`${twilioSid}:${twilioAuth}`)}`,
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({ To: lead.phone, From: twilioFrom, Body: message })
-          }
-        )
-        const smsData = await smsRes.json()
+        const sms = await sendSms({
+          to: lead.phone,
+          body: message,
+          from: twilioFrom,
+          idempotencyKey: `ut-growth-sms-${campaign.id}-${lead.id}`,
+          sendClass: 'campaign',
+          campaignId: campaign.id,
+          campaignMaxSends: leads.length,
+          purpose: 'ut_growth_outreach',
+          metadata: { campaign_id: campaign.id, lead_id: lead.id, audience_type },
+        })
 
-        if (smsRes.ok) {
+        if (sms.success) {
           sent++
           logs.push({
             campaign_id: campaign.id, prospect_id: lead.id, prospect_table: 'ut_leads',
             channel: 'sms', to_number: lead.phone, message_sent: message,
-            status: 'sent', twilio_sid: smsData.sid
+            status: 'sent', twilio_sid: sms.providerMessageId
           })
           await supabase.from('ut_leads').update({
             status: 'contacted', outreach_channel: 'sms',
             outreach_sent_at: new Date().toISOString()
           }).eq('id', lead.id)
         } else {
-          failed++
+          // Suppressed/blocked is a named outcome, not a failure — and the
+          // lead is NOT marked contacted, so a lifted suppression (START) can
+          // still be reached on a later run.
+          if (sms.blocked) blocked++; else failed++
           logs.push({
             campaign_id: campaign.id, prospect_id: lead.id, prospect_table: 'ut_leads',
             channel: 'sms', to_number: lead.phone, message_sent: message,
-            status: 'failed', error_message: smsData.message
+            status: sms.blocked ? 'blocked' : 'failed',
+            error_message: `${sms.status}: ${sms.errorMessage ?? ''}`
           })
         }
         await new Promise(r => setTimeout(r, 1000))
@@ -143,7 +143,7 @@ serve(async (req) => {
     }).eq('id', campaign.id)
 
     return new Response(
-      JSON.stringify({ success: true, sent, failed }),
+      JSON.stringify({ success: true, sent, failed, blocked }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -269,21 +269,16 @@ serve(async (req) => {
       ambassadors_found: ambassadors, sms_sent: smsSent, emails_sent: emailsSent
     }, { onConflict: 'report_date' })
 
-    if (twilioSid && twilioAuth && twilioFrom) {
-      const reportMsg = `🔥 UT DAILY GROWTH REPORT\nDate: ${today}\n━━━━━━━━━━━━━━\nLEADS: Venues ${venues} | Staff ${staff} | Ambassadors ${ambassadors} | A-Grade ${aGrade}\nOUTREACH: SMS ${smsSent} | Emails ${emailsSent}\n━━━━━━━━━━━━━━\nCheck OS for details`
-
-      await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${btoa(`${twilioSid}:${twilioAuth}`)}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({ To: '+19295007046', From: twilioFrom, Body: reportMsg })
-        }
-      )
-    }
+    // Internal operator report — twilioSend, internal class (never queues
+    // behind campaign traffic, STOP-exempt by design).
+    const reportMsg = `🔥 UT DAILY GROWTH REPORT\nDate: ${today}\n━━━━━━━━━━━━━━\nLEADS: Venues ${venues} | Staff ${staff} | Ambassadors ${ambassadors} | A-Grade ${aGrade}\nOUTREACH: SMS ${smsSent} | Emails ${emailsSent}\n━━━━━━━━━━━━━━\nCheck OS for details`
+    await sendTwilioSms({
+      to: '+19295007046',
+      from: twilioFrom,
+      body: reportMsg,
+      suppressionClass: 'internal',
+      source: 'ut-growth-engine:daily_report',
+    })
 
     return new Response(
       JSON.stringify({ success: true, report: { venues, staff, ambassadors, smsSent, emailsSent } }),

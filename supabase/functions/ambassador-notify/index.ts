@@ -1,129 +1,132 @@
-// CRITICAL: Uses EXISTING Twilio backend secrets (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER)
-// Sends SMS notifications for ambassador lifecycle events
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { sendSms } from "../_shared/sendSms.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// UT-facing ambassador lifecycle notifications (approval / conversion /
+// milestone / payout / tier_upgrade). All are person-triggered financial or
+// status notices → transactional class. Sent via the send-sms chokepoint
+// (suppression + legal-STOP, idempotency, outbound_messages).
+// Sender parity preserved: same TWILIO_FROM_NUMBER this function always used.
 
-interface NotifyPayload {
-  event: "application_received" | "approved" | "conversion" | "payout_paid";
-  ambassador_id: string;
-  // Optional context
+type NotifyEvent = "approval" | "conversion" | "milestone" | "payout_paid" | "tier_upgrade";
+
+interface NotifyRequest {
+  ambassador_id?: string;
+  phone?: string;
+  event: NotifyEvent;
+  referral_code?: string;
   commission_amount?: number;
   revenue_amount?: number;
-  referral_code?: string;
   payout_amount?: number;
-  name?: string;
-  phone?: string;
+  new_tier?: string;
+  milestone?: string;
 }
 
-function buildMessage(event: string, data: NotifyPayload & { ambassador?: any }): string {
-  const name = data.name || data.ambassador?.full_name || "Ambassador";
-  const code = data.referral_code || data.ambassador?.referral_code || "";
-
+function buildMessage(event: NotifyEvent, data: NotifyRequest & { ambassador?: Record<string, unknown> }): string {
+  const name = (data.ambassador?.name as string) || "there";
   switch (event) {
-    case "application_received":
-      return `🎉 We received your Unforgettable Times ambassador application, ${name}. We'll review it and notify you once approved.`;
-
-    case "approved":
-      return `✅ You're approved as an Unforgettable Times ambassador, ${name}! Your referral code: ${code}. Start sharing and earning now!`;
-
+    case "approval":
+      return `🎉 Welcome to Unforgettable Times, ${name}! Your ambassador application is approved. Your referral link: unforgettable-times-usa.myshopify.com?ref=${data.referral_code} — Start sharing and earning today!`;
     case "conversion":
-      return `💰 A new referral conversion was credited to your account! Commission: $${(data.commission_amount || 0).toFixed(2)}. Check your dashboard for updated earnings.`;
-
+      return `💰 Cha-ching, ${name}! Your referral just converted — $${data.revenue_amount?.toFixed(2) ?? "0.00"} sale, you earned $${data.commission_amount?.toFixed(2) ?? "0.00"}. Keep sharing!`;
+    case "milestone":
+      return `🏆 Milestone unlocked, ${name}! ${data.milestone ?? "You hit a new goal"}. Your consistency is paying off — details in your dashboard.`;
     case "payout_paid":
-      return `💸 Your ambassador payout of $${(data.payout_amount || 0).toFixed(2)} has been processed. Check your dashboard for details.`;
-
+      return `✅ Payout sent, ${name}! $${data.payout_amount?.toFixed(2) ?? "0.00"} is on its way to your account. Thanks for repping Unforgettable Times.`;
+    case "tier_upgrade":
+      return `⬆️ Tier up, ${name}! You're now ${(data.new_tier ?? "a higher tier").toUpperCase()} — higher commissions unlocked. Check your dashboard for details.`;
     default:
-      return `📢 You have a new update on your Unforgettable Times ambassador account.`;
+      return `Hi ${name}, you have a new update from Unforgettable Times. Check your ambassador dashboard.`;
   }
 }
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const rawText = await req.text();
-    let body: NotifyPayload;
-    try { body = JSON.parse(rawText); } catch { body = {} as NotifyPayload; }
+    const body: NotifyRequest = await req.json();
 
-    if (!body.event) {
-      return new Response(JSON.stringify({ error: "Missing event type" }), {
+    if (!body.event || (!body.ambassador_id && !body.phone)) {
+      return new Response(JSON.stringify({ error: "event and ambassador_id (or phone) required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get Twilio secrets
-    const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const fromNumber = Deno.env.get("TWILIO_FROM_NUMBER");
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    if (!accountSid || !authToken || !fromNumber) {
-      console.error("Missing Twilio credentials in backend secrets");
-      return new Response(JSON.stringify({ error: "Twilio not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Get ambassador phone if not provided
+    // Resolve phone: direct or via ambassador record
     let phone = body.phone;
-    let ambassadorData: any = null;
+    let ambassadorData: Record<string, unknown> | undefined;
 
-    if (body.ambassador_id) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      const { data } = await supabase
+    if (!phone && body.ambassador_id) {
+      const { data, error } = await supabase
         .from("unforgettable_ambassadors")
-        .select("full_name, phone, referral_code, total_commissions")
+        .select("id, name, phone, referral_code, tier")
         .eq("id", body.ambassador_id)
-        .maybeSingle();
+        .single();
 
+      if (error || !data?.phone) {
+        console.error("Ambassador lookup failed:", error);
+        return new Response(JSON.stringify({ error: "Ambassador not found or has no phone" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      phone = data.phone;
       ambassadorData = data;
-      if (!phone && data?.phone) phone = data.phone;
+      body.referral_code = body.referral_code || data.referral_code;
     }
 
     if (!phone) {
-      console.warn("No phone number available for notification");
-      return new Response(JSON.stringify({ error: "No phone number", sent: false }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "No phone number available" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const message = buildMessage(body.event, { ...body, ambassador: ambassadorData });
 
-    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-    const smsResp = await fetch(twilioUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: "Basic " + btoa(`${accountSid}:${authToken}`),
-      },
-      body: new URLSearchParams({ To: phone, From: fromNumber, Body: message }),
+    // Idempotency: event + ambassador + amount. Distinct conversions/payouts
+    // legitimately repeat, so the amount is part of the key; an identical
+    // retried payload collapses to one send.
+    const amountKey = body.commission_amount ?? body.payout_amount ?? body.revenue_amount ?? 0;
+    const sms = await sendSms({
+      to: phone,
+      body: message,
+      from: Deno.env.get("TWILIO_FROM_NUMBER"),
+      idempotencyKey: `amb-notify-${body.event}-${body.ambassador_id ?? phone}-${amountKey}`,
+      sendClass: "transactional",
+      skipCooldown: true,
+      purpose: `ambassador_${body.event}`,
+      metadata: { event: body.event, ambassador_id: body.ambassador_id },
     });
 
-    const smsResult = await smsResp.json();
-
-    if (!smsResp.ok) {
-      console.error("Twilio SMS failed:", smsResult);
-      return new Response(JSON.stringify({ error: "SMS failed", details: smsResult }), {
+    if (!sms.success) {
+      if (sms.status === "blocked") {
+        console.log(`ambassador-notify suppressed: event=${body.event} phone=${phone} reason=${sms.errorMessage}`);
+        return new Response(JSON.stringify({ success: false, blocked: true, reason: sms.errorMessage, event: body.event }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.error("SMS via send-sms failed:", sms.status, sms.errorMessage);
+      return new Response(JSON.stringify({ error: "SMS failed", details: sms.errorMessage }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log(`SMS sent: event=${body.event} phone=${phone} sid=${smsResult.sid}`);
+    console.log(`SMS sent: event=${body.event} phone=${phone} sid=${sms.providerMessageId}`);
 
-    return new Response(JSON.stringify({ success: true, sid: smsResult.sid, event: body.event }), {
+    return new Response(JSON.stringify({ success: true, sid: sms.providerMessageId, event: body.event }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
-    console.error("ambassador-notify error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+  } catch (error) {
+    console.error("ambassador-notify error:", error);
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

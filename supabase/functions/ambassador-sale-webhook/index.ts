@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms } from "../_shared/sendSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -135,40 +136,38 @@ Deno.serve(async (req) => {
       })
       .eq("id", ambassador.id);
 
-    // 6. Send SMS notification via Twilio
-    const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const twilioFrom = Deno.env.get("TWILIO_FROM_NUMBER");
+    // 6. Send SMS notification via the send-sms chokepoint (suppression +
+    // legal-STOP, idempotency, outbound_messages). Transactional class:
+    // commission-earned notice for a sale that already happened.
+    // NOTE: sections 1-5 reference ambassador_sales and
+    // ambassadors.status/commission_rate/full_name — a schema that lives in
+    // UT's own backend project, not Nexus. This function cannot currently
+    // succeed in Nexus. See docs/comms/AMBASSADOR-SMS-CONVERSION-2026-08-22.md.
+    // Do not "repair" by pointing at Nexus's ambassadors table — same name,
+    // different entity (Grabba/dispatch ambassadors).
+    const fromNumber = Deno.env.get("TWILIO_FROM_NUMBER");
 
     let smsSent = false;
 
-    if (twilioSid && twilioAuth && twilioFrom && ambassador.phone) {
-      try {
-        const smsBody = `🎉 You just earned $${commissionAmount.toFixed(2)} commission from a sale! Your total earnings: $${newTotalEarnings.toFixed(2)}. Check your dashboard: https://unforgettable-times-usa.myshopify.com/ambassador/dashboard`;
+    if (fromNumber && ambassador.phone) {
+      const smsBody = `🎉 You just earned $${commissionAmount.toFixed(2)} commission from a sale! Your total earnings: $${newTotalEarnings.toFixed(2)}. Check your dashboard: https://unforgettable-times-usa.myshopify.com/ambassador/dashboard`;
 
-        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
+      const sms = await sendSms({
+        to: ambassador.phone,
+        body: smsBody,
+        from: fromNumber,
+        idempotencyKey: `amb-sale-${order_id}-${ambassador.id}`,
+        sendClass: "transactional",
+        skipCooldown: true,
+        purpose: "ambassador_sale_commission",
+        metadata: { order_id, ambassador_id: ambassador.id },
+      });
 
-        const smsResponse = await fetch(twilioUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": "Basic " + btoa(`${twilioSid}:${twilioAuth}`),
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            To: ambassador.phone,
-            From: twilioFrom,
-            Body: smsBody,
-          }),
-        });
-
-        const smsResult = await smsResponse.json();
-        smsSent = smsResponse.ok;
-
-        if (!smsResponse.ok) {
-          console.error("Twilio SMS failed:", smsResult);
-        }
-      } catch (smsErr) {
-        console.error("SMS send error:", smsErr);
+      smsSent = sms.success;
+      if (!sms.success) {
+        // blocked (suppression/STOP) and failed both land here; the
+        // outbound_messages row written by send-sms carries the reason.
+        console.error("SMS via send-sms:", sms.status, sms.errorMessage);
       }
     }
 
