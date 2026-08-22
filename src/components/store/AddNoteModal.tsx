@@ -183,6 +183,8 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
           note_text: noteText.trim(),
           created_at: dateToUse.toISOString(),
           brand_scope: brandScope || null,
+          edited_at: new Date().toISOString(),
+          edited_by: user?.id ?? null,
         })
         .eq('id', editingNote.id);
 
