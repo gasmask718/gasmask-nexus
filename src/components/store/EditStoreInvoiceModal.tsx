@@ -147,6 +147,10 @@ export function EditStoreInvoiceModal({
     onSuccess: () => {
       setReopened(true);
       toast.success('Invoice reopened — it will be re-finalized when you save');
+      // Refresh the invoice list so status reflects 'draft' immediately
+      queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
     },
     onError: (error: any) => {
       toast.error(`Could not reopen invoice: ${error.message}`);
@@ -293,12 +297,18 @@ export function EditStoreInvoiceModal({
       }
 
       // If this invoice was finalized and we reopened it to edit, lock it again.
-      if (reopened) {
-        const { error: finErr } = await (supabase as any).rpc('finalize_invoice', {
+      // reopened_for_edit covers an abandoned reopen (modal closed without saving):
+      // the invoice is already draft on the next open but still owes a finalize.
+      if (reopened || (invoice as any).reopened_for_edit) {
+        const { data: finData, error: finErr } = await (supabase as any).rpc('finalize_invoice', {
           p_invoice_id: invoice.id,
           p_user_id: user?.id ?? 'manual',
         });
         if (finErr) throw new Error(`Changes saved, but re-finalize failed: ${finErr.message}`);
+        // finalize_invoice reports failures in its JSON payload instead of raising
+        if (finData && finData.success === false) {
+          throw new Error(`Changes saved, but re-finalize failed: ${finData.error ?? 'unknown error'}`);
+        }
       }
 
       return invoice.id;
