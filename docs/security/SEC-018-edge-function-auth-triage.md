@@ -87,7 +87,6 @@ token accepted. 5/5 passing.
 - `ambassador-sale-webhook`
 - `analyze-dialer-call`
 - `analyze-va-call`
-- `apply-call-disposition`
 - `bland-call-webhook`
 - `bland-context-api`
 - `bland-send-sms`
@@ -99,7 +98,6 @@ token accepted. 5/5 passing.
 - `brandaro-call-analysis`
 - `brandaro-call-analyzer`
 - `brandaro-call-status`
-- `brandaro-call-twiml`
 - `brandaro-execute-calls`
 - `brandaro-fetch-recordings`
 - `brandaro-recording-proxy`
@@ -140,8 +138,7 @@ token accepted. 5/5 passing.
 - `cold-call-tts-webhook`
 - `dc-amd-callback`
 - `dc-bland-dispatch`
-- `dc-call-status`
-- `dc-configure-webhook`
+- `twilio-admin-set-number-webhook` (renamed from `dc-configure-webhook` 2026-08-20 — admin tool: JWT + role gate, NOT a signature check)
 - `dc-outbound-call`
 - `dc-post-call-analysis`
 - `dc-twilio-creds-check`
@@ -154,7 +151,7 @@ token accepted. 5/5 passing.
 - `expose-admin-bridge`
 - `fetch-twilio-conversation`
 - `fetch-twilio-messages`
-- `fix-twiml-voice-url`
+- `twilio-admin-fix-twiml-voice-url` (renamed from `fix-twiml-voice-url` 2026-08-20 — admin tool: JWT + role gate, NOT a signature check)
 - `gasmask-ai-caller`
 - `gasmask-trigger-bland-campaign`
 - `get-unified-call-history`
@@ -188,21 +185,15 @@ token accepted. 5/5 passing.
 - `transcribe-call-audio`
 - `transfer-campaign-call`
 - `twilio-bridge`
-- `twilio-call-events`
-- `twilio-call-status`
-- `twilio-gather-webhook`
 - `twilio-human-call-complete`
 - `twilio-human-queue-hold`
 - `twilio-manual-call`
 - `twilio-outbound-call`
-- `twilio-recording-callback`
 - `twilio-sms-status`
-- `twilio-status-webhook`
 - `twilio-transfer-choice-webhook`
 - `twilio-voice-diagnose`
 - `ut-generate-invoice`
 - `va-analyze-call`
-- `va-dialer-status`
 - `va-initiate-call`
 - `va-post-call-analysis`
 - `va-power-dialer`
@@ -424,7 +415,7 @@ token accepted. 5/5 passing.
 - `bulk-ai-call-processor`
 - `bulk-sms-processor`
 - `bureau-deadline-checker`
-- `dc-configure-webhooks-bulk`
+- `twilio-admin-set-number-webhooks-bulk` (renamed from `dc-configure-webhooks-bulk` 2026-08-20 — admin tool: JWT + role gate, NOT a signature check)
 - `dd-cart-recovery-cron`
 - `dd-generate-partner-payouts`
 - `dd-order-anomaly-cron`
