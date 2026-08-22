@@ -357,18 +357,35 @@ serve(async (req) => {
           })
           .select("id, response_token").single();
 
-        // SMS
+        // SMS — partners = workforce. One request = one offer per partner.
         if (partner.phone) {
           const smsBody = buildDispatchSMS(request, responseUrl);
-          const smsResult = await sendSMS(partner.phone, smsBody);
+          const smsResult = await sendSMS(partner.phone, smsBody, {
+            sendClass: "workforce",
+            idempotencyKey: `cb-dispatch-${request.id}-${partner.id}`,
+            purpose: "cb_dispatch_sms",
+            skipCooldown: true,
+          });
+          if (smsResult.suppressed) {
+            // Not a silent skip: named outcome in cb_communication_logs and
+            // the response payload so ops can see WHICH partner was
+            // unreachable and why. STOP is absolute — workforce skips
+            // cooldown, never consent.
+            suppressedPartners.push({
+              partner_id: partner.id, name: partner.name, phone: partner.phone,
+              reason: smsResult.error || "suppressed",
+            });
+          }
           notifications.push({ type: "sms", partner: partner.name, ...smsResult });
 
           await logComm(supabase, request.id, partner.id, "outbound", "sms",
-            "cb_dispatch_sms", smsBody, smsResult.success ? "sent" : "failed", smsResult.sid);
+            "cb_dispatch_sms", smsBody,
+            smsResult.suppressed ? "suppressed" : smsResult.success ? "sent" : "failed", smsResult.sid);
 
           if (dispatch) {
             await supabase.from("cb_request_partner_dispatches")
-              .update({ status: smsResult.success ? "sent" : "failed", sent_at: new Date().toISOString(),
+              .update({ status: smsResult.suppressed ? "suppressed" : smsResult.success ? "sent" : "failed",
+                sent_at: new Date().toISOString(),
                 failure_reason: smsResult.error || null })
               .eq("id", dispatch.id);
           }
@@ -522,10 +539,16 @@ serve(async (req) => {
 
       if (sendChannels.includes("sms") && request.customer_phone) {
         const smsBody = `🚌 Your Coach Bus is Available!\n${request.pickup_city} → ${request.dropoff_city}\n${request.trip_date || "TBD"}\nPrice: $${margin?.final_customer_price || quote?.quoted_price}\n\nConfirm: ${approveUrl}`;
-        const smsResult = await sendSMS(request.customer_phone, smsBody);
+        // Customer, post-quote = transactional. One request = one offer.
+        const smsResult = await sendSMS(request.customer_phone, smsBody, {
+          sendClass: "transactional",
+          idempotencyKey: `cb-offer-${request.id}`,
+          purpose: "cb_customer_offer_sms",
+          skipCooldown: true,
+        });
         results.push({ channel: "sms", ...smsResult });
         await logComm(supabase, request.id, null, "outbound", "sms", "cb_customer_offer_sms",
-          smsBody, smsResult.success ? "sent" : "failed", smsResult.sid);
+          smsBody, smsResult.suppressed ? "suppressed" : smsResult.success ? "sent" : "failed", smsResult.sid);
       }
 
       if (sendChannels.includes("email") && request.customer_email) {
