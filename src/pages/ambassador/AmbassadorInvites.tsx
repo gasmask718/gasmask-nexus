@@ -1,7 +1,7 @@
 /**
  * AmbassadorInvites — Full invite management page for ambassador portal
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { UserPlus, Clock, Check, X, Send, AlertTriangle, Copy } from 'lucide-react';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useMyInvites, useCreateInvite, useInvitesEnabled, useSendAmbassadorInvite, useResendAmbassadorInvite } from '@/hooks/useAmbassadorInvites';
+import { useMyInvites, useCreateInvite, useInvitesEnabled, useSendAmbassadorInvite, useResendAmbassadorInvite, useInviteSendEvents } from '@/hooks/useAmbassadorInvites';
+import { InviteDeliveryInfo } from '@/components/ambassador/InviteDeliveryInfo';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -29,6 +30,14 @@ function InvitesContent() {
   const createInvite = useCreateInvite();
   const sendInvite = useSendAmbassadorInvite();
   const resendInvite = useResendAmbassadorInvite();
+
+  const inviteIds = useMemo(() => invites.map(i => i.id), [invites]);
+  const { data: sendEvents = [] } = useInviteSendEvents(inviteIds);
+  const eventsByInvite = useMemo(() => {
+    const map: Record<string, typeof sendEvents> = {};
+    for (const e of sendEvents) (map[e.invite_id] ||= []).push(e);
+    return map;
+  }, [sendEvents]);
 
   const stats = {
     total: invites.length,
@@ -49,6 +58,10 @@ function InvitesContent() {
       phone: phone || undefined,
       channel,
     });
+    const failed = (result?.send_log || []).filter((l: any) => !l.ok);
+    if (failed.length) {
+      toast.warning(`Some channels failed: ${failed.map((l: any) => l.channel).join(', ')}`);
+    }
     if (result?.link) setGeneratedLink(result.link);
   };
 
@@ -134,6 +147,7 @@ function InvitesContent() {
                 <TableHead>Contact</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead>Delivered</TableHead>
                 <TableHead>Expires</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -141,11 +155,11 @@ function InvitesContent() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : invites.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No invites yet. Create your first invite to start recruiting.
                   </TableCell>
                 </TableRow>
@@ -159,6 +173,9 @@ function InvitesContent() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDistanceToNow(new Date(invite.created_at), { addSuffix: true })}
+                  </TableCell>
+                  <TableCell>
+                    <InviteDeliveryInfo events={eventsByInvite[invite.id] || []} />
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {invite.status === 'pending'

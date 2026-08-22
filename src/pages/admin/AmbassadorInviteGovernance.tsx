@@ -2,8 +2,8 @@
  * AmbassadorInviteGovernance — Owner/Admin panel for invite oversight
  * Global toggle, all invites table, revoke/extend actions
  */
-import { useState } from 'react';
-import { Shield, Power, Search, X, UserPlus, Clock, Check, AlertTriangle } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Shield, Power, Search, X, UserPlus, Clock, Check, AlertTriangle, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,9 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { useAllInvites, useRevokeInvite, useInvitesEnabled, useToggleInvites, useResendAmbassadorInvite } from '@/hooks/useAmbassadorInvites';
+import { useAllInvites, useRevokeInvite, useInvitesEnabled, useToggleInvites, useResendAmbassadorInvite, useSendAmbassadorInvite, useInviteSendEvents } from '@/hooks/useAmbassadorInvites';
+import { InviteDeliveryInfo } from '@/components/ambassador/InviteDeliveryInfo';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -22,12 +23,48 @@ export default function AmbassadorInviteGovernance() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
   const [revokeReason, setRevokeReason] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newChannel, setNewChannel] = useState<'sms' | 'email' | 'both'>('both');
 
   const { data: enabled, isLoading: enabledLoading } = useInvitesEnabled();
   const toggleInvites = useToggleInvites();
   const { data: invites = [], isLoading } = useAllInvites();
   const revokeInvite = useRevokeInvite();
   const resendInvite = useResendAmbassadorInvite();
+  const sendInvite = useSendAmbassadorInvite();
+
+  const inviteIds = useMemo(() => invites.map(i => i.id), [invites]);
+  const { data: sendEvents = [] } = useInviteSendEvents(inviteIds);
+  const eventsByInvite = useMemo(() => {
+    const map: Record<string, typeof sendEvents> = {};
+    for (const e of sendEvents) (map[e.invite_id] ||= []).push(e);
+    return map;
+  }, [sendEvents]);
+
+  const handleCreateSend = async () => {
+    if (!newEmail && !newPhone) {
+      toast.error('Enter an email or phone number');
+      return;
+    }
+    const result = await sendInvite.mutateAsync({
+      name: newName || undefined,
+      email: newEmail || undefined,
+      phone: newPhone || undefined,
+      channel: newChannel,
+    });
+    const failed = (result?.send_log || []).filter((l: any) => !l.ok);
+    if (failed.length) {
+      toast.warning(`Some channels failed: ${failed.map((l: any) => l.channel).join(', ')}`);
+    }
+    setShowCreate(false);
+    setNewName('');
+    setNewEmail('');
+    setNewPhone('');
+    setNewChannel('both');
+  };
 
   const filteredInvites = invites.filter(inv => {
     if (statusFilter !== 'all' && inv.status !== statusFilter) return false;
@@ -72,6 +109,10 @@ export default function AmbassadorInviteGovernance() {
           </h1>
           <p className="text-muted-foreground">Control, audit, and manage all ambassador invitations</p>
         </div>
+        <Button onClick={() => setShowCreate(true)}>
+          <UserPlus className="h-4 w-4 mr-2" />
+          New Invite
+        </Button>
       </div>
 
       {/* Global Toggle */}
@@ -144,6 +185,7 @@ export default function AmbassadorInviteGovernance() {
                 <TableHead>Invited By</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead>Delivered</TableHead>
                 <TableHead>Expires</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -151,11 +193,11 @@ export default function AmbassadorInviteGovernance() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">Loading...</TableCell>
+                  <TableCell colSpan={7} className="text-center py-8">Loading...</TableCell>
                 </TableRow>
               ) : filteredInvites.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No invites found
                   </TableCell>
                 </TableRow>
@@ -172,6 +214,9 @@ export default function AmbassadorInviteGovernance() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {format(new Date(inv.created_at), 'MMM d, yyyy HH:mm')}
+                  </TableCell>
+                  <TableCell>
+                    <InviteDeliveryInfo events={eventsByInvite[inv.id] || []} />
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {inv.status === 'pending'
@@ -233,6 +278,51 @@ export default function AmbassadorInviteGovernance() {
             <Button variant="outline" onClick={() => setRevokeTarget(null)}>Cancel</Button>
             <Button variant="destructive" onClick={handleRevoke} disabled={revokeInvite.isPending}>
               {revokeInvite.isPending ? 'Revoking...' : 'Revoke Invite'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create & Send Dialog */}
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Ambassador Invite</DialogTitle>
+            <DialogDescription>
+              Creates a single-use invite (expires in 48 hours) and delivers the link over the channels you pick.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Name (optional)</Label>
+              <Input placeholder="Invitee name" value={newName} onChange={e => setNewName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input placeholder="email@example.com" type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input placeholder="+1..." type="tel" value={newPhone} onChange={e => setNewPhone(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Send via</Label>
+              <select
+                value={newChannel}
+                onChange={e => setNewChannel(e.target.value as 'sms' | 'email' | 'both')}
+                className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+              >
+                <option value="sms">SMS</option>
+                <option value="email">Email</option>
+                <option value="both">Both</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button onClick={handleCreateSend} disabled={sendInvite.isPending}>
+              <Send className="h-4 w-4 mr-2" />
+              {sendInvite.isPending ? 'Sending...' : 'Create & Send'}
             </Button>
           </DialogFooter>
         </DialogContent>
