@@ -10803,6 +10803,7 @@ export type Database = {
           email: string | null
           expires_at: string
           id: string
+          invite_request_id: string | null
           invite_token: string
           invited_by_ambassador_id: string
           invited_by_user_id: string
@@ -10826,6 +10827,7 @@ export type Database = {
           email?: string | null
           expires_at?: string
           id?: string
+          invite_request_id?: string | null
           invite_token: string
           invited_by_ambassador_id: string
           invited_by_user_id: string
@@ -10849,6 +10851,7 @@ export type Database = {
           email?: string | null
           expires_at?: string
           id?: string
+          invite_request_id?: string | null
           invite_token?: string
           invited_by_ambassador_id?: string
           invited_by_user_id?: string
@@ -10866,6 +10869,13 @@ export type Database = {
           used_by_user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ambassador_invites_invite_request_id_fkey"
+            columns: ["invite_request_id"]
+            isOneToOne: false
+            referencedRelation: "ambassador_invite_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ambassador_invites_invited_by_ambassador_id_fkey"
             columns: ["invited_by_ambassador_id"]
