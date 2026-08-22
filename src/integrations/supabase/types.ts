@@ -10478,114 +10478,6 @@ export type Database = {
           },
         ]
       }
-      ambassador_box_requests: {
-        Row: {
-          ambassador_id: string
-          ambassador_user_id: string
-          created_at: string
-          created_purchase_id: string | null
-          decline_reason: string | null
-          id: string
-          note: string | null
-          product_id: string | null
-          product_name: string
-          quantity: number
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          ambassador_id: string
-          ambassador_user_id: string
-          created_at?: string
-          created_purchase_id?: string | null
-          decline_reason?: string | null
-          id?: string
-          note?: string | null
-          product_id?: string | null
-          product_name: string
-          quantity: number
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          ambassador_id?: string
-          ambassador_user_id?: string
-          created_at?: string
-          created_purchase_id?: string | null
-          decline_reason?: string | null
-          id?: string
-          note?: string | null
-          product_id?: string | null
-          product_name?: string
-          quantity?: number
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ambassador_box_requests_ambassador_id_fkey"
-            columns: ["ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "admin_commission_overview"
-            referencedColumns: ["ambassador_id"]
-          },
-          {
-            foreignKeyName: "ambassador_box_requests_ambassador_id_fkey"
-            columns: ["ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "admin_payout_summary"
-            referencedColumns: ["ambassador_id"]
-          },
-          {
-            foreignKeyName: "ambassador_box_requests_ambassador_id_fkey"
-            columns: ["ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "ambassadors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ambassador_box_requests_ambassador_id_fkey"
-            columns: ["ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "v_ambassador_financial_summary"
-            referencedColumns: ["ambassador_id"]
-          },
-          {
-            foreignKeyName: "ambassador_box_requests_created_purchase_id_fkey"
-            columns: ["created_purchase_id"]
-            isOneToOne: false
-            referencedRelation: "ambassador_purchases"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ambassador_box_requests_created_purchase_id_fkey"
-            columns: ["created_purchase_id"]
-            isOneToOne: false
-            referencedRelation: "v_ambassador_purchase_history"
-            referencedColumns: ["order_id"]
-          },
-          {
-            foreignKeyName: "ambassador_box_requests_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ambassador_box_requests_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "v_product_profit_summary"
-            referencedColumns: ["product_id"]
-          },
-        ]
-      }
       ambassador_bulk_job_items: {
         Row: {
           created_at: string
@@ -10846,45 +10738,57 @@ export type Database = {
       ambassador_invite_requests: {
         Row: {
           created_at: string
-          email: string
+          email: string | null
           full_name: string
           generated_invite_id: string | null
           id: string
-          justification: string
+          justification: string | null
+          phone: string | null
           requested_by: string
           requested_by_ambassador_id: string | null
+          resulting_ambassador_id: string | null
           review_notes: string | null
           reviewed_by: string | null
+          show_review_notes: boolean
+          source: string
           status: string
           territory: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
-          email: string
+          email?: string | null
           full_name: string
           generated_invite_id?: string | null
           id?: string
-          justification: string
+          justification?: string | null
+          phone?: string | null
           requested_by: string
           requested_by_ambassador_id?: string | null
+          resulting_ambassador_id?: string | null
           review_notes?: string | null
           reviewed_by?: string | null
+          show_review_notes?: boolean
+          source?: string
           status?: string
           territory?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
-          email?: string
+          email?: string | null
           full_name?: string
           generated_invite_id?: string | null
           id?: string
-          justification?: string
+          justification?: string | null
+          phone?: string | null
           requested_by?: string
           requested_by_ambassador_id?: string | null
+          resulting_ambassador_id?: string | null
           review_notes?: string | null
           reviewed_by?: string | null
+          show_review_notes?: boolean
+          source?: string
           status?: string
           territory?: string | null
           updated_at?: string
@@ -11724,127 +11628,6 @@ export type Database = {
           {
             foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
             columns: ["ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "v_ambassador_financial_summary"
-            referencedColumns: ["ambassador_id"]
-          },
-        ]
-      }
-      ambassador_referral_requests: {
-        Row: {
-          created_at: string
-          decline_reason: string | null
-          email: string | null
-          full_name: string
-          id: string
-          invite_id: string | null
-          notes: string | null
-          phone: string | null
-          referrer_ambassador_id: string
-          region: string | null
-          resulting_ambassador_id: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          show_decline_reason: boolean
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          decline_reason?: string | null
-          email?: string | null
-          full_name: string
-          id?: string
-          invite_id?: string | null
-          notes?: string | null
-          phone?: string | null
-          referrer_ambassador_id: string
-          region?: string | null
-          resulting_ambassador_id?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          show_decline_reason?: boolean
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          decline_reason?: string | null
-          email?: string | null
-          full_name?: string
-          id?: string
-          invite_id?: string | null
-          notes?: string | null
-          phone?: string | null
-          referrer_ambassador_id?: string
-          region?: string | null
-          resulting_ambassador_id?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          show_decline_reason?: boolean
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ambassador_referral_requests_invite_id_fkey"
-            columns: ["invite_id"]
-            isOneToOne: false
-            referencedRelation: "ambassador_invites"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ambassador_referral_requests_referrer_ambassador_id_fkey"
-            columns: ["referrer_ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "admin_commission_overview"
-            referencedColumns: ["ambassador_id"]
-          },
-          {
-            foreignKeyName: "ambassador_referral_requests_referrer_ambassador_id_fkey"
-            columns: ["referrer_ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "admin_payout_summary"
-            referencedColumns: ["ambassador_id"]
-          },
-          {
-            foreignKeyName: "ambassador_referral_requests_referrer_ambassador_id_fkey"
-            columns: ["referrer_ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "ambassadors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ambassador_referral_requests_referrer_ambassador_id_fkey"
-            columns: ["referrer_ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "v_ambassador_financial_summary"
-            referencedColumns: ["ambassador_id"]
-          },
-          {
-            foreignKeyName: "ambassador_referral_requests_resulting_ambassador_id_fkey"
-            columns: ["resulting_ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "admin_commission_overview"
-            referencedColumns: ["ambassador_id"]
-          },
-          {
-            foreignKeyName: "ambassador_referral_requests_resulting_ambassador_id_fkey"
-            columns: ["resulting_ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "admin_payout_summary"
-            referencedColumns: ["ambassador_id"]
-          },
-          {
-            foreignKeyName: "ambassador_referral_requests_resulting_ambassador_id_fkey"
-            columns: ["resulting_ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "ambassadors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ambassador_referral_requests_resulting_ambassador_id_fkey"
-            columns: ["resulting_ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
             referencedColumns: ["ambassador_id"]
@@ -153160,12 +152943,12 @@ export type Database = {
         }
         Returns: Json
       }
-      review_ambassador_referral: {
+      review_ambassador_invite_request: {
         Args: {
           p_decision: string
-          p_reason?: string
+          p_notes?: string
           p_request_id: string
-          p_show_reason?: boolean
+          p_show_notes?: boolean
         }
         Returns: Json
       }
