@@ -20,7 +20,7 @@ import { useMyAmbassadorIdentity, useMyReferrals } from '@/hooks/useAmbassadorRe
 
 export function ReferralLinkCard() {
   const { data: identity, isLoading: identityLoading } = useMyAmbassadorIdentity();
-  const { data: referrals = [], isLoading: referralsLoading } = useMyReferrals(identity?.id);
+  const { data: referrals = [], isLoading: referralsLoading } = useMyReferrals();
   const [copied, setCopied] = useState(false);
 
   if (identityLoading || referralsLoading) return null;
@@ -50,7 +50,7 @@ export function ReferralLinkCard() {
     switch (status) {
       case 'approved':
         return <Badge variant="default" className="text-xs shrink-0 gap-1"><CheckCircle2 className="h-3 w-3" />Approved</Badge>;
-      case 'declined':
+      case 'rejected':
         return <Badge variant="destructive" className="text-xs shrink-0 gap-1"><XCircle className="h-3 w-3" />Declined</Badge>;
       default:
         return <Badge variant="secondary" className="text-xs shrink-0 gap-1"><Clock className="h-3 w-3" />Pending review</Badge>;
@@ -98,11 +98,11 @@ export function ReferralLinkCard() {
             <div className="flex flex-col gap-0.5 min-w-0">
               <span className="font-medium truncate">{ref.full_name}</span>
               <span className="text-muted-foreground truncate">
-                {[ref.region, ref.phone || ref.email].filter(Boolean).join(' · ') || 'No contact details'}
+                {[ref.territory, ref.phone || ref.email].filter(Boolean).join(' · ') || 'No contact details'}
               </span>
-              {ref.status === 'declined' && ref.show_decline_reason && ref.decline_reason && (
+              {ref.status === 'rejected' && ref.show_review_notes && ref.review_notes && (
                 <span className="text-muted-foreground/70 italic truncate">
-                  Reason: {ref.decline_reason}
+                  Reason: {ref.review_notes}
                 </span>
               )}
             </div>

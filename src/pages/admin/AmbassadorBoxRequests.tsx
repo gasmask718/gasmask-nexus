@@ -35,7 +35,8 @@ export default function AmbassadorBoxRequests() {
   const [declineReason, setDeclineReason] = useState('');
   const [approveTarget, setApproveTarget] = useState<AmbassadorBoxRequest | null>(null);
 
-  // Outstanding balance per ambassador: unpaid, non-cancelled purchases
+  // Outstanding balance per ambassador: unpaid purchases, excluding
+  // cancelled orders and un-reviewed box requests (those carry no debt)
   const { data: balances = {} } = useQuery({
     queryKey: ['ambassador-outstanding-balances'],
     queryFn: async () => {
@@ -43,7 +44,7 @@ export default function AmbassadorBoxRequests() {
         .from('ambassador_purchases')
         .select('ambassador_user_id, total, paid_at, status')
         .is('paid_at', null)
-        .neq('status', 'cancelled');
+        .not('status', 'in', '("cancelled","requested","declined")');
       if (error) throw error;
       const map: Record<string, number> = {};
       for (const row of data || []) {

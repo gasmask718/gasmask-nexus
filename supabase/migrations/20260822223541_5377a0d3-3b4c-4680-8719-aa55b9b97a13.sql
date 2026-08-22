@@ -1,0 +1,1 @@
+ALTER VIEW public.v_ambassador_referral_tree SET (security_invoker = true);

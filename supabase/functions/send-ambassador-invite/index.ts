@@ -65,6 +65,12 @@ Deno.serve(async (req) => {
       if (!data) return json({ error: "invite_not_found" }, 404);
       if (data.status !== "pending") return json({ error: `invite_${data.status}` }, 400);
       if (new Date(data.expires_at) < new Date()) return json({ error: "invite_expired" }, 400);
+      // Request-originated invites must be owner-approved before anything
+      // (re)sends. Direct staff invites carry no invite_request_id and are exempt.
+      if (data.invite_request_id && !data.owner_approved_at) {
+        console.warn("Blocked resend of unapproved request invite:", data.id);
+        return json({ error: "invite_pending_owner_approval" }, 403);
+      }
       invite = { ...data, token: data.invite_token };
     } else {
       const { data, error } = await userClient.rpc("create_ambassador_invite", {

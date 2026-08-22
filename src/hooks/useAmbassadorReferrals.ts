@@ -2,34 +2,39 @@
  * useAmbassadorReferrals — GasMask ambassador referral pipeline.
  *
  * Flow: ambassador shares /ambassador-referral/:code → recruit self-submits
- * (public, no account) → PENDING referral → owner/admin approves or declines.
- * Approval creates an ambassador invite stamped with the referrer's ambassador
- * id and delivers it via send-ambassador-invite (SMS + email). Attribution
- * rides referrer_ambassador_id → ambassador_invites.invited_by_ambassador_id →
- * ambassadors.recruited_by_ambassador_id (all three accept paths).
+ * (public, no account) → PENDING row in ambassador_invite_requests (the
+ * pre-existing review queue) → owner/admin approves or declines via
+ * review_ambassador_invite_request. Approval creates the ambassador_invites
+ * row stamped with invited_by_ambassador_id (recruiter credit) and
+ * owner_approved_at/by, then delivers it via send-ambassador-invite
+ * (SMS + email). Attribution rides invited_by_ambassador_id →
+ * ambassadors.recruited_by_ambassador_id on all three accept paths.
+ *
+ * No parallel tables: referrals ARE invite requests (source='public_referral').
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-export type ReferralStatus = 'pending' | 'approved' | 'declined';
+export type ReferralStatus = 'pending' | 'approved' | 'rejected';
 
 export interface AmbassadorReferral {
   id: string;
-  referrer_ambassador_id: string;
+  requested_by: string;
+  requested_by_ambassador_id: string | null;
   full_name: string;
   email: string | null;
   phone: string | null;
-  region: string | null;
-  notes: string | null;
+  territory: string | null;
+  justification: string | null;
+  source: string;
   status: ReferralStatus;
-  decline_reason: string | null;
-  show_decline_reason: boolean;
-  invite_id: string | null;
+  review_notes: string | null;
+  show_review_notes: boolean;
+  generated_invite_id: string | null;
   resulting_ambassador_id: string | null;
   reviewed_by: string | null;
-  reviewed_at: string | null;
   created_at: string;
 }
 
@@ -38,7 +43,7 @@ export interface AmbassadorReferralWithNames extends AmbassadorReferral {
   resulting_ambassador_name: string | null;
 }
 
-const QUERY_KEY = 'ambassador-referral-requests';
+const QUERY_KEY = 'ambassador-invite-requests';
 
 /** Current user's ambassador identity (id + tracking_code for the share link). */
 export function useMyAmbassadorIdentity() {
@@ -61,21 +66,22 @@ export function useMyAmbassadorIdentity() {
   });
 }
 
-/** Ambassador: my own referrals (RLS scopes to referrer). */
-export function useMyReferrals(ambassadorId: string | null | undefined) {
+/** Ambassador: my own referrals + invite requests (RLS: requested_by = me). */
+export function useMyReferrals() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [QUERY_KEY, 'mine', ambassadorId],
+    queryKey: [QUERY_KEY, 'mine', user?.id],
     queryFn: async () => {
-      if (!ambassadorId) return [];
+      if (!user?.id) return [];
       const { data, error } = await supabase
-        .from('ambassador_referral_requests')
+        .from('ambassador_invite_requests')
         .select('*')
-        .eq('referrer_ambassador_id', ambassadorId)
+        .eq('requested_by', user.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data || []) as AmbassadorReferral[];
     },
-    enabled: !!ambassadorId,
+    enabled: !!user?.id,
   });
 }
 
@@ -85,7 +91,7 @@ export function useAllReferrals() {
     queryKey: [QUERY_KEY, 'all'],
     queryFn: async () => {
       const { data: referrals, error } = await supabase
-        .from('ambassador_referral_requests')
+        .from('ambassador_invite_requests')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -93,7 +99,7 @@ export function useAllReferrals() {
 
       const ids = new Set<string>();
       rows.forEach(r => {
-        ids.add(r.referrer_ambassador_id);
+        if (r.requested_by_ambassador_id) ids.add(r.requested_by_ambassador_id);
         if (r.resulting_ambassador_id) ids.add(r.resulting_ambassador_id);
       });
 
@@ -109,7 +115,7 @@ export function useAllReferrals() {
 
       return rows.map(r => ({
         ...r,
-        referrer_name: names[r.referrer_ambassador_id] ?? null,
+        referrer_name: r.requested_by_ambassador_id ? names[r.requested_by_ambassador_id] ?? null : null,
         resulting_ambassador_name: r.resulting_ambassador_id ? names[r.resulting_ambassador_id] ?? null : null,
       })) as AmbassadorReferralWithNames[];
     },
@@ -120,7 +126,8 @@ export function useAllReferrals() {
 export function referralStatsByAmbassador(referrals: AmbassadorReferral[]) {
   const map: Record<string, { total: number; approved: number }> = {};
   for (const r of referrals) {
-    const entry = (map[r.referrer_ambassador_id] ||= { total: 0, approved: 0 });
+    if (!r.requested_by_ambassador_id) continue;
+    const entry = (map[r.requested_by_ambassador_id] ||= { total: 0, approved: 0 });
     entry.total += 1;
     if (r.status === 'approved') entry.approved += 1;
   }
@@ -139,11 +146,11 @@ export function useReviewReferral() {
       showReason?: boolean;
     }) => {
       const { request, decision } = input;
-      const { data, error } = await supabase.rpc('review_ambassador_referral', {
+      const { data, error } = await supabase.rpc('review_ambassador_invite_request', {
         p_request_id: request.id,
         p_decision: decision,
-        p_reason: input.reason || null,
-        p_show_reason: !!input.showReason,
+        p_notes: input.reason || null,
+        p_show_notes: input.showReason ?? true,
       } as any);
       if (error) throw error;
       const result = data as any;
@@ -178,7 +185,7 @@ export function useReviewReferral() {
       queryClient.invalidateQueries({ queryKey: ['ambassador-invite-send-events'] });
       if (input.decision === 'approve') {
         if (result.sent) {
-          toast.success('Referral approved — invite sent by text and email');
+          toast.success('Approved — invite sent by text and email');
         } else {
           toast.warning(`Approved, but invite delivery failed: ${result.sendError || 'unknown error'}. Resend from Invite Governance.`);
         }
@@ -258,7 +265,7 @@ export function useSubmitReferral() {
           result?.error || 'Submission failed';
         throw new Error(msg);
       }
-      return result as { success: true; duplicate: boolean; request_id: string };
+      return result as { success: true; duplicate: boolean };
     },
   });
 }
