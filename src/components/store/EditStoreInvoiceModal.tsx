@@ -45,6 +45,8 @@ interface Invoice {
   partial_amount: number | null;
   received_by: string | null;
   delivery_photos: string[] | null;
+  /** Lifecycle status — 'finalized' invoices need reopen_invoice before editing */
+  status?: string | null;
 }
 
 interface EditStoreInvoiceModalProps {
