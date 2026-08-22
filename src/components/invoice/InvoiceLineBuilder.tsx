@@ -33,6 +33,7 @@ import {
   listPriceForUnit,
   summarize,
   tubesPerBox,
+  withDiscount,
   withPrice,
   withQuantity,
   UNIT_KIND_ICONS,
@@ -40,6 +41,7 @@ import {
   type BuilderBrand,
   type BuilderLine,
   type BuilderProduct,
+  type DiscountType,
   type SaleChannel,
   type SaleUnitKind,
 } from '@/lib/invoice/lineMath';
@@ -391,9 +393,76 @@ export function InvoiceLineBuilder({
                     }
                     className="h-8 w-24 font-mono text-sm"
                   />
-                  <span className="ml-auto w-24 text-right font-mono text-sm font-medium">
+                  {line.discount_type !== 'none' && line.unit_price_used !== line.list_unit_price && (
+                    <span className="ml-auto font-mono text-xs text-muted-foreground line-through">
+                      ${(line.list_unit_price * line.quantity).toFixed(2)}
+                    </span>
+                  )}
+                  <span className={`${line.discount_type !== 'none' ? '' : 'ml-auto '}w-24 text-right font-mono text-sm font-medium`}>
                     ${line.line_subtotal.toFixed(2)}
                   </span>
+                </div>
+
+                {/* ── Discount (percent / fixed) with mandatory reason ── */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex overflow-hidden rounded-md border border-border/60">
+                    {(['none', 'percent', 'amount'] as DiscountType[]).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() =>
+                          updateLine(
+                            line.id,
+                            withDiscount(
+                              line,
+                              t,
+                              t === 'none' ? 0 : line.discount_value,
+                              t === 'none' ? '' : line.discount_reason,
+                            ),
+                          )
+                        }
+                        className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                          line.discount_type === t
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-background text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {t === 'none' ? 'List' : t === 'percent' ? '% off' : '$ off'}
+                      </button>
+                    ))}
+                  </div>
+                  {line.discount_type !== 'none' && (
+                    <>
+                      <Input
+                        type="number"
+                        min="0"
+                        step={line.discount_type === 'percent' ? '1' : '0.01'}
+                        value={line.discount_value || ''}
+                        disabled={disabled}
+                        onChange={(e) =>
+                          updateLine(
+                            line.id,
+                            withDiscount(line, line.discount_type, parseFloat(e.target.value) || 0, line.discount_reason),
+                          )
+                        }
+                        placeholder={line.discount_type === 'percent' ? '%' : '$ off'}
+                        className="h-8 w-20 font-mono text-sm"
+                      />
+                      <Input
+                        value={line.discount_reason}
+                        disabled={disabled}
+                        onChange={(e) =>
+                          updateLine(
+                            line.id,
+                            withDiscount(line, line.discount_type, line.discount_value, e.target.value),
+                          )
+                        }
+                        placeholder="Discount reason"
+                        className="h-8 min-w-32 flex-1 text-xs"
+                      />
+                    </>
+                  )}
                 </div>
 
                 <p className="flex items-center gap-1 text-[11px] text-muted-foreground">

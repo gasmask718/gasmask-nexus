@@ -212,10 +212,8 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
   };
 
   const handleEdit = (invoice: Invoice) => {
-    if ((invoice as any).status === 'finalized') {
-      toast.error('Cannot edit a finalized invoice. Void it first to make corrections.');
-      return;
-    }
+    // Finalized invoices are handled inside the modal: it offers a
+    // reason-gated reopen (reopen_invoice RPC) and re-finalizes on save.
     setInvoiceToEdit(invoice);
     setEditModalOpen(true);
   };

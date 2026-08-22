@@ -45,6 +45,8 @@ interface Invoice {
   partial_amount: number | null;
   received_by: string | null;
   delivery_photos: string[] | null;
+  /** Lifecycle status — 'finalized' invoices need reopen_invoice before editing */
+  status?: string | null;
 }
 
 interface EditStoreInvoiceModalProps {
@@ -105,6 +107,32 @@ export function EditStoreInvoiceModal({
   );
   const [receivedByName, setReceivedByName] = useState(invoice.received_by || '');
   const [photos, setPhotos] = useState<string[]>(invoice.delivery_photos || []);
+
+  // Finalized invoices are locked by a DB trigger ("Cannot modify line items
+  // on a finalized invoice"). Reopen with a reason, then re-finalize on save.
+  const isFinalized = invoice.status === 'finalized';
+  const [reopened, setReopened] = useState(false);
+  const [reopenReason, setReopenReason] = useState('');
+
+  const reopenMutation = useMutation({
+    mutationFn: async () => {
+      const reason = reopenReason.trim();
+      if (!reason) throw new Error('Enter a reason for reopening');
+      const { error } = await (supabase as any).rpc('reopen_invoice', {
+        p_invoice_id: invoice.id,
+        p_reason: reason,
+        p_user_id: user?.id ?? 'admin',
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setReopened(true);
+      toast.success('Invoice reopened — it will be re-finalized when you save');
+    },
+    onError: (error: any) => {
+      toast.error(`Could not reopen invoice: ${error.message}`);
+    },
+  });
 
   // Fetch existing line items
   const { data: existingLineItems = [] } = useQuery({
@@ -243,7 +271,14 @@ export function EditStoreInvoiceModal({
         if (error) throw new Error(`Line removal failed: ${error.message}`);
       }
 
-
+      // If this invoice was finalized and we reopened it to edit, lock it again.
+      if (reopened) {
+        const { error: finErr } = await (supabase as any).rpc('finalize_invoice', {
+          p_invoice_id: invoice.id,
+          p_user_id: user?.id ?? 'manual',
+        });
+        if (finErr) throw new Error(`Changes saved, but re-finalize failed: ${finErr.message}`);
+      }
 
       return invoice.id;
     },
@@ -273,11 +308,12 @@ export function EditStoreInvoiceModal({
 
   // Don't allow editing paid invoices
   const isPaid = invoice.payment_status === 'paid';
+  const showForm = !isPaid && (!isFinalized || reopened);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg h-[90vh] max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
             Edit Invoice
@@ -287,6 +323,8 @@ export function EditStoreInvoiceModal({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Scrollable body — header above and footer below stay fixed */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
         {isPaid ? (
           <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/30 text-center">
             <p className="text-destructive font-medium">This invoice is paid and cannot be edited.</p>
@@ -294,8 +332,34 @@ export function EditStoreInvoiceModal({
               If you need to make changes, void this invoice and create a new one.
             </p>
           </div>
+        ) : isFinalized && !reopened ? (
+          <div className="space-y-4">
+            <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+              <p className="font-medium text-amber-500">This invoice is finalized.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Finalized invoices are locked against line-item changes. Reopen it with a
+                reason to make corrections — it will be re-finalized when you save.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Reason for reopening</Label>
+              <Textarea
+                value={reopenReason}
+                onChange={(e) => setReopenReason(e.target.value)}
+                placeholder="Why does this invoice need to change?"
+                rows={3}
+              />
+            </div>
+            <Button
+              className="w-full"
+              disabled={!reopenReason.trim() || reopenMutation.isPending}
+              onClick={() => reopenMutation.mutate()}
+            >
+              {reopenMutation.isPending ? 'Reopening…' : 'Reopen to Edit'}
+            </Button>
+          </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="edit-invoice-form" onSubmit={handleSubmit} className="space-y-4">
             {/* Canonical line builder — Full Box / Half Box / Pack / Loose Tube */}
             <InvoiceLineBuilder
               lines={lineItems}
@@ -451,24 +515,30 @@ export function EditStoreInvoiceModal({
               />
             </div>
 
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={updateMutation.isPending || lineItems.length === 0}
-                className="flex-1"
-              >
-                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
           </form>
+        )}
+        </div>
+
+        {/* Fixed footer */}
+        {showForm && (
+          <div className="flex gap-3 px-6 py-4 border-t shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="edit-invoice-form"
+              disabled={updateMutation.isPending || lineItems.length === 0}
+              className="flex-1"
+            >
+              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
         )}
       </DialogContent>
     </Dialog>
