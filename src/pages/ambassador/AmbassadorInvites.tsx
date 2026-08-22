@@ -1,7 +1,7 @@
 /**
  * AmbassadorInvites — Full invite management page for ambassador portal
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { UserPlus, Clock, Check, X, Send, AlertTriangle, Copy } from 'lucide-react';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { PortalRBACGate } from '@/components/portal/PortalRBACGate';
@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useMyInvites, useCreateInvite, useInvitesEnabled, useSendAmbassadorInvite, useResendAmbassadorInvite } from '@/hooks/useAmbassadorInvites';
+import { useMyInvites, useCreateInvite, useInvitesEnabled, useSendAmbassadorInvite, useResendAmbassadorInvite, useInviteSendEvents } from '@/hooks/useAmbassadorInvites';
+import { InviteDeliveryInfo } from '@/components/ambassador/InviteDeliveryInfo';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 

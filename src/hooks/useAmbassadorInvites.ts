@@ -218,8 +218,30 @@ export function useResendAmbassadorInvite() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-ambassador-invites'] });
       queryClient.invalidateQueries({ queryKey: ['all-ambassador-invites'] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-invite-send-events'] });
       toast.success('Invite resent');
     },
     onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+// Delivery history: which channels each invite was sent over, and when.
+// RLS: actors read their own send events; admin/owner read all.
+export function useInviteSendEvents(inviteIds: string[]) {
+  const key = [...inviteIds].sort().join(',');
+  return useQuery({
+    queryKey: ['ambassador-invite-send-events', key],
+    queryFn: async () => {
+      if (!inviteIds.length) return [];
+      const { data, error } = await supabase
+        .from('ambassador_invite_events')
+        .select('invite_id, event_type, created_at, metadata')
+        .in('invite_id', inviteIds)
+        .eq('event_type', 'sent')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as { invite_id: string; event_type: string; created_at: string; metadata: any }[];
+    },
+    enabled: inviteIds.length > 0,
   });
 }
