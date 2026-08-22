@@ -11550,6 +11550,7 @@ export type Database = {
           created_by_user_id: string
           created_for_user_id: string
           currency: string
+          decline_reason: string | null
           discount_total: number
           fulfilled_at: string | null
           id: string
@@ -11570,6 +11571,7 @@ export type Database = {
           created_by_user_id: string
           created_for_user_id: string
           currency?: string
+          decline_reason?: string | null
           discount_total?: number
           fulfilled_at?: string | null
           id?: string
@@ -11590,6 +11592,7 @@ export type Database = {
           created_by_user_id?: string
           created_for_user_id?: string
           currency?: string
+          decline_reason?: string | null
           discount_total?: number
           fulfilled_at?: string | null
           id?: string
