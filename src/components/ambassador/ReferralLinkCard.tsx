@@ -1,47 +1,61 @@
 /**
- * ReferralLinkCard — GasMask ambassador recruitment.
+ * ReferralLinkCard — GasMask ambassador referral link + referral status.
  *
- * Adds recruits to the GasMask pipeline (ambassador_leads) with recruiter
- * credit via created_by_ambassador_id. It deliberately does NOT link to
- * /apply/ambassador — that form feeds the Unforgettable Times programme's
- * table, which is a different business. Recruits added here surface in the
- * ambassador's Recruitment pipeline and can be qualified + invited from there.
+ * The shareable link sends recruits to /ambassador-referral/:code (public form).
+ * Submissions become PENDING referrals for owner approval — recruits never
+ * become ambassadors automatically. The ambassador sees their own list and
+ * counts (referred / approved), which is the recruiting motivator.
+ *
+ * It deliberately does NOT link to /apply/ambassador — that form feeds the
+ * Unforgettable Times programme's table, which is a different business.
  */
 import { useState } from 'react';
-import { UserPlus, Users, Loader2 } from 'lucide-react';
+import { Copy, Check, Users, Clock, CheckCircle2, XCircle, Link2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useRecruitmentLeads } from '@/hooks/useRecruitmentLeads';
+import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
+import { useMyAmbassadorIdentity, useMyReferrals } from '@/hooks/useAmbassadorReferrals';
 
 export function ReferralLinkCard() {
-  const { leads, isLoading, ambassadorId, createLead } = useRecruitmentLeads();
-  const [name, setName] = useState('');
-  const [contact, setContact] = useState('');
-  const [region, setRegion] = useState('');
+  const { data: identity, isLoading: identityLoading } = useMyAmbassadorIdentity();
+  const { data: referrals = [], isLoading: referralsLoading } = useMyReferrals(identity?.id);
+  const [copied, setCopied] = useState(false);
 
-  const handleAdd = async () => {
-    if (!name.trim()) return;
-    const trimmed = contact.trim();
-    const isEmail = trimmed.includes('@');
-    await createLead.mutateAsync({
-      full_name: name.trim(),
-      email: isEmail ? trimmed : undefined,
-      phone: !isEmail && trimmed ? trimmed : undefined,
-      region: region.trim() || undefined,
-      notes: 'Added via dashboard recruit card',
-    });
-    setName('');
-    setContact('');
-    setRegion('');
+  if (identityLoading || referralsLoading) return null;
+  if (!identity) return null;
+
+  const referralLink = identity.tracking_code
+    ? `${window.location.origin}/ambassador-referral/${identity.tracking_code}`
+    : null;
+
+  const totalReferred = referrals.length;
+  const approvedCount = referrals.filter(r => r.status === 'approved').length;
+  const pendingCount = referrals.filter(r => r.status === 'pending').length;
+
+  const handleCopy = async () => {
+    if (!referralLink) return;
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      toast.success('Referral link copied');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Could not copy — long-press the link to copy it manually');
+    }
   };
 
-  if (isLoading) return null;
-  if (!ambassadorId) return null;
-
-  const activeLeads = leads.filter(l => l.status !== 'dead' && l.status !== 'converted').length;
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge variant="default" className="text-xs shrink-0 gap-1"><CheckCircle2 className="h-3 w-3" />Approved</Badge>;
+      case 'declined':
+        return <Badge variant="destructive" className="text-xs shrink-0 gap-1"><XCircle className="h-3 w-3" />Declined</Badge>;
+      default:
+        return <Badge variant="secondary" className="text-xs shrink-0 gap-1"><Clock className="h-3 w-3" />Pending review</Badge>;
+    }
+  };
 
   return (
     <Card className="border-primary/20">
@@ -49,64 +63,69 @@ export function ReferralLinkCard() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              Recruit Ambassadors
+              <Link2 className="h-4 w-4 text-primary" />
+              Your Referral Link
             </CardTitle>
             <CardDescription className="text-xs">
-              Add someone to your GasMask recruitment pipeline — you get the credit.
+              Share it — recruits apply themselves, the owner approves, you get the credit.
             </CardDescription>
           </div>
-          {activeLeads > 0 && (
+          {totalReferred > 0 && (
             <Badge variant="secondary" className="shrink-0">
-              {activeLeads} in pipeline
+              {totalReferred} referred · {approvedCount} approved
             </Badge>
           )}
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="space-y-2">
-          <Label htmlFor="recruit-name" className="text-xs">Their name</Label>
-          <Input
-            id="recruit-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Full name"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="recruit-contact" className="text-xs">Email or phone</Label>
-          <Input
-            id="recruit-contact"
-            value={contact}
-            onChange={(e) => setContact(e.target.value)}
-            placeholder="email@example.com or +1..."
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="recruit-region" className="text-xs">Area (optional)</Label>
-          <Input
-            id="recruit-region"
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            placeholder="e.g. Brooklyn — Bed-Stuy"
-          />
-        </div>
-        <Button
-          onClick={handleAdd}
-          disabled={!name.trim() || createLead.isPending}
-          className="w-full"
-          size="sm"
-        >
-          {createLead.isPending ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <UserPlus className="h-4 w-4 mr-2" />
-          )}
-          Add to my pipeline
-        </Button>
-        <p className="text-xs text-muted-foreground text-center">
-          Leads appear under Recruitment. Once qualified, generate their invite from there.
-        </p>
+        {referralLink ? (
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-xs bg-muted/50 border rounded px-2 py-2 truncate select-all">
+              {referralLink}
+            </code>
+            <Button size="sm" variant="outline" onClick={handleCopy} className="shrink-0">
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground bg-muted/30 border rounded p-2">
+            No referral code on your profile yet — ask an admin to generate one.
+          </p>
+        )}
+
+        {referrals.slice(0, 6).map(ref => (
+          <div key={ref.id} className="flex items-center justify-between text-xs p-2 bg-muted/30 rounded border">
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="font-medium truncate">{ref.full_name}</span>
+              <span className="text-muted-foreground truncate">
+                {[ref.region, ref.phone || ref.email].filter(Boolean).join(' · ') || 'No contact details'}
+              </span>
+              {ref.status === 'declined' && ref.show_decline_reason && ref.decline_reason && (
+                <span className="text-muted-foreground/70 italic truncate">
+                  Reason: {ref.decline_reason}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
+              {statusBadge(ref.status)}
+              <span className="text-[10px] text-muted-foreground">
+                {formatDistanceToNow(new Date(ref.created_at), { addSuffix: true })}
+              </span>
+            </div>
+          </div>
+        ))}
+
+        {referrals.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-2">
+            Nobody has used your link yet. Share it to start building your team.
+          </p>
+        )}
+
+        {pendingCount > 0 && (
+          <p className="text-xs text-muted-foreground text-center">
+            {pendingCount} waiting on owner review.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

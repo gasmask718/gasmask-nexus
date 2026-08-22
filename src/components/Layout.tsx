@@ -377,6 +377,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/ambassadors', label: 'All Ambassadors', icon: Users },
         { path: '/ambassadors/tasks', label: 'Ambassador Tasks', icon: ClipboardList },
         { path: '/ambassadors/box-requests', label: 'Box Requests', icon: Package },
+        { path: '/ambassadors/referrals', label: 'Referral Queue', icon: UserPlus },
         { path: '/ambassador-regions', label: 'Ambassador Regions', icon: Map },
         { path: '/ambassador-payouts', label: 'Ambassador Payouts', icon: DollarSign },
         { path: '/influencers', label: 'Influencers', icon: Star },

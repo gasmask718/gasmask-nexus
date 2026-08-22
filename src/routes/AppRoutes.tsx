@@ -149,6 +149,8 @@ const AmbassadorRequestAmbassador = lazy(() => import('@/pages/ambassador/Ambass
 const AmbassadorTasks = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorTasks })));
 const AmbassadorTasksAdmin = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AmbassadorTasksAdmin })));
 const AmbassadorBoxRequests = lazy(() => import('@/pages/admin/AmbassadorBoxRequests'));
+const AmbassadorReferralQueue = lazy(() => import('@/pages/admin/AmbassadorReferralQueue'));
+const AmbassadorReferralPage = lazy(() => import('@/pages/public/AmbassadorReferralPage'));
 const AmbassadorRequests = lazy(() => import('@/pages/security/AmbassadorRequests'));
 const AmbassadorInviteAccept = lazy(() => import('@/pages/invite/AmbassadorInviteAccept'));
 
@@ -1400,6 +1402,8 @@ export default function AppRoutes() {
       <Route path="/clipper/login" element={<ClipperLogin />} />
       <Route path="/clipper/portal" element={<ClipperPortal />} />
       <Route path="/apply/ambassador" element={<AmbassadorApplication />} />
+      {/* Public GasMask ambassador referral form (shared by ambassadors, no login) */}
+      <Route path="/ambassador-referral/:code" element={<AmbassadorReferralPage />} />
       <Route path="/apply/beauty-specialist" element={<BeautyProviderSignup />} />
       {/* Brandaro paid-client intake (public, no login) */}
       <Route path="/intake" element={<BrandaroIntakePage />} />
@@ -1779,6 +1783,7 @@ export default function AppRoutes() {
         <Route path="/ambassadors/command" element={<AmbassadorCommandDashboard />} />
         <Route path="/ambassadors/tasks" element={<AmbassadorTasksAdmin />} />
         <Route path="/ambassadors/box-requests" element={<AmbassadorBoxRequests />} />
+        <Route path="/ambassadors/referrals" element={<AmbassadorReferralQueue />} />
         <Route path="/ambassador-regions" element={<AmbassadorRegionsPage />} />
         <Route path="/ambassador-payouts" element={<Floor8PayoutsPage />} />
         <Route path="/ambassadors/regions" element={<AmbassadorRegionsPage />} />
