@@ -15,3 +15,4 @@ export { default as AmbassadorSellThrough } from './AmbassadorSellThrough';
 export { default as AmbassadorProfitDashboard } from './AmbassadorProfitDashboard';
 export { default as AmbassadorInvites } from './AmbassadorInvites';
 export { default as AmbassadorRecruitmentLeads } from './AmbassadorRecruitmentLeads';
+export { default as AmbassadorTasks } from './AmbassadorTasks';
