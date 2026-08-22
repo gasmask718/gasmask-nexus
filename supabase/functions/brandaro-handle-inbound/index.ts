@@ -1,6 +1,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { verifyTwilio } from "../_shared/dialer.ts";
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
+import { sendSms, smsContentHash } from "../_shared/sendSms.ts";
+
+// Auto-replies route through send-sms (conversational class): suppression,
+// idempotency, and an outbound_messages row. An inbound text from someone
+// who previously sent STOP does NOT re-consent them — if send-sms blocks the
+// reply we record the suppressed outcome in brandaro_message_log and the
+// inbound message still lands in brandaro_inbound_messages for a human.
+// (Whether an inbound text legally re-opens SMS contact is a legal question,
+// not a technical one — the code takes the conservative answer.)
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
