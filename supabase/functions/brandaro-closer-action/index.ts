@@ -1,11 +1,18 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendSms } from "../_shared/sendSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+function shortHash(s: string): string {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h).toString(36);
+}
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -44,25 +51,39 @@ serve(async (req: Request) => {
       // Send SMS
       if (!message) throw new Error("message is required for SMS");
 
-      const twilioApiUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
-      const formData = new URLSearchParams({
-        To: e164,
-        Body: message,
-        MessagingServiceSid: twilioMessagingServiceSid,
+      // Outbound SMS routes through send-sms (suppression + idempotency +
+      // outbound_messages audit). Sender parity: previously MessagingServiceSid
+      // only — send-sms applies the same TWILIO_MESSAGING_SERVICE_SID
+      // globally, so the presented sender is unchanged.
+      // Class: conversational — a human at the closer desk types this per lead.
+      const hourBucket = new Date().toISOString().slice(0, 13);
+      const smsResult = await sendSms({
+        to: e164,
+        body: message,
+        sendClass: "conversational",
+        idempotencyKey: `closer-sms-${lead_id || normalized}-${shortHash(message)}-${hourBucket}`,
+        skipCooldown: true, // human-paced, one tap = one send
+        purpose: "closer_desk_sms",
+        metadata: { source: "brandaro_closer_desk", lead_id, session_id },
       });
 
-      const response = await fetch(twilioApiUrl, {
-        method: "POST",
-        headers: { "Authorization": authHeader, "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData.toString(),
-      });
-
-      const responseText = await response.text();
-      result = JSON.parse(responseText);
-
-      if (!response.ok || result?.error_code) {
-        throw new Error(`SMS failed: ${result?.message || "unknown"}`);
+      if (smsResult.blocked) {
+        console.warn(`[brandaro-closer-action] BLOCKED ${e164} — ${smsResult.errorMessage}`);
+        await supabase.from("communication_logs").insert({
+          direction: "outbound",
+          channel: "sms",
+          phone_number: e164,
+          message_body: message,
+          status: "blocked",
+          provider: "twilio",
+          metadata: { source: "brandaro_closer_desk", lead_id, session_id, blocker: smsResult.errorCode },
+        });
+        throw new Error(`SMS not sent — recipient has opted out (${smsResult.errorMessage}). Call instead.`);
       }
+      if (!smsResult.success) {
+        throw new Error(`SMS failed: ${smsResult.errorMessage || "unknown"}`);
+      }
+      result = { sid: smsResult.providerMessageId };
 
       // Log to communication_logs
       await supabase.from("communication_logs").insert({
