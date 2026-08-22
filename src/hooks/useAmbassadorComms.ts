@@ -79,7 +79,7 @@ export interface MessageTemplate {
  * - Otherwise resolves from auth.uid(); picks the oldest row (deterministic) when
  *   multiple ambassador records share the same user_id (legacy seed data).
  */
-function useCurrentAmbassador() {
+export function useCurrentAmbassador() {
   const { user } = useAuth();
   const { viewAsAmbassador } = useViewAs();
   const impersonatedId = viewAsAmbassador?.id ?? null;
