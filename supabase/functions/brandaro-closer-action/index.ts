@@ -194,25 +194,35 @@ serve(async (req: Request) => {
         paymentMessage = paymentMessage.split(payment_url).join(shortPaymentUrl);
       }
 
-      const twilioApiUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
-      const formData = new URLSearchParams({
-        To: e164,
-        Body: paymentMessage,
-        MessagingServiceSid: twilioMessagingServiceSid,
+      // Payment link via send-sms. Class: transactional (post-quote, one
+      // session = one link). Same MessagingServiceSid parity as above.
+      const payResult = await sendSms({
+        to: e164,
+        body: paymentMessage,
+        sendClass: "transactional",
+        idempotencyKey: `closer-pay-${session_id || lead_id || normalized}-${shortHash(paymentMessage)}`,
+        skipCooldown: true,
+        purpose: "closer_payment_link",
+        metadata: { source: "brandaro_payment_push", lead_id, session_id },
       });
 
-      const response = await fetch(twilioApiUrl, {
-        method: "POST",
-        headers: { "Authorization": authHeader, "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData.toString(),
-      });
-
-      const responseText = await response.text();
-      result = JSON.parse(responseText);
-
-      if (!response.ok || result?.error_code) {
-        throw new Error(`Payment link SMS failed: ${result?.message || "unknown"}`);
+      if (payResult.blocked) {
+        console.warn(`[brandaro-closer-action] payment link BLOCKED ${e164} — ${payResult.errorMessage}`);
+        await supabase.from("communication_logs").insert({
+          direction: "outbound",
+          channel: "sms",
+          phone_number: e164,
+          message_body: paymentMessage,
+          status: "blocked",
+          provider: "twilio",
+          metadata: { source: "brandaro_payment_push", lead_id, session_id, blocker: payResult.errorCode },
+        });
+        throw new Error(`Payment link not sent — recipient has opted out (${payResult.errorMessage}). Call instead.`);
       }
+      if (!payResult.success) {
+        throw new Error(`Payment link SMS failed: ${payResult.errorMessage || "unknown"}`);
+      }
+      result = { sid: payResult.providerMessageId };
 
       // Update session
       if (session_id) {
