@@ -269,21 +269,16 @@ serve(async (req) => {
       ambassadors_found: ambassadors, sms_sent: smsSent, emails_sent: emailsSent
     }, { onConflict: 'report_date' })
 
-    if (twilioSid && twilioAuth && twilioFrom) {
-      const reportMsg = `🔥 UT DAILY GROWTH REPORT\nDate: ${today}\n━━━━━━━━━━━━━━\nLEADS: Venues ${venues} | Staff ${staff} | Ambassadors ${ambassadors} | A-Grade ${aGrade}\nOUTREACH: SMS ${smsSent} | Emails ${emailsSent}\n━━━━━━━━━━━━━━\nCheck OS for details`
-
-      await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${btoa(`${twilioSid}:${twilioAuth}`)}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({ To: '+19295007046', From: twilioFrom, Body: reportMsg })
-        }
-      )
-    }
+    // Internal operator report — twilioSend, internal class (never queues
+    // behind campaign traffic, STOP-exempt by design).
+    const reportMsg = `🔥 UT DAILY GROWTH REPORT\nDate: ${today}\n━━━━━━━━━━━━━━\nLEADS: Venues ${venues} | Staff ${staff} | Ambassadors ${ambassadors} | A-Grade ${aGrade}\nOUTREACH: SMS ${smsSent} | Emails ${emailsSent}\n━━━━━━━━━━━━━━\nCheck OS for details`
+    await sendTwilioSms({
+      to: '+19295007046',
+      from: twilioFrom,
+      body: reportMsg,
+      suppressionClass: 'internal',
+      source: 'ut-growth-engine:daily_report',
+    })
 
     return new Response(
       JSON.stringify({ success: true, report: { venues, staff, ambassadors, smsSent, emailsSent } }),
