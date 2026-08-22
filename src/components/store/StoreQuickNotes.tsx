@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, StickyNote, Trash2, Pencil, AlertTriangle } from 'lucide-react';
+import { Loader2, StickyNote, Trash2, Pencil, AlertTriangle, Eraser } from 'lucide-react';
 import { verifiedInsert, verifiedUpdate, mutationErrorMessage } from '@/lib/verifiedMutation';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { Button as UIButton } from '@/components/ui/button';
@@ -176,6 +176,27 @@ export function StoreQuickNotes({ storeId, storeName: storeNameProp, compact = f
     onError: (e: any) => toast.error(mutationErrorMessage(e)),
   });
 
+  /** Remove exact duplicate notes for this store, keeping the earliest. */
+  const cleanupNotes = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await (supabase as any).rpc('dedupe_store_notes', {
+        p_store_id: storeId,
+      });
+      if (error) throw error;
+      return Number(data) || 0;
+    },
+    onSuccess: (removed) => {
+      toast.success(
+        removed > 0
+          ? `Removed ${removed} duplicate note${removed === 1 ? '' : 's'}.`
+          : 'No duplicate notes found.',
+      );
+      qc.invalidateQueries({ queryKey: ['store-notes-quick', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-notes'] });
+    },
+    onError: (e: any) => toast.error(`Cleanup failed: ${mutationErrorMessage(e)}`),
+  });
+
   const handleEdit = (note: CleanQuickNote) => {
     setEditingNote(note);
     setEditModalOpen(true);
@@ -203,6 +224,21 @@ export function StoreQuickNotes({ storeId, storeName: storeNameProp, compact = f
       <div className="flex items-center gap-1.5">
         <StickyNote className={compact ? 'h-3.5 w-3.5 text-muted-foreground' : 'h-4 w-4 text-primary'} />
         <p className={headingClass}>Quick notes</p>
+        <UIButton
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="ml-auto h-6 px-2 text-[10px] text-muted-foreground"
+          onClick={() => cleanupNotes.mutate()}
+          disabled={cleanupNotes.isPending || !storeId}
+        >
+          {cleanupNotes.isPending ? (
+            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+          ) : (
+            <Eraser className="h-3 w-3 mr-1" />
+          )}
+          Clean up notes
+        </UIButton>
       </div>
 
       {isLoading ? (

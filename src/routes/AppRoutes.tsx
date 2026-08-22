@@ -140,6 +140,8 @@ const AmbassadorProfitDashboard = lazy(() => import('@/pages/ambassador').then(m
 const AmbassadorInvites = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorInvites })));
 const AmbassadorRecruitmentLeads = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorRecruitmentLeads })));
 const AmbassadorRequestAmbassador = lazy(() => import('@/pages/ambassador/AmbassadorRequestAmbassador'));
+const AmbassadorTasks = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorTasks })));
+const AmbassadorTasksAdmin = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AmbassadorTasksAdmin })));
 const AmbassadorRequests = lazy(() => import('@/pages/security/AmbassadorRequests'));
 const AmbassadorInviteAccept = lazy(() => import('@/pages/invite/AmbassadorInviteAccept'));
 
@@ -1771,6 +1773,7 @@ export default function AppRoutes() {
         <Route path="/training" element={<Training />} />
         <Route path="/ambassadors" element={<AllAmbassadorsTable />} />
         <Route path="/ambassadors/command" element={<AmbassadorCommandDashboard />} />
+        <Route path="/ambassadors/tasks" element={<AmbassadorTasksAdmin />} />
         <Route path="/ambassador-regions" element={<AmbassadorRegionsPage />} />
         <Route path="/ambassador-payouts" element={<Floor8PayoutsPage />} />
         <Route path="/ambassadors/regions" element={<AmbassadorRegionsPage />} />
@@ -3458,6 +3461,13 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
             <AmbassadorRoutes />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/tasks" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <AmbassadorTasks />
           </RequireRole>
         </ProtectedRoute>
       } />

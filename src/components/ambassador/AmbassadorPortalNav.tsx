@@ -29,6 +29,7 @@ const AMBASSADOR_NAV_ITEMS = [
   { id: 'commissions', i18n: 'ambassador.nav.commissions', label: 'Commissions', path: '/ambassador/commissions', icon: DollarSign },
   { id: 'orders', i18n: 'ambassador.nav.orders', label: 'Orders', path: '/ambassador/orders', icon: Package },
   { id: 'routes', i18n: 'ambassador.nav.routes', label: 'Routes', path: '/ambassador/routes', icon: MapPin },
+  { id: 'tasks', i18n: 'ambassador.nav.tasks', label: 'Tasks', path: '/ambassador/tasks', icon: ClipboardList },
   { id: 'communications', i18n: 'ambassador.nav.messages', label: 'Messages', path: '/ambassador/communications', icon: MessageSquare },
   { id: 'recruitment', i18n: 'ambassador.nav.recruitment', label: 'Recruitment', path: '/ambassador/recruitment', icon: Users },
   { id: 'request-ambassador', i18n: 'ambassador.nav.team_expansion', label: 'Team Expansion', path: '/ambassador/request-ambassador', icon: UserPlus },

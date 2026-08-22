@@ -8,3 +8,4 @@ export { default as AmbassadorProfilePage } from './AmbassadorProfilePage';
 export { default as AmbassadorPayoutsPage } from './AmbassadorPayoutsPage';
 export { default as AmbassadorRegionsPage } from './AmbassadorRegionsPage';
 export { default as InfluencersPage } from './InfluencersPage';
+export { default as AmbassadorTasksAdmin } from './AmbassadorTasksAdmin';
