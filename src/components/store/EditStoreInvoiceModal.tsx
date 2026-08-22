@@ -114,6 +114,25 @@ export function EditStoreInvoiceModal({
   const [reopened, setReopened] = useState(false);
   const [reopenReason, setReopenReason] = useState('');
 
+  // Reset ALL form state whenever a different invoice is opened (or the modal
+  // is reopened). Without this, a stale `reopened=true` from a previous edit
+  // skips the reopen gate and the save hits the DB guard raw.
+  useEffect(() => {
+    if (!open) return;
+    setReopened(false);
+    setReopenReason('');
+    setLineItems([]);
+    setSaleChannel('retail');
+    setPaymentMethod(invoice.payment_method || '');
+    setDueDate(invoice.due_date ? new Date(invoice.due_date) : undefined);
+    setNotes(invoice.notes || '');
+    setPaymentStatus(invoice.payment_status as 'unpaid' | 'partial' | 'paid');
+    setPartialAmount(invoice.partial_amount?.toString() || '');
+    setReceivedByName(invoice.received_by || '');
+    setPhotos(invoice.delivery_photos || []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, invoice.id]);
+
   const reopenMutation = useMutation({
     mutationFn: async () => {
       const reason = reopenReason.trim();
@@ -157,10 +176,9 @@ export function EditStoreInvoiceModal({
 
   // Load line items when modal opens
   useEffect(() => {
-    if (existingLineItems.length > 0) {
-      setLineItems(existingLineItems.map((item: any) => fromLineItemRow(item)));
-    }
-  }, [existingLineItems]);
+    if (!open) return;
+    setLineItems(existingLineItems.map((item: any) => fromLineItemRow(item)));
+  }, [existingLineItems, open]);
 
 
 
