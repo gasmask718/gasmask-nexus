@@ -114,6 +114,25 @@ export function EditStoreInvoiceModal({
   const [reopened, setReopened] = useState(false);
   const [reopenReason, setReopenReason] = useState('');
 
+  // Reset ALL form state whenever a different invoice is opened (or the modal
+  // is reopened). Without this, a stale `reopened=true` from a previous edit
+  // skips the reopen gate and the save hits the DB guard raw.
+  useEffect(() => {
+    if (!open) return;
+    setReopened(false);
+    setReopenReason('');
+    setLineItems([]);
+    setSaleChannel('retail');
+    setPaymentMethod(invoice.payment_method || '');
+    setDueDate(invoice.due_date ? new Date(invoice.due_date) : undefined);
+    setNotes(invoice.notes || '');
+    setPaymentStatus(invoice.payment_status as 'unpaid' | 'partial' | 'paid');
+    setPartialAmount(invoice.partial_amount?.toString() || '');
+    setReceivedByName(invoice.received_by || '');
+    setPhotos(invoice.delivery_photos || []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, invoice.id]);
+
   const reopenMutation = useMutation({
     mutationFn: async () => {
       const reason = reopenReason.trim();
@@ -128,6 +147,10 @@ export function EditStoreInvoiceModal({
     onSuccess: () => {
       setReopened(true);
       toast.success('Invoice reopened — it will be re-finalized when you save');
+      // Refresh the invoice list so status reflects 'draft' immediately
+      queryClient.invalidateQueries({ queryKey: ['store-invoices', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
     },
     onError: (error: any) => {
       toast.error(`Could not reopen invoice: ${error.message}`);
@@ -157,10 +180,9 @@ export function EditStoreInvoiceModal({
 
   // Load line items when modal opens
   useEffect(() => {
-    if (existingLineItems.length > 0) {
-      setLineItems(existingLineItems.map((item: any) => fromLineItemRow(item)));
-    }
-  }, [existingLineItems]);
+    if (!open) return;
+    setLineItems(existingLineItems.map((item: any) => fromLineItemRow(item)));
+  }, [existingLineItems, open]);
 
 
 
@@ -220,7 +242,10 @@ export function EditStoreInvoiceModal({
           Number(prev.total) !== Number(item.line_subtotal) ||
           prev.product_id !== item.product_id ||
           prev.brand_id !== item.brand_id ||
-          (prev.unit_kind ?? null) !== item.unit_kind;
+          (prev.unit_kind ?? null) !== item.unit_kind ||
+          (prev.discount_type ?? 'none') !== item.discount_type ||
+          Number(prev.discount_value ?? 0) !== Number(item.discount_value) ||
+          (prev.discount_reason ?? '') !== (item.discount_reason || '');
         if (!changed) continue; // preserve provenance untouched
 
         const { invoice_id: _ignored, line_source: _src, ...updatePayload } = toLineItemRow(
@@ -272,12 +297,18 @@ export function EditStoreInvoiceModal({
       }
 
       // If this invoice was finalized and we reopened it to edit, lock it again.
-      if (reopened) {
-        const { error: finErr } = await (supabase as any).rpc('finalize_invoice', {
+      // reopened_for_edit covers an abandoned reopen (modal closed without saving):
+      // the invoice is already draft on the next open but still owes a finalize.
+      if (reopened || (invoice as any).reopened_for_edit) {
+        const { data: finData, error: finErr } = await (supabase as any).rpc('finalize_invoice', {
           p_invoice_id: invoice.id,
           p_user_id: user?.id ?? 'manual',
         });
         if (finErr) throw new Error(`Changes saved, but re-finalize failed: ${finErr.message}`);
+        // finalize_invoice reports failures in its JSON payload instead of raising
+        if (finData && finData.success === false) {
+          throw new Error(`Changes saved, but re-finalize failed: ${finData.error ?? 'unknown error'}`);
+        }
       }
 
       return invoice.id;
@@ -337,8 +368,8 @@ export function EditStoreInvoiceModal({
             <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
               <p className="font-medium text-amber-500">This invoice is finalized.</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Finalized invoices are locked against line-item changes. Reopen it with a
-                reason to make corrections — it will be re-finalized when you save.
+                Reopening it will let you correct the lines. Please give a reason — a full
+                snapshot is saved to the amendment log, and it will be re-finalized when you save.
               </p>
             </div>
             <div className="space-y-2">

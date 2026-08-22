@@ -73359,6 +73359,7 @@ export type Database = {
           receipt_status: string | null
           received_by: string | null
           referenced_external_number: string | null
+          reopened_for_edit: boolean
           repair_notes: string | null
           repair_status: string
           repaired_at: string | null
@@ -73424,6 +73425,7 @@ export type Database = {
           receipt_status?: string | null
           received_by?: string | null
           referenced_external_number?: string | null
+          reopened_for_edit?: boolean
           repair_notes?: string | null
           repair_status?: string
           repaired_at?: string | null
@@ -73489,6 +73491,7 @@ export type Database = {
           receipt_status?: string | null
           received_by?: string | null
           referenced_external_number?: string | null
+          reopened_for_edit?: boolean
           repair_notes?: string | null
           repair_status?: string
           repaired_at?: string | null
