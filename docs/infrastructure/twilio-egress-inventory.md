@@ -48,7 +48,7 @@ These 8 functions route through `https://connector-gateway.lovable.dev/twilio` u
 - `brandaro-autonomous-executor`
 - `brandaro-call-status`
 - `brandaro-call-twiml`
-- `brandaro-closer-action`
+- `brandaro-closer-action` — SMS sites converted to `send-sms` (conversational / transactional, 2026-08-22); call initiation remains direct REST; MessagingServiceSid sender parity preserved via send-sms global
 - `brandaro-execute-calls`
 - `brandaro-handle-inbound` — SMS egress converted to `send-sms` (2026-08-22); Twilio API contact now limited to `verifyTwilio` ingress verification
 - `brandaro-provision-receptionist`
@@ -128,12 +128,12 @@ These 8 functions route through `https://connector-gateway.lovable.dev/twilio` u
 - `brandaro-handle-inbound` — converted to `send-sms` (2026-08-22); TwiML `<Message>` reply removed, all egress gated
 - `brandaro-recovery-worker`
 - `brandaro-receptionist-checkout`
-- `brandaro-send-demo`
+- `brandaro-send-demo` — converted to `send-sms` campaign class (2026-08-22); suppression blocks never queued for retry
 - `brandaro-send-followup`
 - `brandaro-send-followups`
 - `brandaro-stripe-webhook`
 - `brandaro-sms-dispatch`
-- `cb-dispatch-engine`
+- `cb-dispatch-engine` — 3 SMS sites converted to `send-sms` (workforce partners / transactional customer, 2026-08-22); suppressed partners named in `cb_communication_logs` + response payload; SendGrid email untouched
 - `check-bill-balances`
 - `cold-call-tts-blast`
 - `dd-cart-recovery-cron`
@@ -151,7 +151,7 @@ These 8 functions route through `https://connector-gateway.lovable.dev/twilio` u
 - `dynasty-recovery-claimant-intake`
 - `encrypt-client-ssn`
 - `fetch-twilio-conversation`
-- `field-portal-comms`
+- `field-portal-comms` — SMS converted to `send-sms` conversational (2026-08-22); suppressed sends logged as `field_sms_suppressed` in communication_logs; call bridging remains direct REST
 - `gasmask-order-receipt`
 - `gasmask-sms-inbound`
 - `messaging-send-worker`
@@ -159,7 +159,7 @@ These 8 functions route through `https://connector-gateway.lovable.dev/twilio` u
 - `nightlife-notify`
 - `receive-event-booking`
 - `relay-sms`
-- `send-approval-sms`
+- `send-approval-sms` — converted to `send-sms` transactional (2026-08-22); suppressed recipient returns 403 `suppressed: true`
 - `send-invoice-receipt`
 - `send-invoice-sms`
 - `send-sms`
