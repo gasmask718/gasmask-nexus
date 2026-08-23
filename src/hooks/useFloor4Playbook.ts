@@ -50,8 +50,9 @@ export function useFloor4PendingActions() {
   return useQuery({
     queryKey: ['floor4-playbook-actions-pending'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('playbook_actions')
+      // Cast breaks TS2589 deep-instantiation on the embedded select; runtime unchanged
+      const { data, error } = await (supabase
+        .from('playbook_actions') as any)
         .select(`
           *,
           worker:profiles!playbook_actions_worker_id_fkey(id, name, role, avatar_url)

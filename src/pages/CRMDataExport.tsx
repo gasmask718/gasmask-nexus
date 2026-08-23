@@ -107,8 +107,9 @@ const CRMDataExport = () => {
         data = contacts || [];
         recordCount = data.length;
       } else if (exportType === 'logs') {
-        const { data: logs, error } = await supabase
-          .from('communication_logs')
+        // Cast breaks TS2589 deep-instantiation on the embedded select; runtime unchanged
+        const { data: logs, error } = await (supabase
+          .from('communication_logs') as any)
           .select('*, contact:people(name), store:stores(name)')
           .eq('business_id', currentBusiness.id);
         if (error) throw error;

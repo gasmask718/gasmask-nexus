@@ -1567,7 +1567,6 @@ export default function AppRoutes() {
         <Route path="/gasmask/wholesale/fulfillment" element={<Navigate to="/wholesale/fulfillment" replace />} />
         <Route path="/gasmask/wholesale/:id" element={<Navigate to="/wholesale" replace />} />
         <Route path="/gasmask/communications" element={<Navigate to="/communications" replace />} />
-        <Route path="/gasmask/settings" element={<BrandPlaceholder />} />
         <Route path="/gasmask/route-engine" element={<RouteEnginePage />} />
         <Route path="/gasmask/driver-route" element={<GasmaskDriverRoutePage />} />
         {/* T3 K2: Agent Center merged into Floor 9 intelligence suite */}
@@ -1575,8 +1574,8 @@ export default function AppRoutes() {
         <Route path="/dynasty/agents" element={<Navigate to="/grabba/floor9" replace />} />
         <Route path="/gasmask/note-cleaner" element={<NoteCleanerPage />} />
 
-        {/* HotMama Routes */}
-        <Route path="/hotmama/*" element={<BrandPlaceholder />} />
+        {/* HotMama — merged into the working brand dashboard */}
+        <Route path="/hotmama/*" element={<Navigate to="/brand/hotmama" replace />} />
 
         {/* Finance & Real Estate */}
         <Route path="/finance" element={<Navigate to="/funding-machine" replace />} />
@@ -1610,8 +1609,6 @@ export default function AppRoutes() {
         <Route path="/holdings/strategy" element={<HoldingsStrategy />} />
 
         {/* Systems & Engine Room */}
-        <Route path="/systems" element={<BrandPlaceholder />} />
-        <Route path="/systems/*" element={<BrandPlaceholder />} />
         <Route path="/system-operations/ai-ceo-control-room" element={<AICEOControlRoom />} />
         <Route path="/meta-ai" element={<MetaAI />} />
         <Route path="/executive-reports" element={<ExecutiveReports />} />
@@ -1668,9 +1665,9 @@ export default function AppRoutes() {
           <Route path="campaigns/builder" element={<DCCampaignBuilder />} />
           <Route path="campaigns/outbound" element={<DCCampaignManager />} />
           <Route path="agents" element={<DCAgents />} />
-          <Route path="agents/playbooks" element={<DCAgents />} />
+          <Route path="agents/playbooks" element={<Navigate to="/dynasty-connect/agents" replace />} />
           <Route path="intelligence" element={<DCIntelligence />} />
-          <Route path="intelligence/self-learn" element={<DCAgents />} />
+          <Route path="intelligence/self-learn" element={<Navigate to="/dynasty-connect/agents" replace />} />
           <Route path="pipelines" element={<DCPipelines />} />
           <Route path="pipelines/surplus-funds" element={<SurplusFundsPipeline />} />
           <Route path="pipelines/real-estate" element={<DCRealEstatePipeline />} />
@@ -2458,8 +2455,7 @@ export default function AppRoutes() {
         <Route path="/playboxxx/*" element={<PlayboxxxDashboard />} />
         <Route path="/specialneeds" element={<SpecialNeedsDashboard />} />
         <Route path="/specialneeds/*" element={<SpecialNeedsDashboard />} />
-        <Route path="/scalati/*" element={<BrandPlaceholder />} />
-        <Route path="/ecommerce/*" element={<BrandPlaceholder />} />
+        <Route path="/scalati/*" element={<Navigate to="/brand/scalati" replace />} />
 
         {/* Module Diagnostics - Admin Only */}
         <Route path="/system/modules" element={
@@ -2807,13 +2803,13 @@ export default function AppRoutes() {
         <Route path="/portal/wholesaler/marketplace-inventory" element={<WholesalerMarketplaceInventory />} />
         <Route path="/portal/wholesaler/order-grabba" element={<WholesalerOrderGrabba />} />
         <Route path="/portal/wholesaler/catalog/onboard" element={<WholesalerCatalogOnboard />} />
-        <Route path="/portal/production" element={<ProductionPortal />} />
+        <Route path="/portal/production/*" element={<ProductionPortal />} />
         <Route path="/portal/va" element={<VAPortal />} />
-        <Route path="/portal/customer" element={<CustomerPortal />} />
+        <Route path="/portal/customer/*" element={<CustomerPortal />} />
         <Route path="/portal/invoices" element={<PortalInvoices />} />
         <Route path="/portal/invoices/:id" element={<PortalInvoiceDetail />} />
         <Route path="/portal/wholesale" element={<PortalWholesale />} />
-        <Route path="/portal/influencer" element={<PortalInfluencer />} />
+        <Route path="/portal/influencer/*" element={<PortalInfluencer />} />
          <Route path="/portal/inbox" element={<OpsInboxPage />} />
          <Route path="/portal/inbox/:threadId" element={<OpsInboxThreadPage />} />
          <Route path="/portal/tasks" element={<OpsTaskListPage />} />
@@ -3847,12 +3843,29 @@ export default function AppRoutes() {
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* REAL ESTATE HQ — legacy department pages (/realestate/*).                     */}
+      {/* RealEstateLayout enforces admin / realestate_worker.                          */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/realestate" element={<RealEstateLayout><RealEstate /></RealEstateLayout>} />
+        <Route path="/realestate/leads" element={<RealEstateLayout><RealEstateLeads /></RealEstateLayout>} />
+        <Route path="/realestate/pipeline" element={<RealEstateLayout><RealEstatePipeline /></RealEstateLayout>} />
+        <Route path="/realestate/investors" element={<RealEstateLayout><RealEstateInvestors /></RealEstateLayout>} />
+        <Route path="/realestate/closings" element={<RealEstateLayout><RealEstateClosings /></RealEstateLayout>} />
+        <Route path="/realestate/expansion" element={<RealEstateLayout><RealEstateExpansion /></RealEstateLayout>} />
+        <Route path="/realestate/subscriptions" element={<RealEstateLayout><RealEstateSubscriptions /></RealEstateLayout>} />
+        <Route path="/realestate/partners" element={<RealEstateLayout><RealEstatePartners /></RealEstateLayout>} />
+        <Route path="/realestate/pl" element={<RealEstateLayout><RealEstatePL /></RealEstateLayout>} />
+      </Route>
+
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
         <Route path="/brandaro" element={<RequireRole allowedRoles={['admin','owner']} showLocked><BrandaroHubLayout /></RequireRole>}>
           {/* ── Command ── */}
           <Route index element={<BrandaroWarRoom />} />
           <Route path="ceo" element={<CEODashboardPage />} />
-          <Route path="pm" element={<CEODashboardPage />} />
+          <Route path="pm" element={<Navigate to="/brandaro/ceo" replace />} />
 
 
           {/* ── Sales Floor ── */}
@@ -3881,22 +3894,22 @@ export default function AppRoutes() {
 
           {/* ── Execution ── */}
           <Route path="production-pipeline" element={<ProductionPipelinePage />} />
-          <Route path="callbacks" element={<FollowUpEnginePage />} />
-          <Route path="tasks" element={<ProductionPipelinePage />} />
-          <Route path="alerts" element={<BrandaroWarRoom />} />
+          <Route path="callbacks" element={<Navigate to="/brandaro/follow-ups" replace />} />
+          <Route path="tasks" element={<Navigate to="/brandaro/production-pipeline" replace />} />
+          <Route path="alerts" element={<Navigate to="/brandaro" replace />} />
 
           {/* ── Intelligence ── */}
-          <Route path="ai-brain" element={<CloserAIPage />} />
-          <Route path="personalities" element={<VAManagerPage />} />
-          <Route path="emotion-engine" element={<CloserAIPage />} />
-          <Route path="learning" element={<OptimizationEnginePage />} />
+          <Route path="ai-brain" element={<Navigate to="/brandaro/closer-ai" replace />} />
+          <Route path="personalities" element={<Navigate to="/brandaro/va-manager" replace />} />
+          <Route path="emotion-engine" element={<Navigate to="/brandaro/closer-ai" replace />} />
+          <Route path="learning" element={<Navigate to="/brandaro/optimization" replace />} />
           <Route path="patterns" element={<ResultEnginePage />} />
 
           {/* ── Domination ── */}
-          <Route path="domination" element={<OptimizationEnginePage />} />
+          <Route path="domination" element={<Navigate to="/brandaro/optimization" replace />} />
           <Route path="competitors" element={<CompetitorTakeoverPage />} />
-          <Route path="offers" element={<OptimizationEnginePage />} />
-          <Route path="positioning" element={<OptimizationEnginePage />} />
+          <Route path="offers" element={<Navigate to="/brandaro/optimization" replace />} />
+          <Route path="positioning" element={<Navigate to="/brandaro/optimization" replace />} />
 
           {/* ── Growth ── */}
           <Route path="revenue" element={<RevenueAnalyticsPage />} />

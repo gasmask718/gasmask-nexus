@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -56,7 +56,12 @@ export default function CustomerPortal() {
   const { items: cartItems, totals } = useCart();
   const ordersRef = useRef<HTMLDivElement>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const location = useLocation();
 
+  // OpsBottomNav subpaths: /portal/customer (home), /orders, /rewards, /profile
+  const subpath = location.pathname.split("/")[3] || "";
+  const section = (["orders", "rewards", "profile"].includes(subpath) ? subpath : "home") as
+    "home" | "orders" | "rewards" | "profile";
 
   const profile = profileData?.profile;
 
@@ -180,7 +185,9 @@ export default function CustomerPortal() {
           </HudCard>
         )}
 
-        {/* Quick Stats */}
+        {/* Quick Stats + Actions (home section only) */}
+        {section === "home" && (
+        <>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <HudCard variant="cyan">
             <HudMetric
@@ -284,8 +291,52 @@ export default function CustomerPortal() {
             </HudCard>
           </div>
         </div>
+        </>
+        )}
+
+        {/* Rewards (rewards section) — program not live yet, honest state */}
+        {section === "rewards" && (
+          <HudCard variant="amber">
+            <div className="text-center py-10 space-y-3">
+              <Gift className="mx-auto h-10 w-10 text-hud-amber/60" />
+              <h3 className="font-bold text-lg">Rewards & Loyalty</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                The rewards program isn't live yet. When it launches you'll earn points on
+                every purchase and redeem them here — nothing needed from you in the meantime.
+              </p>
+              <div className="flex justify-center pt-1">
+                <ComingSoonBadge />
+              </div>
+            </div>
+          </HudCard>
+        )}
+
+        {/* Profile (profile section) — read-only, editing not wired yet */}
+        {section === "profile" && (
+          <HudCard>
+            <h3 className="font-bold text-lg mb-4">Profile Details</h3>
+            <dl className="space-y-3 max-w-md">
+              <div className="flex justify-between gap-4">
+                <dt className="text-sm text-muted-foreground">Name</dt>
+                <dd className="text-sm font-medium">{displayName}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-sm text-muted-foreground">Email</dt>
+                <dd className="text-sm font-medium">{displayEmail || "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-sm text-muted-foreground">Phone</dt>
+                <dd className="text-sm font-medium">{displayPhone || "—"}</dd>
+              </div>
+            </dl>
+            <p className="text-xs text-muted-foreground mt-6">
+              Profile editing isn't available in the portal yet — contact support to update your details.
+            </p>
+          </HudCard>
+        )}
 
         {/* Order History */}
+        {(section === "home" || section === "orders") && (
         <div ref={ordersRef}>
           <HudCard>
             <div className="flex items-center justify-between mb-4">
@@ -419,6 +470,7 @@ export default function CustomerPortal() {
             )}
           </HudCard>
         </div>
+        )}
       </div>
     </PortalDashboard>
   );

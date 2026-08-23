@@ -50,8 +50,9 @@ export const CommunicationTimelineCRM = ({
   const { data: logs, isLoading, refetch } = useQuery({
     queryKey: ['communication-logs-crm', storeId, contactId, driverId, influencerId, wholesalerId],
     queryFn: async () => {
-      let query = supabase
-        .from('communication_logs')
+      // Cast breaks TS2589 deep-instantiation on the embedded select; runtime unchanged
+      let query = (supabase
+        .from('communication_logs') as any)
         .select(`
           *,
           contact:people(name),
