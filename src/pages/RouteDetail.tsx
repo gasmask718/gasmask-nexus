@@ -366,15 +366,24 @@ const RouteDetail = () => {
                           </Badge>
                         </div>
 
-                        {stop.stop_reason && (
-                          <Badge variant="outline" className="border-primary/40 text-primary">
-                            {stop.stop_reason === 'physical_inventory_check'
-                              ? '📦 Physical inventory check'
-                              : stop.stop_reason === 'update_contact_details'
-                              ? '📞 Update contact details'
-                              : stop.stop_reason}
-                          </Badge>
-                        )}
+                        {stop.stop_reason && (() => {
+                          const segments = String(stop.stop_reason).split('|').map(s => s.trim()).filter(Boolean);
+                          const head = segments[0] === 'physical_inventory_check'
+                            ? '📦 Physical inventory check'
+                            : segments[0] === 'update_contact_details'
+                            ? '📞 Update contact details'
+                            : segments[0];
+                          return (
+                            <div className="space-y-1">
+                              <Badge variant="outline" className="border-primary/40 text-primary">
+                                {head}
+                              </Badge>
+                              {segments.slice(1).map((seg, i) => (
+                                <p key={i} className="text-xs text-muted-foreground leading-snug">{seg}</p>
+                              ))}
+                            </div>
+                          );
+                        })()}
 
                         {stop.notes_to_worker && (
                           <div className="text-sm text-muted-foreground bg-secondary/30 p-2 rounded">
