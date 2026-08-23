@@ -337,9 +337,9 @@ export default function ProductionPortalPage() {
           <ActiveBatchBanner 
             batches={batches}
             onCreateBatch={() => {
-              // Navigate to batches tab and trigger create
-              const batchesTab = document.querySelector('[value="batches"]') as HTMLElement;
-              batchesTab?.click();
+              // Jump to the TODAY → Enter Output view, where batch creation lives
+              const entryTab = document.querySelector('[value="entry"]') as HTMLElement;
+              entryTab?.click();
             }}
           />
 
@@ -350,10 +350,6 @@ export default function ProductionPortalPage() {
                 <Factory className="h-5 w-5" />
                 {t('production.todays_production')} — {format(new Date(), 'EEEE, MMMM d')}
               </h2>
-              <TrainingModeToggle 
-                isTrainingMode={isTrainingMode}
-                onToggle={setIsTrainingMode}
-              />
             </div>
             <ProductionKPICards 
               kpis={kpis || {
