@@ -70,20 +70,21 @@ Deno.serve(async (req) => {
 
     // Pre-create log row
     const { data: log } = await admin.from('communication_logs').insert({
-      ambassador_id: amb.id, store_id, channel: 'voice', direction: 'outbound',
+      ambassador_id: amb.id, store_id: store_id ?? null, channel: 'voice', direction: 'outbound',
       call_type: 'direct', status: 'dialing', started_at: new Date().toISOString(),
-      notes, sender_phone: amb.twilio_number, recipient_phone: store.phone,
+      notes, sender_phone: amb.twilio_number, recipient_phone: targetPhone,
+      ...(store_id ? {} : { metadata: { source: 'quick_dial' } }),
     }).select('id').single();
 
     // TwiML to dial store when ambassador answers
     const callerId = amb.twilio_number || Deno.env.get('TWILIO_PHONE_NUMBER')!;
     // Recording consent gate: fail closed unless the store's jurisdiction is
     // known and one-party. See _shared/recordingConsent.ts.
-    const { attr: recAttr, decision: recDecision } = await recordAttrFor(admin, store.phone, {
+    const { attr: recAttr, decision: recDecision } = await recordAttrFor(admin, targetPhone, {
       mode: 'record-from-answer',
     });
     console.log(`[ambassador-direct-call] recording=${recAttr ? 'on' : 'off'} (${recDecision.reason}${recDecision.state ? `/${recDecision.state}` : ''})`);
-    const twiml = `<Response><Say voice="Polly.Joanna">Connecting you to ${store.store_name.replace(/[<>&"']/g, '')}</Say><Dial callerId="${callerId}"${recAttr} timeout="25"><Number>${store.phone}</Number></Dial></Response>`;
+    const twiml = `<Response><Say voice="Polly.Joanna">Connecting you to ${targetName.replace(/[<>&"']/g, '')}</Say><Dial callerId="${callerId}"${recAttr} timeout="25"><Number>${targetPhone}</Number></Dial></Response>`;
     const projectRef = SUPABASE_URL.split('//')[1].split('.')[0];
     const statusCb = `https://${projectRef}.functions.supabase.co/twilio-call-status?log_id=${log!.id}`;
 
@@ -106,9 +107,18 @@ Deno.serve(async (req) => {
     }
 
     await admin.from('communication_logs').update({ twilio_call_sid: twData.sid }).eq('id', log!.id);
-    await verifiedInsertSoft(admin, 'log ambassador direct call', (c: any) => c.from('ambassador_activity_log').insert({ ambassador_id: amb.id, store_id, action_type: 'direct_call_initiated', metadata: { twilio_call_sid: twData.sid } }));
+    await verifiedInsertSoft(admin, 'log ambassador direct call', (c: any) => c.from('ambassador_activity_log').insert({ ambassador_id: amb.id, store_id: store_id ?? null, action_type: 'direct_call_initiated', metadata: { twilio_call_sid: twData.sid, source: store_id ? 'store_profile' : 'quick_dial' } }));
 
-    return new Response(JSON.stringify({ success: true, log_id: log!.id, twilio_call_sid: twData.sid, message: 'Your phone will ring shortly. Answer to connect to the store.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // Quick-dial: capture the number the moment the call fires. If the
+    // ambassador gets interrupted mid-conversation, the number is already safe.
+    let quickContactId: string | null = null;
+    if (!store_id) {
+      quickContactId = await captureQuickContact(admin, {
+        ambassadorId: amb.id, ambassadorName: amb.name, phone: targetPhone, firstAction: 'called',
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true, log_id: log!.id, twilio_call_sid: twData.sid, quick_contact_id: quickContactId, message: 'Your phone will ring shortly. Answer to connect.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     console.error('direct-call error', e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
