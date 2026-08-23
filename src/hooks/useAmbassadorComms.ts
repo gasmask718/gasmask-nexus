@@ -385,8 +385,8 @@ export function useCallHistory() {
     queryKey: ['ambassador-call-history', ambassadorId],
     queryFn: async (): Promise<CallLog[]> => {
       if (!ambassadorId) return [];
-      const { data, error } = await supabase
-        .from('communication_logs')
+      const { data, error } = await (supabase
+        .from('communication_logs') as any)
         .select('*, store:store_master!store_id(store_name, owner_name, phone)')
         .eq('ambassador_id', ambassadorId)
         .eq('channel', 'call')

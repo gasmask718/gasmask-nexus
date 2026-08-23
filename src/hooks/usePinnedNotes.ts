@@ -25,8 +25,8 @@ export function usePinnedNotes(storeId: string | undefined) {
     queryFn: async () => {
       if (!storeId) return [];
 
-      const { data, error } = await supabase
-        .from('pinned_notes')
+      const { data, error } = await (supabase
+        .from('pinned_notes') as any)
         .select(`
           *,
           pinner:pinned_by(name),
