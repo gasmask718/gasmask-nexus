@@ -227,7 +227,7 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-medium truncate">{stop.store?.store_name || 'Unknown Store'}</p>
+                            <p className="text-sm font-medium truncate">{stop.store?.name || 'Unknown Store'}</p>
                             <Badge variant="outline" className="text-xs capitalize flex-shrink-0">
                               {stop.status || 'pending'}
                             </Badge>
@@ -237,18 +237,29 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
                               </Badge>
                             )}
                           </div>
-                          {stop.store?.address && (
-                            <p className="text-xs text-muted-foreground truncate">{stop.store.address}</p>
+                          {(stop.store?.address_street || stop.store?.address_city) && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {[stop.store.address_street, stop.store.address_city, stop.store.address_state].filter(Boolean).join(', ')}
+                            </p>
                           )}
-                          {stop.stop_reason && (
-                            <Badge variant="outline" className="border-primary/40 text-primary text-[10px] mt-1">
-                              {stop.stop_reason === 'physical_inventory_check'
-                                ? '📦 Physical inventory check'
-                                : stop.stop_reason === 'update_contact_details'
-                                ? '📞 Update contact details'
-                                : stop.stop_reason.replace(/_/g, ' ')}
-                            </Badge>
-                          )}
+                          {stop.stop_reason && (() => {
+                            const segments = String(stop.stop_reason).split('|').map((s: string) => s.trim()).filter(Boolean);
+                            const head = segments[0] === 'physical_inventory_check'
+                              ? '📦 Physical inventory check'
+                              : segments[0] === 'update_contact_details'
+                              ? '📞 Update contact details'
+                              : segments[0];
+                            return (
+                              <div className="mt-1 space-y-0.5">
+                                <Badge variant="outline" className="border-primary/40 text-primary text-[10px]">
+                                  {head}
+                                </Badge>
+                                {segments.slice(1).map((seg: string, i: number) => (
+                                  <p key={i} className="text-[10px] text-muted-foreground leading-snug">{seg}</p>
+                                ))}
+                              </div>
+                            );
+                          })()}
                           <div className="flex gap-2 mt-1 flex-wrap items-center">
                             {stop.brand_id && (
                               <Badge variant="secondary" className="text-[10px]">{stop.brand_id}</Badge>
