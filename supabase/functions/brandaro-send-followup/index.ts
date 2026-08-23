@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendSms } from "../_shared/sendSms.ts";
+import { outreachAllowed } from "../_shared/outreachGate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +10,13 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // OUTREACH GATE (2026-08-23): no Brandaro follow-up sends unless a human armed the switch.
+  if (!(await outreachAllowed("brandaro_followup_worker"))) {
+    return new Response(JSON.stringify({ ok: true, gated: true, switch: "brandaro_followup_worker" }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {

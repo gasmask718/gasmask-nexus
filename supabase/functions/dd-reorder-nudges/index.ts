@@ -18,6 +18,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { outreachAllowed } from "../_shared/outreachGate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,6 +32,14 @@ const BODY_MAX = 320;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // OUTREACH GATE (2026-08-23): even though this writes DRAFTS by default, it
+  // is one flag away from auto-send — gated with everything else.
+  if (!(await outreachAllowed("dd_reorder_nudges"))) {
+    return new Response(JSON.stringify({ ok: true, gated: true, switch: "dd_reorder_nudges", processed: 0, drafted: 0 }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   let body: any = {};
   try { body = await req.json(); } catch { /* allow empty for cron */ }

@@ -11,6 +11,7 @@
 // even if multiple ticks run concurrently.
 
 import { corsHeaders, svc, logEvent } from "../_shared/dialer.ts";
+import { outreachAllowed } from "../_shared/outreachGate.ts";
 
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), {
@@ -45,6 +46,13 @@ Deno.serve(async (req) => {
     }
 
     if (sweepOnly) return json({ ok: true, sweep_only: true, swept: sweptCount });
+
+    // OUTREACH GATE (2026-08-23): no campaign dispatches unless a human armed
+    // the switch. The stuck-call sweep above always runs — it hangs up stuck
+    // calls (customer-protective) and never reaches out to anyone.
+    if (!(await outreachAllowed("dispatch_campaign_tick"))) {
+      return json({ ok: true, gated: true, switch: "dispatch_campaign_tick", swept: sweptCount });
+    }
 
     // Find active AI campaigns to dispatch
     const { data: campaigns, error: campErr } = await supabase

@@ -3,6 +3,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
+import { outreachAllowed } from "../_shared/outreachGate.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -26,6 +27,11 @@ function hydrate(t: string, v: Record<string, any>) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+
+  // OUTREACH GATE (2026-08-23): no AI call blast runs unless a human armed the switch.
+  if (!(await outreachAllowed("bulk_ai_call_resume"))) {
+    return json({ ok: true, gated: true, switch: "bulk_ai_call_resume" });
+  }
 
   let job_id: string;
   try { ({ job_id } = await req.json()); } catch { return json({ error: "invalid_json" }, 400); }

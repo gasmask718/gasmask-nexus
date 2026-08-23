@@ -3,6 +3,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendSms } from "../_shared/sendSms.ts";
+import { outreachAllowed } from "../_shared/outreachGate.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -42,6 +43,18 @@ async function sendRecoverySms(cartId: string, to: string, body: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // OUTREACH GATE (2026-08-23): invoked by TWO crons (15-min + hourly) with a
+  // switch each — allowed when EITHER is armed. No cart-recovery email/SMS
+  // goes out unless a human flipped one of them.
+  const cartGated = !(await outreachAllowed("dd_cart_recovery_15"))
+    && !(await outreachAllowed("dd_cart_recovery_hourly"));
+  if (cartGated) {
+    return new Response(JSON.stringify({ ok: true, gated: true, switches: ["dd_cart_recovery_15", "dd_cart_recovery_hourly"] }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const emailRes: any[] = [];

@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { outreachAllowed } from '../_shared/outreachGate.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -227,6 +228,14 @@ Return JSON:
     // COLLECTIONS AGENT
     // ═══════════════════════════════
     else if (agentName === 'Collections Agent') {
+      // OUTREACH GATE (2026-08-23): this agent sends SMS to customers directly.
+      if (!(await outreachAllowed('dynasty_collections_agent'))) {
+        summary = 'Collections Agent gated — outreach switch off';
+        await supabase.from('dynasty_agent_runs').insert({ agent_name: agentName, status: 'gated', summary, completed_at: new Date().toISOString() }).catch(() => null);
+        return new Response(JSON.stringify({ ok: true, gated: true, switch: 'dynasty_collections_agent' }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       const { data: stuckLeads } = await supabase
         .from('brandaro_qualified_leads').select('*')
         .eq('pipeline_stage', 'booked')

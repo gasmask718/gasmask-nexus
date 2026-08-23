@@ -4,6 +4,7 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { logLeadSync, logLeadSyncBatch, logGateBlock } from "../_shared/dc_sync_log.ts";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 import { fetchVoicemailTranscript } from "../_shared/voicemail_template.ts";
+import { outreachAllowed } from "../_shared/outreachGate.ts";
 
 const COLD_SELLER_PROMPT = `You are a real estate acquisition specialist calling homeowners about their property. Be friendly, professional, and respectful.
 
@@ -54,6 +55,13 @@ const BLAND_AGENT_ID = "b3375dc8-cb93-4d10-9d63-8556631a8887";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  // OUTREACH GATE (2026-08-23): nothing dispatches unless a human armed the switch.
+  if (!(await outreachAllowed('re_daily_campaign_launch'))) {
+    return new Response(JSON.stringify({ ok: true, gated: true, switch: 're_daily_campaign_launch', bland_calls_started: 0 }), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   // HARD-REJECT GUARD - Prevent accidental full-cohort dispatch.
   // Runs BEFORE any env/secret checks so an empty body always returns 400,

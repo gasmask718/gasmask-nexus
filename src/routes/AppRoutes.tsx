@@ -574,6 +574,7 @@ const DialerPredictiveTargeting = lazy(() => import('@/pages/communication/diale
 const DialerIntegrityPage = lazy(() => import('@/pages/communication/dialer/DialerIntegrityPage'));
 const AutoDialerPage = lazy(() => import('@/pages/communication/dialer/AutoDialerPage'));
 const PowerDialerConsole = lazy(() => import('@/pages/communication/dialer/PowerDialerConsole'));
+const OutreachSwitchboard = lazy(() => import('@/pages/admin/OutreachSwitchboard'));
 const CampaignDialPage = lazy(() => import('@/pages/communication/dialer/CampaignDialPage'));
 const AIAutoTextPage = lazy(() => import('@/pages/communication/ai/AIAutoTextPage'));
 const MessagingHubPage = lazy(() => import('@/pages/communication/messaging').then(m => ({ default: m.MessagingHubPage })));
@@ -2623,6 +2624,13 @@ export default function AppRoutes() {
         <Route path="/penthouse/audit-engine" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <AuditEnginePage />
+          </RequireRole>
+        } />
+
+        {/* ═══ OUTREACH SWITCHBOARD — human gate for every customer-contacting automation ═══ */}
+        <Route path="/outreach-switchboard" element={
+          <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+            <OutreachSwitchboard />
           </RequireRole>
         } />
 

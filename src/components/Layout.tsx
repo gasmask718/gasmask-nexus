@@ -138,6 +138,7 @@ import {
   BarChart,
   Grid3x3,
   ListFilter,
+  ToggleLeft,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -302,6 +303,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/communication/provision-numbers', label: '📱 Buy Numbers', icon: ShoppingCart, adminOnly: true },
         { path: '/communication/dialer-integrity', label: 'Dialer Integrity', icon: Activity, adminOnly: true },
         { path: '/communication/comms-health', label: '🩺 Comms Health', icon: Activity, adminOnly: true },
+        { path: '/outreach-switchboard', label: '🎛️ Outreach Switchboard', icon: ToggleLeft, adminOnly: true },
         { path: '/communication/settings', label: 'Settings', icon: Settings },
       ],
     },
