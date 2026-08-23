@@ -303,7 +303,7 @@ export function useRouteDetail(routeId: string | null) {
           .single(),
         (supabase as any)
           .from('route_stops')
-          .select(`*, store:store_master!route_stops_store_id_fkey(id, store_name, address, territory, phone)`)
+          .select(`*, store:stores!route_stops_store_id_fkey(id, name, address_street, address_city, address_state, neighborhood, boro, phone)`)
           .eq('route_id', routeId)
           .order('planned_order', { ascending: true }),
         supabase
