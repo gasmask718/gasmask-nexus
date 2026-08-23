@@ -41,14 +41,14 @@ function VerdictBadge({ verdict }: { verdict: string }) {
   const rank = verdictRank(verdict);
   const cls =
     rank === 0
-      ? 'bg-red-600 text-white'
+      ? 'bg-destructive text-destructive-foreground'
       : rank === 1
-        ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200'
+        ? 'bg-destructive/15 text-destructive'
         : rank === 2
-          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200'
+          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
           : rank === 3
             ? 'bg-muted text-muted-foreground'
-            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200';
+            : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
   return <Badge className={cn('text-[10px] whitespace-nowrap', cls)}>{verdict}</Badge>;
 }
 
@@ -300,9 +300,9 @@ export default function YieldWatchPage() {
                         <TableRow
                           key={r.batch_id}
                           className={cn(
-                            rank === 0 && 'bg-red-50 dark:bg-red-950/30',
-                            rank === 1 && 'bg-red-50/60 dark:bg-red-950/20',
-                            rank === 2 && 'bg-amber-50/60 dark:bg-amber-950/20',
+                            rank === 0 && 'bg-destructive/15',
+                            rank === 1 && 'bg-destructive/5',
+                            rank === 2 && 'bg-amber-500/10',
                           )}
                         >
                           <TableCell className="font-medium">{r.office}</TableCell>
