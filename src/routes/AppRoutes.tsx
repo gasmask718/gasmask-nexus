@@ -3158,14 +3158,9 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* Floor 6 — Production */}
-      <Route path="/grabba/production" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'warehouse', 'accountant']}>
-            <Layout><GrabbaLayout><GrabbaProduction /></GrabbaLayout></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
+      {/* Floor 6 — Production: retired duplicate surface; the Manufacturing OS
+          at /portals/production now carries the batch ledger (Production Logs). */}
+      <Route path="/grabba/production" element={<Navigate to="/portals/production" replace />} />
 
       {/* Floor 7 — Wholesale */}
       <Route path="/grabba/wholesale-platform" element={
