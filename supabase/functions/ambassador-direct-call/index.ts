@@ -30,9 +30,13 @@ Deno.serve(async (req) => {
     const { store_id, notes, to_phone } = await req.json();
     if (!store_id && !to_phone) return new Response(JSON.stringify({ error: 'store_id or to_phone required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-    const { data: amb } = await admin.from('ambassadors').select('id, personal_phone, twilio_number, name, is_active').eq('user_id', userId).maybeSingle();
+    const { data: amb } = await admin.from('ambassadors').select('id, personal_phone, phone_primary, twilio_number, name, is_active').eq('user_id', userId).maybeSingle();
     if (!amb?.is_active) return new Response(JSON.stringify({ error: 'Ambassador not active' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    if (!amb.personal_phone) return new Response(JSON.stringify({ error: 'Add your personal phone in Settings before placing direct calls', code: 'NO_PERSONAL_PHONE' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // personal_phone is preferred; phone_primary is the fallback — every live
+    // ambassador row currently has personal_phone empty, so without the
+    // fallback no direct call could ever fire.
+    const ambPhone = amb.personal_phone || amb.phone_primary;
+    if (!ambPhone) return new Response(JSON.stringify({ error: 'Add your phone number in Settings before placing direct calls', code: 'NO_PERSONAL_PHONE' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
     // Two targets: an assigned store (store_id) or a raw street number from the
     // quick-dial pad (to_phone, no store yet). The quick path skips store
@@ -89,7 +93,7 @@ Deno.serve(async (req) => {
     const statusCb = `https://${projectRef}.functions.supabase.co/twilio-call-status?log_id=${log!.id}`;
 
     const form = new URLSearchParams({
-      To: amb.personal_phone, From: callerId, Twiml: twiml,
+      To: ambPhone, From: callerId, Twiml: twiml,
       StatusCallback: statusCb,
       // Outer-leg recording follows the same gate.
       Record: recAttr ? 'true' : 'false',
