@@ -65,6 +65,7 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   onAssigned,
 }) => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [isBulkMode, setIsBulkMode] = useState(initialBulkMode);
   const [routeDate, setRouteDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [bulkDates, setBulkDates] = useState<string[]>([format(new Date(), 'yyyy-MM-dd')]);
