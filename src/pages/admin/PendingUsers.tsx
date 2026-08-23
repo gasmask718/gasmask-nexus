@@ -36,7 +36,7 @@ export default function PendingUsers() {
     queryKey: ['pending-users'],
     queryFn: async () => {
       // Join user_roles -> profiles. Anyone holding a `pending` role row.
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('user_roles')
         .select('user_id, role, profiles:profiles!user_roles_user_id_fkey(id, name, email, created_at)')
         .eq('role', 'pending')
