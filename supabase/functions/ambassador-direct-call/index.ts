@@ -5,6 +5,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 import { recordAttrFor } from "../_shared/recordingConsent.ts";
+import { captureQuickContact } from "../_shared/quickContact.ts";
 
 const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')!;
 const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')!;
@@ -26,8 +27,8 @@ Deno.serve(async (req) => {
     const userId = claims.claims.sub;
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { store_id, notes } = await req.json();
-    if (!store_id) return new Response(JSON.stringify({ error: 'store_id required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const { store_id, notes, to_phone } = await req.json();
+    if (!store_id && !to_phone) return new Response(JSON.stringify({ error: 'store_id or to_phone required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
     const { data: amb } = await admin.from('ambassadors').select('id, personal_phone, twilio_number, name, is_active').eq('user_id', userId).maybeSingle();
     if (!amb?.is_active) return new Response(JSON.stringify({ error: 'Ambassador not active' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
