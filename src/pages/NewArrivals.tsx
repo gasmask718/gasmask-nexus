@@ -177,7 +177,7 @@ export default function NewArrivals() {
       entityType: 'store',
       entityId: storeIdFor(r) || undefined,
       entityName: r.name,
-    } as any);
+    });
   };
 
   const textMutation = useMutation({
