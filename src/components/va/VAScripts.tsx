@@ -8,10 +8,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useVASession } from '@/contexts/VASessionContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export function VAScripts() {
+interface VAScriptsProps {
+  /** Active VA company slug — scripts only exist for Brandaro today */
+  companySlug?: string | null;
+  companyName?: string | null;
+}
+
+export function VAScripts({ companySlug, companyName }: VAScriptsProps = {}) {
   const { t } = useVASession();
+  const scriptsConfigured = !companySlug || companySlug === 'brandaro';
   const { data, isLoading } = useQuery({
     queryKey: ['brandaro-script-steps'],
+    enabled: scriptsConfigured,
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('brandaro_sales_script_steps')
@@ -22,6 +30,19 @@ export function VAScripts() {
       return data || [];
     },
   });
+
+  if (!scriptsConfigured) {
+    return (
+      <div className="text-center py-6 space-y-1">
+        <p className="text-sm text-slate-300">
+          No script configured for {companyName ?? 'this company'} yet.
+        </p>
+        <p className="text-[11px] text-slate-500">
+          The owner can add one from the Scripts &amp; Rebuttals admin.
+        </p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
