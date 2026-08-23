@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useCall } from '@/components/communication/CallProvider';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { InboundHumansFirstTab } from '@/components/communication/InboundHumansFirstTab';
 
 interface BusinessPhoneNumber {
   id: string;
@@ -94,7 +95,7 @@ export default function BusinessPhoneNumbers() {
       </div>
 
       <Tabs defaultValue="caller-ids" className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-2xl grid-cols-3">
           <TabsTrigger value="caller-ids" className="flex items-center gap-2">
             <Phone className="h-4 w-4" />
             Caller IDs
@@ -102,6 +103,10 @@ export default function BusinessPhoneNumbers() {
           <TabsTrigger value="inbound-routing" className="flex items-center gap-2">
             <PhoneIncoming className="h-4 w-4" />
             Inbound Routing
+          </TabsTrigger>
+          <TabsTrigger value="humans-first" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Humans First
           </TabsTrigger>
         </TabsList>
 
@@ -111,6 +116,10 @@ export default function BusinessPhoneNumbers() {
 
         <TabsContent value="inbound-routing">
           <InboundRoutingTab />
+        </TabsContent>
+
+        <TabsContent value="humans-first">
+          <InboundHumansFirstTab />
         </TabsContent>
       </Tabs>
     </div>
