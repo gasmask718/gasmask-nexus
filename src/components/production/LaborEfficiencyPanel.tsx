@@ -29,8 +29,10 @@ interface LaborEfficiencyPanelProps {
 
 export function LaborEfficiencyPanel({ officeId }: LaborEfficiencyPanelProps) {
   const [days, setDays] = useState('30');
-  const fromDate = startOfDay(subDays(new Date(), parseInt(days))).toISOString();
-  const toDate = new Date().toISOString();
+  // Memoized: a fresh Date every render made the query key unstable and the
+  // panel refetched forever ("Loading labor analytics…" never resolved).
+  const fromDate = useMemo(() => startOfDay(subDays(new Date(), parseInt(days))).toISOString(), [days]);
+  const toDate = useMemo(() => new Date().toISOString(), [days]);
 
   const { data: tasks = [], isLoading } = useOfficeTasks(officeId, { from: fromDate, to: toDate });
   const { data: baselines = [] } = useLaborBaselines(officeId);

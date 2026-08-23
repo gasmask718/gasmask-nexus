@@ -82,3 +82,7 @@ export { EquipmentAssignmentPanel } from './EquipmentAssignmentPanel';
 export { DailyExecutionDashboard } from './DailyExecutionDashboard';
 export { SupervisorScorecard } from './SupervisorScorecard';
 export { ShipmentsPanel } from './ShipmentsPanel';
+
+// Office-leader landing rail + migrated batch ledger
+export { MaterialBalanceCard } from './MaterialBalanceCard';
+export { ProductionLogsTable } from './ProductionLogsTable';

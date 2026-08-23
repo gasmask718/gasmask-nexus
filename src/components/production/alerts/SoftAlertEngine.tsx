@@ -380,24 +380,26 @@ export function generateWorkerPrompts(
 // UI COMPONENTS
 // ============================================
 
+// Dark-mode contrast: /20 backgrounds on a dark floor rendered these alerts
+// half-invisible. /60 backgrounds + 100-level text keep them readable.
 const SEVERITY_CONFIG = {
   info: {
-    border: 'border-blue-500/50',
-    bg: 'bg-blue-50/50 dark:bg-blue-950/20',
-    icon: <Info className="h-4 w-4 text-blue-600" />,
-    badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    border: 'border-blue-500/60',
+    bg: 'bg-blue-50 dark:bg-blue-950/60',
+    icon: <Info className="h-4 w-4 text-blue-600 dark:text-blue-300" />,
+    badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100',
   },
   attention: {
-    border: 'border-amber-500/50',
-    bg: 'bg-amber-50/50 dark:bg-amber-950/20',
-    icon: <AlertTriangle className="h-4 w-4 text-amber-600" />,
-    badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+    border: 'border-amber-500/60',
+    bg: 'bg-amber-50 dark:bg-amber-950/60',
+    icon: <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-300" />,
+    badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100',
   },
   risk: {
-    border: 'border-red-500/50',
-    bg: 'bg-red-50/50 dark:bg-red-950/20',
-    icon: <AlertTriangle className="h-4 w-4 text-red-600" />,
-    badge: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    border: 'border-red-500/60',
+    bg: 'bg-red-50 dark:bg-red-950/60',
+    icon: <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-300" />,
+    badge: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100',
   },
 };
 
