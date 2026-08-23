@@ -36,6 +36,7 @@ import {
   Layers,
   BarChart3,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouteManager, DEFAULT_FILTERS, type RouteRow } from '@/hooks/useRouteManager';
@@ -273,6 +274,7 @@ export default function RoutesPage() {
                   <TableHead>Assigned To</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Progress</TableHead>
+                  <TableHead className="text-right">Money on Route</TableHead>
                   <TableHead>Territory</TableHead>
                   <TableHead>Brands</TableHead>
                   <TableHead>Profit</TableHead>
