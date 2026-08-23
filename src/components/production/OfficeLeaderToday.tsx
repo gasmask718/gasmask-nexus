@@ -204,7 +204,7 @@ export function OfficeLeaderToday({ officeId, officeName }: Props) {
               'text-sm px-3 py-1',
               isDayClosed
                 ? 'bg-muted text-muted-foreground'
-                : 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200',
+                : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
             )}
           >
             {isDayClosed ? <Lock className="h-3.5 w-3.5 mr-1" /> : <LockOpen className="h-3.5 w-3.5 mr-1" />}
@@ -287,9 +287,9 @@ export function OfficeLeaderToday({ officeId, officeName }: Props) {
             <div
               className={cn(
                 'rounded-lg border-2 p-4 text-center space-y-1',
-                liveYield.verdict === 'within' && 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40',
-                (liveYield.verdict === 'under' || liveYield.verdict === 'zero') && 'border-red-500 bg-red-50 dark:bg-red-950/40',
-                liveYield.verdict === 'over' && 'border-amber-500 bg-amber-50 dark:bg-amber-950/40',
+                liveYield.verdict === 'within' && 'border-emerald-500 bg-emerald-500/10',
+                (liveYield.verdict === 'under' || liveYield.verdict === 'zero') && 'border-destructive bg-destructive/10',
+                liveYield.verdict === 'over' && 'border-amber-500 bg-amber-500/10',
                 liveYield.verdict === 'no_standard' && 'border-border bg-muted/50',
               )}
             >
