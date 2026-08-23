@@ -339,42 +339,46 @@ export function VALeadsTable({
                         >
                           <Phone className="h-3 w-3" /> {t('va.leads.call')}
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs hover:bg-accent/50 gap-1"
-                          style={{ color: "hsl(var(--success))" }}
-                          onClick={() => onCreateInvoice(lead)}
-                        >
-                          <FileText className="h-3 w-3" /> {t('va.leads.createInvoice')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs hover:bg-accent/50 gap-1"
-                          style={{ color: "hsl(var(--hud-amber))" }}
-                          onClick={() => onSendInvoice(lead)}
-                        >
-                          <Send className="h-3 w-3" /> {t('va.leads.sendInvoice')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs hover:bg-accent/50 gap-1"
-                          style={{ color: "hsl(var(--hud-cyan))" }}
-                          onClick={() => setReceptionistLead(lead)}
-                        >
-                          <Sparkles className="h-3 w-3" /> Receptionist
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs hover:bg-accent/50 gap-1"
-                          style={{ color: "hsl(var(--hud-amber))" }}
-                          onClick={() => setDemoLead(lead)}
-                        >
-                          <Zap className="h-3 w-3" /> Send Demo
-                        </Button>
+                        {brandaroTools && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs hover:bg-accent/50 gap-1"
+                              style={{ color: "hsl(var(--success))" }}
+                              onClick={() => onCreateInvoice(lead)}
+                            >
+                              <FileText className="h-3 w-3" /> {t('va.leads.createInvoice')}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs hover:bg-accent/50 gap-1"
+                              style={{ color: "hsl(var(--hud-amber))" }}
+                              onClick={() => onSendInvoice(lead)}
+                            >
+                              <Send className="h-3 w-3" /> {t('va.leads.sendInvoice')}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs hover:bg-accent/50 gap-1"
+                              style={{ color: "hsl(var(--hud-cyan))" }}
+                              onClick={() => setReceptionistLead(lead)}
+                            >
+                              <Sparkles className="h-3 w-3" /> Receptionist
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs hover:bg-accent/50 gap-1"
+                              style={{ color: "hsl(var(--hud-amber))" }}
+                              onClick={() => setDemoLead(lead)}
+                            >
+                              <Zap className="h-3 w-3" /> Send Demo
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </motion.tr>
@@ -385,23 +389,27 @@ export function VALeadsTable({
         </div>
       )}
 
-      <SendReceptionistLinkModal
-        lead={receptionistLead ? { id: receptionistLead.id, business_name: receptionistLead.business_name, phone_number: receptionistLead.phone } : null}
-        open={!!receptionistLead}
-        onOpenChange={(o) => { if (!o) setReceptionistLead(null); }}
-      />
+      {brandaroTools && (
+        <>
+          <SendReceptionistLinkModal
+            lead={receptionistLead ? { id: receptionistLead.id, business_name: receptionistLead.business_name, phone_number: receptionistLead.phone } : null}
+            open={!!receptionistLead}
+            onOpenChange={(o) => { if (!o) setReceptionistLead(null); }}
+          />
 
-      <SendDemoModal
-        lead={demoLead ? {
-          id: demoLead.id,
-          business_name: demoLead.business_name,
-          city: demoLead.city ?? null,
-          phone_number: demoLead.phone,
-          google_place_id: demoLead.google_place_id ?? null,
-        } : null}
-        open={!!demoLead}
-        onClose={() => setDemoLead(null)}
-      />
+          <SendDemoModal
+            lead={demoLead ? {
+              id: demoLead.id,
+              business_name: demoLead.business_name,
+              city: demoLead.city ?? null,
+              phone_number: demoLead.phone,
+              google_place_id: demoLead.google_place_id ?? null,
+            } : null}
+            open={!!demoLead}
+            onClose={() => setDemoLead(null)}
+          />
+        </>
+      )}
     </div>
   );
 }
