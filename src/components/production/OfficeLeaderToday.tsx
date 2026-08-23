@@ -300,27 +300,27 @@ export function OfficeLeaderToday({ officeId, officeName }: Props) {
                 </span>
               </p>
               {liveYield.verdict === 'within' && (
-                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-1">
+                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1">
                   <CheckCircle className="h-4 w-4" />
                   {t('production.within_tolerance')}
                   {liveYield.std && ` (${t('production.expected')}: ${Number(liveYield.std.expected_boxes_per_lb).toFixed(2)} ±${Number(liveYield.std.tolerance_pct)}%)`}
                 </p>
               )}
               {liveYield.verdict === 'under' && (
-                <p className="text-sm font-medium text-red-700 dark:text-red-300 flex items-center justify-center gap-1">
+                <p className="text-sm font-medium text-destructive flex items-center justify-center gap-1">
                   <TrendingDown className="h-4 w-4" />
                   {t('production.under_yield_entry')}
                   {liveYield.std && ` (${t('production.expected')}: ${Number(liveYield.std.expected_boxes_per_lb).toFixed(2)})`}
                 </p>
               )}
               {liveYield.verdict === 'zero' && (
-                <p className="text-sm font-medium text-red-700 dark:text-red-300 flex items-center justify-center gap-1">
+                <p className="text-sm font-medium text-destructive flex items-center justify-center gap-1">
                   <AlertTriangle className="h-4 w-4" />
                   {t('production.zero_boxes_entry')}
                 </p>
               )}
               {liveYield.verdict === 'over' && (
-                <p className="text-sm font-medium text-amber-700 dark:text-amber-300 flex items-center justify-center gap-1">
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center justify-center gap-1">
                   <TrendingUp className="h-4 w-4" />
                   {t('production.over_yield_entry')}
                   {liveYield.std && ` (${t('production.expected')}: ${Number(liveYield.std.expected_boxes_per_lb).toFixed(2)})`}
