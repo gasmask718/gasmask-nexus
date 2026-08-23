@@ -53405,6 +53405,10 @@ export type Database = {
           ai_prescreen_enabled: boolean | null
           ai_voicemail_script: string | null
           amd_sensitivity: string | null
+          armed_at: string | null
+          armed_by: string | null
+          armed_campaign_id: string | null
+          auto_disarm_at: string | null
           auto_profit_protection: boolean | null
           business_hours_end: string | null
           business_hours_end_min: number | null
@@ -53417,6 +53421,7 @@ export type Database = {
           default_voice_mode: string | null
           default_voice_provider: string | null
           enable_test_mode: boolean | null
+          engine_armed: boolean | null
           id: string
           live_mode_test_call_sid: string | null
           live_mode_unlocked_at: string | null
@@ -53445,6 +53450,10 @@ export type Database = {
           ai_prescreen_enabled?: boolean | null
           ai_voicemail_script?: string | null
           amd_sensitivity?: string | null
+          armed_at?: string | null
+          armed_by?: string | null
+          armed_campaign_id?: string | null
+          auto_disarm_at?: string | null
           auto_profit_protection?: boolean | null
           business_hours_end?: string | null
           business_hours_end_min?: number | null
@@ -53457,6 +53466,7 @@ export type Database = {
           default_voice_mode?: string | null
           default_voice_provider?: string | null
           enable_test_mode?: boolean | null
+          engine_armed?: boolean | null
           id?: string
           live_mode_test_call_sid?: string | null
           live_mode_unlocked_at?: string | null
@@ -53485,6 +53495,10 @@ export type Database = {
           ai_prescreen_enabled?: boolean | null
           ai_voicemail_script?: string | null
           amd_sensitivity?: string | null
+          armed_at?: string | null
+          armed_by?: string | null
+          armed_campaign_id?: string | null
+          auto_disarm_at?: string | null
           auto_profit_protection?: boolean | null
           business_hours_end?: string | null
           business_hours_end_min?: number | null
@@ -53497,6 +53511,7 @@ export type Database = {
           default_voice_mode?: string | null
           default_voice_provider?: string | null
           enable_test_mode?: boolean | null
+          engine_armed?: boolean | null
           id?: string
           live_mode_test_call_sid?: string | null
           live_mode_unlocked_at?: string | null
@@ -153629,6 +153644,10 @@ export type Database = {
         Args: { p_promotion_id: string }
         Returns: string
       }
+      arm_dialer: {
+        Args: { p_campaign_id: string; p_minutes?: number }
+        Returns: Json
+      }
       assert_public_view_grants: {
         Args: never
         Returns: {
@@ -154763,6 +154782,7 @@ export type Database = {
           to_snapshot: string
         }[]
       }
+      disarm_dialer: { Args: never; Returns: Json }
       distribute_leads_to_vas: { Args: never; Returns: Json }
       engagement_scores_tick: { Args: never; Returns: Json }
       enrich_store_contacts: { Args: never; Returns: Json }

@@ -573,6 +573,7 @@ const DialerRevenueIntelligence = lazy(() => import('@/pages/communication/diale
 const DialerPredictiveTargeting = lazy(() => import('@/pages/communication/dialer/DialerPredictiveTargeting'));
 const DialerIntegrityPage = lazy(() => import('@/pages/communication/dialer/DialerIntegrityPage'));
 const AutoDialerPage = lazy(() => import('@/pages/communication/dialer/AutoDialerPage'));
+const PowerDialerConsole = lazy(() => import('@/pages/communication/dialer/PowerDialerConsole'));
 const CampaignDialPage = lazy(() => import('@/pages/communication/dialer/CampaignDialPage'));
 const AIAutoTextPage = lazy(() => import('@/pages/communication/ai/AIAutoTextPage'));
 const MessagingHubPage = lazy(() => import('@/pages/communication/messaging').then(m => ({ default: m.MessagingHubPage })));
@@ -2653,6 +2654,7 @@ export default function AppRoutes() {
           {/* ═══ FLOOR 1: OPERATIONS HUB ═══ */}
           <Route path="unified-inbox" element={<UnifiedInboxV3Page />} />
           <Route path="auto-dialer" element={<AutoDialerPage />} />
+          <Route path="power-dialer" element={<PowerDialerConsole />} />
           <Route path="campaign-dial" element={<CampaignDialPage />} />
           <Route path="manual-calls" element={<ManualCallPage />} />
           <Route path="manual-text" element={<ManualTextPage />} />
