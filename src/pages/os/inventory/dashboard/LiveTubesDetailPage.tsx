@@ -58,12 +58,12 @@ export default function LiveTubesDetailPage() {
   });
 
   // Get unique cities
-  const cities: string[] = [...new Set(storeInventory.map((s: any) => s.warehouses?.city as string).filter(Boolean))].sort();
+  const cities: string[] = ([...new Set(storeInventory.map((s: any) => s.warehouses?.city).filter(Boolean))] as string[]).sort();
 
   // Get unique brands
-  const brands: string[] = [...new Set(storeInventory.map((s: any) =>
-    (s.products as any)?.brands?.name as string
-  ).filter(Boolean))].sort();
+  const brands: string[] = ([...new Set(storeInventory.map((s: any) =>
+    (s.products as any)?.brands?.name
+  ).filter(Boolean))] as string[]).sort();
 
   // Calculate totals
   const totalOnHand = storeInventory.reduce((sum: number, item: any) => sum + (item.quantity_on_hand || 0), 0);
