@@ -156,6 +156,15 @@ export default function CostHistoryPage() {
             {/* Table */}
             {isLoading ? (
               <div className="py-12 text-center text-muted-foreground">Loading cost ledger...</div>
+            ) : records.length === 0 ? (
+              <div className="py-12 text-center space-y-2">
+                <DollarSign className="h-10 w-10 mx-auto text-muted-foreground/40" />
+                <p className="font-medium">No costed batches yet</p>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  Cost records appear here automatically when a batch is completed and its costs
+                  are approved on the production floor (Manufacturing OS → Insight → Costs).
+                </p>
+              </div>
             ) : filtered.length === 0 ? (
               <div className="py-12 text-center text-muted-foreground text-sm">No records match filters.</div>
             ) : (

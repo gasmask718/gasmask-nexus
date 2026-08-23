@@ -67,6 +67,8 @@ import {
   SupervisorScorecard,
   BrandYieldAnalyticsPanel,
   ShipmentsPanel,
+  MaterialBalanceCard,
+  ProductionLogsTable,
 } from '@/components/production';
 import { WorkerTaskTimer } from '@/components/production/WorkerTaskTimer';
 import { LaborEfficiencyPanel } from '@/components/production/LaborEfficiencyPanel';
@@ -285,8 +287,9 @@ export default function ProductionPortalPage() {
                   </Badge>
                 </div>
                 
-                {/* Quick Actions */}
-                <div className="flex gap-2">
+                {/* Quick Actions — training mode lives here, out of the daily
+                    entry view, so it can't be confused with real data. */}
+                <div className="flex items-center gap-2">
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -295,6 +298,10 @@ export default function ProductionPortalPage() {
                     <UserPlus className="h-4 w-4 mr-1" />
                     {t('production.staff')}
                   </Button>
+                  <TrainingModeToggle 
+                    isTrainingMode={isTrainingMode}
+                    onToggle={setIsTrainingMode}
+                  />
                 </div>
               </div>
             )}
@@ -330,9 +337,9 @@ export default function ProductionPortalPage() {
           <ActiveBatchBanner 
             batches={batches}
             onCreateBatch={() => {
-              // Navigate to batches tab and trigger create
-              const batchesTab = document.querySelector('[value="batches"]') as HTMLElement;
-              batchesTab?.click();
+              // Jump to the TODAY → Enter Output view, where batch creation lives
+              const entryTab = document.querySelector('[value="entry"]') as HTMLElement;
+              entryTab?.click();
             }}
           />
 
@@ -343,10 +350,6 @@ export default function ProductionPortalPage() {
                 <Factory className="h-5 w-5" />
                 {t('production.todays_production')} — {format(new Date(), 'EEEE, MMMM d')}
               </h2>
-              <TrainingModeToggle 
-                isTrainingMode={isTrainingMode}
-                onToggle={setIsTrainingMode}
-              />
             </div>
             <ProductionKPICards 
               kpis={kpis || {
@@ -369,243 +372,287 @@ export default function ProductionPortalPage() {
             />
           </div>
 
-          {/* Tabbed Sections — office leaders land on daily entry (batches),
-              HQ staff land on the command view. key forces the default to
-              apply once role/assignments resolve. */}
-          <Tabs key={isOfficeScoped ? 'batches' : 'command'} defaultValue={isOfficeScoped ? 'batches' : 'command'} className="space-y-4">
+          {/* Grouped sections — 5 top-level tabs, everything else nested.
+              Everyone lands on TODAY → Enter Output: the office leader's whole
+              daily job (enter numbers, see variance, see what they hold, close
+              the day) on one screen with no tab-hunting. */}
+          <Tabs key={rbac.tier} defaultValue="today" className="space-y-4">
             <TabsList className="flex flex-wrap gap-1 h-auto">
-              {/* ── OPERATE (DO) ── */}
-              <TabsTrigger value="command" className="flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.command" en="Command" /></span>
+              <TabsTrigger value="today" className="flex items-center gap-2">
+                <ClipboardCheck className="h-4 w-4" />
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.section.today" en="Today" /></span>
               </TabsTrigger>
-              <TabsTrigger value="batches" className="flex items-center gap-2">
-                <Boxes className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.batches" en="Batches" /></span>
-              </TabsTrigger>
-              {rbac.canApproveSubmissions && (
-                <TabsTrigger value="submissions" className="flex items-center gap-2 relative">
-                  <ClipboardCheck className="h-4 w-4" />
-                  <span className="hidden sm:inline"><BilingualLabel tKey="production.submissions" en="Submissions" /></span>
-                  {pendingSubmissionCount > 0 && (
-                    <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
-                      {pendingSubmissionCount}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="attendance" className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.attendance" en="Attendance" /></span>
-              </TabsTrigger>
-              <TabsTrigger value="timer" className="flex items-center gap-2">
-                <Timer className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.task_timer" en="Task Timer" /></span>
-              </TabsTrigger>
-
-              {rbac.canManagePayroll && (
-                <TabsTrigger value="payroll" className="flex items-center gap-2">
-                  <Wallet className="h-4 w-4" />
-                  <span className="hidden sm:inline"><BilingualLabel tKey="production.payroll" en="Payroll" /></span>
-                </TabsTrigger>
-              )}
-              {rbac.canViewCosts && (
-                <TabsTrigger value="costs" className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  <span className="hidden sm:inline"><BilingualLabel tKey="production.costs" en="Costs" /></span>
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="inventory" className="flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.inventory" en="Inventory" /></span>
-              </TabsTrigger>
-              <TabsTrigger value="shipments" className="flex items-center gap-2">
-                <Truck className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.shipments" en="Shipments" /></span>
-              </TabsTrigger>
-              <TabsTrigger value="performance" className="flex items-center gap-2">
-                <Target className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.performance" en="Performance" /></span>
-              </TabsTrigger>
-              {rbac.canViewForecasts && (
-                <TabsTrigger value="forecast" className="flex items-center gap-2">
-                  <Brain className="h-4 w-4" />
-                  <span className="hidden sm:inline"><BilingualLabel tKey="production.ai_forecast" en="AI Forecast" /></span>
-                </TabsTrigger>
-              )}
-
-              <TabsTrigger value="workers" className="flex items-center gap-2">
+              <TabsTrigger value="people" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.workers" en="Workers" /></span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.section.people" en="People" /></span>
               </TabsTrigger>
-              <TabsTrigger value="tools" className="flex items-center gap-2">
-                <Wrench className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.tools_tab" en="Tools" /></span>
+              <TabsTrigger value="materials" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.section.materials" en="Materials" /></span>
+              </TabsTrigger>
+              <TabsTrigger value="insight" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.section.insight" en="Insight" /></span>
               </TabsTrigger>
               <TabsTrigger value="messages" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.messages" en="Messages" /></span>
-              </TabsTrigger>
-              <TabsTrigger value="history" className="flex items-center gap-2">
-                <History className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.history" en="History" /></span>
-              </TabsTrigger>
-              <TabsTrigger value="materials" className="flex items-center gap-2">
-                <Leaf className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.materials" en="Materials" /></span>
-              </TabsTrigger>
-              <TabsTrigger value="equipment" className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.equipment" en="Equipment" /></span>
-              </TabsTrigger>
-              <TabsTrigger value="daily-exec" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.daily_exec" en="Daily Exec" /></span>
-              </TabsTrigger>
-              <TabsTrigger value="supervisor" className="flex items-center gap-2">
-                <Award className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.supervisor" en="Supervisor" /></span>
-              </TabsTrigger>
-              <TabsTrigger value="yield" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline"><BilingualLabel tKey="production.yield" en="Yield" /></span>
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.section.messages" en="Messages" /></span>
               </TabsTrigger>
             </TabsList>
 
-            {/* ── OPERATE CONTENT ── */}
-            <TabsContent value="command">
-              <DailyCommandView officeId={selectedOfficeId} targetBoxes={selectedOffice?.daily_box_goal || 100} />
-            </TabsContent>
+            {/* ── TODAY: enter output · command · submissions · close day ── */}
+            <TabsContent value="today">
+              <Tabs defaultValue="entry" className="space-y-4">
+                <TabsList className="h-auto">
+                  <TabsTrigger value="entry" className="flex items-center gap-2">
+                    <Boxes className="h-4 w-4" />
+                    <BilingualLabel tKey="production.enter_output" en="Enter Output" />
+                  </TabsTrigger>
+                  <TabsTrigger value="command" className="flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    <BilingualLabel tKey="production.command" en="Command" />
+                  </TabsTrigger>
+                  {rbac.canApproveSubmissions && (
+                    <TabsTrigger value="submissions" className="flex items-center gap-2 relative">
+                      <ClipboardCheck className="h-4 w-4" />
+                      <BilingualLabel tKey="production.submissions" en="Submissions" />
+                      {pendingSubmissionCount > 0 && (
+                        <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                          {pendingSubmissionCount}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                  )}
+                </TabsList>
 
-            <TabsContent value="batches">
-              <div className="grid lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2">
-                  <DailyBatchEntry officeId={selectedOfficeId} />
-                </div>
-                <div className="space-y-4">
-                  <DailyChecklist
-                    hasBatch={hasBatch}
-                    hasOutput={hasOutput}
-                    hasVarianceReview={varianceAcknowledged || varianceAmount === 0}
-                    varianceAmount={varianceAmount}
-                    boxCount={kpis?.totalBoxes || 0}
-                    onCloseDay={handleCloseDay}
-                    isClosing={closeDay.isPending}
-                    isDayClosed={isDayClosed}
-                  />
-                  <VariancePanel officeId={selectedOfficeId} />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="submissions">
-              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Submission Approvals">
-                <SubmissionApprovalQueue officeId={selectedOfficeId} />
-              </ProductionRBACGate>
-            </TabsContent>
-
-            <TabsContent value="attendance">
-              <WorkerAttendance officeId={selectedOfficeId} isDayLocked={isDayClosed} />
-            </TabsContent>
-
-            <TabsContent value="timer">
-              <div className="grid lg:grid-cols-2 gap-4">
-                <WorkerTaskTimer officeId={selectedOfficeId} />
-                <LaborEfficiencyPanel officeId={selectedOfficeId} />
-              </div>
-            </TabsContent>
-
-            {/* ── REVIEW CONTENT ── */}
-            <TabsContent value="payroll">
-              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Worker Payroll">
-                <WorkerPayrollAdmin officeId={selectedOfficeId} />
-              </ProductionRBACGate>
-            </TabsContent>
-
-            <TabsContent value="costs">
-              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Cost & Margin Analytics">
-                <div className="grid lg:grid-cols-3 gap-4">
-                  <div className="lg:col-span-1">
-                    <CostBreakdownPanel officeId={selectedOfficeId} />
+                {/* The office leader's landing view — one screen, no tabs:
+                    today's batch entry, checklist/close day, variance, and
+                    what the office still holds. */}
+                <TabsContent value="entry">
+                  <div className="grid lg:grid-cols-3 gap-4">
+                    <div className="lg:col-span-2">
+                      <DailyBatchEntry officeId={selectedOfficeId} />
+                    </div>
+                    <div className="space-y-4">
+                      <DailyChecklist
+                        hasBatch={hasBatch}
+                        hasOutput={hasOutput}
+                        hasVarianceReview={varianceAcknowledged || varianceAmount === 0}
+                        varianceAmount={varianceAmount}
+                        boxCount={kpis?.totalBoxes || 0}
+                        onCloseDay={handleCloseDay}
+                        isClosing={closeDay.isPending}
+                        isDayClosed={isDayClosed}
+                      />
+                      <VariancePanel officeId={selectedOfficeId} />
+                      <MaterialBalanceCard officeId={selectedOfficeId} />
+                    </div>
                   </div>
-                  <div className="lg:col-span-2">
-                    <MarginAnalytics officeId={selectedOfficeId} />
+                </TabsContent>
+
+                <TabsContent value="command">
+                  <DailyCommandView officeId={selectedOfficeId} targetBoxes={selectedOffice?.daily_box_goal || 100} />
+                </TabsContent>
+
+                <TabsContent value="submissions">
+                  <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Submission Approvals">
+                    <SubmissionApprovalQueue officeId={selectedOfficeId} />
+                  </ProductionRBACGate>
+                </TabsContent>
+              </Tabs>
+            </TabsContent>
+
+            {/* ── PEOPLE: workers · attendance · timer · performance · supervisor · payroll ── */}
+            <TabsContent value="people">
+              <Tabs defaultValue="workers" className="space-y-4">
+                <TabsList className="flex flex-wrap h-auto">
+                  <TabsTrigger value="workers" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <BilingualLabel tKey="production.workers" en="Workers" />
+                  </TabsTrigger>
+                  <TabsTrigger value="attendance" className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <BilingualLabel tKey="production.attendance" en="Attendance" />
+                  </TabsTrigger>
+                  <TabsTrigger value="timer" className="flex items-center gap-2">
+                    <Timer className="h-4 w-4" />
+                    <BilingualLabel tKey="production.task_timer" en="Task Timer" />
+                  </TabsTrigger>
+                  <TabsTrigger value="performance" className="flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    <BilingualLabel tKey="production.performance" en="Performance" />
+                  </TabsTrigger>
+                  <TabsTrigger value="supervisor" className="flex items-center gap-2">
+                    <Award className="h-4 w-4" />
+                    <BilingualLabel tKey="production.supervisor" en="Supervisor" />
+                  </TabsTrigger>
+                  {rbac.canManagePayroll && (
+                    <TabsTrigger value="payroll" className="flex items-center gap-2">
+                      <Wallet className="h-4 w-4" />
+                      <BilingualLabel tKey="production.payroll" en="Payroll" />
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+
+                <TabsContent value="workers">
+                  <WorkerManagement officeId={selectedOfficeId} />
+                </TabsContent>
+                <TabsContent value="attendance">
+                  <WorkerAttendance officeId={selectedOfficeId} isDayLocked={isDayClosed} />
+                </TabsContent>
+                <TabsContent value="timer">
+                  <div className="grid lg:grid-cols-2 gap-4">
+                    <WorkerTaskTimer officeId={selectedOfficeId} />
+                    <LaborEfficiencyPanel officeId={selectedOfficeId} />
                   </div>
-                </div>
-              </ProductionRBACGate>
+                </TabsContent>
+                <TabsContent value="performance">
+                  <div className="grid lg:grid-cols-3 gap-4">
+                    <div className="lg:col-span-2">
+                      <WorkerPerformance officeId={selectedOfficeId} />
+                    </div>
+                    <div className="space-y-4">
+                      <DailyCycleTimeSummary batches={batches} officeId={selectedOfficeId} />
+                      <StaffingForecast officeId={selectedOfficeId} />
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="supervisor">
+                  <SupervisorScorecard officeId={selectedOfficeId} />
+                </TabsContent>
+                <TabsContent value="payroll">
+                  <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Worker Payroll">
+                    <WorkerPayrollAdmin officeId={selectedOfficeId} />
+                  </ProductionRBACGate>
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
-            <TabsContent value="inventory">
-              <div className="space-y-4">
-                <RawAllocationPanel officeId={selectedOfficeId} />
-                <InventoryPipeline officeId={selectedOfficeId} />
-                <RawMaterialIntake officeId={selectedOfficeId} />
-              </div>
+            {/* ── MATERIALS: inventory · consumption · shipments · equipment · tools ── */}
+            <TabsContent value="materials">
+              <Tabs defaultValue="inventory" className="space-y-4">
+                <TabsList className="flex flex-wrap h-auto">
+                  <TabsTrigger value="inventory" className="flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    <BilingualLabel tKey="production.inventory" en="Inventory" />
+                  </TabsTrigger>
+                  <TabsTrigger value="consumption" className="flex items-center gap-2">
+                    <Leaf className="h-4 w-4" />
+                    <BilingualLabel tKey="production.materials" en="Materials" />
+                  </TabsTrigger>
+                  <TabsTrigger value="shipments" className="flex items-center gap-2">
+                    <Truck className="h-4 w-4" />
+                    <BilingualLabel tKey="production.shipments" en="Shipments" />
+                  </TabsTrigger>
+                  <TabsTrigger value="equipment" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    <BilingualLabel tKey="production.equipment" en="Equipment" />
+                  </TabsTrigger>
+                  <TabsTrigger value="tools" className="flex items-center gap-2">
+                    <Wrench className="h-4 w-4" />
+                    <BilingualLabel tKey="production.tools_tab" en="Tools" />
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="inventory">
+                  <div className="space-y-4">
+                    <RawAllocationPanel officeId={selectedOfficeId} />
+                    <InventoryPipeline officeId={selectedOfficeId} />
+                    <RawMaterialIntake officeId={selectedOfficeId} />
+                  </div>
+                </TabsContent>
+                <TabsContent value="consumption">
+                  <MaterialConsumptionPanel officeId={selectedOfficeId} />
+                </TabsContent>
+                <TabsContent value="shipments">
+                  <ShipmentsPanel officeId={selectedOfficeId} />
+                </TabsContent>
+                <TabsContent value="equipment">
+                  <EquipmentAssignmentPanel officeId={selectedOfficeId} />
+                </TabsContent>
+                <TabsContent value="tools">
+                  <ToolsInventory officeId={selectedOfficeId} />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
-            <TabsContent value="shipments">
-              <ShipmentsPanel officeId={selectedOfficeId} />
+            {/* ── INSIGHT: logs · costs · yield · forecast · history · daily exec ──
+                Costs/margins stay manager-gated; an office leader never sees
+                cost per box or unit costs. */}
+            <TabsContent value="insight">
+              <Tabs defaultValue="logs" className="space-y-4">
+                <TabsList className="flex flex-wrap h-auto">
+                  <TabsTrigger value="logs" className="flex items-center gap-2">
+                    <Boxes className="h-4 w-4" />
+                    <BilingualLabel tKey="production.production_logs" en="Production Logs" />
+                  </TabsTrigger>
+                  {rbac.canViewCosts && (
+                    <TabsTrigger value="costs" className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      <BilingualLabel tKey="production.costs" en="Costs" />
+                    </TabsTrigger>
+                  )}
+                  <TabsTrigger value="yield" className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    <BilingualLabel tKey="production.yield" en="Yield" />
+                  </TabsTrigger>
+                  {rbac.canViewForecasts && (
+                    <TabsTrigger value="forecast" className="flex items-center gap-2">
+                      <Brain className="h-4 w-4" />
+                      <BilingualLabel tKey="production.ai_forecast" en="AI Forecast" />
+                    </TabsTrigger>
+                  )}
+                  <TabsTrigger value="history" className="flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    <BilingualLabel tKey="production.history" en="History" />
+                  </TabsTrigger>
+                  <TabsTrigger value="daily-exec" className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    <BilingualLabel tKey="production.daily_exec" en="Daily Exec" />
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="logs">
+                  <ProductionLogsTable officeId={selectedOfficeId} />
+                </TabsContent>
+                <TabsContent value="costs">
+                  <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Cost & Margin Analytics">
+                    <div className="grid lg:grid-cols-3 gap-4">
+                      <div className="lg:col-span-1">
+                        <CostBreakdownPanel officeId={selectedOfficeId} />
+                      </div>
+                      <div className="lg:col-span-2">
+                        <MarginAnalytics officeId={selectedOfficeId} />
+                      </div>
+                    </div>
+                  </ProductionRBACGate>
+                </TabsContent>
+                <TabsContent value="yield">
+                  <BrandYieldAnalyticsPanel officeId={selectedOfficeId} />
+                </TabsContent>
+                <TabsContent value="forecast">
+                  <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="AI Supply Forecast">
+                    <div className="grid lg:grid-cols-2 gap-4">
+                      <SupplyPredictionPanel officeId={selectedOfficeId} />
+                      <LeadTimeConfig officeId={selectedOfficeId} />
+                    </div>
+                  </ProductionRBACGate>
+                </TabsContent>
+                <TabsContent value="history">
+                  <div className="grid lg:grid-cols-2 gap-4">
+                    <BatchHistoryPanel officeId={selectedOfficeId} />
+                    <ProductionHistoryPanel officeId={selectedOfficeId} />
+                  </div>
+                </TabsContent>
+                <TabsContent value="daily-exec">
+                  <DailyExecutionDashboard officeId={selectedOfficeId} dailyGoal={(selectedOffice as any)?.daily_box_goal || 100} />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
-            <TabsContent value="performance">
-              <div className="grid lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2">
-                  <WorkerPerformance officeId={selectedOfficeId} />
-                </div>
-                <div className="space-y-4">
-                  <DailyCycleTimeSummary batches={batches} officeId={selectedOfficeId} />
-                  <StaffingForecast officeId={selectedOfficeId} />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="forecast">
-              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="AI Supply Forecast">
-                <div className="grid lg:grid-cols-2 gap-4">
-                  <SupplyPredictionPanel officeId={selectedOfficeId} />
-                  <LeadTimeConfig officeId={selectedOfficeId} />
-                </div>
-              </ProductionRBACGate>
-            </TabsContent>
-
-            {/* ── ADMIN CONTENT ── */}
-            <TabsContent value="workers">
-              <WorkerManagement officeId={selectedOfficeId} />
-            </TabsContent>
-
-            <TabsContent value="tools">
-              <ToolsInventory officeId={selectedOfficeId} />
-            </TabsContent>
-
+            {/* ── MESSAGES ── */}
             <TabsContent value="messages">
               <CommunicationsLog officeId={selectedOfficeId} />
-            </TabsContent>
-
-            <TabsContent value="history">
-              <div className="grid lg:grid-cols-2 gap-4">
-                <BatchHistoryPanel officeId={selectedOfficeId} />
-                <ProductionHistoryPanel officeId={selectedOfficeId} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="materials">
-              <MaterialConsumptionPanel officeId={selectedOfficeId} />
-            </TabsContent>
-
-            <TabsContent value="equipment">
-              <EquipmentAssignmentPanel officeId={selectedOfficeId} />
-            </TabsContent>
-
-            <TabsContent value="daily-exec">
-              <DailyExecutionDashboard officeId={selectedOfficeId} dailyGoal={(selectedOffice as any)?.daily_box_goal || 100} />
-            </TabsContent>
-
-            <TabsContent value="supervisor">
-              <SupervisorScorecard officeId={selectedOfficeId} />
-            </TabsContent>
-
-            <TabsContent value="yield">
-              <BrandYieldAnalyticsPanel officeId={selectedOfficeId} />
             </TabsContent>
           </Tabs>
         </>

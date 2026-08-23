@@ -1039,17 +1039,40 @@ export function useDailyKPIs(officeId: string | undefined, date?: Date) {
         };
       }
 
-      // Get today's batches
-      const { data: batches } = await supabase
-        .from('production_batches')
-        .select('id, tobacco_lbs, tubes_total, workers_present, total_tubes_used, total_defects, variance_tubes')
-        .eq('office_id', officeId)
-        .eq('batch_date', dateStr)
-        .eq('is_test', false);
+      // Batches, tools, attendance, and closeout are independent — fetch them
+      // in parallel. They used to run serially, which is why the KPI strip sat
+      // on skeleton boxes for seconds before resolving.
+      const [batchesRes, toolsRes, attendanceResult, closeoutRes] = await Promise.all([
+        supabase
+          .from('production_batches')
+          .select('id, tobacco_lbs, tubes_total, workers_present, total_tubes_used, total_defects, variance_tubes')
+          .eq('office_id', officeId)
+          .eq('batch_date', dateStr)
+          .eq('is_test', false),
+        supabase
+          .from('production_office_tools')
+          .select('quantity, operational_count')
+          .eq('office_id', officeId),
+        supabase
+          .from('production_worker_attendance')
+          .select('id', { count: 'exact', head: true })
+          .eq('office_id', officeId)
+          .eq('attendance_date', dateStr),
+        supabase
+          .from('production_daily_closeouts')
+          .select('is_locked')
+          .eq('office_id', officeId)
+          .eq('close_date', dateStr)
+          .maybeSingle(),
+      ]);
+      const batches = batchesRes.data;
+      const tools = toolsRes.data;
+      const attendanceCount = attendanceResult?.count || 0;
+      const closeout = closeoutRes.data;
 
       const batchIds = (batches || []).map(b => b.id);
 
-      // Get outputs for today's batches
+      // Get outputs for today's batches (depends on batchIds)
       let outputs: ProductionBatchOutput[] = [];
       if (batchIds.length > 0) {
         const { data } = await supabase
@@ -1058,28 +1081,6 @@ export function useDailyKPIs(officeId: string | undefined, date?: Date) {
           .in('batch_id', batchIds);
         outputs = (data || []) as ProductionBatchOutput[];
       }
-
-      // Get tools
-      const { data: tools } = await supabase
-        .from('production_office_tools')
-        .select('quantity, operational_count')
-        .eq('office_id', officeId);
-
-      // Get attendance count
-      const attendanceResult = await supabase
-        .from('production_worker_attendance')
-        .select('id', { count: 'exact', head: true })
-        .eq('office_id', officeId)
-        .eq('attendance_date', dateStr);
-      const attendanceCount = attendanceResult?.count || 0;
-
-      // Check if day is closed
-      const { data: closeout } = await supabase
-        .from('production_daily_closeouts')
-        .select('is_locked')
-        .eq('office_id', officeId)
-        .eq('close_date', dateStr)
-        .maybeSingle();
 
       // Calculate KPIs
       const boxesByBrand: Record<string, number> = {};

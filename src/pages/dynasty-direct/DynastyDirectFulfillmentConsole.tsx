@@ -339,8 +339,9 @@ function RoutingFeed() {
     queryKey: ["dd-routing-feed", supplierFilter, rangeHours],
     queryFn: async () => {
       const sinceIso = new Date(Date.now() - Number(rangeHours) * 3_600_000).toISOString();
-      let q = supabase
-        .from("dd_routing_audit")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TS2589: untyped relation
+      let q: any = supabase
+        .from("dd_routing_audit" as any)
         .select("*, w:wholesaler_id(company_name)")
         .gte("created_at", sinceIso)
         .order("created_at", { ascending: false })
@@ -348,7 +349,8 @@ function RoutingFeed() {
       if (supplierFilter !== "all") q = q.eq("wholesaler_id", supplierFilter);
       const { data, error } = await q;
       if (error) throw error;
-      return data || [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (data || []) as any[];
     },
     refetchInterval: paused ? false : 5_000,
   });

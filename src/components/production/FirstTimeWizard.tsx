@@ -124,7 +124,7 @@ export function FirstTimeWizard({
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg"><BilingualLabel tKey="production.welcome_to" en={`Welcome to ${officeName}`} /></CardTitle>
+              <CardTitle className="text-lg"><BilingualLabel tKey="production.welcome_to" en={`Welcome to ${officeName}`} params={{ officeName }} /></CardTitle>
               <CardDescription>{t("production.complete_training_steps")}</CardDescription>
             </div>
           </div>

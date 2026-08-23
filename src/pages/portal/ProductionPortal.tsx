@@ -71,7 +71,7 @@ export default function ProductionPortal() {
 
   const { data: batches = [] } = useTodayBatches(selectedOfficeId);
   const { data: kpis } = useDailyKPIs(selectedOfficeId);
-  const { data: mySubmissions = [] } = useWorkerSubmissions(selectedOfficeId);
+  const { data: mySubmissions = [], isLoading: subsLoading } = useWorkerSubmissions(selectedOfficeId);
 
   const todayTarget = batches.reduce((sum, b) => sum + (b.tubes_total || 0), 0);
   const todayCompleted = batches.reduce((sum, b) => sum + (b.boxes_produced || 0), 0);
@@ -166,11 +166,11 @@ export default function ProductionPortal() {
           <Card className="border-muted">
             <CardHeader className="pb-2">
               <CardDescription>My Submissions</CardDescription>
-              <CardTitle className="text-3xl">{mySubmissions.length}</CardTitle>
+              <CardTitle className="text-3xl">{!selectedOfficeId || subsLoading ? '—' : mySubmissions.length}</CardTitle>
             </CardHeader>
             <CardContent>
               <span className="text-sm text-muted-foreground">
-                {mySubmissions.filter(s => s.status === 'pending_review').length} pending review
+                {!selectedOfficeId || subsLoading ? 'Loading…' : `${mySubmissions.filter(s => s.status === 'pending_review').length} pending review`}
               </span>
             </CardContent>
           </Card>
