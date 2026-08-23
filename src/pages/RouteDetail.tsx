@@ -382,6 +382,29 @@ const RouteDetail = () => {
                           </div>
                         )}
 
+                        {(owedByStore[stop.store.id] || 0) > 0 && (
+                          <Badge className="bg-red-500/10 text-red-500 border-red-500/30">
+                            Owes ${Math.round(owedByStore[stop.store.id]).toLocaleString()}
+                          </Badge>
+                        )}
+
+                        {stop.store.phone && (
+                          <div className="flex items-center gap-2">
+                            <ClickablePhone
+                              phone={stop.store.phone}
+                              entityType="store"
+                              entityId={stop.store.id}
+                              entityName={stop.store.name}
+                              className="text-sm"
+                            />
+                            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
+                              <a href={`sms:${stop.store.phone}`} onClick={(e) => e.stopPropagation()}>
+                                <MessageSquare className="h-3 w-3 mr-1" /> Text
+                              </a>
+                            </Button>
+                          </div>
+                        )}
+
                         {stop.status !== 'completed' && (
                           <Button 
                             size="sm" 
