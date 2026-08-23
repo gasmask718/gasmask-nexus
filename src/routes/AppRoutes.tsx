@@ -1183,7 +1183,6 @@ const AIInsights = lazy(() => import('@/pages/grabba/AIInsights'));
 const GrabbaCRM = lazy(() => import('@/pages/grabba/GrabbaCRM'));
 const GrabbaCommunication = lazy(() => import('@/pages/grabba/GrabbaCommunication'));
 const GrabbaInventory = lazy(() => import('@/pages/grabba/GrabbaInventory'));
-const GrabbaProduction = lazy(() => import('@/pages/grabba/GrabbaProduction'));
 const GrabbaDeliveries = lazy(() => import('@/pages/grabba/GrabbaDeliveries'));
 const GrabbaAssignments = lazy(() => import('@/pages/grabba/GrabbaAssignments'));
 const GrabbaAmbassadors = lazy(() => import('@/pages/grabba/GrabbaAmbassadors'));
