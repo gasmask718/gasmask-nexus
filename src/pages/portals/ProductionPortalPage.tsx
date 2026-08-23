@@ -67,6 +67,8 @@ import {
   SupervisorScorecard,
   BrandYieldAnalyticsPanel,
   ShipmentsPanel,
+  MaterialBalanceCard,
+  ProductionLogsTable,
 } from '@/components/production';
 import { WorkerTaskTimer } from '@/components/production/WorkerTaskTimer';
 import { LaborEfficiencyPanel } from '@/components/production/LaborEfficiencyPanel';
@@ -285,8 +287,9 @@ export default function ProductionPortalPage() {
                   </Badge>
                 </div>
                 
-                {/* Quick Actions */}
-                <div className="flex gap-2">
+                {/* Quick Actions — training mode lives here, out of the daily
+                    entry view, so it can't be confused with real data. */}
+                <div className="flex items-center gap-2">
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -295,6 +298,10 @@ export default function ProductionPortalPage() {
                     <UserPlus className="h-4 w-4 mr-1" />
                     {t('production.staff')}
                   </Button>
+                  <TrainingModeToggle 
+                    isTrainingMode={isTrainingMode}
+                    onToggle={setIsTrainingMode}
+                  />
                 </div>
               </div>
             )}
