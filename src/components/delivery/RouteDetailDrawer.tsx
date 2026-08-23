@@ -18,10 +18,11 @@ import {
 import {
   MapPin, Calendar, User, Clock, Package, DollarSign,
   ArrowRight, Pause, Play, X, AlertTriangle, TrendingUp,
-  Loader2, Layers, FileText,
+  Loader2, Layers, FileText, MessageSquare,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouteDetail } from '@/hooks/useRouteManager';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { useDispatchActions } from '@/hooks/useDispatchInterventions';
 import { RouteReassignDialog } from './RouteReassignDialog';
 import { SLAAlertBadges, RouteSLASummary } from './SLAAlertBadges';
@@ -68,6 +69,8 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
   const profit = data?.profit;
   const payout = data?.payout;
   const interventions = data?.interventions || [];
+  const overview = (data as any)?.overview as { worker_name?: string | null; money_on_this_route?: number | null } | null;
+  const owedByStore: Record<string, number> = (data as any)?.owedByStore || {};
 
   // SLA alerts for all stores in this route
   const stopStoreIds = useMemo(() => stops.map((s: any) => s.store_id).filter(Boolean), [stops]);
