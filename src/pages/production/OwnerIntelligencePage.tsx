@@ -20,7 +20,8 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ProductionRBACGate, useProductionRBAC } from '@/components/production/ProductionRBACGate';
+import { ProductionRBACGate } from '@/components/production/ProductionRBACGate';
+import { useProductionRBAC } from '@/hooks/useProductionRBAC';
 import {
   useConversionRows,
   useMarginRows,
