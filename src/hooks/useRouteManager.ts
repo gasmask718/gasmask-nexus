@@ -49,6 +49,11 @@ export interface RouteRow {
   stop_count: number;
   completed_stops: number;
   profit_score: number | null;
+  // From v_routes_overview (worker name resolved across ambassadors/drivers/bikers/profiles)
+  worker_name?: string | null;
+  assignment_state?: string;
+  money_on_this_route?: number | null;
+  stop_list?: string | null;
 }
 
 export function useRouteManager() {
@@ -147,14 +152,37 @@ export function useRouteManager() {
         }
       }
 
+      // Overlay v_routes_overview: worker name resolved across ambassadors/drivers/bikers/profiles
+      // (the raw profiles join shows the wrong name when the profile row is a placeholder),
+      // plus assignment state and money owed across the route's stops.
+      let overviewMap: Record<string, any> = {};
+      if (routeIds.length > 0) {
+        const { data: overview } = await supabase
+          .from('v_routes_overview' as any)
+          .select('route_id, worker_name, assignment_state, money_on_this_route, stop_list')
+          .in('route_id', routeIds);
+        if (overview) {
+          for (const o of overview as any[]) overviewMap[o.route_id] = o;
+        }
+      }
+
       // Compose rows
-      const rows: RouteRow[] = (routes || []).map(r => ({
-        ...r,
-        assignee: r.assignee as any,
-        stop_count: stopCounts[r.id]?.total || 0,
-        completed_stops: stopCounts[r.id]?.completed || 0,
-        profit_score: profitScores[r.id] ?? null,
-      }));
+      const rows: RouteRow[] = (routes || []).map(r => {
+        const ov = overviewMap[r.id];
+        return {
+          ...r,
+          assignee: (ov?.worker_name
+            ? { ...(r.assignee as any || {}), name: ov.worker_name }
+            : r.assignee) as any,
+          stop_count: stopCounts[r.id]?.total || 0,
+          completed_stops: stopCounts[r.id]?.completed || 0,
+          profit_score: profitScores[r.id] ?? null,
+          worker_name: ov?.worker_name ?? null,
+          assignment_state: ov?.assignment_state ?? (r.assigned_to ? 'assigned' : 'UNASSIGNED'),
+          money_on_this_route: ov?.money_on_this_route ?? null,
+          stop_list: ov?.stop_list ?? null,
+        };
+      });
 
       // Client-side profit band filter (since it's derived data)
       let filtered = rows;
