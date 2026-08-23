@@ -39,7 +39,7 @@ export default function BoxesSoldDetailPage() {
   const { data: salesData = [], isLoading } = useQuery({
     queryKey: ['boxes-sold-detail'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('purchase_order_items')
         .select(`
           id,
