@@ -295,7 +295,7 @@ export function useRouteDetail(routeId: string | null) {
     queryFn: async () => {
       if (!routeId) return null;
 
-      const [routeRes, stopsRes, profitRes, payoutRes, interventionsRes] = await Promise.all([
+      const [routeRes, stopsRes, profitRes, payoutRes, interventionsRes, overviewRes] = await Promise.all([
         supabase
           .from('routes')
           .select(`*, assignee:profiles!routes_assigned_to_fkey(id, name, role)`)
@@ -303,7 +303,7 @@ export function useRouteDetail(routeId: string | null) {
           .single(),
         (supabase as any)
           .from('route_stops')
-          .select(`*, store:store_master!route_stops_store_id_fkey(id, store_name, address, territory)`)
+          .select(`*, store:store_master!route_stops_store_id_fkey(id, store_name, address, territory, phone)`)
           .eq('route_id', routeId)
           .order('planned_order', { ascending: true }),
         supabase
