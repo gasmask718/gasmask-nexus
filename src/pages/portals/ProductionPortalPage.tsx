@@ -369,8 +369,10 @@ export default function ProductionPortalPage() {
             />
           </div>
 
-          {/* Tabbed Sections */}
-          <Tabs defaultValue="command" className="space-y-4">
+          {/* Tabbed Sections — office leaders land on daily entry (batches),
+              HQ staff land on the command view. key forces the default to
+              apply once role/assignments resolve. */}
+          <Tabs key={isOfficeScoped ? 'batches' : 'command'} defaultValue={isOfficeScoped ? 'batches' : 'command'} className="space-y-4">
             <TabsList className="flex flex-wrap gap-1 h-auto">
               {/* ── OPERATE (DO) ── */}
               <TabsTrigger value="command" className="flex items-center gap-2">
@@ -416,6 +418,10 @@ export default function ProductionPortalPage() {
               <TabsTrigger value="inventory" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 <span className="hidden sm:inline"><BilingualLabel tKey="production.inventory" en="Inventory" /></span>
+              </TabsTrigger>
+              <TabsTrigger value="shipments" className="flex items-center gap-2">
+                <Truck className="h-4 w-4" />
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.shipments" en="Shipments" /></span>
               </TabsTrigger>
               <TabsTrigger value="performance" className="flex items-center gap-2">
                 <Target className="h-4 w-4" />
@@ -517,7 +523,7 @@ export default function ProductionPortalPage() {
             </TabsContent>
 
             <TabsContent value="costs">
-              <ProductionRBACGate currentTier={rbac.tier} requiredTier="admin" resourceName="Cost & Margin Analytics">
+              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Cost & Margin Analytics">
                 <div className="grid lg:grid-cols-3 gap-4">
                   <div className="lg:col-span-1">
                     <CostBreakdownPanel officeId={selectedOfficeId} />
@@ -535,6 +541,10 @@ export default function ProductionPortalPage() {
                 <InventoryPipeline officeId={selectedOfficeId} />
                 <RawMaterialIntake officeId={selectedOfficeId} />
               </div>
+            </TabsContent>
+
+            <TabsContent value="shipments">
+              <ShipmentsPanel officeId={selectedOfficeId} />
             </TabsContent>
 
             <TabsContent value="performance">
