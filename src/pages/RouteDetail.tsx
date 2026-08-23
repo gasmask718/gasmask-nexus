@@ -244,22 +244,32 @@ const RouteDetail = () => {
                 <Calendar className="h-4 w-4 text-primary" />
                 <span>{formatDate(route.date)}</span>
               </div>
-              {route.assigned_user && (
+              {(route.assigned_user || workerName) && (
                 <>
                   <Separator />
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <User className="h-4 w-4 text-primary" />
-                      <span className="font-medium">{route.assigned_user.name}</span>
+                      <span className="font-medium">{workerName || route.assigned_user?.name}</span>
                     </div>
-                    {route.assigned_user.phone && (
+                    {route.assigned_user?.phone && (
                       <ClickablePhone 
                         phone={route.assigned_user.phone}
                         entityType="driver"
-                        entityName={route.assigned_user.name}
+                        entityName={workerName || route.assigned_user.name}
                         className="text-sm text-muted-foreground hover:underline ml-6"
                       />
                     )}
+                  </div>
+                </>
+              )}
+              {routeMoney != null && routeMoney > 0 && (
+                <>
+                  <Separator />
+                  <div className="flex items-center gap-2 text-sm">
+                    <DollarSign className="h-4 w-4 text-amber-500" />
+                    <span className="font-semibold text-amber-500">${routeMoney.toLocaleString()}</span>
+                    <span className="text-muted-foreground">owed across these stops</span>
                   </div>
                 </>
               )}
