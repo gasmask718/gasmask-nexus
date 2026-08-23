@@ -62,8 +62,8 @@ export function useProductionRBAC(): ProductionPermissions {
     tier,
     isLoading,
     
-    // Admin only
-    canViewCosts: tier === 'admin' || tier === 'manager',
+    // Admin (HQ) only — costs/margins never appear on an office leader's screen
+    canViewCosts: tier === 'admin',
     canEditCosts: tier === 'admin',
     canViewMargins: tier === 'admin',
     canViewAuditLog: tier === 'admin',
