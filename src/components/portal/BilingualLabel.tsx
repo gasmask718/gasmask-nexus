@@ -10,14 +10,16 @@ import { useTranslation } from '@/hooks/useTranslation';
 interface Props {
   tKey: string;
   en: string;
+  /** Interpolation params for {{placeholders}} in the translation string. */
+  params?: Record<string, string | number>;
   /** Render inline (no flex-col stack). Useful inside buttons. */
   inline?: boolean;
   className?: string;
 }
 
-export function BilingualLabel({ tKey, en, inline, className }: Props) {
+export function BilingualLabel({ tKey, en, params, inline, className }: Props) {
   const { t, language } = useTranslation();
-  const translated = t(tKey);
+  const translated = t(tKey, params);
   const showSubtitle = language === 'es' && translated !== en;
 
   if (!showSubtitle) {
