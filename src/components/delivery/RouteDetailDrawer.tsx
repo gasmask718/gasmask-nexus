@@ -274,7 +274,7 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
                                 phone={stop.store.phone}
                                 entityType="store"
                                 entityId={stop.store_id}
-                                entityName={stop.store?.store_name || 'Store'}
+                                entityName={stop.store?.name || 'Store'}
                                 className="text-xs"
                               />
                               <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" asChild>
