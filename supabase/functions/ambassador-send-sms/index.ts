@@ -7,10 +7,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 import { sendSms, smsContentHash } from "../_shared/sendSms.ts";
+import { captureQuickContact } from "../_shared/quickContact.ts";
 
 
 interface Body {
-  store_id: string;
+  store_id?: string; // absent = quick-dial pad send to a raw street number
   to_phone: string;
   body: string;
   body_translated?: string | null;
@@ -62,20 +63,28 @@ Deno.serve(async (req) => {
   // 2. Validate body
   let body: Body;
   try { body = await req.json(); } catch { return json({ error: "invalid_json" }, 400); }
-  if (!body.store_id || !body.to_phone || !body.body) {
+  if (!body.to_phone || !body.body) {
     return json({ error: "missing_fields" }, 400);
   }
 
-  // 3. Confirm the store is assigned to one of this user's ambassador records
-  const { data: assignments } = await admin
-    .from("ambassador_assignments")
-    .select("ambassador_id")
-    .in("ambassador_id", ambRows.map((a) => a.id))
-    .eq("store_id", body.store_id)
-    .eq("active", true);
-  const owningId = assignments?.[0]?.ambassador_id;
-  if (!owningId) return json({ error: "store_not_assigned" }, 403);
-  const amb = ambRows.find((a) => a.id === owningId)!;
+  // 3. Resolve which ambassador record owns this send. Store sends must be
+  //    assigned to the caller. Quick-dial sends (a street number with no store
+  //    yet) have nothing to assign against — use the caller's first active
+  //    ambassador record. Suppression still applies via sendSms either way.
+  let amb: (typeof ambRows)[number];
+  if (body.store_id) {
+    const { data: assignments } = await admin
+      .from("ambassador_assignments")
+      .select("ambassador_id")
+      .in("ambassador_id", ambRows.map((a) => a.id))
+      .eq("store_id", body.store_id)
+      .eq("active", true);
+    const owningId = assignments?.[0]?.ambassador_id;
+    if (!owningId) return json({ error: "store_not_assigned" }, 403);
+    amb = ambRows.find((a) => a.id === owningId)!;
+  } else {
+    amb = ambRows[0];
+  }
 
   const fromNumber = amb.twilio_number || DEFAULT_FROM;
   let twilioSid: string | null = null;
