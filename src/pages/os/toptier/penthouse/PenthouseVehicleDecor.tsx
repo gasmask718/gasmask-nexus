@@ -276,7 +276,7 @@ function TransformationsTab() {
   const { data: providers = [] } = useQuery({ queryKey: ['decor-providers'], queryFn: async () => { const { data } = await supabase.from('decor_providers_legacy').select('id,name'); return data || []; } });
   const { data: items = [] } = useQuery({
     queryKey: ['decor-transformations'],
-    queryFn: async () => { const { data } = await supabase.from('decor_transformations').select('*, decor_providers(name)').order('created_at', { ascending: false }); return data || []; },
+    queryFn: async () => { const { data } = await (supabase.from('decor_transformations') as any).select('*, decor_providers(name)').order('created_at', { ascending: false }); return data || []; },
   });
 
   const create = useMutation({
