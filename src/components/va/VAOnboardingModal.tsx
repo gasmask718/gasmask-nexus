@@ -14,14 +14,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Phone, CheckCircle2, AlertTriangle, Globe, Bot } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { useVACompany } from '@/contexts/VACompanyContext';
+import { useVASession } from '@/contexts/VASessionContext';
 import { useVACallerIds } from '@/hooks/useVACallerIds';
 import { toast } from 'sonner';
 
 interface VAOnboardingModalProps {
-  isOpen: boolean;
-  onSessionStarted: (selectedNumber: string, agentName?: string) => void;
+  isOpen?: boolean;
+  onSessionStarted?: (selectedNumber: string, agentName?: string) => void;
 }
 
 function useNumberLastSessions(numberIds: string[]) {
@@ -44,8 +44,9 @@ function useNumberLastSessions(numberIds: string[]) {
   });
 }
 
-export function VAOnboardingModal({ isOpen, onSessionStarted }: VAOnboardingModalProps) {
-  const { user } = useAuth();
+export function VAOnboardingModal({ isOpen: isOpenProp, onSessionStarted }: VAOnboardingModalProps = {}) {
+  const session = useVASession();
+  const isOpen = isOpenProp ?? !session.isOnboarded;
   const { activeCompany, companies, setActiveCompany } = useVACompany();
   const { numbers, defaultNumber, hasNumbers, isLoading: numbersLoading } = useVACallerIds(activeCompany?.id);
 
