@@ -296,12 +296,29 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
         }
       }
 
-      return createdRouteIds;
+      return {
+        routeIds: createdRouteIds,
+        names: assignees.map(a => a.name),
+        stopCount: selectedStores.length,
+      };
     },
-    onSuccess: (routeIds) => {
+    onSuccess: ({ routeIds, names, stopCount }) => {
       invalidateAll();
       const count = routeIds.length;
-      toast.success(`${count} route${count > 1 ? 's' : ''} assigned successfully`);
+      const label = names.join(', ');
+      toast.success(
+        count === 1
+          ? `Route created for ${label} — ${stopCount} stop${stopCount === 1 ? '' : 's'}`
+          : `${count} routes created for ${label} — ${stopCount} stops each`,
+        {
+          description: 'The route is live on the Dispatch Control Center and the worker’s portal.',
+          duration: 10000,
+          action: {
+            label: count === 1 ? 'View route' : 'View routes',
+            onClick: () => navigate(count === 1 ? `/routes/${routeIds[0]}` : '/grabba/routes'),
+          },
+        },
+      );
       onAssigned?.(routeIds);
       onOpenChange(false);
       resetForm();
