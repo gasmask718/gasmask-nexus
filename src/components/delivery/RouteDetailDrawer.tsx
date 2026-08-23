@@ -142,8 +142,20 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground flex items-center gap-1"><User className="h-3 w-3" /> Assigned To</p>
-                    <p className="text-sm font-medium">{(route as any).assignee?.name || 'Unassigned'}</p>
+                    {route.assigned_to ? (
+                      <p className="text-sm font-medium">{overview?.worker_name || (route as any).assignee?.name || '—'}</p>
+                    ) : (
+                      <Badge className="bg-red-500/15 text-red-500 border-red-500/40 text-xs gap-1">
+                        <AlertTriangle className="h-3 w-3" /> UNASSIGNED
+                      </Badge>
+                    )}
                   </div>
+                  {overview?.money_on_this_route != null && overview.money_on_this_route > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><DollarSign className="h-3 w-3" /> Money on this route</p>
+                      <p className="text-sm font-semibold text-amber-500">${overview.money_on_this_route.toLocaleString()} owed across stops</p>
+                    </div>
+                  )}
                   {route.territory && (
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Territory</p>
