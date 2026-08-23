@@ -1318,3 +1318,203 @@ export function useLogCommunication() {
     },
   });
 }
+
+// ============================================================
+// OFFICE ASSIGNMENT HOOKS (office leader scoping)
+// ============================================================
+
+export interface OfficeAssignment {
+  id: string;
+  office_id: string;
+  user_id: string;
+  role: string;
+  is_primary: boolean;
+  active: boolean;
+}
+
+/** Offices the current user is assigned to (production_office_users). */
+export function useMyOfficeAssignments() {
+  return useQuery({
+    queryKey: ['my-office-assignments'],
+    queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return [];
+      const { data, error } = await supabase
+        .from('production_office_users')
+        .select('*')
+        .eq('user_id', userData.user.id)
+        .eq('active', true);
+      if (error) throw error;
+      return (data || []) as OfficeAssignment[];
+    },
+  });
+}
+
+// ============================================================
+// ISSUANCE LEDGER — shipments HQ → office
+// ============================================================
+
+export interface ShipmentItem {
+  id: string;
+  shipment_id: string;
+  material_type: 'tobacco' | 'empty_tubes' | 'stickers' | 'sleeves' | 'empty_boxes' | 'tools' | 'other';
+  brand: string | null;
+  quantity: number;
+  unit: 'lb' | 'kg' | 'each' | 'roll';
+  unit_cost: number | null;
+  total_cost: number | null;
+  expected_yield_boxes: number | null;
+  received_quantity: number | null;
+}
+
+export interface OfficeShipment {
+  id: string;
+  office_id: string;
+  sent_date: string;
+  sent_by: string | null;
+  status: 'sent' | 'received' | 'disputed';
+  notes: string | null;
+  received_at: string | null;
+  received_by: string | null;
+  created_at: string;
+  items?: ShipmentItem[];
+}
+
+export function useOfficeShipments(officeId: string | undefined) {
+  return useQuery({
+    queryKey: ['office-shipments', officeId],
+    queryFn: async () => {
+      if (!officeId) return [];
+      const { data, error } = await (supabase
+        .from('production_office_shipments') as any)
+        .select('*, items:production_office_shipment_items(*)')
+        .eq('office_id', officeId)
+        .order('sent_date', { ascending: false });
+      if (error) throw error;
+      return (data || []) as OfficeShipment[];
+    },
+    enabled: !!officeId,
+  });
+}
+
+export function useCreateShipment() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (params: {
+      officeId: string;
+      sentDate: string;
+      notes?: string;
+      items: Array<Omit<ShipmentItem, 'id' | 'shipment_id' | 'received_quantity'>>;
+    }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: shipment, error: shipErr } = await (supabase
+        .from('production_office_shipments') as any)
+        .insert({
+          office_id: params.officeId,
+          sent_date: params.sentDate,
+          sent_by: userData.user?.id || null,
+          notes: params.notes || null,
+          status: 'sent',
+        })
+        .select()
+        .single();
+      if (shipErr) throw shipErr;
+
+      if (params.items.length > 0) {
+        const { error: itemErr } = await (supabase
+          .from('production_office_shipment_items') as any)
+          .insert(params.items.map(i => ({ ...i, shipment_id: shipment.id })));
+        if (itemErr) throw itemErr;
+      }
+      return shipment as OfficeShipment;
+    },
+    onSuccess: (shipment) => {
+      queryClient.invalidateQueries({ queryKey: ['office-shipments', shipment.office_id] });
+      queryClient.invalidateQueries({ queryKey: ['office-material-balance'] });
+      toast({ title: 'Shipment recorded' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to record shipment', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+/** Office leader confirms receipt: sets received quantities + variance. */
+export function useConfirmShipmentReceipt() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (params: {
+      shipmentId: string;
+      officeId: string;
+      receivedQuantities: Record<string, number>; // item_id -> received qty
+      disputed?: boolean;
+      notes?: string;
+    }) => {
+      const { data: userData } = await supabase.auth.getUser();
+
+      for (const [itemId, qty] of Object.entries(params.receivedQuantities)) {
+        const { error } = await (supabase
+          .from('production_office_shipment_items') as any)
+          .update({ received_quantity: qty })
+          .eq('id', itemId);
+        if (error) throw error;
+      }
+
+      const { error } = await (supabase
+        .from('production_office_shipments') as any)
+        .update({
+          status: params.disputed ? 'disputed' : 'received',
+          received_at: new Date().toISOString(),
+          received_by: userData.user?.id || null,
+          notes: params.notes || undefined,
+        })
+        .eq('id', params.shipmentId);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['office-shipments', vars.officeId] });
+      queryClient.invalidateQueries({ queryKey: ['office-material-balance'] });
+      toast({ title: vars.disputed ? 'Shipment disputed' : 'Receipt confirmed' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to confirm receipt', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+// ============================================================
+// OFFICE MATERIAL BALANCE (issued − consumed)
+// ============================================================
+
+export interface OfficeMaterialBalance {
+  office_id: string;
+  office_name: string | null;
+  material_type: string;
+  brand: string | null;
+  unit: string | null;
+  total_issued: number;
+  total_received: number;
+  total_consumed: number;
+  expected_on_hand: number;
+  total_issued_cost: number;
+}
+
+export function useOfficeMaterialBalance(officeId: string | undefined) {
+  return useQuery({
+    queryKey: ['office-material-balance', officeId],
+    queryFn: async () => {
+      if (!officeId) return [];
+      const { data, error } = await (supabase
+        .from('v_office_material_balance') as any)
+        .select('*')
+        .eq('office_id', officeId);
+      if (error) throw error;
+      return (data || []) as OfficeMaterialBalance[];
+    },
+    enabled: !!officeId,
+  });
+}
