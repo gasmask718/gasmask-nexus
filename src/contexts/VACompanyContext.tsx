@@ -56,7 +56,7 @@ export function VACompanyProvider({ children }: { children: ReactNode }) {
       const [membershipsRes, companiesRes] = await Promise.all([
         (supabase as any)
           .from('va_company_memberships')
-          .select('company_id, is_primary, va_companies:company_id ( id, slug, name, brand_color, is_active )')
+          .select('company_id, is_primary, role, va_companies:company_id ( id, slug, name, brand_color, is_active )')
           .eq('user_id', user!.id)
           .eq('is_active', true),
         (supabase as any)

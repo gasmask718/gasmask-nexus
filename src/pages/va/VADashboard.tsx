@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { VASessionProvider, useVASession } from '@/contexts/VASessionContext';
@@ -38,9 +38,13 @@ import {
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
   Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles, Building2, History, UserPlus,
-  MessageSquare,
+  MessageSquare, AlertTriangle,
 } from 'lucide-react';
-import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
+import { VACompanyProvider, useVACompany } from '@/contexts/VACompanyContext';
+import { VACompanySwitcher } from '@/components/va/VACompanySwitcher';
+import { useVACallerIds } from '@/hooks/useVACallerIds';
+import { getVACompanyConfig } from '@/config/vaCompanies';
+import { Card, CardContent } from '@/components/ui/card';
 import { BrandaroLeadIntakeModal } from '@/components/brandaro/BrandaroLeadIntakeModal';
 import { VAIntakeInvitesPanel } from '@/components/va/VAIntakeInvitesPanel';
 import { VAMessages } from '@/components/va/VAMessages';
