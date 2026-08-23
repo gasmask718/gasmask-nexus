@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useMarkManualSignIn } from '@/contexts/AuthContext';
+import { getVACompanyConfig } from '@/config/vaCompanies';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -90,58 +91,62 @@ export default function VAAuthPage() {
     try { sessionStorage.removeItem('va_invite_token'); } catch {}
   };
 
-  // Verifies the signed-in user has VA-portal access via the canonical user_roles table.
-  // Mirrors the gate used by Driver/Biker/Ambassador logins to prevent silent cross-portal access.
+  // Single source of truth: va_company_memberships. Elevated app roles and
+  // invite-holders also pass so owners/admins and fresh invitees aren't locked
+  // out (invite acceptance provisions the membership server-side).
   const verifyVAAccessOrSignOut = async (userId: string): Promise<boolean> => {
-    const { data: userRoles } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId);
+    const [{ data: memberships }, { data: userRoles }] = await Promise.all([
+      supabase
+        .from('va_company_memberships')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .limit(1),
+      supabase.from('user_roles').select('role').eq('user_id', userId),
+    ]);
 
-    const roles = (userRoles || []).map((r: any) => (r.role as string)?.trim().toLowerCase());
     const elevatedRoles = ['owner', 'admin', 'ceo', 'super_admin', 'dynasty_owner'];
+    const roles = (userRoles || []).map((r: any) => (r.role as string)?.trim().toLowerCase());
     const hasVAAccess =
-      roles.includes('va') ||
-      roles.includes('employee') ||
+      (memberships && memberships.length > 0) ||
       roles.some((r) => elevatedRoles.includes(r));
 
-    // Invite acceptance grants the va role server-side, so users completing an invite are allowed through.
     if (!hasVAAccess && !hasInvite) {
       await supabase.auth.signOut();
-      toast.error('Access denied. This portal is for Virtual Assistants only.');
+      toast.error(
+        'Access denied. You have no VA company membership — ask an admin for an invite.',
+      );
       return false;
     }
     return true;
   };
 
-  // Hub-scoped login: pre-selects the business_id the VA is a member of.
-  // When a hub slug is present, membership in that business is required.
+  // Hub-scoped login: /va/auth/:businessSlug requires an active membership in
+  // the VA company that calls for that business (matched via VA_COMPANY_CONFIG).
   const selectHubBusinessOrSignOut = async (userId: string): Promise<boolean> => {
+    if (!hubSlug) return true;
+
     const { data } = await supabase
-      .from('business_members')
-      .select('business_id, role, businesses:business_id ( slug, name )')
-      .eq('user_id', userId);
+      .from('va_company_memberships')
+      .select('company_id, va_companies:company_id ( slug, name )')
+      .eq('user_id', userId)
+      .eq('is_active', true);
 
     const memberships = (data || []) as any[];
+    const match = memberships.find((m) => {
+      const slug = (m.va_companies?.slug as string)?.trim().toLowerCase();
+      if (!slug) return false;
+      if (slug === hubSlug) return true;
+      return getVACompanyConfig(slug).businessSlugs.includes(hubSlug);
+    });
 
-    if (hubSlug) {
-      const match = memberships.find(
-        (m) => (m.businesses?.slug as string)?.trim().toLowerCase() === hubSlug,
-      );
-      if (!match) {
-        await supabase.auth.signOut();
-        toast.error(`You are not a member of the ${hubSlug} hub.`);
-        return false;
-      }
-      localStorage.setItem('currentBusinessId', match.business_id);
-      return true;
+    if (!match) {
+      await supabase.auth.signOut();
+      toast.error(`You are not a member of the ${hubSlug} calling company.`);
+      return false;
     }
-
-    if (memberships.length > 0) {
-      const saved = localStorage.getItem('currentBusinessId');
-      const stillValid = memberships.some((m) => m.business_id === saved);
-      if (!stillValid) localStorage.setItem('currentBusinessId', memberships[0].business_id);
-    }
+    // Pre-select that company so the portal lands scoped to the hub.
+    try { localStorage.setItem('va_active_company_id', match.company_id); } catch {}
     return true;
   };
 

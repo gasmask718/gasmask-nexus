@@ -63,6 +63,24 @@ Deno.serve(async (req) => {
     if (cErr) throw cErr;
     if (!company) return json({ error: 'Company not found' }, 404);
 
+    // If this email already belongs to a user with an ACTIVE membership in
+    // THIS company, say so plainly instead of sending a redundant invite.
+    // Memberships in OTHER companies are fine — accepting this invite simply
+    // adds another membership (accept_va_invite_atomic upserts per company).
+    const { data: existingUserId } = await admin.rpc('auth_user_id_by_email', { _email: email });
+    if (existingUserId) {
+      const { data: existingMembership } = await admin
+        .from('va_company_memberships')
+        .select('id')
+        .eq('user_id', existingUserId)
+        .eq('company_id', company_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (existingMembership) {
+        return json({ error: `${email} is already an active member of ${company.name}` }, 409);
+      }
+    }
+
     const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
 
     const insertPayload: Record<string, unknown> = {
