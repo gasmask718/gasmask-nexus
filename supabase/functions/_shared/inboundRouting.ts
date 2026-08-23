@@ -157,10 +157,8 @@ export async function buildRingLegs(
     return [];
   }
 
-  const rows = (targets || []).filter((t) => withinHours || !t.only_business_hours === false ? true : withinHours || !t.only_business_hours);
-  // ^ keep rows unless (only_business_hours AND outside hours)
+  // Keep rows unless they are flagged only_business_hours AND we are outside hours.
   const usable = (targets || []).filter((t) => withinHours || !t.only_business_hours);
-  void rows;
 
   // Which browser-target users are actually on shift?
   const browserUserIds = usable.filter((t) => t.target_type === "browser" && t.user_id).map((t) => t.user_id as string);
