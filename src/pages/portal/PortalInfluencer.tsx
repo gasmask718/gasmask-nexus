@@ -1,17 +1,43 @@
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Link2, TrendingUp, DollarSign, Users, Calendar, Settings } from 'lucide-react';
+import { Link2, TrendingUp, DollarSign, Users, Calendar, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
+// OpsBottomNav subpaths → tab values. Tabs without a nav path (links, earnings,
+// content) stay reachable in-page and don't change the URL.
+const SUBPATH_TO_TAB: Record<string, string> = {
+  '': 'dashboard',
+  campaigns: 'campaigns',
+  analytics: 'analytics',
+  profile: 'profile',
+};
+const TAB_TO_PATH: Record<string, string> = {
+  dashboard: '/portal/influencer',
+  campaigns: '/portal/influencer/campaigns',
+  analytics: '/portal/influencer/analytics',
+  profile: '/portal/influencer/profile',
+};
 
 export default function PortalInfluencer() {
   const [influencerData, setInfluencerData] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const subpath = location.pathname.split('/')[3] || '';
+  const activeTab = SUBPATH_TO_TAB[subpath] ?? 'dashboard';
+
+  const handleTabChange = (value: string) => {
+    const path = TAB_TO_PATH[value];
+    if (path && path !== location.pathname) navigate(path);
+  };
 
   useEffect(() => {
     fetchInfluencerData();
@@ -98,14 +124,15 @@ export default function PortalInfluencer() {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        <Tabs defaultValue="dashboard" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="links">Affiliate Links</TabsTrigger>
             <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="earnings">Earnings</TabsTrigger>
             <TabsTrigger value="content">Content Assistant</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="profile">Profile</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -205,6 +232,19 @@ export default function PortalInfluencer() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="analytics">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Analytics</h3>
+              <div className="text-center py-10 space-y-3">
+                <BarChart3 className="mx-auto h-10 w-10 text-muted-foreground/40" />
+                <p className="text-muted-foreground max-w-sm mx-auto">
+                  Campaign analytics will live here — clicks, conversions, and per-post performance.
+                  Link tracking hasn't been wired up yet, so there is nothing to show today.
+                </p>
+              </div>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="earnings">
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Earnings History</h3>
@@ -222,7 +262,7 @@ export default function PortalInfluencer() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings">
+          <TabsContent value="profile">
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Profile Settings</h3>
               <p className="text-muted-foreground">Update your influencer profile</p>

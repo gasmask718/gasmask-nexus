@@ -46,8 +46,9 @@ const DriverStopsCompleted: React.FC = () => {
     queryKey: ['driver-completed-stops', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from('route_checkins')
+      // Cast breaks TS2589 deep-instantiation on the embedded select; runtime unchanged
+      const { data, error } = await (supabase
+        .from('route_checkins') as any)
         .select(`
           id, completed_at, status,
           store:store_master(id, store_name, address, city),

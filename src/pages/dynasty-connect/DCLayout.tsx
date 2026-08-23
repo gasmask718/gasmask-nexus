@@ -2,7 +2,7 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   BarChart3, Brain, Phone, Building2, Settings, FileText, 
-  Users, Zap, Radio, BookOpen, Target, Headphones, DollarSign, Rocket,
+  Users, Zap, Radio, Target, Headphones, DollarSign, Rocket,
   Inbox, Mic, ClipboardList, ShieldOff, ShieldCheck
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -43,14 +43,12 @@ const dcNavSections = [
     title: '🤖 AI Agents',
     items: [
       { path: '/dynasty-connect/agents', label: 'Agent Center', icon: Brain },
-      { path: '/dynasty-connect/agents/playbooks', label: 'Playbook History', icon: BookOpen },
     ],
   },
   {
     title: '🧠 Call Intelligence',
     items: [
       { path: '/dynasty-connect/intelligence', label: 'Call Logs', icon: FileText },
-      { path: '/dynasty-connect/intelligence/self-learn', label: 'Self-Learn Console', icon: Brain },
     ],
   },
   {

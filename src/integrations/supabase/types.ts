@@ -16785,6 +16785,42 @@ export type Database = {
         }
         Relationships: []
       }
+      blank_invoice_verdict: {
+        Row: {
+          address: string | null
+          business_date: string | null
+          extracted_amount: number | null
+          invoice_id: string
+          note: string | null
+          run_id: string | null
+          staged_at: string | null
+          store_id: string | null
+          verdict: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_date?: string | null
+          extracted_amount?: number | null
+          invoice_id: string
+          note?: string | null
+          run_id?: string | null
+          staged_at?: string | null
+          store_id?: string | null
+          verdict?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_date?: string | null
+          extracted_amount?: number | null
+          invoice_id?: string
+          note?: string | null
+          run_id?: string | null
+          staged_at?: string | null
+          store_id?: string | null
+          verdict?: string | null
+        }
+        Relationships: []
+      }
       booking_addons: {
         Row: {
           addon_id: string

@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Car, CheckCircle, AlertTriangle, X, Check, Pencil, UserPlus } from 'lucide-react';
+import { Car, CheckCircle, AlertTriangle, X, Check, Pencil, UserPlus, Users } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Vehicle {
@@ -54,6 +55,9 @@ function KPICard({ label, value, color = 'text-[#C9A84C]' }: { label: string; va
 
 export default function TTFleet() {
   const qc = useQueryClient();
+  const location = useLocation();
+  // Path-aware split: /os/toptier/fleet = vehicles, /os/toptier/drivers = partner roster
+  const isDrivers = location.pathname.includes('/drivers');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
 
@@ -114,6 +118,20 @@ export default function TTFleet() {
         return localOpts;
       }
     },
+  });
+
+  // Drivers view: local tt_partners roster (40 rows) — only fetched on /os/toptier/drivers
+  const { data: drivers = [], isLoading: driversLoading } = useQuery({
+    queryKey: ['tt-drivers-roster'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tt_partners')
+        .select('id, name, business_name, phone, email, service_category, partner_type, status, is_active, trust_score, total_bookings, total_earnings, last_active_at, city, state')
+        .order('name');
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: isDrivers,
   });
 
   // Metrics
@@ -180,6 +198,103 @@ export default function TTFleet() {
     }
   };
 
+  // ─── Drivers view (/os/toptier/drivers) ───────────────────────────────────
+  if (isDrivers) {
+    const activeDrivers = drivers.filter((d: any) => d.is_active !== false).length;
+    const avgTrust = drivers.length
+      ? Math.round(drivers.reduce((s: number, d: any) => s + (d.trust_score || 0), 0) / drivers.length)
+      : 0;
+    const totalBookings = drivers.reduce((s: number, d: any) => s + (d.total_bookings || 0), 0);
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Drivers & Partners</h1>
+          <p className="text-white/40 text-sm">TopTier partner and driver roster</p>
+        </div>
+
+        <div className="grid grid-cols-4 gap-4">
+          <KPICard label="Total Partners" value={drivers.length} />
+          <KPICard label="Active" value={activeDrivers} color="text-emerald-400" />
+          <KPICard label="Avg Trust Score" value={avgTrust} color="text-emerald-400" />
+          <KPICard label="Total Bookings" value={totalBookings} />
+        </div>
+
+        <Card className="bg-[#111111] border-[#C9A84C]/10">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-white/5 hover:bg-transparent">
+                <TableHead className="text-white/40">Partner</TableHead>
+                <TableHead className="text-white/40">Category</TableHead>
+                <TableHead className="text-white/40">Phone</TableHead>
+                <TableHead className="text-white/40">Location</TableHead>
+                <TableHead className="text-white/40">Status</TableHead>
+                <TableHead className="text-white/40">Trust</TableHead>
+                <TableHead className="text-white/40">Bookings</TableHead>
+                <TableHead className="text-white/40">Earnings</TableHead>
+                <TableHead className="text-white/40">Last Active</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-white/5">
+              {driversLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-white/40 py-12">Loading roster...</TableCell>
+                </TableRow>
+              ) : drivers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-white/40 py-12">No partners found.</TableCell>
+                </TableRow>
+              ) : (
+                drivers.map((d: any) => (
+                  <TableRow key={d.id} className="border-white/5">
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+                          <Users className="h-4 w-4 text-white/30" />
+                        </div>
+                        <div>
+                          <p className="text-white font-medium text-sm">{d.name || d.business_name || 'Unnamed'}</p>
+                          {d.business_name && d.name && (
+                            <p className="text-white/40 text-xs">{d.business_name}</p>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="bg-white/5 text-white/60 text-[10px]">
+                        {d.service_category || d.partner_type || '—'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-white/60 text-sm">{d.phone || '—'}</TableCell>
+                    <TableCell className="text-white/60 text-sm">
+                      {[d.city, d.state].filter(Boolean).join(', ') || '—'}
+                    </TableCell>
+                    <TableCell>
+                      {d.is_active !== false ? (
+                        <Badge className="bg-emerald-500/20 text-emerald-400">{d.status || 'active'}</Badge>
+                      ) : (
+                        <Badge className="bg-white/10 text-white/40">inactive</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-[#C9A84C] font-bold">{d.trust_score ?? '—'}</TableCell>
+                    <TableCell className="text-white/60 text-sm">{d.total_bookings ?? 0}</TableCell>
+                    <TableCell className="text-white/60 text-sm">
+                      {d.total_earnings ? `$${Number(d.total_earnings).toLocaleString()}` : '—'}
+                    </TableCell>
+                    <TableCell className="text-white/40 text-xs">
+                      {d.last_active_at ? new Date(d.last_active_at).toLocaleDateString() : '—'}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      </div>
+    );
+  }
+
+  // ─── Fleet view (/os/toptier/fleet) ───────────────────────────────────────
   return (
     <div className="space-y-6">
       {/* Header */}

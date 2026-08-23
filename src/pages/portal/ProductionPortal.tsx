@@ -11,8 +11,8 @@
  * All editing is done via the Manufacturing OS (/portals/production).
  */
 
-import { Factory, ClipboardList, AlertTriangle, Eye, Lock, ArrowRight, Send, DollarSign, Flame } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Factory, ClipboardList, AlertTriangle, Eye, Lock, ArrowRight, Send, DollarSign, Flame, User, CheckSquare } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +35,28 @@ export default function ProductionPortal() {
   const { data: profileData } = useCurrentUserProfile();
   const { data: offices = [] } = useProductionOffices();
   const [selectedOfficeId, setSelectedOfficeId] = useState('');
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // OpsBottomNav subpaths → tab values. Tabs without a nav path (submit, my-logs,
+  // my-pay, conversion) stay reachable in-page and don't change the URL.
+  const SUBPATH_TO_TAB: Record<string, string> = {
+    '': 'batches',
+    batches: 'batches',
+    quality: 'quality',
+    profile: 'profile',
+  };
+  const TAB_TO_PATH: Record<string, string> = {
+    batches: '/portal/production',
+    quality: '/portal/production/quality',
+    profile: '/portal/production/profile',
+  };
+  const subpath = location.pathname.split('/')[3] || '';
+  const activeTab = SUBPATH_TO_TAB[subpath] ?? 'batches';
+  const handleTabChange = (value: string) => {
+    const path = TAB_TO_PATH[value];
+    if (path && path !== location.pathname) navigate(path);
+  };
 
   const productionProfile = profileData?.roleProfile as any;
   const userRole = profileData?.profile?.primary_role;
@@ -155,7 +177,7 @@ export default function ProductionPortal() {
         </div>
 
         {/* Tabbed: Batches / Submit / My Logs */}
-        <Tabs defaultValue="batches">
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList>
             <TabsTrigger value="batches" className="flex items-center gap-1">
               <Factory className="h-3 w-3" /> Batches
@@ -168,6 +190,12 @@ export default function ProductionPortal() {
             </TabsTrigger>
             <TabsTrigger value="my-pay" className="flex items-center gap-1">
               <DollarSign className="h-3 w-3" /> My Pay
+            </TabsTrigger>
+            <TabsTrigger value="quality" className="flex items-center gap-1">
+              <CheckSquare className="h-3 w-3" /> Quality
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="flex items-center gap-1">
+              <User className="h-3 w-3" /> Me
             </TabsTrigger>
             {isManager && (
               <TabsTrigger value="conversion" className="flex items-center gap-1">
@@ -293,6 +321,63 @@ export default function ProductionPortal() {
           {/* My Pay Dashboard */}
           <TabsContent value="my-pay">
             <WorkerPayDashboard workerId={productionProfile?.id} />
+          </TabsContent>
+
+          {/* Quality — honest empty state: worker-facing QC history is not wired yet */}
+          <TabsContent value="quality">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckSquare className="h-5 w-5 text-primary" />
+                  Quality Control
+                </CardTitle>
+                <CardDescription>QC checkpoints and results for your batches</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-center text-muted-foreground py-8">
+                  QC checkpoints are recorded by managers in the Manufacturing OS. A worker-facing
+                  QC history will appear here once that feed is wired up — there is nothing to show today.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Profile — real worker record, read-only */}
+          <TabsContent value="profile">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary" />
+                  My Profile
+                </CardTitle>
+                <CardDescription>Your worker record as managers see it</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <dl className="space-y-3 max-w-md">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-sm text-muted-foreground">Name</dt>
+                    <dd className="text-sm font-medium">{profileData?.profile?.full_name || '—'}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-sm text-muted-foreground">Role</dt>
+                    <dd className="text-sm font-medium">
+                      {productionProfile?.role ? getRoleLabel(productionProfile.role) : '—'}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-sm text-muted-foreground">Station</dt>
+                    <dd className="text-sm font-medium">{productionProfile?.station || '—'}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-sm text-muted-foreground">Shift</dt>
+                    <dd className="text-sm font-medium">{productionProfile?.shift || 'Day'}</dd>
+                  </div>
+                </dl>
+                <p className="text-xs text-muted-foreground mt-6">
+                  Profile editing isn't available here — ask your manager to update your worker record.
+                </p>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Conversion Intelligence (Manager/Admin only) */}

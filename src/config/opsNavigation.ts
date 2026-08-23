@@ -49,8 +49,10 @@ export const opsNavigation: Record<OpsRole, OpsNavItem[]> = {
     { label: 'Home', path: '/ambassador/dashboard', icon: Home },
     { label: 'Stores', path: '/ambassador/stores', icon: Store },
     { label: 'Inbox', path: '/portal/inbox', icon: Inbox },
-    { label: 'Comms', path: '/ambassador/commissions', icon: DollarSign },
-    { label: 'Me', path: '/ambassador/profile', icon: User },
+    // Label bug fix: this path is the commissions page, not a comms page
+    { label: 'Earnings', path: '/ambassador/commissions', icon: DollarSign },
+    // /ambassador/profile has no route — dashboard is the working profile home
+    { label: 'Me', path: '/ambassador/dashboard', icon: User },
   ],
   influencer: [
     { label: 'Home', path: '/portal/influencer', icon: Home },

@@ -1,12 +1,12 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Swords, Phone, Users, TrendingUp, ListTodo, Brain,
-  Theater, UserCog, GraduationCap, Crown, Settings,
+  UserCog, GraduationCap, Crown, Settings,
   BarChart3, Globe, Megaphone, Wrench, Eye, FileText,
   Flame, Target, DollarSign, Rocket, Zap, Search,
-  PhoneCall, ClipboardList, Bell, Activity, Shield,
-  Presentation, Factory, Lightbulb, Crosshair, Tag,
-  Map, HeartPulse, Star, ChevronLeft, ChevronRight, Bot,
+  Activity, Shield,
+  Presentation, Factory, Crosshair,
+  HeartPulse, Star, ChevronLeft, ChevronRight, Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,6 @@ import brandaroLogo from "@/assets/brandaro-logo.png";
 const hubNav = [
   { section: "Command", items: [
     { title: "War Room", path: "/brandaro", icon: Swords, end: true },
-    { title: "PM Dashboard", path: "/brandaro/pm", icon: Crown },
     { title: "CEO Dashboard", path: "/brandaro/ceo", icon: Crown },
   ]},
 
@@ -50,22 +49,12 @@ const hubNav = [
   ]},
   { section: "Execution", items: [
     { title: "Production", path: "/brandaro/production-pipeline", icon: Factory },
-    { title: "Callbacks", path: "/brandaro/callbacks", icon: PhoneCall },
-    { title: "Tasks", path: "/brandaro/tasks", icon: ClipboardList },
-    { title: "Alerts", path: "/brandaro/alerts", icon: Bell },
   ]},
   { section: "Intelligence", items: [
-    { title: "AI Brain", path: "/brandaro/ai-brain", icon: Brain },
-    { title: "Personalities", path: "/brandaro/personalities", icon: Theater },
-    { title: "Emotion Engine", path: "/brandaro/emotion-engine", icon: HeartPulse },
-    { title: "Learning", path: "/brandaro/learning", icon: Lightbulb },
     { title: "Patterns", path: "/brandaro/patterns", icon: Activity },
   ]},
   { section: "Domination", items: [
-    { title: "Market Control", path: "/brandaro/domination", icon: Crown },
     { title: "Competitors", path: "/brandaro/competitors", icon: Crosshair },
-    { title: "Offers", path: "/brandaro/offers", icon: Tag },
-    { title: "Positioning", path: "/brandaro/positioning", icon: Map },
   ]},
   { section: "Growth", items: [
     { title: "Revenue", path: "/brandaro/revenue", icon: DollarSign },

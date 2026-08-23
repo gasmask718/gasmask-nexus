@@ -806,6 +806,21 @@ const DYNASTY_NAVIGATION = {
       { path: '/real-estate/analytics', label: '📊 Floor 9 — Analytics', icon: BarChart3 },
     ],
   },
+  realEstateHq: {
+    id: 'real-estate-hq',
+    name: '🏠 Real Estate HQ',
+    items: [
+      { path: '/realestate', label: '🏠 Real Estate HQ', icon: Building },
+      { path: '/realestate/leads', label: '🎯 Lead Intelligence', icon: Target },
+      { path: '/realestate/pipeline', label: '📋 Acquisition Pipeline', icon: TrendingUp },
+      { path: '/realestate/investors', label: '🏦 Investor Marketplace', icon: Users },
+      { path: '/realestate/closings', label: '💰 Deal Closings & Payments', icon: CreditCard },
+      { path: '/realestate/expansion', label: '🗺️ Expansion Engine', icon: MapPin },
+      { path: '/realestate/subscriptions', label: '💳 Investor Subscriptions', icon: DollarSign },
+      { path: '/realestate/partners', label: '🤝 Closing Partners', icon: Briefcase },
+      { path: '/realestate/pl', label: '📊 P&L', icon: Calculator },
+    ],
+  },
   solarOs: {
     id: 'solar-os',
     name: '☀️ BrightSun Solar Hub',
@@ -1288,6 +1303,18 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.realEstateOs.id,
           DYNASTY_NAVIGATION.realEstateOs.name,
           DYNASTY_NAVIGATION.realEstateOs.items
+        )}
+      </div>
+
+      {/* 🏠 REAL ESTATE HQ — LEGACY DEPARTMENT PAGES (/realestate/*) */}
+      <div className="pt-2 border-t border-green-600/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-green-600/80 tracking-wider">
+          🏠 Real Estate HQ
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.realEstateHq.id,
+          DYNASTY_NAVIGATION.realEstateHq.name,
+          DYNASTY_NAVIGATION.realEstateHq.items
         )}
       </div>
 
