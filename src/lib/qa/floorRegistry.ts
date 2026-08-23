@@ -117,7 +117,7 @@ export const FLOOR_REGISTRY: Floor[] = [
     name: 'Floor 6 — Production',
     description: 'Manufacturing and production operations',
     modules: [
-      { name: 'Production Dashboard', path: '/grabba/production', componentFile: 'src/pages/grabba/GrabbaProduction.tsx', category: 'production', requiresAuth: true, hasAuthCheck: true },
+      { name: 'Production Dashboard', path: '/portals/production', componentFile: 'src/pages/portals/ProductionPortalPage.tsx', category: 'production', requiresAuth: true, hasAuthCheck: true },
       { name: 'Manufacturing OS', path: '/portals/production', componentFile: 'src/pages/portals/production/ProductionPortalPage.tsx', category: 'production', requiresAuth: true, hasAuthCheck: true },
       { name: 'Offices Management', path: '/portals/production/offices', componentFile: 'src/pages/portals/production/OfficesManagementPage.tsx', category: 'production', requiresAuth: true, hasAuthCheck: true },
       { name: 'Staff Management', path: '/portals/production/staff', componentFile: 'src/pages/portals/production/StaffManagementPage.tsx', category: 'production', requiresAuth: true, hasAuthCheck: true },
