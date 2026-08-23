@@ -683,6 +683,7 @@ const StaffManagementPage = lazy(() => import('@/pages/portals/production/StaffM
 const ConversionIntelligencePage = lazy(() => import('@/pages/portals/ConversionIntelligencePage'));
 const SupplierYieldPage = lazy(() => import('@/pages/portals/SupplierYieldPage'));
 const YieldWatchPage = lazy(() => import('@/pages/production/YieldWatchPage'));
+const OwnerIntelligencePage = lazy(() => import('@/pages/production/OwnerIntelligencePage'));
 const SalesVelocityPage = lazy(() => import('@/pages/portals/SalesVelocityPage'));
 const ProductionWarRoom = lazy(() => import('@/pages/portals/production/ProductionWarRoom'));
 const WorkerTaskTimerPage = lazy(() => import('@/pages/portals/production/WorkerTaskTimerPage'));
