@@ -1,8 +1,18 @@
-// POWER DIALER TICK — the engine cycle for human power dialing.
+// POWER DIALER TICK — one engine cycle for human power dialing.
 //
-// Invoked by pg_cron every minute (job 'power-dialer-tick').
+// NOT SCHEDULED. There is deliberately NO cron job for this function
+// (jobid 126 was disabled 2026-08-23 and must stay disabled). The engine
+// never dials unless a human armed it: the operator screen
+// (PowerDialerConsole) invokes this while it is open and the engine is
+// armed, and stops invoking when the operator presses STOP or leaves.
 //
-// Per business with telephony_mode='live' AND twilio_enabled=true:
+// FIRST ACTION, every run — obey the master switch in dialer_settings:
+//   - engine_armed = false        → return immediately, do nothing.
+//   - auto_disarm_at in the past  → disarm (engine_armed=false), return.
+//   - armed_campaign_id           → the ONLY campaign ever processed;
+//                                   "all active campaigns" is never dialed.
+//
+// Per ARMED business with telephony_mode='live' AND twilio_enabled=true:
 //   1. Release agents whose wrap-up window has expired.
 //   2. For each available agent (1:1 — power dialing, NEVER more calls than
 //      agents; predictive_multiplier is deliberately 1 and must stay 1):
@@ -77,10 +87,12 @@ Deno.serve(async (req) => {
     const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
     const TWILIO_PHONE_NUMBER = Deno.env.get("TWILIO_PHONE_NUMBER");
 
-    // Every business with a settings row is evaluated; mode decides behavior.
-    const { data: allSettings } = await supabase.from("dialer_settings").select("*");
+    // ── MASTER SWITCH: only armed businesses are even considered. ──
+    // A human pressed START CALLING (arm_dialer) — nothing else arms this.
+    const { data: allSettings } = await supabase
+      .from("dialer_settings").select("*").eq("engine_armed", true);
     if (!allSettings || allSettings.length === 0) {
-      return json({ ok: true, businesses: 0 });
+      return json({ ok: true, armed: false, businesses: 0 });
     }
 
     const summary: any[] = [];
