@@ -2,6 +2,7 @@
 // Dedupe: skip if an open (pending/in_progress/overdue) follow_up exists for the store.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { outreachAllowed } from "../_shared/outreachGate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +11,14 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // OUTREACH GATE (2026-08-23): enqueues to follow_up_queue only, but the
+  // queue feeds human/AI outreach — gated with everything else.
+  if (!(await outreachAllowed("gm_cadence_cron"))) {
+    return new Response(JSON.stringify({ ok: true, gated: true, switch: "gm_cadence_cron", promoted: 0 }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const sb = createClient(
     Deno.env.get("SUPABASE_URL")!,

@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { errText } from "../_shared/errText.ts";
 import { sendSms } from "../_shared/sendSms.ts";
+import { outreachAllowed } from "../_shared/outreachGate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,6 +20,16 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // OUTREACH GATE (2026-08-23): this worker is invoked by TWO crons (every
+  // minute + 2pm daily) with a switch each — allowed when EITHER is armed.
+  const gated = !(await outreachAllowed("brandaro_send_followups_min"))
+    && !(await outreachAllowed("brandaro_send_followups_day"));
+  if (gated) {
+    return new Response(JSON.stringify({ ok: true, gated: true, switches: ["brandaro_send_followups_min", "brandaro_send_followups_day"] }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {

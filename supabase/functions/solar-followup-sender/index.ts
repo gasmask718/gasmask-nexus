@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendSms } from "../_shared/sendSms.ts";
+import { outreachAllowed } from "../_shared/outreachGate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +17,13 @@ const RETRY_DELAYS = [5, 15, 60];
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // OUTREACH GATE (2026-08-23): no solar follow-up sends unless a human armed the switch.
+  if (!(await outreachAllowed("solar_followup_sender"))) {
+    return new Response(JSON.stringify({ ok: true, gated: true, switch: "solar_followup_sender" }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

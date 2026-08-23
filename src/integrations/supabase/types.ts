@@ -86008,6 +86008,60 @@ export type Database = {
           },
         ]
       }
+      outreach_switches: {
+        Row: {
+          auto_disable_at: string | null
+          channel: string
+          cron_jobid: number | null
+          cron_schedule: string | null
+          enabled: boolean
+          enabled_at: string | null
+          enabled_by: string | null
+          key: string
+          label: string
+          last_run_at: string | null
+          last_run_sent: number | null
+          notes: string | null
+          reaches: string
+          updated_at: string | null
+          what_it_does: string
+        }
+        Insert: {
+          auto_disable_at?: string | null
+          channel: string
+          cron_jobid?: number | null
+          cron_schedule?: string | null
+          enabled?: boolean
+          enabled_at?: string | null
+          enabled_by?: string | null
+          key: string
+          label: string
+          last_run_at?: string | null
+          last_run_sent?: number | null
+          notes?: string | null
+          reaches: string
+          updated_at?: string | null
+          what_it_does: string
+        }
+        Update: {
+          auto_disable_at?: string | null
+          channel?: string
+          cron_jobid?: number | null
+          cron_schedule?: string | null
+          enabled?: boolean
+          enabled_at?: string | null
+          enabled_by?: string | null
+          key?: string
+          label?: string
+          last_run_at?: string | null
+          last_run_sent?: number | null
+          notes?: string | null
+          reaches?: string
+          updated_at?: string | null
+          what_it_does?: string
+        }
+        Relationships: []
+      }
       owner_ai_commands: {
         Row: {
           confidence: number | null
@@ -155578,6 +155632,7 @@ export type Database = {
       number_can_dial_now: { Args: { p_number: string }; Returns: boolean }
       obs_date: { Args: { fallback: string; raw: string }; Returns: string }
       obs_date_src: { Args: { raw: string }; Returns: string }
+      outreach_allowed: { Args: { p_key: string }; Returns: boolean }
       override_intent_resolution: {
         Args: {
           p_amended_effect?: Json
@@ -156260,6 +156315,10 @@ export type Database = {
         Args: { p_authorized: boolean }
         Returns: undefined
       }
+      set_outreach: {
+        Args: { p_hours?: number; p_key: string; p_on: boolean }
+        Returns: Json
+      }
       set_phase5_mode: {
         Args: { p_enabled?: boolean; p_kill_switch?: boolean; p_mode: string }
         Returns: boolean
@@ -156346,6 +156405,7 @@ export type Database = {
         Returns: undefined
       }
       stock_from_note: { Args: { raw: string }; Returns: number }
+      stop_all_outreach: { Args: never; Returns: Json }
       submit_ambassador_referral: {
         Args: {
           p_email?: string
