@@ -40,8 +40,8 @@ export default function LiveTubesDetailPage() {
   const { data: storeInventory = [], isLoading } = useQuery({
     queryKey: ['live-tubes-detail'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('inventory_stock')
+      const { data, error } = await (supabase
+        .from('inventory_stock') as any)
         .select(`
           id,
           quantity_on_hand,

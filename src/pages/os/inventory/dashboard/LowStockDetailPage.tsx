@@ -41,8 +41,8 @@ export default function LowStockDetailPage() {
     queryKey: ['low-stock-detail'],
     queryFn: async () => {
       // Get inventory with reorder points
-      const { data: inventory, error: invError } = await supabase
-        .from('inventory_stock')
+      const { data: inventory, error: invError } = await (supabase
+        .from('inventory_stock') as any)
         .select(`
           id,
           product_id,
