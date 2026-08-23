@@ -43,6 +43,10 @@ interface VALeadsTableProps {
   onSendInvoice: (lead: Lead) => void;
   onStartCampaign?: (leads: CampaignLead[]) => void;
   onQuickDial?: (lead: CampaignLead) => void;
+  /** Where the list comes from — defaults to Brandaro's qualified leads */
+  leadSource?: 'brandaro_qualified_leads' | 'v_store_who_to_contact';
+  /** Brandaro-only row tools (invoices, receptionist link, demo) */
+  brandaroTools?: boolean;
 }
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string }> = {
@@ -54,7 +58,11 @@ const STATUS_CONFIG: Record<string, { bg: string; text: string }> = {
   closed: { bg: 'bg-green-500/15', text: 'text-green-400' },
 };
 
-export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCampaign, onQuickDial }: VALeadsTableProps) {
+export function VALeadsTable({
+  onCall, onCreateInvoice, onSendInvoice, onStartCampaign, onQuickDial,
+  leadSource = 'brandaro_qualified_leads',
+  brandaroTools = true,
+}: VALeadsTableProps) {
   const { t } = useVASession();
   const { user } = useAuth();
   const [search, setSearch] = useState('');
@@ -66,8 +74,29 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice, onStartCa
   const [demoLead, setDemoLead] = useState<Lead | null>(null);
 
   const { data: leads = [], isLoading } = useQuery({
-    queryKey: ['va-leads', user?.id],
+    queryKey: ['va-leads', leadSource, user?.id],
     queryFn: async () => {
+      if (leadSource === 'v_store_who_to_contact') {
+        // Grabba brands (GasMask / Grabba R Us / Hot Scolatti / Hot Mama):
+        // call the primary contact at each store.
+        const { data } = await (supabase as any)
+          .from('v_store_who_to_contact')
+          .select('store_id, store_name, phone, name, role, how_to_reach')
+          .not('phone', 'is', null)
+          .eq('try_this_first', 1)
+          .order('store_name')
+          .limit(200);
+        return (data || []).map((s: any) => ({
+          id: s.store_id,
+          business_name: s.store_name,
+          phone: s.phone,
+          email: null,
+          status: 'new',
+          created_at: '',
+          assigned_va: null,
+          category: s.role ? `${s.role}${s.name ? ` · ${s.name}` : ''}` : null,
+        })) as Lead[];
+      }
       const { data } = await (supabase as any)
         .from('brandaro_qualified_leads')
         .select('id, business_name, phone_number, email, lead_status, created_at, assigned_va, industry, category, subtypes, city, google_place_id')
