@@ -18,7 +18,7 @@ import {
 import { toast } from 'sonner';
 import { Loader2, Mail, Copy, RefreshCw, UserPlus, Building2, Search, Trash2, History, MessageSquare } from 'lucide-react';
 
-interface Company { id: string; slug: string; name: string; brand_color: string | null; }
+interface Company { id: string; slug: string; name: string; brand_color: string | null; calls_for: string | null; vas_assigned: number | null; }
 interface DirRow {
   membership_id: string;
   user_id: string;
@@ -61,11 +61,29 @@ export default function VAManagementPage() {
   const { data: companies = [] } = useQuery({
     queryKey: ['va-companies'],
     queryFn: async () => {
+      // v_va_company_access carries calls_for ("what this VA will be calling")
+      // and vas_assigned alongside the company row — one row per company.
       const { data, error } = await supabase
-        .from('va_companies').select('id, slug, name, brand_color')
-        .eq('is_active', true).order('name');
+        .from('v_va_company_access')
+        .select('company_id, slug, name, brand_color, calls_for, vas_assigned')
+        .eq('is_active', true)
+        .order('name');
       if (error) throw error;
-      return (data ?? []) as Company[];
+      const seen = new Set<string>();
+      const rows: Company[] = [];
+      for (const r of data ?? []) {
+        if (!r.company_id || seen.has(r.company_id)) continue;
+        seen.add(r.company_id);
+        rows.push({
+          id: r.company_id,
+          slug: r.slug ?? '',
+          name: r.name ?? '',
+          brand_color: r.brand_color,
+          calls_for: r.calls_for,
+          vas_assigned: r.vas_assigned,
+        });
+      }
+      return rows;
     },
   });
 
