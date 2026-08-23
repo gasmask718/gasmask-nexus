@@ -102,8 +102,14 @@ export function VAOnboardingModal({ isOpen: isOpenProp, onSessionStarted }: VAOn
   const handleStart = async () => {
     if (!selectedNumber) return;
     setIsStarting(true);
-    await onSessionStarted(selectedNumber, selectedAgent);
-    setIsStarting(false);
+    try {
+      if (onSessionStarted) await onSessionStarted(selectedNumber, selectedAgent);
+      else await session.startSession(selectedNumber, selectedAgent);
+    } catch (err: any) {
+      toast.error(`Failed to start session: ${err?.message || 'unknown error'}`);
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   return (

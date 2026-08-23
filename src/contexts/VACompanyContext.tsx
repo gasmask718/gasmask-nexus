@@ -21,6 +21,8 @@ export interface VACompany {
   slug: string;
   name: string;
   brand_color: string | null;
+  /** Membership role when this company came from the VA's own memberships */
+  role?: string;
 }
 
 interface VACompanyContextValue {
