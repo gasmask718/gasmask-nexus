@@ -2830,6 +2830,7 @@ export default function AppRoutes() {
         <Route path="/portals/production/conversion" element={<ConversionIntelligencePage />} />
         <Route path="/portals/production/supplier-yield" element={<SupplierYieldPage />} />
         <Route path="/portals/production/yield-watch" element={<YieldWatchPage />} />
+        <Route path="/portals/production/intelligence" element={<OwnerIntelligencePage />} />
         <Route path="/portals/production/sales-velocity" element={<SalesVelocityPage />} />
         <Route path="/portals/production/war-room" element={<ProductionWarRoom />} />
         <Route path="/portals/production/task-timer" element={<WorkerTaskTimerPage />} />
