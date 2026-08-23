@@ -334,7 +334,7 @@ function TransformationsTab() {
 function MatchesTab() {
   const { data: matches = [] } = useQuery({
     queryKey: ['decor-matches'],
-    queryFn: async () => { const { data } = await supabase.from('decor_matches').select('*, decor_providers(name), decor_bookings(event_type, status)').order('match_score', { ascending: false }); return data || []; },
+    queryFn: async () => { const { data } = await (supabase.from('decor_matches') as any).select('*, decor_providers(name), decor_bookings(event_type, status)').order('match_score', { ascending: false }); return data || []; },
   });
 
   return (
