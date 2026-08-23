@@ -93361,6 +93361,106 @@ export type Database = {
           },
         ]
       }
+      production_office_shipment_items: {
+        Row: {
+          brand: string | null
+          created_at: string
+          expected_yield_boxes: number | null
+          id: string
+          material_type: string
+          quantity: number
+          received_quantity: number | null
+          shipment_id: string
+          total_cost: number | null
+          unit: string
+          unit_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          expected_yield_boxes?: number | null
+          id?: string
+          material_type: string
+          quantity: number
+          received_quantity?: number | null
+          shipment_id: string
+          total_cost?: number | null
+          unit?: string
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          expected_yield_boxes?: number | null
+          id?: string
+          material_type?: string
+          quantity?: number
+          received_quantity?: number | null
+          shipment_id?: string
+          total_cost?: number | null
+          unit?: string
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_office_shipment_items_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "production_office_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_office_shipments: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          office_id: string
+          received_at: string | null
+          received_by: string | null
+          sent_by: string | null
+          sent_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          office_id: string
+          received_at?: string | null
+          received_by?: string | null
+          sent_by?: string | null
+          sent_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          office_id?: string
+          received_at?: string | null
+          received_by?: string | null
+          sent_by?: string | null
+          sent_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_office_shipments_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_office_tools: {
         Row: {
           created_at: string | null
@@ -149372,6 +149472,21 @@ export type Database = {
         }
         Relationships: []
       }
+      v_office_material_balance: {
+        Row: {
+          brand: string | null
+          expected_on_hand: number | null
+          material_type: string | null
+          office_id: string | null
+          office_name: string | null
+          total_consumed: number | null
+          total_issued: number | null
+          total_issued_cost: number | null
+          total_received: number | null
+          unit: string | null
+        }
+        Relationships: []
+      }
       v_payout_batch_export: {
         Row: {
           ambassador_id: string | null
@@ -155051,6 +155166,11 @@ export type Database = {
       process_paid_order: { Args: { p_order_id: string }; Returns: Json }
       process_recalc_queue: { Args: never; Returns: Json }
       process_settlement_releases: { Args: never; Returns: number }
+      production_core_staff: { Args: { p_user: string }; Returns: boolean }
+      production_office_member: {
+        Args: { p_office: string; p_user: string }
+        Returns: boolean
+      }
       production_staff: { Args: { p_user: string }; Returns: boolean }
       promote_quick_contact: {
         Args: {
