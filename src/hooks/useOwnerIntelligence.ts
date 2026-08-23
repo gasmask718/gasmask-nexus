@@ -133,9 +133,9 @@ export function useLeakageRows() {
         (supabase as any).from('production_workers').select('id, name'),
       ]);
       if (outputsRes.error) throw outputsRes.error;
-      const batchMap = new Map((batchesRes.data || []).map((b: any) => [b.id, b]));
-      const officeMap = new Map((officesRes.data || []).map((o: any) => [o.id, o.name]));
-      const workerMap = new Map((workersRes.data || []).map((w: any) => [w.id, w.name]));
+      const batchMap = new Map<string, any>((batchesRes.data || []).map((b: any) => [b.id, b]));
+      const officeMap = new Map<string, string>((officesRes.data || []).map((o: any) => [o.id, o.name]));
+      const workerMap = new Map<string, string>((workersRes.data || []).map((w: any) => [w.id, w.name]));
       return ((outputsRes.data || []) as any[]).map((o) => {
         const batch = batchMap.get(o.batch_id);
         return {
