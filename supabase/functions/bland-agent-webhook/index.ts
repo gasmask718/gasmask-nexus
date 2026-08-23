@@ -65,6 +65,15 @@ Deno.serve(async (req) => {
   try {
     const supabase = svc();
 
+    // Parse the body BEFORE auth so the comms-health-monitor liveness probe is
+    // answered without a secret. Otherwise every 20-min probe logs a spurious
+    // bland.webhook_unauthorized event (2,311 false events 2026-07-22 → 08-23)
+    // and drowns out real rejections. The probe response is canned and carries
+    // no data, so answering it pre-auth exposes nothing.
+    const payload = await req.json().catch(() => ({}));
+    // Liveness probe from comms-health-monitor — answer, never persist.
+    if (isHealthProbe(payload)) return healthProbeResponse("bland-agent-webhook", corsHeaders);
+
     const auth = verifyBland(req);
     if (!auth.ok) {
       await logEvent({
@@ -79,9 +88,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const payload = await req.json().catch(() => ({}));
-    // Liveness probe from comms-health-monitor — answer, never persist.
-    if (isHealthProbe(payload)) return healthProbeResponse("bland-agent-webhook", corsHeaders);
     console.log("Bland webhook payload:", JSON.stringify(payload).slice(0, 1500));
 
     const call_id = payload.call_id || payload.c_id || null;

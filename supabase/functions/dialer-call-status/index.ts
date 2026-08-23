@@ -110,6 +110,45 @@ Deno.serve(async (req) => {
 
       if (isAmdCallback) {
         update.answered_by = answeredBy;
+        // Power-dialer AMD verdicts (2026-08-23): a human bridges to the
+        // agent; a machine hangs up — the agent never hears non-humans.
+        if (answeredBy === "human" && call_session_id) {
+          update.status = "bridging";
+          update.bridge_attempted_at = new Date().toISOString();
+          const { data: qrow } = await supabase
+            .from("outbound_call_queue").select("business_id").eq("id", queue_item_id).maybeSingle();
+          supabase.functions.invoke("dialer-bridge-agent", {
+            body: { session_id: call_session_id, queue_item_id, target_call_sid: callSid, business_id: qrow?.business_id },
+          }).then((r: any) => {
+            if (r?.error) console.error("bridge invoke failed:", r.error);
+          }).catch((e: any) => console.error("bridge invoke threw:", e));
+        } else if (answeredBy && answeredBy !== "human") {
+          update.status = "voicemail_detected";
+          update.ended_at = new Date().toISOString();
+          try {
+            const sid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
+            const tok = Deno.env.get("TWILIO_AUTH_TOKEN")!;
+            await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Calls/${callSid}.json`, {
+              method: "POST",
+              headers: { Authorization: "Basic " + btoa(`${sid}:${tok}`), "Content-Type": "application/x-www-form-urlencoded" },
+              body: new URLSearchParams({ Twiml: "<Response><Hangup/></Response>" }),
+            });
+          } catch (e) { console.error("amd machine hangup failed:", e); }
+          // Agent was never engaged — release them for the next number.
+          if (call_session_id) {
+            const { data: sess } = await supabase
+              .from("live_call_sessions").select("rep_user_id, business_id").eq("id", call_session_id).maybeSingle();
+            if (sess?.rep_user_id) {
+              await supabase.from("dialer_agent_availability").update({
+                status: "available", current_session_id: null, active_calls_count: 0,
+                updated_at: new Date().toISOString(),
+              }).eq("user_id", sess.rep_user_id).eq("business_id", sess.business_id);
+            }
+            await supabase.from("live_call_sessions")
+              .update({ ended_at: new Date().toISOString(), outcome: "voicemail_detected" })
+              .eq("id", call_session_id);
+          }
+        }
       } else if (callStatus === "in-progress") {
         update.answered_at = new Date().toISOString();
         if (!current || !protectedStates.has(current)) update.status = "connected";

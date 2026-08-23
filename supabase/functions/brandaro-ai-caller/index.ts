@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkDispatchGates } from "../_shared/dispatch_gates.ts";
 import { logLeadSync } from "../_shared/dc_sync_log.ts";
+import { blandWebhookUrl } from "../_shared/dialer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -322,7 +323,7 @@ serve(async (req) => {
           ...(fromNumber ? { from: fromNumber } : {}),
           pathway_id: BRANDARO_SALES_PATHWAY_ID,
 
-          webhook: `${supabaseUrl}/functions/v1/bland-agent-webhook`,
+          webhook: blandWebhookUrl(`${supabaseUrl}/functions/v1/bland-agent-webhook`),
           metadata: {
             lead_id: lead.id,
             first_name: firstName,

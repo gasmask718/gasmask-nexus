@@ -905,6 +905,89 @@ async function checkBlandSynthetic(): Promise<Result[]> {
   return out;
 }
 
+/**
+ * Integration liveness — added 2026-08-23 after the Bland webhook failed
+ * SILENTLY for a month (2026-07-22 → 08-23): BLAND_WEBHOOK_SECRET was set
+ * while every call-origin function still registered a bare webhook URL, so
+ * each post-call callback got 401'd and 2,311 bland.webhook_unauthorized
+ * events (plus zero bland.call_completed) accumulated with no alert.
+ * A dead integration must not be invisible again:
+ *  1. >5 bland.webhook_unauthorized in the last hour → fail.
+ *  2. No bland.call_completed in 48h WHILE a campaign is active → fail.
+ *     (No active campaigns = legitimately idle = pass.)
+ */
+async function checkBlandIntegrationLiveness(): Promise<Result[]> {
+  const out: Result[] = [];
+  try {
+    const supa = sb();
+
+    // 1. Rejection spike
+    const hourAgo = new Date(Date.now() - 3600 * 1000).toISOString();
+    const { count: unauthCount, error: unauthErr } = await supa
+      .from("dialer_call_events")
+      .select("id", { count: "exact", head: true })
+      .eq("event_type", "bland.webhook_unauthorized")
+      .gte("created_at", hourAgo);
+    if (unauthErr) {
+      out.push({ provider: "bland", layer: "integration_liveness", target: "webhook_rejections", status: "warn", message: `Could not count webhook rejections: ${unauthErr.message}` });
+    } else if ((unauthCount ?? 0) > 5) {
+      out.push({
+        provider: "bland", layer: "integration_liveness", target: "webhook_rejections",
+        status: "fail",
+        message: `${unauthCount} bland.webhook_unauthorized in the last hour — Bland post-call callbacks are being REJECTED. Check BLAND_WEBHOOK_SECRET matches the ?secret= registered on the Bland call's webhook URL.`,
+        detail: { rejections_last_hour: unauthCount },
+      });
+    } else {
+      out.push({ provider: "bland", layer: "integration_liveness", target: "webhook_rejections", status: "pass", message: `${unauthCount ?? 0} webhook rejections in the last hour` });
+    }
+
+    // 2. Completion starvation while campaigns are active
+    const { data: lastDone, error: doneErr } = await supa
+      .from("dialer_call_events")
+      .select("created_at")
+      .eq("event_type", "bland.call_completed")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (doneErr) {
+      out.push({ provider: "bland", layer: "integration_liveness", target: "call_completed_flow", status: "warn", message: `Could not read bland.call_completed: ${doneErr.message}` });
+      return out;
+    }
+    const lastAt = lastDone?.[0]?.created_at ? new Date(lastDone[0].created_at as string) : null;
+    const staleHours = lastAt ? (Date.now() - lastAt.getTime()) / 3_600_000 : Infinity;
+
+    const activeStatuses = ["active", "running", "in_progress", "scheduled"];
+    const [{ count: aiActive }, { count: dialerActive }] = await Promise.all([
+      supa.from("ai_call_campaigns").select("id", { count: "exact", head: true }).in("status", activeStatuses),
+      supa.from("dialer_campaigns").select("id", { count: "exact", head: true }).in("status", activeStatuses),
+    ]);
+    const campaignsActive = (aiActive ?? 0) + (dialerActive ?? 0);
+
+    if (campaignsActive === 0) {
+      out.push({
+        provider: "bland", layer: "integration_liveness", target: "call_completed_flow",
+        status: "pass",
+        message: `No active campaigns; last bland.call_completed ${lastAt ? `${Math.floor(staleHours)}h ago` : "never"} (idle is expected)`,
+      });
+    } else if (staleHours > 48) {
+      out.push({
+        provider: "bland", layer: "integration_liveness", target: "call_completed_flow",
+        status: "fail",
+        message: `${campaignsActive} campaign(s) active but no bland.call_completed in ${lastAt ? Math.floor(staleHours) + "h" : "forever"} — call results are NOT being recorded. Webhook auth or delivery is broken.`,
+        detail: { campaigns_active: campaignsActive, last_call_completed: lastAt?.toISOString() ?? null },
+      });
+    } else {
+      out.push({
+        provider: "bland", layer: "integration_liveness", target: "call_completed_flow",
+        status: "pass",
+        message: `Last bland.call_completed ${Math.floor(staleHours)}h ago with ${campaignsActive} active campaign(s)`,
+      });
+    }
+  } catch (e) {
+    out.push({ provider: "bland", layer: "integration_liveness", target: "liveness_check", status: "fail", message: `Bland liveness check threw: ${(e as Error).message}` });
+  }
+  return out;
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // ELEVENLABS — separate provider section
 // ════════════════════════════════════════════════════════════════════════════
@@ -1438,6 +1521,7 @@ Deno.serve(async (req) => {
     { name: "checkBlandAgents", provider: "bland", fn: checkBlandAgents },
     { name: "checkBlandWebhooks", provider: "bland", fn: checkBlandWebhooks },
     { name: "checkBlandSynthetic", provider: "bland", fn: checkBlandSynthetic },
+    { name: "checkBlandIntegrationLiveness", provider: "bland", fn: checkBlandIntegrationLiveness },
     { name: "checkOutboundDispatch", provider: "bland", fn: checkOutboundDispatch },
     // Alerting channel — watches for the absence of the daily heartbeat.
     { name: "checkAlertChannel", provider: "resend", fn: checkAlertChannel },
