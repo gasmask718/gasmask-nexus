@@ -682,6 +682,7 @@ const OfficesManagementPage = lazy(() => import('@/pages/portals/production/Offi
 const StaffManagementPage = lazy(() => import('@/pages/portals/production/StaffManagementPage'));
 const ConversionIntelligencePage = lazy(() => import('@/pages/portals/ConversionIntelligencePage'));
 const SupplierYieldPage = lazy(() => import('@/pages/portals/SupplierYieldPage'));
+const YieldWatchPage = lazy(() => import('@/pages/production/YieldWatchPage'));
 const SalesVelocityPage = lazy(() => import('@/pages/portals/SalesVelocityPage'));
 const ProductionWarRoom = lazy(() => import('@/pages/portals/production/ProductionWarRoom'));
 const WorkerTaskTimerPage = lazy(() => import('@/pages/portals/production/WorkerTaskTimerPage'));
@@ -2828,6 +2829,7 @@ export default function AppRoutes() {
         <Route path="/portals/production/staff" element={<StaffManagementPage />} />
         <Route path="/portals/production/conversion" element={<ConversionIntelligencePage />} />
         <Route path="/portals/production/supplier-yield" element={<SupplierYieldPage />} />
+        <Route path="/portals/production/yield-watch" element={<YieldWatchPage />} />
         <Route path="/portals/production/sales-velocity" element={<SalesVelocityPage />} />
         <Route path="/portals/production/war-room" element={<ProductionWarRoom />} />
         <Route path="/portals/production/task-timer" element={<WorkerTaskTimerPage />} />
