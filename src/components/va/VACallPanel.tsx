@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useVASession } from '@/contexts/VASessionContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVoiceDevice } from '@/contexts/VoiceDeviceProvider';
+import { useVACompanySafe } from '@/contexts/VACompanyContext';
 import { useCall } from '@/components/communication/CallProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
   const { t, twilioNumber, sessionId } = useVASession();
   const { user } = useAuth();
   const voice = useVoiceDevice();
+  const vaCompany = useVACompanySafe();
   const { setVACallMetadata, endActiveCall } = useCall();
   const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'connected' | 'ended'>('idle');
   const [seconds, setSeconds] = useState(0);
@@ -91,7 +93,13 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
   };
 
   const initiateCall = async () => {
-    if (!lead || !twilioNumber) return;
+    if (!lead) return;
+    if (!twilioNumber) {
+      const companyName = vaCompany?.activeCompany?.name ?? 'This company';
+      toast.error(`${companyName} has no phone number assigned. Add one before calling.`);
+      return;
+    }
+
 
     // Request mic permission directly from the user gesture (must be synchronous chain)
     try {
@@ -346,7 +354,12 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
           </TabsList>
           <TabsContent value="services" className="p-4"><VAServicesPricing /></TabsContent>
           <TabsContent value="faqs" className="p-4"><VAFAQs /></TabsContent>
-          <TabsContent value="scripts" className="p-4"><VAScripts /></TabsContent>
+          <TabsContent value="scripts" className="p-4">
+            <VAScripts
+              companySlug={vaCompany?.activeCompany?.slug}
+              companyName={vaCompany?.activeCompany?.name}
+            />
+          </TabsContent>
           <TabsContent value="rebuttals" className="p-4"><VARebuttals /></TabsContent>
         </Tabs>
       </div>

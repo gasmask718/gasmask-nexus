@@ -29239,6 +29239,36 @@ export type Database = {
           },
         ]
       }
+      business_merge_log: {
+        Row: {
+          kept_id: string | null
+          kept_name: string | null
+          merged_at: string | null
+          reason: string | null
+          removed_id: string
+          removed_name: string | null
+          removed_slug: string | null
+        }
+        Insert: {
+          kept_id?: string | null
+          kept_name?: string | null
+          merged_at?: string | null
+          reason?: string | null
+          removed_id: string
+          removed_name?: string | null
+          removed_slug?: string | null
+        }
+        Update: {
+          kept_id?: string | null
+          kept_name?: string | null
+          merged_at?: string | null
+          reason?: string | null
+          removed_id?: string
+          removed_name?: string | null
+          removed_slug?: string | null
+        }
+        Relationships: []
+      }
       business_owner_contacts: {
         Row: {
           business_id: string
@@ -45941,6 +45971,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_ai_number: boolean | null
+          is_default_caller_id: boolean | null
           last_called_at: string | null
           monthly_cost: number | null
           number_type: string | null
@@ -45957,6 +45988,7 @@ export type Database = {
           twilio_webhook_configured: boolean
           twilio_webhook_configured_at: string | null
           updated_at: string
+          va_company_id: string | null
           warming_daily_cap: number | null
           warming_profile: string | null
           warming_started_at: string | null
@@ -45983,6 +46015,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_ai_number?: boolean | null
+          is_default_caller_id?: boolean | null
           last_called_at?: string | null
           monthly_cost?: number | null
           number_type?: string | null
@@ -45999,6 +46032,7 @@ export type Database = {
           twilio_webhook_configured?: boolean
           twilio_webhook_configured_at?: string | null
           updated_at?: string
+          va_company_id?: string | null
           warming_daily_cap?: number | null
           warming_profile?: string | null
           warming_started_at?: string | null
@@ -46025,6 +46059,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_ai_number?: boolean | null
+          is_default_caller_id?: boolean | null
           last_called_at?: string | null
           monthly_cost?: number | null
           number_type?: string | null
@@ -46041,6 +46076,7 @@ export type Database = {
           twilio_webhook_configured?: boolean
           twilio_webhook_configured_at?: string | null
           updated_at?: string
+          va_company_id?: string | null
           warming_daily_cap?: number | null
           warming_profile?: string | null
           warming_started_at?: string | null
@@ -134627,6 +134663,13 @@ export type Database = {
             foreignKeyName: "va_company_memberships_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
+            referencedRelation: "v_va_caller_ids"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "va_company_memberships_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
             referencedRelation: "v_va_company_access"
             referencedColumns: ["company_id"]
           },
@@ -134873,6 +134916,13 @@ export type Database = {
           token?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "va_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_va_caller_ids"
+            referencedColumns: ["company_id"]
+          },
           {
             foreignKeyName: "va_invites_company_id_fkey"
             columns: ["company_id"]
@@ -153218,6 +153268,23 @@ export type Database = {
           },
         ]
       }
+      v_va_caller_ids: {
+        Row: {
+          brand_color: string | null
+          calls_for: string | null
+          company: string | null
+          company_id: string | null
+          friendly_name: string | null
+          is_ai_number: boolean | null
+          is_default_caller_id: boolean | null
+          number_type: string | null
+          phone_number: string | null
+          slug: string | null
+          status: string | null
+          use_note: string | null
+        }
+        Relationships: []
+      }
       v_va_company_access: {
         Row: {
           brand_color: string | null
@@ -156324,6 +156391,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_ai_number: boolean | null
+          is_default_caller_id: boolean | null
           last_called_at: string | null
           monthly_cost: number | null
           number_type: string | null
@@ -156340,6 +156408,7 @@ export type Database = {
           twilio_webhook_configured: boolean
           twilio_webhook_configured_at: string | null
           updated_at: string
+          va_company_id: string | null
           warming_daily_cap: number | null
           warming_profile: string | null
           warming_started_at: string | null

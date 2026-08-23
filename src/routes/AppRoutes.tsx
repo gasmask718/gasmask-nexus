@@ -664,7 +664,6 @@ const StoreTeam = lazy(() => import('@/pages/portal/store/StoreTeam'));
 const WholesalerTeam = lazy(() => import('@/pages/portal/wholesaler/WholesalerTeam'));
 const JoinOrg = lazy(() => import('@/pages/portal/JoinOrg'));
 const ProductionPortal = lazy(() => import('@/pages/portal/ProductionPortal'));
-const VAPortal = lazy(() => import('@/pages/portal/VAPortal'));
 const CustomerPortal = lazy(() => import('@/pages/portal/CustomerPortal'));
 const NationalWholesale = lazy(() => import('@/pages/portal/NationalWholesale'));
 const MarketplaceAdmin = lazy(() => import('@/pages/portal/MarketplaceAdmin'));
@@ -2817,7 +2816,8 @@ export default function AppRoutes() {
         <Route path="/portal/wholesaler/order-grabba" element={<WholesalerOrderGrabba />} />
         <Route path="/portal/wholesaler/catalog/onboard" element={<WholesalerCatalogOnboard />} />
         <Route path="/portal/production/*" element={<ProductionPortal />} />
-        <Route path="/portal/va" element={<VAPortal />} />
+        {/* Retired hardcoded VA shell — canonical portal is /va/dashboard */}
+        <Route path="/portal/va" element={<Navigate to="/va/dashboard" replace />} />
         <Route path="/portal/customer/*" element={<CustomerPortal />} />
         <Route path="/portal/invoices" element={<PortalInvoices />} />
         <Route path="/portal/invoices/:id" element={<PortalInvoiceDetail />} />
@@ -2847,8 +2847,8 @@ export default function AppRoutes() {
         <Route path="/portals/production/task-timer" element={<WorkerTaskTimerPage />} />
         <Route path="/production/cost-history" element={<CostHistoryPage />} />
         <Route path="/production/supervisor-comparison" element={<SupervisorComparisonPage />} />
-        {/* T3 K7: /portals/va is the duplicate; canonical is /portal/va */}
-        <Route path="/portals/va" element={<Navigate to="/portal/va" replace />} />
+        {/* Retired duplicate — canonical VA portal is /va/dashboard */}
+        <Route path="/portals/va" element={<Navigate to="/va/dashboard" replace />} />
         <Route path="/portals/customer" element={<CustomerPortalPage />} />
         <Route path="/portals/national-wholesale" element={<NationalWholesalePortalPage />} />
         <Route path="/portals/admin" element={<MarketplaceAdminPortalPage />} />

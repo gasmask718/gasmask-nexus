@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { VASessionProvider, useVASession } from '@/contexts/VASessionContext';
@@ -38,9 +38,13 @@ import {
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
   Search, ArrowLeft, Zap, Trophy, Clock, UserCircle, Sparkles, Building2, History, UserPlus,
-  MessageSquare,
+  MessageSquare, AlertTriangle,
 } from 'lucide-react';
-import { useVAActiveCompany } from '@/hooks/useVAActiveCompany';
+import { VACompanyProvider, useVACompany } from '@/contexts/VACompanyContext';
+import { VACompanySwitcher } from '@/components/va/VACompanySwitcher';
+import { useVACallerIds } from '@/hooks/useVACallerIds';
+import { getVACompanyConfig } from '@/config/vaCompanies';
+import { Card, CardContent } from '@/components/ui/card';
 import { BrandaroLeadIntakeModal } from '@/components/brandaro/BrandaroLeadIntakeModal';
 import { VAIntakeInvitesPanel } from '@/components/va/VAIntakeInvitesPanel';
 import { VAMessages } from '@/components/va/VAMessages';
@@ -53,9 +57,9 @@ function VADashboardInner() {
   const location = useLocation();
   const { signOut } = useAuth();
   const { user } = useAuth();
-  const { t, twilioNumber, language, isOnboarded, endSession } = useVASession();
-  const { data: activeCompany } = useVAActiveCompany();
-  const companyName = activeCompany?.company_name ?? 'No company assigned';
+  const { t, twilioNumber, twilioNumberId, language, isOnboarded, endSession, switchNumber } = useVASession();
+  const { activeCompany, loading: companyLoading } = useVACompany();
+  const companyName = activeCompany?.name ?? 'No company assigned';
   const companyColor = activeCompany?.brand_color ?? '#06b6d4';
 
   const initialView: VAView = 'leads';
@@ -68,26 +72,70 @@ function VADashboardInner() {
   const [campaignLeadList, setCampaignLeadList] = useState<{ id?: string; name: string; phone: string }[] | null>(null);
   const [showSessionSummary, setShowSessionSummary] = useState(false);
 
-  // Fetch leads for dialer
+  // Per-company caller IDs for the ACTIVE company
+  const {
+    numbers: callerIdPool, defaultNumber, hasNumbers, isLoading: callerIdsLoading,
+  } = useVACallerIds(activeCompany?.id);
+
+  // When the active company changes (switcher or first load with a stale
+  // persisted session), force the caller ID to that company's default — or
+  // end the session so the onboarding modal shows the "no number" block.
+  const lastCompanyIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!activeCompany || callerIdsLoading || companyLoading) return;
+    if (lastCompanyIdRef.current === activeCompany.id) return;
+    lastCompanyIdRef.current = activeCompany.id;
+    if (!isOnboarded) return;
+    const currentIsValid = callerIdPool.some((n) => n.dc_number_id === twilioNumberId);
+    if (currentIsValid) return;
+    if (defaultNumber) {
+      switchNumber(defaultNumber.dc_number_id, defaultNumber.phone_number);
+    } else {
+      endSession();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCompany?.id, callerIdsLoading, companyLoading, isOnboarded]);
+
+  // Fetch leads for dialer — scoped to the active company's lead source
   const { data: allLeads = [] } = useQuery({
-    queryKey: ['va-dialer-leads', user?.id],
+    queryKey: ['va-dialer-leads', user?.id, activeCompany?.id],
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('brandaro_qualified_leads')
-        .select('id, business_name, phone_number, email, lead_status')
-        .eq('assigned_va', user!.id)
-        .not('phone_number', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(500);
-      return (data || []).map((l: any) => ({
-        id: l.id,
-        business_name: l.business_name,
-        phone: l.phone_number,
-        email: l.email,
-        status: l.lead_status,
-      })).filter((l: any) => l.phone);
+      const cfg = getVACompanyConfig(activeCompany?.slug);
+      if (cfg.leadSource === 'brandaro_qualified_leads') {
+        const { data } = await (supabase as any)
+          .from('brandaro_qualified_leads')
+          .select('id, business_name, phone_number, email, lead_status')
+          .eq('assigned_va', user!.id)
+          .not('phone_number', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(500);
+        return (data || []).map((l: any) => ({
+          id: l.id,
+          business_name: l.business_name,
+          phone: l.phone_number,
+          email: l.email,
+          status: l.lead_status,
+        })).filter((l: any) => l.phone);
+      }
+      if (cfg.leadSource === 'v_store_who_to_contact') {
+        const { data } = await (supabase as any)
+          .from('v_store_who_to_contact')
+          .select('store_id, store_name, phone')
+          .not('phone', 'is', null)
+          .eq('try_this_first', 1)
+          .order('store_name')
+          .limit(500);
+        return (data || []).map((s: any) => ({
+          id: s.store_id,
+          business_name: s.store_name,
+          phone: s.phone,
+          email: null,
+          status: 'new',
+        }));
+      }
+      return [];
     },
-    enabled: !!user,
+    enabled: !!user && !!activeCompany,
   });
 
   const handleLogout = async () => {
@@ -187,7 +235,7 @@ function VADashboardInner() {
                   <Building2 className="h-4 w-4" style={{ color: companyColor }} />
                   <span className="text-white font-medium">{companyName}</span>
                 </div>
-                {activeCompany && (
+                {activeCompany?.role && (
                   <div className="px-2 text-[10px] text-slate-500 uppercase tracking-wide">
                     Role: {activeCompany.role}
                   </div>
@@ -211,6 +259,7 @@ function VADashboardInner() {
               </span>
             </div>
             <div className="flex items-center gap-3">
+              <VACompanySwitcher />
               <VAActiveNumberSwitcher />
               <GasMaskShiftToggle />
               <Badge className="bg-slate-700 text-slate-300 text-xs">
@@ -233,28 +282,51 @@ function VADashboardInner() {
                 <VACallStats />
                 
                 <div className="flex justify-end">
-                  <Button onClick={handleStartDialer} className="bg-cyan-600 hover:bg-cyan-700 gap-2">
+                  <Button
+                    onClick={handleStartDialer}
+                    className="bg-cyan-600 hover:bg-cyan-700 gap-2"
+                    disabled={allLeads.length === 0}
+                  >
                     <Zap className="h-4 w-4" /> Start Power Dialer ({allLeads.length} leads)
                   </Button>
                 </div>
-                <VALeadsTable
-                  onCall={lead => { setCallLead(lead); setView('call'); }}
-                  onCreateInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(false); setInvoiceOpen(true); }}
-                  onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(true); setInvoiceOpen(true); }}
-                  onStartCampaign={(list) => { setCampaignLeadList(list); setView('autodialer'); }}
-                  onQuickDial={(lead) => {
-                    setCallLead({
-                      id: `quick-${Date.now()}`,
-                      business_name: lead.name,
-                      phone: lead.phone,
-                      email: null,
-                      status: 'new',
-                      created_at: new Date().toISOString(),
-                      assigned_va: null,
-                    } as any);
-                    setView('call');
-                  }}
-                />
+                {!getVACompanyConfig(activeCompany?.slug).leadSource ? (
+                  <Card className="border-slate-700 bg-slate-800/50">
+                    <CardContent className="py-16 text-center space-y-3">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-700/40 flex items-center justify-center mx-auto">
+                        <Users className="h-7 w-7 text-slate-500" />
+                      </div>
+                      <p className="text-slate-300">
+                        No call list configured for {companyName} yet.
+                      </p>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        Leads are assigned per company. Switch companies in the header, or ask the
+                        owner to load a call list for {companyName}.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <VALeadsTable
+                    leadSource={getVACompanyConfig(activeCompany?.slug).leadSource!}
+                    brandaroTools={activeCompany?.slug === 'brandaro'}
+                    onCall={lead => { setCallLead(lead); setView('call'); }}
+                    onCreateInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(false); setInvoiceOpen(true); }}
+                    onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(true); setInvoiceOpen(true); }}
+                    onStartCampaign={(list) => { setCampaignLeadList(list); setView('autodialer'); }}
+                    onQuickDial={(lead) => {
+                      setCallLead({
+                        id: `quick-${Date.now()}`,
+                        business_name: lead.name,
+                        phone: lead.phone,
+                        email: null,
+                        status: 'new',
+                        created_at: new Date().toISOString(),
+                        assigned_va: null,
+                      } as any);
+                      setView('call');
+                    }}
+                  />
+                )}
                 
                 {/* Recent Calls */}
                 <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-4">
@@ -369,7 +441,9 @@ function VADashboardInner() {
 export default function VADashboard() {
   return (
     <VASessionProvider>
-      <VADashboardInner />
+      <VACompanyProvider>
+        <VADashboardInner />
+      </VACompanyProvider>
     </VASessionProvider>
   );
 }

@@ -33,7 +33,7 @@ const FEATURE_MODES: FeatureMode[] = [
   { key: "manual_call_ambassador", label: "Ambassador direct call", channel: "call", mode: "manual", fn: "ambassador-direct-call", provider: "twilio", surfaces: ["Ambassador comms"], sender: "Ambassador-assigned Twilio number" },
   { key: "ai_call_ambassador",  label: "Ambassador AI call", channel: "call", mode: "ai", fn: "ambassador-ai-call", provider: "bland", surfaces: ["Ambassador outreach"], sender: "Bland → Twilio caller-ID" },
   { key: "va_power_dialer",     label: "VA Power Dialer (auto-dialer)", channel: "call", mode: "auto_dialer", fn: "va-power-dialer", provider: "twilio", surfaces: ["VAPowerDialer", "BatchDialerPanel"], sender: "Per-VA assigned caller-ID set" },
-  { key: "va_initiate_call",    label: "VA single-call initiate", channel: "call", mode: "auto_dialer", fn: "va-initiate-call", provider: "twilio", surfaces: ["VA portals"], sender: "Per-VA caller-ID" },
+  
   { key: "predictive_dialer",   label: "Predictive dialer engine", channel: "call", mode: "auto_dialer", fn: "predictive-dialer-engine", provider: "twilio", surfaces: ["Batch dial campaigns"], sender: "Campaign caller-ID" },
   { key: "bulk_ai_call",        label: "Bulk AI call processor", channel: "call", mode: "bulk", fn: "bulk-ai-call-processor", provider: "bland", surfaces: ["Bulk AI campaigns"], sender: "Bland fleet → toll-free" },
   { key: "bland_outbound",      label: "Bland AI outbound call", channel: "call", mode: "ai", fn: "bland-start-call", provider: "bland", surfaces: ["AI-initiated outreach"], sender: "Bland caller-ID pool" },
