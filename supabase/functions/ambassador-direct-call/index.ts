@@ -34,15 +34,29 @@ Deno.serve(async (req) => {
     if (!amb?.is_active) return new Response(JSON.stringify({ error: 'Ambassador not active' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     if (!amb.personal_phone) return new Response(JSON.stringify({ error: 'Add your personal phone in Settings before placing direct calls', code: 'NO_PERSONAL_PHONE' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-    const { data: store } = await admin.from('store_master').select('id, store_name, phone, assigned_ambassador_id, status').eq('id', store_id).maybeSingle();
-    if (!store) return new Response(JSON.stringify({ error: 'Store not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    // Unified assignment rule (explicit assignment OR active route stop) — same
-    // check used by RLS and the field portal, instead of the legacy
-    // store_master.assigned_ambassador_id pointer only.
-    const { data: isAssigned } = await admin.rpc('field_worker_has_store', { _user_id: userId, _store_id: store_id });
-    if (isAssigned !== true) return new Response(JSON.stringify({ error: 'Store not assigned to you' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    if (!store.phone) return new Response(JSON.stringify({ error: 'Store missing phone number' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    if (store.status === 'blacklisted') return new Response(JSON.stringify({ error: 'Store is blacklisted' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // Two targets: an assigned store (store_id) or a raw street number from the
+    // quick-dial pad (to_phone, no store yet). The quick path skips store
+    // ownership checks — there is no store — but keeps the ambassador-active,
+    // daily-cap and recording-consent gates below.
+    let targetPhone: string;
+    let targetName = 'your new contact';
+    if (store_id) {
+      const { data: store } = await admin.from('store_master').select('id, store_name, phone, assigned_ambassador_id, status').eq('id', store_id).maybeSingle();
+      if (!store) return new Response(JSON.stringify({ error: 'Store not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      // Unified assignment rule (explicit assignment OR active route stop) — same
+      // check used by RLS and the field portal, instead of the legacy
+      // store_master.assigned_ambassador_id pointer only.
+      const { data: isAssigned } = await admin.rpc('field_worker_has_store', { _user_id: userId, _store_id: store_id });
+      if (isAssigned !== true) return new Response(JSON.stringify({ error: 'Store not assigned to you' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (!store.phone) return new Response(JSON.stringify({ error: 'Store missing phone number' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (store.status === 'blacklisted') return new Response(JSON.stringify({ error: 'Store is blacklisted' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      targetPhone = store.phone;
+      targetName = store.store_name;
+    } else {
+      const digits = String(to_phone).replace(/\D/g, '');
+      if (digits.length < 10) return new Response(JSON.stringify({ error: 'A valid 10-digit phone number is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      targetPhone = '+1' + digits.slice(-10);
+    }
 
     // Daily limit — safety net against runaway loops only; not a calling window.
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
