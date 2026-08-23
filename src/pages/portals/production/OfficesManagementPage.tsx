@@ -53,6 +53,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
+import { InviteButton } from '@/components/invites/InviteButton';
 import { format } from 'date-fns';
 
 const STATUS_OPTIONS = [
@@ -164,6 +165,13 @@ function OfficeHealthCard({ office }: { office: ProductionOffice }) {
             Open Dashboard
             <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
+          <InviteButton
+            role="production"
+            targetLink={{ office_id: office.id, office_name: office.name }}
+            label="Invite Leader"
+            variant="outline"
+            size="sm"
+          />
         </div>
       </CardContent>
     </Card>
