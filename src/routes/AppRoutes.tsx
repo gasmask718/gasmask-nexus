@@ -664,7 +664,6 @@ const StoreTeam = lazy(() => import('@/pages/portal/store/StoreTeam'));
 const WholesalerTeam = lazy(() => import('@/pages/portal/wholesaler/WholesalerTeam'));
 const JoinOrg = lazy(() => import('@/pages/portal/JoinOrg'));
 const ProductionPortal = lazy(() => import('@/pages/portal/ProductionPortal'));
-const VAPortal = lazy(() => import('@/pages/portal/VAPortal'));
 const CustomerPortal = lazy(() => import('@/pages/portal/CustomerPortal'));
 const NationalWholesale = lazy(() => import('@/pages/portal/NationalWholesale'));
 const MarketplaceAdmin = lazy(() => import('@/pages/portal/MarketplaceAdmin'));
