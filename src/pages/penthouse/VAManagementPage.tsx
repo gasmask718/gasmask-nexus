@@ -345,10 +345,22 @@ export default function VAManagementPage() {
               </SelectTrigger>
               <SelectContent>
                 {companies.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  <SelectItem key={c.id} value={c.id}>
+                    <div className="flex flex-col">
+                      <span>{c.name}</span>
+                      {c.calls_for && (
+                        <span className="text-[10px] text-slate-400 max-w-[280px] truncate">{c.calls_for}</span>
+                      )}
+                    </div>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {form.company_id && companies.find(c => c.id === form.company_id)?.calls_for && (
+              <p className="mt-1 text-[11px] text-slate-400">
+                Calls for: {companies.find(c => c.id === form.company_id)?.calls_for}
+              </p>
+            )}
           </div>
           <div>
             <Label className="text-slate-300">Role</Label>
