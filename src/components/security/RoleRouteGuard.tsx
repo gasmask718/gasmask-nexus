@@ -158,7 +158,7 @@ const ROLE_HOME: Record<string, string> = {
   wholesale: "/portal/wholesaler",
   store: "/portal/store",
   store_owner: "/portal/store",
-  va: "/portal/va",
+  va: "/va/dashboard",
   production: "/portal/production",
   influencer: "/portal/influencer",
 };

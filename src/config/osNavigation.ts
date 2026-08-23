@@ -751,7 +751,7 @@ export const PORTALS: PortalConfig[] = [
   { id: 'biker-portal', role: 'biker', label: 'Biker Portal', path: '/portal/biker', icon: Bike, color: 'hsl(180, 100%, 40%)', description: 'Pickups, dropoffs, checks' },
   { id: 'production-portal', role: 'production', label: 'Manufacturing OS', path: '/portals/production', icon: Factory, color: 'hsl(45, 100%, 50%)', description: 'Office production, variance, closeouts' },
   { id: 'production-worker', role: 'production', label: 'Worker View (Read-Only)', path: '/portal/production', icon: Factory, color: 'hsl(45, 80%, 45%)', description: 'View batches, progress' },
-  { id: 'va-portal', role: 'va', label: 'VA Portal', path: '/portal/va', icon: UserCircle, color: 'hsl(200, 100%, 50%)', description: 'CRM, tasks, communications' },
+  { id: 'va-portal', role: 'va', label: 'VA Portal', path: '/va/dashboard', icon: UserCircle, color: 'hsl(200, 100%, 50%)', description: 'CRM, tasks, communications' },
   { id: 'national-wholesale-portal', role: 'wholesaler', label: 'National Wholesale Portal', path: '/portal/national-wholesale', icon: Globe, color: 'hsl(220, 100%, 50%)', description: 'Nationwide distribution' },
   { id: 'marketplace-admin-portal', role: 'admin', label: 'Marketplace Admin Portal', path: '/portal/marketplace-admin', icon: Cog, color: 'hsl(0, 0%, 50%)', description: 'Marketplace management' },
 ];
