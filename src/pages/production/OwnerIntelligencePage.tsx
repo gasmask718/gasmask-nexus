@@ -261,7 +261,7 @@ function IntelligenceBody() {
           <CardTitle className="text-base flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-500" />
             Flags — what needs an answer
-          </Title>
+          </CardTitle>
           <CardDescription>Outliers surfaced in words, so nothing has to be hunted for.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -403,7 +403,7 @@ function IntelligenceBody() {
           <CardTitle className="text-base flex items-center gap-2">
             <PackageSearch className="h-4 w-4 text-destructive" />
             Leakage — material that left the room and did not become product
-          </Title>
+          </CardTitle>
           <CardDescription>Issued minus used, said out loud. Each sentence is a conversation to have.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -437,7 +437,7 @@ function IntelligenceBody() {
           <CardTitle className="text-base flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-primary" />
             Cost per box &amp; margin — the pricing floor
-          </Title>
+          </CardTitle>
           <CardDescription>What a box costs to make, and the margin at wholesale and retail.</CardDescription>
         </CardHeader>
         <CardContent>
