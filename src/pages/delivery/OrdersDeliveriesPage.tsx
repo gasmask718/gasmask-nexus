@@ -224,7 +224,8 @@ function useDeliveredInvoices() {
     queryKey: ["delivered-invoices"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("invoices")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TS2589: deep join type
+        .from("invoices" as any)
         .select(
           `id, invoice_number, store_id, total, amount_paid, payment_status,
            paid_at, finalized_at, created_at, finalized_by, created_by,

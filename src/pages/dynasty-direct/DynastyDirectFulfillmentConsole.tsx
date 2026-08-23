@@ -340,7 +340,8 @@ function RoutingFeed() {
     queryFn: async () => {
       const sinceIso = new Date(Date.now() - Number(rangeHours) * 3_600_000).toISOString();
       let q = supabase
-        .from("dd_routing_audit")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TS2589: deep join type
+        .from("dd_routing_audit" as any)
         .select("*, w:wholesaler_id(company_name)")
         .gte("created_at", sinceIso)
         .order("created_at", { ascending: false })
