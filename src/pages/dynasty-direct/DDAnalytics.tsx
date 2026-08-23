@@ -44,7 +44,7 @@ export default function DDAnalytics() {
   const { data: items = [] } = useQuery({
     queryKey: ["dd-analytics-items", range],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("marketplace_order_items")
         .select("product_id, wholesaler_id, qty, price_each, order_id, products_all(product_name)")
         .gte("created_at", since);
