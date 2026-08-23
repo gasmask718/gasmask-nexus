@@ -35,7 +35,9 @@ export function useTranslation() {
     let str = t(key, language);
     if (params) {
       for (const [k, v] of Object.entries(params)) {
-        str = str.split(`{${k}}`).join(String(v)).split(`{{${k}}}`).join(String(v));
+        // Double-brace first: replacing {k} inside {{k}} would leave stray
+        // braces behind ("Welcome to {Office}").
+        str = str.split(`{{${k}}}`).join(String(v)).split(`{${k}}`).join(String(v));
       }
     }
     return str;
