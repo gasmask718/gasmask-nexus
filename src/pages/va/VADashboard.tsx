@@ -57,9 +57,9 @@ function VADashboardInner() {
   const location = useLocation();
   const { signOut } = useAuth();
   const { user } = useAuth();
-  const { t, twilioNumber, language, isOnboarded, endSession } = useVASession();
-  const { data: activeCompany } = useVAActiveCompany();
-  const companyName = activeCompany?.company_name ?? 'No company assigned';
+  const { t, twilioNumber, twilioNumberId, language, isOnboarded, endSession, switchNumber } = useVASession();
+  const { activeCompany, loading: companyLoading } = useVACompany();
+  const companyName = activeCompany?.name ?? 'No company assigned';
   const companyColor = activeCompany?.brand_color ?? '#06b6d4';
 
   const initialView: VAView = 'leads';
@@ -72,26 +72,70 @@ function VADashboardInner() {
   const [campaignLeadList, setCampaignLeadList] = useState<{ id?: string; name: string; phone: string }[] | null>(null);
   const [showSessionSummary, setShowSessionSummary] = useState(false);
 
-  // Fetch leads for dialer
+  // Per-company caller IDs for the ACTIVE company
+  const {
+    numbers: callerIdPool, defaultNumber, hasNumbers, isLoading: callerIdsLoading,
+  } = useVACallerIds(activeCompany?.id);
+
+  // When the active company changes (switcher or first load with a stale
+  // persisted session), force the caller ID to that company's default — or
+  // end the session so the onboarding modal shows the "no number" block.
+  const lastCompanyIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!activeCompany || callerIdsLoading || companyLoading) return;
+    if (lastCompanyIdRef.current === activeCompany.id) return;
+    lastCompanyIdRef.current = activeCompany.id;
+    if (!isOnboarded) return;
+    const currentIsValid = callerIdPool.some((n) => n.dc_number_id === twilioNumberId);
+    if (currentIsValid) return;
+    if (defaultNumber) {
+      switchNumber(defaultNumber.dc_number_id, defaultNumber.phone_number);
+    } else {
+      endSession();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCompany?.id, callerIdsLoading, companyLoading, isOnboarded]);
+
+  // Fetch leads for dialer — scoped to the active company's lead source
   const { data: allLeads = [] } = useQuery({
-    queryKey: ['va-dialer-leads', user?.id],
+    queryKey: ['va-dialer-leads', user?.id, activeCompany?.id],
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('brandaro_qualified_leads')
-        .select('id, business_name, phone_number, email, lead_status')
-        .eq('assigned_va', user!.id)
-        .not('phone_number', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(500);
-      return (data || []).map((l: any) => ({
-        id: l.id,
-        business_name: l.business_name,
-        phone: l.phone_number,
-        email: l.email,
-        status: l.lead_status,
-      })).filter((l: any) => l.phone);
+      const cfg = getVACompanyConfig(activeCompany?.slug);
+      if (cfg.leadSource === 'brandaro_qualified_leads') {
+        const { data } = await (supabase as any)
+          .from('brandaro_qualified_leads')
+          .select('id, business_name, phone_number, email, lead_status')
+          .eq('assigned_va', user!.id)
+          .not('phone_number', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(500);
+        return (data || []).map((l: any) => ({
+          id: l.id,
+          business_name: l.business_name,
+          phone: l.phone_number,
+          email: l.email,
+          status: l.lead_status,
+        })).filter((l: any) => l.phone);
+      }
+      if (cfg.leadSource === 'v_store_who_to_contact') {
+        const { data } = await (supabase as any)
+          .from('v_store_who_to_contact')
+          .select('store_id, store_name, phone')
+          .not('phone', 'is', null)
+          .eq('try_this_first', 1)
+          .order('store_name')
+          .limit(500);
+        return (data || []).map((s: any) => ({
+          id: s.store_id,
+          business_name: s.store_name,
+          phone: s.phone,
+          email: null,
+          status: 'new',
+        }));
+      }
+      return [];
     },
-    enabled: !!user,
+    enabled: !!user && !!activeCompany,
   });
 
   const handleLogout = async () => {
