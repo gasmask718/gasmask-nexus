@@ -150194,6 +150194,7 @@ export type Database = {
         Row: {
           assigned_to: string | null
           assignment_state: string | null
+          brand_ids: string[] | null
           created_at: string | null
           date: string | null
           done: number | null
@@ -150205,6 +150206,7 @@ export type Database = {
           status: string | null
           stop_list: string | null
           stops: number | null
+          territory: string | null
           total_stops: number | null
           type: string | null
           worker_name: string | null
@@ -150212,6 +150214,7 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           assignment_state?: never
+          brand_ids?: string[] | null
           created_at?: string | null
           date?: string | null
           done?: never
@@ -150223,6 +150226,7 @@ export type Database = {
           status?: string | null
           stop_list?: never
           stops?: never
+          territory?: string | null
           total_stops?: number | null
           type?: string | null
           worker_name?: never
@@ -150230,6 +150234,7 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           assignment_state?: never
+          brand_ids?: string[] | null
           created_at?: string | null
           date?: string | null
           done?: never
@@ -150241,6 +150246,7 @@ export type Database = {
           status?: string | null
           stop_list?: never
           stops?: never
+          territory?: string | null
           total_stops?: number | null
           type?: string | null
           worker_name?: never
