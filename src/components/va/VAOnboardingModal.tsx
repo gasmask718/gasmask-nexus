@@ -84,7 +84,7 @@ export function VAOnboardingModal({ isOpen, onSessionStarted }: VAOnboardingModa
     if (!forceReleaseId) return;
     setIsForceReleasing(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('dc_phone_numbers')
         .update({ assigned_to: null })
         .eq('id', forceReleaseId);
