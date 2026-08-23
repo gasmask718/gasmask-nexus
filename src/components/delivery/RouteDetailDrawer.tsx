@@ -226,16 +226,30 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
                           {idx + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-medium truncate">{stop.store?.store_name || 'Unknown Store'}</p>
                             <Badge variant="outline" className="text-xs capitalize flex-shrink-0">
                               {stop.status || 'pending'}
                             </Badge>
+                            {(owedByStore[stop.store_id] || 0) > 0 && (
+                              <Badge className="bg-red-500/10 text-red-500 border-red-500/30 text-xs flex-shrink-0">
+                                Owes ${Math.round(owedByStore[stop.store_id]).toLocaleString()}
+                              </Badge>
+                            )}
                           </div>
                           {stop.store?.address && (
                             <p className="text-xs text-muted-foreground truncate">{stop.store.address}</p>
                           )}
-                          <div className="flex gap-2 mt-1 flex-wrap">
+                          {stop.stop_reason && (
+                            <Badge variant="outline" className="border-primary/40 text-primary text-[10px] mt-1">
+                              {stop.stop_reason === 'physical_inventory_check'
+                                ? '📦 Physical inventory check'
+                                : stop.stop_reason === 'update_contact_details'
+                                ? '📞 Update contact details'
+                                : stop.stop_reason.replace(/_/g, ' ')}
+                            </Badge>
+                          )}
+                          <div className="flex gap-2 mt-1 flex-wrap items-center">
                             {stop.brand_id && (
                               <Badge variant="secondary" className="text-[10px]">{stop.brand_id}</Badge>
                             )}
@@ -243,6 +257,22 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
                               <span className="text-[10px] text-muted-foreground">{stop.order_ids.length} order(s)</span>
                             )}
                           </div>
+                          {stop.store?.phone && (
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <ClickablePhone
+                                phone={stop.store.phone}
+                                entityType="store"
+                                entityId={stop.store_id}
+                                entityName={stop.store?.store_name || 'Store'}
+                                className="text-xs"
+                              />
+                              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" asChild>
+                                <a href={`sms:${stop.store.phone}`}>
+                                  <MessageSquare className="h-3 w-3 mr-1" /> Text
+                                </a>
+                              </Button>
+                            </div>
+                          )}
                           <SLAAlertBadges alert={slaMap.get(stop.store_id)} compact className="mt-1" />
                         </div>
                       </div>
