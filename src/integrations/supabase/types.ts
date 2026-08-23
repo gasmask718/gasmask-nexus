@@ -134552,6 +134552,9 @@ export type Database = {
       va_companies: {
         Row: {
           brand_color: string | null
+          brands: string[] | null
+          business_ids: string[] | null
+          calls_for: string | null
           created_at: string
           id: string
           is_active: boolean
@@ -134562,6 +134565,9 @@ export type Database = {
         }
         Insert: {
           brand_color?: string | null
+          brands?: string[] | null
+          business_ids?: string[] | null
+          calls_for?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -134572,6 +134578,9 @@ export type Database = {
         }
         Update: {
           brand_color?: string | null
+          brands?: string[] | null
+          business_ids?: string[] | null
+          calls_for?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -134614,6 +134623,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "va_company_memberships_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_va_company_access"
+            referencedColumns: ["company_id"]
+          },
           {
             foreignKeyName: "va_company_memberships_company_id_fkey"
             columns: ["company_id"]
@@ -134857,6 +134873,13 @@ export type Database = {
           token?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "va_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_va_company_access"
+            referencedColumns: ["company_id"]
+          },
           {
             foreignKeyName: "va_invites_company_id_fkey"
             columns: ["company_id"]
@@ -143029,14 +143052,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -153195,6 +153218,23 @@ export type Database = {
           },
         ]
       }
+      v_va_company_access: {
+        Row: {
+          brand_color: string | null
+          brands: string[] | null
+          business_ids: string[] | null
+          calls_for: string | null
+          company_id: string | null
+          is_active: boolean | null
+          is_primary: boolean | null
+          name: string | null
+          scope_note: string | null
+          slug: string | null
+          user_id: string | null
+          vas_assigned: number | null
+        }
+        Relationships: []
+      }
       v_va_directory: {
         Row: {
           avatar_url: string | null
@@ -154836,7 +154876,9 @@ export type Database = {
           to_snapshot: string
         }[]
       }
-      disarm_dialer: { Args: never; Returns: Json }
+      disarm_dialer:
+        | { Args: never; Returns: Json }
+        | { Args: { p_business_id?: string }; Returns: Json }
       distribute_leads_to_vas: { Args: never; Returns: Json }
       engagement_scores_tick: { Args: never; Returns: Json }
       enrich_store_contacts: { Args: never; Returns: Json }
