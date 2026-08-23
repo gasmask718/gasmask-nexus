@@ -66,6 +66,14 @@ function IntelligenceBody() {
   const { data: margins = [] } = useMarginRows();
   const { data: leakage = [] } = useLeakageRows();
   const { data: baselines = [] } = useConversionBaselines();
+  const { data: batchYields = [] } = useBatchYield();
+
+  // v_tobacco_conversion_intelligence deliberately excludes is_test batches.
+  // When it is empty but raw yield rows exist, every recorded batch is a test
+  // row — say so instead of showing a bare empty box.
+  const onlyTestBatches = conversion.length === 0 && batchYields.length > 0;
+  const testOnlyMessage =
+    'Every recorded batch is flagged as a test batch, and test rows never enter conversion intelligence. Unflag them in the batch record, or record the first real batch.';
 
   // ── Per-office rollup ────────────────────────────────────────────────
   const officeStats = useMemo(() => {
@@ -297,7 +305,7 @@ function IntelligenceBody() {
           Offices side by side — ranked by conversion
         </h2>
         {officeStats.length === 0 ? (
-          <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">No production data yet.</CardContent></Card>
+          <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">{onlyTestBatches ? testOnlyMessage : 'No production data yet.'}</CardContent></Card>
         ) : (
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
             {officeStats.map((s, idx) => (
@@ -342,7 +350,7 @@ function IntelligenceBody() {
         </CardHeader>
         <CardContent>
           {chartData.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">No conversion data yet.</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">{onlyTestBatches ? testOnlyMessage : 'No conversion data yet.'}</p>
           ) : (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
