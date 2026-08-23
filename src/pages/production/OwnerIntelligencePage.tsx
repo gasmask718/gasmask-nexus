@@ -29,6 +29,7 @@ import {
   useConversionBaselines,
   type ConversionRow,
 } from '@/hooks/useOwnerIntelligence';
+import { useBatchYield } from '@/hooks/useYieldWatch';
 import {
   Brain,
   AlertTriangle,
