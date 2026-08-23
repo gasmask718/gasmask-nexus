@@ -321,14 +321,39 @@ export function useRouteDetail(routeId: string | null) {
           .select(`*, performer:profiles!dispatch_interventions_performed_by_fkey(id, name, role)`)
           .eq('route_id', routeId)
           .order('created_at', { ascending: false }),
+        supabase
+          .from('v_routes_overview' as any)
+          .select('worker_name, assignment_state, money_on_this_route')
+          .eq('route_id', routeId)
+          .maybeSingle(),
       ]);
+
+      // Money owed per stop's store (unpaid sale invoices) — same logic as v_routes_overview
+      const stopsData: any[] = stopsRes.data || [];
+      const storeIds = [...new Set(stopsData.map((s: any) => s.store_id).filter(Boolean))];
+      let owedByStore: Record<string, number> = {};
+      if (storeIds.length > 0) {
+        const { data: inv } = await supabase
+          .from('invoices' as any)
+          .select('store_id, total_amount, amount_paid')
+          .in('store_id', storeIds)
+          .is('deleted_at', null)
+          .eq('revenue_role', 'sale')
+          .or('payment_status.is.null,payment_status.neq.paid');
+        for (const row of (inv as any[]) || []) {
+          owedByStore[row.store_id] = (owedByStore[row.store_id] || 0)
+            + (Number(row.total_amount) || 0) - (Number(row.amount_paid) || 0);
+        }
+      }
 
       return {
         route: routeRes.data,
-        stops: stopsRes.data || [],
+        stops: stopsData,
         profit: profitRes.data,
         payout: payoutRes.data,
         interventions: interventionsRes.data || [],
+        overview: (overviewRes.data as any) || null,
+        owedByStore,
       };
     },
     enabled: !!routeId,
