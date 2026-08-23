@@ -358,6 +358,15 @@ export default function RoutesPage() {
                             </span>
                           </div>
                         </TableCell>
+                        <TableCell className="text-right">
+                          {route.money_on_this_route != null && route.money_on_this_route > 0 ? (
+                            <span className="text-sm font-semibold tabular-nums text-amber-500">
+                              ${route.money_on_this_route.toLocaleString()}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <span className="text-sm text-muted-foreground">{route.territory || '—'}</span>
                         </TableCell>
