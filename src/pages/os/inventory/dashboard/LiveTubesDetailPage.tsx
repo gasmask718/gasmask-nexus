@@ -58,11 +58,11 @@ export default function LiveTubesDetailPage() {
   });
 
   // Get unique cities
-  const cities = [...new Set(storeInventory.map((s: any) => s.warehouses?.city).filter(Boolean))].sort();
+  const cities: string[] = [...new Set(storeInventory.map((s: any) => s.warehouses?.city as string).filter(Boolean))].sort();
 
   // Get unique brands
-  const brands = [...new Set(storeInventory.map((s: any) => 
-    (s.products as any)?.brands?.name
+  const brands: string[] = [...new Set(storeInventory.map((s: any) =>
+    (s.products as any)?.brands?.name as string
   ).filter(Boolean))].sort();
 
   // Calculate totals
