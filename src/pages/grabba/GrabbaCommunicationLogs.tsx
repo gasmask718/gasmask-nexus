@@ -24,7 +24,7 @@ export default function GrabbaCommunicationLogs() {
     queryFn: async () => {
       const brandsToQuery = getBrandQuery();
       let query = supabase
-        .from('communication_logs')
+        .from('communication_logs' as any)
         .select(`
           *,
           contact:crm_contacts(name),
