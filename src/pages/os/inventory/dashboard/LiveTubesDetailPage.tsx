@@ -40,8 +40,8 @@ export default function LiveTubesDetailPage() {
   const { data: storeInventory = [], isLoading } = useQuery({
     queryKey: ['live-tubes-detail'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('inventory_stock')
+      const { data, error } = await (supabase
+        .from('inventory_stock') as any)
         .select(`
           id,
           quantity_on_hand,
@@ -58,12 +58,12 @@ export default function LiveTubesDetailPage() {
   });
 
   // Get unique cities
-  const cities = [...new Set(storeInventory.map((s: any) => s.warehouses?.city).filter(Boolean))].sort();
+  const cities: string[] = ([...new Set(storeInventory.map((s: any) => s.warehouses?.city).filter(Boolean))] as string[]).sort();
 
   // Get unique brands
-  const brands = [...new Set(storeInventory.map((s: any) => 
+  const brands: string[] = ([...new Set(storeInventory.map((s: any) =>
     (s.products as any)?.brands?.name
-  ).filter(Boolean))].sort();
+  ).filter(Boolean))] as string[]).sort();
 
   // Calculate totals
   const totalOnHand = storeInventory.reduce((sum: number, item: any) => sum + (item.quantity_on_hand || 0), 0);

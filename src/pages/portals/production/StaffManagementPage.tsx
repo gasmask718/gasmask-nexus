@@ -378,13 +378,7 @@ function StaffGrid({ staff, roleIcon, onUpdateRole, onRemove, isLoading }: Staff
                   Since {new Date(member.assigned_at).toLocaleDateString()}
                 </span>
               </div>
-              {member.user_id && (
-                <Link to={`/portals/production/staff/${member.user_id}`}>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs gap-1">
-                    <Eye className="h-3 w-3" /> Profile
-                  </Button>
-                </Link>
-              )}
+              {/* Staff detail route does not exist — link removed until it is built. */}
             </div>
           </CardContent>
         </Card>

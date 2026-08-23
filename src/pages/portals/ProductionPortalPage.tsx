@@ -29,6 +29,7 @@ import {
   useDailyCloseout,
   useTodayBatches,
   useCloseDay,
+  useMyOfficeAssignments,
 } from '@/hooks/useProductionPortal';
 import {
   ProductionKPICards,
@@ -65,6 +66,7 @@ import {
   DailyExecutionDashboard,
   SupervisorScorecard,
   BrandYieldAnalyticsPanel,
+  ShipmentsPanel,
 } from '@/components/production';
 import { WorkerTaskTimer } from '@/components/production/WorkerTaskTimer';
 import { LaborEfficiencyPanel } from '@/components/production/LaborEfficiencyPanel';
@@ -96,6 +98,7 @@ import {
   Leaf,
   BarChart3,
   Award,
+  Truck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -141,6 +144,15 @@ export default function ProductionPortalPage() {
   const closeDay = useCloseDay();
   const { data: pendingSubmissionCount = 0 } = usePendingSubmissionCount(selectedOfficeId);
   const rbac = useProductionRBAC();
+  const { data: myAssignments = [] } = useMyOfficeAssignments();
+
+  // Office leaders (production role with an assignment) only see their own
+  // office(s). Core staff (admin tier) and unassigned managers see all.
+  const isOfficeScoped = rbac.tier !== 'admin' && myAssignments.length > 0;
+  const visibleOffices = isOfficeScoped
+    ? offices.filter(o => myAssignments.some(a => a.office_id === o.id))
+    : offices;
+  const singleOffice = visibleOffices.length === 1;
   // Check if wizard was completed for this office
   useEffect(() => {
     if (selectedOfficeId) {
@@ -149,12 +161,13 @@ export default function ProductionPortalPage() {
     }
   }, [selectedOfficeId]);
 
-  // Auto-select first office when loaded
+  // Auto-select first visible office when loaded (for an office leader this
+  // is their assigned office — the selector is hidden below when there's one).
   useEffect(() => {
-    if (offices.length > 0 && !selectedOfficeId) {
-      setSelectedOfficeId(offices[0].id);
+    if (visibleOffices.length > 0 && !visibleOffices.some(o => o.id === selectedOfficeId)) {
+      setSelectedOfficeId(visibleOffices[0].id);
     }
-  }, [offices, selectedOfficeId]);
+  }, [visibleOffices, selectedOfficeId]);
 
   const handleWizardDismiss = () => {
     const completedOffices = JSON.parse(localStorage.getItem(WIZARD_COMPLETE_KEY) || '[]');
@@ -190,7 +203,7 @@ export default function ProductionPortalPage() {
   // Show wizard if not dismissed and office is selected
   const showWizard = selectedOfficeId && !wizardDismissed && !isDayClosed;
 
-  const activeOffices = offices.filter(o => o.active !== false);
+  const activeOffices = visibleOffices.filter(o => o.active !== false);
 
   return (
     <EnhancedPortalLayout
@@ -200,7 +213,7 @@ export default function ProductionPortalPage() {
       quickActions={[
         { label: 'All Offices', href: '/portals/production/offices' },
         { label: t('production.staff'), href: '/portals/production/staff' },
-        { label: 'Reports', href: '/portals/production/reports' },
+        { label: 'Reports', href: '/portals/production/war-room' },
       ]}
     >
       {/* Training Mode Banner */}
@@ -217,6 +230,9 @@ export default function ProductionPortalPage() {
               <Building2 className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">{t('production.select_office')}</p>
+                {singleOffice ? (
+                  <p className="text-lg font-semibold mt-1">{visibleOffices[0].name}</p>
+                ) : (
                 <Select
                   value={selectedOfficeId}
                   onValueChange={setSelectedOfficeId}
@@ -242,6 +258,7 @@ export default function ProductionPortalPage() {
                     })}
                   </SelectContent>
                 </Select>
+                )}
               </div>
             </div>
 
@@ -352,8 +369,10 @@ export default function ProductionPortalPage() {
             />
           </div>
 
-          {/* Tabbed Sections */}
-          <Tabs defaultValue="command" className="space-y-4">
+          {/* Tabbed Sections — office leaders land on daily entry (batches),
+              HQ staff land on the command view. key forces the default to
+              apply once role/assignments resolve. */}
+          <Tabs key={isOfficeScoped ? 'batches' : 'command'} defaultValue={isOfficeScoped ? 'batches' : 'command'} className="space-y-4">
             <TabsList className="flex flex-wrap gap-1 h-auto">
               {/* ── OPERATE (DO) ── */}
               <TabsTrigger value="command" className="flex items-center gap-2">
@@ -399,6 +418,10 @@ export default function ProductionPortalPage() {
               <TabsTrigger value="inventory" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 <span className="hidden sm:inline"><BilingualLabel tKey="production.inventory" en="Inventory" /></span>
+              </TabsTrigger>
+              <TabsTrigger value="shipments" className="flex items-center gap-2">
+                <Truck className="h-4 w-4" />
+                <span className="hidden sm:inline"><BilingualLabel tKey="production.shipments" en="Shipments" /></span>
               </TabsTrigger>
               <TabsTrigger value="performance" className="flex items-center gap-2">
                 <Target className="h-4 w-4" />
@@ -500,7 +523,7 @@ export default function ProductionPortalPage() {
             </TabsContent>
 
             <TabsContent value="costs">
-              <ProductionRBACGate currentTier={rbac.tier} requiredTier="admin" resourceName="Cost & Margin Analytics">
+              <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Cost & Margin Analytics">
                 <div className="grid lg:grid-cols-3 gap-4">
                   <div className="lg:col-span-1">
                     <CostBreakdownPanel officeId={selectedOfficeId} />
@@ -518,6 +541,10 @@ export default function ProductionPortalPage() {
                 <InventoryPipeline officeId={selectedOfficeId} />
                 <RawMaterialIntake officeId={selectedOfficeId} />
               </div>
+            </TabsContent>
+
+            <TabsContent value="shipments">
+              <ShipmentsPanel officeId={selectedOfficeId} />
             </TabsContent>
 
             <TabsContent value="performance">

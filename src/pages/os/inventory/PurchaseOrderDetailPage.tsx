@@ -79,8 +79,8 @@ export default function PurchaseOrderDetailPage() {
   const { data: poItems } = useQuery({
     queryKey: ['purchase-order-items', poId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('purchase_order_items')
+      const { data, error } = await (supabase
+        .from('purchase_order_items') as any)
         .select(`
           *,
           product:products(id, name, sku)

@@ -12336,6 +12336,13 @@ export type Database = {
             referencedRelation: "routes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "analytics_computation_log_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
+          },
         ]
       }
       api_clients: {
@@ -51451,6 +51458,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "deliveries_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
+          },
+          {
             foreignKeyName: "deliveries_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
@@ -51656,6 +51670,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "routes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_alerts_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
           },
           {
             foreignKeyName: "delivery_alerts_stop_id_fkey"
@@ -53727,6 +53748,13 @@ export type Database = {
             referencedRelation: "routes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "dispatch_action_proposals_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
+          },
         ]
       }
       dispatch_interventions: {
@@ -53829,6 +53857,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "routes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_interventions_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
           },
           {
             foreignKeyName: "dispatch_interventions_stop_id_fkey"
@@ -54416,6 +54451,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "driver_assignments_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
+          },
+          {
             foreignKeyName: "driver_assignments_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
@@ -54996,6 +55038,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "routes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_sessions_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
           },
           {
             foreignKeyName: "driver_sessions_user_id_fkey"
@@ -89156,6 +89205,13 @@ export type Database = {
             referencedRelation: "routes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "playbook_actions_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
+          },
         ]
       }
       playbook_executions: {
@@ -93354,6 +93410,106 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "production_office_managers_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_office_shipment_items: {
+        Row: {
+          brand: string | null
+          created_at: string
+          expected_yield_boxes: number | null
+          id: string
+          material_type: string
+          quantity: number
+          received_quantity: number | null
+          shipment_id: string
+          total_cost: number | null
+          unit: string
+          unit_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          expected_yield_boxes?: number | null
+          id?: string
+          material_type: string
+          quantity: number
+          received_quantity?: number | null
+          shipment_id: string
+          total_cost?: number | null
+          unit?: string
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          expected_yield_boxes?: number | null
+          id?: string
+          material_type?: string
+          quantity?: number
+          received_quantity?: number | null
+          shipment_id?: string
+          total_cost?: number | null
+          unit?: string
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_office_shipment_items_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "production_office_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_office_shipments: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          office_id: string
+          received_at: string | null
+          received_by: string | null
+          sent_by: string | null
+          sent_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          office_id: string
+          received_at?: string | null
+          received_by?: string | null
+          sent_by?: string | null
+          sent_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          office_id?: string
+          received_at?: string | null
+          received_by?: string | null
+          sent_by?: string | null
+          sent_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_office_shipments_office_id_fkey"
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "production_offices"
@@ -99344,6 +99500,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "route_analytics_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: true
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
+          },
+          {
             foreignKeyName: "route_analytics_worker_id_fkey"
             columns: ["worker_id"]
             isOneToOne: false
@@ -99674,6 +99837,13 @@ export type Database = {
             referencedRelation: "routes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "route_profit_metrics_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: true
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
+          },
         ]
       }
       route_run_20260817: {
@@ -99774,6 +99944,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "routes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_stops_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
           },
           {
             foreignKeyName: "route_stops_store_id_fkey"
@@ -137818,6 +137995,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "wholesale_orders_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
+          },
+          {
             foreignKeyName: "wholesale_orders_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
@@ -140309,6 +140493,13 @@ export type Database = {
             referencedRelation: "routes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "worker_payouts_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "v_routes_overview"
+            referencedColumns: ["route_id"]
+          },
         ]
       }
       worker_performance: {
@@ -142553,14 +142744,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -149372,6 +149563,21 @@ export type Database = {
         }
         Relationships: []
       }
+      v_office_material_balance: {
+        Row: {
+          brand: string | null
+          expected_on_hand: number | null
+          material_type: string | null
+          office_id: string | null
+          office_name: string | null
+          total_consumed: number | null
+          total_issued: number | null
+          total_issued_cost: number | null
+          total_received: number | null
+          unit: string | null
+        }
+        Relationships: []
+      }
       v_payout_batch_export: {
         Row: {
           ambassador_id: string | null
@@ -149983,6 +150189,71 @@ export type Database = {
           zip: string | null
         }
         Relationships: []
+      }
+      v_routes_overview: {
+        Row: {
+          assigned_to: string | null
+          assignment_state: string | null
+          created_at: string | null
+          date: string | null
+          done: number | null
+          money_on_this_route: number | null
+          remaining: number | null
+          route_id: string | null
+          route_name: string | null
+          route_state: string | null
+          status: string | null
+          stop_list: string | null
+          stops: number | null
+          total_stops: number | null
+          type: string | null
+          worker_name: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          assignment_state?: never
+          created_at?: string | null
+          date?: string | null
+          done?: never
+          money_on_this_route?: never
+          remaining?: never
+          route_id?: string | null
+          route_name?: never
+          route_state?: string | null
+          status?: string | null
+          stop_list?: never
+          stops?: never
+          total_stops?: number | null
+          type?: string | null
+          worker_name?: never
+        }
+        Update: {
+          assigned_to?: string | null
+          assignment_state?: never
+          created_at?: string | null
+          date?: string | null
+          done?: never
+          money_on_this_route?: never
+          remaining?: never
+          route_id?: string | null
+          route_name?: never
+          route_state?: string | null
+          status?: string | null
+          stop_list?: never
+          stops?: never
+          total_stops?: number | null
+          type?: string | null
+          worker_name?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routes_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_sales_funnel: {
         Row: {
@@ -155051,6 +155322,12 @@ export type Database = {
       process_paid_order: { Args: { p_order_id: string }; Returns: Json }
       process_recalc_queue: { Args: never; Returns: Json }
       process_settlement_releases: { Args: never; Returns: number }
+      production_core_staff: { Args: { p_user: string }; Returns: boolean }
+      production_office_member: {
+        Args: { p_office: string; p_user: string }
+        Returns: boolean
+      }
+      production_staff: { Args: { p_user: string }; Returns: boolean }
       promote_quick_contact: {
         Args: {
           p_due_date?: string

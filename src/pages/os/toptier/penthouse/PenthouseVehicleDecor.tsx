@@ -221,7 +221,7 @@ function BookingsTab() {
   const { data: bookings = [] } = useQuery({
     queryKey: ['decor-bookings'],
     queryFn: async () => {
-      const { data } = await supabase.from('decor_bookings').select('*, decor_providers(name), vehicle_decor_styles(name)').order('created_at', { ascending: false });
+      const { data } = await (supabase.from('decor_bookings') as any).select('*, decor_providers(name), vehicle_decor_styles(name)').order('created_at', { ascending: false });
       return data || [];
     },
   });
@@ -276,7 +276,7 @@ function TransformationsTab() {
   const { data: providers = [] } = useQuery({ queryKey: ['decor-providers'], queryFn: async () => { const { data } = await supabase.from('decor_providers_legacy').select('id,name'); return data || []; } });
   const { data: items = [] } = useQuery({
     queryKey: ['decor-transformations'],
-    queryFn: async () => { const { data } = await supabase.from('decor_transformations').select('*, decor_providers(name)').order('created_at', { ascending: false }); return data || []; },
+    queryFn: async () => { const { data } = await (supabase.from('decor_transformations') as any).select('*, decor_providers(name)').order('created_at', { ascending: false }); return data || []; },
   });
 
   const create = useMutation({
@@ -334,7 +334,7 @@ function TransformationsTab() {
 function MatchesTab() {
   const { data: matches = [] } = useQuery({
     queryKey: ['decor-matches'],
-    queryFn: async () => { const { data } = await supabase.from('decor_matches').select('*, decor_providers(name), decor_bookings(event_type, status)').order('match_score', { ascending: false }); return data || []; },
+    queryFn: async () => { const { data } = await (supabase.from('decor_matches') as any).select('*, decor_providers(name), decor_bookings(event_type, status)').order('match_score', { ascending: false }); return data || []; },
   });
 
   return (

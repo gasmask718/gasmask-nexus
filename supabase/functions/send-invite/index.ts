@@ -23,6 +23,7 @@ const ROLE_COPY: Record<string, { title: string; line: string }> = {
   va: { title: "GasMask — VA Invite", line: "You've been invited to join GasMask as a Virtual Assistant." },
   driver: { title: "GasMask — Driver Invite", line: "You've been invited to join GasMask as a Driver." },
   biker: { title: "GasMask — Biker Invite", line: "You've been invited to join GasMask as a Biker." },
+  production: { title: "GasMask — Production Office Invite", line: "You've been invited to run a GasMask production office." },
 };
 
 const INVITABLE_ROLES = Object.keys(ROLE_COPY);
@@ -89,6 +90,7 @@ Deno.serve(async (req) => {
               message_body: msg,
               idempotency_key: `invite-${invite.id}-${Date.now()}`,
               skip_cooldown: true,
+              send_class: "conversational",
               purpose: `${role}_invite`,
             },
           });

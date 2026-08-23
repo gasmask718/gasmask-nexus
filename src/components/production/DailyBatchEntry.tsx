@@ -29,6 +29,7 @@ import {
 } from '@/hooks/useProductionPortal';
 import { useDeviationGate } from '@/hooks/useDeviationGate';
 import { useAllocationCheck } from '@/hooks/useMaterialAllocations';
+import { useRecordBatchMaterials } from '@/hooks/useProductionMaterials';
 import { supabase } from '@/integrations/supabase/client';
 import { Boxes, Plus, Play, CheckCircle, XCircle, ChevronRight, Scale, Package, AlertTriangle, User, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -75,6 +76,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
   const { data: workers = [] } = useProductionWorkers(officeId);
   const createBatch = useCreateBatch();
   const updateBatch = useUpdateBatch();
+  const recordMaterials = useRecordBatchMaterials();
   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<ProductionBatch | null>(null);
@@ -207,6 +209,20 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
       status: 'completed',
       completed_at: new Date().toISOString(),
     });
+
+    // Record material consumption so the office balance ledger stays honest.
+    // Previously this hook existed but was never called — tobacco/tube/box
+    // usage never landed in production_material_usage.
+    if (batch.office_id) {
+      recordMaterials.mutate({
+        batchId: batch.id,
+        officeId: batch.office_id,
+        tobaccoLbs: batch.tobacco_lbs || 0,
+        productOutputUnits: (batch as any).product_output_units || 0,
+        boxesProduced: (batch as any).boxes_full || batch.boxes_produced || 0,
+        productType: (batch as any).product_type || 'tubes',
+      });
+    }
   };
 
   const toggleWorker = (workerId: string) => {
