@@ -14974,6 +14974,13 @@ export type Database = {
             foreignKeyName: "batch_cost_history_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -14982,6 +14989,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
           {
@@ -92376,6 +92390,13 @@ export type Database = {
             foreignKeyName: "production_batch_costs_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: true
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_batch_costs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: true
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -92384,6 +92405,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: true
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_batch_costs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: true
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
         ]
@@ -92470,6 +92498,13 @@ export type Database = {
             foreignKeyName: "production_batch_outputs_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_batch_outputs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -92478,6 +92513,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_batch_outputs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
           {
@@ -92810,6 +92852,13 @@ export type Database = {
             foreignKeyName: "production_communication_log_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_communication_log_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -92818,6 +92867,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_communication_log_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
           {
@@ -93096,6 +93152,13 @@ export type Database = {
             foreignKeyName: "production_demand_overrides_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_demand_overrides_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -93104,6 +93167,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_demand_overrides_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
         ]
@@ -93187,6 +93257,13 @@ export type Database = {
             foreignKeyName: "production_history_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -93195,6 +93272,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
           {
@@ -93249,6 +93333,13 @@ export type Database = {
             foreignKeyName: "production_inventory_transitions_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_inventory_transitions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -93257,6 +93348,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_inventory_transitions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
         ]
@@ -94124,6 +94222,13 @@ export type Database = {
             foreignKeyName: "production_worker_attendance_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_attendance_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -94132,6 +94237,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_attendance_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
           {
@@ -94226,6 +94338,13 @@ export type Database = {
             foreignKeyName: "production_worker_earnings_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_earnings_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -94234,6 +94353,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_earnings_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
           {
@@ -94611,6 +94737,13 @@ export type Database = {
             foreignKeyName: "production_worker_submissions_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_submissions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -94619,6 +94752,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_submissions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
           {
@@ -94747,6 +94887,13 @@ export type Database = {
             foreignKeyName: "production_worker_tasks_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_tasks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -94755,6 +94902,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_tasks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
           {
@@ -95470,6 +95624,13 @@ export type Database = {
             foreignKeyName: "profit_per_lb_snapshots_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "profit_per_lb_snapshots_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -95478,6 +95639,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "profit_per_lb_snapshots_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
         ]
@@ -141731,6 +141899,45 @@ export type Database = {
           },
         ]
       }
+      yield_standards: {
+        Row: {
+          brand: string
+          created_at: string | null
+          effective_from: string
+          effective_to: string | null
+          expected_boxes_per_lb: number
+          id: string
+          note: string | null
+          set_by: string | null
+          tolerance_pct: number
+          tube_size: string | null
+        }
+        Insert: {
+          brand: string
+          created_at?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          expected_boxes_per_lb: number
+          id?: string
+          note?: string | null
+          set_by?: string | null
+          tolerance_pct?: number
+          tube_size?: string | null
+        }
+        Update: {
+          brand?: string
+          created_at?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          expected_boxes_per_lb?: number
+          id?: string
+          note?: string | null
+          set_by?: string | null
+          tolerance_pct?: number
+          tube_size?: string | null
+        }
+        Relationships: []
+      }
       zip_backfill_staging: {
         Row: {
           basis: string | null
@@ -142744,14 +142951,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -147028,6 +147235,13 @@ export type Database = {
             foreignKeyName: "batch_cost_history_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -147036,6 +147250,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
           {
@@ -147113,6 +147334,13 @@ export type Database = {
             foreignKeyName: "production_worker_tasks_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_tasks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -147124,7 +147352,40 @@ export type Database = {
             referencedColumns: ["batch_id"]
           },
           {
+            foreignKeyName: "production_worker_tasks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
+            referencedColumns: ["batch_id"]
+          },
+          {
             foreignKeyName: "production_worker_tasks_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_batch_yield: {
+        Row: {
+          batch_date: string | null
+          batch_id: string | null
+          boxes_per_100_tubes: number | null
+          boxes_per_lb: number | null
+          boxes_produced: number | null
+          brand: string | null
+          lbs_per_box: number | null
+          office: string | null
+          office_id: string | null
+          status: string | null
+          tobacco_lbs: number | null
+          tubes_total: number | null
+          waste_lbs: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_batches_office_id_fkey"
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "production_offices"
@@ -149983,6 +150244,13 @@ export type Database = {
             foreignKeyName: "batch_cost_history_batch_id_fkey"
             columns: ["batch_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_yield"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
             referencedRelation: "v_production_margin_analysis"
             referencedColumns: ["batch_id"]
           },
@@ -149991,6 +150259,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_yield_watch"
             referencedColumns: ["batch_id"]
           },
           {
@@ -152923,6 +153198,37 @@ export type Database = {
           wholesale_status?: string | null
         }
         Relationships: []
+      }
+      v_yield_watch: {
+        Row: {
+          actual_bpl: number | null
+          batch_date: string | null
+          batch_id: string | null
+          boxes_expected: number | null
+          boxes_per_lb: number | null
+          boxes_produced: number | null
+          boxes_short_or_over: number | null
+          brand: string | null
+          expected_bpl: number | null
+          office: string | null
+          office_id: string | null
+          status: string | null
+          tobacco_lbs: number | null
+          tolerance: number | null
+          tube_size: string | null
+          tubes_total: number | null
+          verdict: string | null
+          waste_lbs: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_batches_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendor_fulfillment_view: {
         Row: {

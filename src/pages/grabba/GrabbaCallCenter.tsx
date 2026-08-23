@@ -21,7 +21,7 @@ export default function GrabbaCallCenter() {
     queryKey: ['grabba-call-logs', selectedBrand],
     queryFn: async () => {
       const brandsToQuery = getBrandQuery();
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('communication_logs')
         .select(`
           *,

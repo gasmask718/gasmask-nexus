@@ -34,16 +34,13 @@ import {
 import {
   ProductionKPICards,
   WorkerManagement,
-  DailyBatchEntry,
   ToolsInventory,
   ProductionHistoryPanel,
   BatchHistoryPanel,
-  VariancePanel,
   DayClosePanel,
   WorkerAttendance,
   CommunicationsLog,
   FirstTimeWizard,
-  DailyChecklist,
   TrainingModeBanner,
   TrainingModeToggle,
   ActiveBatchBanner,
@@ -67,10 +64,10 @@ import {
   SupervisorScorecard,
   BrandYieldAnalyticsPanel,
   ShipmentsPanel,
-  MaterialBalanceCard,
   ProductionLogsTable,
 } from '@/components/production';
 import { WorkerTaskTimer } from '@/components/production/WorkerTaskTimer';
+import { OfficeLeaderToday } from '@/components/production/OfficeLeaderToday';
 import { LaborEfficiencyPanel } from '@/components/production/LaborEfficiencyPanel';
 import { usePendingSubmissionCount } from '@/hooks/useWorkerSubmissions';
 import { useProductionRBAC } from '@/hooks/useProductionRBAC';
@@ -400,19 +397,22 @@ export default function ProductionPortalPage() {
               </TabsTrigger>
             </TabsList>
 
-            {/* ── TODAY: enter output · command · submissions · close day ── */}
+            {/* ── TODAY: the office leader's landing view — ONE screen, no tabs.
+                Order: today header → enter output (live yield as they type) →
+                what you still hold → close the day. Managers/admins additionally
+                get Command and Submissions behind nested tabs. ── */}
             <TabsContent value="today">
-              <Tabs defaultValue="entry" className="space-y-4">
-                <TabsList className="h-auto">
-                  <TabsTrigger value="entry" className="flex items-center gap-2">
-                    <Boxes className="h-4 w-4" />
-                    <BilingualLabel tKey="production.enter_output" en="Enter Output" />
-                  </TabsTrigger>
-                  <TabsTrigger value="command" className="flex items-center gap-2">
-                    <Activity className="h-4 w-4" />
-                    <BilingualLabel tKey="production.command" en="Command" />
-                  </TabsTrigger>
-                  {rbac.canApproveSubmissions && (
+              {rbac.canApproveSubmissions ? (
+                <Tabs defaultValue="entry" className="space-y-4">
+                  <TabsList className="h-auto">
+                    <TabsTrigger value="entry" className="flex items-center gap-2">
+                      <Boxes className="h-4 w-4" />
+                      <BilingualLabel tKey="production.enter_output" en="Enter Output" />
+                    </TabsTrigger>
+                    <TabsTrigger value="command" className="flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      <BilingualLabel tKey="production.command" en="Command" />
+                    </TabsTrigger>
                     <TabsTrigger value="submissions" className="flex items-center gap-2 relative">
                       <ClipboardCheck className="h-4 w-4" />
                       <BilingualLabel tKey="production.submissions" en="Submissions" />
@@ -422,44 +422,31 @@ export default function ProductionPortalPage() {
                         </Badge>
                       )}
                     </TabsTrigger>
-                  )}
-                </TabsList>
+                  </TabsList>
 
-                {/* The office leader's landing view — one screen, no tabs:
-                    today's batch entry, checklist/close day, variance, and
-                    what the office still holds. */}
-                <TabsContent value="entry">
-                  <div className="grid lg:grid-cols-3 gap-4">
-                    <div className="lg:col-span-2">
-                      <DailyBatchEntry officeId={selectedOfficeId} />
-                    </div>
-                    <div className="space-y-4">
-                      <DailyChecklist
-                        hasBatch={hasBatch}
-                        hasOutput={hasOutput}
-                        hasVarianceReview={varianceAcknowledged || varianceAmount === 0}
-                        varianceAmount={varianceAmount}
-                        boxCount={kpis?.totalBoxes || 0}
-                        onCloseDay={handleCloseDay}
-                        isClosing={closeDay.isPending}
-                        isDayClosed={isDayClosed}
-                      />
-                      <VariancePanel officeId={selectedOfficeId} />
-                      <MaterialBalanceCard officeId={selectedOfficeId} />
-                    </div>
-                  </div>
-                </TabsContent>
+                  <TabsContent value="entry">
+                    <OfficeLeaderToday
+                      officeId={selectedOfficeId}
+                      officeName={selectedOffice?.name || ''}
+                    />
+                  </TabsContent>
 
-                <TabsContent value="command">
-                  <DailyCommandView officeId={selectedOfficeId} targetBoxes={selectedOffice?.daily_box_goal || 100} />
-                </TabsContent>
+                  <TabsContent value="command">
+                    <DailyCommandView officeId={selectedOfficeId} targetBoxes={selectedOffice?.daily_box_goal || 100} />
+                  </TabsContent>
 
-                <TabsContent value="submissions">
-                  <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Submission Approvals">
-                    <SubmissionApprovalQueue officeId={selectedOfficeId} />
-                  </ProductionRBACGate>
-                </TabsContent>
-              </Tabs>
+                  <TabsContent value="submissions">
+                    <ProductionRBACGate currentTier={rbac.tier} requiredTier="manager" resourceName="Submission Approvals">
+                      <SubmissionApprovalQueue officeId={selectedOfficeId} />
+                    </ProductionRBACGate>
+                  </TabsContent>
+                </Tabs>
+              ) : (
+                <OfficeLeaderToday
+                  officeId={selectedOfficeId}
+                  officeName={selectedOffice?.name || ''}
+                />
+              )}
             </TabsContent>
 
             {/* ── PEOPLE: workers · attendance · timer · performance · supervisor · payroll ── */}
