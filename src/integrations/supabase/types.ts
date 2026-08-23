@@ -142553,14 +142553,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -149332,6 +149332,43 @@ export type Database = {
           top_brand: string | null
           total_known_stores: number | null
           total_lifetime_tubes: number | null
+        }
+        Relationships: []
+      }
+      v_new_arrivals: {
+        Row: {
+          address: string | null
+          attention: string | null
+          blocker: string | null
+          borough: string | null
+          captured_by: string | null
+          contact_name: string | null
+          contacts: number | null
+          created_at: string | null
+          days_in_system: number | null
+          days_since_any_contact: number | null
+          kind: string | null
+          last_touch: string | null
+          name: string | null
+          neighborhood: string | null
+          orders: number | null
+          parent_store: string | null
+          phone: string | null
+          record_id: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      v_new_arrivals_summary: {
+        Row: {
+          cannot_be_called: number | null
+          cannot_be_visited: number | null
+          chase_this_week: number | null
+          converted: number | null
+          fresh_today: number | null
+          going_cold: number | null
+          lingering_30_days: number | null
+          total_new_90_days: number | null
         }
         Relationships: []
       }
