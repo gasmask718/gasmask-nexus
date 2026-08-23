@@ -68,8 +68,11 @@ export function VAActiveNumberSwitcher() {
                   <span className="text-[9px] text-slate-400">(default)</span>
                 )}
                 {num.is_ai_number && (
-                  <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-400">
-                    <Bot className="h-2.5 w-2.5" /> AI line
+                  <span
+                    className="inline-flex items-center gap-0.5 text-[9px] text-amber-400"
+                    title="Humans-first inbound is live: callbacks ring on-shift VAs and forward phones first; the AI concierge answers only if nobody picks up."
+                  >
+                    <Bot className="h-2.5 w-2.5" /> AI fallback
                   </span>
                 )}
               </span>
