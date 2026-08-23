@@ -544,6 +544,12 @@ export default function OwnerIntelligencePage() {
         <p className="text-muted-foreground mt-1">
           Cross-office conversion, cost, margin and leakage. This is the side of the floor an office leader never sees.
         </p>
+        <a
+          href="/portals/production/conversion"
+          className="text-sm text-primary underline-offset-4 hover:underline inline-block mt-1"
+        >
+          Deep dive: Conversion Intelligence &amp; baselines →
+        </a>
       </div>
       <ProductionRBACGate currentTier={rbac.tier} requiredTier="admin" resourceName="Owner Intelligence">
         <IntelligenceBody />

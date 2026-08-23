@@ -40,7 +40,7 @@ export function MaterialBalanceCard({ officeId }: { officeId: string }) {
           <p className="text-sm text-muted-foreground">{t('production.loading')}</p>
         ) : rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No materials issued yet — balances appear here when HQ ships material to this office.
+            {t('production.no_materials_yet')}
           </p>
         ) : (
           <div className="space-y-2">
