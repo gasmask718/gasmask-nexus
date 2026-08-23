@@ -11,6 +11,7 @@
 
 import { placeBlandCall } from "../_shared/bland.ts";
 import { isOnDNC } from "../_shared/dnc.ts";
+import { blandWebhookUrl } from "../_shared/dialer.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
@@ -277,7 +278,7 @@ Deno.serve(async (req) => {
       from: fromNumber,
       agent_id: agentId,
       first_sentence: lead_name ? `Hi, is this ${lead_name}?` : undefined,
-      webhook: `${SUPABASE_URL}/functions/v1/bland-agent-webhook`,
+      webhook: blandWebhookUrl(`${SUPABASE_URL}/functions/v1/bland-agent-webhook`),
       metadata: {
         lead_id: lead_id || null,
         lead_name: lead_name || null,

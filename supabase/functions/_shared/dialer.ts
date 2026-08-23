@@ -199,6 +199,23 @@ export function verifyBland(req: Request): { ok: boolean; reason?: string } {
 }
 
 /**
+ * Build the Bland post-call webhook URL with the shared secret appended as a
+ * query param. Bland's webhook delivery CANNOT set custom headers, so
+ * ?secret= is the only auth channel verifyBland() can accept from real Bland
+ * calls. Every function that registers a bland-agent-webhook URL with the
+ * Bland API MUST pass it through this helper — a bare URL means every
+ * post-call callback gets 401'd the moment BLAND_WEBHOOK_SECRET is set
+ * (regression of 2026-07-22: a month of call results lost).
+ * If the secret is unset the bare URL is returned (verification is a no-op).
+ */
+export function blandWebhookUrl(base: string): string {
+  const secret = Deno.env.get("BLAND_WEBHOOK_SECRET");
+  if (!secret) return base;
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}secret=${encodeURIComponent(secret)}`;
+}
+
+/**
  * Idempotent event log. The dedupe_key uses (call_sid|bland_call_id, event_type, optional bucket)
  * so duplicate webhook deliveries don't double-write.
  */

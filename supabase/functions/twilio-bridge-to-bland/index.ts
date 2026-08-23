@@ -25,6 +25,7 @@ import {
   verifyTwilio,
   readForm,
   logEvent,
+  blandWebhookUrl,
 } from "../_shared/dialer.ts";
 
 Deno.serve(async (req) => {
@@ -149,7 +150,7 @@ Deno.serve(async (req) => {
       return fail("Could not connect. Goodbye.");
     }
 
-    const blandWebhook = `${SUPABASE_URL}/functions/v1/bland-agent-webhook`;
+    const blandWebhook = blandWebhookUrl(`${SUPABASE_URL}/functions/v1/bland-agent-webhook`);
     const blandUrl = bland_agent_id
       ? `https://api.bland.ai/v1/agents/${bland_agent_id}/calls`
       : "https://api.bland.ai/v1/calls";

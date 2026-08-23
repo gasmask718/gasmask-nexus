@@ -5,6 +5,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
+import { blandWebhookUrl } from "../_shared/dialer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -93,7 +94,7 @@ Deno.serve(async (req) => {
     if (business_name) task = `Their business is "${business_name}". ` + task;
     if (context) task = `Additional context from the operator: ${context}\n\n` + task;
 
-    const webhook = `${SUPABASE_URL}/functions/v1/bland-agent-webhook?lead_id=${lead_id}&agent_type=brandaro_sales`;
+    const webhook = blandWebhookUrl(`${SUPABASE_URL}/functions/v1/bland-agent-webhook?lead_id=${lead_id}&agent_type=brandaro_sales`);
 
     const blandUrl = bland_agent_id
       ? `https://api.bland.ai/v1/agents/${bland_agent_id}/calls`
