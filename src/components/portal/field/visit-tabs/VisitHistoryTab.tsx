@@ -35,7 +35,7 @@ export function VisitHistoryTab({ storeId }: VisitHistoryTabProps) {
     async function fetchHistory() {
       try {
         // Fetch visits
-        const { data: visitsData } = await supabase
+        const { data: visitsData } = await (supabase as any)
           .from('store_visits')
           .select(`
             id,
@@ -61,7 +61,7 @@ export function VisitHistoryTab({ storeId }: VisitHistoryTabProps) {
         }
 
         // Fetch change lists
-        const { data: changeListsData } = await supabase
+        const { data: changeListsData } = await (supabase as any)
           .from('change_lists')
           .select(`
             id,

@@ -252,6 +252,7 @@ const DYNASTY_NAVIGATION = {
       name: '🏢 Floor 1 — CRM / Store Master',
       items: [
         { path: '/stores', label: 'Store Directory', icon: Store },
+        { path: '/new-arrivals', label: '🆕 New Arrivals', icon: Sparkles },
         { path: '/gasmask/store-intelligence', label: '🎯 Store Intelligence', icon: BarChart3 },
         { path: '/grabba/store-master', label: 'Store Master Profile', icon: Database },
         { path: '/grabba/flower-customers', label: '🌿 Flower Customers', icon: Target },
