@@ -35,7 +35,7 @@ export default function DDOrderDetail() {
     queryKey: ["dd-order-items", orderId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("marketplace_order_items")
+        .from("marketplace_order_items" as any)
         .select("*, products_all(product_name, images)")
         .eq("order_id", orderId);
       if (error) throw error;

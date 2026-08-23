@@ -71,7 +71,7 @@ export async function recalculateInventoryInsights(params: RecalculateParams = {
     // 1) Fetch inventory_stock joined with products & warehouses
     // Using correct column names: quantity_on_hand, quantity_reserved
     let levelsQuery = supabase
-      .from('inventory_stock')
+      .from('inventory_stock' as any)
       .select(`
         id,
         business_id,

@@ -36,6 +36,7 @@ import {
   Layers,
   BarChart3,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouteManager, DEFAULT_FILTERS, type RouteRow } from '@/hooks/useRouteManager';
@@ -273,6 +274,7 @@ export default function RoutesPage() {
                   <TableHead>Assigned To</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Progress</TableHead>
+                  <TableHead className="text-right">Money on Route</TableHead>
                   <TableHead>Territory</TableHead>
                   <TableHead>Brands</TableHead>
                   <TableHead>Profit</TableHead>
@@ -281,13 +283,13 @@ export default function RoutesPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-12">
+                    <TableCell colSpan={9} className="text-center py-12">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                     </TableCell>
                   </TableRow>
                 ) : routes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                       <MapPin className="h-8 w-8 mx-auto mb-2 opacity-40" />
                       No routes found
                     </TableCell>
@@ -298,15 +300,21 @@ export default function RoutesPage() {
                     const progress = route.stop_count > 0
                       ? Math.round((route.completed_stops / route.stop_count) * 100)
                       : 0;
+                    const isUnassigned = !route.assigned_to || (route.assignment_state || '').startsWith('UNASSIGNED');
 
                     return (
                       <TableRow
                         key={route.id}
-                        className="cursor-pointer hover:bg-muted/50"
+                        className={`cursor-pointer hover:bg-muted/50 ${isUnassigned ? 'bg-red-500/5' : ''}`}
                         onClick={() => handleRowClick(route)}
                       >
                         <TableCell className="font-medium text-sm">
-                          {format(new Date(route.date), 'MMM d, yyyy')}
+                          <div>{format(new Date(route.date), 'MMM d, yyyy')}</div>
+                          {route.stop_list && (
+                            <div className="text-[11px] text-muted-foreground font-normal truncate max-w-[220px] mt-0.5">
+                              {route.stop_list}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
@@ -319,12 +327,18 @@ export default function RoutesPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1.5">
-                            <User className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="text-sm truncate max-w-[120px]">
-                              {route.assignee?.name || 'Unassigned'}
-                            </span>
-                          </div>
+                          {isUnassigned ? (
+                            <Badge className="bg-red-500/15 text-red-500 border-red-500/40 text-xs gap-1">
+                              <AlertTriangle className="h-3 w-3" /> UNASSIGNED
+                            </Badge>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <User className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-sm truncate max-w-[140px] font-medium">
+                                {route.worker_name || route.assignee?.name || '—'}
+                              </span>
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge className={`${statusBadge(route.status)} text-xs`}>
@@ -343,6 +357,15 @@ export default function RoutesPage() {
                               {route.completed_stops}/{route.stop_count}
                             </span>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {route.money_on_this_route != null && route.money_on_this_route > 0 ? (
+                            <span className="text-sm font-semibold tabular-nums text-amber-500">
+                              ${route.money_on_this_route.toLocaleString()}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-muted-foreground">{route.territory || '—'}</span>

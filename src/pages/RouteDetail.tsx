@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   Circle,
   Navigation,
-  Plus
+  Plus,
+  MessageSquare,
+  DollarSign
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
@@ -58,6 +60,9 @@ const RouteDetail = () => {
   const [route, setRoute] = useState<Route | null>(null);
   const [stops, setStops] = useState<RouteStop[]>([]);
   const [loading, setLoading] = useState(true);
+  const [workerName, setWorkerName] = useState<string | null>(null);
+  const [routeMoney, setRouteMoney] = useState<number | null>(null);
+  const [owedByStore, setOwedByStore] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchRouteData = async () => {
@@ -101,6 +106,35 @@ const RouteDetail = () => {
 
         if (stopsError) throw stopsError;
         setStops(stopsData as any || []);
+
+        // Worker name resolved across ambassadors/drivers/bikers/profiles + money on route
+        const { data: ov } = await supabase
+          .from('v_routes_overview' as any)
+          .select('worker_name, money_on_this_route')
+          .eq('route_id', id)
+          .maybeSingle();
+        if (ov) {
+          setWorkerName((ov as any).worker_name ?? null);
+          setRouteMoney((ov as any).money_on_this_route ?? null);
+        }
+
+        // Money owed per stop's store (unpaid sale invoices)
+        const storeIds = [...new Set(((stopsData as any[]) || []).map((s: any) => s.store?.id).filter(Boolean))];
+        if (storeIds.length > 0) {
+          const { data: inv } = await supabase
+            .from('invoices' as any)
+            .select('store_id, total_amount, amount_paid')
+            .in('store_id', storeIds)
+            .is('deleted_at', null)
+            .eq('revenue_role', 'sale')
+            .or('payment_status.is.null,payment_status.neq.paid');
+          const owed: Record<string, number> = {};
+          for (const row of (inv as any[]) || []) {
+            owed[row.store_id] = (owed[row.store_id] || 0)
+              + (Number(row.total_amount) || 0) - (Number(row.amount_paid) || 0);
+          }
+          setOwedByStore(owed);
+        }
       } catch (error) {
         console.error('Error fetching route data:', error);
         toast.error('Failed to load route details');
@@ -210,22 +244,32 @@ const RouteDetail = () => {
                 <Calendar className="h-4 w-4 text-primary" />
                 <span>{formatDate(route.date)}</span>
               </div>
-              {route.assigned_user && (
+              {(route.assigned_user || workerName) && (
                 <>
                   <Separator />
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <User className="h-4 w-4 text-primary" />
-                      <span className="font-medium">{route.assigned_user.name}</span>
+                      <span className="font-medium">{workerName || route.assigned_user?.name}</span>
                     </div>
-                    {route.assigned_user.phone && (
+                    {route.assigned_user?.phone && (
                       <ClickablePhone 
                         phone={route.assigned_user.phone}
                         entityType="driver"
-                        entityName={route.assigned_user.name}
+                        entityName={workerName || route.assigned_user.name}
                         className="text-sm text-muted-foreground hover:underline ml-6"
                       />
                     )}
+                  </div>
+                </>
+              )}
+              {routeMoney != null && routeMoney > 0 && (
+                <>
+                  <Separator />
+                  <div className="flex items-center gap-2 text-sm">
+                    <DollarSign className="h-4 w-4 text-amber-500" />
+                    <span className="font-semibold text-amber-500">${routeMoney.toLocaleString()}</span>
+                    <span className="text-muted-foreground">owed across these stops</span>
                   </div>
                 </>
               )}
@@ -322,19 +366,51 @@ const RouteDetail = () => {
                           </Badge>
                         </div>
 
-                        {stop.stop_reason && (
-                          <Badge variant="outline" className="border-primary/40 text-primary">
-                            {stop.stop_reason === 'physical_inventory_check'
-                              ? '📦 Physical inventory check'
-                              : stop.stop_reason === 'update_contact_details'
-                              ? '📞 Update contact details'
-                              : stop.stop_reason}
-                          </Badge>
-                        )}
+                        {stop.stop_reason && (() => {
+                          const segments = String(stop.stop_reason).split('|').map(s => s.trim()).filter(Boolean);
+                          const head = segments[0] === 'physical_inventory_check'
+                            ? '📦 Physical inventory check'
+                            : segments[0] === 'update_contact_details'
+                            ? '📞 Update contact details'
+                            : segments[0];
+                          return (
+                            <div className="space-y-1">
+                              <Badge variant="outline" className="border-primary/40 text-primary">
+                                {head}
+                              </Badge>
+                              {segments.slice(1).map((seg, i) => (
+                                <p key={i} className="text-xs text-muted-foreground leading-snug">{seg}</p>
+                              ))}
+                            </div>
+                          );
+                        })()}
 
                         {stop.notes_to_worker && (
                           <div className="text-sm text-muted-foreground bg-secondary/30 p-2 rounded">
                             📝 {stop.notes_to_worker}
+                          </div>
+                        )}
+
+                        {(owedByStore[stop.store.id] || 0) > 0 && (
+                          <Badge className="bg-red-500/10 text-red-500 border-red-500/30">
+                            Owes ${Math.round(owedByStore[stop.store.id]).toLocaleString()}
+                          </Badge>
+                        )}
+
+                        {stop.store.phone && (
+                          <div className="flex items-center gap-2">
+                            <ClickablePhone
+                              phone={stop.store.phone}
+                              entityType="store"
+                              entityId={stop.store.id}
+                              entityName={stop.store.name}
+                              className="text-sm"
+                            />
+                            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
+                              <a href={`sms:${stop.store.phone}`} onClick={(e) => e.stopPropagation()}>
+                                <MessageSquare className="h-3 w-3 mr-1" /> Text
+                              </a>
+                            </Button>
                           </div>
                         )}
 

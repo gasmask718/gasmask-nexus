@@ -166,7 +166,7 @@ export function ShipmentsPanel({ officeId }: { officeId: string }) {
                       {row.expected_on_hand.toLocaleString()} {row.unit || ''}
                     </TableCell>
                     {rbac.canViewCosts && (
-                      <TableCell className="text-right">${row.total_issued_cost.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">${(row.total_issued_cost ?? 0).toFixed(2)}</TableCell>
                     )}
                   </TableRow>
                 ))}

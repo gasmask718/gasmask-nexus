@@ -18,10 +18,11 @@ import {
 import {
   MapPin, Calendar, User, Clock, Package, DollarSign,
   ArrowRight, Pause, Play, X, AlertTriangle, TrendingUp,
-  Loader2, Layers, FileText,
+  Loader2, Layers, FileText, MessageSquare,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouteDetail } from '@/hooks/useRouteManager';
+import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { useDispatchActions } from '@/hooks/useDispatchInterventions';
 import { RouteReassignDialog } from './RouteReassignDialog';
 import { SLAAlertBadges, RouteSLASummary } from './SLAAlertBadges';
@@ -68,6 +69,8 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
   const profit = data?.profit;
   const payout = data?.payout;
   const interventions = data?.interventions || [];
+  const overview = (data as any)?.overview as { worker_name?: string | null; money_on_this_route?: number | null } | null;
+  const owedByStore: Record<string, number> = (data as any)?.owedByStore || {};
 
   // SLA alerts for all stores in this route
   const stopStoreIds = useMemo(() => stops.map((s: any) => s.store_id).filter(Boolean), [stops]);
@@ -139,8 +142,20 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground flex items-center gap-1"><User className="h-3 w-3" /> Assigned To</p>
-                    <p className="text-sm font-medium">{(route as any).assignee?.name || 'Unassigned'}</p>
+                    {route.assigned_to ? (
+                      <p className="text-sm font-medium">{overview?.worker_name || (route as any).assignee?.name || '—'}</p>
+                    ) : (
+                      <Badge className="bg-red-500/15 text-red-500 border-red-500/40 text-xs gap-1">
+                        <AlertTriangle className="h-3 w-3" /> UNASSIGNED
+                      </Badge>
+                    )}
                   </div>
+                  {overview?.money_on_this_route != null && overview.money_on_this_route > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><DollarSign className="h-3 w-3" /> Money on this route</p>
+                      <p className="text-sm font-semibold text-amber-500">${overview.money_on_this_route.toLocaleString()} owed across stops</p>
+                    </div>
+                  )}
                   {route.territory && (
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Territory</p>
@@ -211,16 +226,41 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
                           {idx + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium truncate">{stop.store?.store_name || 'Unknown Store'}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-medium truncate">{stop.store?.name || 'Unknown Store'}</p>
                             <Badge variant="outline" className="text-xs capitalize flex-shrink-0">
                               {stop.status || 'pending'}
                             </Badge>
+                            {(owedByStore[stop.store_id] || 0) > 0 && (
+                              <Badge className="bg-red-500/10 text-red-500 border-red-500/30 text-xs flex-shrink-0">
+                                Owes ${Math.round(owedByStore[stop.store_id]).toLocaleString()}
+                              </Badge>
+                            )}
                           </div>
-                          {stop.store?.address && (
-                            <p className="text-xs text-muted-foreground truncate">{stop.store.address}</p>
+                          {(stop.store?.address_street || stop.store?.address_city) && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {[stop.store.address_street, stop.store.address_city, stop.store.address_state].filter(Boolean).join(', ')}
+                            </p>
                           )}
-                          <div className="flex gap-2 mt-1 flex-wrap">
+                          {stop.stop_reason && (() => {
+                            const segments = String(stop.stop_reason).split('|').map((s: string) => s.trim()).filter(Boolean);
+                            const head = segments[0] === 'physical_inventory_check'
+                              ? '📦 Physical inventory check'
+                              : segments[0] === 'update_contact_details'
+                              ? '📞 Update contact details'
+                              : segments[0];
+                            return (
+                              <div className="mt-1 space-y-0.5">
+                                <Badge variant="outline" className="border-primary/40 text-primary text-[10px]">
+                                  {head}
+                                </Badge>
+                                {segments.slice(1).map((seg: string, i: number) => (
+                                  <p key={i} className="text-[10px] text-muted-foreground leading-snug">{seg}</p>
+                                ))}
+                              </div>
+                            );
+                          })()}
+                          <div className="flex gap-2 mt-1 flex-wrap items-center">
                             {stop.brand_id && (
                               <Badge variant="secondary" className="text-[10px]">{stop.brand_id}</Badge>
                             )}
@@ -228,6 +268,22 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
                               <span className="text-[10px] text-muted-foreground">{stop.order_ids.length} order(s)</span>
                             )}
                           </div>
+                          {stop.store?.phone && (
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <ClickablePhone
+                                phone={stop.store.phone}
+                                entityType="store"
+                                entityId={stop.store_id}
+                                entityName={stop.store?.name || 'Store'}
+                                className="text-xs"
+                              />
+                              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" asChild>
+                                <a href={`sms:${stop.store.phone}`}>
+                                  <MessageSquare className="h-3 w-3 mr-1" /> Text
+                                </a>
+                              </Button>
+                            </div>
+                          )}
                           <SLAAlertBadges alert={slaMap.get(stop.store_id)} compact className="mt-1" />
                         </div>
                       </div>

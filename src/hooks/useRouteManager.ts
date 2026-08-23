@@ -49,6 +49,11 @@ export interface RouteRow {
   stop_count: number;
   completed_stops: number;
   profit_score: number | null;
+  // From v_routes_overview (worker name resolved across ambassadors/drivers/bikers/profiles)
+  worker_name?: string | null;
+  assignment_state?: string;
+  money_on_this_route?: number | null;
+  stop_list?: string | null;
 }
 
 export function useRouteManager() {
@@ -147,14 +152,37 @@ export function useRouteManager() {
         }
       }
 
+      // Overlay v_routes_overview: worker name resolved across ambassadors/drivers/bikers/profiles
+      // (the raw profiles join shows the wrong name when the profile row is a placeholder),
+      // plus assignment state and money owed across the route's stops.
+      let overviewMap: Record<string, any> = {};
+      if (routeIds.length > 0) {
+        const { data: overview } = await supabase
+          .from('v_routes_overview' as any)
+          .select('route_id, worker_name, assignment_state, money_on_this_route, stop_list')
+          .in('route_id', routeIds);
+        if (overview) {
+          for (const o of overview as any[]) overviewMap[o.route_id] = o;
+        }
+      }
+
       // Compose rows
-      const rows: RouteRow[] = (routes || []).map(r => ({
-        ...r,
-        assignee: r.assignee as any,
-        stop_count: stopCounts[r.id]?.total || 0,
-        completed_stops: stopCounts[r.id]?.completed || 0,
-        profit_score: profitScores[r.id] ?? null,
-      }));
+      const rows: RouteRow[] = (routes || []).map(r => {
+        const ov = overviewMap[r.id];
+        return {
+          ...r,
+          assignee: (ov?.worker_name
+            ? { ...(r.assignee as any || {}), name: ov.worker_name }
+            : r.assignee) as any,
+          stop_count: stopCounts[r.id]?.total || 0,
+          completed_stops: stopCounts[r.id]?.completed || 0,
+          profit_score: profitScores[r.id] ?? null,
+          worker_name: ov?.worker_name ?? null,
+          assignment_state: ov?.assignment_state ?? (r.assigned_to ? 'assigned' : 'UNASSIGNED'),
+          money_on_this_route: ov?.money_on_this_route ?? null,
+          stop_list: ov?.stop_list ?? null,
+        };
+      });
 
       // Client-side profit band filter (since it's derived data)
       let filtered = rows;
@@ -267,7 +295,7 @@ export function useRouteDetail(routeId: string | null) {
     queryFn: async () => {
       if (!routeId) return null;
 
-      const [routeRes, stopsRes, profitRes, payoutRes, interventionsRes] = await Promise.all([
+      const [routeRes, stopsRes, profitRes, payoutRes, interventionsRes, overviewRes] = await Promise.all([
         supabase
           .from('routes')
           .select(`*, assignee:profiles!routes_assigned_to_fkey(id, name, role)`)
@@ -275,7 +303,7 @@ export function useRouteDetail(routeId: string | null) {
           .single(),
         (supabase as any)
           .from('route_stops')
-          .select(`*, store:store_master!route_stops_store_id_fkey(id, store_name, address, territory)`)
+          .select(`*, store:stores!route_stops_store_id_fkey(id, name, address_street, address_city, address_state, neighborhood, boro, phone)`)
           .eq('route_id', routeId)
           .order('planned_order', { ascending: true }),
         supabase
@@ -293,14 +321,39 @@ export function useRouteDetail(routeId: string | null) {
           .select(`*, performer:profiles!dispatch_interventions_performed_by_fkey(id, name, role)`)
           .eq('route_id', routeId)
           .order('created_at', { ascending: false }),
+        supabase
+          .from('v_routes_overview' as any)
+          .select('worker_name, assignment_state, money_on_this_route')
+          .eq('route_id', routeId)
+          .maybeSingle(),
       ]);
+
+      // Money owed per stop's store (unpaid sale invoices) — same logic as v_routes_overview
+      const stopsData: any[] = stopsRes.data || [];
+      const storeIds = [...new Set(stopsData.map((s: any) => s.store_id).filter(Boolean))];
+      let owedByStore: Record<string, number> = {};
+      if (storeIds.length > 0) {
+        const { data: inv } = await supabase
+          .from('invoices' as any)
+          .select('store_id, total_amount, amount_paid')
+          .in('store_id', storeIds)
+          .is('deleted_at', null)
+          .eq('revenue_role', 'sale')
+          .or('payment_status.is.null,payment_status.neq.paid');
+        for (const row of (inv as any[]) || []) {
+          owedByStore[row.store_id] = (owedByStore[row.store_id] || 0)
+            + (Number(row.total_amount) || 0) - (Number(row.amount_paid) || 0);
+        }
+      }
 
       return {
         route: routeRes.data,
-        stops: stopsRes.data || [],
+        stops: stopsData,
         profit: profitRes.data,
         payout: payoutRes.data,
         interventions: interventionsRes.data || [],
+        overview: (overviewRes.data as any) || null,
+        owedByStore,
       };
     },
     enabled: !!routeId,
