@@ -105,6 +105,30 @@ Deno.serve(async (req) => {
       let claimed = 0;
       let agentsClaimed = 0;
 
+      // ── Auto-disarm: the armed window has a hard expiry (max 8h). ──
+      if (settings.auto_disarm_at && new Date(settings.auto_disarm_at) <= new Date()) {
+        await supabase.from("dialer_settings").update({
+          engine_armed: false, armed_campaign_id: null, updated_at: new Date().toISOString(),
+        }).eq("id", settings.id);
+        await logCycle(supabase, {
+          business_id: businessId, lock_acquired: false, claimed: 0,
+          outcomes: { auto_disarmed: 1 }, agents: 0, errors: [], startedAt: cycleStartedAt,
+        });
+        summary.push({ business_id: businessId, reason: "auto_disarmed" });
+        continue;
+      }
+
+      // ── Only the armed campaign is ever processed. Armed without a
+      // campaign is not a valid state — disarm defensively. ──
+      const armedCampaignId = settings.armed_campaign_id as string | null;
+      if (!armedCampaignId) {
+        await supabase.from("dialer_settings").update({
+          engine_armed: false, updated_at: new Date().toISOString(),
+        }).eq("id", settings.id);
+        summary.push({ business_id: businessId, reason: "armed_without_campaign_disarmed" });
+        continue;
+      }
+
       const isLive = settings.telephony_mode === "live" && settings.twilio_enabled === true;
 
       if (!isLive) {
@@ -132,7 +156,8 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // ── Engine lock (50s — shorter than the cron interval) ──
+      // ── Engine lock (50s — longer than the operator screen's tick
+      // cadence so overlapping invokes never double-dial) ──
       const { data: existingLock } = await supabase
         .from("dialer_engine_locks").select("*")
         .eq("business_id", businessId).maybeSingle();
@@ -200,7 +225,7 @@ Deno.serve(async (req) => {
       for (const agent of readyAgents) {
         const { data: claimedItems, error: claimErr } = await supabase.rpc("claim_queue_items", {
           p_business_id: businessId,
-          p_campaign_id: null,
+          p_campaign_id: armedCampaignId,
           p_limit_count: 1,
           p_max_attempts: maxAttempts,
           p_agent_user_id: agent.user_id,
