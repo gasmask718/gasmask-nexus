@@ -1,11 +1,23 @@
 /**
- * OFFICE LEADER — TODAY (one screen, no tabs)
+ * OFFICE LEADER — TODAY (Product A: one screen, no tabs)
  *
- * Built for a person standing in a workspace with a phone.
- * In order: TODAY header → ENTER OUTPUT (big thumb-sized inputs, no modal)
- * → LIVE YIELD (verdict while they type, so a mistake is caught at entry)
- * → WHAT YOU STILL HOLD (material balance, quantities only)
- * → CLOSE THE DAY.
+ * Built for a person standing in a workspace with a phone, at the end of a
+ * shift, with ninety seconds and one thumb. They answer four questions:
+ *   What did we make today?  → ENTER OUTPUT (the input IS the page)
+ *   What did we use?         → the same inputs, with units on every field
+ *   What is left in the room?→ WHAT YOU STILL HOLD
+ *   Are we done?             → CLOSE THE DAY
+ *
+ * Design rules honoured here:
+ *  - Entry before display. No tab bar, no forecast, no cost, no other office.
+ *  - Never a blank grey box: no batch → "No batch open — start today's batch".
+ *  - Every field has its unit next to it (boxes / tubes / stickers / lbs).
+ *  - Saves confirm in WORDS ("42 boxes recorded for Gasmask. 4,200 tubes
+ *    used."), not a toast that says Success.
+ *  - One primary action per screen state: start batch → record output →
+ *    close day. Never two filled buttons.
+ *  - Fully translated EN/ES — a worker who half-understands a form fills
+ *    it in wrong.
  *
  * RBAC: quantities only. This screen NEVER renders cost per box, material
  * cost, margin, or another office's numbers.
@@ -38,9 +50,11 @@ import {
   TrendingDown,
   TrendingUp,
   Minus,
+  PackageOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { es as esLocale } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -76,8 +90,19 @@ const EMPTY_ENTRY: EntryState = {
   defects: '',
 };
 
+/** What was just saved — rendered back in words, not a toast. */
+interface SavedSummary {
+  brandLabel: string;
+  lbs: number;
+  boxes: number;
+  tubes: number;
+  stickers: number;
+  emptyBoxes: number;
+  defects: number;
+}
+
 export function OfficeLeaderToday({ officeId, officeName }: Props) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { data: batches = [] } = useTodayBatches(officeId);
   const { data: kpis } = useDailyKPIs(officeId);
   const { data: standards = [] } = useYieldStandards();
@@ -89,13 +114,18 @@ export function OfficeLeaderToday({ officeId, officeName }: Props) {
   const [brand, setBrand] = useState<BrandId>('gasmask');
   const [entry, setEntry] = useState<EntryState>(EMPTY_ENTRY);
   const [saving, setSaving] = useState(false);
+  const [savedSummary, setSavedSummary] = useState<SavedSummary | null>(null);
 
   const isDayClosed = kpis?.isDayClosed || false;
+  const hasBatchToday = batches.length > 0;
 
   const setField = (k: keyof EntryState) => (e: React.ChangeEvent<HTMLInputElement>) => {
     // Digits and one decimal point only — thumb entry on a phone.
     const v = e.target.value.replace(/[^0-9.]/g, '');
     setEntry((prev) => ({ ...prev, [k]: v }));
+    // Editing again means the previous confirmation is stale — clear it and
+    // the primary action flips back to Record.
+    setSavedSummary(null);
   };
 
   const lbs = parseFloat(entry.tobacco_lbs) || 0;
@@ -147,19 +177,33 @@ export function OfficeLeaderToday({ officeId, officeName }: Props) {
         });
       }
 
-      if (boxes > 0 || parseInt(entry.defects) > 0) {
+      const tubes = parseInt(entry.tubes_used) || 0;
+      const stickers = parseInt(entry.stickers_used) || 0;
+      const emptyBoxes = parseInt(entry.empty_boxes_used) || 0;
+      const defects = parseInt(entry.defects) || 0;
+
+      if (boxes > 0 || defects > 0) {
         await recordOutput.mutateAsync({
           batch_id: batch.id,
           brand,
           boxes_completed: boxes,
-          tubes_used: parseInt(entry.tubes_used) || 0,
-          stickers_used: parseInt(entry.stickers_used) || 0,
-          empty_boxes_used: parseInt(entry.empty_boxes_used) || 0,
-          defects_count: parseInt(entry.defects) || 0,
+          tubes_used: tubes,
+          stickers_used: stickers,
+          empty_boxes_used: emptyBoxes,
+          defects_count: defects,
         });
       }
 
-      toast.success(t('production.output_saved'));
+      // Confirm in words — this stays on screen until they edit again.
+      setSavedSummary({
+        brandLabel: BRANDS.find((b) => b.id === brand)?.label || brand,
+        lbs,
+        boxes,
+        tubes,
+        stickers,
+        emptyBoxes,
+        defects,
+      });
       setEntry(EMPTY_ENTRY);
     } catch (e: any) {
       toast.error(e?.message || 'Save failed');
@@ -181,7 +225,63 @@ export function OfficeLeaderToday({ officeId, officeName }: Props) {
     });
   };
 
-  const inputCls = 'h-14 text-center text-2xl font-mono font-semibold';
+  const dateStr =
+    language === 'es'
+      ? format(new Date(), "EEEE d 'de' MMMM", { locale: esLocale })
+      : format(new Date(), 'EEEE, MMMM d');
+
+  const statusLabel = (s: string | null | undefined) => {
+    const key = `production.status_${s || 'open'}`;
+    const translated = t(key);
+    return translated === key ? (s || 'open') : translated;
+  };
+
+  // One primary action per screen state:
+  //   no batch yet      → "Start today's batch" is the only primary
+  //   batch open        → "Record output" primary, Close Day outline
+  //   just saved        → "Close the Day" primary, record flips to outline
+  //   day closed        → nothing primary, everything locked
+  const saveIsPrimary = !savedSummary;
+  const saveLabel = !hasBatchToday
+    ? t('production.start_todays_batch')
+    : savedSummary
+      ? t('production.record_more_output')
+      : t('production.record_output');
+
+  const inputCls = 'h-14 text-center text-2xl font-mono font-semibold pr-16';
+
+  const UnitInput = ({
+    label,
+    unit,
+    value,
+    onChange,
+    decimal = false,
+  }: {
+    label: string;
+    unit: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    decimal?: boolean;
+  }) => (
+    <label className="space-y-1 block">
+      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        {label}
+      </span>
+      <span className="relative block">
+        <Input
+          inputMode={decimal ? 'decimal' : 'numeric'}
+          className={inputCls}
+          value={value}
+          onChange={onChange}
+          placeholder="0"
+          disabled={isDayClosed}
+        />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground pointer-events-none">
+          {unit}
+        </span>
+      </span>
+    </label>
+  );
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
@@ -191,9 +291,7 @@ export function OfficeLeaderToday({ officeId, officeName }: Props) {
           <div className="flex items-center gap-3">
             <CalendarDays className="h-5 w-5 text-primary" />
             <div>
-              <p className="text-lg font-semibold leading-tight">
-                {format(new Date(), 'EEEE, MMMM d')}
-              </p>
+              <p className="text-lg font-semibold leading-tight capitalize">{dateStr}</p>
               <p className="text-sm text-muted-foreground flex items-center gap-1">
                 <Building2 className="h-3.5 w-3.5" /> {officeName}
               </p>
@@ -222,13 +320,25 @@ export function OfficeLeaderToday({ officeId, officeName }: Props) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Never a blank grey box — say what to do, button right below */}
+          {!hasBatchToday && !isDayClosed && (
+            <div className="rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 p-4 flex items-center gap-3">
+              <PackageOpen className="h-8 w-8 text-primary shrink-0" />
+              <p className="text-sm font-medium">{t('production.no_batch_open')}</p>
+            </div>
+          )}
+
           {/* Brand chips — thumb-sized */}
           <div className="grid grid-cols-4 gap-2">
             {BRANDS.map((b) => (
               <button
                 key={b.id}
                 type="button"
-                onClick={() => setBrand(b.id)}
+                disabled={isDayClosed}
+                onClick={() => {
+                  setBrand(b.id);
+                  setSavedSummary(null);
+                }}
                 className={cn(
                   'h-12 rounded-lg border-2 font-medium text-sm flex items-center justify-center gap-1.5 transition-colors',
                   brand === b.id
@@ -242,48 +352,18 @@ export function OfficeLeaderToday({ officeId, officeName }: Props) {
             ))}
           </div>
 
-          {/* Big inputs */}
+          {/* Big inputs — every field carries its unit */}
           <div className="grid grid-cols-2 gap-3">
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {t('production.tobacco_lbs')}
-              </span>
-              <Input inputMode="decimal" className={inputCls} value={entry.tobacco_lbs} onChange={setField('tobacco_lbs')} placeholder="0" />
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {t('production.boxes_completed')}
-              </span>
-              <Input inputMode="numeric" className={inputCls} value={entry.boxes_completed} onChange={setField('boxes_completed')} placeholder="0" />
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {t('production.tubes_used')}
-              </span>
-              <Input inputMode="numeric" className={inputCls} value={entry.tubes_used} onChange={setField('tubes_used')} placeholder="0" />
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {t('production.stickers_used')}
-              </span>
-              <Input inputMode="numeric" className={inputCls} value={entry.stickers_used} onChange={setField('stickers_used')} placeholder="0" />
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {t('production.empty_boxes_used')}
-              </span>
-              <Input inputMode="numeric" className={inputCls} value={entry.empty_boxes_used} onChange={setField('empty_boxes_used')} placeholder="0" />
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {t('production.defects')}
-              </span>
-              <Input inputMode="numeric" className={inputCls} value={entry.defects} onChange={setField('defects')} placeholder="0" />
-            </label>
+            <UnitInput label={t('production.tobacco_lbs')} unit={t('production.unit_lbs')} value={entry.tobacco_lbs} onChange={setField('tobacco_lbs')} decimal />
+            <UnitInput label={t('production.boxes_completed')} unit={t('production.unit_boxes')} value={entry.boxes_completed} onChange={setField('boxes_completed')} />
+            <UnitInput label={t('production.tubes_used')} unit={t('production.unit_tubes')} value={entry.tubes_used} onChange={setField('tubes_used')} />
+            <UnitInput label={t('production.stickers_used')} unit={t('production.unit_stickers')} value={entry.stickers_used} onChange={setField('stickers_used')} />
+            <UnitInput label={t('production.empty_boxes_used')} unit={t('production.unit_boxes')} value={entry.empty_boxes_used} onChange={setField('empty_boxes_used')} />
+            <UnitInput label={t('production.defects')} unit={t('production.unit_defects')} value={entry.defects} onChange={setField('defects')} />
           </div>
 
           {/* ── 3. LIVE YIELD — verdict while they type ──────────────── */}
-          {liveYield && (
+          {liveYield && !isDayClosed && (
             <div
               className={cn(
                 'rounded-lg border-2 p-4 text-center space-y-1',
@@ -335,12 +415,40 @@ export function OfficeLeaderToday({ officeId, officeName }: Props) {
             </div>
           )}
 
+          {/* Confirmation in WORDS — stays until they edit again */}
+          {savedSummary && (
+            <div className="rounded-lg border-2 border-emerald-500 bg-emerald-500/10 p-4 space-y-1">
+              <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                <CheckCircle className="h-4 w-4" />
+                {savedSummary.boxes > 0
+                  ? t('production.saved_boxes', { count: savedSummary.boxes.toLocaleString(), brand: savedSummary.brandLabel })
+                  : t('production.saved_tobacco', { count: savedSummary.lbs.toLocaleString() })}
+              </p>
+              {savedSummary.tubes > 0 && (
+                <p className="text-sm text-emerald-600/90 dark:text-emerald-400/90 pl-6">
+                  {t('production.saved_tubes', { count: savedSummary.tubes.toLocaleString() })}
+                </p>
+              )}
+              {savedSummary.stickers > 0 && (
+                <p className="text-sm text-emerald-600/90 dark:text-emerald-400/90 pl-6">
+                  {t('production.saved_stickers', { count: savedSummary.stickers.toLocaleString() })}
+                </p>
+              )}
+              {savedSummary.defects > 0 && (
+                <p className="text-sm text-emerald-600/90 dark:text-emerald-400/90 pl-6">
+                  {t('production.saved_defects', { count: savedSummary.defects.toLocaleString() })}
+                </p>
+              )}
+            </div>
+          )}
+
           <Button
             className="w-full h-14 text-lg"
+            variant={saveIsPrimary ? 'default' : 'outline'}
             disabled={saving || isDayClosed}
             onClick={handleSave}
           >
-            {saving ? t('production.saving') : t('production.save_output')}
+            {saving ? t('production.saving') : saveLabel}
           </Button>
 
           {/* Today's saved batches for this brand — confirmation, not a ledger */}
@@ -355,7 +463,7 @@ export function OfficeLeaderToday({ officeId, officeName }: Props) {
                     <Scale className="h-3.5 w-3.5 text-muted-foreground" />
                     {b.tobacco_lbs ?? 0} {t('production.lbs')} → {(b as any).boxes_full || b.boxes_produced || 0} {t('production.boxes_lower')}
                   </span>
-                  <Badge variant="outline" className="text-[10px]">{b.status}</Badge>
+                  <Badge variant="outline" className="text-[10px]">{statusLabel(b.status)}</Badge>
                 </div>
               ))}
             </div>
@@ -367,23 +475,30 @@ export function OfficeLeaderToday({ officeId, officeName }: Props) {
       <MaterialBalanceCard officeId={officeId} />
 
       {/* ── 5. CLOSE THE DAY ─────────────────────────────────────────── */}
-      <Card>
-        <CardContent className="p-4">
-          <Button
-            variant={isDayClosed ? 'outline' : 'default'}
-            className="w-full h-14 text-lg"
-            disabled={isDayClosed || closeDay.isPending}
-            onClick={handleCloseDay}
-          >
-            <Lock className="h-5 w-5 mr-2" />
-            {isDayClosed
-              ? t('production.day_closed')
-              : closeDay.isPending
-                ? t('production.saving')
-                : t('production.close_the_day')}
-          </Button>
-        </CardContent>
-      </Card>
+      {hasBatchToday && (
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <Button
+              variant={isDayClosed ? 'outline' : savedSummary ? 'default' : 'outline'}
+              className="w-full h-14 text-lg"
+              disabled={isDayClosed || closeDay.isPending}
+              onClick={handleCloseDay}
+            >
+              <Lock className="h-5 w-5 mr-2" />
+              {isDayClosed
+                ? t('production.day_closed')
+                : closeDay.isPending
+                  ? t('production.saving')
+                  : t('production.close_the_day')}
+            </Button>
+            {!isDayClosed && (
+              <p className="text-xs text-center text-muted-foreground">
+                {t('production.close_day_hint')}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

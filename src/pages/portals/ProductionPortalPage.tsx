@@ -204,12 +204,73 @@ export default function ProductionPortalPage() {
 
   const activeOffices = visibleOffices.filter(o => o.active !== false);
 
+  // ── PRODUCT A: THE OFFICE LEADER'S DAY ──────────────────────────────
+  // One person, one phone, one office, four questions: what did we make,
+  // what did we use, what is left, are we done. No tab bar, no office
+  // selector, no forecast, no cost, no other office. Everything else on
+  // this page is Product B and is not for them.
+  if (isOfficeScoped) {
+    return (
+      <EnhancedPortalLayout
+        title={t('production.title')}
+        subtitle={selectedOffice?.name || t('production.subtitle')}
+        portalIcon={<Factory className="h-4 w-4 text-primary-foreground" />}
+        quickActions={[]}
+      >
+        {showWizard && selectedOfficeId && (
+          <FirstTimeWizard
+            officeId={selectedOfficeId}
+            officeName={selectedOffice?.name || 'Production Office'}
+            hasBatch={hasBatch}
+            hasOutput={hasOutput}
+            isClosed={isDayClosed}
+            onDismiss={handleWizardDismiss}
+          />
+        )}
+
+        {/* Only their own assigned offices — never the full list */}
+        {visibleOffices.length > 1 && (
+          <div className="flex gap-2 mb-4">
+            {visibleOffices.map((o) => (
+              <Button
+                key={o.id}
+                variant={o.id === selectedOfficeId ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedOfficeId(o.id)}
+              >
+                <Building2 className="h-3.5 w-3.5 mr-1" />
+                {o.name}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {selectedOfficeId ? (
+          <OfficeLeaderToday
+            officeId={selectedOfficeId}
+            officeName={selectedOffice?.name || ''}
+          />
+        ) : (
+          <Card>
+            <CardContent className="py-16 text-center text-muted-foreground">
+              {t('production.loading')}
+            </CardContent>
+          </Card>
+        )}
+      </EnhancedPortalLayout>
+    );
+  }
+
+  // ── PRODUCT B: THE OWNER'S INTELLIGENCE + full management portal ────
   return (
     <EnhancedPortalLayout
       title={t('production.title')}
       subtitle={t('production.subtitle')}
       portalIcon={<Factory className="h-4 w-4 text-primary-foreground" />}
       quickActions={[
+        ...(rbac.tier === 'admin'
+          ? [{ label: 'Owner Intelligence', href: '/portals/production/intelligence' }]
+          : []),
         { label: 'All Offices', href: '/portals/production/offices' },
         { label: t('production.staff'), href: '/portals/production/staff' },
         { label: 'Reports', href: '/portals/production/war-room' },

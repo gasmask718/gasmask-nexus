@@ -155634,6 +155634,10 @@ export type Database = {
       process_paid_order: { Args: { p_order_id: string }; Returns: Json }
       process_recalc_queue: { Args: never; Returns: Json }
       process_settlement_releases: { Args: never; Returns: number }
+      production_batch_office_access: {
+        Args: { _batch_id: string; _user_id: string }
+        Returns: boolean
+      }
       production_core_staff: { Args: { p_user: string }; Returns: boolean }
       production_office_member: {
         Args: { p_office: string; p_user: string }

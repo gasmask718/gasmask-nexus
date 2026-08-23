@@ -354,6 +354,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/portals/production', label: 'Manufacturing OS', icon: Factory },
         { path: '/portals/production/conversion', label: 'Conversion Intelligence', icon: Flame },
         { path: '/portals/production/yield-watch', label: 'Yield Watch', icon: Scale },
+        { path: '/portals/production/intelligence', label: 'Owner Intelligence', icon: BarChart },
         { path: '/portals/production/supplier-yield', label: 'Supplier Yield Rankings', icon: Factory },
         { path: '/portals/production/sales-velocity', label: 'Sales Velocity Intelligence', icon: TrendingUp },
         { path: '/portals/production/task-timer', label: 'Task Timer', icon: Clock },
