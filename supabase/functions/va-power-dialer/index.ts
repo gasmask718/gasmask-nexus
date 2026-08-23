@@ -90,6 +90,51 @@ serve(async (req) => {
         });
       }
 
+      // ── Caller-ID company gate ─────────────────────────────────────
+      // The presented caller ID must belong to a VA company the caller may
+      // represent: one of their va_company_memberships, or ANY company for a
+      // Dynasty Connect member (the switchboard). Identity comes from the JWT,
+      // never the body's vaId.
+      const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+      const { data: authData } = await supabaseAdmin.auth.getUser(token);
+      const callerUserId = authData?.user?.id ?? null;
+      if (!callerUserId) {
+        return new Response(JSON.stringify({ error: "Authentication required to dial." }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: numRow } = await supabaseAdmin
+        .from("dc_phone_numbers")
+        .select("id, va_company_id")
+        .eq("phone_number", twilioNumber)
+        .maybeSingle();
+
+      if (!numRow?.va_company_id) {
+        return new Response(JSON.stringify({
+          error: `${twilioNumber} is not assigned to any VA company — assign it in the phone library before calling.`,
+        }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const { data: memberships } = await supabaseAdmin
+        .from("va_company_memberships")
+        .select("company_id, va_companies:company_id ( slug, name )")
+        .eq("user_id", callerUserId)
+        .eq("is_active", true);
+
+      const membershipList = (memberships ?? []) as any[];
+      const isSwitchboard = membershipList.some((m) => m.va_companies?.slug === "dynasty_connect");
+      const allowed = isSwitchboard || membershipList.some((m) => m.company_id === numRow.va_company_id);
+
+      if (!allowed) {
+        const { data: ownerCompany } = await supabaseAdmin
+          .from("va_companies").select("name").eq("id", numRow.va_company_id).maybeSingle();
+        return new Response(JSON.stringify({
+          error: `Caller ID ${twilioNumber} belongs to ${ownerCompany?.name ?? "another company"} — switch companies in the portal header.`,
+        }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+
       // SUPPRESSION — FAST UX SKIP ONLY. THIS IS NOT THE ENFORCEMENT POINT.
       //
       // This function does not place the call: the browser does, via the Twilio
