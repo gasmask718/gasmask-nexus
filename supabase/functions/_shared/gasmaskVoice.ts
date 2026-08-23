@@ -263,9 +263,12 @@ export async function upsertCallLog(
     direction?: string;
     status: string;
     summary?: string;
+    /** Brand / source business tag — defaults to gasmask (historical caller). */
+    brand?: string;
     extra?: Record<string, unknown>;
   },
 ): Promise<string | null> {
+  const brand = args.brand || "gasmask";
   const { data: existing } = await supabase
     .from("communication_logs")
     .select("id")
@@ -294,8 +297,8 @@ export async function upsertCallLog(
       recipient_phone: args.to,
       store_id: match.store_id,
       contact_id: match.contact_id,
-      brand: "gasmask",
-      source_business: "gasmask",
+      brand,
+      source_business: brand,
       provider: "twilio",
       // performed_by is constrained to ai|va|system — routing is a system action.
       performed_by: "system",

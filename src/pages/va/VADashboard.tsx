@@ -25,6 +25,7 @@ import { VACoachingInbox } from '@/components/va/VACoachingInbox';
 import { VAAICoachingHub } from '@/components/va/VAAICoachingHub';
 import { VAAutoDialerSection } from '@/components/va/VAAutoDialerSection';
 import { VAActiveNumberSwitcher } from '@/components/va/VAActiveNumberSwitcher';
+import { RingMyMobile } from '@/components/va/RingMyMobile';
 import { GasMaskShiftToggle } from '@/components/va/GasMaskShiftToggle';
 import { AutoTranslateRoot } from '@/components/va/AutoTranslateRoot';
 import { Button } from '@/components/ui/button';
@@ -262,6 +263,7 @@ function VADashboardInner() {
               <VACompanySwitcher />
               <VAActiveNumberSwitcher />
               <GasMaskShiftToggle />
+              <RingMyMobile />
               <Badge className="bg-slate-700 text-slate-300 text-xs">
                 {language === 'en' ? '🇺🇸 EN' : '🇪🇸 ES'}
               </Badge>

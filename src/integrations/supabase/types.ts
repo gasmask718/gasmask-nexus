@@ -70162,6 +70162,61 @@ export type Database = {
         }
         Relationships: []
       }
+      inbound_call_outcomes: {
+        Row: {
+          call_sid: string
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          store_id: string | null
+          summary: string | null
+          va_company_id: string | null
+        }
+        Insert: {
+          call_sid: string
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          store_id?: string | null
+          summary?: string | null
+          va_company_id?: string | null
+        }
+        Update: {
+          call_sid?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          store_id?: string | null
+          summary?: string | null
+          va_company_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbound_call_outcomes_va_company_id_fkey"
+            columns: ["va_company_id"]
+            isOneToOne: false
+            referencedRelation: "v_va_caller_ids"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "inbound_call_outcomes_va_company_id_fkey"
+            columns: ["va_company_id"]
+            isOneToOne: false
+            referencedRelation: "v_va_company_access"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "inbound_call_outcomes_va_company_id_fkey"
+            columns: ["va_company_id"]
+            isOneToOne: false
+            referencedRelation: "va_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inbound_call_routes: {
         Row: {
           business_id: string
@@ -70215,6 +70270,151 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      inbound_concierge_sessions: {
+        Row: {
+          call_sid: string
+          contact_name: string | null
+          created_at: string
+          ended_at: string | null
+          from_number: string | null
+          status: string
+          store_id: string | null
+          store_name: string | null
+          to_number: string | null
+          transcript: Json
+          va_company_id: string | null
+        }
+        Insert: {
+          call_sid: string
+          contact_name?: string | null
+          created_at?: string
+          ended_at?: string | null
+          from_number?: string | null
+          status?: string
+          store_id?: string | null
+          store_name?: string | null
+          to_number?: string | null
+          transcript?: Json
+          va_company_id?: string | null
+        }
+        Update: {
+          call_sid?: string
+          contact_name?: string | null
+          created_at?: string
+          ended_at?: string | null
+          from_number?: string | null
+          status?: string
+          store_id?: string | null
+          store_name?: string | null
+          to_number?: string | null
+          transcript?: Json
+          va_company_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbound_concierge_sessions_va_company_id_fkey"
+            columns: ["va_company_id"]
+            isOneToOne: false
+            referencedRelation: "v_va_caller_ids"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "inbound_concierge_sessions_va_company_id_fkey"
+            columns: ["va_company_id"]
+            isOneToOne: false
+            referencedRelation: "v_va_company_access"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "inbound_concierge_sessions_va_company_id_fkey"
+            columns: ["va_company_id"]
+            isOneToOne: false
+            referencedRelation: "va_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inbound_policy: {
+        Row: {
+          after_hours_ai_only: boolean | null
+          ai_agent_id: string | null
+          ai_fallback: boolean | null
+          ai_greeting: string | null
+          business_hours_end: string | null
+          business_hours_start: string | null
+          ring_humans_first: boolean | null
+          ring_seconds: number | null
+          ring_strategy: string | null
+          updated_at: string | null
+          va_company_id: string
+        }
+        Insert: {
+          after_hours_ai_only?: boolean | null
+          ai_agent_id?: string | null
+          ai_fallback?: boolean | null
+          ai_greeting?: string | null
+          business_hours_end?: string | null
+          business_hours_start?: string | null
+          ring_humans_first?: boolean | null
+          ring_seconds?: number | null
+          ring_strategy?: string | null
+          updated_at?: string | null
+          va_company_id: string
+        }
+        Update: {
+          after_hours_ai_only?: boolean | null
+          ai_agent_id?: string | null
+          ai_fallback?: boolean | null
+          ai_greeting?: string | null
+          business_hours_end?: string | null
+          business_hours_start?: string | null
+          ring_humans_first?: boolean | null
+          ring_seconds?: number | null
+          ring_strategy?: string | null
+          updated_at?: string | null
+          va_company_id?: string
+        }
+        Relationships: []
+      }
+      inbound_ring_targets: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          label: string
+          only_business_hours: boolean | null
+          phone_e164: string | null
+          ring_order: number | null
+          target_type: string
+          user_id: string | null
+          va_company_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          label: string
+          only_business_hours?: boolean | null
+          phone_e164?: string | null
+          ring_order?: number | null
+          target_type: string
+          user_id?: string | null
+          va_company_id: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          label?: string
+          only_business_hours?: boolean | null
+          phone_e164?: string | null
+          ring_order?: number | null
+          target_type?: string
+          user_id?: string | null
+          va_company_id?: string
+        }
+        Relationships: []
       }
       incident_drills: {
         Row: {
