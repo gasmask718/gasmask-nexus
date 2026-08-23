@@ -203,7 +203,7 @@ export default function ProductionPortalPage() {
   // Show wizard if not dismissed and office is selected
   const showWizard = selectedOfficeId && !wizardDismissed && !isDayClosed;
 
-  const activeOffices = offices.filter(o => o.active !== false);
+  const activeOffices = visibleOffices.filter(o => o.active !== false);
 
   return (
     <EnhancedPortalLayout
@@ -213,7 +213,7 @@ export default function ProductionPortalPage() {
       quickActions={[
         { label: 'All Offices', href: '/portals/production/offices' },
         { label: t('production.staff'), href: '/portals/production/staff' },
-        { label: 'Reports', href: '/portals/production/reports' },
+        { label: 'Reports', href: '/portals/production/war-room' },
       ]}
     >
       {/* Training Mode Banner */}
@@ -230,6 +230,9 @@ export default function ProductionPortalPage() {
               <Building2 className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">{t('production.select_office')}</p>
+                {singleOffice ? (
+                  <p className="text-lg font-semibold mt-1">{visibleOffices[0].name}</p>
+                ) : (
                 <Select
                   value={selectedOfficeId}
                   onValueChange={setSelectedOfficeId}
