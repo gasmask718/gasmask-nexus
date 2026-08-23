@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   Circle,
   Navigation,
-  Plus
+  Plus,
+  MessageSquare,
+  DollarSign
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
@@ -58,6 +60,9 @@ const RouteDetail = () => {
   const [route, setRoute] = useState<Route | null>(null);
   const [stops, setStops] = useState<RouteStop[]>([]);
   const [loading, setLoading] = useState(true);
+  const [workerName, setWorkerName] = useState<string | null>(null);
+  const [routeMoney, setRouteMoney] = useState<number | null>(null);
+  const [owedByStore, setOwedByStore] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchRouteData = async () => {
