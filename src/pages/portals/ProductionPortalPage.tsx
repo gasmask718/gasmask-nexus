@@ -34,16 +34,13 @@ import {
 import {
   ProductionKPICards,
   WorkerManagement,
-  DailyBatchEntry,
   ToolsInventory,
   ProductionHistoryPanel,
   BatchHistoryPanel,
-  VariancePanel,
   DayClosePanel,
   WorkerAttendance,
   CommunicationsLog,
   FirstTimeWizard,
-  DailyChecklist,
   TrainingModeBanner,
   TrainingModeToggle,
   ActiveBatchBanner,
@@ -67,7 +64,6 @@ import {
   SupervisorScorecard,
   BrandYieldAnalyticsPanel,
   ShipmentsPanel,
-  MaterialBalanceCard,
   ProductionLogsTable,
 } from '@/components/production';
 import { WorkerTaskTimer } from '@/components/production/WorkerTaskTimer';
