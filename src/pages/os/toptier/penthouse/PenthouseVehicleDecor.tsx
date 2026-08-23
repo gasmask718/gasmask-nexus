@@ -221,7 +221,7 @@ function BookingsTab() {
   const { data: bookings = [] } = useQuery({
     queryKey: ['decor-bookings'],
     queryFn: async () => {
-      const { data } = await supabase.from('decor_bookings').select('*, decor_providers(name), vehicle_decor_styles(name)').order('created_at', { ascending: false });
+      const { data } = await (supabase.from('decor_bookings') as any).select('*, decor_providers(name), vehicle_decor_styles(name)').order('created_at', { ascending: false });
       return data || [];
     },
   });

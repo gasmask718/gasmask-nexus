@@ -80,8 +80,8 @@ export function useAllActiveBlocks() {
   return useQuery({
     queryKey: ['all-autonomy-blocks'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('autonomy_blocks')
+      const { data, error } = await (supabase
+        .from('autonomy_blocks') as any)
         .select(`
           *,
           worker:profiles!autonomy_blocks_worker_id_fkey(id, name, role, avatar_url)
