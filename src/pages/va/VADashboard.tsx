@@ -235,7 +235,7 @@ function VADashboardInner() {
                   <Building2 className="h-4 w-4" style={{ color: companyColor }} />
                   <span className="text-white font-medium">{companyName}</span>
                 </div>
-                {activeCompany && (
+                {activeCompany?.role && (
                   <div className="px-2 text-[10px] text-slate-500 uppercase tracking-wide">
                     Role: {activeCompany.role}
                   </div>
@@ -259,6 +259,7 @@ function VADashboardInner() {
               </span>
             </div>
             <div className="flex items-center gap-3">
+              <VACompanySwitcher />
               <VAActiveNumberSwitcher />
               <GasMaskShiftToggle />
               <Badge className="bg-slate-700 text-slate-300 text-xs">
@@ -281,28 +282,51 @@ function VADashboardInner() {
                 <VACallStats />
                 
                 <div className="flex justify-end">
-                  <Button onClick={handleStartDialer} className="bg-cyan-600 hover:bg-cyan-700 gap-2">
+                  <Button
+                    onClick={handleStartDialer}
+                    className="bg-cyan-600 hover:bg-cyan-700 gap-2"
+                    disabled={allLeads.length === 0}
+                  >
                     <Zap className="h-4 w-4" /> Start Power Dialer ({allLeads.length} leads)
                   </Button>
                 </div>
-                <VALeadsTable
-                  onCall={lead => { setCallLead(lead); setView('call'); }}
-                  onCreateInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(false); setInvoiceOpen(true); }}
-                  onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(true); setInvoiceOpen(true); }}
-                  onStartCampaign={(list) => { setCampaignLeadList(list); setView('autodialer'); }}
-                  onQuickDial={(lead) => {
-                    setCallLead({
-                      id: `quick-${Date.now()}`,
-                      business_name: lead.name,
-                      phone: lead.phone,
-                      email: null,
-                      status: 'new',
-                      created_at: new Date().toISOString(),
-                      assigned_va: null,
-                    } as any);
-                    setView('call');
-                  }}
-                />
+                {!getVACompanyConfig(activeCompany?.slug).leadSource ? (
+                  <Card className="border-slate-700 bg-slate-800/50">
+                    <CardContent className="py-16 text-center space-y-3">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-700/40 flex items-center justify-center mx-auto">
+                        <Users className="h-7 w-7 text-slate-500" />
+                      </div>
+                      <p className="text-slate-300">
+                        No call list configured for {companyName} yet.
+                      </p>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        Leads are assigned per company. Switch companies in the header, or ask the
+                        owner to load a call list for {companyName}.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <VALeadsTable
+                    leadSource={getVACompanyConfig(activeCompany?.slug).leadSource!}
+                    brandaroTools={activeCompany?.slug === 'brandaro'}
+                    onCall={lead => { setCallLead(lead); setView('call'); }}
+                    onCreateInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(false); setInvoiceOpen(true); }}
+                    onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceSendMode(true); setInvoiceOpen(true); }}
+                    onStartCampaign={(list) => { setCampaignLeadList(list); setView('autodialer'); }}
+                    onQuickDial={(lead) => {
+                      setCallLead({
+                        id: `quick-${Date.now()}`,
+                        business_name: lead.name,
+                        phone: lead.phone,
+                        email: null,
+                        status: 'new',
+                        created_at: new Date().toISOString(),
+                        assigned_va: null,
+                      } as any);
+                      setView('call');
+                    }}
+                  />
+                )}
                 
                 {/* Recent Calls */}
                 <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-4">
@@ -417,7 +441,9 @@ function VADashboardInner() {
 export default function VADashboard() {
   return (
     <VASessionProvider>
-      <VADashboardInner />
+      <VACompanyProvider>
+        <VADashboardInner />
+      </VACompanyProvider>
     </VASessionProvider>
   );
 }
