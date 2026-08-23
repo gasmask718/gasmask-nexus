@@ -7,10 +7,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 import { sendSms, smsContentHash } from "../_shared/sendSms.ts";
+import { captureQuickContact } from "../_shared/quickContact.ts";
 
 
 interface Body {
-  store_id: string;
+  store_id?: string; // absent = quick-dial pad send to a raw street number
   to_phone: string;
   body: string;
   body_translated?: string | null;
@@ -62,20 +63,28 @@ Deno.serve(async (req) => {
   // 2. Validate body
   let body: Body;
   try { body = await req.json(); } catch { return json({ error: "invalid_json" }, 400); }
-  if (!body.store_id || !body.to_phone || !body.body) {
+  if (!body.to_phone || !body.body) {
     return json({ error: "missing_fields" }, 400);
   }
 
-  // 3. Confirm the store is assigned to one of this user's ambassador records
-  const { data: assignments } = await admin
-    .from("ambassador_assignments")
-    .select("ambassador_id")
-    .in("ambassador_id", ambRows.map((a) => a.id))
-    .eq("store_id", body.store_id)
-    .eq("active", true);
-  const owningId = assignments?.[0]?.ambassador_id;
-  if (!owningId) return json({ error: "store_not_assigned" }, 403);
-  const amb = ambRows.find((a) => a.id === owningId)!;
+  // 3. Resolve which ambassador record owns this send. Store sends must be
+  //    assigned to the caller. Quick-dial sends (a street number with no store
+  //    yet) have nothing to assign against — use the caller's first active
+  //    ambassador record. Suppression still applies via sendSms either way.
+  let amb: (typeof ambRows)[number];
+  if (body.store_id) {
+    const { data: assignments } = await admin
+      .from("ambassador_assignments")
+      .select("ambassador_id")
+      .in("ambassador_id", ambRows.map((a) => a.id))
+      .eq("store_id", body.store_id)
+      .eq("active", true);
+    const owningId = assignments?.[0]?.ambassador_id;
+    if (!owningId) return json({ error: "store_not_assigned" }, 403);
+    amb = ambRows.find((a) => a.id === owningId)!;
+  } else {
+    amb = ambRows[0];
+  }
 
   const fromNumber = amb.twilio_number || DEFAULT_FROM;
   let twilioSid: string | null = null;
@@ -89,13 +98,13 @@ Deno.serve(async (req) => {
   const sendRes = await sendSms({
     to: body.to_phone,
     body: body.body,
-    idempotencyKey: `amb-sms-${amb.id}-${body.store_id}-${await smsContentHash(body.body + Date.now())}`,
+    idempotencyKey: `amb-sms-${amb.id}-${body.store_id || body.to_phone}-${await smsContentHash(body.body + Date.now())}`,
     sendClass: "conversational",
     from: fromNumber || undefined,
     mediaUrls: body.media_urls || [],
-    storeId: body.store_id,
+    storeId: body.store_id || undefined,
     purpose: "ambassador",
-    metadata: { ambassador_id: amb.id, template_id: body.template_id || null },
+    metadata: { ambassador_id: amb.id, template_id: body.template_id || null, source: body.store_id ? "store_thread" : "quick_dial" },
   });
 
   if (sendRes.success) {
@@ -111,7 +120,7 @@ Deno.serve(async (req) => {
     .from("communication_messages")
     .insert({
       ambassador_id: amb.id,
-      store_id: body.store_id,
+      store_id: body.store_id || null,
       owner_user_id: userId,
       created_by: userId,
       direction: "outbound",
@@ -135,7 +144,7 @@ Deno.serve(async (req) => {
   // 5b. Mirror into the CANONICAL unified phone log so the owner sees
   //     ambassador texts alongside every other call/text for the store.
   const { error: mirrorErr } = await admin.from("communication_logs").insert({
-    store_id: body.store_id,
+    store_id: body.store_id || null,
     channel: "sms",
     direction: "outbound",
     status: providerStatus,
@@ -155,7 +164,7 @@ Deno.serve(async (req) => {
   // 6. Activity log
   await verifiedInsertSoft(admin, 'log ambassador SMS', (c: any) => c.from("ambassador_activity_log").insert({
     ambassador_id: amb.id,
-    store_id: body.store_id,
+    store_id: body.store_id || null,
     action_type: body.template_id ? "template_sent" : "sms_sent",
     metadata: { message_id: msgRow.id, template_id: body.template_id, status: providerStatus },
   }));
@@ -169,5 +178,14 @@ Deno.serve(async (req) => {
       .eq("id", body.template_id);
   }
 
-  return json({ ok: true, message: msgRow, twilio_sid: twilioSid, provider_status: providerStatus, provider_error: providerError });
+  // Quick-dial: capture the number the moment the text fires (sent or
+  //  suppressed — either way the ambassador met a person and the number matters).
+  let quickContactId: string | null = null;
+  if (!body.store_id) {
+    quickContactId = await captureQuickContact(admin, {
+      ambassadorId: amb.id, ambassadorName: amb.name, phone: body.to_phone, firstAction: "texted",
+    });
+  }
+
+  return json({ ok: true, message: msgRow, twilio_sid: twilioSid, provider_status: providerStatus, provider_error: providerError, blocked: sendRes.blocked === true, quick_contact_id: quickContactId });
 });

@@ -39,7 +39,7 @@ export default function StockLevelsPage() {
   const { data: stockLevels, isLoading } = useQuery({
     queryKey: ['stock-levels', warehouseFilter, stockFilter, search],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from('inventory_stock')
         .select(`
           *,

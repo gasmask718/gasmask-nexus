@@ -53,7 +53,7 @@ export default function MovementsPage() {
   const { data: movements, isLoading } = useQuery({
     queryKey: ['inventory-movements-page', warehouseFilter, productFilter, typeFilter, search],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from('inventory_movements')
         .select(`
           *,

@@ -50,7 +50,7 @@ export function useInventoryAuditLog(filters?: AuditLogFilters) {
   return useQuery({
     queryKey: ['inventory-audit-log', filters],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from('inventory_audit_log')
         .select(`
           *,

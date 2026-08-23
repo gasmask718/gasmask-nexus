@@ -273,7 +273,7 @@ export function useRouteDetail(routeId: string | null) {
           .select(`*, assignee:profiles!routes_assigned_to_fkey(id, name, role)`)
           .eq('id', routeId)
           .single(),
-        supabase
+        (supabase as any)
           .from('route_stops')
           .select(`*, store:store_master!route_stops_store_id_fkey(id, store_name, address, territory)`)
           .eq('route_id', routeId)

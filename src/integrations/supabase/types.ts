@@ -96453,6 +96453,60 @@ export type Database = {
         }
         Relationships: []
       }
+      quick_contacts: {
+        Row: {
+          address: string | null
+          became_store_id: string | null
+          became_task_id: string | null
+          captured_at: string | null
+          captured_by_ambassador_id: string | null
+          captured_by_name: string | null
+          first_action: string | null
+          id: string
+          name: string | null
+          neighborhood: string | null
+          note: string | null
+          phone10: string
+          promoted_at: string | null
+          status: string | null
+          what_they_are: string | null
+        }
+        Insert: {
+          address?: string | null
+          became_store_id?: string | null
+          became_task_id?: string | null
+          captured_at?: string | null
+          captured_by_ambassador_id?: string | null
+          captured_by_name?: string | null
+          first_action?: string | null
+          id?: string
+          name?: string | null
+          neighborhood?: string | null
+          note?: string | null
+          phone10: string
+          promoted_at?: string | null
+          status?: string | null
+          what_they_are?: string | null
+        }
+        Update: {
+          address?: string | null
+          became_store_id?: string | null
+          became_task_id?: string | null
+          captured_at?: string | null
+          captured_by_ambassador_id?: string | null
+          captured_by_name?: string | null
+          first_action?: string | null
+          id?: string
+          name?: string | null
+          neighborhood?: string | null
+          note?: string | null
+          phone10?: string
+          promoted_at?: string | null
+          status?: string | null
+          what_they_are?: string | null
+        }
+        Relationships: []
+      }
       raw_allocation_overrides: {
         Row: {
           changed_by: string | null
@@ -154960,6 +155014,16 @@ export type Database = {
       process_paid_order: { Args: { p_order_id: string }; Returns: Json }
       process_recalc_queue: { Args: never; Returns: Json }
       process_settlement_releases: { Args: never; Returns: number }
+      promote_quick_contact: {
+        Args: {
+          p_due_date?: string
+          p_make_store?: boolean
+          p_make_task?: boolean
+          p_quick_id: string
+          p_task_text?: string
+        }
+        Returns: Json
+      }
       promote_store_to_route_board: {
         Args: {
           _business?: string
