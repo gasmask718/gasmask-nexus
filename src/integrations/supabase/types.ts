@@ -53418,6 +53418,9 @@ export type Database = {
           default_voice_provider: string | null
           enable_test_mode: boolean | null
           id: string
+          live_mode_test_call_sid: string | null
+          live_mode_unlocked_at: string | null
+          live_mode_unlocked_by: string | null
           max_attempts_per_day: number | null
           max_calls_per_minute: number | null
           max_concurrent_dials: number | null
@@ -53455,6 +53458,9 @@ export type Database = {
           default_voice_provider?: string | null
           enable_test_mode?: boolean | null
           id?: string
+          live_mode_test_call_sid?: string | null
+          live_mode_unlocked_at?: string | null
+          live_mode_unlocked_by?: string | null
           max_attempts_per_day?: number | null
           max_calls_per_minute?: number | null
           max_concurrent_dials?: number | null
@@ -53492,6 +53498,9 @@ export type Database = {
           default_voice_provider?: string | null
           enable_test_mode?: boolean | null
           id?: string
+          live_mode_test_call_sid?: string | null
+          live_mode_unlocked_at?: string | null
+          live_mode_unlocked_by?: string | null
           max_attempts_per_day?: number | null
           max_calls_per_minute?: number | null
           max_concurrent_dials?: number | null
