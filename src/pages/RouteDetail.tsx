@@ -106,6 +106,35 @@ const RouteDetail = () => {
 
         if (stopsError) throw stopsError;
         setStops(stopsData as any || []);
+
+        // Worker name resolved across ambassadors/drivers/bikers/profiles + money on route
+        const { data: ov } = await supabase
+          .from('v_routes_overview' as any)
+          .select('worker_name, money_on_this_route')
+          .eq('route_id', id)
+          .maybeSingle();
+        if (ov) {
+          setWorkerName((ov as any).worker_name ?? null);
+          setRouteMoney((ov as any).money_on_this_route ?? null);
+        }
+
+        // Money owed per stop's store (unpaid sale invoices)
+        const storeIds = [...new Set(((stopsData as any[]) || []).map((s: any) => s.store?.id).filter(Boolean))];
+        if (storeIds.length > 0) {
+          const { data: inv } = await supabase
+            .from('invoices' as any)
+            .select('store_id, total_amount, amount_paid')
+            .in('store_id', storeIds)
+            .is('deleted_at', null)
+            .eq('revenue_role', 'sale')
+            .or('payment_status.is.null,payment_status.neq.paid');
+          const owed: Record<string, number> = {};
+          for (const row of (inv as any[]) || []) {
+            owed[row.store_id] = (owed[row.store_id] || 0)
+              + (Number(row.total_amount) || 0) - (Number(row.amount_paid) || 0);
+          }
+          setOwedByStore(owed);
+        }
       } catch (error) {
         console.error('Error fetching route data:', error);
         toast.error('Failed to load route details');
