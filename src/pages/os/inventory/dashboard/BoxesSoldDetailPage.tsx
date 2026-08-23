@@ -60,7 +60,7 @@ export default function BoxesSoldDetailPage() {
         .limit(500);
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as any[];
     },
   });
 

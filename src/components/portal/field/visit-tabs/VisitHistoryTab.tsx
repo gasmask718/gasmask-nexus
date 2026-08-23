@@ -61,7 +61,7 @@ export function VisitHistoryTab({ storeId }: VisitHistoryTabProps) {
         }
 
         // Fetch change lists
-        const { data: changeListsData } = await supabase
+        const { data: changeListsData } = await (supabase as any)
           .from('change_lists')
           .select(`
             id,
