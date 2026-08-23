@@ -1,59 +1,44 @@
 /**
  * VAActiveNumberSwitcher — live caller-ID swap for an in-session VA.
  *
- * Pulls the same dc_phone_numbers pool used by the onboarding modal and lets
- * the VA change the active Twilio number without ending the session. The
- * selected number is what every subsequent outbound call (browser SDK or
- * server-dispatched) uses as the From / callerId.
+ * Company-scoped: lists only the ACTIVE company's numbers from
+ * v_va_caller_ids. AI-backed lines are flagged so the VA knows callbacks to
+ * that number reach the AI agent, not a human. A company with no number
+ * renders a blocked state instead of leaking the global pool.
  */
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useVASession } from '@/contexts/VASessionContext';
+import { useVACompany } from '@/contexts/VACompanyContext';
+import { useVACallerIds } from '@/hooks/useVACallerIds';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Phone } from 'lucide-react';
+import { Phone, AlertTriangle, Bot } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface PoolNumber {
-  id: string;
-  phone_number: string;
-  friendly_name: string;
-  business: string | null;
-}
 
 export function VAActiveNumberSwitcher() {
   const { twilioNumberId, twilioNumber, switchNumber, isOnboarded } = useVASession();
-
-  const { data: numbers = [] } = useQuery({
-    queryKey: ['va-active-number-switcher'],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('dc_phone_numbers')
-        .select('id, phone_number, friendly_name, business, number_type, is_active')
-        .eq('is_active', true)
-        .eq('number_type', 'local')
-        .not('friendly_name', 'ilike', '%AI Agent%')
-        .order('business')
-        .order('phone_number');
-      return ((data || []) as any[]).map((n) => ({
-        id: n.id,
-        phone_number: n.phone_number,
-        friendly_name: n.friendly_name || n.phone_number,
-        business: n.business,
-      })) as PoolNumber[];
-    },
-    enabled: isOnboarded,
-  });
+  const { activeCompany } = useVACompany();
+  const { numbers, hasNumbers } = useVACallerIds(activeCompany?.id);
 
   if (!isOnboarded) return null;
 
+  if (!hasNumbers) {
+    return (
+      <span className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-400 text-xs">
+        <AlertTriangle className="h-3 w-3" />
+        No caller ID — calls blocked
+      </span>
+    );
+  }
+
   const handleChange = async (id: string) => {
-    const picked = numbers.find((n) => n.id === id);
+    const picked = numbers.find((n) => n.dc_number_id === id);
     if (!picked) return;
     try {
-      await switchNumber(picked.id, picked.phone_number);
-      toast.success(`Caller ID set to ${picked.friendly_name} · ${picked.phone_number}`);
+      await switchNumber(picked.dc_number_id, picked.phone_number);
+      toast.success(
+        `Caller ID set to ${picked.number_friendly_name || picked.phone_number} · ${picked.phone_number}`,
+      );
     } catch (err: any) {
       toast.error(`Failed to switch number: ${err?.message || 'unknown error'}`);
     }
@@ -71,16 +56,27 @@ export function VAActiveNumberSwitcher() {
       </SelectTrigger>
       <SelectContent className="bg-slate-900 border-slate-700 text-white">
         {numbers.map((num) => (
-          <SelectItem key={num.id} value={num.id} className="focus:bg-cyan-500/10 focus:text-cyan-300">
+          <SelectItem
+            key={num.dc_number_id}
+            value={num.dc_number_id}
+            className="focus:bg-cyan-500/10 focus:text-cyan-300"
+          >
             <div className="flex flex-col">
-              <span className="text-xs font-medium">{num.friendly_name}</span>
+              <span className="text-xs font-medium flex items-center gap-1.5">
+                {num.number_friendly_name || num.phone_number}
+                {num.is_default_caller_id && (
+                  <span className="text-[9px] text-slate-400">(default)</span>
+                )}
+                {num.is_ai_number && (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-400">
+                    <Bot className="h-2.5 w-2.5" /> AI line
+                  </span>
+                )}
+              </span>
               <span className="text-[10px] text-slate-400 font-mono">{num.phone_number}</span>
             </div>
           </SelectItem>
         ))}
-        {numbers.length === 0 && (
-          <div className="px-3 py-2 text-xs text-slate-400">No numbers available.</div>
-        )}
       </SelectContent>
     </Select>
   );
