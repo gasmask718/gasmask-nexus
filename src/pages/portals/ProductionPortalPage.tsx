@@ -29,6 +29,7 @@ import {
   useDailyCloseout,
   useTodayBatches,
   useCloseDay,
+  useMyOfficeAssignments,
 } from '@/hooks/useProductionPortal';
 import {
   ProductionKPICards,
@@ -65,6 +66,7 @@ import {
   DailyExecutionDashboard,
   SupervisorScorecard,
   BrandYieldAnalyticsPanel,
+  ShipmentsPanel,
 } from '@/components/production';
 import { WorkerTaskTimer } from '@/components/production/WorkerTaskTimer';
 import { LaborEfficiencyPanel } from '@/components/production/LaborEfficiencyPanel';
@@ -96,6 +98,7 @@ import {
   Leaf,
   BarChart3,
   Award,
+  Truck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -141,6 +144,15 @@ export default function ProductionPortalPage() {
   const closeDay = useCloseDay();
   const { data: pendingSubmissionCount = 0 } = usePendingSubmissionCount(selectedOfficeId);
   const rbac = useProductionRBAC();
+  const { data: myAssignments = [] } = useMyOfficeAssignments();
+
+  // Office leaders (production role with an assignment) only see their own
+  // office(s). Core staff (admin tier) and unassigned managers see all.
+  const isOfficeScoped = rbac.tier !== 'admin' && myAssignments.length > 0;
+  const visibleOffices = isOfficeScoped
+    ? offices.filter(o => myAssignments.some(a => a.office_id === o.id))
+    : offices;
+  const singleOffice = visibleOffices.length === 1;
   // Check if wizard was completed for this office
   useEffect(() => {
     if (selectedOfficeId) {
@@ -149,12 +161,13 @@ export default function ProductionPortalPage() {
     }
   }, [selectedOfficeId]);
 
-  // Auto-select first office when loaded
+  // Auto-select first visible office when loaded (for an office leader this
+  // is their assigned office — the selector is hidden below when there's one).
   useEffect(() => {
-    if (offices.length > 0 && !selectedOfficeId) {
-      setSelectedOfficeId(offices[0].id);
+    if (visibleOffices.length > 0 && !visibleOffices.some(o => o.id === selectedOfficeId)) {
+      setSelectedOfficeId(visibleOffices[0].id);
     }
-  }, [offices, selectedOfficeId]);
+  }, [visibleOffices, selectedOfficeId]);
 
   const handleWizardDismiss = () => {
     const completedOffices = JSON.parse(localStorage.getItem(WIZARD_COMPLETE_KEY) || '[]');
