@@ -70216,6 +70216,87 @@ export type Database = {
           },
         ]
       }
+      inbound_policy: {
+        Row: {
+          after_hours_ai_only: boolean | null
+          ai_agent_id: string | null
+          ai_fallback: boolean | null
+          ai_greeting: string | null
+          business_hours_end: string | null
+          business_hours_start: string | null
+          ring_humans_first: boolean | null
+          ring_seconds: number | null
+          ring_strategy: string | null
+          updated_at: string | null
+          va_company_id: string
+        }
+        Insert: {
+          after_hours_ai_only?: boolean | null
+          ai_agent_id?: string | null
+          ai_fallback?: boolean | null
+          ai_greeting?: string | null
+          business_hours_end?: string | null
+          business_hours_start?: string | null
+          ring_humans_first?: boolean | null
+          ring_seconds?: number | null
+          ring_strategy?: string | null
+          updated_at?: string | null
+          va_company_id: string
+        }
+        Update: {
+          after_hours_ai_only?: boolean | null
+          ai_agent_id?: string | null
+          ai_fallback?: boolean | null
+          ai_greeting?: string | null
+          business_hours_end?: string | null
+          business_hours_start?: string | null
+          ring_humans_first?: boolean | null
+          ring_seconds?: number | null
+          ring_strategy?: string | null
+          updated_at?: string | null
+          va_company_id?: string
+        }
+        Relationships: []
+      }
+      inbound_ring_targets: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          label: string
+          only_business_hours: boolean | null
+          phone_e164: string | null
+          ring_order: number | null
+          target_type: string
+          user_id: string | null
+          va_company_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          label: string
+          only_business_hours?: boolean | null
+          phone_e164?: string | null
+          ring_order?: number | null
+          target_type: string
+          user_id?: string | null
+          va_company_id: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          label?: string
+          only_business_hours?: boolean | null
+          phone_e164?: string | null
+          ring_order?: number | null
+          target_type?: string
+          user_id?: string | null
+          va_company_id?: string
+        }
+        Relationships: []
+      }
       incident_drills: {
         Row: {
           actual_outcomes: Json | null
