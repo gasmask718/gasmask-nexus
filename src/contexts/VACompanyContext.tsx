@@ -67,13 +67,19 @@ export function VACompanyProvider({ children }: { children: ReactNode }) {
       ]);
 
       const memberships = (membershipsRes.data || []) as any[];
+      const roleByCompany = new Map<string, string>(
+        memberships.map((m) => [m.company_id as string, m.role as string]),
+      );
       const memberCompanies = memberships
-        .map((m) => m.va_companies)
+        .map((m) => (m.va_companies ? { ...m.va_companies, role: m.role } : null))
         .filter((c) => c && c.is_active) as VACompany[];
       const isSwitchboard = memberships.some(
         (m) => m.va_companies?.slug === SWITCHBOARD_COMPANY_SLUG,
       );
-      const allCompanies = (companiesRes.data || []) as VACompany[];
+      const allCompanies = ((companiesRes.data || []) as VACompany[]).map((c) => ({
+        ...c,
+        role: roleByCompany.get(c.id),
+      }));
 
       return {
         companies: isSwitchboard ? allCompanies : memberCompanies,

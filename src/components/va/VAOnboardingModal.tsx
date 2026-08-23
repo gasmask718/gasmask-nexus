@@ -100,11 +100,12 @@ export function VAOnboardingModal({ isOpen: isOpenProp, onSessionStarted }: VAOn
   };
 
   const handleStart = async () => {
-    if (!selectedNumber) return;
+    const picked = numbers.find((n) => n.phone_number === selectedNumber);
+    if (!picked) return;
     setIsStarting(true);
     try {
-      if (onSessionStarted) await onSessionStarted(selectedNumber, selectedAgent);
-      else await session.startSession(selectedNumber, selectedAgent);
+      if (onSessionStarted) await onSessionStarted(picked.phone_number, selectedAgent);
+      else await session.startSession(picked.dc_number_id, picked.phone_number, language);
     } catch (err: any) {
       toast.error(`Failed to start session: ${err?.message || 'unknown error'}`);
     } finally {
