@@ -482,9 +482,25 @@ export default function PowerDialerConsole() {
                 )}
 
                 {(testSid || settings?.live_mode_test_call_sid) && !testSteps?.human_confirmed && !testFailure && (
-                  <Button className="w-full" disabled={gateBusy} onClick={() => adminAction("confirm_test")}>
-                    <ShieldCheck className="h-4 w-4 mr-2" /> I answered — Confirm &amp; unlock live mode
-                  </Button>
+                  <div className="space-y-2">
+                    <Button className="w-full" disabled={gateBusy} onClick={() => adminAction("confirm_test")}>
+                      <ShieldCheck className="h-4 w-4 mr-2" /> I answered — Confirm &amp; unlock live mode
+                    </Button>
+                    {testSteps?.answered && !testStatus?.answered_by && (
+                      <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 text-sm space-y-2">
+                        <p>
+                          The call was answered, but machine detection hasn't reported a verdict.
+                          If you answered it yourself, unlock by your own attestation — the unlock
+                          is recorded as <span className="font-mono">human_attestation</span> so the
+                          audit trail shows how live mode was confirmed.
+                        </p>
+                        <Button variant="outline" className="w-full" disabled={gateBusy}
+                          onClick={() => adminAction("confirm_test", { attest_human: true })}>
+                          <UserCheck className="h-4 w-4 mr-2" /> I answered it myself — unlock live mode
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </>
             ) : (
@@ -493,7 +509,10 @@ export default function PowerDialerConsole() {
                   <p className="font-semibold text-destructive">LIVE MODE IS ON.</p>
                   <p className="mt-1">
                     Real calls will be placed when a campaign is armed.
-                    Unlocked {settings?.live_mode_unlocked_at ? new Date(settings.live_mode_unlocked_at).toLocaleString() : ""}.
+                    Unlocked {settings?.live_mode_unlocked_at ? new Date(settings.live_mode_unlocked_at).toLocaleString() : ""}
+                    {settings?.live_mode_unlock_method
+                      ? ` — confirmed by ${settings.live_mode_unlock_method === "human_attestation" ? "human attestation (you answered the test call)" : "machine detection verdict"}`
+                      : ""}.
                   </p>
                 </div>
                 <Button variant="outline" disabled={gateBusy} onClick={() => adminAction("set_simulation")}>
