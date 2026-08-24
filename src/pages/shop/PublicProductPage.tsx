@@ -25,6 +25,7 @@ function categoryLabel(value: string | null | undefined) {
  */
 export default function PublicProductPage() {
   const { productId } = useParams<{ productId: string }>();
+  const { addToCart, isAddingToCart } = useCart();
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['public-product', productId],
