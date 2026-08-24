@@ -50,6 +50,8 @@ const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const PendingApproval = lazy(() => import('@/pages/PendingApproval'));
 const Shop = lazy(() => import('@/pages/Shop'));
 const PublicProductPage = lazy(() => import('@/pages/shop/PublicProductPage'));
+const CheckoutSuccess = lazy(() => import('@/pages/shop/CheckoutSuccess'));
+const TrackOrder = lazy(() => import('@/pages/shop/TrackOrder'));
 
 const ShopifyStore = lazy(() => import('@/pages/ShopifyStore'));
 const Cart = lazy(() => import('@/pages/Cart'));
