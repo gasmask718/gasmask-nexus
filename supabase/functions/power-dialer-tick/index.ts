@@ -307,13 +307,17 @@ Deno.serve(async (req) => {
           Method: "POST",
           StatusCallback: statusUrl,
           StatusCallbackMethod: "POST",
-          StatusCallbackEvent: "initiated ringing answered completed",
           Timeout: "30",
           AsyncAmd: "true",
           AsyncAmdStatusCallback: statusUrl,
           AsyncAmdStatusCallbackMethod: "POST",
           MachineDetectionTimeout: "5",
         });
+        // Each event must be its OWN repeated StatusCallbackEvent parameter —
+        // a single space-joined value subscribes to nothing (2026-08-24 fix).
+        for (const ev of ["initiated", "ringing", "answered", "completed"]) {
+          params.append("StatusCallbackEvent", ev);
+        }
 
         try {
           const twilioRes = await fetch(

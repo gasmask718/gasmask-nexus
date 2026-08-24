@@ -732,6 +732,17 @@ serve(async (req: Request): Promise<Response> => {
     const twimlContent = `<Response><Say voice="alice">This is a test ring from ${businessName}. Your phone is correctly configured to receive calls. Goodbye.</Say><Hangup/></Response>`;
 
     try {
+      const callParams = new URLSearchParams({
+        To: targetPhone,
+        From: fromNumber,
+        Twiml: twimlContent,
+        StatusCallback: statusCallbackUrl,
+        StatusCallbackMethod: "POST",
+      });
+      // Repeated params — a space-joined single value subscribes to nothing.
+      for (const ev of ["initiated", "ringing", "answered", "completed"]) {
+        callParams.append("StatusCallbackEvent", ev);
+      }
       const twilioResponse = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Calls.json`,
         {
@@ -740,14 +751,7 @@ serve(async (req: Request): Promise<Response> => {
             "Authorization": `Basic ${btoa(`${twilioAccountSid}:${twilioAuthToken}`)}`,
             "Content-Type": "application/x-www-form-urlencoded",
           },
-          body: new URLSearchParams({
-            To: targetPhone,
-            From: fromNumber,
-            Twiml: twimlContent,
-            StatusCallback: statusCallbackUrl,
-            StatusCallbackEvent: "initiated ringing answered completed",
-            StatusCallbackMethod: "POST",
-          }).toString(),
+          body: callParams.toString(),
         }
       );
 

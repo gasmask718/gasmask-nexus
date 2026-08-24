@@ -156,7 +156,9 @@ Deno.serve(async (req) => {
       params.set("From", TWILIO_PHONE_NUMBER);
       params.set("Twiml", agentTwiml);
       params.set("StatusCallback", statusCallbackUrl);
-      params.set("StatusCallbackEvent", "answered completed");
+      // Repeated params — a space-joined single value subscribes to nothing.
+      params.append("StatusCallbackEvent", "answered");
+      params.append("StatusCallbackEvent", "completed");
       params.set("StatusCallbackMethod", "POST");
       params.set("Timeout", "30");
 
@@ -189,7 +191,9 @@ Deno.serve(async (req) => {
       params.set("From", TWILIO_PHONE_NUMBER);
       params.set("Twiml", agentTwiml);
       params.set("StatusCallback", statusCallbackUrl);
-      params.set("StatusCallbackEvent", "answered completed");
+      // Repeated params — a space-joined single value subscribes to nothing.
+      params.append("StatusCallbackEvent", "answered");
+      params.append("StatusCallbackEvent", "completed");
       params.set("StatusCallbackMethod", "POST");
       params.set("Timeout", "30");
 

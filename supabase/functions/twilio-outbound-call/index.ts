@@ -166,7 +166,10 @@ Deno.serve(async (req) => {
     params.append("Method", "POST");
     params.append("StatusCallback", statusCallbackUrl);
     params.append("StatusCallbackMethod", "POST");
-    params.append("StatusCallbackEvent", "initiated ringing answered completed");
+    // Repeated params — a space-joined single value subscribes to nothing.
+    for (const ev of ["initiated", "ringing", "answered", "completed"]) {
+      params.append("StatusCallbackEvent", ev);
+    }
     params.append("Record", "true");
     params.append("RecordingChannels", "dual");
     params.append("RecordingStatusCallback", `${supabaseUrl}/functions/v1/twilio-recording-callback`);
