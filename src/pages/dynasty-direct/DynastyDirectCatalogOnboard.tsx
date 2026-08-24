@@ -441,6 +441,65 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
               )}
             </div>
             <PhotoUploadMultiple photos={photos} onChange={setPhotos} folder="dd-catalog-onboard" maxPhotos={6} />
+
+            {/* PHOTO → LISTING. AI suggests; the wholesaler confirms. */}
+            <div className="rounded-lg border border-border/60 p-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="secondary" disabled={photos.length === 0 || reading} onClick={runReadPhoto}>
+                  {reading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                  Read the photo &amp; write my listing
+                </Button>
+                <Button variant="outline" disabled={photos.length === 0 || standardizing} onClick={runStandardize}>
+                  {standardizing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wand2 className="h-4 w-4 mr-2" />}
+                  Uniform backdrop
+                </Button>
+                {standardizedUrl && <Badge variant="secondary">backdrop normalised</Badge>}
+              </div>
+
+              {recognition && (
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={recognition.confidence === 'high' ? 'default' : 'destructive'}
+                      className={recognition.confidence === 'medium' ? 'bg-amber-500/20 text-amber-500 border-amber-500/40' : ''}
+                    >
+                      AI confidence: {recognition.confidence}
+                    </Badge>
+                    {recognition.confidence !== 'high' && (
+                      <span className="text-xs text-muted-foreground">
+                        Confirm every field below — the model was unsure.
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
+                    {recognition.flavor_or_variant && <div><span className="font-medium">Variant:</span> {recognition.flavor_or_variant}</div>}
+                    {recognition.size_or_count && <div><span className="font-medium">Size:</span> {recognition.size_or_count}</div>}
+                    {recognition.item_type && <div><span className="font-medium">Type:</span> {recognition.item_type}</div>}
+                    {recognition.package_text && <div className="col-span-2"><span className="font-medium">On pack:</span> {recognition.package_text}</div>}
+                  </div>
+                  {Array.isArray(recognition.key_features) && recognition.key_features.length > 0 && (
+                    <ul className="list-disc pl-5 text-xs text-muted-foreground">
+                      {recognition.key_features.map((f: string, i: number) => <li key={i}>{f}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-2 max-w-sm">
+                <Label>Category</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger><SelectValue placeholder="Pick a category" /></SelectTrigger>
+                  <SelectContent>
+                    {DD_CATEGORY_OPTIONS.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Weight and box dimensions are still required at the confirm gate before this can go live.
+              </p>
+            </div>
+
             <div className="flex justify-end">
               <Button size="lg" disabled={!canStartB} onClick={startStepB}>
                 <Sparkles className="h-4 w-4 mr-2" /> Find official photos
