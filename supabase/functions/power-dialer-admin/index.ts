@@ -73,8 +73,25 @@ Deno.serve(async (req) => {
       }
       const SID = Deno.env.get("TWILIO_ACCOUNT_SID");
       const TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-      const FROM = Deno.env.get("TWILIO_PHONE_NUMBER");
-      if (!SID || !TOKEN || !FROM) return json({ error: "twilio_env_missing" }, 500);
+      if (!SID || !TOKEN) return json({ error: "twilio_env_missing" }, 500);
+
+      // The test call presents the GasMask / Grabba default caller ID —
+      // +19298225712, the one human voice line in the pool — resolved from
+      // the database, not a shared env var. Env is the fallback only.
+      let FROM = Deno.env.get("TWILIO_PHONE_NUMBER") || "";
+      const { data: gm } = await supabase
+        .from("va_companies").select("id").eq("slug", "gasmask_grabba").maybeSingle();
+      if (gm?.id) {
+        const { data: num } = await supabase
+          .from("dc_phone_numbers")
+          .select("phone_number")
+          .eq("va_company_id", gm.id)
+          .eq("is_default_caller_id", true)
+          .eq("is_active", true)
+          .maybeSingle();
+        if (num?.phone_number) FROM = num.phone_number;
+      }
+      if (!FROM) return json({ error: "no_caller_id", detail: "No GasMask/Grabba default caller ID and no TWILIO_PHONE_NUMBER fallback." }, 500);
 
       const cb = new URLSearchParams({ purpose: "live_mode_test" });
       const params = new URLSearchParams({
@@ -106,8 +123,71 @@ Deno.serve(async (req) => {
       }).eq("id", settings.id);
 
       return json({
-        ok: true, test_call_sid: data.sid,
-        message: "Test call placed. ANSWER IT and stay on the line a few seconds, then press Confirm & Unlock.",
+        ok: true, test_call_sid: data.sid, from: FROM,
+        message: `Test call placed from ${FROM}. ANSWER IT and stay on the line — this screen watches each step and unlocks live mode when a human answer is confirmed.`,
+      });
+    }
+
+    // Live progress for the test call, derived from OUR webhook pipeline's
+    // own event log (dialer_call_events). The console polls this so each
+    // step — dialing, ringing, answered, human confirmed — shows as it
+    // happens, and a failure names the exact step that failed.
+    if (action === "test_status") {
+      const testSid = settings.live_mode_test_call_sid;
+      if (!testSid) return json({ ok: true, testing: false });
+
+      const { data: events } = await supabase
+        .from("dialer_call_events")
+        .select("event_type, payload, created_at")
+        .eq("call_sid", testSid)
+        .order("created_at", { ascending: true });
+      const evs = (events || []) as any[];
+      const has = (t: string) => evs.some((e) => e.event_type === t);
+      const amd = [...evs].reverse().find((e) => e.event_type === "twilio.amd_result");
+      const answeredBy: string | null = (amd?.payload as any)?.answered_by ?? null;
+      const failEv = evs.find((e) =>
+        ["twilio.failed", "twilio.busy", "twilio.canceled", "twilio.no-answer"].includes(e.event_type));
+
+      // AMD "answered" implies the call was answered; ringing implies dialing.
+      const steps = {
+        dialing: evs.length > 0,
+        ringing: has("twilio.ringing") || has("twilio.in-progress") || !!amd,
+        answered: has("twilio.in-progress") || !!amd,
+        human_confirmed: answeredBy === "human",
+      };
+
+      let failure: { step: string; detail: string } | null = null;
+      if (failEv) {
+        const p = (failEv.payload || {}) as any;
+        const status = failEv.event_type.replace("twilio.", "");
+        const step =
+          status === "no-answer" ? "answered" :
+          status === "busy" ? "ringing" : "dialing";
+        failure = {
+          step,
+          detail: `Twilio reported '${status}'${p.error_code ? ` (error ${p.error_code})` : ""}${p.error_message ? `: ${p.error_message}` : ""}`,
+        };
+      } else if (answeredBy && answeredBy !== "human") {
+        failure = { step: "human_confirmed", detail: `Answered by '${answeredBy}' — a machine or voicemail, not a human.` };
+      }
+
+      return json({
+        ok: true,
+        testing: true,
+        sid: testSid,
+        steps,
+        answered_by: answeredBy,
+        failure,
+        unlocked_at: settings.live_mode_unlocked_at,
+        telephony_mode: settings.telephony_mode,
+        twilio_enabled: settings.twilio_enabled,
+        events: evs.map((e) => ({
+          t: e.event_type,
+          at: e.created_at,
+          status: (e.payload as any)?.call_status ?? null,
+          answered_by: (e.payload as any)?.answered_by ?? null,
+          err: (e.payload as any)?.error_message || (e.payload as any)?.error_code || null,
+        })),
       });
     }
 
