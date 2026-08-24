@@ -181,6 +181,79 @@ function SplitLedgerCard() {
   );
 }
 
+/**
+ * MANUAL RELEASE GATE. Every payout row lands held + unapproved, so no money
+ * moves until a human clicks here. Approving stamps approved_at via
+ * dd_approve_reserve_release (admin/owner only); the transfer itself is still
+ * executed by dd-release-reserves once the hold has matured.
+ */
+function PayoutApprovalCard() {
+  const qc = useQueryClient();
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["dd-reserve-approvals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dd_reserve_ledger")
+        .select("*, w:wholesaler_id(company_name)")
+        .eq("status", "held")
+        .is("approved_at", null)
+        .order("created_at", { ascending: true })
+        .limit(200);
+      if (error) throw error;
+      return data || [];
+    },
+    refetchInterval: 15_000,
+  });
+
+  const approve = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc("dd_approve_reserve_release" as any, { p_reserve_id: id });
+      if (error) throw error;
+      // Release immediately if the hold has already matured; otherwise the cron
+      // picks it up on the release date now that it is approved.
+      await supabase.functions.invoke("dd-release-reserves", { body: { reserve_id: id } });
+    },
+    onSuccess: () => {
+      toast.success("Payout approved");
+      qc.invalidateQueries({ queryKey: ["dd-reserve-approvals"] });
+      qc.invalidateQueries({ queryKey: ["dd-split-ledger"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Shield className="w-4 h-4" />Payouts awaiting your approval
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2 text-sm">
+        {isLoading && <div className="text-muted-foreground">Loading…</div>}
+        {!isLoading && rows.length === 0 && (
+          <div className="text-muted-foreground">Nothing waiting. No supplier money moves without a click here.</div>
+        )}
+        {rows.map((r: any) => (
+          <div key={r.id} className="flex items-center justify-between gap-3 border-b py-2">
+            <div>
+              <div className="font-medium">
+                {r.w?.company_name ?? "Unknown supplier"} is owed {fmt(r.amount_cents)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                order {String(r.order_id ?? "").slice(0, 8)} · {r.kind ?? "payout"} · releases{" "}
+                {r.release_at ? new Date(r.release_at).toLocaleDateString() : "—"}
+              </div>
+            </div>
+            <Button size="sm" disabled={approve.isPending} onClick={() => approve.mutate(r.id)}>
+              Release
+            </Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 function ActivationChecklist() {
   const items = [
     { id: "key", label: "STRIPE_SECRET_KEY_DD added to Lovable Cloud secrets" },
