@@ -46776,6 +46776,8 @@ export type Database = {
           image_variants: Json | null
           input_photos: Json
           inventory_qty: number | null
+          label_extraction: Json | null
+          label_photo_url: string | null
           market_check: Json | null
           measurements_estimate: Json | null
           measurements_verified_at: string | null
@@ -46815,6 +46817,8 @@ export type Database = {
           image_variants?: Json | null
           input_photos?: Json
           inventory_qty?: number | null
+          label_extraction?: Json | null
+          label_photo_url?: string | null
           market_check?: Json | null
           measurements_estimate?: Json | null
           measurements_verified_at?: string | null
@@ -46854,6 +46858,8 @@ export type Database = {
           image_variants?: Json | null
           input_photos?: Json
           inventory_qty?: number | null
+          label_extraction?: Json | null
+          label_photo_url?: string | null
           market_check?: Json | null
           measurements_estimate?: Json | null
           measurements_verified_at?: string | null

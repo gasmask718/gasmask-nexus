@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { DDAlertBar } from '@/components/dynasty-direct/DDAlertBar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DD_CATEGORY_OPTIONS } from '@/lib/dynastyDirect/categories';
+import { PackageLabelCapture } from '@/components/dynasty-direct/PackageLabelCapture';
 
 interface Candidate { url: string; source: string; confidence: number; attribution?: string; thumb?: string }
 interface Supplier { id: string; company_name: string }
@@ -76,6 +77,8 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
   const [measurements, setMeasurements] = useState<{ weight_oz: number | null; length_in: number | null; width_in: number | null; height_in: number | null }>({ weight_oz: null, length_in: null, width_in: null, height_in: null });
   const [measurementsEstimate, setMeasurementsEstimate] = useState<any>(null);
   const [measurementsVerified, setMeasurementsVerified] = useState(false);
+  // True only when a packaging-label read produced weight + all three dimensions at good confidence.
+  const [labelVerified, setLabelVerified] = useState(false);
 
   useEffect(() => {
     if (lockedSupplierId) {
@@ -441,6 +444,18 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
               )}
             </div>
             <PhotoUploadMultiple photos={photos} onChange={setPhotos} folder="dd-catalog-onboard" maxPhotos={6} />
+
+            {/* PACKAGING LABEL → SHIPPING FIELDS. Reading the printed panel beats a tape-measure guess. */}
+            <PackageLabelCapture
+              draftId={draftId}
+              productName={productName}
+              measurements={measurements}
+              onMeasurements={(m, opts) => {
+                setMeasurements(m);
+                setLabelVerified(opts.fromLabel && opts.complete);
+                setMeasurementsVerified(opts.fromLabel && opts.complete);
+              }}
+            />
 
             {/* PHOTO → LISTING. AI suggests; the wholesaler confirms. */}
             <div className="rounded-lg border border-border/60 p-4 space-y-3">
@@ -833,9 +848,19 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
                   {busy === 'estimate' ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Estimating…</> : <><Sparkles className="h-3 w-3 mr-1" /> AI estimate from photo</>}
                 </Button>
               </div>
+              {labelVerified && (
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <Badge className="bg-emerald-500/15 text-emerald-500 border-emerald-500/40">
+                    read from the printed packaging label
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    A printed number beats an estimate — these set shipping cost on every future order.
+                  </span>
+                </div>
+              )}
               {measurementsEstimate && (
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <Badge variant="secondary" className="bg-amber-100 text-amber-900 border-amber-300">AI estimate — verify before publish</Badge>
+                  <Badge variant="secondary" className="bg-amber-500/15 text-amber-500 border-amber-500/40">AI estimate — verify before publish</Badge>
                   <span className="text-muted-foreground">confidence: {measurementsEstimate.confidence}</span>
                   {measurementsEstimate.reasoning && <span className="text-muted-foreground italic">· {measurementsEstimate.reasoning}</span>}
                 </div>
@@ -843,19 +868,19 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Weight (oz)</Label>
-                  <Input type="number" step="0.1" value={measurements.weight_oz ?? ''} onChange={(e) => { setMeasurements({ ...measurements, weight_oz: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); }} />
+                  <Input type="number" step="0.1" value={measurements.weight_oz ?? ''} onChange={(e) => { setMeasurements({ ...measurements, weight_oz: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); setLabelVerified(false); }} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Length (in)</Label>
-                  <Input type="number" step="0.1" value={measurements.length_in ?? ''} onChange={(e) => { setMeasurements({ ...measurements, length_in: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); }} />
+                  <Input type="number" step="0.1" value={measurements.length_in ?? ''} onChange={(e) => { setMeasurements({ ...measurements, length_in: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); setLabelVerified(false); }} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Width (in)</Label>
-                  <Input type="number" step="0.1" value={measurements.width_in ?? ''} onChange={(e) => { setMeasurements({ ...measurements, width_in: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); }} />
+                  <Input type="number" step="0.1" value={measurements.width_in ?? ''} onChange={(e) => { setMeasurements({ ...measurements, width_in: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); setLabelVerified(false); }} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Height (in)</Label>
-                  <Input type="number" step="0.1" value={measurements.height_in ?? ''} onChange={(e) => { setMeasurements({ ...measurements, height_in: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); }} />
+                  <Input type="number" step="0.1" value={measurements.height_in ?? ''} onChange={(e) => { setMeasurements({ ...measurements, height_in: e.target.value === '' ? null : Number(e.target.value) }); setMeasurementsVerified(false); setLabelVerified(false); }} />
                 </div>
               </div>
               <label className="flex items-start gap-2 cursor-pointer pt-1 select-none">

@@ -17,7 +17,23 @@ import { DD_CATEGORIES, mapDdCategory } from '../_shared/ddCategory.ts';
 const LOVABLE_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const REMOVEBG_API_KEY = Deno.env.get('REMOVEBG_API_KEY') || '';
+// Remove.bg key lives in dd_ai_config.remove_bg_api_key (the shape dd-process-image
+// already reads); env REMOVEBG_API_KEY is only a fallback.
+let _removeBgKey: string | undefined;
+async function getRemoveBgKey(): Promise<string> {
+  if (_removeBgKey !== undefined) return _removeBgKey;
+  try {
+    const { data } = await sbAdmin()
+      .from('dd_ai_config')
+      .select('remove_bg_api_key')
+      .eq('id', 1)
+      .maybeSingle();
+    const v = String((data as any)?.remove_bg_api_key ?? '').trim();
+    if (v) { _removeBgKey = v; return v; }
+  } catch (_e) { /* fall through to env */ }
+  _removeBgKey = (Deno.env.get('REMOVEBG_API_KEY') || '').trim();
+  return _removeBgKey;
+}
 
 const sbAdmin = () => createClient(SUPABASE_URL, SERVICE_ROLE);
 
@@ -414,6 +430,115 @@ async function runMarketCheck(body: any) {
 
 }
 
+// ── PACKAGING LABEL READER ────────────────────────────────────────────────
+// Most case/retail packaging PRINTS net/gross weight, case dimensions, units
+// per case and a UPC. Reading the printed number beats a tape-measure guess:
+// these values set the shipping cost on every future order of the product,
+// and a bad read shows up weeks later as an invisible carrier re-weigh
+// adjustment against Dynasty's account.
+const OZ_PER: Record<string, number> = { oz: 1, lb: 16, lbs: 16, kg: 35.27396, g: 0.03527396 };
+const IN_PER: Record<string, number> = { in: 1, inch: 1, inches: 1, '"': 1, cm: 0.393701, mm: 0.0393701, m: 39.3701 };
+
+function toOz(value: unknown, unit: unknown): number | null {
+  const v = Number(value);
+  const u = String(unit ?? '').toLowerCase().trim();
+  if (!Number.isFinite(v) || v <= 0 || !(u in OZ_PER)) return null;
+  return Math.round(v * OZ_PER[u] * 100) / 100;
+}
+function toIn(value: unknown, unit: unknown): number | null {
+  const v = Number(value);
+  const u = String(unit ?? '').toLowerCase().trim();
+  if (!Number.isFinite(v) || v <= 0 || !(u in IN_PER)) return null;
+  return Math.round(v * IN_PER[u] * 100) / 100;
+}
+
+async function runReadPackageLabel(body: any) {
+  const { photo_url, draft_id, product_name } = body;
+  if (!photo_url) throw new Error('photo_url required');
+  const dataUrl = await fetchAsDataUrl(photo_url);
+
+  const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${LOVABLE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-pro',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: `You are reading a PACKAGING LABEL photo${product_name ? ` for "${product_name}"` : ''}. This is OCR of printed specification text, NOT product recognition — only report values you can actually READ on the label. Never infer, never estimate, never use product knowledge.
+
+Look for: NET WT / NET WEIGHT, GROSS WT, case or carton DIMENSIONS (often "DIMS", "SIZE", or L x W x H), units/pieces per case, UPC/EAN barcode digits, and any stated shipping class or DOT/ORM-D marking.
+
+Return STRICT JSON only:
+{
+  "label_detected": true|false,
+  "net_weight": { "value": <number>, "unit": "oz|lb|kg|g", "printed_as": "<verbatim text>" } | null,
+  "gross_weight": { "value": <number>, "unit": "oz|lb|kg|g", "printed_as": "<verbatim text>" } | null,
+  "dimensions": { "length": <number>, "width": <number>, "height": <number>, "unit": "in|cm|mm", "printed_as": "<verbatim text>" } | null,
+  "units_per_case": <number|null>,
+  "upc": "<digits|null>",
+  "shipping_class": "<text|null>",
+  "confidence": "low|medium|high",
+  "notes": "<one short sentence: what part of the label you read, or why you could not>"
+}
+If the photo shows no printed specification panel, set label_detected=false and every field null.` },
+          { type: 'image_url', image_url: { url: dataUrl } },
+        ],
+      }],
+    }),
+  });
+  if (r.status === 429) throw new Error('rate limited by AI gateway — wait and retry');
+  if (r.status === 402) throw new Error('AI credits exhausted — add credits to continue');
+  if (!r.ok) throw new Error(`label read failed (${r.status})`);
+
+  const j = await r.json();
+  const txt = j.choices?.[0]?.message?.content ?? '';
+  const p = parseJson(typeof txt === 'string' ? txt : '');
+
+  // Ship on the heavier of gross and net — the carrier weighs the whole parcel.
+  const netOz = p.net_weight ? toOz(p.net_weight.value, p.net_weight.unit) : null;
+  const grossOz = p.gross_weight ? toOz(p.gross_weight.value, p.gross_weight.unit) : null;
+  const weight_oz = grossOz ?? netOz;
+
+  const d = p.dimensions;
+  const length_in = d ? toIn(d.length, d.unit) : null;
+  const width_in = d ? toIn(d.width, d.unit) : null;
+  const height_in = d ? toIn(d.height, d.unit) : null;
+  const dimsComplete = !!(length_in && width_in && height_in);
+
+  const payload = {
+    label_detected: p.label_detected !== false,
+    printed: {
+      net_weight: p.net_weight ?? null,
+      gross_weight: p.gross_weight ?? null,
+      dimensions: p.dimensions ?? null,
+    },
+    normalized: {
+      weight_oz,
+      weight_source: grossOz ? 'gross' : netOz ? 'net' : null,
+      net_weight_oz: netOz,
+      dimensions: dimsComplete ? { length_in, width_in, height_in } : null,
+    },
+    units_per_case: Number.isFinite(Number(p.units_per_case)) ? Number(p.units_per_case) : null,
+    upc: p.upc ?? null,
+    shipping_class: p.shipping_class ?? null,
+    confidence: p.confidence ?? 'low',
+    notes: p.notes ?? '',
+    // Verified only when the label gave weight AND all three dims at good confidence.
+    complete: !!(weight_oz && dimsComplete && (p.confidence === 'high' || p.confidence === 'medium')),
+    photo_url,
+    read_at: new Date().toISOString(),
+  };
+
+  if (draft_id) {
+    const update: Record<string, unknown> = { label_photo_url: photo_url, label_extraction: payload };
+    if (weight_oz) update.weight_oz = weight_oz;
+    if (dimsComplete) update.dimensions = { length_in, width_in, height_in };
+    await sbAdmin().from('dd_catalog_drafts').update(update).eq('id', draft_id);
+  }
+  return payload;
+}
+
 async function runEstimateMeasurements(body: any) {
   const { product_name, photo_url, draft_id } = body;
   if (!product_name || !photo_url) throw new Error('product_name + photo_url required');
@@ -782,7 +907,8 @@ async function runStandardizeImage(body: any) {
 
   // 1) Background removal via Remove.bg (optional)
   let cleanUrl = '';
-  if (REMOVEBG_API_KEY) {
+  const removeBgKey = await getRemoveBgKey();
+  if (removeBgKey) {
     try {
       const fd = new FormData();
       fd.append('image_url', photo_url);
@@ -790,7 +916,7 @@ async function runStandardizeImage(body: any) {
       fd.append('bg_color', 'ffffff');
       const rb = await fetch('https://api.remove.bg/v1.0/removebg', {
         method: 'POST',
-        headers: { 'X-Api-Key': REMOVEBG_API_KEY },
+        headers: { 'X-Api-Key': removeBgKey },
         body: fd,
       });
       if (!rb.ok) {
@@ -804,7 +930,7 @@ async function runStandardizeImage(body: any) {
       console.warn('remove.bg error', e);
     }
   } else {
-    console.log('Background removal skipped — add REMOVEBG_API_KEY to Vault');
+    console.log('Background removal skipped — no remove_bg_api_key in dd_ai_config and no REMOVEBG_API_KEY env');
   }
 
   // 2) Card (800) + thumb (400) variants via ImageScript
@@ -847,6 +973,7 @@ Deno.serve(async (req) => {
       case 'copy_pricing':           result = await runCopyPricing(body, privileged); break;
       case 'market_check':           result = await runMarketCheck(body); break;
       case 'estimate_measurements':  result = await runEstimateMeasurements(body); break;
+      case 'read_package_label':     result = await runReadPackageLabel(body); break;
       // price_research returns retail margin math — admin/owner only.
       case 'price_research':
         if (!privileged) throw new Error('forbidden: pricing research is admin-only');
