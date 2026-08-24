@@ -285,12 +285,12 @@ export default function DDOrderDetail() {
                       <div className="flex items-center gap-2">
                         {/* Why this supplier: promo pins override geo-routing, so say so
                             plainly instead of leaving admins guessing at odd routing. */}
-                        {r.routing_reason && (
+                        {(r.routing_reason ?? r.reason) && (
                           <Badge
-                            variant={r.routing_reason === "promo_pinned" ? "default" : "secondary"}
+                            variant={(r.routing_reason ?? r.reason) === "promo_pinned" ? "default" : "secondary"}
                             className="text-[10px]"
                           >
-                            {r.routing_reason === "promo_pinned" ? "promo pinned" : r.routing_reason}
+                            {(r.routing_reason ?? r.reason) === "promo_pinned" ? "promo pinned" : (r.routing_reason ?? r.reason)}
                           </Badge>
                         )}
                         <span className="font-mono text-xs">{r.wholesaler_id?.slice(0, 8) ?? "—"}</span>
