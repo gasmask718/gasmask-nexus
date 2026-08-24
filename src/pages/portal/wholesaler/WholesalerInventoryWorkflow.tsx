@@ -172,7 +172,7 @@ export default function WholesalerInventoryWorkflow() {
                           {qty.toLocaleString()}
                         </td>
                         <td className="p-3 text-sm text-right">
-                          ${(product.wholesale_price || product.retail_price || 0).toFixed(2)}
+                          ${((product as any).supplier_cost || 0).toFixed(2)}
                         </td>
                         <td className="p-3 text-center">
                           {isOut ? (
