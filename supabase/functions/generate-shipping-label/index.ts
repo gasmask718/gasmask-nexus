@@ -15,13 +15,16 @@ const corsHeaders = {
 let _resolvedKey: string | null | undefined;
 async function resolveEasyPostKey(supabase: any): Promise<string | null> {
   if (_resolvedKey !== undefined) return _resolvedKey;
+  // dd_ai_config is a SINGLE-ROW (id=1) table with an easypost_api_key COLUMN —
+  // the key/value shape this used to query does not exist, so every call fell
+  // through to a non-existent env var and silently produced sandbox rates.
   try {
     const { data } = await supabase
       .from("dd_ai_config")
-      .select("config_value")
-      .eq("config_key", "easypost_api_key")
+      .select("easypost_api_key")
+      .eq("id", 1)
       .maybeSingle();
-    const v = String((data as any)?.config_value ?? "").trim();
+    const v = String((data as any)?.easypost_api_key ?? "").trim();
     if (v) { _resolvedKey = v; return v; }
   } catch (_e) { /* fall through to env */ }
   const env = Deno.env.get("EASYPOST_API_KEY");
