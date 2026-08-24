@@ -46,6 +46,7 @@ const FLOOR_1_OPS: FloorSection = {
   items: [
     { path: "unified-inbox", label: "Unified Inbox", icon: MessageSquare, badge: 12, highlight: true },
     { path: "auto-dialer", label: "Auto Dialer", icon: Rocket, highlight: true },
+    { path: "power-dialer", label: "Power Dialer", icon: Zap, highlight: true },
     { path: "campaign-dial", label: "Campaign Dial", icon: Target, highlight: true },
     { path: "manual-calls", label: "Manual Calls", icon: PhoneOutgoing },
     { path: "manual-text", label: "Manual Text", icon: MessageSquarePlus },
