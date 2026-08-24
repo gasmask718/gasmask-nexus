@@ -20,6 +20,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { logDdError } from "../_shared/ddAlert.ts";
+import { quoteShipping } from "../_shared/ddShipping.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -260,7 +261,28 @@ serve(async (req) => {
       // express pay does not silently skip them. Hosted path uses Stripe Tax
       // (automatic_tax), which is not available on a raw PaymentIntent, so the
       // public site must precompute these for express; default 0 is explicit.
-      const shippingCents = Math.max(0, Math.round(Number(body.shipping_cost ?? 0) * 100));
+      // Shipping integrity — recompute server-side from the real carrier rate
+      // (EasyPost; flat fallback documented in ddShipping.ts). The client-passed
+      // shipping_cost is a display hint only: the customer must pay what the
+      // prepaid label will actually cost, so the server value wins on mismatch.
+      let shippingCents = Math.max(0, Math.round(Number(body.shipping_cost ?? 0) * 100));
+      const shipZip = String(shipping?.zipCode ?? shipping?.zip ?? shipping?.postal_code ?? "").trim();
+      if (shipZip && picks.length > 0) {
+        try {
+          const quote = await quoteShipping(
+            supabase,
+            picks.map((p) => ({ product_id: p.product_id, quantity: p.qty })),
+            shipZip,
+          );
+          const serverCents = Math.round(quote.shipping_cost * 100);
+          if (serverCents !== shippingCents) {
+            console.log(`[dd-create-checkout] shipping corrected client=${shippingCents} server=${serverCents} source=${quote.source}`);
+            shippingCents = serverCents;
+          }
+        } catch (e) {
+          console.error("[dd-create-checkout] shipping recompute failed, keeping client value:", e instanceof Error ? e.message : e);
+        }
+      }
       const taxCents = Math.max(0, Math.round(Number(body.tax_amount ?? 0) * 100));
       const amountCents = subtotalCents + shippingCents + taxCents;
       if (amountCents <= 0) throw new Error("zero_total");

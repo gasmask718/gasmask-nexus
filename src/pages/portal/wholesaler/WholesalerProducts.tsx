@@ -95,10 +95,8 @@ export default function WholesalerProducts() {
             <TableHeader>
               <TableRow>
                 <TableHead>Product</TableHead>
-                <TableHead>Brand</TableHead>
-                <TableHead className="text-right">Retail</TableHead>
-                <TableHead className="text-right">Store</TableHead>
-                <TableHead className="text-right">Wholesale</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="text-right">Your Cost</TableHead>
                 <TableHead className="text-center">Stock</TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead className="w-12"></TableHead>
@@ -124,18 +122,12 @@ export default function WholesalerProducts() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {product.brand ? (
-                      <Badge variant="outline">{product.brand.name}</Badge>
+                    {(product as any).category ? (
+                      <Badge variant="outline">{(product as any).category}</Badge>
                     ) : '-'}
                   </TableCell>
                   <TableCell className="text-right">
-                    ${Number(product.retail_price || 0).toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ${Number(product.store_price || 0).toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ${Number(product.wholesale_price || 0).toFixed(2)}
+                    ${Number((product as any).supplier_cost || 0).toFixed(2)}
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
