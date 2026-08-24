@@ -71,7 +71,7 @@ export function useWholesalerProducts() {
 
       if (error) throw error;
       
-      return (data || []).map(p => ({
+      return ((data || []) as any[]).map((p: any) => ({
         ...p,
         images: Array.isArray(p.images) ? p.images : [],
         dimensions: p.dimensions as { length: number; width: number; height: number } | null,
@@ -205,11 +205,12 @@ export function useWholesalerProduct(productId: string) {
         .single();
 
       if (error) throw error;
-      
+
+      const row: any = data;
       return {
-        ...data,
-        images: Array.isArray(data.images) ? data.images : [],
-        dimensions: data.dimensions as { length: number; width: number; height: number } | null,
+        ...row,
+        images: Array.isArray(row.images) ? row.images : [],
+        dimensions: row.dimensions as { length: number; width: number; height: number } | null,
       } as WholesalerProduct;
     },
     enabled: !!productId && !!profile,
