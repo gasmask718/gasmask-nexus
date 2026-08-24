@@ -112,6 +112,31 @@ function parseJson(s: string): any {
   }
 }
 
+// ---------- caller privilege ----------
+
+/**
+ * Only admin/owner callers may see or persist retail pricing + margin math.
+ * The wholesaler self-serve wizard calls this same pipeline — without this gate
+ * the suggested retail, margin floor, and market-check snapshot would be written
+ * into dd_catalog_drafts, a row the wholesaler can SELECT (creators-see-own-drafts
+ * policy), leaking Dynasty's margin. Wholesalers get copy only.
+ */
+async function callerIsPrivileged(req: Request): Promise<boolean> {
+  try {
+    const auth = req.headers.get('Authorization') || '';
+    const token = auth.replace(/^Bearer\s+/i, '').trim();
+    if (!token) return false;
+    const sb = sbAdmin();
+    const { data: { user } } = await sb.auth.getUser(token);
+    if (!user) return false;
+    const { data: roles } = await sb.from('user_roles').select('role').eq('user_id', user.id);
+    const set = new Set((roles || []).map((r: any) => r.role));
+    return set.has('admin') || set.has('owner');
+  } catch (_e) {
+    return false; // fail closed — no pricing for unverifiable callers
+  }
+}
+
 // ---------- modes ----------
 
 async function runEnhance(body: any) {
@@ -177,7 +202,7 @@ async function runStage(body: any) {
   return { staged: urls };
 }
 
-async function runCopyPricing(body: any) {
+async function runCopyPricing(body: any, privileged = true) {
   const { draft_id, product_name, brand_hint, cost, hero_url, supplier_id } = body;
   if (!product_name) throw new Error('product_name required');
   const numericCost = Number(cost) || 0;
@@ -340,14 +365,18 @@ Generate JSON:
         category_source: catMap.method,
         category_raw: catMap.raw,
         tags: parsed.tags || [],
-        jsonld,
-        margin_pct_applied: effectiveMarginPct,
-        retail_floor: retailFloor,
+        // Margin math is admin/owner-only — wholesalers can SELECT their own drafts.
+        ...(privileged ? { jsonld, margin_pct_applied: effectiveMarginPct, retail_floor: retailFloor } : {}),
       },
-      pricing,
-      market_check: marketSnapshot,
+      // Pricing columns are written for privileged callers only; admin re-prices
+      // wholesaler submissions during review regardless.
+      ...(privileged ? { pricing, market_check: marketSnapshot } : {}),
       status: 'copy_ready',
     }).eq('id', draft_id);
+  }
+  if (!privileged) {
+    // Wholesaler self-serve response: copy fields only. No retail, no margin, no floor.
+    return { ...parsed };
   }
   return {
     ...parsed,
@@ -810,14 +839,19 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     const mode = body.mode as string;
+    const privileged = await callerIsPrivileged(req);
     let result: any;
     switch (mode) {
       case 'enhance':                result = await runEnhance(body); break;
       case 'stage':                  result = await runStage(body); break;
-      case 'copy_pricing':           result = await runCopyPricing(body); break;
+      case 'copy_pricing':           result = await runCopyPricing(body, privileged); break;
       case 'market_check':           result = await runMarketCheck(body); break;
       case 'estimate_measurements':  result = await runEstimateMeasurements(body); break;
-      case 'price_research':         result = await runPriceResearch(body); break;
+      // price_research returns retail margin math — admin/owner only.
+      case 'price_research':
+        if (!privileged) throw new Error('forbidden: pricing research is admin-only');
+        result = await runPriceResearch(body);
+        break;
       case 'recognize_product':      result = await runRecognizeProduct(body); break;
       case 'standardize_image':      result = await runStandardizeImage(body); break;
       case 'publish':                result = await runPublish(body); break;

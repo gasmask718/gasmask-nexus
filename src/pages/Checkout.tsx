@@ -56,6 +56,12 @@ export default function Checkout() {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [clientIp, setClientIp] = useState<string | null>(null);
 
+  // ── Live carrier rate (EasyPost via dd-shipping-quote) ──────────
+  // The customer pays the real label cost; dd-create-checkout re-quotes
+  // server-side before charging, so this is display + order-row integrity.
+  const [shippingQuote, setShippingQuote] = useState<{ shipping_cost: number; source: string } | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+
   useEffect(() => {
     const ids = items.map(i => i.product_id).filter(Boolean);
     if (ids.length === 0) { setHasRestrictedItems(false); return; }
@@ -81,7 +87,39 @@ export default function Checkout() {
       .catch(() => setClientIp(null));
   }, [hasRestrictedItems]);
 
+  // Fetch the real carrier rate once a valid ZIP is known (ship orders only).
+  useEffect(() => {
+    if (deliveryType !== 'ship') { setShippingQuote(null); return; }
+    const zip = shippingAddress.zipCode.trim();
+    if (!/^\d{5}(-\d{4})?$/.test(zip) || items.length === 0) { setShippingQuote(null); return; }
+    let cancelled = false;
+    setQuoteLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('dd-shipping-quote', {
+          body: { to_zip: zip, items: items.map(i => ({ product_id: i.product_id, quantity: i.qty })) },
+        });
+        if (cancelled) return;
+        if (!error && data?.shipping_cost != null) {
+          setShippingQuote({ shipping_cost: Number(data.shipping_cost), source: data.source || 'flat_fallback' });
+        } else {
+          setShippingQuote(null); // keep the cart's estimate; server still re-quotes at payment
+        }
+      } catch {
+        if (!cancelled) setShippingQuote(null);
+      } finally {
+        if (!cancelled) setQuoteLoading(false);
+      }
+    }, 500); // debounce ZIP typing
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [deliveryType, shippingAddress.zipCode, items]);
+
   const ageBlocked = hasRestrictedItems && !ageConfirmed;
+
+  // Live rate wins over the cart's weight-based estimate when available.
+  const effectiveTotals = (deliveryType === 'ship' && shippingQuote)
+    ? { ...totals, shipping: shippingQuote.shipping_cost, total: totals.subtotal + shippingQuote.shipping_cost + totals.tax }
+    : totals;
 
   const handlePlaceOrder = async () => {
     try {
@@ -100,7 +138,7 @@ export default function Checkout() {
         // 1) Create the pending marketplace_order (DB rows + routing + fulfillments).
         const result = await createOrder({
           items,
-          totals,
+          totals: effectiveTotals,
           shippingAddress,
           deliveryType,
           paymentMethod,
@@ -137,7 +175,7 @@ export default function Checkout() {
       // Non-card (cash on delivery / net terms) keeps the direct fulfillment path.
       const result = await createOrder({
         items,
-        totals,
+        totals: effectiveTotals,
         shippingAddress,
         deliveryType,
         paymentMethod,
@@ -328,6 +366,15 @@ export default function Checkout() {
                         <Label htmlFor="ship" className="flex items-center gap-2 cursor-pointer flex-1">
                           <Truck className="h-4 w-4" />
                           Standard Shipping (3-5 days)
+                          {quoteLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                          {shippingQuote && (
+                            <span className="ml-auto text-sm font-semibold">
+                              ${shippingQuote.shipping_cost.toFixed(2)}
+                              {shippingQuote.source !== 'easypost' && (
+                                <span className="ml-1 text-[10px] font-normal text-muted-foreground">flat rate</span>
+                              )}
+                            </span>
+                          )}
                         </Label>
                       </div>
                       <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50">
@@ -513,8 +560,8 @@ export default function Checkout() {
                       </>
                     ) : (
                       paymentMethod === 'card'
-                        ? `Pay with Card - $${totals.total.toFixed(2)}`
-                        : `Place Order - $${totals.total.toFixed(2)}`
+                        ? `Pay with Card - $${effectiveTotals.total.toFixed(2)}`
+                        : `Place Order - $${effectiveTotals.total.toFixed(2)}`
                     )}
                   </Button>
                 </CardFooter>
@@ -558,15 +605,20 @@ export default function Checkout() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${totals.subtotal.toFixed(2)}</span>
+                    <span>${effectiveTotals.subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span>${totals.shipping.toFixed(2)}</span>
+                    <span className="text-muted-foreground">
+                      Shipping
+                      {shippingQuote?.source === 'easypost' && (
+                        <span className="ml-1 text-[10px] text-emerald-600">live carrier rate</span>
+                      )}
+                    </span>
+                    <span>${effectiveTotals.shipping.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tax</span>
-                    <span>${totals.tax.toFixed(2)}</span>
+                    <span>${effectiveTotals.tax.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -574,7 +626,7 @@ export default function Checkout() {
 
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span>${totals.total.toFixed(2)}</span>
+                  <span>${effectiveTotals.total.toFixed(2)}</span>
                 </div>
               </CardContent>
             </Card>

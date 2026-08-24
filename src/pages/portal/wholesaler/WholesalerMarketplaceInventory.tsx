@@ -43,8 +43,19 @@ export default function WholesalerMarketplaceInventory() {
       const wid = profile!.id;
       const { data: inv } = await supabase
         .from("marketplace_inventory")
-        .select("product_id, quantity_available, reserved_quantity, low_stock_threshold, reorder_point, product:products_all(product_name)")
+        .select("product_id, quantity_available, reserved_quantity, low_stock_threshold, reorder_point")
         .eq("wholesaler_id", wid);
+
+      // Product names come from the safe view — products_all SELECT is admin-only now
+      // (retail/margin columns are hidden from wholesalers), so an embedded join would 401.
+      const invProductIds = (inv || []).map((r: any) => r.product_id);
+      const { data: prodRows } = invProductIds.length
+        ? await supabase
+            .from("dd_wholesaler_products_safe" as any)
+            .select("id, product_name")
+            .in("id", invProductIds)
+        : { data: [] as any[] };
+      const nameMap = new Map<string, string>((prodRows || []).map((p: any) => [p.id, p.product_name]));
 
       const productIds = (inv || []).map((r: any) => r.product_id);
       const since30 = new Date(Date.now() - 30 * 86400000).toISOString();
@@ -72,7 +83,7 @@ export default function WholesalerMarketplaceInventory() {
           .map((i) => ({ order_id: i.order.id, qty: i.qty || 0 }));
         return {
           product_id: r.product_id,
-          product_name: r.product?.product_name || "—",
+          product_name: nameMap.get(r.product_id) || "—",
           quantity_available: r.quantity_available,
           reserved_quantity: r.reserved_quantity,
           low_stock_threshold: r.low_stock_threshold,
