@@ -8,9 +8,12 @@
 //   test_call   → places ONE real call to a number the admin types in.
 //                 AsyncAmd verdict arrives at dialer-call-status exactly
 //                 like a production power-dial call would.
-//   confirm_test→ unlocks live mode ONLY if our own webhook pipeline
-//                 recorded answered_by='human' for that test call (or the
-//                 Twilio API reports it). Recorded in live_mode_unlocked_at.
+//   confirm_test→ unlocks live mode when OUR webhook pipeline recorded
+//                 answered_by='human' for that test call (or the Twilio API
+//                 reports it) — method 'amd_verdict'. If the call was
+//                 answered but AMD never reported a verdict, the admin who
+//                 answered may attest explicitly — method
+//                 'human_attestation'. Recorded in live_mode_unlock_method.
 //   set_simulation → back to safe mode; also disarms the engine.
 //
 // Until confirm_test succeeds, live mode stays locked — a dialer that
@@ -59,6 +62,7 @@ Deno.serve(async (req) => {
         twilio_enabled: settings.twilio_enabled,
         live_mode_unlocked_at: settings.live_mode_unlocked_at,
         live_mode_unlocked_by: settings.live_mode_unlocked_by,
+        live_mode_unlock_method: settings.live_mode_unlock_method ?? null,
         live_mode_test_call_sid: settings.live_mode_test_call_sid,
         engine_armed: settings.engine_armed,
         armed_campaign_id: settings.armed_campaign_id,
