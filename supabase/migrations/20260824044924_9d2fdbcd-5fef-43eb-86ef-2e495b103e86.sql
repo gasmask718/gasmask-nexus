@@ -1,0 +1,1 @@
+ALTER TABLE public.dialer_settings ADD COLUMN IF NOT EXISTS live_mode_unlock_method text;

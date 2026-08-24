@@ -53460,6 +53460,7 @@ export type Database = {
           engine_armed: boolean | null
           id: string
           live_mode_test_call_sid: string | null
+          live_mode_unlock_method: string | null
           live_mode_unlocked_at: string | null
           live_mode_unlocked_by: string | null
           max_attempts_per_day: number | null
@@ -53505,6 +53506,7 @@ export type Database = {
           engine_armed?: boolean | null
           id?: string
           live_mode_test_call_sid?: string | null
+          live_mode_unlock_method?: string | null
           live_mode_unlocked_at?: string | null
           live_mode_unlocked_by?: string | null
           max_attempts_per_day?: number | null
@@ -53550,6 +53552,7 @@ export type Database = {
           engine_armed?: boolean | null
           id?: string
           live_mode_test_call_sid?: string | null
+          live_mode_unlock_method?: string | null
           live_mode_unlocked_at?: string | null
           live_mode_unlocked_by?: string | null
           max_attempts_per_day?: number | null

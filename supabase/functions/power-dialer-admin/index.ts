@@ -8,9 +8,12 @@
 //   test_call   → places ONE real call to a number the admin types in.
 //                 AsyncAmd verdict arrives at dialer-call-status exactly
 //                 like a production power-dial call would.
-//   confirm_test→ unlocks live mode ONLY if our own webhook pipeline
-//                 recorded answered_by='human' for that test call (or the
-//                 Twilio API reports it). Recorded in live_mode_unlocked_at.
+//   confirm_test→ unlocks live mode when OUR webhook pipeline recorded
+//                 answered_by='human' for that test call (or the Twilio API
+//                 reports it) — method 'amd_verdict'. If the call was
+//                 answered but AMD never reported a verdict, the admin who
+//                 answered may attest explicitly — method
+//                 'human_attestation'. Recorded in live_mode_unlock_method.
 //   set_simulation → back to safe mode; also disarms the engine.
 //
 // Until confirm_test succeeds, live mode stays locked — a dialer that
@@ -59,6 +62,7 @@ Deno.serve(async (req) => {
         twilio_enabled: settings.twilio_enabled,
         live_mode_unlocked_at: settings.live_mode_unlocked_at,
         live_mode_unlocked_by: settings.live_mode_unlocked_by,
+        live_mode_unlock_method: settings.live_mode_unlock_method ?? null,
         live_mode_test_call_sid: settings.live_mode_test_call_sid,
         engine_armed: settings.engine_armed,
         armed_campaign_id: settings.armed_campaign_id,
@@ -205,6 +209,7 @@ Deno.serve(async (req) => {
     if (action === "confirm_test") {
       const testSid = settings.live_mode_test_call_sid;
       if (!testSid) return json({ error: "no_test_call", detail: "Place a test call first." }, 400);
+      const attestHuman = body.attest_human === true;
 
       // Primary proof: OUR OWN webhook pipeline recorded a human AMD verdict
       // for this call — that proves signing, callbacks and AMD all work.
@@ -218,9 +223,13 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       let answeredBy: string | null = (amdEvent?.payload as any)?.answered_by ?? null;
+      let unlockMethod: "amd_verdict" | "human_attestation" | null =
+        answeredBy === "human" ? "amd_verdict" : null;
 
-      // Fallback: ask Twilio directly (covers a delayed webhook).
-      if (!answeredBy) {
+      // Fallback 1: ask Twilio directly (covers a delayed webhook), and learn
+      // whether the call was answered at all.
+      let callAnswered = false;
+      if (!unlockMethod) {
         const SID = Deno.env.get("TWILIO_ACCOUNT_SID");
         const TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
         if (SID && TOKEN) {
@@ -228,8 +237,10 @@ Deno.serve(async (req) => {
             `https://api.twilio.com/2010-04-01/Accounts/${SID}/Calls/${testSid}.json`,
             { headers: { Authorization: "Basic " + btoa(`${SID}:${TOKEN}`) } },
           ).then(r => r.json()).catch(() => null);
-          answeredBy = call?.answered_by ?? null;
-          if (!answeredBy && call && !["in-progress", "completed"].includes(call.status)) {
+          answeredBy = answeredBy ?? call?.answered_by ?? null;
+          if (answeredBy === "human") unlockMethod = "amd_verdict";
+          callAnswered = !!call && ["in-progress", "completed"].includes(call.status);
+          if (call && !callAnswered) {
             return json({
               error: "test_not_answered",
               detail: `Test call status is '${call.status}'. Answer the test call, then confirm.`,
@@ -238,14 +249,45 @@ Deno.serve(async (req) => {
         }
       }
 
-      if (answeredBy !== "human") {
+      // Our own pipeline's in-progress event is also proof the call was answered.
+      if (!callAnswered) {
+        const { data: ansEv } = await supabase
+          .from("dialer_call_events").select("id")
+          .eq("call_sid", testSid).eq("event_type", "twilio.in-progress")
+          .limit(1).maybeSingle();
+        callAnswered = !!ansEv;
+      }
+
+      // A NON-human verdict is a hard refusal — no attestation overrides it.
+      if (!unlockMethod && answeredBy && answeredBy !== "human") {
         return json({
           error: "human_not_confirmed",
-          detail: answeredBy
-            ? `The test call was answered by '${answeredBy}', not a human. Live mode stays locked.`
-            : "No answer detected yet. Answer the test call and wait a few seconds, then try again.",
+          detail: `The test call was answered by '${answeredBy}', not a human. Live mode stays locked.`,
           answered_by: answeredBy,
         }, 400);
+      }
+
+      // Fallback 2: attested human. AMD callbacks are best-effort — when the
+      // call provably reached a human's phone (answered) and the admin
+      // standing there says "I answered it", that IS a human confirmation.
+      // Recorded distinctly so the unlock audit trail shows HOW.
+      if (!unlockMethod) {
+        if (!callAnswered) {
+          return json({
+            error: "test_not_answered",
+            detail: "No answer detected yet. Answer the test call and wait a few seconds, then try again.",
+            answered_by: null,
+          }, 400);
+        }
+        if (!attestHuman) {
+          return json({
+            error: "attestation_required",
+            detail: "The test call was answered, but machine detection did not report a verdict. If YOU answered it yourself, use 'I answered it myself' to unlock by human attestation.",
+            answered_by: null,
+            call_answered: true,
+          }, 400);
+        }
+        unlockMethod = "human_attestation";
       }
 
       await supabase.from("dialer_settings").update({
@@ -253,12 +295,15 @@ Deno.serve(async (req) => {
         twilio_enabled: true,
         live_mode_unlocked_at: new Date().toISOString(),
         live_mode_unlocked_by: user.id,
+        live_mode_unlock_method: unlockMethod,
         updated_at: new Date().toISOString(),
       }).eq("id", settings.id);
 
       return json({
-        ok: true, unlocked: true, answered_by: answeredBy,
-        message: "Confirmed human answer on the test call. LIVE MODE UNLOCKED — real calls will be placed while the engine is armed.",
+        ok: true, unlocked: true, answered_by: answeredBy, unlock_method: unlockMethod,
+        message: unlockMethod === "amd_verdict"
+          ? "Confirmed human answer on the test call. LIVE MODE UNLOCKED — real calls will be placed while the engine is armed."
+          : "Unlocked by your attestation (you answered the test call yourself). LIVE MODE IS ON. Note: machine detection did not report on the test call — if AMD verdicts stay absent, production calls will not auto-separate humans from voicemail until AMD delivery is confirmed.",
       });
     }
 
