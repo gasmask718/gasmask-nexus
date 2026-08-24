@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { BusinessProvider } from "./contexts/BusinessContext";
 import { SimulationModeProvider } from "./contexts/SimulationModeContext";
 import { SimulationModeBanner } from "./components/simulation/SimulationModeBanner";
+import { DialerModeBanner } from "./components/communication/DialerModeBanner";
 import { VoiceDeviceProvider } from "./contexts/VoiceDeviceProvider";
 import { CallProvider } from "./components/communication/CallProvider";
 import { MessageProvider } from "./components/communication/MessageProvider";
@@ -62,6 +63,7 @@ const App = () => (
                           <FlashSaleBanner />
                           <ViewAsBanner />
                           <SimulationModeBanner />
+                          <DialerModeBanner />
                           <VACallWidget />
                           <GlobalTrainingHelp />
                           <IdeaBoxLauncher />
