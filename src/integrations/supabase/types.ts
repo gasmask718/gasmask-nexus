@@ -40035,7 +40035,7 @@ export type Database = {
           bland_ai_handled: boolean
           bland_call_id: string | null
           brand: string | null
-          business_id: string
+          business_id: string | null
           call_duration: number | null
           call_objective: string | null
           call_type: string | null
@@ -40108,7 +40108,7 @@ export type Database = {
           bland_ai_handled?: boolean
           bland_call_id?: string | null
           brand?: string | null
-          business_id?: string
+          business_id?: string | null
           call_duration?: number | null
           call_objective?: string | null
           call_type?: string | null
@@ -40181,7 +40181,7 @@ export type Database = {
           bland_ai_handled?: boolean
           bland_call_id?: string | null
           brand?: string | null
-          business_id?: string
+          business_id?: string | null
           call_duration?: number | null
           call_objective?: string | null
           call_type?: string | null

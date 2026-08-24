@@ -16,6 +16,7 @@ import {
   TWILIO_SHARED_NUMBER,
 } from "../_shared/twilio-operator.ts";
 import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
+import { resolveNumberBrand } from "../_shared/inboundNumberBrand.ts";
 
 const STOP_RE = /^\s*(STOP|UNSUBSCRIBE|QUIT|CANCEL|END)\s*$/i;
 const START_RE = /^\s*(START|UNSTOP|SUBSCRIBE)\s*$/i;
@@ -63,6 +64,11 @@ Deno.serve(async (req) => {
 
   const sb = svc();
 
+  // Resolve the owning brand from the To number. NEVER let
+  // communication_logs.business_id fall through to its GasMask default.
+  const numberBrand = await resolveNumberBrand(sb, To, "twilio-sms-webhook");
+  console.log(`[twilio-sms-webhook] to=${To} brand=${numberBrand.brand ?? "UNKNOWN"} business_id=${numberBrand.business_id ?? "NULL"}`);
+
 
   // STOP keyword
   if (STOP_RE.test(Body)) {
@@ -85,6 +91,9 @@ Deno.serve(async (req) => {
       sender_phone: From,
       recipient_phone: To,
       twilio_sid: MessageSid,
+      business_id: numberBrand.business_id,
+      brand: numberBrand.brand,
+      source_business: numberBrand.source_business,
       summary: "Customer opted out (STOP)",
       delivery_status: "received",
     });
@@ -118,6 +127,9 @@ Deno.serve(async (req) => {
       sender_phone: From,
       recipient_phone: To,
       twilio_sid: MessageSid,
+      business_id: numberBrand.business_id,
+      brand: numberBrand.brand,
+      source_business: numberBrand.source_business,
       summary: "Customer opted in (START)",
       delivery_status: "received",
     });
@@ -170,6 +182,9 @@ Deno.serve(async (req) => {
             sender_phone: From,
             recipient_phone: To,
             twilio_sid: MessageSid,
+            business_id: numberBrand.business_id,
+            brand: numberBrand.brand,
+            source_business: numberBrand.source_business,
             delivery_status: "received",
             outcome: "verification_confirmed",
           });
@@ -227,6 +242,9 @@ Deno.serve(async (req) => {
     sender_phone: From,
     recipient_phone: To,
     twilio_sid: MessageSid,
+    business_id: numberBrand.business_id,
+    brand: numberBrand.brand,
+    source_business: numberBrand.source_business,
     summary,
     delivery_status: "received",
     follow_up_required: isOrphan,
