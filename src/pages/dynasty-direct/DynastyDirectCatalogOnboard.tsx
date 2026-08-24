@@ -131,6 +131,8 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
       supplier_id: supplierId || null,
       cost: cost ? Number(cost) : null,
       input_photos: photos,
+      recognition: recognition ?? null,
+      category: category || null,
       status: 'candidates',
     }).select('id').single();
     if (draftErr || !draft) { toast.error(`Draft save failed: ${draftErr?.message}`); setStreaming(false); return; }
