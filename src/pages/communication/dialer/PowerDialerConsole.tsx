@@ -25,6 +25,14 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Phone, PhoneCall, PhoneOff, ShieldAlert, ShieldCheck, UserCheck, UserX, AlertTriangle, Lock, LockOpen, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { CallListBuilder } from "@/components/communication/dialer/CallListBuilder";
+
+// GasMask and Grabba R Us are the same company sharing one store book —
+// the dialer shows the family's campaigns regardless of which badge is active.
+const DIALER_FAMILY_BUSINESS_IDS = [
+  "a1b2c3d4-e5f6-7890-abcd-ef1234567890", // Grabba R Us (existing dialer home)
+  "c3d4e5f6-a7b8-9012-cdef-123456789012", // GasMask
+];
 
 const TICK_INTERVAL_MS = 20_000;
 const POLL_MS = 10_000;
@@ -73,8 +81,10 @@ export default function PowerDialerConsole() {
   const { data: campaigns } = useQuery({
     queryKey: ["power-dialer-campaigns", currentBusiness?.id],
     queryFn: async () => {
-      let q = supabase.from("dialer_campaigns").select("id, name, status, total_targets, completed_calls").is("archived_at", null).order("updated_at", { ascending: false });
-      if (currentBusiness?.id) q = q.eq("business_id", currentBusiness.id);
+      const ids = currentBusiness?.id && !DIALER_FAMILY_BUSINESS_IDS.includes(currentBusiness.id)
+        ? [...DIALER_FAMILY_BUSINESS_IDS, currentBusiness.id]
+        : DIALER_FAMILY_BUSINESS_IDS;
+      const q = supabase.from("dialer_campaigns").select("id, name, status, total_targets, completed_calls").in("business_id", ids).is("archived_at", null).order("updated_at", { ascending: false });
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
@@ -368,6 +378,12 @@ export default function PowerDialerConsole() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── BUILD A CALL LIST — store book → campaign → queue ── */}
+      <CallListBuilder
+        businessId={currentBusiness?.id}
+        onCampaignCreated={(id) => setSelectedCampaign(id)}
+      />
 
       {/* ── LIVE-MODE GATE (admin/owner only) ── */}
       {isElevated && (

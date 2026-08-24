@@ -104,8 +104,9 @@ export function CallListBuilder({
       toast.success(`Campaign "${data.name}" created — ${data.queued} stores loaded into the queue`, {
         description: `${data.suppressed} suppressed skipped · ${data.already_dialing} already dialing · ${data.no_phone} without a phone`,
       });
-      queryClient.invalidateQueries({ queryKey: ["dialer-campaigns-console"] });
+      queryClient.invalidateQueries({ queryKey: ["power-dialer-campaigns"] });
       queryClient.invalidateQueries({ queryKey: ["dialer-call-list-presets"] });
+      queryClient.invalidateQueries({ queryKey: ["dialer-call-list-preview"] });
       onCampaignCreated(data.campaign_id);
     },
     onError: (e: Error) => toast.error(`Could not build list: ${e.message}`),
