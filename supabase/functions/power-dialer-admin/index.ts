@@ -101,13 +101,19 @@ Deno.serve(async (req) => {
         Method: "POST",
         StatusCallback: `${SUPABASE_URL}/functions/v1/dialer-call-status?${cb.toString()}`,
         StatusCallbackMethod: "POST",
-        StatusCallbackEvent: "initiated ringing answered completed",
         Timeout: "30",
         AsyncAmd: "true",
         AsyncAmdStatusCallback: `${SUPABASE_URL}/functions/v1/dialer-call-status?${cb.toString()}`,
         AsyncAmdStatusCallbackMethod: "POST",
         MachineDetectionTimeout: "5",
       });
+      // Twilio subscribes to call-progress events ONLY when each event is its
+      // own repeated StatusCallbackEvent parameter. A single space-joined
+      // value is treated as one unrecognized event name and subscribes to
+      // NOTHING — the silent-webhook bug found 2026-08-24.
+      for (const ev of ["initiated", "ringing", "answered", "completed"]) {
+        params.append("StatusCallbackEvent", ev);
+      }
 
       const res = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${SID}/Calls.json`,

@@ -178,7 +178,10 @@ serve(async (req: Request) => {
           callParams.append("From", TWILIO_PHONE_NUMBER);
           callParams.append("Url", twimlUrl);
           callParams.append("StatusCallback", statusCallbackUrl);
-          callParams.append("StatusCallbackEvent", "initiated ringing answered completed");
+          // Repeated params — a space-joined single value subscribes to nothing.
+          for (const ev of ["initiated", "ringing", "answered", "completed"]) {
+            callParams.append("StatusCallbackEvent", ev);
+          }
           callParams.append("StatusCallbackMethod", "POST");
           callParams.append("Timeout", "30");
 

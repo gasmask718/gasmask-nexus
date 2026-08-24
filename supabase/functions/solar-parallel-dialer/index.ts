@@ -139,10 +139,13 @@ serve(async (req) => {
           From: TWILIO_PHONE_NUMBER,
           Url: twimlUrl,
           StatusCallback: statusCallbackUrl,
-          StatusCallbackEvent: "initiated ringing answered completed",
           StatusCallbackMethod: "POST",
           Timeout: "30",
         });
+        // Repeated params — a space-joined single value subscribes to nothing.
+        for (const ev of ["initiated", "ringing", "answered", "completed"]) {
+          callParams.append("StatusCallbackEvent", ev);
+        }
 
         const twilioResponse = await fetch(
           `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`,
