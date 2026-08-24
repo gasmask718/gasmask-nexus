@@ -134,6 +134,33 @@ serve(async (req) => {
         }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
+      // ── MASTER SWITCH: nothing dials while the engine is disarmed. ──
+      // Owner's rule (2026-08-24): no call goes out — power session OR
+      // one-off manual — unless a human pressed START CALLING on the Power
+      // Dialer console and the armed window has not expired. An expired
+      // window is lazily disarmed here so the stored state stays honest.
+      const { data: armedRows } = await supabaseAdmin
+        .from("dialer_settings")
+        .select("id, auto_disarm_at")
+        .eq("engine_armed", true);
+      const nowTs = new Date();
+      const expiredRows = (armedRows ?? []).filter(
+        (r: any) => r.auto_disarm_at && new Date(r.auto_disarm_at) <= nowTs,
+      );
+      for (const row of expiredRows) {
+        await supabaseAdmin.from("dialer_settings").update({
+          engine_armed: false, armed_campaign_id: null, updated_at: nowTs.toISOString(),
+        }).eq("id", row.id);
+      }
+      const stillArmed = (armedRows ?? []).some(
+        (r: any) => !r.auto_disarm_at || new Date(r.auto_disarm_at) > nowTs,
+      );
+      if (!stillArmed) {
+        return new Response(JSON.stringify({
+          error: "engine_not_armed",
+          detail: "The calling engine is not armed. An owner/admin must press START CALLING on the Power Dialer console before any call goes out.",
+        }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
 
       // SUPPRESSION — FAST UX SKIP ONLY. THIS IS NOT THE ENFORCEMENT POINT.
       //
