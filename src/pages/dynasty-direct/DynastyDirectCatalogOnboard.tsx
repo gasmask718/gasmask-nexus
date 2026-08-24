@@ -180,6 +180,46 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
     return data;
   }
 
+  // PHOTO → LISTING. Vision reads the photo and SUGGESTS the listing fields.
+  // Nothing is silently accepted: every value lands in an editable input and the
+  // model's own confidence is shown. Low confidence = confirm each field.
+  async function runReadPhoto() {
+    if (photos.length === 0) return;
+    setReading(true);
+    try {
+      const r = await callPipeline({ mode: 'recognize_product', draft_id: draftId, photo_url: photos[0] });
+      setRecognition(r);
+      if (r.product_name && !productName.trim()) setProductName(r.product_name);
+      if (r.brand_visible && !brandHint.trim()) setBrandHint(r.brand_visible);
+      if (r.category && !category) {
+        const match = DD_CATEGORY_OPTIONS.find(
+          (c) => c.label.toLowerCase() === String(r.category).toLowerCase() || c.value === r.category,
+        );
+        if (match) setCategory(match.value);
+      }
+      toast.success(`Photo read — confidence: ${r.confidence}`);
+    } catch (e: any) { toast.error(e.message); }
+    finally { setReading(false); }
+  }
+
+  // UNIFORM BACKDROP. Background removed onto a white field + card/thumb variants
+  // so the catalogue looks like one shop rather than a warehouse camera roll.
+  async function runStandardize() {
+    if (photos.length === 0) return;
+    setStandardizing(true);
+    try {
+      const r = await callPipeline({ mode: 'standardize_image', draft_id: draftId, photo_url: photos[0] });
+      const clean = (r.variants || []).find((v: any) => v.size === 'clean')?.url
+        || (r.variants || []).find((v: any) => v.size === 'card')?.url || null;
+      setStandardizedUrl(clean);
+      if (clean) setPhotos((p) => (p.includes(clean) ? p : [clean, ...p]));
+      toast[r.removebg_used ? 'success' : 'message'](
+        r.removebg_used ? 'Backdrop normalised' : 'Resized only — background removal key not configured',
+      );
+    } catch (e: any) { toast.error(e.message); }
+    finally { setStandardizing(false); }
+  }
+
   async function runEnhance() {
     if (!draftId || photos.length === 0) return;
     setBusy('enhance');
