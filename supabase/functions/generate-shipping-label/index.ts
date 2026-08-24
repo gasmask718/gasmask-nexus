@@ -11,8 +11,23 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const EASYPOST_API_KEY = Deno.env.get("EASYPOST_API_KEY");
-const LIVE_MODE = !!EASYPOST_API_KEY;
+// Key resolution: dd_ai_config (runtime-editable, no redeploy) first, env second.
+let _resolvedKey: string | null | undefined;
+async function resolveEasyPostKey(supabase: any): Promise<string | null> {
+  if (_resolvedKey !== undefined) return _resolvedKey;
+  try {
+    const { data } = await supabase
+      .from("dd_ai_config")
+      .select("config_value")
+      .eq("config_key", "easypost_api_key")
+      .maybeSingle();
+    const v = String((data as any)?.config_value ?? "").trim();
+    if (v) { _resolvedKey = v; return v; }
+  } catch (_e) { /* fall through to env */ }
+  const env = Deno.env.get("EASYPOST_API_KEY");
+  _resolvedKey = env && env.trim() ? env.trim() : null;
+  return _resolvedKey;
+}
 
 // ── Sandbox quote fallback (flat-rate by weight) ──
 function sandboxQuote(weightOz: number) {
@@ -30,8 +45,8 @@ function sandboxQuote(weightOz: number) {
 }
 
 // ── EasyPost live call ──
-async function easypostCreateShipmentAndBuy(fromAddr: any, toAddr: any, parcel: any) {
-  const auth = "Basic " + btoa(EASYPOST_API_KEY + ":");
+async function easypostCreateShipmentAndBuy(apiKey: string, fromAddr: any, toAddr: any, parcel: any) {
+  const auth = "Basic " + btoa(apiKey + ":");
 
   // 1) Create shipment → returns rates
   const shipRes = await fetch("https://api.easypost.com/v2/shipments", {
@@ -99,6 +114,9 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    const easypostKey = await resolveEasyPostKey(supabase);
+    const liveMode = !!easypostKey;
 
     const body = await req.json().catch(() => ({}));
     const { fulfillment_id, quote_only } = body;
@@ -168,10 +186,10 @@ Deno.serve(async (req) => {
 
     // ── QUOTE-ONLY path (no label purchase, no DB write) ──
     if (quote_only) {
-      const quote = LIVE_MODE
+      const quote = liveMode
         ? { ...sandboxQuote(totalWeightOz), mode: "live_not_implemented_yet_for_quote_only" }
         : sandboxQuote(totalWeightOz);
-      return new Response(JSON.stringify({ success: true, quote, mode: LIVE_MODE ? "live" : "sandbox" }), {
+      return new Response(JSON.stringify({ success: true, quote, mode: liveMode ? "live" : "sandbox" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -202,7 +220,7 @@ Deno.serve(async (req) => {
     let rateId: string | null = null;
     let mode: "live" | "sandbox";
 
-    if (LIVE_MODE) {
+    if (liveMode && easypostKey) {
       const fromAddr = {
         name: supplier?.company_name || "Dynasty Direct",
         street1: supplier?.warehouse_street,
@@ -223,7 +241,7 @@ Deno.serve(async (req) => {
       const parcel = { weight: totalWeightOz, length: 12, width: 9, height: 6 };
 
       try {
-        const bought = await easypostCreateShipmentAndBuy(fromAddr, toAddr, parcel);
+        const bought = await easypostCreateShipmentAndBuy(easypostKey, fromAddr, toAddr, parcel);
         trackingNumber = bought.tracking_number;
         labelUrl = bought.label_url;
         carrier = bought.carrier;

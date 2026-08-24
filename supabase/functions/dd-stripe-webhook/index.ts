@@ -192,6 +192,18 @@ async function markOrderPaid(
     .invoke("dd-grabba-bridge", { body: { order_id: orderId } })
     .catch((e: any) => console.error("[dd-webhook] grabba bridge failed", e?.message));
 
+  // Fire-and-forget fulfillment kickoff: buys the prepaid label per supplier
+  // (with the shipping money the customer paid), emails the supplier the order
+  // + label, and schedules the carrier pickup. Idempotent — webhook replays skip
+  // groups that already have a purchased label.
+  supabase.functions
+    .invoke("dd-order-fulfillment-kickoff", { body: { order_id: orderId } })
+    .then(({ data, error }) => {
+      if (error) console.error("[dd-webhook] fulfillment kickoff failed:", error?.message);
+      else console.log("[dd-webhook] fulfillment kickoff:", JSON.stringify(data));
+    })
+    .catch((e: any) => console.error("[dd-webhook] fulfillment kickoff failed:", e?.message));
+
   // Fire-and-forget customer 'confirmed' notification (SMS + email)
   supabase.functions
     .invoke("dd-notify-customer-order-update", {

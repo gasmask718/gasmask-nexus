@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     );
 
     // Match dd_shipments — prefer easypost_shipment_id, fall back to tracking_number
-    let query = supabase.from('dd_shipments').select('id, status, tracking_number, easypost_shipment_id');
+    let query = supabase.from('dd_shipments').select('id, status, tracking_number, easypost_shipment_id, order_id, wholesaler_id');
     if (shipmentId) {
       query = query.eq('easypost_shipment_id', shipmentId);
     } else if (trackingCode) {
@@ -142,6 +142,38 @@ Deno.serve(async (req) => {
         updated.push({ id: row.id, error: updErr.message });
       } else {
         updated.push(upd);
+      }
+    }
+
+    // Propagate to the order pipeline so the customer + portals see movement:
+    // marketplace_fulfillments tracks the wholesaler's leg; the order flips to
+    // 'shipped' when any leg moves and 'delivered' only when every leg is delivered.
+    const ffStatus =
+      mappedStatus === 'delivered' ? 'delivered'
+      : (mappedStatus === 'in_transit' || mappedStatus === 'out_for_delivery') ? 'shipped'
+      : null;
+    if (ffStatus) {
+      for (const row of matches) {
+        const oid = (row as any).order_id;
+        if (!oid) continue;
+        let ffQ = supabase
+          .from('marketplace_fulfillments')
+          .update({ status: ffStatus, updated_at: new Date().toISOString() })
+          .eq('order_id', oid);
+        ffQ = (row as any).wholesaler_id ? ffQ.eq('wholesaler_id', (row as any).wholesaler_id) : ffQ;
+        const { error: ffErr } = await ffQ;
+        if (ffErr) console.error('[dd-tracking-webhook] fulfillment propagate failed:', ffErr.message);
+      }
+    }
+    const orderIds = Array.from(new Set(matches.map((m: any) => m.order_id).filter(Boolean)));
+    for (const oid of orderIds) {
+      const { data: legs } = await supabase.from('dd_shipments').select('status').eq('order_id', oid as string);
+      const all = legs ?? [];
+      if (all.length === 0) continue;
+      if (all.every((s: any) => s.status === 'delivered')) {
+        await supabase.from('marketplace_orders').update({ fulfillment_status: 'delivered' }).eq('id', oid as string);
+      } else if (all.some((s: any) => s.status === 'in_transit' || s.status === 'out_for_delivery' || s.status === 'delivered')) {
+        await supabase.from('marketplace_orders').update({ fulfillment_status: 'shipped' }).eq('id', oid as string);
       }
     }
 

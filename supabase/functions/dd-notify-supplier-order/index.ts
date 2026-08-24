@@ -30,15 +30,32 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // 1) Wholesaler
+    // 1) Wholesaler — the live catalog keys wholesaler_id to wholesaler_profiles;
+    //    the legacy `wholesalers` table is tried first for backward compatibility.
+    let recipient: string | null = null;
+    let supplierName = "Supplier";
     const { data: wholesaler, error: wErr } = await supabase
       .from("wholesalers")
       .select("id, name, contact_email, email, whatsapp, preferred_contact")
       .eq("id", wholesaler_id)
       .maybeSingle();
     if (wErr) throw wErr;
-    const recipient = wholesaler?.contact_email || wholesaler?.email;
-    if (!wholesaler || !recipient) {
+    if (wholesaler) {
+      recipient = wholesaler.contact_email || wholesaler.email;
+      supplierName = wholesaler.name ?? supplierName;
+    }
+    if (!recipient) {
+      const { data: prof } = await supabase
+        .from("wholesaler_profiles")
+        .select("id, company_name, contact_name, email, phone")
+        .eq("id", wholesaler_id)
+        .maybeSingle();
+      if (prof?.email) {
+        recipient = prof.email;
+        supplierName = prof.company_name ?? supplierName;
+      }
+    }
+    if (!recipient) {
       return json({ success: false, warning: "no recipient email on wholesaler" }, 200);
     }
 
@@ -57,6 +74,17 @@ serve(async (req) => {
       .eq("order_id", order_id)
       .eq("wholesaler_id", wholesaler_id);
     if (iErr) throw iErr;
+
+    // Prepaid label — when the fulfillment kickoff already bought postage,
+    // the supplier gets the label link in this email and never pays shipping.
+    const { data: shipment } = await supabase
+      .from("dd_shipments")
+      .select("tracking_number, carrier, label_url, label_pdf_url, status")
+      .eq("order_id", order_id)
+      .eq("wholesaler_id", wholesaler_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     const lineItems = (items ?? []).map((it: any) => {
       const qty = Number(it.qty ?? 0);
@@ -123,12 +151,22 @@ serve(async (req) => {
         ${esc(addr.city ?? "")}, ${esc(addr.state ?? "")} ${esc(addr.postal_code ?? addr.zip ?? "")}
       </div>
 
+      ${shipment?.label_url ? `
+      <h2 style="margin:24px 0 8px;font-size:16px;color:#0f172a">Prepaid Shipping Label — already paid</h2>
+      <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;padding:12px;font-size:14px;line-height:1.6">
+        <p style="margin:0 0 6px">Postage is <strong>already purchased</strong> by Dynasty Direct. Print the label, attach it to the package, and hand it to the carrier — you pay nothing.</p>
+        <p style="margin:0 0 6px"><a href="${esc(shipment.label_pdf_url ?? shipment.label_url)}" style="color:#047857;font-weight:bold">📄 Download prepaid label</a></p>
+        ${shipment.tracking_number ? `<p style="margin:0">Tracking: <strong>${esc(shipment.tracking_number)}</strong>${shipment.carrier ? ` (${esc(shipment.carrier)})` : ""}</p>` : ""}
+      </div>` : ""}
+
       <h2 style="margin:24px 0 8px;font-size:16px;color:#0f172a">Instructions</h2>
       <ul style="font-size:14px;line-height:1.7;color:#334155;margin:0;padding-left:18px">
         <li>Pack securely</li>
         <li>Include packing slip</li>
         <li>Ship within 2 business days</li>
-        <li>Email tracking to <a href="mailto:orders@dynastydirect.com">orders@dynastydirect.com</a></li>
+        ${shipment?.label_url
+          ? "<li>Tracking flows to the customer automatically — no action needed</li>"
+          : `<li>Email tracking to <a href="mailto:orders@dynastydirect.com">orders@dynastydirect.com</a></li>`}
       </ul>
 
       <p style="margin-top:24px;font-size:13px;color:#64748b">Questions? Reply to this email.</p>
