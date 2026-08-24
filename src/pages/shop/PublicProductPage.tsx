@@ -5,7 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Package, Loader2, AlertCircle } from 'lucide-react';
+import { Package, Loader2, AlertCircle, ShoppingCart } from 'lucide-react';
+import { toast } from 'sonner';
+import { useCart } from '@/services/marketplace/useCart';
 import { formatCurrency } from '@/lib/format';
 import { DD_CATEGORY_OPTIONS } from '@/lib/dynastyDirect/categories';
 import ProductJsonLd from '@/components/seo/ProductJsonLd';
@@ -23,6 +25,7 @@ function categoryLabel(value: string | null | undefined) {
  */
 export default function PublicProductPage() {
   const { productId } = useParams<{ productId: string }>();
+  const { addToCart, isAddingToCart } = useCart();
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['public-product', productId],
@@ -148,9 +151,28 @@ export default function PublicProductPage() {
           {product.unit_type && (
             <p className="text-sm text-muted-foreground">Sold per {product.unit_type}</p>
           )}
-          <Button asChild>
-            <Link to="/shop">Browse catalog</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={!inStock || isAddingToCart}
+              onClick={async () => {
+                try {
+                  await addToCart({ productId: product.id, qty: 1 });
+                  toast.success('Added to cart');
+                } catch (e: any) {
+                  toast.error(e?.message ?? 'Could not add to cart');
+                }
+              }}
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              {inStock ? 'Add to cart' : 'Out of stock'}
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/cart">View cart</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link to="/shop">Browse catalog</Link>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

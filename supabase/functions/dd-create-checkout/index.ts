@@ -689,8 +689,8 @@ serve(async (req) => {
       line_items: lineItems,
       customer_email: email,
       automatic_tax: { enabled: true },
-      success_url: `${origin}/order/${order.id}?paid=true`,
-      cancel_url: `${origin}/order/${order.id}?cancelled=true`,
+      success_url: `${origin}/checkout/success?order_id=${order.id}`,
+      cancel_url: `${origin}/cart?cancelled=true&order_id=${order.id}`,
       payment_method_options: {
         card: { request_three_d_secure: threeDSMode },
       },

@@ -23,7 +23,10 @@ serve(async (req) => {
 
   const stripeKey =
     Deno.env.get("STRIPE_SECRET_KEY_DD") ?? Deno.env.get("STRIPE_SECRET_KEY");
-  const webhookSecret = Deno.env.get("DD_STRIPE_WEBHOOK_SECRET");
+  // Prefer a dedicated DD endpoint secret; fall back to the shared platform
+  // secret so the pipeline works with the secret that IS set today.
+  const webhookSecret =
+    Deno.env.get("DD_STRIPE_WEBHOOK_SECRET") ?? Deno.env.get("STRIPE_WEBHOOK_SECRET");
 
   if (!stripeKey || !webhookSecret) {
     return new Response(
@@ -185,6 +188,22 @@ async function markOrderPaid(
       p_reason: "sale",
     });
     if (decErr) console.error(`[dd-webhook] inventory decrement failed ${it.product_id}:`, decErr.message);
+  }
+
+  // ── SPLIT LEDGER ────────────────────────────────────────────────────────
+  // Write gross / Stripe fee / wholesale cost / Dynasty margin and the reserve
+  // rows. Every payout row lands as approval_required=true — no money moves to
+  // a supplier until an admin presses release.
+  try {
+    const { data: split, error: splitErr } = await supabase.rpc("dd_write_order_split", {
+      p_order_id: orderId,
+      p_charge_id: paymentRef,
+      p_stripe_fee_cents: null,
+    });
+    if (splitErr) console.error(`[dd-webhook] split write failed ${orderId}:`, splitErr.message);
+    else console.log(`[dd-webhook] split written ${orderId}:`, JSON.stringify(split));
+  } catch (e: any) {
+    console.error("[dd-webhook] split write threw", e?.message);
   }
 
   // Fire-and-forget grabba bridge sync.

@@ -38,6 +38,13 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
   const [photos, setPhotos] = useState<string[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
+  // Step A — photo-to-listing (vision extraction + uniform backdrop)
+  const [recognition, setRecognition] = useState<any>(null);
+  const [category, setCategory] = useState<string>('');
+  const [reading, setReading] = useState(false);
+  const [standardizing, setStandardizing] = useState(false);
+  const [standardizedUrl, setStandardizedUrl] = useState<string | null>(null);
+
   // Wizard
   const [step, setStep] = useState<Step>('A');
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -124,6 +131,8 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
       supplier_id: supplierId || null,
       cost: cost ? Number(cost) : null,
       input_photos: photos,
+      recognition: recognition ?? null,
+      category: category || null,
       status: 'candidates',
     }).select('id').single();
     if (draftErr || !draft) { toast.error(`Draft save failed: ${draftErr?.message}`); setStreaming(false); return; }
@@ -171,6 +180,46 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
     if (error) throw error;
     if (!data?.ok) throw new Error(data?.error || 'pipeline failed');
     return data;
+  }
+
+  // PHOTO → LISTING. Vision reads the photo and SUGGESTS the listing fields.
+  // Nothing is silently accepted: every value lands in an editable input and the
+  // model's own confidence is shown. Low confidence = confirm each field.
+  async function runReadPhoto() {
+    if (photos.length === 0) return;
+    setReading(true);
+    try {
+      const r = await callPipeline({ mode: 'recognize_product', draft_id: draftId, photo_url: photos[0] });
+      setRecognition(r);
+      if (r.product_name && !productName.trim()) setProductName(r.product_name);
+      if (r.brand_visible && !brandHint.trim()) setBrandHint(r.brand_visible);
+      if (r.category && !category) {
+        const match = DD_CATEGORY_OPTIONS.find(
+          (c) => c.label.toLowerCase() === String(r.category).toLowerCase() || c.value === r.category,
+        );
+        if (match) setCategory(match.value);
+      }
+      toast.success(`Photo read — confidence: ${r.confidence}`);
+    } catch (e: any) { toast.error(e.message); }
+    finally { setReading(false); }
+  }
+
+  // UNIFORM BACKDROP. Background removed onto a white field + card/thumb variants
+  // so the catalogue looks like one shop rather than a warehouse camera roll.
+  async function runStandardize() {
+    if (photos.length === 0) return;
+    setStandardizing(true);
+    try {
+      const r = await callPipeline({ mode: 'standardize_image', draft_id: draftId, photo_url: photos[0] });
+      const clean = (r.variants || []).find((v: any) => v.size === 'clean')?.url
+        || (r.variants || []).find((v: any) => v.size === 'card')?.url || null;
+      setStandardizedUrl(clean);
+      if (clean) setPhotos((p) => (p.includes(clean) ? p : [clean, ...p]));
+      toast[r.removebg_used ? 'success' : 'message'](
+        r.removebg_used ? 'Backdrop normalised' : 'Resized only — background removal key not configured',
+      );
+    } catch (e: any) { toast.error(e.message); }
+    finally { setStandardizing(false); }
   }
 
   async function runEnhance() {
@@ -392,6 +441,65 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
               )}
             </div>
             <PhotoUploadMultiple photos={photos} onChange={setPhotos} folder="dd-catalog-onboard" maxPhotos={6} />
+
+            {/* PHOTO → LISTING. AI suggests; the wholesaler confirms. */}
+            <div className="rounded-lg border border-border/60 p-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="secondary" disabled={photos.length === 0 || reading} onClick={runReadPhoto}>
+                  {reading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                  Read the photo &amp; write my listing
+                </Button>
+                <Button variant="outline" disabled={photos.length === 0 || standardizing} onClick={runStandardize}>
+                  {standardizing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wand2 className="h-4 w-4 mr-2" />}
+                  Uniform backdrop
+                </Button>
+                {standardizedUrl && <Badge variant="secondary">backdrop normalised</Badge>}
+              </div>
+
+              {recognition && (
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={recognition.confidence === 'high' ? 'default' : 'destructive'}
+                      className={recognition.confidence === 'medium' ? 'bg-amber-500/20 text-amber-500 border-amber-500/40' : ''}
+                    >
+                      AI confidence: {recognition.confidence}
+                    </Badge>
+                    {recognition.confidence !== 'high' && (
+                      <span className="text-xs text-muted-foreground">
+                        Confirm every field below — the model was unsure.
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
+                    {recognition.flavor_or_variant && <div><span className="font-medium">Variant:</span> {recognition.flavor_or_variant}</div>}
+                    {recognition.size_or_count && <div><span className="font-medium">Size:</span> {recognition.size_or_count}</div>}
+                    {recognition.item_type && <div><span className="font-medium">Type:</span> {recognition.item_type}</div>}
+                    {recognition.package_text && <div className="col-span-2"><span className="font-medium">On pack:</span> {recognition.package_text}</div>}
+                  </div>
+                  {Array.isArray(recognition.key_features) && recognition.key_features.length > 0 && (
+                    <ul className="list-disc pl-5 text-xs text-muted-foreground">
+                      {recognition.key_features.map((f: string, i: number) => <li key={i}>{f}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-2 max-w-sm">
+                <Label>Category</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger><SelectValue placeholder="Pick a category" /></SelectTrigger>
+                  <SelectContent>
+                    {DD_CATEGORY_OPTIONS.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Weight and box dimensions are still required at the confirm gate before this can go live.
+              </p>
+            </div>
+
             <div className="flex justify-end">
               <Button size="lg" disabled={!canStartB} onClick={startStepB}>
                 <Sparkles className="h-4 w-4 mr-2" /> Find official photos
