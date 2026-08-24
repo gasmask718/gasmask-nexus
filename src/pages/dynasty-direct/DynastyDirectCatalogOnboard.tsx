@@ -38,6 +38,13 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
   const [photos, setPhotos] = useState<string[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
+  // Step A — photo-to-listing (vision extraction + uniform backdrop)
+  const [recognition, setRecognition] = useState<any>(null);
+  const [category, setCategory] = useState<string>('');
+  const [reading, setReading] = useState(false);
+  const [standardizing, setStandardizing] = useState(false);
+  const [standardizedUrl, setStandardizedUrl] = useState<string | null>(null);
+
   // Wizard
   const [step, setStep] = useState<Step>('A');
   const [draftId, setDraftId] = useState<string | null>(null);

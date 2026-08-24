@@ -77,7 +77,28 @@ serve(async (req) => {
   // RPC returns {} for any non-match / rate-limit / invalid — never reveals
   // whether the order id exists. Always 200 + JSON to keep the public surface
   // indistinguishable across outcomes.
-  return new Response(JSON.stringify(data ?? {}), {
+  const result = (data ?? {}) as Record<string, unknown>;
+
+  // Tracking is only attached once the RPC has already proven the caller owns
+  // the order (non-empty result). Shipment-level fields only — never supplier
+  // identity, cost, or margin.
+  if (result && Object.keys(result).length > 0) {
+    const { data: fulfillments } = await supabase
+      .from("marketplace_fulfillments")
+      .select("status, tracking_number, carrier, updated_at")
+      .eq("order_id", body.order_id);
+    result.shipments = (fulfillments ?? []).map((f) => ({
+      status: f.status,
+      carrier: f.carrier,
+      tracking_number: f.tracking_number,
+      updated_at: f.updated_at,
+      tracking_url: f.tracking_number
+        ? `https://www.google.com/search?q=${encodeURIComponent(String(f.tracking_number))}`
+        : null,
+    }));
+  }
+
+  return new Response(JSON.stringify(result), {
     status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });

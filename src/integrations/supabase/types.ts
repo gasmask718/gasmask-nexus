@@ -49200,9 +49200,13 @@ export type Database = {
       dd_reserve_ledger: {
         Row: {
           amount_cents: number
+          approval_required: boolean
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
           fulfillment_id: string | null
           id: string
+          kind: string
           notes: string | null
           order_id: string | null
           release_at: string
@@ -49213,9 +49217,13 @@ export type Database = {
         }
         Insert: {
           amount_cents: number
+          approval_required?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           fulfillment_id?: string | null
           id?: string
+          kind?: string
           notes?: string | null
           order_id?: string | null
           release_at: string
@@ -49226,9 +49234,13 @@ export type Database = {
         }
         Update: {
           amount_cents?: number
+          approval_required?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           fulfillment_id?: string | null
           id?: string
+          kind?: string
           notes?: string | null
           order_id?: string | null
           release_at?: string
@@ -49320,6 +49332,7 @@ export type Database = {
       }
       dd_routing_pins: {
         Row: {
+          category: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -49331,6 +49344,7 @@ export type Database = {
           state_code: string | null
         }
         Insert: {
+          category?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -49342,6 +49356,7 @@ export type Database = {
           state_code?: string | null
         }
         Update: {
+          category?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -155042,6 +155057,10 @@ export type Database = {
         Args: { p_referral_code: string; p_store_account_id: string }
         Returns: Json
       }
+      dd_approve_reserve_release: {
+        Args: { p_note?: string; p_reserve_id: string }
+        Returns: Json
+      }
       dd_backfill_order_economics: { Args: never; Returns: Json }
       dd_calculate_order_profit: {
         Args: { p_order_id: string }
@@ -155445,6 +155464,14 @@ export type Database = {
       }
       dd_write_order_economics: {
         Args: { p_order_id: string; p_rate_source?: string }
+        Returns: Json
+      }
+      dd_write_order_split: {
+        Args: {
+          p_charge_id?: string
+          p_order_id: string
+          p_stripe_fee_cents?: number
+        }
         Returns: Json
       }
       debug_auth: { Args: never; Returns: Json }
