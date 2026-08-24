@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Phone, PhoneCall, PhoneOff, ShieldAlert, ShieldCheck, UserCheck, UserX, AlertTriangle, Lock, LockOpen } from "lucide-react";
+import { Phone, PhoneCall, PhoneOff, ShieldAlert, ShieldCheck, UserCheck, UserX, AlertTriangle, Lock, LockOpen, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const TICK_INTERVAL_MS = 20_000;
@@ -47,9 +47,11 @@ export default function PowerDialerConsole() {
   const [selectedCampaign, setSelectedCampaign] = useState<string>("");
   const [minutes, setMinutes] = useState(120);
   const [arming, setArming] = useState(false);
-  const [testPhone, setTestPhone] = useState("");
+  const [testPhone, setTestPhone] = useState("+19174643048"); // owner's test line
   const [gateBusy, setGateBusy] = useState(false);
+  const [testSid, setTestSid] = useState<string | null>(null);
   const tickInFlight = useRef(false);
+  const autoConfirmFired = useRef(false);
 
   // ── Engine state (the master switch) ──
   const { data: settings } = useQuery({
@@ -201,6 +203,10 @@ export default function PowerDialerConsole() {
       if (data?.error) throw new Error(data.detail ? `${data.error}: ${data.detail}` : data.error);
       if (action === "confirm_test") toast.success(data.message);
       else toast(data.message || "Done");
+      if (action === "test_call" && data?.test_call_sid) {
+        autoConfirmFired.current = false;
+        setTestSid(data.test_call_sid);
+      }
       invalidate();
       return data;
     } catch (e: any) {
@@ -210,6 +216,43 @@ export default function PowerDialerConsole() {
       setGateBusy(false);
     }
   };
+
+  // ── Live test-call step tracking ──
+  // While a test call is in flight, poll OUR webhook pipeline's own event
+  // log (through the admin function) so each step shows as it happens, and
+  // a failure names the exact step that failed. Resume tracking on reload
+  // if a test call was placed but never unlocked.
+  useEffect(() => {
+    if (!testSid && !isLive && settings?.live_mode_test_call_sid) {
+      setTestSid(settings.live_mode_test_call_sid as string);
+    }
+  }, [settings?.live_mode_test_call_sid, isLive, testSid]);
+
+  const { data: testStatus } = useQuery({
+    queryKey: ["power-dialer-test-status", testSid],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("power-dialer-admin", { body: { action: "test_status" } });
+      if (error) throw error;
+      return data as any;
+    },
+    enabled: !!testSid && !isLive,
+    refetchInterval: 2500,
+  });
+
+  // Human confirmed → unlock automatically. The manual button stays as a
+  // fallback for a delayed webhook.
+  useEffect(() => {
+    if (isLive) { autoConfirmFired.current = false; return; }
+    if (testStatus?.steps?.human_confirmed && !autoConfirmFired.current && !gateBusy) {
+      autoConfirmFired.current = true;
+      adminAction("confirm_test");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testStatus?.steps?.human_confirmed, isLive, gateBusy]);
+
+  const testSteps = testStatus?.steps as Record<string, boolean> | undefined;
+  const testFailure = testStatus?.failure as { step: string; detail: string } | null | undefined;
+  const showTracker = !!testSid && !isLive;
 
   return (
     <div className="space-y-4 p-4 max-w-5xl mx-auto">
@@ -345,24 +388,81 @@ export default function PowerDialerConsole() {
               <>
                 <div className="flex items-start gap-2 rounded-md bg-amber-500/10 border border-amber-500/30 p-3 text-sm">
                   <ShieldAlert className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                  <span>Enter YOUR OWN number. The system places one real call — answer it and stay on the line a few seconds. Only a confirmed human answer unlocks live mode.</span>
+                  <span>
+                    One real call from GasMask / Grabba's line <span className="font-mono">+19298225712</span> to the
+                    number below — the full chain runs: dial → machine detection → confirmed human. Answer it and
+                    stay on the line a few seconds; live mode unlocks itself when the human answer is confirmed.
+                  </span>
                 </div>
                 <div className="flex gap-2">
-                  <Input placeholder="+19295551234" value={testPhone} onChange={(e) => setTestPhone(e.target.value)} className="font-mono" />
+                  <Input value={testPhone} onChange={(e) => setTestPhone(e.target.value)} className="font-mono" />
                   <Button variant="outline" disabled={gateBusy || !testPhone} onClick={() => adminAction("test_call", { phone: testPhone })}>
-                    Place test call
+                    {gateBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <PhoneCall className="h-4 w-4" />}
+                    <span className="ml-1">Place test call</span>
                   </Button>
                 </div>
-                {settings?.live_mode_test_call_sid && (
+
+                {showTracker && (
+                  <div className="rounded-md border p-3 space-y-2">
+                    {[
+                      { key: "dialing", label: "Dialing" },
+                      { key: "ringing", label: "Ringing" },
+                      { key: "answered", label: "Answered" },
+                      { key: "human_confirmed", label: "Human confirmed (machine detection)" },
+                    ].map((s, i, arr) => {
+                      const done = !!testSteps?.[s.key];
+                      const failedHere = testFailure?.step === s.key;
+                      const prevDone = i === 0 ? true : !!testSteps?.[arr[i - 1].key];
+                      const active = !done && !failedHere && !testFailure && prevDone;
+                      return (
+                        <div key={s.key} className="flex items-center gap-2 text-sm">
+                          {done ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> :
+                           failedHere ? <XCircle className="h-4 w-4 text-destructive" /> :
+                           active ? <Loader2 className="h-4 w-4 animate-spin text-blue-500" /> :
+                           <div className="h-4 w-4 rounded-full border border-muted-foreground/30" />}
+                          <span className={done ? "text-foreground" : failedHere ? "text-destructive font-medium" : "text-muted-foreground"}>
+                            {s.label}
+                          </span>
+                          {s.key === "human_confirmed" && testStatus?.answered_by && (
+                            <span className="text-xs text-muted-foreground font-mono">({testStatus.answered_by})</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <div className="flex items-center gap-2 text-sm">
+                      {testSteps?.human_confirmed && !testFailure
+                        ? <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                        : <div className="h-4 w-4 rounded-full border border-muted-foreground/30" />}
+                      <span className="text-muted-foreground">Live mode unlocked</span>
+                    </div>
+                    {testFailure && (
+                      <div className="rounded-md bg-destructive/10 border border-destructive/40 p-3 text-sm text-destructive">
+                        <p className="font-semibold">Failed at: {testFailure.step.replace(/_/g, " ")}</p>
+                        <p className="text-xs mt-1">{testFailure.detail}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {(testSid || settings?.live_mode_test_call_sid) && !testSteps?.human_confirmed && !testFailure && (
                   <Button className="w-full" disabled={gateBusy} onClick={() => adminAction("confirm_test")}>
                     <ShieldCheck className="h-4 w-4 mr-2" /> I answered — Confirm &amp; unlock live mode
                   </Button>
                 )}
               </>
             ) : (
-              <Button variant="outline" disabled={gateBusy} onClick={() => adminAction("set_simulation")}>
-                Back to simulation (also stops the engine)
-              </Button>
+              <div className="space-y-3">
+                <div className="rounded-md bg-destructive/10 border border-destructive/40 p-3 text-sm">
+                  <p className="font-semibold text-destructive">LIVE MODE IS ON.</p>
+                  <p className="mt-1">
+                    Real calls will be placed when a campaign is armed.
+                    Unlocked {settings?.live_mode_unlocked_at ? new Date(settings.live_mode_unlocked_at).toLocaleString() : ""}.
+                  </p>
+                </div>
+                <Button variant="outline" disabled={gateBusy} onClick={() => adminAction("set_simulation")}>
+                  Back to simulation (also stops the engine)
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
