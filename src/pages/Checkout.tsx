@@ -560,8 +560,8 @@ export default function Checkout() {
                       </>
                     ) : (
                       paymentMethod === 'card'
-                        ? `Pay with Card - $${totals.total.toFixed(2)}`
-                        : `Place Order - $${totals.total.toFixed(2)}`
+                        ? `Pay with Card - $${effectiveTotals.total.toFixed(2)}`
+                        : `Place Order - $${effectiveTotals.total.toFixed(2)}`
                     )}
                   </Button>
                 </CardFooter>
