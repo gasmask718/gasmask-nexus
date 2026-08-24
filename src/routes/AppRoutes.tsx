@@ -3091,21 +3091,12 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* Floor 2 — Communication Center V8 (Modular with nested routes) */}
-      <Route path="/grabba/communication/*" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'csr', 'driver']}>
-            <Layout><CommunicationHubLayout /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
-      <Route path="/grabba/communication" element={
-        <ProtectedRoute>
-          <RequireRole allowedRoles={['admin', 'employee', 'csr']}>
-            <Layout><CommunicationHubLayout /></Layout>
-          </RequireRole>
-        </ProtectedRoute>
-      } />
+      {/* Floor 2 — Communication hub. Canonical mount is /communication (full-screen
+          floor with its own layout + child routes). The old /grabba/communication
+          mounts rendered the hub shell with NO child routes — a blank page whose
+          sidebar links looked dead. Redirect to the canonical mount. */}
+      <Route path="/grabba/communication" element={<Navigate to="/communication" replace />} />
+      <Route path="/grabba/communication/*" element={<Navigate to="/communication" replace />} />
       {/* Legacy grabba comm aliases → canonical /grabba/communication (Pass 1B redirects) */}
       <Route path="/grabba/text-center" element={<Navigate to="/grabba/communication" replace />} />
       <Route path="/grabba/email-center" element={<Navigate to="/grabba/communication" replace />} />
