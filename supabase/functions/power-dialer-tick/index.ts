@@ -308,6 +308,10 @@ Deno.serve(async (req) => {
           StatusCallback: statusUrl,
           StatusCallbackMethod: "POST",
           Timeout: "30",
+          // MachineDetection=Enable turns detection ON; AsyncAmd=true only
+          // makes it non-blocking. AsyncAmd without MachineDetection runs no
+          // detection and the verdict callback never fires.
+          MachineDetection: "Enable",
           AsyncAmd: "true",
           AsyncAmdStatusCallback: statusUrl,
           AsyncAmdStatusCallbackMethod: "POST",

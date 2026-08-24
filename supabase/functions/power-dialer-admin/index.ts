@@ -102,6 +102,11 @@ Deno.serve(async (req) => {
         StatusCallback: `${SUPABASE_URL}/functions/v1/dialer-call-status?${cb.toString()}`,
         StatusCallbackMethod: "POST",
         Timeout: "30",
+        // MachineDetection=Enable is the master switch — AsyncAmd=true only
+        // selects BACKGROUND mode. Without MachineDetection, Twilio performs
+        // NO detection at all: no AsyncAmdStatusCallback fires and
+        // answered_by stays null forever (the human_not_confirmed bug).
+        MachineDetection: "Enable",
         AsyncAmd: "true",
         AsyncAmdStatusCallback: `${SUPABASE_URL}/functions/v1/dialer-call-status?${cb.toString()}`,
         AsyncAmdStatusCallbackMethod: "POST",

@@ -160,8 +160,12 @@ Deno.serve(async (req) => {
 
     // Answering Machine Detection — async (non-blocking) so the dial proceeds
     // immediately and AnsweredBy is delivered separately to the status webhook.
-    // Blocking modes ("DetectMessageEnd"/"Enable") cannot be combined with AsyncAmd=true.
+    // MachineDetection=Enable is REQUIRED: it switches detection on, while
+    // AsyncAmd=true only selects background delivery. (The old comment here
+    // claimed the two can't combine — wrong; that belief is why no AMD
+    // verdict ever arrived, see dialer_call_events: zero amd_result rows.)
     if (amd_enabled) {
+      form.set("MachineDetection", "Enable");
       form.set("AsyncAmd", "true");
       form.set("AsyncAmdStatusCallback", statusUrl);
       form.set("AsyncAmdStatusCallbackMethod", "POST");
