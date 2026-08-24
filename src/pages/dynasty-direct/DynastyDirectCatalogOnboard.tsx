@@ -232,10 +232,22 @@ export default function DynastyDirectCatalogOnboard({ lockedSupplierId, lockedSu
     if (!supplierId) { toast.error('Pick a wholesaler before publishing'); return; }
     if (selectedImages.length === 0) { toast.error('Select at least one image for the live product'); return; }
     if (!measurementsVerified) { toast.error('Tap "measurements verified" before publishing'); return; }
+    // Weight AND all three dimensions are mandatory — EasyPost cannot rate a
+    // parcel without them and the DB rejects an active product that lacks them.
+    const missingDims = [
+      !(Number(measurements.weight_oz) > 0) && 'weight (oz)',
+      !(Number(measurements.length_in) > 0) && 'length',
+      !(Number(measurements.width_in) > 0) && 'width',
+      !(Number(measurements.height_in) > 0) && 'height',
+    ].filter(Boolean) as string[];
+    if (missingDims.length > 0) {
+      toast.error(`Missing ${missingDims.join(', ')} — shipping can't be priced without them.`);
+      return;
+    }
     if (!copy.category_guess) { toast.error('Pick a category before publishing'); return; }
     setBusy('publish');
     try {
-      const dims = (measurements.length_in || measurements.width_in || measurements.height_in)
+      const dims = (measurements.length_in && measurements.width_in && measurements.height_in)
         ? { length_in: measurements.length_in, width_in: measurements.width_in, height_in: measurements.height_in }
         : null;
       const { data: userRes } = await supabase.auth.getUser();

@@ -49428,20 +49428,31 @@ export type Database = {
       dd_shipments: {
         Row: {
           actual_delivery: string | null
+          adjustment_detected_at: string | null
+          billable_weight_oz: number | null
           box_count: number | null
+          box_id: string | null
+          box_name: string | null
           carrier: string
+          carrier_adjustment_amount: number | null
+          carrier_adjustment_detail: Json | null
+          carrier_billed_weight_oz: number | null
           created_at: string | null
+          dim_weight_oz: number | null
+          dimension_variance_flag: boolean
           easypost_shipment_id: string | null
           estimated_delivery: string | null
           from_address: Json | null
           height_in: number | null
           id: string
           label_pdf_url: string | null
+          label_status: string
           label_url: string | null
           length_in: number | null
           order_id: string | null
           packing_result: Json | null
           rate_selected: number | null
+          rated_weight_oz: number | null
           rates_compared: Json | null
           service_level: string | null
           status: string | null
@@ -49455,20 +49466,31 @@ export type Database = {
         }
         Insert: {
           actual_delivery?: string | null
+          adjustment_detected_at?: string | null
+          billable_weight_oz?: number | null
           box_count?: number | null
+          box_id?: string | null
+          box_name?: string | null
           carrier: string
+          carrier_adjustment_amount?: number | null
+          carrier_adjustment_detail?: Json | null
+          carrier_billed_weight_oz?: number | null
           created_at?: string | null
+          dim_weight_oz?: number | null
+          dimension_variance_flag?: boolean
           easypost_shipment_id?: string | null
           estimated_delivery?: string | null
           from_address?: Json | null
           height_in?: number | null
           id?: string
           label_pdf_url?: string | null
+          label_status?: string
           label_url?: string | null
           length_in?: number | null
           order_id?: string | null
           packing_result?: Json | null
           rate_selected?: number | null
+          rated_weight_oz?: number | null
           rates_compared?: Json | null
           service_level?: string | null
           status?: string | null
@@ -49482,20 +49504,31 @@ export type Database = {
         }
         Update: {
           actual_delivery?: string | null
+          adjustment_detected_at?: string | null
+          billable_weight_oz?: number | null
           box_count?: number | null
+          box_id?: string | null
+          box_name?: string | null
           carrier?: string
+          carrier_adjustment_amount?: number | null
+          carrier_adjustment_detail?: Json | null
+          carrier_billed_weight_oz?: number | null
           created_at?: string | null
+          dim_weight_oz?: number | null
+          dimension_variance_flag?: boolean
           easypost_shipment_id?: string | null
           estimated_delivery?: string | null
           from_address?: Json | null
           height_in?: number | null
           id?: string
           label_pdf_url?: string | null
+          label_status?: string
           label_url?: string | null
           length_in?: number | null
           order_id?: string | null
           packing_result?: Json | null
           rate_selected?: number | null
+          rated_weight_oz?: number | null
           rates_compared?: Json | null
           service_level?: string | null
           status?: string | null
@@ -49507,7 +49540,15 @@ export type Database = {
           wholesaler_id?: string | null
           width_in?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dd_shipments_box_id_fkey"
+            columns: ["box_id"]
+            isOneToOne: false
+            referencedRelation: "dd_box_sizes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dd_shipping_accounts: {
         Row: {
@@ -50051,6 +50092,8 @@ export type Database = {
         Row: {
           avg_fulfillment_hours: number | null
           calculated_at: string | null
+          dimension_adjustment_amount: number
+          dimension_adjustments: number
           fulfillment_rate: number | null
           id: string
           issue_count: number | null
@@ -50062,11 +50105,14 @@ export type Database = {
           period_end: string
           period_start: string
           revenue_generated: number | null
+          shipments_labeled: number
           wholesaler_id: string
         }
         Insert: {
           avg_fulfillment_hours?: number | null
           calculated_at?: string | null
+          dimension_adjustment_amount?: number
+          dimension_adjustments?: number
           fulfillment_rate?: number | null
           id?: string
           issue_count?: number | null
@@ -50078,11 +50124,14 @@ export type Database = {
           period_end: string
           period_start: string
           revenue_generated?: number | null
+          shipments_labeled?: number
           wholesaler_id: string
         }
         Update: {
           avg_fulfillment_hours?: number | null
           calculated_at?: string | null
+          dimension_adjustment_amount?: number
+          dimension_adjustments?: number
           fulfillment_rate?: number | null
           id?: string
           issue_count?: number | null
@@ -50094,6 +50143,7 @@ export type Database = {
           period_end?: string
           period_start?: string
           revenue_generated?: number | null
+          shipments_labeled?: number
           wholesaler_id?: string
         }
         Relationships: [
@@ -155236,6 +155286,15 @@ export type Database = {
       dd_recipient_blocked: { Args: { p_email: string }; Returns: boolean }
       dd_recompute_product_inventory_qty: {
         Args: { p_product_id: string }
+        Returns: undefined
+      }
+      dd_record_carrier_adjustment: {
+        Args: {
+          _adjustment_amount: number
+          _billed_weight_oz: number
+          _detail?: Json
+          _shipment_id: string
+        }
         Returns: undefined
       }
       dd_record_credit_payment: {

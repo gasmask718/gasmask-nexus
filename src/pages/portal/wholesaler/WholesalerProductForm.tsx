@@ -10,7 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Loader2, Package, Upload } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Package, Upload, Ruler } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "sonner";
 import { useWholesalerProfile } from "@/services/wholesaler/useWholesalerProfile";
 import { BulkUploadModule } from "@/components/wholesaler-console";
 import { ProductDimensionsPanel, ProductDimensions } from "@/components/products/ProductDimensionsPanel";
@@ -74,8 +76,23 @@ export default function WholesalerProductForm() {
     }
   }, [existingProduct, isEditing]);
 
+  // A listing cannot go live without weight + L x W x H: EasyPost can't rate a
+  // parcel without them, so checkout would be guessing and the margin with it.
+  // The database enforces the same rule (dd_require_shipping_dimensions).
+  const missingShipping = [
+    !(Number(formData.weight_oz) > 0) && 'weight (oz)',
+    !(Number(formData.length_in) > 0) && 'length',
+    !(Number(formData.width_in) > 0) && 'width',
+    !(Number(formData.height_in) > 0) && 'height',
+  ].filter(Boolean) as string[];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (missingShipping.length > 0) {
+      toast.error(`Add ${missingShipping.join(', ')} before saving — shipping can't be priced without them.`);
+      return;
+    }
 
     try {
       if (isEditing && productId) {
@@ -218,6 +235,17 @@ export default function WholesalerProductForm() {
               </div>
             </CardContent>
           </Card>
+
+          {missingShipping.length > 0 && (
+            <Alert variant="destructive">
+              <Ruler className="h-4 w-4" />
+              <AlertTitle>Shipping size required</AlertTitle>
+              <AlertDescription>
+                Missing {missingShipping.join(', ')}. Carriers bill on the greater of actual and
+                dimensional weight, so a listing can't go live until the real box size is on file.
+              </AlertDescription>
+            </Alert>
+          )}
 
           <ProductDimensionsPanel
             value={{
