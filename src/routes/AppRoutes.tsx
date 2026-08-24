@@ -2124,7 +2124,8 @@ export default function AppRoutes() {
         />
         <Route path="/dynasty-direct/catalog" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><MarketplaceAdminPortalPage /></RequireRole>} />
         <Route path="/dynasty-direct/store-storefront" element={<RequireRole allowedRoles={['admin', 'owner', 'store']} showLocked><StorePortalPage /></RequireRole>} />
-        <Route path="/dynasty-direct/d2c-storefront" element={<RequireRole allowedRoles={['admin', 'owner', 'customer']} showLocked><Shop /></RequireRole>} />
+        {/* Legacy alias — the storefront is public at /shop. */}
+        <Route path="/dynasty-direct/d2c-storefront" element={<Navigate to="/shop" replace />} />
         <Route path="/dynasty-direct/fulfillment" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DynastyDirectFulfillmentConsole /></RequireRole>} />
         <Route path="/dynasty-direct/shipping" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDShippingPage /></RequireRole>} />
         <Route path="/dynasty-direct/products" element={<RequireRole allowedRoles={['admin', 'owner', 'wholesaler']} showLocked><DDProductManagementPage /></RequireRole>} />
