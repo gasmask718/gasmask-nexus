@@ -1333,10 +1333,13 @@ export default function AppRoutes() {
       {/* Public routes wrapped in PublicLayout (marketing nav + footer) */}
       <Route element={<PublicLayout />}>
         <Route path="/public" element={<LandingRedirect />} />
-        {/* T1 M2: /shop → DD storefront (tier-aware pricing canonical there) */}
-        <Route path="/shop" element={<Navigate to="/dynasty-direct/d2c-storefront" replace />} />
+        {/* /shop IS the public D2C storefront grid (no auth, crawlable). */}
+        <Route path="/shop" element={<Shop />} />
         {/* Public, crawlable product detail page (schema.org Product JSON-LD) */}
         <Route path="/shop/product/:productId" element={<PublicProductPage />} />
+        {/* Stripe redirect target + guest order tracking */}
+        <Route path="/checkout/success" element={<CheckoutSuccess />} />
+        <Route path="/track" element={<TrackOrder />} />
 
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
