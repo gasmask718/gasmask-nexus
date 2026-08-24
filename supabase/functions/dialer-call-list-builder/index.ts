@@ -361,7 +361,8 @@ Deno.serve(async (req) => {
           never_ordered: countCallable(buildEntries("never_ordered", { summaries, alerts, waves, contacts }, contactsByStore, {})),
           no_answer: countCallable(buildEntries("no_answer", { summaries, alerts, waves, contacts }, contactsByStore, {})),
         },
-        waves: [...waveCounts.entries()].map(([segment, count]) => ({ segment, count })).sort(),
+        waves: [...waveCounts.entries()].map(([segment, count]) => ({ segment, count }))
+          .sort((a, b) => a.segment.localeCompare(b.segment)),
         areas: {
           borough: toList(boroughs),
           corridor: toList(corridors),
@@ -414,6 +415,7 @@ Deno.serve(async (req) => {
           amd_mode: "detect",
           max_attempts: 3,
           max_concurrent_calls: 1,
+          total_targets: ok.length,
         })
         .select("id,name")
         .single();
