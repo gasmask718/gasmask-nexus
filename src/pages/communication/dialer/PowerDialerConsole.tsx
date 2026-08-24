@@ -15,6 +15,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -195,8 +196,20 @@ export default function PowerDialerConsole() {
           .eq("id", myAgent.id);
         if (error) throw error;
       } else {
+        // UNIQUE(user_id) is GLOBAL — one row per user across all businesses.
+        // The query above is business-scoped, so a row created under another
+        // business is invisible here and a plain insert violates the
+        // constraint (the duplicate-key bug, hits every VA's second shift).
+        // Upsert on user_id: new users get a row, existing users get
+        // status/business updated in place.
         const { error } = await supabase.from("dialer_agent_availability")
-          .insert({ user_id: user.id, business_id: currentBusiness?.id, status, max_concurrent_calls: 1 } as any);
+          .upsert({
+            user_id: user.id,
+            business_id: currentBusiness?.id,
+            status,
+            last_status_change: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as any, { onConflict: "user_id" });
         if (error) throw error;
       }
       invalidate();
@@ -209,7 +222,15 @@ export default function PowerDialerConsole() {
     setGateBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke("power-dialer-admin", { body: { action, ...extra } });
-      if (error) throw new Error(error.message);
+      if (error) {
+        // A non-2xx carries the function's real JSON body — surface its
+        // error/detail (what failed and what to do), not the generic
+        // "Edge Function returned a non-2xx status code".
+        const body = error instanceof FunctionsHttpError
+          ? await error.context.json().catch(() => null)
+          : null;
+        throw new Error(body?.detail ? `${body.error}: ${body.detail}` : body?.error || error.message);
+      }
       if (data?.error) throw new Error(data.detail ? `${data.error}: ${data.detail}` : data.error);
       if (action === "confirm_test") toast.success(data.message);
       else toast(data.message || "Done");
