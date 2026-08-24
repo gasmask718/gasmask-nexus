@@ -297,11 +297,13 @@ export default function DynastyDirectSplitConsole() {
         <TabsList>
           <TabsTrigger value="config">Config</TabsTrigger>
           <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
+          <TabsTrigger value="approvals">Approvals</TabsTrigger>
           <TabsTrigger value="ledger">Ledger</TabsTrigger>
           <TabsTrigger value="activation">Activation</TabsTrigger>
         </TabsList>
         <TabsContent value="config"><GlobalConfigCard /></TabsContent>
         <TabsContent value="suppliers"><SupplierPayoutCard /></TabsContent>
+        <TabsContent value="approvals"><PayoutApprovalCard /></TabsContent>
         <TabsContent value="ledger"><SplitLedgerCard /></TabsContent>
         <TabsContent value="activation"><ActivationChecklist /></TabsContent>
       </Tabs>
