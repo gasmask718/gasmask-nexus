@@ -29,9 +29,7 @@ export default function WholesalerProductForm() {
     product_name: '',
     description: '',
     brand_id: '',
-    retail_price: 0,
-    store_price: 0,
-    wholesale_price: 0,
+    supplier_cost: 0,
     inventory_qty: 0,
     weight_oz: null,
     processing_time: '1-3 days',
@@ -56,9 +54,7 @@ export default function WholesalerProductForm() {
         product_name: existingProduct.product_name,
         description: existingProduct.description || '',
         brand_id: existingProduct.brand_id || '',
-        retail_price: existingProduct.retail_price || 0,
-        store_price: existingProduct.store_price || 0,
-        wholesale_price: existingProduct.wholesale_price || 0,
+        supplier_cost: (existingProduct as any).supplier_cost || 0,
         inventory_qty: existingProduct.inventory_qty || 0,
         weight_oz: existingProduct.weight_oz ?? null,
         processing_time: existingProduct.processing_time || '1-3 days',
@@ -159,43 +155,22 @@ export default function WholesalerProductForm() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Pricing Tiers</CardTitle>
+              <CardTitle>Your Cost</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid sm:grid-cols-3 gap-4">
-                <div>
-                  <Label>Retail Price ($)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.retail_price}
-                    onChange={(e) => handleChange('retail_price', parseFloat(e.target.value) || 0)}
-                    placeholder="0.00"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">For D2C customers</p>
-                </div>
-                <div>
-                  <Label>Store Price ($)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.store_price}
-                    onChange={(e) => handleChange('store_price', parseFloat(e.target.value) || 0)}
-                    placeholder="0.00"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">For B2B stores</p>
-                </div>
-                <div>
-                  <Label>Wholesale Price ($)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.wholesale_price}
-                    onChange={(e) => handleChange('wholesale_price', parseFloat(e.target.value) || 0)}
-                    placeholder="0.00"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">For bulk buyers</p>
-                </div>
+              <div className="max-w-xs">
+                <Label>Supplier Cost ($)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.supplier_cost}
+                  onChange={(e) => handleChange('supplier_cost', parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  What you charge Dynasty Direct per unit. Retail pricing is set by Dynasty
+                  during catalog review — it is never shown or editable here.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -290,8 +265,8 @@ export default function WholesalerProductForm() {
                 <Package className="h-16 w-16 text-muted-foreground" />
               </div>
               <h3 className="font-semibold">{formData.product_name || 'Product Name'}</h3>
-              <p className="text-2xl font-bold text-primary mt-2">
-                ${(formData.retail_price || 0).toFixed(2)}
+              <p className="text-sm text-muted-foreground mt-2">
+                Your cost: ${(formData.supplier_cost || 0).toFixed(2)} · retail set by Dynasty on review
               </p>
             </CardContent>
           </Card>

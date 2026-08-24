@@ -16,15 +16,12 @@ export interface WholesalerProduct {
   inventory_qty: number | null;
   weight_oz: number | null;
   dimensions: { length: number; width: number; height: number } | null;
-  retail_price: number | null;
-  store_price: number | null;
-  wholesale_price: number | null;
+  supplier_cost: number | null;
   shipping_from_city: string | null;
   shipping_from_state: string | null;
   processing_time: string | null;
   status: string | null;
   created_at: string | null;
-  brand?: { name: string; color: string | null } | null;
 }
 
 export interface CreateProductData {
@@ -36,9 +33,7 @@ export interface CreateProductData {
   inventory_qty?: number;
   weight_oz?: number | null;
   dimensions?: { length: number; width: number; height: number };
-  retail_price?: number;
-  store_price?: number;
-  wholesale_price?: number;
+  supplier_cost?: number;
   shipping_from_city?: string;
   shipping_from_state?: string;
   processing_time?: string;
@@ -65,13 +60,12 @@ export function useWholesalerProducts() {
     queryFn: async () => {
       if (!profile) return [];
 
+      // Reads go through the safe view: RLS on products_all no longer exposes
+      // retail/store/margin columns to wholesalers. The view scopes to the
+      // caller's own wholesaler profile and returns non-sensitive columns only.
       const { data, error } = await supabase
-        .from('products_all')
-        .select(`
-          *,
-          brand:brands(name, color)
-        `)
-        .eq('wholesaler_id', profile.id)
+        .from('dd_wholesaler_products_safe' as any)
+        .select('*')
         .neq('status', 'deleted')
         .order('created_at', { ascending: false });
 
@@ -205,11 +199,8 @@ export function useWholesalerProduct(productId: string) {
     queryKey: ['wholesaler-product', productId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products_all')
-        .select(`
-          *,
-          brand:brands(name, color)
-        `)
+        .from('dd_wholesaler_products_safe' as any)
+        .select('*')
         .eq('id', productId)
         .single();
 
