@@ -9,6 +9,7 @@
  */
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { resolveNumberBrand } from "./inboundNumberBrand.ts";
 
 export interface VoiceRoutingSettings {
   id: string;
@@ -268,7 +269,14 @@ export async function upsertCallLog(
     extra?: Record<string, unknown>;
   },
 ): Promise<string | null> {
-  const brand = args.brand || "gasmask";
+  // Resolve the owning brand from the number this call landed on. Without an
+  // explicit business_id, communication_logs defaults every row to GasMask.
+  const numberBrand = await resolveNumberBrand(
+    supabase,
+    args.direction === "outbound" ? args.from : args.to,
+    "call-log",
+  );
+  const brand = args.brand || numberBrand.brand || null;
   const { data: existing } = await supabase
     .from("communication_logs")
     .select("id")
@@ -297,6 +305,7 @@ export async function upsertCallLog(
       recipient_phone: args.to,
       store_id: match.store_id,
       contact_id: match.contact_id,
+      business_id: numberBrand.business_id,
       brand,
       source_business: brand,
       provider: "twilio",
