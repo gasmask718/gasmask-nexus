@@ -50,6 +50,18 @@ export async function getEasyPostKey(supabase: SupabaseClient): Promise<string |
       .maybeSingle();
     const v = String((data as any)?.config_value ?? "").trim();
     if (v) return v;
+  } catch (_e) { /* fall through */ }
+  // dd_ai_config is also used in single-row (id=1) column form by
+  // dd-create-shipment — read that shape too, or the quote silently falls back
+  // to the flat rate while the label buyer uses the real carrier.
+  try {
+    const { data } = await supabase
+      .from("dd_ai_config")
+      .select("easypost_api_key")
+      .eq("id", 1)
+      .maybeSingle();
+    const v = String((data as any)?.easypost_api_key ?? "").trim();
+    if (v) return v;
   } catch (_e) { /* fall through to env */ }
   const env = Deno.env.get("EASYPOST_API_KEY");
   return env && env.trim() ? env.trim() : null;
