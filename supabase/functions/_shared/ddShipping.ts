@@ -5,6 +5,7 @@
 // NEVER trust a client-passed shipping_cost for the charge amount.
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
+import { hydrateItems, loadBoxes, packItems, type PackedBox } from "./ddBoxing.ts";
 
 export interface QuoteItem {
   product_id: string;
@@ -14,11 +15,13 @@ export interface QuoteItem {
 export interface OriginGroupQuote {
   wholesaler_id: string | null;
   from: { city: string; state: string; zip: string };
+  /** Billable weight (greater of actual and dimensional) across this origin's boxes. */
   weight_oz: number;
   cost: number;
   carrier: string | null;
   service: string | null;
   source: "easypost" | "flat_fallback";
+  boxes: Array<{ box_name: string; length_in: number; width_in: number; height_in: number; billable_weight_oz: number }>;
 }
 
 export interface ShippingQuote {
@@ -26,12 +29,12 @@ export interface ShippingQuote {
   currency: string;
   source: "easypost" | "flat_fallback" | "mixed";
   groups: OriginGroupQuote[];
+  /** Products with no weight/dimensions on file — rated on a fallback parcel. */
+  warnings: string[];
 }
 
 const FLAT_FIRST_ITEM = 8.99;
 const FLAT_PER_EXTRA_ITEM = 1.0;
-const DEFAULT_WEIGHT_OZ = 8;
-const DEFAULT_DIMS = { length: 6, width: 4, height: 2 };
 
 function flatFallback(totalQty: number): number {
   return Math.round((FLAT_FIRST_ITEM + FLAT_PER_EXTRA_ITEM * Math.max(0, totalQty - 1)) * 100) / 100;
@@ -47,6 +50,18 @@ export async function getEasyPostKey(supabase: SupabaseClient): Promise<string |
       .maybeSingle();
     const v = String((data as any)?.config_value ?? "").trim();
     if (v) return v;
+  } catch (_e) { /* fall through */ }
+  // dd_ai_config is also used in single-row (id=1) column form by
+  // dd-create-shipment — read that shape too, or the quote silently falls back
+  // to the flat rate while the label buyer uses the real carrier.
+  try {
+    const { data } = await supabase
+      .from("dd_ai_config")
+      .select("easypost_api_key")
+      .eq("id", 1)
+      .maybeSingle();
+    const v = String((data as any)?.easypost_api_key ?? "").trim();
+    if (v) return v;
   } catch (_e) { /* fall through to env */ }
   const env = Deno.env.get("EASYPOST_API_KEY");
   return env && env.trim() ? env.trim() : null;
@@ -61,12 +76,10 @@ export async function quoteShipping(
   items: QuoteItem[],
   toZip: string,
 ): Promise<ShippingQuote> {
-  const ids = Array.from(new Set(items.map((i) => i.product_id)));
-  const { data: products, error } = await supabase
-    .from("products_all")
-    .select("id, wholesaler_id, weight_oz, length_in, width_in, height_in, dimensions, shipping_from_city, shipping_from_state")
-    .in("id", ids);
-  if (error) throw new Error(`product_lookup_failed: ${error.message}`);
+  // Real per-product weight and dimensions — never a hardcoded parcel. Carriers
+  // bill on the greater of actual and dimensional weight, so a flat 6x4x2
+  // assumption silently loses money on every bulky item.
+  const hydrated = await hydrateItems(supabase, items);
 
   // Platform default origin (dd_config.pickup_address) for products with no origin on file
   let defaultOrigin = { city: "New York", state: "NY", zip: "11201" };
@@ -76,88 +89,131 @@ export async function quoteShipping(
     if (pa?.zip) defaultOrigin = { city: pa.city ?? defaultOrigin.city, state: pa.state ?? defaultOrigin.state, zip: String(pa.zip) };
   } catch (_e) { /* keep default */ }
 
-  const prodMap = new Map<string, any>((products ?? []).map((p: any) => [p.id, p]));
+  const warnings = hydrated
+    .filter((h) => h.missing_dimensions)
+    .map((h) => `Product ${h.product_id} has no weight/dimensions on file — quoted on a conservative fallback parcel.`);
 
-  // Group by origin (wholesaler); unknown wholesaler → platform default origin
-  const groups = new Map<string, { wholesaler_id: string | null; weight_oz: number; length: number; width: number; height: number; qty: number; from: { city: string; state: string; zip: string } }>();
-  for (const it of items) {
-    const p = prodMap.get(it.product_id);
-    if (!p) continue;
-    const key = p.wholesaler_id ?? "platform";
+  // One parcel set per origin (wholesaler); unknown wholesaler → platform origin
+  const groups = new Map<string, { wholesaler_id: string | null; from: { city: string; state: string; zip: string }; items: typeof hydrated; qty: number }>();
+  for (const h of hydrated) {
+    const key = h.wholesaler_id ?? "platform";
     const g = groups.get(key) ?? {
-      wholesaler_id: p.wholesaler_id ?? null,
-      weight_oz: 0,
-      length: 0,
-      width: 0,
-      height: 0,
-      qty: 0,
+      wholesaler_id: h.wholesaler_id,
       from: {
-        city: p.shipping_from_city ?? defaultOrigin.city,
-        state: p.shipping_from_state ?? defaultOrigin.state,
+        city: h.shipping_from_city ?? defaultOrigin.city,
+        state: h.shipping_from_state ?? defaultOrigin.state,
         zip: defaultOrigin.zip,
       },
+      items: [] as typeof hydrated,
+      qty: 0,
     };
-    const dims = (p.dimensions ?? {}) as Record<string, any>;
-    g.weight_oz += (Number(p.weight_oz) || DEFAULT_WEIGHT_OZ) * it.quantity;
-    g.length = Math.max(g.length, Number(p.length_in ?? dims.length) || DEFAULT_DIMS.length);
-    g.width = Math.max(g.width, Number(p.width_in ?? dims.width) || DEFAULT_DIMS.width);
-    g.height = Math.max(g.height, Number(p.height_in ?? dims.height) || DEFAULT_DIMS.height);
-    g.qty += it.quantity;
+    g.items.push(h);
+    g.qty += h.quantity;
     groups.set(key, g);
   }
 
+  const boxes = await loadBoxes(supabase, "any");
   const apiKey = await getEasyPostKey(supabase);
   const groupQuotes: OriginGroupQuote[] = [];
 
   for (const g of groups.values()) {
-    let quoted: OriginGroupQuote | null = null;
+    const packed = boxes.length > 0 ? packItems(g.items, boxes) : { boxes: [] as PackedBox[], warnings: [] as string[] };
+    warnings.push(...packed.warnings);
+
+    // No box fits (or none configured) — fall back to a single parcel sized to
+    // the largest item so the customer still gets a real-ish rate.
+    const parcels: PackedBox[] = packed.boxes.length > 0 ? packed.boxes : [{
+      box_id: "", box_name: "unboxed", carrier: "any", is_flat_rate: false, flat_rate_price: null,
+      dimensions: {
+        length_in: Math.max(...g.items.map((i) => i.length_in)),
+        width_in: Math.max(...g.items.map((i) => i.width_in)),
+        height_in: Math.max(...g.items.map((i) => i.height_in)),
+      },
+      items: g.items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+      actual_weight_oz: g.items.reduce((s, i) => s + i.weight_oz * i.quantity, 0),
+      dim_weight_oz: 0,
+      billable_weight_oz: g.items.reduce((s, i) => s + i.weight_oz * i.quantity, 0),
+      fill_percentage: 0,
+      fragile_only: false,
+    }];
+
+    const billableTotal = parcels.reduce((s, b) => s + b.billable_weight_oz, 0);
+    const boxSummary = parcels.map((b) => ({
+      box_name: b.box_name,
+      length_in: b.dimensions.length_in,
+      width_in: b.dimensions.width_in,
+      height_in: b.dimensions.height_in,
+      billable_weight_oz: b.billable_weight_oz,
+    }));
+
+    let cost = 0;
+    let carrier: string | null = null;
+    let service: string | null = null;
+    let allQuoted = apiKey != null;
+
     if (apiKey) {
-      try {
-        const res = await fetch("https://api.easypost.com/v2/shipments", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            shipment: {
-              from_address: { name: "Dynasty Direct", city: g.from.city, state: g.from.state, zip: g.from.zip, country: "US" },
-              to_address: { zip: toZip, country: "US" },
-              parcel: { weight: Math.max(1, Math.round(g.weight_oz)), length: g.length, width: g.width, height: g.height },
-            },
-          }),
-        });
-        if (res.ok) {
+      for (const b of parcels) {
+        try {
+          const res = await fetch("https://api.easypost.com/v2/shipments", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              shipment: {
+                from_address: { name: "Dynasty Direct", city: g.from.city, state: g.from.state, zip: g.from.zip, country: "US" },
+                to_address: { zip: toZip, country: "US" },
+                parcel: {
+                  // Rate on BILLABLE weight and the real box dimensions.
+                  weight: Math.max(1, Math.round(b.billable_weight_oz)),
+                  length: b.dimensions.length_in,
+                  width: b.dimensions.width_in,
+                  height: b.dimensions.height_in,
+                },
+              },
+            }),
+          });
+          if (!res.ok) {
+            console.error(`[ddShipping] EasyPost rate error ${res.status}: ${(await res.text()).slice(0, 300)}`);
+            allQuoted = false;
+            break;
+          }
           const body = await res.json();
           const rates: any[] = body?.rates ?? [];
-          if (rates.length > 0) {
-            const cheapest = rates.reduce((a: any, b: any) => (Number(a.rate) <= Number(b.rate) ? a : b));
-            quoted = {
-              wholesaler_id: g.wholesaler_id,
-              from: g.from,
-              weight_oz: g.weight_oz,
-              cost: Math.round(Number(cheapest.rate) * 100) / 100,
-              carrier: cheapest.carrier ?? null,
-              service: cheapest.service ?? null,
-              source: "easypost",
-            };
-          }
-        } else {
-          console.error(`[ddShipping] EasyPost rate error ${res.status}: ${(await res.text()).slice(0, 300)}`);
+          if (rates.length === 0) { allQuoted = false; break; }
+          const cheapest = rates.reduce((a: any, x: any) => (Number(a.rate) <= Number(x.rate) ? a : x));
+          cost += Number(cheapest.rate);
+          carrier = carrier ?? (cheapest.carrier ?? null);
+          service = service ?? (cheapest.service ?? null);
+        } catch (e) {
+          console.error(`[ddShipping] EasyPost rate exception: ${e instanceof Error ? e.message : e}`);
+          allQuoted = false;
+          break;
         }
-      } catch (e) {
-        console.error(`[ddShipping] EasyPost rate exception: ${e instanceof Error ? e.message : e}`);
       }
     }
-    if (!quoted) {
-      quoted = {
-        wholesaler_id: g.wholesaler_id,
-        from: g.from,
-        weight_oz: g.weight_oz,
-        cost: flatFallback(g.qty),
-        carrier: null,
-        service: null,
-        source: "flat_fallback",
-      };
-    }
-    groupQuotes.push(quoted);
+
+    groupQuotes.push(
+      allQuoted
+        ? {
+            wholesaler_id: g.wholesaler_id,
+            from: g.from,
+            weight_oz: Number(billableTotal.toFixed(2)),
+            cost: Math.round(cost * 100) / 100,
+            carrier,
+            service,
+            source: "easypost",
+            boxes: boxSummary,
+          }
+        : {
+            wholesaler_id: g.wholesaler_id,
+            from: g.from,
+            weight_oz: Number(billableTotal.toFixed(2)),
+            cost: flatFallback(g.qty),
+            carrier: null,
+            service: null,
+            source: "flat_fallback",
+            boxes: boxSummary,
+          },
+    );
   }
 
   const total = Math.round(groupQuotes.reduce((s, g) => s + g.cost, 0) * 100) / 100;
@@ -167,6 +223,7 @@ export async function quoteShipping(
     currency: "USD",
     source: sources.size === 1 ? (groupQuotes[0]?.source ?? "flat_fallback") : "mixed",
     groups: groupQuotes,
+    warnings,
   };
 }
 

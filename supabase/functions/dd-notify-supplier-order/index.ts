@@ -79,7 +79,7 @@ serve(async (req) => {
     // the supplier gets the label link in this email and never pays shipping.
     const { data: shipment } = await supabase
       .from("dd_shipments")
-      .select("tracking_number, carrier, label_url, label_pdf_url, status")
+      .select("tracking_number, carrier, label_url, label_pdf_url, status, box_name, billable_weight_oz")
       .eq("order_id", order_id)
       .eq("wholesaler_id", wholesaler_id)
       .order("created_at", { ascending: false })
@@ -155,6 +155,7 @@ serve(async (req) => {
       <h2 style="margin:24px 0 8px;font-size:16px;color:#0f172a">Prepaid Shipping Label — already paid</h2>
       <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;padding:12px;font-size:14px;line-height:1.6">
         <p style="margin:0 0 6px">Postage is <strong>already purchased</strong> by Dynasty Direct. Print the label, attach it to the package, and hand it to the carrier — you pay nothing.</p>
+        ${shipment?.box_name ? `<p style="margin:0 0 6px;font-size:16px"><strong>📦 Use ${esc(shipment.box_name)}</strong>${shipment.billable_weight_oz ? ` — rated at ${Number(shipment.billable_weight_oz).toFixed(1)} oz billable` : ''}. Using a different box may cause a carrier re-weigh charge.</p>` : ''}
         <p style="margin:0 0 6px"><a href="${esc(shipment.label_pdf_url ?? shipment.label_url)}" style="color:#047857;font-weight:bold">📄 Download prepaid label</a></p>
         ${shipment.tracking_number ? `<p style="margin:0">Tracking: <strong>${esc(shipment.tracking_number)}</strong>${shipment.carrier ? ` (${esc(shipment.carrier)})` : ""}</p>` : ""}
       </div>` : ""}

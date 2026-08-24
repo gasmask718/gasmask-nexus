@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     );
 
     // Match dd_shipments — prefer easypost_shipment_id, fall back to tracking_number
-    let query = supabase.from('dd_shipments').select('id, status, tracking_number, easypost_shipment_id, order_id, wholesaler_id');
+    let query = supabase.from('dd_shipments').select('id, status, tracking_number, easypost_shipment_id, order_id, wholesaler_id, billable_weight_oz, rate_selected');
     if (shipmentId) {
       query = query.eq('easypost_shipment_id', shipmentId);
     } else if (trackingCode) {
@@ -143,6 +143,32 @@ Deno.serve(async (req) => {
       } else {
         updated.push(upd);
       }
+    }
+
+    // Carrier re-weigh / dimension adjustment.
+    // The carrier measures the parcel at the depot; if it is heavier or bulkier
+    // than the numbers we rated on, an adjustment lands on Dynasty's account
+    // weeks later and is invisible until the invoice. Flag it against the
+    // supplier whose dimensions were wrong so a repeat offender can be corrected.
+    const billedWeightOz = Number(tracker.weight ?? event?.result?.weight ?? NaN); // EasyPost reports oz
+    const adjustmentAmount = Number(
+      event?.result?.adjustment ?? event?.adjustment ?? tracker.adjustment ?? NaN,
+    );
+    for (const row of matches) {
+      const rated = Number((row as any).billable_weight_oz ?? 0);
+      const hasWeightVariance =
+        Number.isFinite(billedWeightOz) && billedWeightOz > 0 && rated > 0 &&
+        billedWeightOz > rated * 1.1 && billedWeightOz - rated >= 4;
+      const hasCharge = Number.isFinite(adjustmentAmount) && adjustmentAmount !== 0;
+      if (!hasWeightVariance && !hasCharge) continue;
+      const { error: adjErr } = await supabase.rpc('dd_record_carrier_adjustment', {
+        _shipment_id: (row as any).id,
+        _billed_weight_oz: Number.isFinite(billedWeightOz) ? billedWeightOz : null,
+        _adjustment_amount: Number.isFinite(adjustmentAmount) ? adjustmentAmount : 0,
+        _detail: { rated_billable_oz: rated, carrier, source_event: event?.description ?? 'tracker', tracking_code: trackingCode },
+      });
+      if (adjErr) console.error('[dd-tracking-webhook] adjustment record failed:', adjErr.message);
+      else console.log(`[dd-tracking-webhook] carrier adjustment flagged shipment=${(row as any).id} rated=${rated}oz billed=${billedWeightOz}oz`);
     }
 
     // Propagate to the order pipeline so the customer + portals see movement:

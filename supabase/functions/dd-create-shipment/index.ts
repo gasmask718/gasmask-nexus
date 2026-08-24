@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { hydrateItems, loadBoxes, packItems } from '../_shared/ddBoxing.ts';
 
 interface ShipmentRequest {
   order_id: string;
@@ -19,10 +20,14 @@ interface ShipmentRequest {
   items: Array<{
     product_id: string;
     quantity: number;
-    length_in: number;
-    width_in: number;
-    height_in: number;
-    weight_oz: number;
+    // Dimensions are OPTIONAL on the request — when omitted they are hydrated
+    // from products_all so callers (e.g. dd-order-fulfillment-kickoff) never
+    // have to carry them. A parcel is never rated on guessed numbers silently:
+    // any hydrated fallback is reported in packing_warnings.
+    length_in?: number;
+    width_in?: number;
+    height_in?: number;
+    weight_oz?: number;
     is_fragile?: boolean;
     stackable?: boolean;
   }>;
@@ -79,24 +84,32 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // 1) MANDATORY: run packing calculation first — never label without it
-    const packingUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/dd-calculate-packing`;
-    const packingRes = await fetch(packingUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-      },
-      body: JSON.stringify({
-        items: body.items,
-        carrier_preference: body.carrier_preference ?? 'any',
-        prefer_flat_rate: body.prefer_flat_rate ?? false,
-      }),
+    // 1) MANDATORY: pack first — never label without box selection + billable weight.
+    //    Dimensions come from products_all when the caller didn't supply them.
+    const hydrated = await hydrateItems(supabase, body.items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })));
+    const packItemsInput = hydrated.map((h, idx) => {
+      const supplied = body.items[idx] ?? {};
+      return {
+        ...h,
+        length_in: Number(supplied.length_in) > 0 ? Number(supplied.length_in) : h.length_in,
+        width_in: Number(supplied.width_in) > 0 ? Number(supplied.width_in) : h.width_in,
+        height_in: Number(supplied.height_in) > 0 ? Number(supplied.height_in) : h.height_in,
+        weight_oz: Number(supplied.weight_oz) > 0 ? Number(supplied.weight_oz) : h.weight_oz,
+        is_fragile: supplied.is_fragile ?? h.is_fragile,
+        stackable: supplied.stackable ?? h.stackable,
+      };
     });
-    const packing = await packingRes.json().catch(() => null);
-    if (!packing || packing.error) {
-      return json({ error: `Packing calculation failed: ${packing?.error ?? 'unknown'}` });
+
+    const boxes = await loadBoxes(supabase, body.carrier_preference ?? 'any');
+    if (boxes.length === 0) {
+      return json({ error: 'No active boxes configured in dd_box_sizes — cannot select a box or rate a parcel' });
     }
+    const packing = packItems(packItemsInput, boxes, { preferFlatRate: body.prefer_flat_rate ?? false });
+    const dimensionWarnings = hydrated
+      .filter((h, idx) => h.missing_dimensions && !(Number(body.items[idx]?.length_in) > 0))
+      .map((h) => `Product ${h.product_id} has no weight/dimensions on file — rated on a conservative fallback parcel. Carrier may re-weigh and bill an adjustment.`);
+    packing.warnings.push(...dimensionWarnings);
+
     if (!packing.boxes || packing.boxes.length === 0) {
       return json({ error: 'Packing calculation returned no boxes', packing_result: packing });
     }
@@ -206,6 +219,12 @@ Deno.serve(async (req) => {
           to_address: toAddress,
           packing_result: packing,
           box_count: packing.box_count,
+          label_status: 'demo',
+          box_id: primaryBox.box_id,
+          box_name: primaryBox.box_name,
+          rated_weight_oz: primaryBox.actual_weight_oz,
+          dim_weight_oz: primaryBox.dim_weight_oz,
+          billable_weight_oz: totalBillableOz,
         })
         .select()
         .single();
@@ -214,6 +233,8 @@ Deno.serve(async (req) => {
         demo_mode: true,
         demo_rates: demoRates,
         packing_result: packing,
+        packing_warnings: packing.warnings,
+        box_instructions: packing.boxes.map((b: any) => `Use ${b.box_name}`),
         shipment_id: shipRow?.id ?? null,
         from_address: fromAddress,
         to_address: toAddress,
@@ -333,12 +354,20 @@ Deno.serve(async (req) => {
           to_address: toAddress,
           packing_result: { ...packing, this_box: box },
           box_count: 1,
+          label_status: 'purchased',
+          box_id: box.box_id,
+          box_name: box.box_name,
+          rated_weight_oz: box.actual_weight_oz,
+          dim_weight_oz: box.dim_weight_oz,
+          billable_weight_oz: box.billable_weight_oz,
         })
         .select()
         .single();
 
       results.push({
         box_id: box.box_id,
+        box_name: box.box_name,
+        billable_weight_oz: box.billable_weight_oz,
         shipment_id: shipRow?.id ?? null,
         easypost_shipment_id: bought.id,
         tracking_number: bought.tracking_code,
@@ -350,8 +379,27 @@ Deno.serve(async (req) => {
       });
     }
 
+    const purchased = results.filter((r: any) => r.tracking_number);
+    const first = purchased[0] ?? null;
+
+    if (purchased.length === 0) {
+      return json({
+        error: `No label purchased: ${results.map((r: any) => r.error).filter(Boolean).join('; ') || 'unknown'}`,
+        shipments: results,
+        packing_result: packing,
+      });
+    }
+
     return json({
       demo_mode: false,
+      // Flat summary fields — dd-order-fulfillment-kickoff reads these.
+      shipment_id: first?.shipment_id ?? null,
+      easypost_shipment_id: first?.easypost_shipment_id ?? null,
+      tracking_number: first?.tracking_number ?? null,
+      label_url: first?.label_url ?? null,
+      carrier: first?.carrier ?? null,
+      box_instructions: purchased.map((r: any) => `Use ${r.box_name}`),
+      packing_warnings: packing.warnings,
       shipments: results,
       box_count: packing.box_count,
       packing_result: packing,
