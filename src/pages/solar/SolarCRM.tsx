@@ -188,7 +188,11 @@ export default function SolarCRM() {
                 {CRM_STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Badge variant="outline">{installerRows.length} installers</Badge>
+            <Badge variant="outline">{filteredTotal.toLocaleString()} installers</Badge>
+            {(debouncedSearch || installerStageFilter !== 'all') && totals?.total != null && (
+              <Badge variant="outline" className="text-muted-foreground">of {totals.total.toLocaleString()} total</Badge>
+            )}
+
           </div>
 
           {installersError && (
