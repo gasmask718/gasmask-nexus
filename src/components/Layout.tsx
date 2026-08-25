@@ -791,6 +791,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/surplus-funds/campaigns', label: '📞 Floor 2 — Dynasty Connect', icon: Phone },
       { path: '/surplus-funds/cases', label: '📋 Floor 3 — Case Management', icon: Briefcase },
       { path: '/surplus-funds/attorneys', label: '⚖️ Floor 4 — Attorney Network', icon: UserCog },
+      { path: '/surplus-funds/attorney-crm', label: '📇 Attorney CRM', icon: Users },
       { path: '/surplus-funds/documents', label: '📄 Floor 5 — Documents', icon: FileText },
       { path: '/surplus-funds/automation', label: '🤖 Floor 6 — AI & Automation', icon: Bot },
       { path: '/surplus-funds/analytics', label: '📊 Floor 7 — Analytics', icon: BarChart3 },
@@ -842,6 +843,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/solar/agents', label: '👥 Floor 8 — Agents', icon: Users },
       { path: '/solar/ai-brain', label: '🧠 Floor 9 — AI Brain', icon: Brain },
       { path: '/solar/analytics', label: '📊 Floor 10 — Analytics', icon: BarChart3 },
+      { path: '/solar/crm', label: '📇 CRM', icon: Users },
     ],
   },
   globalDashboard: {
