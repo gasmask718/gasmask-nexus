@@ -9,6 +9,8 @@ import { Loader2, Truck, PackageSearch } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ReturnRequestDialog } from '@/components/dynasty-direct/ReturnRequestDialog';
 import { OrderSupportLink } from '@/components/dynasty-direct/OrderSupportPanel';
+import { InrClaimDialog } from '@/components/dynasty-direct/InrClaimDialog';
+
 
 /**
  * Guest order lookup + tracking.
