@@ -16,7 +16,7 @@ const AMBER = '#E8A317';
 
 const CRM_STAGES = ['identified', 'contacted', 'interested', 'onboarded', 'active', 'declined'] as const;
 
-const PAGE_SIZE = 200;
+const PAGE_SIZE = 50;
 
 type InstallerSortKey = 'company_name' | 'crm_stage' | 'licence_state' | 'last_contacted_at';
 
