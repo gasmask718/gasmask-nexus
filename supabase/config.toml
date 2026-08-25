@@ -551,6 +551,12 @@ verify_jwt = false
 [functions.dd-return-admin]
 verify_jwt = false
 
+[functions.dd-inr-claim]
+verify_jwt = false
+
+[functions.dd-inr-admin]
+verify_jwt = false
+
 [functions.dd-support-ticket]
 verify_jwt = false
 
