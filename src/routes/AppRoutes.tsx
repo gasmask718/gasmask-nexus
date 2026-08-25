@@ -814,6 +814,9 @@ const DDStoreAccounts = lazy(() => import('@/pages/dynasty-direct/DDStoreAccount
 const DDOrderDetail = lazy(() => import('@/pages/dynasty-direct/DDOrderDetail'));
 const DDAnalytics = lazy(() => import('@/pages/dynasty-direct/DDAnalytics'));
 const DDSettings = lazy(() => import('@/pages/dynasty-direct/DDSettings'));
+const DDReadiness = lazy(() => import('@/pages/dynasty-direct/DDReadiness'));
+const DDReturnsQueue = lazy(() => import('@/pages/dynasty-direct/DDReturnsQueue'));
+const DDSupportTickets = lazy(() => import('@/pages/dynasty-direct/DDSupportTickets'));
 const DDCommissionRates = lazy(() => import('@/pages/dynasty-direct/DDCommissionRates'));
 const DDSupplierPerformance = lazy(() => import('@/pages/dynasty-direct/DDSupplierPerformance'));
 const DDPurchaseOrders = lazy(() => import('@/pages/dynasty-direct/DDPurchaseOrders'));
