@@ -323,7 +323,15 @@ export default function SolarCRM() {
                   </TableBody>
                 </Table>
               </CardContent>
+              <DataTablePagination
+                currentPage={homeownerPage}
+                totalPages={Math.max(1, Math.ceil(homeownerTotal / PAGE_SIZE))}
+                pageSize={PAGE_SIZE}
+                totalItems={homeownerTotal}
+                onPageChange={setHomeownerPage}
+              />
             </Card>
+
           )}
         </TabsContent>
       </Tabs>
