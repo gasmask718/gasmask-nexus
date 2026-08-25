@@ -77,7 +77,7 @@ export function SFRecruitingQueue() {
     mutationFn: async ({ row, note }: { row: any; note: string }) => {
       const log: OutreachEntry[] = Array.isArray(row.outreach_log) ? row.outreach_log : [];
       const next = [...log, { at: new Date().toISOString(), channel: 'email', note }];
-      const { error } = await supabase.from('sf_recruiting_queue').update({ outreach_log: next as any, last_contacted_at: new Date().toISOString() } as any).eq('id', row.id);
+      const { error } = await supabase.from('sf_recruiting_queue').update({ outreach_log: next as any }).eq('id', row.id);
       if (error) throw error;
       return next;
     },
