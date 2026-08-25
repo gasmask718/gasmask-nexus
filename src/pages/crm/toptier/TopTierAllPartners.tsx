@@ -18,6 +18,26 @@ import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeCon
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
 import { supabase } from '@/integrations/supabase/client';
+import { PartnerCsvImportDialog } from '@/components/crm/toptier/PartnerCsvImportDialog';
+
+/** Sourced-supply categories (crm_partners.category) — mirrors the DB check constraint. */
+const SOURCED_CATEGORIES = [
+  'chauffeur', 'exotic car rental', 'party bus', 'helicopter', 'yacht charter',
+  'powersports rental', 'nightlife venue', 'rooftop venue', 'event hall',
+  'decorator', 'decor rental', 'florist', 'private chef', 'photographer',
+  'beauty-hair-makeup', 'security-exec protection', 'rose-gifting supplier', 'authenticator',
+];
+
+const STAGES = ['identified', 'contacted', 'interested', 'applied', 'activated', 'declined'] as const;
+
+const STAGE_STYLES: Record<string, string> = {
+  identified: 'bg-muted text-muted-foreground',
+  contacted: 'bg-blue-500/15 text-blue-500',
+  interested: 'bg-amber-500/15 text-amber-500',
+  applied: 'bg-violet-500/15 text-violet-500',
+  activated: 'bg-emerald-500/15 text-emerald-500',
+  declined: 'bg-destructive/15 text-destructive',
+};
 
 export default function TopTierAllPartners() {
   const navigate = useNavigate();
@@ -25,13 +45,16 @@ export default function TopTierAllPartners() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stateFilter, setStateFilter] = useState<string>(searchParams.get('state') || 'all');
   const [categoryFilter, setCategoryFilter] = useState<string>(searchParams.get('category') || 'all');
+  const [sourcedCategoryFilter, setSourcedCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [stageFilter, setStageFilter] = useState<string>('all');
+  const [coverageSearch, setCoverageSearch] = useState('');
 
   const { simulationMode } = useSimulationMode();
   const { getEntityData } = useCRMSimulation('toptier-experience');
 
   // Fetch real partners from database
-  const { data: realPartners = [], isLoading } = useQuery({
+  const { data: realPartners = [], isLoading, refetch } = useQuery({
     queryKey: ['crm_partners', 'toptier-experience', 'all', simulationMode],
     queryFn: async () => {
       const { data, error } = await supabase
