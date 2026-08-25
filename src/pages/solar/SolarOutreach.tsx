@@ -17,6 +17,8 @@ import {
   CheckCircle2, Target, TrendingUp, Plus, Upload, Users, BarChart3
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { BsComplianceGateStatus } from '@/components/solar/BsComplianceGateStatus';
+
 
 const AMBER = '#E8A317';
 
