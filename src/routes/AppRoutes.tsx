@@ -490,6 +490,7 @@ const SFCampaigns = lazy(() => import('@/pages/surplus-funds/SFCampaigns'));
 const SFCases = lazy(() => import('@/pages/surplus-funds/SFCases'));
 const SFAttorneys = lazy(() => import('@/pages/surplus-funds/SFAttorneys'));
 const SFAttorneyCRM = lazy(() => import('@/pages/surplus-funds/SFAttorneyCRM'));
+const SFCoverageMap = lazy(() => import('@/pages/surplus-funds/SFCoverageMap'));
 const SFDocuments = lazy(() => import('@/pages/surplus-funds/SFDocuments'));
 const SFContracts = lazy(() => import('@/pages/surplus-funds/SFContracts'));
 const SFAutomation = lazy(() => import('@/pages/surplus-funds/SFAutomation'));
@@ -3804,6 +3805,7 @@ export default function AppRoutes() {
           <Route path="cases" element={<SFCases />} />
           <Route path="attorneys" element={<SFAttorneys />} />
           <Route path="attorney-crm" element={<SFAttorneyCRM />} />
+          <Route path="coverage-map" element={<SFCoverageMap />} />
           <Route path="documents" element={<SFDocuments />} />
           <Route path="contracts" element={<SFContracts />} />
           <Route path="automation" element={<SFAutomation />} />
