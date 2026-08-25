@@ -28770,12 +28770,16 @@ export type Database = {
           crm_stage: string
           external_place_id: string | null
           financing_paths: string[] | null
+          geocode_status: string | null
+          geocoded_at: string | null
           id: string
           last_contacted_at: string | null
+          lat: number | null
           licence_class: string | null
           licence_state: string | null
           licence_status: string | null
           licence_verified_at: string | null
+          lng: number | null
           national: boolean
           next_action: string | null
           notes: string | null
@@ -28801,12 +28805,16 @@ export type Database = {
           crm_stage?: string
           external_place_id?: string | null
           financing_paths?: string[] | null
+          geocode_status?: string | null
+          geocoded_at?: string | null
           id?: string
           last_contacted_at?: string | null
+          lat?: number | null
           licence_class?: string | null
           licence_state?: string | null
           licence_status?: string | null
           licence_verified_at?: string | null
+          lng?: number | null
           national?: boolean
           next_action?: string | null
           notes?: string | null
@@ -28832,12 +28840,16 @@ export type Database = {
           crm_stage?: string
           external_place_id?: string | null
           financing_paths?: string[] | null
+          geocode_status?: string | null
+          geocoded_at?: string | null
           id?: string
           last_contacted_at?: string | null
+          lat?: number | null
           licence_class?: string | null
           licence_state?: string | null
           licence_status?: string | null
           licence_verified_at?: string | null
+          lng?: number | null
           national?: boolean
           next_action?: string | null
           notes?: string | null

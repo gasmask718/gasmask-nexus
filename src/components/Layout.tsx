@@ -843,6 +843,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/solar/agents', label: '👥 Floor 8 — Agents', icon: Users },
       { path: '/solar/ai-brain', label: '🧠 Floor 9 — AI Brain', icon: Brain },
       { path: '/solar/analytics', label: '📊 Floor 10 — Analytics', icon: BarChart3 },
+      { path: '/solar/installer-map', label: '🗺️ Installer Map', icon: MapPin },
       { path: '/solar/crm', label: '📇 CRM', icon: Users },
     ],
   },
