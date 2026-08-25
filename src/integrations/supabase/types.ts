@@ -108853,6 +108853,53 @@ export type Database = {
           },
         ]
       }
+      sf_attorney_jurisdiction: {
+        Row: {
+          admitted_on: string | null
+          attorney_id: string
+          bar_number: string
+          created_at: string
+          discipline_flag: boolean | null
+          id: string
+          jurisdiction: string
+          status: string | null
+          verification_source: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          admitted_on?: string | null
+          attorney_id: string
+          bar_number: string
+          created_at?: string
+          discipline_flag?: boolean | null
+          id?: string
+          jurisdiction: string
+          status?: string | null
+          verification_source?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          admitted_on?: string | null
+          attorney_id?: string
+          bar_number?: string
+          created_at?: string
+          discipline_flag?: boolean | null
+          id?: string
+          jurisdiction?: string
+          status?: string | null
+          verification_source?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sf_attorney_jurisdiction_attorney_id_fkey"
+            columns: ["attorney_id"]
+            isOneToOne: false
+            referencedRelation: "surplus_funds_attorneys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sf_callback_tasks: {
         Row: {
           created_at: string
@@ -108920,6 +108967,101 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      sf_recruiting_queue: {
+        Row: {
+          attorney_name: string
+          created_at: string
+          email: string | null
+          firm: string | null
+          id: string
+          jurisdiction: string
+          next_action: string | null
+          notes: string | null
+          outreach_log: Json
+          phone: string | null
+          priority_tier: string | null
+          source: string | null
+          source_ref: string | null
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          attorney_name: string
+          created_at?: string
+          email?: string | null
+          firm?: string | null
+          id?: string
+          jurisdiction: string
+          next_action?: string | null
+          notes?: string | null
+          outreach_log?: Json
+          phone?: string | null
+          priority_tier?: string | null
+          source?: string | null
+          source_ref?: string | null
+          stage?: string
+          updated_at?: string
+        }
+        Update: {
+          attorney_name?: string
+          created_at?: string
+          email?: string | null
+          firm?: string | null
+          id?: string
+          jurisdiction?: string
+          next_action?: string | null
+          notes?: string | null
+          outreach_log?: Json
+          phone?: string | null
+          priority_tier?: string | null
+          source?: string | null
+          source_ref?: string | null
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sf_retainer_artifacts: {
+        Row: {
+          approved_by: string | null
+          artifact_url: string | null
+          attorney_id: string
+          counsel_reviewed_at: string | null
+          created_at: string
+          id: string
+          signed_at: string | null
+          template_version: string | null
+        }
+        Insert: {
+          approved_by?: string | null
+          artifact_url?: string | null
+          attorney_id: string
+          counsel_reviewed_at?: string | null
+          created_at?: string
+          id?: string
+          signed_at?: string | null
+          template_version?: string | null
+        }
+        Update: {
+          approved_by?: string | null
+          artifact_url?: string | null
+          attorney_id?: string
+          counsel_reviewed_at?: string | null
+          created_at?: string
+          id?: string
+          signed_at?: string | null
+          template_version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sf_retainer_artifacts_attorney_id_fkey"
+            columns: ["attorney_id"]
+            isOneToOne: false
+            referencedRelation: "surplus_funds_attorneys"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shelf_corp_tracker: {
         Row: {
@@ -119651,6 +119793,8 @@ export type Database = {
           cases_won: number | null
           created_at: string | null
           email: string | null
+          engagement_type: string
+          fee_arrangement: string | null
           fee_split: number | null
           firm: string | null
           id: string
@@ -119678,6 +119822,8 @@ export type Database = {
           cases_won?: number | null
           created_at?: string | null
           email?: string | null
+          engagement_type?: string
+          fee_arrangement?: string | null
           fee_split?: number | null
           firm?: string | null
           id?: string
@@ -119705,6 +119851,8 @@ export type Database = {
           cases_won?: number | null
           created_at?: string | null
           email?: string | null
+          engagement_type?: string
+          fee_arrangement?: string | null
           fee_split?: number | null
           firm?: string | null
           id?: string
