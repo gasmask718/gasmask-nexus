@@ -404,6 +404,14 @@ export default function TopTierAllPartners() {
                         )}
                       </td>
                       <td className="py-3 px-4">
+                        <Badge className={`text-xs capitalize ${STAGE_STYLES[partner.stage || 'identified']}`}>
+                          {partner.stage || 'identified'}
+                        </Badge>
+                        {partner.category && (
+                          <p className="mt-1 text-xs capitalize text-muted-foreground">{partner.category}</p>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
                         {getStatusBadge(partner.contract_status || 'pending')}
                       </td>
                       <td className="py-3 px-4 text-right">
