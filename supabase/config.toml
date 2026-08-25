@@ -545,6 +545,12 @@ verify_jwt = false
 [functions.dd-lookup-guest-order]
 verify_jwt = false
 
+[functions.dd-return-request]
+verify_jwt = false
+
+[functions.dd-return-admin]
+verify_jwt = false
+
 [functions.dd-support-ticket]
 verify_jwt = false
 
