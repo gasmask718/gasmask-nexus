@@ -45030,6 +45030,7 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string | null
+          email: string | null
           full_name: string | null
           id: string
           marketing_opt_in: boolean | null
@@ -45037,6 +45038,7 @@ export type Database = {
           preferred_language: string | null
           state: string | null
           status: string | null
+          stripe_customer_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -45044,6 +45046,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          email?: string | null
           full_name?: string | null
           id?: string
           marketing_opt_in?: boolean | null
@@ -45051,6 +45054,7 @@ export type Database = {
           preferred_language?: string | null
           state?: string | null
           status?: string | null
+          stripe_customer_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -45058,6 +45062,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          email?: string | null
           full_name?: string | null
           id?: string
           marketing_opt_in?: boolean | null
@@ -45065,6 +45070,7 @@ export type Database = {
           preferred_language?: string | null
           state?: string | null
           status?: string | null
+          stripe_customer_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -47419,6 +47425,7 @@ export type Database = {
           default_margin_pct: number
           default_reserve_pct: number
           dispute_auto_submit: boolean
+          dynasty_return_address: Json | null
           grabba_bridge_enabled: boolean | null
           id: boolean
           inventory_sync_enabled: boolean | null
@@ -47429,6 +47436,13 @@ export type Database = {
           loyalty_tier_platinum: number
           loyalty_tier_silver: number
           reserve_hold_days: number
+          return_destination_default: string
+          return_payer_change_of_mind: string
+          return_payer_fault: string
+          return_restocking_fee_pct: number
+          return_window_days: number
+          returns_auto_approve_fault: boolean
+          returns_enabled: boolean
           rolling_reserve_enabled: boolean | null
           split_pay_enabled: boolean | null
           store_portal_enabled: boolean | null
@@ -47442,6 +47456,7 @@ export type Database = {
           default_margin_pct?: number
           default_reserve_pct?: number
           dispute_auto_submit?: boolean
+          dynasty_return_address?: Json | null
           grabba_bridge_enabled?: boolean | null
           id?: boolean
           inventory_sync_enabled?: boolean | null
@@ -47452,6 +47467,13 @@ export type Database = {
           loyalty_tier_platinum?: number
           loyalty_tier_silver?: number
           reserve_hold_days?: number
+          return_destination_default?: string
+          return_payer_change_of_mind?: string
+          return_payer_fault?: string
+          return_restocking_fee_pct?: number
+          return_window_days?: number
+          returns_auto_approve_fault?: boolean
+          returns_enabled?: boolean
           rolling_reserve_enabled?: boolean | null
           split_pay_enabled?: boolean | null
           store_portal_enabled?: boolean | null
@@ -47465,6 +47487,7 @@ export type Database = {
           default_margin_pct?: number
           default_reserve_pct?: number
           dispute_auto_submit?: boolean
+          dynasty_return_address?: Json | null
           grabba_bridge_enabled?: boolean | null
           id?: boolean
           inventory_sync_enabled?: boolean | null
@@ -47475,6 +47498,13 @@ export type Database = {
           loyalty_tier_platinum?: number
           loyalty_tier_silver?: number
           reserve_hold_days?: number
+          return_destination_default?: string
+          return_payer_change_of_mind?: string
+          return_payer_fault?: string
+          return_restocking_fee_pct?: number
+          return_window_days?: number
+          returns_auto_approve_fault?: boolean
+          returns_enabled?: boolean
           rolling_reserve_enabled?: boolean | null
           split_pay_enabled?: boolean | null
           store_portal_enabled?: boolean | null
@@ -49701,6 +49731,176 @@ export type Database = {
           },
         ]
       }
+      dd_return_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_item_id: string | null
+          product_id: string | null
+          product_name: string | null
+          qty: number
+          return_id: string
+          unit_price_cents: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_item_id?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          qty?: number
+          return_id: string
+          unit_price_cents?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_item_id?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          qty?: number
+          return_id?: string
+          unit_price_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_return_items_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "dd_returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_returns: {
+        Row: {
+          admin_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          clawback_id: string | null
+          created_at: string
+          customer_email: string | null
+          declined_reason: string | null
+          destination: string | null
+          destination_address: Json | null
+          easypost_shipment_id: string | null
+          fault_party: string
+          id: string
+          is_fault_return: boolean
+          label_cost_cents: number | null
+          label_error: string | null
+          order_id: string
+          photos: string[]
+          quantity: number
+          reason_code: string
+          reason_text: string | null
+          received_at: string | null
+          refund_amount_cents: number | null
+          refunded_at: string | null
+          restocking_fee_cents: number
+          return_carrier: string | null
+          return_label_url: string | null
+          return_tracking_number: string | null
+          rma_number: string
+          shipping_paid_by: string | null
+          split_reversal_id: string | null
+          status: string
+          stripe_refund_id: string | null
+          updated_at: string
+          user_id: string | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          clawback_id?: string | null
+          created_at?: string
+          customer_email?: string | null
+          declined_reason?: string | null
+          destination?: string | null
+          destination_address?: Json | null
+          easypost_shipment_id?: string | null
+          fault_party?: string
+          id?: string
+          is_fault_return?: boolean
+          label_cost_cents?: number | null
+          label_error?: string | null
+          order_id: string
+          photos?: string[]
+          quantity?: number
+          reason_code: string
+          reason_text?: string | null
+          received_at?: string | null
+          refund_amount_cents?: number | null
+          refunded_at?: string | null
+          restocking_fee_cents?: number
+          return_carrier?: string | null
+          return_label_url?: string | null
+          return_tracking_number?: string | null
+          rma_number?: string
+          shipping_paid_by?: string | null
+          split_reversal_id?: string | null
+          status?: string
+          stripe_refund_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          clawback_id?: string | null
+          created_at?: string
+          customer_email?: string | null
+          declined_reason?: string | null
+          destination?: string | null
+          destination_address?: Json | null
+          easypost_shipment_id?: string | null
+          fault_party?: string
+          id?: string
+          is_fault_return?: boolean
+          label_cost_cents?: number | null
+          label_error?: string | null
+          order_id?: string
+          photos?: string[]
+          quantity?: number
+          reason_code?: string
+          reason_text?: string | null
+          received_at?: string | null
+          refund_amount_cents?: number | null
+          refunded_at?: string | null
+          restocking_fee_cents?: number
+          return_carrier?: string | null
+          return_label_url?: string | null
+          return_tracking_number?: string | null
+          rma_number?: string
+          shipping_paid_by?: string | null
+          split_reversal_id?: string | null
+          status?: string
+          stripe_refund_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_returns_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_returns_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+        ]
+      }
       dd_routing_audit: {
         Row: {
           actor: string | null
@@ -50090,6 +50290,7 @@ export type Database = {
         Row: {
           created_at: string
           dd_margin_cents: number
+          entry_type: string
           fulfillment_id: string | null
           gross_amount_cents: number
           id: string
@@ -50099,6 +50300,8 @@ export type Database = {
           reserve_held_cents: number
           reserve_pct_applied: number | null
           reserve_released_cents: number
+          return_id: string | null
+          reverses_ledger_id: string | null
           status: string
           stripe_charge_id: string | null
           stripe_fee_cents: number
@@ -50110,6 +50313,7 @@ export type Database = {
         Insert: {
           created_at?: string
           dd_margin_cents?: number
+          entry_type?: string
           fulfillment_id?: string | null
           gross_amount_cents?: number
           id?: string
@@ -50119,6 +50323,8 @@ export type Database = {
           reserve_held_cents?: number
           reserve_pct_applied?: number | null
           reserve_released_cents?: number
+          return_id?: string | null
+          reverses_ledger_id?: string | null
           status?: string
           stripe_charge_id?: string | null
           stripe_fee_cents?: number
@@ -50130,6 +50336,7 @@ export type Database = {
         Update: {
           created_at?: string
           dd_margin_cents?: number
+          entry_type?: string
           fulfillment_id?: string | null
           gross_amount_cents?: number
           id?: string
@@ -50139,6 +50346,8 @@ export type Database = {
           reserve_held_cents?: number
           reserve_pct_applied?: number | null
           reserve_released_cents?: number
+          return_id?: string | null
+          reverses_ledger_id?: string | null
           status?: string
           stripe_charge_id?: string | null
           stripe_fee_cents?: number
@@ -50526,6 +50735,9 @@ export type Database = {
           orders_received: number | null
           period_end: string
           period_start: string
+          return_rate: number | null
+          returns_fault: number
+          returns_total: number
           revenue_generated: number | null
           shipments_labeled: number
           wholesaler_id: string
@@ -50545,6 +50757,9 @@ export type Database = {
           orders_received?: number | null
           period_end: string
           period_start: string
+          return_rate?: number | null
+          returns_fault?: number
+          returns_total?: number
           revenue_generated?: number | null
           shipments_labeled?: number
           wholesaler_id: string
@@ -50564,6 +50779,9 @@ export type Database = {
           orders_received?: number | null
           period_end?: string
           period_start?: string
+          return_rate?: number | null
+          returns_fault?: number
+          returns_total?: number
           revenue_generated?: number | null
           shipments_labeled?: number
           wholesaler_id?: string
@@ -50606,6 +50824,138 @@ export type Database = {
           },
         ]
       }
+      dd_support_tickets: {
+        Row: {
+          assigned_to: string | null
+          category: string
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          forwarded_to_wholesaler_at: string | null
+          id: string
+          last_reply_at: string
+          last_reply_role: string | null
+          order_id: string | null
+          priority: string
+          resolved_at: string | null
+          return_id: string | null
+          status: string
+          subject: string
+          ticket_number: string
+          updated_at: string
+          user_id: string | null
+          wholesaler_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: string
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          forwarded_to_wholesaler_at?: string | null
+          id?: string
+          last_reply_at?: string
+          last_reply_role?: string | null
+          order_id?: string | null
+          priority?: string
+          resolved_at?: string | null
+          return_id?: string | null
+          status?: string
+          subject: string
+          ticket_number?: string
+          updated_at?: string
+          user_id?: string | null
+          wholesaler_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          forwarded_to_wholesaler_at?: string | null
+          id?: string
+          last_reply_at?: string
+          last_reply_role?: string | null
+          order_id?: string | null
+          priority?: string
+          resolved_at?: string | null
+          return_id?: string | null
+          status?: string
+          subject?: string
+          ticket_number?: string
+          updated_at?: string
+          user_id?: string | null
+          wholesaler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_support_tickets_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_support_tickets_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "dd_support_tickets_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "dd_returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_ticket_messages: {
+        Row: {
+          attachment_url: string | null
+          body: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          sender_name: string | null
+          sender_role: string
+          sender_user_id: string | null
+          ticket_id: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          sender_name?: string | null
+          sender_role: string
+          sender_user_id?: string | null
+          ticket_id: string
+        }
+        Update: {
+          attachment_url?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          sender_name?: string | null
+          sender_role?: string
+          sender_user_id?: string | null
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "dd_support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_webhook_events: {
         Row: {
           event_id: string
@@ -50627,6 +50977,89 @@ export type Database = {
           received_at?: string
           source?: string
           type?: string | null
+        }
+        Relationships: []
+      }
+      dd_wholesaler_clawbacks: {
+        Row: {
+          amount_cents: number
+          applied_at: string | null
+          applied_payout_id: string | null
+          created_at: string
+          id: string
+          order_id: string | null
+          reason: string | null
+          return_id: string | null
+          status: string
+          wholesaler_id: string
+        }
+        Insert: {
+          amount_cents: number
+          applied_at?: string | null
+          applied_payout_id?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          reason?: string | null
+          return_id?: string | null
+          status?: string
+          wholesaler_id: string
+        }
+        Update: {
+          amount_cents?: number
+          applied_at?: string | null
+          applied_payout_id?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          reason?: string | null
+          return_id?: string | null
+          status?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_wholesaler_clawbacks_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "dd_returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_wholesaler_return_settings: {
+        Row: {
+          accepts_returns: boolean
+          created_at: string
+          notes: string | null
+          return_address: Json | null
+          return_destination: string | null
+          return_payer_change_of_mind: string | null
+          return_payer_fault: string | null
+          updated_at: string
+          wholesaler_id: string
+        }
+        Insert: {
+          accepts_returns?: boolean
+          created_at?: string
+          notes?: string | null
+          return_address?: Json | null
+          return_destination?: string | null
+          return_payer_change_of_mind?: string | null
+          return_payer_fault?: string | null
+          updated_at?: string
+          wholesaler_id: string
+        }
+        Update: {
+          accepts_returns?: boolean
+          created_at?: string
+          notes?: string | null
+          return_address?: Json | null
+          return_destination?: string | null
+          return_payer_change_of_mind?: string | null
+          return_payer_fault?: string | null
+          updated_at?: string
+          wholesaler_id?: string
         }
         Relationships: []
       }
@@ -155609,6 +156042,10 @@ export type Database = {
         }
         Returns: Json
       }
+      dd_apply_return_to_metrics: {
+        Args: { p_return_id: string }
+        Returns: undefined
+      }
       dd_apply_store_referral_signup: {
         Args: { p_referral_code: string; p_store_account_id: string }
         Returns: Json
@@ -155738,6 +156175,7 @@ export type Database = {
           wholesaler_id: string
         }[]
       }
+      dd_link_guest_orders: { Args: never; Returns: number }
       dd_link_wholesaler_to_store_master: {
         Args: { p_wholesaler_id: string }
         Returns: string
@@ -155749,6 +156187,10 @@ export type Database = {
         Returns: number
       }
       dd_margin_warn: { Args: never; Returns: number }
+      dd_pending_clawback_cents: {
+        Args: { p_wholesaler_id: string }
+        Returns: number
+      }
       dd_pick_supplier_for_item: {
         Args: {
           p_campaign_id?: string

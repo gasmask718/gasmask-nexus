@@ -632,6 +632,7 @@ const DYNASTY_NAVIGATION = {
     name: '🚀 Dynasty Direct Hub',
     items: [
       { path: '/dynasty-direct', label: '🏠 DD Home', icon: LayoutDashboard },
+      { path: '/dynasty-direct/readiness', label: '🚦 Launch Readiness', icon: LayoutDashboard },
       { path: '/dynasty-direct/catalog', label: '📦 Catalog', icon: Package },
       { path: '/dynasty-direct/products', label: '📦 Products', icon: Package },
       { path: '/dynasty-direct/pricing', label: '💰 Pricing', icon: DollarSign },

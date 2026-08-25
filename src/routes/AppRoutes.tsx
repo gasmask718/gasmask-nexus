@@ -52,6 +52,13 @@ const Shop = lazy(() => import('@/pages/Shop'));
 const PublicProductPage = lazy(() => import('@/pages/shop/PublicProductPage'));
 const CheckoutSuccess = lazy(() => import('@/pages/shop/CheckoutSuccess'));
 const TrackOrder = lazy(() => import('@/pages/shop/TrackOrder'));
+// Dynasty Direct customer account area (D2C, /account/*)
+const AccountLayout = lazy(() => import('@/pages/account/AccountLayout'));
+const AccountOrders = lazy(() => import('@/pages/account/AccountOrders'));
+const AccountOrderDetail = lazy(() => import('@/pages/account/AccountOrderDetail'));
+const AccountAddresses = lazy(() => import('@/pages/account/AccountAddresses'));
+const AccountPaymentMethods = lazy(() => import('@/pages/account/AccountPaymentMethods'));
+const AccountProfile = lazy(() => import('@/pages/account/AccountProfile'));
 
 const ShopifyStore = lazy(() => import('@/pages/ShopifyStore'));
 const Cart = lazy(() => import('@/pages/Cart'));
@@ -1348,6 +1355,16 @@ export default function AppRoutes() {
         {/* Stripe redirect target + guest order tracking */}
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
         <Route path="/track" element={<TrackOrder />} />
+
+        {/* Customer account area — optional, guest checkout still works without it */}
+        <Route path="/account" element={<AccountLayout />}>
+          <Route index element={<Navigate to="/account/orders" replace />} />
+          <Route path="orders" element={<AccountOrders />} />
+          <Route path="orders/:orderId" element={<AccountOrderDetail />} />
+          <Route path="addresses" element={<AccountAddresses />} />
+          <Route path="payment" element={<AccountPaymentMethods />} />
+          <Route path="profile" element={<AccountProfile />} />
+        </Route>
 
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />

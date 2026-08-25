@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import PortalLayout from '@/components/portal/PortalLayout';
+import { WholesalerTicketsPanel } from '@/components/dynasty-direct/WholesalerTicketsPanel';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 
 // Mock data
@@ -237,6 +238,9 @@ export default function WholesalerPortal() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Support Tickets */}
+        <WholesalerTicketsPanel />
       </div>
     </PortalLayout>
   );
