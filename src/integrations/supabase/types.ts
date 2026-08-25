@@ -44124,7 +44124,9 @@ export type Database = {
         Row: {
           availability_rules: string | null
           booking_link: string | null
+          business: string
           business_slug: string
+          category: string | null
           city: string | null
           commission_rate: number | null
           company_name: string
@@ -44133,17 +44135,31 @@ export type Database = {
           compliance_hold_reason: string | null
           contact_name: string | null
           contract_status: string | null
+          coverage_areas: string | null
           created_at: string
           created_by: string | null
           email: string | null
+          google_place_id: string | null
           id: string
+          insurance_expiry: string | null
+          insurance_status: string | null
           is_simulation: boolean
+          lat: number | null
+          licence_number: string | null
+          licence_state: string | null
+          licence_status: string | null
+          lng: number | null
           notes: string | null
+          office_address: string | null
           partner_category: string
           phone: string | null
           phone_invalid: boolean
           pricing_range: string | null
           service_area: string[] | null
+          source: string | null
+          source_ref: string | null
+          specialty: string | null
+          stage: string | null
           state: string | null
           tt_acquisition_notes: string | null
           tt_acquisition_stage: string
@@ -44152,11 +44168,14 @@ export type Database = {
           tt_last_call_at: string | null
           tt_last_disposition: string | null
           updated_at: string
+          website: string | null
         }
         Insert: {
           availability_rules?: string | null
           booking_link?: string | null
+          business?: string
           business_slug?: string
+          category?: string | null
           city?: string | null
           commission_rate?: number | null
           company_name: string
@@ -44165,17 +44184,31 @@ export type Database = {
           compliance_hold_reason?: string | null
           contact_name?: string | null
           contract_status?: string | null
+          coverage_areas?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
+          google_place_id?: string | null
           id?: string
+          insurance_expiry?: string | null
+          insurance_status?: string | null
           is_simulation?: boolean
+          lat?: number | null
+          licence_number?: string | null
+          licence_state?: string | null
+          licence_status?: string | null
+          lng?: number | null
           notes?: string | null
+          office_address?: string | null
           partner_category: string
           phone?: string | null
           phone_invalid?: boolean
           pricing_range?: string | null
           service_area?: string[] | null
+          source?: string | null
+          source_ref?: string | null
+          specialty?: string | null
+          stage?: string | null
           state?: string | null
           tt_acquisition_notes?: string | null
           tt_acquisition_stage?: string
@@ -44184,11 +44217,14 @@ export type Database = {
           tt_last_call_at?: string | null
           tt_last_disposition?: string | null
           updated_at?: string
+          website?: string | null
         }
         Update: {
           availability_rules?: string | null
           booking_link?: string | null
+          business?: string
           business_slug?: string
+          category?: string | null
           city?: string | null
           commission_rate?: number | null
           company_name?: string
@@ -44197,17 +44233,31 @@ export type Database = {
           compliance_hold_reason?: string | null
           contact_name?: string | null
           contract_status?: string | null
+          coverage_areas?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
+          google_place_id?: string | null
           id?: string
+          insurance_expiry?: string | null
+          insurance_status?: string | null
           is_simulation?: boolean
+          lat?: number | null
+          licence_number?: string | null
+          licence_state?: string | null
+          licence_status?: string | null
+          lng?: number | null
           notes?: string | null
+          office_address?: string | null
           partner_category?: string
           phone?: string | null
           phone_invalid?: boolean
           pricing_range?: string | null
           service_area?: string[] | null
+          source?: string | null
+          source_ref?: string | null
+          specialty?: string | null
+          stage?: string | null
           state?: string | null
           tt_acquisition_notes?: string | null
           tt_acquisition_stage?: string
@@ -44216,6 +44266,7 @@ export type Database = {
           tt_last_call_at?: string | null
           tt_last_disposition?: string | null
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }

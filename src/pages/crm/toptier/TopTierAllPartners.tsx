@@ -18,6 +18,26 @@ import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeCon
 import { useCRMSimulation } from '@/hooks/useCRMSimulation';
 import { useResolvedData } from '@/hooks/useResolvedData';
 import { supabase } from '@/integrations/supabase/client';
+import { PartnerCsvImportDialog } from '@/components/crm/toptier/PartnerCsvImportDialog';
+
+/** Sourced-supply categories (crm_partners.category) — mirrors the DB check constraint. */
+const SOURCED_CATEGORIES = [
+  'chauffeur', 'exotic car rental', 'party bus', 'helicopter', 'yacht charter',
+  'powersports rental', 'nightlife venue', 'rooftop venue', 'event hall',
+  'decorator', 'decor rental', 'florist', 'private chef', 'photographer',
+  'beauty-hair-makeup', 'security-exec protection', 'rose-gifting supplier', 'authenticator',
+];
+
+const STAGES = ['identified', 'contacted', 'interested', 'applied', 'activated', 'declined'] as const;
+
+const STAGE_STYLES: Record<string, string> = {
+  identified: 'bg-muted text-muted-foreground',
+  contacted: 'bg-blue-500/15 text-blue-500',
+  interested: 'bg-amber-500/15 text-amber-500',
+  applied: 'bg-violet-500/15 text-violet-500',
+  activated: 'bg-emerald-500/15 text-emerald-500',
+  declined: 'bg-destructive/15 text-destructive',
+};
 
 export default function TopTierAllPartners() {
   const navigate = useNavigate();
@@ -25,13 +45,16 @@ export default function TopTierAllPartners() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stateFilter, setStateFilter] = useState<string>(searchParams.get('state') || 'all');
   const [categoryFilter, setCategoryFilter] = useState<string>(searchParams.get('category') || 'all');
+  const [sourcedCategoryFilter, setSourcedCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [stageFilter, setStageFilter] = useState<string>('all');
+  const [coverageSearch, setCoverageSearch] = useState('');
 
   const { simulationMode } = useSimulationMode();
   const { getEntityData } = useCRMSimulation('toptier-experience');
 
   // Fetch real partners from database
-  const { data: realPartners = [], isLoading } = useQuery({
+  const { data: realPartners = [], isLoading, refetch } = useQuery({
     queryKey: ['crm_partners', 'toptier-experience', 'all', simulationMode],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -60,10 +83,19 @@ export default function TopTierAllPartners() {
         partner.state === stateFilter || 
         (partner.service_area && partner.service_area.includes(stateFilter));
       const matchesCategory = categoryFilter === 'all' || partner.partner_category === categoryFilter;
+      const matchesSourced = sourcedCategoryFilter === 'all' || partner.category === sourcedCategoryFilter;
       const matchesStatus = statusFilter === 'all' || partner.contract_status === statusFilter;
-      return matchesSearch && matchesState && matchesCategory && matchesStatus;
+      const matchesStage = stageFilter === 'all' || (partner.stage || 'identified') === stageFilter;
+      const coverage = coverageSearch.trim().toLowerCase();
+      const matchesCoverage = coverage === '' ||
+        partner.coverage_areas?.toLowerCase().includes(coverage) ||
+        partner.city?.toLowerCase().includes(coverage) ||
+        partner.state?.toLowerCase().includes(coverage) ||
+        (partner.service_area || []).some((a: string) => a?.toLowerCase().includes(coverage));
+      return matchesSearch && matchesState && matchesCategory && matchesSourced &&
+        matchesStatus && matchesStage && matchesCoverage;
     });
-  }, [partners, searchTerm, stateFilter, categoryFilter, statusFilter]);
+  }, [partners, searchTerm, stateFilter, categoryFilter, sourcedCategoryFilter, statusFilter, stageFilter, coverageSearch]);
 
   // Stats
   const stats = useMemo(() => ({
@@ -72,6 +104,16 @@ export default function TopTierAllPartners() {
     pending: partners.filter((p: any) => p.contract_status === 'pending').length,
     inactive: partners.filter((p: any) => p.contract_status === 'inactive').length,
   }), [partners]);
+
+  // Stage pipeline counts (sourced supply pipeline)
+  const stageCounts = useMemo(() => {
+    const counts: Record<string, number> = Object.fromEntries(STAGES.map((s) => [s, 0]));
+    partners.forEach((p: any) => {
+      const s = p.stage || 'identified';
+      if (s in counts) counts[s] += 1;
+    });
+    return counts;
+  }, [partners]);
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -109,12 +151,47 @@ export default function TopTierAllPartners() {
             </div>
             <p className="text-muted-foreground">View and manage all TopTier experience partners</p>
           </div>
-          <Button onClick={() => navigate('/crm/toptier-experience/partner/new')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Partner
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <PartnerCsvImportDialog onImported={() => refetch()} />
+            <Button onClick={() => navigate('/crm/toptier-experience/partner/new')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Partner
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Sourcing pipeline */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Sourcing pipeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {STAGES.map((stage) => {
+              const selected = stageFilter === stage;
+              return (
+                <button
+                  key={stage}
+                  type="button"
+                  onClick={() => setStageFilter(selected ? 'all' : stage)}
+                  className={`rounded-md border p-3 text-left transition-colors hover:bg-muted/50 ${
+                    selected ? 'border-primary ring-1 ring-primary' : 'border-border'
+                  }`}
+                >
+                  <p className="text-2xl font-bold">{stageCounts[stage]}</p>
+                  <Badge className={`mt-1 text-xs capitalize ${STAGE_STYLES[stage]}`}>{stage}</Badge>
+                </button>
+              );
+            })}
+          </div>
+          {stageFilter !== 'all' && (
+            <Button variant="ghost" size="sm" className="mt-2" onClick={() => setStageFilter('all')}>
+              Clear stage filter
+            </Button>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -175,6 +252,26 @@ export default function TopTierAllPartners() {
             className="pl-10"
           />
         </div>
+        <div className="relative flex-1 min-w-[200px]">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search coverage area, city, or state..."
+            value={coverageSearch}
+            onChange={(e) => setCoverageSearch(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={sourcedCategoryFilter} onValueChange={setSourcedCategoryFilter}>
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="Supply category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All supply categories</SelectItem>
+            {SOURCED_CATEGORIES.map(cat => (
+              <SelectItem key={cat} value={cat} className="capitalize">{cat}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={stateFilter} onValueChange={setStateFilter}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="State" />
@@ -248,6 +345,7 @@ export default function TopTierAllPartners() {
                     <th className="text-left py-3 px-4 font-medium">Contact</th>
                     <th className="text-left py-3 px-4 font-medium">Category</th>
                     <th className="text-left py-3 px-4 font-medium">Location</th>
+                    <th className="text-left py-3 px-4 font-medium">Stage</th>
                     <th className="text-left py-3 px-4 font-medium">Status</th>
                     <th className="text-right py-3 px-4 font-medium">Actions</th>
                   </tr>
@@ -303,6 +401,14 @@ export default function TopTierAllPartners() {
                           <p className="text-xs text-muted-foreground mt-1">
                             +{partner.service_area.length} service area(s)
                           </p>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge className={`text-xs capitalize ${STAGE_STYLES[partner.stage || 'identified']}`}>
+                          {partner.stage || 'identified'}
+                        </Badge>
+                        {partner.category && (
+                          <p className="mt-1 text-xs capitalize text-muted-foreground">{partner.category}</p>
                         )}
                       </td>
                       <td className="py-3 px-4">
