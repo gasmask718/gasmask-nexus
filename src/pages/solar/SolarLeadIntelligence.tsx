@@ -11,10 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import {
-  Sun, Target, Phone, Users, Flame, Star, Upload, Plus, Download, Search,
-  CheckCircle2, XCircle, MoreHorizontal, ChevronRight, X, FileText, BarChart3
+  Sun, Target, Phone, Users, Home, Flame, Star, Upload, Plus, Download, Search,
+  CheckCircle2, XCircle, MoreHorizontal, ChevronRight, X, FileText, BarChart3,
+  ShieldAlert, ArrowUpDown
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -39,11 +41,23 @@ const SCORE_COLORS: Record<string, string> = {
   D: 'bg-red-500 text-white',
 };
 
+const CRM_STAGES = ['identified', 'contacted', 'interested', 'onboarded', 'active', 'declined'] as const;
+
+type InstallerSortKey = 'company_name' | 'crm_stage' | 'licence_state' | 'last_contacted_at';
+
 function getScoreGrade(score: number): string {
   if (score >= 80) return 'A';
   if (score >= 60) return 'B';
   if (score >= 40) return 'C';
   return 'D';
+}
+
+function licenceBadge(status: string | null) {
+  const s = (status || 'unknown').toLowerCase();
+  if (s.includes('active') || s.includes('valid')) return 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30';
+  if (s.includes('expire') || s.includes('lapsed') || s.includes('suspend')) return 'bg-destructive/15 text-destructive border-destructive/30';
+  if (s.includes('pending')) return 'bg-amber-500/15 text-amber-500 border-amber-500/30';
+  return 'bg-muted text-muted-foreground border-border';
 }
 
 export default function SolarLeadIntelligence() {
@@ -54,6 +68,12 @@ export default function SolarLeadIntelligence() {
   const [drawerLead, setDrawerLead] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [sortBy, setSortBy] = useState('created_at');
+
+  // Installer tab state
+  const [installerSearch, setInstallerSearch] = useState('');
+  const [installerStageFilter, setInstallerStageFilter] = useState<string>('all');
+  const [installerSortKey, setInstallerSortKey] = useState<InstallerSortKey>('company_name');
+  const [installerSortAsc, setInstallerSortAsc] = useState(true);
 
   // Fetch leads
   const { data: leads = [], isLoading } = useQuery({
@@ -84,6 +104,46 @@ export default function SolarLeadIntelligence() {
     refetchInterval: 30000,
   });
 
+  // Installers
+  const { data: installers = [], isLoading: installersLoading, error: installersError } = useQuery({
+    queryKey: ['bs-installers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bs_installers')
+        .select('*')
+        .order('company_name', { ascending: true })
+        .limit(1000);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Homeowners
+  const { data: homeowners = [], error: homeownerError } = useQuery({
+    queryKey: ['bs-homeowner-leads'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bs_crm_homeowner_leads')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const updateStage = useMutation({
+    mutationFn: async ({ id, crm_stage }: { id: string; crm_stage: string }) => {
+      const { error } = await supabase.from('bs_installers').update({ crm_stage }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bs-installers'] });
+      toast.success('Stage updated');
+    },
+    onError: (e: any) => toast.error(e.message || 'Update failed'),
+  });
+
   // Filtered leads
   const filtered = useMemo(() => {
     if (!search) return leads;
@@ -97,7 +157,33 @@ export default function SolarLeadIntelligence() {
     );
   }, [leads, search]);
 
-  // Add lead
+  const installerRows = useMemo(() => {
+    const q = installerSearch.trim().toLowerCase();
+    let list = installers.filter((i: any) => {
+      const matchesStage = installerStageFilter === 'all' || i.crm_stage === installerStageFilter;
+      const matchesSearch =
+        !q ||
+        [i.company_name, i.phone, i.licence_state, i.roc_licence_number, i.next_action]
+          .filter(Boolean)
+          .some((v: string) => String(v).toLowerCase().includes(q));
+      return matchesStage && matchesSearch;
+    });
+    list = [...list].sort((a: any, b: any) => {
+      const av = a[installerSortKey] ?? '';
+      const bv = b[installerSortKey] ?? '';
+      return installerSortAsc ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+    return list;
+  }, [installers, installerSearch, installerStageFilter, installerSortKey, installerSortAsc]);
+
+  const toggleSort = (key: InstallerSortKey) => {
+    if (key === installerSortKey) setInstallerSortAsc(!installerSortAsc);
+    else {
+      setInstallerSortKey(key);
+      setInstallerSortAsc(true);
+    }
+  };
+
   const addLead = useMutation({
     mutationFn: async (lead: any) => {
       const { error } = await supabase.from('solar_leads').insert(lead);
@@ -117,182 +203,336 @@ export default function SolarLeadIntelligence() {
 
   return (
     <div className="space-y-6 relative">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Target className="h-6 w-6" style={{ color: AMBER }} />
-            Floor 1 — Lead Intelligence
-          </h1>
-          <p className="text-sm text-muted-foreground">Import, score, qualify, and launch solar campaigns</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowAddModal(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Add Lead
-          </Button>
-          <Button variant="outline" size="sm"><Upload className="h-4 w-4 mr-1" /> Upload CSV</Button>
-          <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" /> Export</Button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Target className="h-6 w-6" style={{ color: AMBER }} />
+          Floor 1 — Lead Intelligence
+        </h1>
+        <p className="text-sm text-muted-foreground">Import, score, qualify, and launch solar campaigns</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {[
-          { label: 'Total Leads', value: st.total, icon: Target, color: 'text-gray-400' },
-          { label: 'Qualified', value: st.qualified, icon: CheckCircle2, color: 'text-green-400' },
-          { label: 'Appointments', value: st.appointed, icon: FileText, color: 'text-purple-400' },
-          { label: 'Hot Leads', value: st.hot, icon: Flame, color: 'text-orange-400' },
-          { label: 'A-Rated', value: st.aRated, icon: Star, color: 'text-amber-400' },
-        ].map((m) => (
-          <Card key={m.label} className="border-border/50">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2">
-                <m.icon className={`h-4 w-4 ${m.color}`} />
-                <span className="text-xs text-muted-foreground">{m.label}</span>
-              </div>
-              <p className="text-2xl font-bold mt-1">{m.value}</p>
+      <Tabs defaultValue="leads">
+        <TabsList>
+          <TabsTrigger value="leads" className="gap-2"><Target className="h-4 w-4" /> Lead Intelligence</TabsTrigger>
+          <TabsTrigger value="installers" className="gap-2"><Users className="h-4 w-4" /> Installers</TabsTrigger>
+          <TabsTrigger value="homeowners" className="gap-2"><Home className="h-4 w-4" /> Homeowners</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="leads" className="space-y-6">
+          {/* Header actions */}
+          <div className="flex items-center justify-end flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowAddModal(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Add Lead
+            </Button>
+            <Button variant="outline" size="sm"><Upload className="h-4 w-4 mr-1" /> Upload CSV</Button>
+            <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" /> Export</Button>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              { label: 'Total Leads', value: st.total, icon: Target, color: 'text-gray-400' },
+              { label: 'Qualified', value: st.qualified, icon: CheckCircle2, color: 'text-green-400' },
+              { label: 'Appointments', value: st.appointed, icon: FileText, color: 'text-purple-400' },
+              { label: 'Hot Leads', value: st.hot, icon: Flame, color: 'text-orange-400' },
+              { label: 'A-Rated', value: st.aRated, icon: Star, color: 'text-amber-400' },
+            ].map((m) => (
+              <Card key={m.label} className="border-border/50">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <m.icon className={`h-4 w-4 ${m.color}`} />
+                    <span className="text-xs text-muted-foreground">{m.label}</span>
+                  </div>
+                  <p className="text-2xl font-bold mt-1">{m.value}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Search + Filters */}
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, address, city, phone, state..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {STATUSES.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${statusFilter === s
+                    ? 'text-white border-transparent'
+                    : 'text-muted-foreground border-border hover:bg-accent'
+                  }`}
+                  style={statusFilter === s ? { backgroundColor: AMBER } : undefined}
+                >
+                  {s === 'all' ? 'All' : s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">Showing {filtered.length} leads</p>
+          </div>
+
+          {/* Table */}
+          {isLoading ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => <div key={i} className="h-12 bg-muted/30 rounded animate-pulse" />)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-16 text-center">
+                <Sun className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold mb-2">No solar leads yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">Upload leads, add manually, or connect ad sources</p>
+                <div className="flex justify-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowAddModal(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Lead
+                  </Button>
+                  <Button variant="outline" size="sm"><Upload className="h-4 w-4 mr-1" /> Upload CSV</Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <TableHead className="w-10"><Checkbox /></TableHead>
+                    <TableHead className="w-16">Score</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Bill</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Contact</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((lead: any) => {
+                    const grade = lead.lead_score ? getScoreGrade(lead.lead_score) : null;
+                    return (
+                      <TableRow
+                        key={lead.id}
+                        className={`cursor-pointer transition-colors hover:bg-accent/30 ${
+                          lead.status === 'qualified' || lead.status === 'appointment_booked' ? 'border-l-2' : ''
+                        }`}
+                        style={
+                          lead.status === 'qualified' || lead.status === 'appointment_booked'
+                            ? { borderLeftColor: AMBER }
+                            : grade === 'A' ? { borderLeftColor: '#BA7517', borderLeftWidth: 2 } : undefined
+                        }
+                        onClick={() => setDrawerLead(lead)}
+                      >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.has(lead.id)}
+                            onCheckedChange={() => toggleSelect(lead.id)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {grade ? (
+                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${SCORE_COLORS[grade]}`}>
+                              {grade}
+                            </span>
+                          ) : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{lead.full_name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || '—'}</div>
+                          {lead.email && <div className="text-xs text-muted-foreground">{lead.email}</div>}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">{lead.city || '—'}, {lead.state || ''}</div>
+                          {lead.address && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{lead.address}</div>}
+                        </TableCell>
+                        <TableCell className="text-sm">{lead.phone || '—'}</TableCell>
+                        <TableCell className="text-sm">{lead.monthly_bill_range || '—'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">{lead.lead_source || 'manual'}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`text-xs ${STATUS_COLORS[lead.status] || ''}`}>
+                            {(lead.status || 'new').replace(/_/g, ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {lead.last_called_at ? formatDistanceToNow(new Date(lead.last_called_at), { addSuffix: true }) : 'Never'}
+                          {lead.call_count > 0 && <div>{lead.call_count} calls</div>}
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {/* Bulk Actions */}
+          {selectedIds.size > 0 && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border rounded-lg shadow-xl px-4 py-3 flex items-center gap-3">
+              <span className="text-sm font-medium">{selectedIds.size} selected</span>
+              <Button size="sm" variant="outline">Assign Agent</Button>
+              <Button size="sm" variant="outline">Add to Campaign</Button>
+              <Button size="sm" variant="outline">Mark DNC</Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>Deselect</Button>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="installers" className="space-y-4">
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search company, phone, licence, next action…"
+                className="pl-9"
+                value={installerSearch}
+                onChange={(e) => setInstallerSearch(e.target.value)}
+              />
+            </div>
+            <Select value={installerStageFilter} onValueChange={setInstallerStageFilter}>
+              <SelectTrigger className="w-[190px]"><SelectValue placeholder="Stage" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All stages</SelectItem>
+                {CRM_STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Badge variant="outline">{installerRows.length} installers</Badge>
+          </div>
+
+          {installersError && (
+            <Card className="border-destructive/40">
+              <CardContent className="p-4 text-sm text-destructive">{(installersError as any).message}</CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="cursor-pointer" onClick={() => toggleSort('company_name')}>
+                      <span className="inline-flex items-center gap-1">Company <ArrowUpDown className="h-3 w-3" /></span>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => toggleSort('crm_stage')}>Stage</TableHead>
+                    <TableHead>Licence</TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => toggleSort('licence_state')}>State</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Next action</TableHead>
+                    <TableHead>Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {installersLoading && (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Loading…</TableCell></TableRow>
+                  )}
+                  {!installersLoading && installerRows.length === 0 && (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      No installers yet. Load the vetted installer list to populate this tab.
+                    </TableCell></TableRow>
+                  )}
+                  {installerRows.map((i: any) => (
+                    <TableRow key={i.id}>
+                      <TableCell className="font-medium">{i.company_name}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={i.crm_stage}
+                          onValueChange={(v) => updateStage.mutate({ id: i.id, crm_stage: v })}
+                        >
+                          <SelectTrigger className="w-[140px] h-8"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {CRM_STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={licenceBadge(i.licence_status)}>
+                          {i.licence_status || 'unknown'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{i.licence_state || '—'}</TableCell>
+                      <TableCell>{i.phone || '—'}</TableCell>
+                      <TableCell className="max-w-[180px] truncate">{i.next_action || '—'}</TableCell>
+                      <TableCell className="max-w-[220px] truncate text-muted-foreground">{i.notes || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
-        ))}
-      </div>
+        </TabsContent>
 
-      {/* Search + Filters */}
-      <div className="space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, address, city, phone, state..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {STATUSES.map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${statusFilter === s
-                ? 'text-white border-transparent'
-                : 'text-muted-foreground border-border hover:bg-accent'
-              }`}
-              style={statusFilter === s ? { backgroundColor: AMBER } : undefined}
-            >
-              {s === 'all' ? 'All' : s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground">Showing {filtered.length} leads</p>
-      </div>
+        <TabsContent value="homeowners" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ShieldAlert className="h-4 w-4 text-amber-500" />
+                Homeowner intake is gated
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <p>
+                No homeowner leads are loaded, and none should be until the state gates clear. Every jurisdiction in
+                <span className="text-foreground"> bs_geo_policy</span> currently has outbound calling switched off with no
+                cleared gate, and consent artifacts (TrustedForm/Jornaya token, form snapshot, IP, exact disclosure text)
+                must be captured at intake before a single record can be dialled.
+              </p>
+              <p>
+                When a jurisdiction's blocking gate is cleared and consent capture is live, homeowner leads land here with
+                their consent record attached.
+              </p>
+              {homeownerError && <p className="text-destructive">{(homeownerError as any).message}</p>}
+              <Badge variant="outline">{homeowners.length} leads</Badge>
+            </CardContent>
+          </Card>
 
-      {/* Table */}
-      {isLoading ? (
-        <div className="space-y-2">
-          {[...Array(5)].map((_, i) => <div key={i} className="h-12 bg-muted/30 rounded animate-pulse" />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-16 text-center">
-            <Sun className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">No solar leads yet</h3>
-            <p className="text-sm text-muted-foreground mb-4">Upload leads, add manually, or connect ad sources</p>
-            <div className="flex justify-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setShowAddModal(true)}>
-                <Plus className="h-4 w-4 mr-1" /> Add Lead
-              </Button>
-              <Button variant="outline" size="sm"><Upload className="h-4 w-4 mr-1" /> Upload CSV</Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="w-10"><Checkbox /></TableHead>
-                <TableHead className="w-16">Score</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Bill</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Contact</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((lead: any) => {
-                const grade = lead.lead_score ? getScoreGrade(lead.lead_score) : null;
-                return (
-                  <TableRow
-                    key={lead.id}
-                    className={`cursor-pointer transition-colors hover:bg-accent/30 ${
-                      lead.status === 'qualified' || lead.status === 'appointment_booked' ? 'border-l-2' : ''
-                    }`}
-                    style={
-                      lead.status === 'qualified' || lead.status === 'appointment_booked'
-                        ? { borderLeftColor: AMBER }
-                        : grade === 'A' ? { borderLeftColor: '#BA7517', borderLeftWidth: 2 } : undefined
-                    }
-                    onClick={() => setDrawerLead(lead)}
-                  >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedIds.has(lead.id)}
-                        onCheckedChange={() => toggleSelect(lead.id)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {grade ? (
-                        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${SCORE_COLORS[grade]}`}>
-                          {grade}
-                        </span>
-                      ) : <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{lead.full_name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || '—'}</div>
-                      {lead.email && <div className="text-xs text-muted-foreground">{lead.email}</div>}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{lead.city || '—'}, {lead.state || ''}</div>
-                      {lead.address && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{lead.address}</div>}
-                    </TableCell>
-                    <TableCell className="text-sm">{lead.phone || '—'}</TableCell>
-                    <TableCell className="text-sm">{lead.monthly_bill_range || '—'}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">{lead.lead_source || 'manual'}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-xs ${STATUS_COLORS[lead.status] || ''}`}>
-                        {(lead.status || 'new').replace(/_/g, ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {lead.last_called_at ? formatDistanceToNow(new Date(lead.last_called_at), { addSuffix: true }) : 'Never'}
-                      {lead.call_count > 0 && <div>{lead.call_count} calls</div>}
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      {/* Bulk Actions */}
-      {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border rounded-lg shadow-xl px-4 py-3 flex items-center gap-3">
-          <span className="text-sm font-medium">{selectedIds.size} selected</span>
-          <Button size="sm" variant="outline">Assign Agent</Button>
-          <Button size="sm" variant="outline">Add to Campaign</Button>
-          <Button size="sm" variant="outline">Mark DNC</Button>
-          <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>Deselect</Button>
-        </div>
-      )}
+          {homeowners.length > 0 && (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Financing</TableHead>
+                      <TableHead>Score</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {homeowners.map((h: any) => (
+                      <TableRow key={h.id}>
+                        <TableCell className="font-medium">{h.full_name || '—'}</TableCell>
+                        <TableCell>{h.phone || '—'}</TableCell>
+                        <TableCell>{h.city || '—'}, {h.state || '—'}</TableCell>
+                        <TableCell>{h.financing_path || '—'}</TableCell>
+                        <TableCell>{h.lead_score ?? '—'}</TableCell>
+                        <TableCell>{h.source || '—'}</TableCell>
+                        <TableCell>{h.status || '—'}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {h.created_at ? formatDistanceToNow(new Date(h.created_at), { addSuffix: true }) : '—'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Lead Detail Drawer */}
       {drawerLead && (
