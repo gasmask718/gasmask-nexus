@@ -252,6 +252,26 @@ export default function TopTierAllPartners() {
             className="pl-10"
           />
         </div>
+        <div className="relative flex-1 min-w-[200px]">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search coverage area, city, or state..."
+            value={coverageSearch}
+            onChange={(e) => setCoverageSearch(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={sourcedCategoryFilter} onValueChange={setSourcedCategoryFilter}>
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="Supply category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All supply categories</SelectItem>
+            {SOURCED_CATEGORIES.map(cat => (
+              <SelectItem key={cat} value={cat} className="capitalize">{cat}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={stateFilter} onValueChange={setStateFilter}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="State" />
