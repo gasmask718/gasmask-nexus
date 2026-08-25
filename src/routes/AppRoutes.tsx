@@ -500,6 +500,7 @@ const SFHumanQueue = lazy(() => import('@/pages/surplus-funds/SFHumanQueue').the
 const SolarLayout = lazy(() => import('@/pages/solar/SolarLayout'));
 const SolarCommandCenter = lazy(() => import('@/pages/solar/SolarCommandCenter'));
 const SolarLeadIntelligence = lazy(() => import('@/pages/solar/SolarLeadIntelligence'));
+const SolarCRM = lazy(() => import('@/pages/solar/SolarCRM'));
 const SolarOutreach = lazy(() => import('@/pages/solar/SolarOutreach'));
 const SolarQualification = lazy(() => import('@/pages/solar/SolarQualification'));
 const SolarAppointments = lazy(() => import('@/pages/solar/SolarAppointments'));
@@ -3814,6 +3815,7 @@ export default function AppRoutes() {
         <Route path="/solar" element={<SolarLayout />}>
           <Route index element={<SolarCommandCenter />} />
           <Route path="leads" element={<SolarLeadIntelligence />} />
+          <Route path="crm" element={<SolarCRM />} />
           <Route path="outreach" element={<SolarOutreach />} />
           <Route path="qualification" element={<SolarQualification />} />
           <Route path="appointments" element={<SolarAppointments />} />

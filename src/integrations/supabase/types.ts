@@ -28613,6 +28613,248 @@ export type Database = {
         }
         Relationships: []
       }
+      bs_consent_events: {
+        Row: {
+          artifact: Json
+          created_at: string
+          event_type: string
+          id: string
+          lead_id: string | null
+          occurred_at: string
+        }
+        Insert: {
+          artifact?: Json
+          created_at?: string
+          event_type: string
+          id?: string
+          lead_id?: string | null
+          occurred_at?: string
+        }
+        Update: {
+          artifact?: Json
+          created_at?: string
+          event_type?: string
+          id?: string
+          lead_id?: string | null
+          occurred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bs_consent_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "bs_crm_homeowner_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bs_crm_homeowner_leads: {
+        Row: {
+          address: string | null
+          business: string
+          city: string | null
+          consent_artifact: Json | null
+          created_at: string
+          current_outage_frequency: string | null
+          email: string | null
+          financing_path: string | null
+          full_name: string
+          has_battery_interest: boolean | null
+          id: string
+          lead_score: number | null
+          phone: string | null
+          phone_last10: string | null
+          source: string | null
+          state: string | null
+          status: string
+          updated_at: string
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          business?: string
+          city?: string | null
+          consent_artifact?: Json | null
+          created_at?: string
+          current_outage_frequency?: string | null
+          email?: string | null
+          financing_path?: string | null
+          full_name: string
+          has_battery_interest?: boolean | null
+          id?: string
+          lead_score?: number | null
+          phone?: string | null
+          phone_last10?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          business?: string
+          city?: string | null
+          consent_artifact?: Json | null
+          created_at?: string
+          current_outage_frequency?: string | null
+          email?: string | null
+          financing_path?: string | null
+          full_name?: string
+          has_battery_interest?: boolean | null
+          id?: string
+          lead_score?: number | null
+          phone?: string | null
+          phone_last10?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          zip?: string | null
+        }
+        Relationships: []
+      }
+      bs_geo_policy: {
+        Row: {
+          blocking_gate: string | null
+          call_window: string | null
+          consent_standard: string | null
+          created_at: string
+          gate_cleared_at: string | null
+          ingest_allowed: boolean
+          jurisdiction: string
+          notes: string | null
+          outbound_allowed: boolean
+          tier: string
+          updated_at: string
+          vertical: string
+        }
+        Insert: {
+          blocking_gate?: string | null
+          call_window?: string | null
+          consent_standard?: string | null
+          created_at?: string
+          gate_cleared_at?: string | null
+          ingest_allowed?: boolean
+          jurisdiction: string
+          notes?: string | null
+          outbound_allowed?: boolean
+          tier: string
+          updated_at?: string
+          vertical?: string
+        }
+        Update: {
+          blocking_gate?: string | null
+          call_window?: string | null
+          consent_standard?: string | null
+          created_at?: string
+          gate_cleared_at?: string | null
+          ingest_allowed?: boolean
+          jurisdiction?: string
+          notes?: string | null
+          outbound_allowed?: boolean
+          tier?: string
+          updated_at?: string
+          vertical?: string
+        }
+        Relationships: []
+      }
+      bs_installers: {
+        Row: {
+          accepts_tpo: boolean | null
+          active: boolean
+          business: string
+          capacity_per_week: number | null
+          company_name: string
+          created_at: string
+          crm_stage: string
+          external_place_id: string | null
+          financing_paths: string[] | null
+          id: string
+          last_contacted_at: string | null
+          licence_class: string | null
+          licence_state: string | null
+          licence_status: string | null
+          licence_verified_at: string | null
+          national: boolean
+          next_action: string | null
+          notes: string | null
+          office_address: string | null
+          payout_amount: number | null
+          payout_model: string | null
+          phone: string | null
+          roc_licence_number: string | null
+          source: string | null
+          source_ref: string | null
+          status: string
+          updated_at: string
+          utility_territory: string | null
+          website: string | null
+        }
+        Insert: {
+          accepts_tpo?: boolean | null
+          active?: boolean
+          business?: string
+          capacity_per_week?: number | null
+          company_name: string
+          created_at?: string
+          crm_stage?: string
+          external_place_id?: string | null
+          financing_paths?: string[] | null
+          id?: string
+          last_contacted_at?: string | null
+          licence_class?: string | null
+          licence_state?: string | null
+          licence_status?: string | null
+          licence_verified_at?: string | null
+          national?: boolean
+          next_action?: string | null
+          notes?: string | null
+          office_address?: string | null
+          payout_amount?: number | null
+          payout_model?: string | null
+          phone?: string | null
+          roc_licence_number?: string | null
+          source?: string | null
+          source_ref?: string | null
+          status?: string
+          updated_at?: string
+          utility_territory?: string | null
+          website?: string | null
+        }
+        Update: {
+          accepts_tpo?: boolean | null
+          active?: boolean
+          business?: string
+          capacity_per_week?: number | null
+          company_name?: string
+          created_at?: string
+          crm_stage?: string
+          external_place_id?: string | null
+          financing_paths?: string[] | null
+          id?: string
+          last_contacted_at?: string | null
+          licence_class?: string | null
+          licence_state?: string | null
+          licence_status?: string | null
+          licence_verified_at?: string | null
+          national?: boolean
+          next_action?: string | null
+          notes?: string | null
+          office_address?: string | null
+          payout_amount?: number | null
+          payout_model?: string | null
+          phone?: string | null
+          roc_licence_number?: string | null
+          source?: string | null
+          source_ref?: string | null
+          status?: string
+          updated_at?: string
+          utility_territory?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       bs_outbound_refusals: {
         Row: {
           caller_function: string
@@ -154559,6 +154801,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
+      bs_brightsun_access: { Args: { _user_id: string }; Returns: boolean }
       bulk_approve_commissions: {
         Args: { p_ambassador_id?: string; p_before_date?: string }
         Returns: number
