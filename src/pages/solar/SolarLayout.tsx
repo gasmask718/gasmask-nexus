@@ -51,6 +51,7 @@ const solarNavSections = [
     items: [
       { path: '/solar/ai-brain', label: 'Floor 9 — AI Brain', icon: Bot },
       { path: '/solar/analytics', label: 'Floor 10 — Analytics', icon: TrendingUp },
+      { path: '/solar/installer-map', label: '🗺️ Installer Map', icon: MapPin },
     ],
   },
   {
