@@ -297,6 +297,9 @@ export default function SolarLeadIntelligence() {
               <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>Deselect</Button>
             </div>
           )}
+      </div>
+
+
 
       {/* Lead Detail Drawer */}
       {drawerLead && (
