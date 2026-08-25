@@ -52,6 +52,13 @@ const Shop = lazy(() => import('@/pages/Shop'));
 const PublicProductPage = lazy(() => import('@/pages/shop/PublicProductPage'));
 const CheckoutSuccess = lazy(() => import('@/pages/shop/CheckoutSuccess'));
 const TrackOrder = lazy(() => import('@/pages/shop/TrackOrder'));
+// Dynasty Direct customer account area (D2C, /account/*)
+const AccountLayout = lazy(() => import('@/pages/account/AccountLayout'));
+const AccountOrders = lazy(() => import('@/pages/account/AccountOrders'));
+const AccountOrderDetail = lazy(() => import('@/pages/account/AccountOrderDetail'));
+const AccountAddresses = lazy(() => import('@/pages/account/AccountAddresses'));
+const AccountPaymentMethods = lazy(() => import('@/pages/account/AccountPaymentMethods'));
+const AccountProfile = lazy(() => import('@/pages/account/AccountProfile'));
 
 const ShopifyStore = lazy(() => import('@/pages/ShopifyStore'));
 const Cart = lazy(() => import('@/pages/Cart'));
@@ -807,6 +814,9 @@ const DDStoreAccounts = lazy(() => import('@/pages/dynasty-direct/DDStoreAccount
 const DDOrderDetail = lazy(() => import('@/pages/dynasty-direct/DDOrderDetail'));
 const DDAnalytics = lazy(() => import('@/pages/dynasty-direct/DDAnalytics'));
 const DDSettings = lazy(() => import('@/pages/dynasty-direct/DDSettings'));
+const DDReadiness = lazy(() => import('@/pages/dynasty-direct/DDReadiness'));
+const DDReturnsQueue = lazy(() => import('@/pages/dynasty-direct/DDReturnsQueue'));
+const DDSupportTickets = lazy(() => import('@/pages/dynasty-direct/DDSupportTickets'));
 const DDCommissionRates = lazy(() => import('@/pages/dynasty-direct/DDCommissionRates'));
 const DDSupplierPerformance = lazy(() => import('@/pages/dynasty-direct/DDSupplierPerformance'));
 const DDPurchaseOrders = lazy(() => import('@/pages/dynasty-direct/DDPurchaseOrders'));
@@ -1348,6 +1358,16 @@ export default function AppRoutes() {
         {/* Stripe redirect target + guest order tracking */}
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
         <Route path="/track" element={<TrackOrder />} />
+
+        {/* Customer account area — optional, guest checkout still works without it */}
+        <Route path="/account" element={<AccountLayout />}>
+          <Route index element={<Navigate to="/account/orders" replace />} />
+          <Route path="orders" element={<AccountOrders />} />
+          <Route path="orders/:orderId" element={<AccountOrderDetail />} />
+          <Route path="addresses" element={<AccountAddresses />} />
+          <Route path="payment" element={<AccountPaymentMethods />} />
+          <Route path="profile" element={<AccountProfile />} />
+        </Route>
 
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
@@ -2178,6 +2198,9 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/analytics" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDAnalytics /></RequireRole>} />
         <Route path="/dynasty-direct/stores" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDStoreAccounts /></RequireRole>} />
         <Route path="/dynasty-direct/settings" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDSettings /></RequireRole>} />
+        <Route path="/dynasty-direct/readiness" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDReadiness /></RequireRole>} />
+        <Route path="/dynasty-direct/returns" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDReturnsQueue /></RequireRole>} />
+        <Route path="/dynasty-direct/support" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDSupportTickets /></RequireRole>} />
         <Route path="/dynasty-direct/commission-rates" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDCommissionRates /></RequireRole>} />
         <Route path="/dynasty-direct/orders/:orderId" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDOrderDetail /></RequireRole>} />
 

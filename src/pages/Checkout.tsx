@@ -47,6 +47,11 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash' | 'net_terms'>('card');
   const [notes, setNotes] = useState('');
 
+  // ── Optional account creation for guests (additive; never blocks checkout) ──
+  const [createAccount, setCreateAccount] = useState(false);
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountEmail, setAccountEmail] = useState('');
+
   const isStoreUser = userRole === 'store' || userRole === 'store_owner';
 
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -121,8 +126,24 @@ export default function Checkout() {
     ? { ...totals, shipping: shippingQuote.shipping_cost, total: totals.subtotal + shippingQuote.shipping_cost + totals.tax }
     : totals;
 
+  const maybeCreateAccount = async () => {
+    if (user || !createAccount || !accountPassword || !accountEmail) return;
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: accountEmail,
+        password: accountPassword,
+        options: { emailRedirectTo: `${window.location.origin}/account/orders` },
+      });
+      if (error) toast.error(`Account creation skipped: ${error.message}`);
+      else toast.success('Account created — check your email to confirm, then sign in to track this order.');
+    } catch (e: any) {
+      toast.error('Account creation skipped — your order will still go through.');
+    }
+  };
+
   const handlePlaceOrder = async () => {
     try {
+      await maybeCreateAccount();
       if (hasRestrictedItems && !ageConfirmed) {
         toast.error('Please confirm you are 21 years or older to purchase age-restricted products.');
         return;
@@ -443,6 +464,44 @@ export default function Checkout() {
                   {paymentMethod === 'card' && (
                     <div className="p-4 bg-muted rounded-lg text-center text-sm text-muted-foreground">
                       <p>Card payment will be processed via Stripe after order review.</p>
+                    </div>
+                  )}
+
+                  {!user && (
+                    <div className="p-4 border rounded-lg space-y-3">
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="create-account"
+                          checked={createAccount}
+                          onCheckedChange={(v) => setCreateAccount(v === true)}
+                          className="mt-0.5"
+                        />
+                        <Label htmlFor="create-account" className="text-sm font-normal leading-snug cursor-pointer">
+                          Create an account to track this order and reorder faster (optional)
+                        </Label>
+                      </div>
+                      {createAccount && (
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <div>
+                            <Label>Email</Label>
+                            <Input
+                              type="email"
+                              value={accountEmail}
+                              onChange={(e) => setAccountEmail(e.target.value)}
+                              placeholder="you@example.com"
+                            />
+                          </div>
+                          <div>
+                            <Label>Password</Label>
+                            <Input
+                              type="password"
+                              value={accountPassword}
+                              onChange={(e) => setAccountPassword(e.target.value)}
+                              placeholder="Choose a password"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
