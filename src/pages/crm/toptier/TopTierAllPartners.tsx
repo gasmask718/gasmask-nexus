@@ -345,6 +345,7 @@ export default function TopTierAllPartners() {
                     <th className="text-left py-3 px-4 font-medium">Contact</th>
                     <th className="text-left py-3 px-4 font-medium">Category</th>
                     <th className="text-left py-3 px-4 font-medium">Location</th>
+                    <th className="text-left py-3 px-4 font-medium">Stage</th>
                     <th className="text-left py-3 px-4 font-medium">Status</th>
                     <th className="text-right py-3 px-4 font-medium">Actions</th>
                   </tr>
