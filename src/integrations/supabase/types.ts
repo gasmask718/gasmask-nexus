@@ -28568,6 +28568,96 @@ export type Database = {
         }
         Relationships: []
       }
+      bs_consent_artifacts: {
+        Row: {
+          captured_at: string
+          consent_source: string
+          consent_text: string | null
+          created_at: string
+          evidence_url: string | null
+          expires_at: string | null
+          id: string
+          lead_id: string | null
+          metadata: Json
+          phone: string
+          phone_last10: string
+          revoked_at: string | null
+        }
+        Insert: {
+          captured_at?: string
+          consent_source: string
+          consent_text?: string | null
+          created_at?: string
+          evidence_url?: string | null
+          expires_at?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          phone: string
+          phone_last10: string
+          revoked_at?: string | null
+        }
+        Update: {
+          captured_at?: string
+          consent_source?: string
+          consent_text?: string | null
+          created_at?: string
+          evidence_url?: string | null
+          expires_at?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          phone?: string
+          phone_last10?: string
+          revoked_at?: string | null
+        }
+        Relationships: []
+      }
+      bs_outbound_refusals: {
+        Row: {
+          caller_function: string
+          channel: string
+          contact_id: string | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          lead_state: string | null
+          metadata: Json
+          phone: string | null
+          phone_last10: string | null
+          reason_code: string
+          reason_detail: string | null
+        }
+        Insert: {
+          caller_function: string
+          channel: string
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          lead_state?: string | null
+          metadata?: Json
+          phone?: string | null
+          phone_last10?: string | null
+          reason_code: string
+          reason_detail?: string | null
+        }
+        Update: {
+          caller_function?: string
+          channel?: string
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          lead_state?: string | null
+          metadata?: Json
+          phone?: string | null
+          phone_last10?: string | null
+          reason_code?: string
+          reason_detail?: string | null
+        }
+        Relationships: []
+      }
       budget_profiles: {
         Row: {
           budget_period: string | null
