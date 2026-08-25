@@ -134,3 +134,22 @@ API calls and zero leads — the search never actually executed. Treat both as N
 - Business-partner leads are separate from consented staff applicants. Nexus currently holds
   **0** inbound/opt-in UT staff applicants; the 46,000 business leads are venues, rental
   companies and vendors, not candidates.
+
+## How phases were assigned (methodology)
+
+The database stores **no phase/tier column** for metros — `ut_territory_jobs` has only
+`source` (the metro slug). Phases were reconstructed from the job-seeding waves
+(`created_at` batches), which are the only live artifact of each search session:
+
+| Wave | Seeded | Metros | Mapped to |
+|---|---|---:|---|
+| 1 | 29–31 Jul 2026 | 7 | Phase 1 |
+| 2 | 3–4 Aug 2026 | 30 | Phase 2 |
+| 3 | 5 Aug 2026 | 21 | 16 = Phase 3 (named in the historical Phase 3 checkpoint), 5 = later tier |
+| 4 | 6 Aug 2026 | 30 | Phase 4 / later |
+
+Waves 1+2 total exactly **37 metros**, matching the historical post-Phase-2 checkpoint.
+The historical 13/24 split inside those 37 is **not reproducible from live data** — nothing
+in the database records it. Phase 3 uses the 16 metros explicitly named in the Phase 3
+checkpoint; all 16 are confirmed searched. Everything seeded after them is grouped as
+Phase 4 / later.
