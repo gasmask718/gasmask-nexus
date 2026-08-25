@@ -833,6 +833,7 @@ const DYNASTY_NAVIGATION = {
     items: [
       { path: '/solar', label: '☀️ Penthouse — Command Center', icon: Building },
       { path: '/solar/leads', label: '🎯 Floor 1 — Lead Intelligence', icon: Target },
+      { path: '/solar/crm', label: '🗂️ Floor 1 — CRM', icon: Users },
       { path: '/solar/outreach', label: '📞 Floor 2 — AI Outreach', icon: Phone },
       { path: '/solar/qualification', label: '🧠 Floor 3 — Qualification', icon: Brain },
       { path: '/solar/appointments', label: '📅 Floor 4 — Appointments', icon: Calendar },
