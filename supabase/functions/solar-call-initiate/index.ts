@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { bsOutboundGate, encodeTarget } from "../_shared/bsOutboundGate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,6 +60,25 @@ serve(async (req) => {
       formattedPhone = formattedPhone.startsWith("1") ? `+${formattedPhone}` : `+1${formattedPhone}`;
     }
 
+    // ── BrightSun outbound gate (suppression / STOP / jurisdiction / consent) ──
+    const gate = await bsOutboundGate({
+      supabase,
+      phone: formattedPhone,
+      state: leadData?.state ?? null,
+      channel: "voice",
+      caller: "solar-call-initiate",
+      leadId: lead_id || null,
+      contactId: contact_id || null,
+    });
+    if (!gate.allowed) {
+      return new Response(JSON.stringify({
+        success: false,
+        blocked: true,
+        reason_code: gate.reasonCode,
+        reason: gate.detail ?? gate.reasonCode,
+      }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Resolve AI agent
     let resolvedAgentId = agent_id;
     if (!resolvedAgentId) {
@@ -92,11 +112,22 @@ serve(async (req) => {
       twimlUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?lead_id=${targetId}&business_name=BrightSun+Energy`;
     }
 
+    // Route the call through the TwiML-side gate; it re-checks and only then
+    // redirects to `twimlUrl`. Nothing is spoken before the gate answers.
+    const gateParams = new URLSearchParams({
+      bs_target: encodeTarget(twimlUrl),
+      caller: "solar-call-initiate",
+      state: (leadData?.state ?? "") as string,
+    });
+    if (lead_id) gateParams.set("lead_id", lead_id);
+    if (contact_id) gateParams.set("contact_id", contact_id);
+    const gatedUrl = `${supabaseUrl}/functions/v1/bs-outbound-gate?${gateParams}`;
+
     // Create call via Twilio
     const callParams = new URLSearchParams({
       To: formattedPhone,
       From: TWILIO_PHONE_NUMBER,
-      Url: twimlUrl,
+      Url: gatedUrl,
       StatusCallback: statusCallbackUrl,
       StatusCallbackMethod: "POST",
       Timeout: "30",

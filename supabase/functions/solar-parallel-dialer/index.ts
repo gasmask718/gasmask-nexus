@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { bsOutboundGate, encodeTarget } from "../_shared/bsOutboundGate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -120,6 +121,39 @@ serve(async (req) => {
         phone = phone.startsWith("1") ? `+${phone}` : `+1${phone}`;
       }
 
+      // Resolve the lead's jurisdiction for the gate.
+      let itemState: string | null = null;
+      if (item.lead_id) {
+        const { data: l } = await supabase
+          .from("solar_leads").select("state").eq("id", item.lead_id).maybeSingle();
+        itemState = l?.state ?? null;
+      } else if (item.contact_id) {
+        const { data: c } = await supabase
+          .from("solar_outreach_contacts").select("state").eq("id", item.contact_id).maybeSingle();
+        itemState = c?.state ?? null;
+      }
+
+      // ── BrightSun outbound gate — refuse before Twilio is touched ──
+      const gate = await bsOutboundGate({
+        supabase,
+        phone,
+        state: itemState,
+        channel: "voice",
+        caller: "solar-parallel-dialer",
+        leadId: item.lead_id || null,
+        contactId: item.contact_id || null,
+        metadata: { batch_id, queue_item_id: item.id },
+      });
+      if (!gate.allowed) {
+        await supabase.from("solar_call_queue").update({
+          call_status: "blocked",
+          outcome: `gate:${gate.reasonCode}`,
+          updated_at: new Date().toISOString(),
+        }).eq("id", item.id);
+        results.push({ id: item.id, phone, status: "blocked", reason_code: gate.reasonCode });
+        continue;
+      }
+
       // Build TwiML URL — use campaign's agent or default bridge
       const bridgeParams = new URLSearchParams({
         lead_name: encodeURIComponent(item.contact_name || "Customer"),
@@ -133,11 +167,23 @@ serve(async (req) => {
 
       const twimlUrl = `${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?${bridgeParams}`;
 
+      // Every dial goes through the TwiML-side gate first.
+      const gateParams = new URLSearchParams({
+        bs_target: encodeTarget(twimlUrl),
+        caller: "solar-parallel-dialer",
+        state: itemState || "",
+        batch_id,
+        queue_item_id: item.id,
+      });
+      if (item.lead_id) gateParams.set("lead_id", item.lead_id);
+      if (item.contact_id) gateParams.set("contact_id", item.contact_id);
+      const gatedUrl = `${supabaseUrl}/functions/v1/bs-outbound-gate?${gateParams}`;
+
       try {
         const callParams = new URLSearchParams({
           To: phone,
           From: TWILIO_PHONE_NUMBER,
-          Url: twimlUrl,
+          Url: gatedUrl,
           StatusCallback: statusCallbackUrl,
           StatusCallbackMethod: "POST",
           Timeout: "30",

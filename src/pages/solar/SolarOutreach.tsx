@@ -17,6 +17,8 @@ import {
   CheckCircle2, Target, TrendingUp, Plus, Upload, Users, BarChart3
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { BsComplianceGateStatus } from '@/components/solar/BsComplianceGateStatus';
+
 
 const AMBER = '#E8A317';
 
@@ -219,7 +221,11 @@ export default function SolarOutreach() {
         ))}
       </div>
 
+      {/* BrightSun-only outbound compliance gate (not Grabba's switchboard) */}
+      <BsComplianceGateStatus />
+
       <Tabs defaultValue="outreach">
+
         <TabsList>
           <TabsTrigger value="outreach"><Phone className="h-4 w-4 mr-1" /> Lead Queue</TabsTrigger>
           <TabsTrigger value="contacts">

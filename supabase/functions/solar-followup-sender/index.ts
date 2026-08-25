@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendSms } from "../_shared/sendSms.ts";
 import { outreachAllowed } from "../_shared/outreachGate.ts";
+import { bsOutboundGate } from "../_shared/bsOutboundGate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,12 +61,12 @@ serve(async (req) => {
     // Try solar_master_leads first for phone numbers
     const { data: leads } = await supabase
       .from("solar_master_leads")
-      .select("id, phone, name")
+      .select("id, phone, name, state")
       .in("id", leadIds);
 
-    const leadMap = new Map<string, { phone: string; name: string }>();
+    const leadMap = new Map<string, { phone: string; name: string; state: string | null }>();
     (leads || []).forEach((l: any) => {
-      if (l.phone) leadMap.set(l.id, { phone: l.phone, name: l.name || "" });
+      if (l.phone) leadMap.set(l.id, { phone: l.phone, name: l.name || "", state: l.state ?? null });
     });
 
     let sent = 0;
@@ -106,6 +107,30 @@ serve(async (req) => {
 
       // Only send SMS channel
       if (followup.channel !== "sms") {
+        skipped++;
+        continue;
+      }
+
+      // ── BrightSun outbound gate — runs before any message is generated
+      // or sent (suppression / STOP / jurisdiction / consent, fails closed).
+      const gate = await bsOutboundGate({
+        supabase,
+        phone,
+        state: lead.state,
+        channel: "sms",
+        caller: "solar-followup-sender",
+        leadId: followup.lead_id || null,
+        metadata: { followup_id: followup.id },
+      });
+      if (!gate.allowed) {
+        await supabase
+          .from("solar_followups")
+          .update({
+            status: "blocked",
+            delivery_status: "blocked",
+            error_message: `gate:${gate.reasonCode}`,
+          })
+          .eq("id", followup.id);
         skipped++;
         continue;
       }
