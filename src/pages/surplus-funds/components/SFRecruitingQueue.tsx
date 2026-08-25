@@ -209,6 +209,9 @@ export function SFRecruitingQueue() {
                 <div><span className="text-muted-foreground text-xs">Email</span><p className="truncate">{selected.email || '—'}</p></div>
                 <div><span className="text-muted-foreground text-xs">Phone</span><p>{selected.phone || '—'}</p></div>
                 <div><span className="text-muted-foreground text-xs">Next action</span><p>{selected.next_action || '—'}</p></div>
+                <div><span className="text-muted-foreground text-xs">Bar number</span><p>{selected.bar_number || '—'}</p></div>
+                <div><span className="text-muted-foreground text-xs">Source</span><p className="truncate">{selected.source || '—'}</p></div>
+                <div className="col-span-2"><span className="text-muted-foreground text-xs">Notes</span><p className="text-xs">{selected.notes || '—'}</p></div>
                 <div>
                   <span className="text-muted-foreground text-xs">Stage</span>
                   <Select value={selected.stage} onValueChange={(v) => { setSelected({ ...selected, stage: v }); updateStage.mutate({ id: selected.id, stage: v }); }}>
