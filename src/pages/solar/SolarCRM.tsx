@@ -285,7 +285,7 @@ export default function SolarCRM() {
                 their consent record attached.
               </p>
               {homeownerError && <p className="text-destructive">{(homeownerError as any).message}</p>}
-              <Badge variant="outline">{homeowners.length} leads</Badge>
+              <Badge variant="outline">{homeownerTotal.toLocaleString()} leads</Badge>
             </CardContent>
           </Card>
 
