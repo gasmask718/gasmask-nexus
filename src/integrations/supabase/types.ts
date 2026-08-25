@@ -44139,6 +44139,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           email: string | null
+          geocode_status: string | null
+          geocoded_at: string | null
           google_place_id: string | null
           id: string
           insurance_expiry: string | null
@@ -44188,6 +44190,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string | null
+          geocode_status?: string | null
+          geocoded_at?: string | null
           google_place_id?: string | null
           id?: string
           insurance_expiry?: string | null
@@ -44237,6 +44241,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string | null
+          geocode_status?: string | null
+          geocoded_at?: string | null
           google_place_id?: string | null
           id?: string
           insurance_expiry?: string | null

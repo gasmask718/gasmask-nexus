@@ -365,6 +365,7 @@ const TopTierReturningCustomers = lazy(() => import('@/pages/crm/toptier').then(
 const TopTierNewCustomers = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierNewCustomers })));
 const TopTierCustomerBookings = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierCustomerBookings })));
 const TopTierCustomerValue = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierCustomerValue })));
+const TopTierSupplyMap = lazy(() => import('@/pages/crm/toptier/TopTierSupplyMap'));
 const TopTierAllPartners = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierAllPartners })));
 const TopTierNewDeal = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierNewDeal })));
 const TopTierDeals = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierDeals })));
@@ -1871,6 +1872,7 @@ export default function AppRoutes() {
         <Route path="/maintenance-list" element={<MaintenanceListPage />} />
         
         {/* TopTier Partner CRM Routes */}
+        <Route path="/crm/toptier-experience/supply-map" element={<TopTierSupplyMap />} />
         <Route path="/crm/toptier-experience/partners" element={<TopTierPartnerDashboard />} />
         <Route path="/crm/toptier-experience/partners/all" element={<TopTierAllPartners />} />
         <Route path="/crm/toptier-experience/partners/new" element={<Navigate to="/crm/toptier-experience/partner/new" replace />} />

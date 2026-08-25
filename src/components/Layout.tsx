@@ -511,6 +511,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/crm/toptier-experience/deals', label: '🤝 Deals', icon: Handshake },
       { path: '/crm/toptier-experience/partners', label: '🏢 Partner CRM', icon: Building },
       { path: '/crm/toptier-experience/analytics/revenue', label: '📊 Analytics', icon: BarChart },
+      { path: '/crm/toptier-experience/supply-map', label: '🗺️ Supply Coverage Map', icon: MapPin },
       { path: '/crm/toptier-experience/interactions', label: '💬 Interactions', icon: MessageSquare },
       { path: '/crm/toptier-experience/kpis/manage', label: '🎯 KPIs', icon: Target },
     ],
