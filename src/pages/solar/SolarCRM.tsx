@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { toast } from 'sonner';
 import { Users, Home, Search, ArrowUpDown, ShieldAlert, Contact } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -14,6 +15,8 @@ import { formatDistanceToNow } from 'date-fns';
 const AMBER = '#E8A317';
 
 const CRM_STAGES = ['identified', 'contacted', 'interested', 'onboarded', 'active', 'declined'] as const;
+
+const PAGE_SIZE = 200;
 
 type InstallerSortKey = 'company_name' | 'crm_stage' | 'licence_state' | 'last_contacted_at';
 
@@ -25,38 +28,98 @@ function licenceBadge(status: string | null) {
   return 'bg-muted text-muted-foreground border-border';
 }
 
+// Escapes a user search term for PostgREST `or=(...)` syntax.
+function searchFilter(term: string) {
+  const safe = term.replace(/[(),*]/g, ' ').trim();
+  if (!safe) return null;
+  const cols = ['company_name', 'phone', 'licence_state', 'roc_licence_number', 'next_action'];
+  return cols.map((c) => `${c}.ilike.*${safe}*`).join(',');
+}
+
 export default function SolarCRM() {
   const queryClient = useQueryClient();
   const [installerSearch, setInstallerSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [installerStageFilter, setInstallerStageFilter] = useState<string>('all');
   const [installerSortKey, setInstallerSortKey] = useState<InstallerSortKey>('company_name');
   const [installerSortAsc, setInstallerSortAsc] = useState(true);
+  const [installerPage, setInstallerPage] = useState(1);
+  const [homeownerPage, setHomeownerPage] = useState(1);
 
-  const { data: installers = [], isLoading: installersLoading, error: installersError } = useQuery({
-    queryKey: ['bs-installers'],
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(installerSearch), 300);
+    return () => clearTimeout(t);
+  }, [installerSearch]);
+
+  // Reset to page 1 whenever the server-side query shape changes.
+  useEffect(() => {
+    setInstallerPage(1);
+  }, [debouncedSearch, installerStageFilter, installerSortKey, installerSortAsc]);
+
+  // Exact totals (head request, count=exact) — independent of the current page.
+  const { data: totals } = useQuery({
+    queryKey: ['bs-installers-totals', debouncedSearch],
+    placeholderData: keepPreviousData,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('bs_installers')
+      const or = searchFilter(debouncedSearch);
+      const build = () => {
+        let q = (supabase.from('bs_installers') as any).select('id', { count: 'exact', head: true });
+        if (or) q = q.or(or);
+        return q;
+      };
+      const allRes = await build();
+      if (allRes.error) throw allRes.error;
+      const perStage: Record<string, number> = {};
+      for (const s of CRM_STAGES) {
+        const { count, error } = await build().eq('crm_stage', s);
+        if (error) throw error;
+        perStage[s] = count ?? 0;
+      }
+      return { total: allRes.count ?? 0, perStage };
+    },
+  });
+
+  const stageCounts = totals?.perStage ?? Object.fromEntries(CRM_STAGES.map((s) => [s, 0]));
+  const filteredTotal =
+    installerStageFilter === 'all' ? totals?.total ?? 0 : totals?.perStage?.[installerStageFilter] ?? 0;
+  const installerTotalPages = Math.max(1, Math.ceil(filteredTotal / PAGE_SIZE));
+
+  const { data: installerRows = [], isLoading: installersLoading, error: installersError } = useQuery({
+    queryKey: ['bs-installers', debouncedSearch, installerStageFilter, installerSortKey, installerSortAsc, installerPage],
+    placeholderData: keepPreviousData,
+    queryFn: async () => {
+      const from = (installerPage - 1) * PAGE_SIZE;
+      let q = (supabase.from('bs_installers') as any)
         .select('*')
-        .order('company_name', { ascending: true })
-        .limit(1000);
+        .order(installerSortKey, { ascending: installerSortAsc, nullsFirst: false })
+        .order('id', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+      const or = searchFilter(debouncedSearch);
+      if (or) q = q.or(or);
+      if (installerStageFilter !== 'all') q = q.eq('crm_stage', installerStageFilter);
+      const { data, error } = await q;
       if (error) throw error;
       return data || [];
     },
   });
 
-  const { data: homeowners = [], error: homeownerError } = useQuery({
-    queryKey: ['bs-homeowner-leads'],
+  const { data: homeownerResult, error: homeownerError } = useQuery({
+    queryKey: ['bs-homeowner-leads', homeownerPage],
+    placeholderData: keepPreviousData,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('bs_crm_homeowner_leads')
-        .select('*')
+      const from = (homeownerPage - 1) * PAGE_SIZE;
+      const { data, error, count } = await (supabase.from('bs_crm_homeowner_leads') as any)
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
-        .limit(500);
+        .order('id', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
       if (error) throw error;
-      return data || [];
+      return { rows: data || [], count: count ?? 0 };
     },
   });
+
+  const homeowners = homeownerResult?.rows ?? [];
+  const homeownerTotal = homeownerResult?.count ?? 0;
 
   const updateStage = useMutation({
     mutationFn: async ({ id, crm_stage }: { id: string; crm_stage: string }) => {
@@ -65,38 +128,11 @@ export default function SolarCRM() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bs-installers'] });
+      queryClient.invalidateQueries({ queryKey: ['bs-installers-totals'] });
       toast.success('Stage updated');
     },
     onError: (e: any) => toast.error(e.message || 'Update failed'),
   });
-
-  const stageCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const s of CRM_STAGES) counts[s] = 0;
-    for (const i of installers as any[]) {
-      if (i.crm_stage in counts) counts[i.crm_stage] += 1;
-    }
-    return counts;
-  }, [installers]);
-
-  const installerRows = useMemo(() => {
-    const q = installerSearch.trim().toLowerCase();
-    let list = (installers as any[]).filter((i: any) => {
-      const matchesStage = installerStageFilter === 'all' || i.crm_stage === installerStageFilter;
-      const matchesSearch =
-        !q ||
-        [i.company_name, i.phone, i.licence_state, i.roc_licence_number, i.next_action]
-          .filter(Boolean)
-          .some((v: string) => String(v).toLowerCase().includes(q));
-      return matchesStage && matchesSearch;
-    });
-    list = [...list].sort((a: any, b: any) => {
-      const av = a[installerSortKey] ?? '';
-      const bv = b[installerSortKey] ?? '';
-      return installerSortAsc ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
-    });
-    return list;
-  }, [installers, installerSearch, installerStageFilter, installerSortKey, installerSortAsc]);
 
   const toggleSort = (key: InstallerSortKey) => {
     if (key === installerSortKey) setInstallerSortAsc(!installerSortAsc);
@@ -105,6 +141,7 @@ export default function SolarCRM() {
       setInstallerSortAsc(true);
     }
   };
+
 
   return (
     <div className="space-y-6">
