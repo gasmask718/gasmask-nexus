@@ -151,12 +151,47 @@ export default function TopTierAllPartners() {
             </div>
             <p className="text-muted-foreground">View and manage all TopTier experience partners</p>
           </div>
-          <Button onClick={() => navigate('/crm/toptier-experience/partner/new')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Partner
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <PartnerCsvImportDialog onImported={() => refetch()} />
+            <Button onClick={() => navigate('/crm/toptier-experience/partner/new')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Partner
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Sourcing pipeline */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Sourcing pipeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {STAGES.map((stage) => {
+              const selected = stageFilter === stage;
+              return (
+                <button
+                  key={stage}
+                  type="button"
+                  onClick={() => setStageFilter(selected ? 'all' : stage)}
+                  className={`rounded-md border p-3 text-left transition-colors hover:bg-muted/50 ${
+                    selected ? 'border-primary ring-1 ring-primary' : 'border-border'
+                  }`}
+                >
+                  <p className="text-2xl font-bold">{stageCounts[stage]}</p>
+                  <Badge className={`mt-1 text-xs capitalize ${STAGE_STYLES[stage]}`}>{stage}</Badge>
+                </button>
+              );
+            })}
+          </div>
+          {stageFilter !== 'all' && (
+            <Button variant="ghost" size="sm" className="mt-2" onClick={() => setStageFilter('all')}>
+              Clear stage filter
+            </Button>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
