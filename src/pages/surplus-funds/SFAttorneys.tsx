@@ -7,11 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { SFRecruitingQueue } from './components/SFRecruitingQueue';
 import { toast } from 'sonner';
-import { Plus, Scale, Phone, Mail } from 'lucide-react';
+import { Plus, Phone, Mail } from 'lucide-react';
 
 
 export default function SFAttorneys() {
@@ -74,63 +72,49 @@ export default function SFAttorneys() {
         </Dialog>
       </div>
 
-      <Tabs defaultValue="network">
-        <TabsList>
-          <TabsTrigger value="network">Attorney Network</TabsTrigger>
-          <TabsTrigger value="recruiting">Recruiting Queue</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="network" className="mt-4">
-          <Card>
-            <CardContent className="p-0 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b border-border">
-                  <th className="p-3 text-left">Name</th>
-                  <th className="p-3 text-left">Firm</th>
-                  <th className="p-3 text-left">States</th>
-                  <th className="p-3 text-left">Cases</th>
-                  <th className="p-3 text-left">Win Rate</th>
-                  <th className="p-3 text-left">Engagement</th>
-                  <th className="p-3 text-left">Verification</th>
-                  <th className="p-3 text-left">Status</th>
-                  <th className="p-3 text-left">Contact</th>
-                </tr></thead>
-                <tbody>
-                  {attorneys.map((a: any) => (
-                    <tr key={a.id} className="border-b border-border/50 hover:bg-accent/30">
-                      <td className="p-3 font-medium">{a.name}</td>
-                      <td className="p-3">{a.firm || '—'}</td>
-                      <td className="p-3"><div className="flex flex-wrap gap-1">{(a.states ?? []).map((s: string) => <Badge key={s} variant="outline" className="text-xs">{s}</Badge>)}</div></td>
-                      <td className="p-3">{a.cases_total}</td>
-                      <td className="p-3">{a.cases_total > 0 ? Math.round((a.cases_won / a.cases_total) * 100) : 0}%</td>
-                      <td className="p-3 text-xs">
-                        <div>Retained by Dynasty</div>
-                        <div className="text-muted-foreground">{a.fee_arrangement ? a.fee_arrangement.replace(/_/g, ' ') : 'not set'}</div>
-                      </td>
-                      <td className="p-3">
-                        <Badge variant="outline" className={a.application_status === 'eligible' ? 'bg-green-500/10 text-green-500 border-green-500' : 'bg-amber-500/10 text-amber-500 border-amber-500'}>
-                          {(a.application_status || 'prospect').replace(/_/g, ' ')}
-                        </Badge>
-                      </td>
-                      <td className="p-3"><Badge variant="outline" className={a.status === 'active' ? 'bg-green-500/10 text-green-500 border-green-500' : 'bg-muted text-muted-foreground'}>{a.status}</Badge></td>
-                      <td className="p-3 flex gap-1">
-                        {a.phone && <Button size="sm" variant="ghost"><Phone className="h-3 w-3" /></Button>}
-                        {a.email && <Button size="sm" variant="ghost"><Mail className="h-3 w-3" /></Button>}
-                      </td>
-                    </tr>
-                  ))}
-                  {attorneys.length === 0 && <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No attorneys yet. Add your first partner!</td></tr>}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="recruiting" className="mt-4">
-          <SFRecruitingQueue />
-        </TabsContent>
-      </Tabs>
+      <Card>
+        <CardContent className="p-0 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-border">
+              <th className="p-3 text-left">Name</th>
+              <th className="p-3 text-left">Firm</th>
+              <th className="p-3 text-left">States</th>
+              <th className="p-3 text-left">Cases</th>
+              <th className="p-3 text-left">Win Rate</th>
+              <th className="p-3 text-left">Engagement</th>
+              <th className="p-3 text-left">Verification</th>
+              <th className="p-3 text-left">Status</th>
+              <th className="p-3 text-left">Contact</th>
+            </tr></thead>
+            <tbody>
+              {attorneys.map((a: any) => (
+                <tr key={a.id} className="border-b border-border/50 hover:bg-accent/30">
+                  <td className="p-3 font-medium">{a.name}</td>
+                  <td className="p-3">{a.firm || '—'}</td>
+                  <td className="p-3"><div className="flex flex-wrap gap-1">{(a.states ?? []).map((s: string) => <Badge key={s} variant="outline" className="text-xs">{s}</Badge>)}</div></td>
+                  <td className="p-3">{a.cases_total}</td>
+                  <td className="p-3">{a.cases_total > 0 ? Math.round((a.cases_won / a.cases_total) * 100) : 0}%</td>
+                  <td className="p-3 text-xs">
+                    <div>Retained by Dynasty</div>
+                    <div className="text-muted-foreground">{a.fee_arrangement ? a.fee_arrangement.replace(/_/g, ' ') : 'not set'}</div>
+                  </td>
+                  <td className="p-3">
+                    <Badge variant="outline" className={a.application_status === 'eligible' ? 'bg-green-500/10 text-green-500 border-green-500' : 'bg-amber-500/10 text-amber-500 border-amber-500'}>
+                      {(a.application_status || 'prospect').replace(/_/g, ' ')}
+                    </Badge>
+                  </td>
+                  <td className="p-3"><Badge variant="outline" className={a.status === 'active' ? 'bg-green-500/10 text-green-500 border-green-500' : 'bg-muted text-muted-foreground'}>{a.status}</Badge></td>
+                  <td className="p-3 flex gap-1">
+                    {a.phone && <Button size="sm" variant="ghost"><Phone className="h-3 w-3" /></Button>}
+                    {a.email && <Button size="sm" variant="ghost"><Mail className="h-3 w-3" /></Button>}
+                  </td>
+                </tr>
+              ))}
+              {attorneys.length === 0 && <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No attorneys yet. Add your first partner!</td></tr>}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
     </div>
-
   );
 }
