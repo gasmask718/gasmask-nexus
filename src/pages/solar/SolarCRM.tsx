@@ -254,7 +254,15 @@ export default function SolarCRM() {
                 </TableBody>
               </Table>
             </CardContent>
+            <DataTablePagination
+              currentPage={installerPage}
+              totalPages={installerTotalPages}
+              pageSize={PAGE_SIZE}
+              totalItems={filteredTotal}
+              onPageChange={setInstallerPage}
+            />
           </Card>
+
         </TabsContent>
 
         <TabsContent value="homeowners" className="space-y-4">
