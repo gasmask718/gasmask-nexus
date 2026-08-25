@@ -118,7 +118,7 @@ export function BsComplianceGateStatus() {
             <p className="text-xs text-muted-foreground">Top reason</p>
             <p className="text-sm font-semibold truncate">
               {Object.keys(byReason).length
-                ? REASON_LABELS[Object.entries(byReason).sort((a, b) => b[1] - a[1])[0][0]] ?? '—'
+                ? REASON_LABELS[(Object.entries(byReason) as [string, number][]).sort((a, b) => b[1] - a[1])[0][0]] ?? '—'
                 : '—'}
             </p>
           </div>
