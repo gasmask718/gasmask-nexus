@@ -643,6 +643,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-direct/d2c-storefront', label: '🛒 D2C Storefront', icon: ShoppingCart },
       { path: '/dynasty-direct/orders', label: '📋 Orders', icon: ClipboardList },
       { path: '/dynasty-direct/returns', label: '↩️ Returns / RMA', icon: ClipboardList },
+      { path: '/dynasty-direct/inr-claims', label: '📦 Not-Received Claims', icon: ClipboardList },
       { path: '/dynasty-direct/support', label: '💬 Support Tickets', icon: MessageCircle },
       { path: '/dynasty-direct/delivery', label: '🚗 Local Delivery', icon: Truck },
       { path: '/dynasty-direct/stores', label: '🏪 Store Accounts', icon: Store },

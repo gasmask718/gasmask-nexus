@@ -816,6 +816,7 @@ const DDAnalytics = lazy(() => import('@/pages/dynasty-direct/DDAnalytics'));
 const DDSettings = lazy(() => import('@/pages/dynasty-direct/DDSettings'));
 const DDReadiness = lazy(() => import('@/pages/dynasty-direct/DDReadiness'));
 const DDReturnsQueue = lazy(() => import('@/pages/dynasty-direct/DDReturnsQueue'));
+const DDInrQueue = lazy(() => import('@/pages/dynasty-direct/DDInrQueue'));
 const DDSupportTickets = lazy(() => import('@/pages/dynasty-direct/DDSupportTickets'));
 const DDCommissionRates = lazy(() => import('@/pages/dynasty-direct/DDCommissionRates'));
 const DDSupplierPerformance = lazy(() => import('@/pages/dynasty-direct/DDSupplierPerformance'));
@@ -2200,6 +2201,7 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/settings" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDSettings /></RequireRole>} />
         <Route path="/dynasty-direct/readiness" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDReadiness /></RequireRole>} />
         <Route path="/dynasty-direct/returns" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDReturnsQueue /></RequireRole>} />
+        <Route path="/dynasty-direct/inr-claims" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDInrQueue /></RequireRole>} />
         <Route path="/dynasty-direct/support" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDSupportTickets /></RequireRole>} />
         <Route path="/dynasty-direct/commission-rates" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDCommissionRates /></RequireRole>} />
         <Route path="/dynasty-direct/orders/:orderId" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDOrderDetail /></RequireRole>} />
