@@ -2,7 +2,7 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   BarChart3, FileText, Search, Phone, Briefcase, Scale, TrendingUp,
-  DollarSign, Bot, FileCheck, Users
+  DollarSign, Bot, FileCheck, Users, Map as MapIcon
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -27,7 +27,7 @@ const sfNavSections = [
       { path: '/surplus-funds/cases', label: 'Floor 3 — Case Management', icon: Briefcase },
       { path: '/surplus-funds/attorneys', label: 'Floor 4 — Attorney Network', icon: Scale },
       { path: '/surplus-funds/attorney-crm', label: 'Attorney CRM', icon: Users },
-      { path: '/surplus-funds/coverage-map', label: 'Attorney Coverage Map', icon: Map },
+      { path: '/surplus-funds/coverage-map', label: 'Attorney Coverage Map', icon: MapIcon },
       { path: '/surplus-funds/documents', label: 'Floor 5 — Documents', icon: FileCheck },
       { path: '/surplus-funds/contracts', label: 'Contracts', icon: FileCheck },
       { path: '/surplus-funds/human-queue', label: 'Human Queue', icon: Users },
