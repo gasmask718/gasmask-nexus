@@ -53,6 +53,12 @@ const solarNavSections = [
       { path: '/solar/analytics', label: 'Floor 10 — Analytics', icon: TrendingUp },
     ],
   },
+  {
+    title: 'CRM',
+    items: [
+      { path: '/solar/crm', label: 'CRM', icon: Users },
+    ],
+  },
 ];
 
 export default function SolarLayout() {

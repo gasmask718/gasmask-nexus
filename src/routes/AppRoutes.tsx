@@ -489,6 +489,7 @@ const SFDiscovery = lazy(() => import('@/pages/surplus-funds/SFDiscovery'));
 const SFCampaigns = lazy(() => import('@/pages/surplus-funds/SFCampaigns'));
 const SFCases = lazy(() => import('@/pages/surplus-funds/SFCases'));
 const SFAttorneys = lazy(() => import('@/pages/surplus-funds/SFAttorneys'));
+const SFAttorneyCRM = lazy(() => import('@/pages/surplus-funds/SFAttorneyCRM'));
 const SFDocuments = lazy(() => import('@/pages/surplus-funds/SFDocuments'));
 const SFContracts = lazy(() => import('@/pages/surplus-funds/SFContracts'));
 const SFAutomation = lazy(() => import('@/pages/surplus-funds/SFAutomation'));
@@ -500,6 +501,7 @@ const SFHumanQueue = lazy(() => import('@/pages/surplus-funds/SFHumanQueue').the
 const SolarLayout = lazy(() => import('@/pages/solar/SolarLayout'));
 const SolarCommandCenter = lazy(() => import('@/pages/solar/SolarCommandCenter'));
 const SolarLeadIntelligence = lazy(() => import('@/pages/solar/SolarLeadIntelligence'));
+const SolarCRM = lazy(() => import('@/pages/solar/SolarCRM'));
 
 const SolarOutreach = lazy(() => import('@/pages/solar/SolarOutreach'));
 const SolarQualification = lazy(() => import('@/pages/solar/SolarQualification'));
@@ -3800,6 +3802,7 @@ export default function AppRoutes() {
           <Route path="campaigns" element={<SFCampaigns />} />
           <Route path="cases" element={<SFCases />} />
           <Route path="attorneys" element={<SFAttorneys />} />
+          <Route path="attorney-crm" element={<SFAttorneyCRM />} />
           <Route path="documents" element={<SFDocuments />} />
           <Route path="contracts" element={<SFContracts />} />
           <Route path="automation" element={<SFAutomation />} />
@@ -3815,6 +3818,7 @@ export default function AppRoutes() {
         <Route path="/solar" element={<SolarLayout />}>
           <Route index element={<SolarCommandCenter />} />
           <Route path="leads" element={<SolarLeadIntelligence />} />
+          <Route path="crm" element={<SolarCRM />} />
           <Route path="outreach" element={<SolarOutreach />} />
           <Route path="qualification" element={<SolarQualification />} />
           <Route path="appointments" element={<SolarAppointments />} />
