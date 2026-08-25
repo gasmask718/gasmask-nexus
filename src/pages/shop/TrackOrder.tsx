@@ -121,6 +121,14 @@ export default function TrackOrder() {
                 No shipments yet — your supplier is preparing the order.
               </p>
             )}
+
+            {/* Something wrong with this order? — return + support, both proven
+                by the same order-id + checkout-email pair used above. */}
+            <div className="flex flex-wrap items-center gap-2 border-t pt-4">
+              <span className="text-muted-foreground">Something wrong with this order?</span>
+              <ReturnRequestDialog orderId={orderId.trim()} email={email.trim()} />
+            </div>
+            <OrderSupportLink orderId={orderId.trim()} email={email.trim()} />
           </CardContent>
         </Card>
       )}
