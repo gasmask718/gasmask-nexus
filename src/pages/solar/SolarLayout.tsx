@@ -27,7 +27,6 @@ const solarNavSections = [
     title: 'Acquisition',
     items: [
       { path: '/solar/leads', label: 'Floor 1 — Lead Intelligence', icon: Target },
-      { path: '/solar/crm', label: 'Floor 1 — CRM', icon: Users },
       { path: '/solar/outreach', label: 'Floor 2 — AI Outreach', icon: Phone },
       { path: '/solar/qualification', label: 'Floor 3 — Qualification', icon: Brain },
     ],
