@@ -83,10 +83,19 @@ export default function TopTierAllPartners() {
         partner.state === stateFilter || 
         (partner.service_area && partner.service_area.includes(stateFilter));
       const matchesCategory = categoryFilter === 'all' || partner.partner_category === categoryFilter;
+      const matchesSourced = sourcedCategoryFilter === 'all' || partner.category === sourcedCategoryFilter;
       const matchesStatus = statusFilter === 'all' || partner.contract_status === statusFilter;
-      return matchesSearch && matchesState && matchesCategory && matchesStatus;
+      const matchesStage = stageFilter === 'all' || (partner.stage || 'identified') === stageFilter;
+      const coverage = coverageSearch.trim().toLowerCase();
+      const matchesCoverage = coverage === '' ||
+        partner.coverage_areas?.toLowerCase().includes(coverage) ||
+        partner.city?.toLowerCase().includes(coverage) ||
+        partner.state?.toLowerCase().includes(coverage) ||
+        (partner.service_area || []).some((a: string) => a?.toLowerCase().includes(coverage));
+      return matchesSearch && matchesState && matchesCategory && matchesSourced &&
+        matchesStatus && matchesStage && matchesCoverage;
     });
-  }, [partners, searchTerm, stateFilter, categoryFilter, statusFilter]);
+  }, [partners, searchTerm, stateFilter, categoryFilter, sourcedCategoryFilter, statusFilter, stageFilter, coverageSearch]);
 
   // Stats
   const stats = useMemo(() => ({
@@ -95,6 +104,16 @@ export default function TopTierAllPartners() {
     pending: partners.filter((p: any) => p.contract_status === 'pending').length,
     inactive: partners.filter((p: any) => p.contract_status === 'inactive').length,
   }), [partners]);
+
+  // Stage pipeline counts (sourced supply pipeline)
+  const stageCounts = useMemo(() => {
+    const counts: Record<string, number> = Object.fromEntries(STAGES.map((s) => [s, 0]));
+    partners.forEach((p: any) => {
+      const s = p.stage || 'identified';
+      if (s in counts) counts[s] += 1;
+    });
+    return counts;
+  }, [partners]);
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
