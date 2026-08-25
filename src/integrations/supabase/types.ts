@@ -47428,6 +47428,8 @@ export type Database = {
           dynasty_return_address: Json | null
           grabba_bridge_enabled: boolean | null
           id: boolean
+          inr_no_scan_days: number
+          insurance_required_above: number
           inventory_sync_enabled: boolean | null
           low_stock_threshold: number | null
           loyalty_enabled: boolean
@@ -47444,6 +47446,7 @@ export type Database = {
           returns_auto_approve_fault: boolean
           returns_enabled: boolean
           rolling_reserve_enabled: boolean | null
+          signature_required_above: number
           split_pay_enabled: boolean | null
           store_portal_enabled: boolean | null
           updated_at: string
@@ -47459,6 +47462,8 @@ export type Database = {
           dynasty_return_address?: Json | null
           grabba_bridge_enabled?: boolean | null
           id?: boolean
+          inr_no_scan_days?: number
+          insurance_required_above?: number
           inventory_sync_enabled?: boolean | null
           low_stock_threshold?: number | null
           loyalty_enabled?: boolean
@@ -47475,6 +47480,7 @@ export type Database = {
           returns_auto_approve_fault?: boolean
           returns_enabled?: boolean
           rolling_reserve_enabled?: boolean | null
+          signature_required_above?: number
           split_pay_enabled?: boolean | null
           store_portal_enabled?: boolean | null
           updated_at?: string
@@ -47490,6 +47496,8 @@ export type Database = {
           dynasty_return_address?: Json | null
           grabba_bridge_enabled?: boolean | null
           id?: boolean
+          inr_no_scan_days?: number
+          insurance_required_above?: number
           inventory_sync_enabled?: boolean | null
           low_stock_threshold?: number | null
           loyalty_enabled?: boolean
@@ -47506,6 +47514,7 @@ export type Database = {
           returns_auto_approve_fault?: boolean
           returns_enabled?: boolean
           rolling_reserve_enabled?: boolean | null
+          signature_required_above?: number
           split_pay_enabled?: boolean | null
           store_portal_enabled?: boolean | null
           updated_at?: string
@@ -48031,6 +48040,7 @@ export type Database = {
           currency: string | null
           evidence_due_by: string | null
           id: string
+          inr_claim_id: string | null
           order_id: string | null
           reason: string | null
           resolved_at: string | null
@@ -48038,6 +48048,7 @@ export type Database = {
           stripe_charge_id: string | null
           stripe_dispute_id: string | null
           three_ds_authenticated: boolean | null
+          tracking_evidence: Json | null
           updated_at: string
         }
         Insert: {
@@ -48046,6 +48057,7 @@ export type Database = {
           currency?: string | null
           evidence_due_by?: string | null
           id?: string
+          inr_claim_id?: string | null
           order_id?: string | null
           reason?: string | null
           resolved_at?: string | null
@@ -48053,6 +48065,7 @@ export type Database = {
           stripe_charge_id?: string | null
           stripe_dispute_id?: string | null
           three_ds_authenticated?: boolean | null
+          tracking_evidence?: Json | null
           updated_at?: string
         }
         Update: {
@@ -48061,6 +48074,7 @@ export type Database = {
           currency?: string | null
           evidence_due_by?: string | null
           id?: string
+          inr_claim_id?: string | null
           order_id?: string | null
           reason?: string | null
           resolved_at?: string | null
@@ -48068,6 +48082,7 @@ export type Database = {
           stripe_charge_id?: string | null
           stripe_dispute_id?: string | null
           three_ds_authenticated?: boolean | null
+          tracking_evidence?: Json | null
           updated_at?: string
         }
         Relationships: [
@@ -48290,6 +48305,206 @@ export type Database = {
           supplier_notified_at?: string | null
           synced_at?: string | null
           updated_at?: string | null
+          wholesaler_id?: string | null
+        }
+        Relationships: []
+      }
+      dd_inr_carrier_claims: {
+        Row: {
+          amount_claimed_cents: number
+          amount_recovered_cents: number
+          carrier: string | null
+          claim_reference: string | null
+          created_at: string
+          declared_value_cents: number
+          filed_by: string | null
+          id: string
+          inr_claim_id: string
+          insurance_purchased: boolean
+          notes: string | null
+          order_id: string | null
+          shipment_id: string | null
+          status: string
+          tracking_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_claimed_cents?: number
+          amount_recovered_cents?: number
+          carrier?: string | null
+          claim_reference?: string | null
+          created_at?: string
+          declared_value_cents?: number
+          filed_by?: string | null
+          id?: string
+          inr_claim_id: string
+          insurance_purchased?: boolean
+          notes?: string | null
+          order_id?: string | null
+          shipment_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_claimed_cents?: number
+          amount_recovered_cents?: number
+          carrier?: string | null
+          claim_reference?: string | null
+          created_at?: string
+          declared_value_cents?: number
+          filed_by?: string | null
+          id?: string
+          inr_claim_id?: string
+          insurance_purchased?: boolean
+          notes?: string | null
+          order_id?: string | null
+          shipment_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_inr_carrier_claims_inr_claim_id_fkey"
+            columns: ["inr_claim_id"]
+            isOneToOne: false
+            referencedRelation: "dd_inr_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dd_inr_claims: {
+        Row: {
+          address_mismatch: boolean
+          address_mismatch_detail: Json | null
+          admin_notes: string | null
+          carrier: string | null
+          checked_notes: string | null
+          checked_with_neighbours: boolean
+          chosen_path: string | null
+          claim_number: string
+          clawback_id: string | null
+          created_at: string
+          customer_email: string
+          customer_note: string | null
+          customer_stated_address: Json | null
+          declined_reason: string | null
+          evidence_gathered_at: string | null
+          expected_delivery_date: string | null
+          fault_party: string
+          id: string
+          order_id: string
+          order_total_cents: number
+          recommended_path: string
+          refund_amount_cents: number | null
+          reship_order_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          shipment_id: string | null
+          signature_on_file: boolean
+          split_reversal_id: string | null
+          status: string
+          stripe_refund_id: string | null
+          tracking_delivered_at: string | null
+          tracking_fetch_error: string | null
+          tracking_history: Json
+          tracking_last_scan_at: string | null
+          tracking_last_scan_location: string | null
+          tracking_number: string | null
+          tracking_raw: Json | null
+          tracking_status: string | null
+          updated_at: string
+          user_id: string | null
+          verdict: string
+          wholesaler_id: string | null
+        }
+        Insert: {
+          address_mismatch?: boolean
+          address_mismatch_detail?: Json | null
+          admin_notes?: string | null
+          carrier?: string | null
+          checked_notes?: string | null
+          checked_with_neighbours?: boolean
+          chosen_path?: string | null
+          claim_number?: string
+          clawback_id?: string | null
+          created_at?: string
+          customer_email: string
+          customer_note?: string | null
+          customer_stated_address?: Json | null
+          declined_reason?: string | null
+          evidence_gathered_at?: string | null
+          expected_delivery_date?: string | null
+          fault_party?: string
+          id?: string
+          order_id: string
+          order_total_cents?: number
+          recommended_path?: string
+          refund_amount_cents?: number | null
+          reship_order_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          shipment_id?: string | null
+          signature_on_file?: boolean
+          split_reversal_id?: string | null
+          status?: string
+          stripe_refund_id?: string | null
+          tracking_delivered_at?: string | null
+          tracking_fetch_error?: string | null
+          tracking_history?: Json
+          tracking_last_scan_at?: string | null
+          tracking_last_scan_location?: string | null
+          tracking_number?: string | null
+          tracking_raw?: Json | null
+          tracking_status?: string | null
+          updated_at?: string
+          user_id?: string | null
+          verdict?: string
+          wholesaler_id?: string | null
+        }
+        Update: {
+          address_mismatch?: boolean
+          address_mismatch_detail?: Json | null
+          admin_notes?: string | null
+          carrier?: string | null
+          checked_notes?: string | null
+          checked_with_neighbours?: boolean
+          chosen_path?: string | null
+          claim_number?: string
+          clawback_id?: string | null
+          created_at?: string
+          customer_email?: string
+          customer_note?: string | null
+          customer_stated_address?: Json | null
+          declined_reason?: string | null
+          evidence_gathered_at?: string | null
+          expected_delivery_date?: string | null
+          fault_party?: string
+          id?: string
+          order_id?: string
+          order_total_cents?: number
+          recommended_path?: string
+          refund_amount_cents?: number | null
+          reship_order_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          shipment_id?: string | null
+          signature_on_file?: boolean
+          split_reversal_id?: string | null
+          status?: string
+          stripe_refund_id?: string | null
+          tracking_delivered_at?: string | null
+          tracking_fetch_error?: string | null
+          tracking_history?: Json
+          tracking_last_scan_at?: string | null
+          tracking_last_scan_location?: string | null
+          tracking_number?: string | null
+          tracking_raw?: Json | null
+          tracking_status?: string | null
+          updated_at?: string
+          user_id?: string | null
+          verdict?: string
           wholesaler_id?: string | null
         }
         Relationships: []
@@ -50060,6 +50275,7 @@ export type Database = {
           carrier_adjustment_detail: Json | null
           carrier_billed_weight_oz: number | null
           created_at: string | null
+          declared_value: number | null
           dim_weight_oz: number | null
           dimension_variance_flag: boolean
           easypost_shipment_id: string | null
@@ -50067,16 +50283,20 @@ export type Database = {
           from_address: Json | null
           height_in: number | null
           id: string
+          insured_amount: number | null
           label_pdf_url: string | null
           label_status: string
           label_url: string | null
           length_in: number | null
           order_id: string | null
           packing_result: Json | null
+          protection_note: string | null
           rate_selected: number | null
           rated_weight_oz: number | null
           rates_compared: Json | null
           service_level: string | null
+          signature_confirmation: string | null
+          signature_required: boolean
           status: string | null
           store_id: string | null
           to_address: Json | null
@@ -50098,6 +50318,7 @@ export type Database = {
           carrier_adjustment_detail?: Json | null
           carrier_billed_weight_oz?: number | null
           created_at?: string | null
+          declared_value?: number | null
           dim_weight_oz?: number | null
           dimension_variance_flag?: boolean
           easypost_shipment_id?: string | null
@@ -50105,16 +50326,20 @@ export type Database = {
           from_address?: Json | null
           height_in?: number | null
           id?: string
+          insured_amount?: number | null
           label_pdf_url?: string | null
           label_status?: string
           label_url?: string | null
           length_in?: number | null
           order_id?: string | null
           packing_result?: Json | null
+          protection_note?: string | null
           rate_selected?: number | null
           rated_weight_oz?: number | null
           rates_compared?: Json | null
           service_level?: string | null
+          signature_confirmation?: string | null
+          signature_required?: boolean
           status?: string | null
           store_id?: string | null
           to_address?: Json | null
@@ -50136,6 +50361,7 @@ export type Database = {
           carrier_adjustment_detail?: Json | null
           carrier_billed_weight_oz?: number | null
           created_at?: string | null
+          declared_value?: number | null
           dim_weight_oz?: number | null
           dimension_variance_flag?: boolean
           easypost_shipment_id?: string | null
@@ -50143,16 +50369,20 @@ export type Database = {
           from_address?: Json | null
           height_in?: number | null
           id?: string
+          insured_amount?: number | null
           label_pdf_url?: string | null
           label_status?: string
           label_url?: string | null
           length_in?: number | null
           order_id?: string | null
           packing_result?: Json | null
+          protection_note?: string | null
           rate_selected?: number | null
           rated_weight_oz?: number | null
           rates_compared?: Json | null
           service_level?: string | null
+          signature_confirmation?: string | null
+          signature_required?: boolean
           status?: string | null
           store_id?: string | null
           to_address?: Json | null
@@ -50725,8 +50955,10 @@ export type Database = {
           calculated_at: string | null
           dimension_adjustment_amount: number
           dimension_adjustments: number
+          fulfillment_errors: number
           fulfillment_rate: number | null
           id: string
+          inr_claims_total: number
           issue_count: number | null
           on_time_rate: number | null
           orders_cancelled: number | null
@@ -50747,8 +50979,10 @@ export type Database = {
           calculated_at?: string | null
           dimension_adjustment_amount?: number
           dimension_adjustments?: number
+          fulfillment_errors?: number
           fulfillment_rate?: number | null
           id?: string
+          inr_claims_total?: number
           issue_count?: number | null
           on_time_rate?: number | null
           orders_cancelled?: number | null
@@ -50769,8 +51003,10 @@ export type Database = {
           calculated_at?: string | null
           dimension_adjustment_amount?: number
           dimension_adjustments?: number
+          fulfillment_errors?: number
           fulfillment_rate?: number | null
           id?: string
+          inr_claims_total?: number
           issue_count?: number | null
           on_time_rate?: number | null
           orders_cancelled?: number | null
@@ -149809,6 +150045,18 @@ export type Database = {
             referencedColumns: ["store_id"]
           },
         ]
+      }
+      v_dd_inr_customer_risk: {
+        Row: {
+          claims_marked_delivered: number | null
+          claims_refunded: number | null
+          claims_total: number | null
+          customer_email: string | null
+          distinct_zips: number | null
+          last_claim_at: string | null
+          refunded_cents: number | null
+        }
+        Relationships: []
       }
       v_dialer_latest_run: {
         Row: {

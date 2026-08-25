@@ -192,6 +192,40 @@ Deno.serve(async (req) => {
     // Sum billable weight across all boxes for a quick shipment-level number stored on row
     const totalBillableOz = packing.boxes.reduce((s: number, b: any) => s + Number(b.billable_weight_oz || 0), 0);
 
+    // ── Loss protection thresholds ────────────────────────────────────────
+    // Without a signature you generally LOSE an item-not-received chargeback on
+    // a card-not-present order; with one you usually win. Both thresholds live
+    // in dd_config so the owner can move them without a deploy.
+    const { data: protCfg } = await supabase
+      .from('dd_config')
+      .select('signature_required_above, insurance_required_above')
+      .limit(1)
+      .maybeSingle();
+    const sigAbove = Number((protCfg as any)?.signature_required_above ?? 75);
+    const insAbove = Number((protCfg as any)?.insurance_required_above ?? 100);
+
+    let orderValue = Number(body.declared_value ?? 0);
+    if (!orderValue) {
+      const { data: ordRow } = await supabase
+        .from('marketplace_orders')
+        .select('total')
+        .eq('id', body.order_id)
+        .maybeSingle();
+      orderValue = Number((ordRow as any)?.total ?? 0);
+    }
+
+    const needsSignature = sigAbove > 0 && orderValue > sigAbove;
+    const needsInsurance = insAbove > 0 && orderValue > insAbove;
+    const protectionNote = [
+      needsSignature
+        ? `Signature confirmation bought — order value $${orderValue.toFixed(2)} is above the $${sigAbove.toFixed(2)} threshold.`
+        : `No signature — order value $${orderValue.toFixed(2)} is at or below the $${sigAbove.toFixed(2)} threshold. An INR chargeback on this parcel would likely be lost.`,
+      needsInsurance
+        ? `Insured for $${orderValue.toFixed(2)} — above the $${insAbove.toFixed(2)} free declared-value cover.`
+        : `Not separately insured — relying on the carrier's included declared value.`,
+    ].join(' ');
+
+
     if (!easypostKey) {
       // DEMO MODE — no key configured
       const demoRates = packing.boxes.flatMap((b: any) => [
@@ -281,8 +315,13 @@ Deno.serve(async (req) => {
             height: Number(box.dimensions.height_in),
             weight: Number(box.billable_weight_oz), // ounces
           },
+          ...(needsSignature
+            ? { options: { delivery_confirmation: 'SIGNATURE' } }
+            : {}),
+          ...(needsInsurance ? { insurance: orderValue.toFixed(2) } : {}),
         },
       };
+
 
       const rateRes = await fetch('https://api.easypost.com/v2/shipments', {
         method: 'POST',
@@ -355,6 +394,12 @@ Deno.serve(async (req) => {
           packing_result: { ...packing, this_box: box },
           box_count: 1,
           label_status: 'purchased',
+          signature_required: needsSignature,
+          signature_confirmation: needsSignature ? 'SIGNATURE' : null,
+          insured_amount: needsInsurance ? orderValue : null,
+          declared_value: orderValue || null,
+          protection_note: protectionNote,
+
           box_id: box.box_id,
           box_name: box.box_name,
           rated_weight_oz: box.actual_weight_oz,

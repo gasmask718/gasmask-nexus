@@ -632,6 +632,27 @@ async function handleDisputeCreated(stripe: Stripe, supabase: any, dispute: Stri
         (charge.payment_method_details as any)?.card?.three_d_secure?.authenticated ?? false;
     }
 
+    // If this charge already has an item-not-received claim, carry the carrier
+    // evidence we gathered at intake onto the dispute. Weeks later, when the
+    // evidence is due, the admin should not be hunting for tracking history.
+    let inrClaimId: string | null = null;
+    let trackingEvidence: unknown = null;
+    if (orderId) {
+      const { data: inr } = await supabase
+        .from("dd_inr_claims")
+        .select(
+          "id, claim_number, tracking_number, carrier, tracking_status, tracking_delivered_at, tracking_last_scan_location, tracking_history, signature_on_file, verdict, recommended_path",
+        )
+        .eq("order_id", orderId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (inr) {
+        inrClaimId = (inr as any).id;
+        trackingEvidence = inr;
+      }
+    }
+
     await supabase.from("dd_disputes").insert({
       order_id: orderId,
       stripe_dispute_id: dispute.id,
@@ -644,7 +665,10 @@ async function handleDisputeCreated(stripe: Stripe, supabase: any, dispute: Stri
         ? new Date(dispute.evidence_details.due_by * 1000).toISOString()
         : null,
       three_ds_authenticated: threeDS,
+      inr_claim_id: inrClaimId,
+      tracking_evidence: trackingEvidence,
     });
+
 
     const ref = orderId ? String(orderId).slice(0, 8) : "unknown";
     const amount = ((dispute.amount ?? 0) / 100).toFixed(2);
