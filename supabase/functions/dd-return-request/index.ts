@@ -10,7 +10,11 @@
 // here. It is resolved from dd_config + dd_wholesaler_return_settings so the
 // owner can change it without a deploy.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 const FAULT_REASONS = new Set([
   "wrong_item",
