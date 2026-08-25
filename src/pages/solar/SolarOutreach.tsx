@@ -219,7 +219,11 @@ export default function SolarOutreach() {
         ))}
       </div>
 
+      {/* BrightSun-only outbound compliance gate (not Grabba's switchboard) */}
+      <BsComplianceGateStatus />
+
       <Tabs defaultValue="outreach">
+
         <TabsList>
           <TabsTrigger value="outreach"><Phone className="h-4 w-4 mr-1" /> Lead Queue</TabsTrigger>
           <TabsTrigger value="contacts">
