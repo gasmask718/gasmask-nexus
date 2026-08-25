@@ -127,6 +127,14 @@ export default function TrackOrder() {
             <div className="flex flex-wrap items-center gap-2 border-t pt-4">
               <span className="text-muted-foreground">Something wrong with this order?</span>
               <ReturnRequestDialog orderId={orderId.trim()} email={email.trim()} />
+              {/* "I got it and want to send it back" and "I never got it" are
+                  different claims with different evidence — separate paths. */}
+              <InrClaimDialog
+                orderId={orderId.trim()}
+                email={email.trim()}
+                shippingAddress={result.shipping_address ?? null}
+              />
+
             </div>
             <OrderSupportLink orderId={orderId.trim()} email={email.trim()} />
           </CardContent>
