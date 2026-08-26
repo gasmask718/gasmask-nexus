@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Lock, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Lock, ShieldCheck, AlertTriangle, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DynastyDirectCatalogOnboard from '@/pages/dynasty-direct/DynastyDirectCatalogOnboard';
+import { QuickAddCamera } from '@/components/dynasty-direct/QuickAddCamera';
 
 /**
  * Wholesaler self-serve catalog onboarding (Phase 2).
@@ -19,6 +21,8 @@ export default function WholesalerCatalogOnboard() {
   const [supplier, setSupplier] = useState<{ id: string; name: string } | null>(null);
   const [resolving, setResolving] = useState(true);
   const [resolveError, setResolveError] = useState<string | null>(null);
+  const [advanced, setAdvanced] = useState(false);
+
 
   useEffect(() => {
     (async () => {
@@ -93,21 +97,32 @@ export default function WholesalerCatalogOnboard() {
     );
   }
 
+  if (advanced) {
+    return (
+      <div>
+        <div className="flex items-center justify-between px-4 pt-4">
+          <Button variant="ghost" size="sm" onClick={() => setAdvanced(false)}>
+            <Camera className="h-4 w-4 mr-2" /> Back to camera
+          </Button>
+        </div>
+        <DynastyDirectCatalogOnboard
+          lockedSupplierId={supplier.id}
+          lockedSupplierName={supplier.name}
+          submitForReviewMode
+        />
+      </div>
+    );
+  }
+
   return (
     <div>
-      <Alert className="m-4">
-        <ShieldCheck className="h-4 w-4" />
-        <AlertTitle>Submissions are reviewed before going live</AlertTitle>
-        <AlertDescription>
-          Your draft is auto-attached to <strong>{supplier.name}</strong> and sent to Dynasty
-          Direct's admin queue for the exactness gate. You'll be notified when it's published.
-        </AlertDescription>
-      </Alert>
-      <DynastyDirectCatalogOnboard
-        lockedSupplierId={supplier.id}
-        lockedSupplierName={supplier.name}
-        submitForReviewMode
-      />
+      <QuickAddCamera supplierId={supplier.id} supplierName={supplier.name} />
+      <div className="pb-8 text-center">
+        <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setAdvanced(true)}>
+          Use the full form instead
+        </Button>
+      </div>
     </div>
   );
 }
+
