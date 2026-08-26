@@ -422,7 +422,7 @@ Deno.serve(async (req) => {
 
   await maybeEscalate(client, checks ?? [], results, monitoringConfig);
 
-  const counts = { pass: 0, warn: 0, fail: 0 };
-  for (const r of results) counts[r.status]++;
+  const counts = { pass: 0, warn: 0, fail: 0, paused: 0 };
+  for (const r of results) counts[r.status as keyof typeof counts]++;
   return new Response(JSON.stringify({ ran: results.length, counts, results }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 });
