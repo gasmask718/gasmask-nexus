@@ -46707,6 +46707,7 @@ export type Database = {
       }
       dd_affiliates: {
         Row: {
+          ambassador_id: string | null
           approved_at: string | null
           clicks: number
           code: string
@@ -46727,6 +46728,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          ambassador_id?: string | null
           approved_at?: string | null
           clicks?: number
           code: string
@@ -46747,6 +46749,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          ambassador_id?: string | null
           approved_at?: string | null
           clicks?: number
           code?: string
@@ -46766,7 +46769,43 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dd_affiliates_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_affiliates_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_affiliates_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_affiliates_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_affiliates_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_referral_tree"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dd_ai_config: {
         Row: {
@@ -155472,6 +155511,10 @@ export type Database = {
           success: boolean
         }[]
       }
+      admin_hold_dd_commissions: {
+        Args: { p_ids: string[]; p_reason?: string }
+        Returns: number
+      }
       admin_pickup_dispute: {
         Args: { p_dispute_id: string }
         Returns: undefined
@@ -155479,6 +155522,10 @@ export type Database = {
       admin_reject_dispute: {
         Args: { p_dispute_id: string; p_resolution_summary?: string }
         Returns: undefined
+      }
+      admin_release_dd_commissions: {
+        Args: { p_ids: string[] }
+        Returns: number
       }
       admin_request_info: {
         Args: { p_dispute_id: string; p_message: string }
@@ -156382,6 +156429,15 @@ export type Database = {
       dd_earn_loyalty_points: {
         Args: { p_order_id: string; p_order_total: number; p_user_id: string }
         Returns: undefined
+      }
+      dd_ensure_ambassador_affiliate: {
+        Args: never
+        Returns: {
+          affiliate_id: string
+          code: string
+          commission_rate: number
+          status: string
+        }[]
       }
       dd_flag_unshipped_commissions: {
         Args: { p_hours?: number }
