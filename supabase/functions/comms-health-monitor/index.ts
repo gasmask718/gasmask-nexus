@@ -1139,12 +1139,11 @@ async function checkFeatureModes(): Promise<Result[]> {
 // ────────────────────────────────────────────────────────────────────────────
 // ALERT SINK
 // Detection existed; notification did not. Every `fail` result is escalated
-// to Slack and/or SMS, deduped per (layer:target) for ALERT_DEDUPE_HOURS.
+// to the canonical ops sink and optional Slack, deduped by persistent incident state.
 //
 // Optional Slack remains separate; SMS uses only the canonical ops sender.
 // Alert state lives in public.comms_health_alerts.
 // ────────────────────────────────────────────────────────────────────────────
-const ALERT_DEDUPE_HOURS = parseFloat(Deno.env.get("COMMS_ALERT_DEDUPE_HOURS") || "6");
 const SLACK_WEBHOOK = Deno.env.get("COMMS_ALERT_SLACK_WEBHOOK") || "";
 
 type MonitoringConfig = {
