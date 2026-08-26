@@ -12169,6 +12169,9 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           email: string | null
+          funding_client_id: string | null
+          funding_qualified: boolean | null
+          funding_qualified_at: string | null
           id: string
           is_active: boolean
           is_simulation: boolean | null
@@ -12200,6 +12203,9 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           email?: string | null
+          funding_client_id?: string | null
+          funding_qualified?: boolean | null
+          funding_qualified_at?: string | null
           id?: string
           is_active?: boolean
           is_simulation?: boolean | null
@@ -12231,6 +12237,9 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           email?: string | null
+          funding_client_id?: string | null
+          funding_qualified?: boolean | null
+          funding_qualified_at?: string | null
           id?: string
           is_active?: boolean
           is_simulation?: boolean | null
@@ -12253,6 +12262,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ambassadors_funding_client_id_fkey"
+            columns: ["funding_client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ambassadors_recruited_by_ambassador_id_fkey"
             columns: ["recruited_by_ambassador_id"]
@@ -52542,6 +52558,7 @@ export type Database = {
           dispute_reason: string | null
           email: string | null
           full_name: string
+          funding_client_id: string | null
           generated_at: string | null
           generated_letter: string | null
           id: string
@@ -52573,6 +52590,7 @@ export type Database = {
           dispute_reason?: string | null
           email?: string | null
           full_name: string
+          funding_client_id?: string | null
           generated_at?: string | null
           generated_letter?: string | null
           id?: string
@@ -52604,6 +52622,7 @@ export type Database = {
           dispute_reason?: string | null
           email?: string | null
           full_name?: string
+          funding_client_id?: string | null
           generated_at?: string | null
           generated_letter?: string | null
           id?: string
@@ -52617,7 +52636,15 @@ export type Database = {
           updated_at?: string
           zip?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "deletion_letter_recipients_funding_client_id_fkey"
+            columns: ["funding_client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deletion_recovery_log: {
         Row: {
@@ -65736,6 +65763,7 @@ export type Database = {
           address: string | null
           ai_analysis_date: string | null
           ai_last_analysis: string | null
+          ambassador_id: string | null
           assigned_advisor: string | null
           assigned_operator: string | null
           business_name: string | null
@@ -65797,6 +65825,7 @@ export type Database = {
           address?: string | null
           ai_analysis_date?: string | null
           ai_last_analysis?: string | null
+          ambassador_id?: string | null
           assigned_advisor?: string | null
           assigned_operator?: string | null
           business_name?: string | null
@@ -65858,6 +65887,7 @@ export type Database = {
           address?: string | null
           ai_analysis_date?: string | null
           ai_last_analysis?: string | null
+          ambassador_id?: string | null
           assigned_advisor?: string | null
           assigned_operator?: string | null
           business_name?: string | null
@@ -65915,7 +65945,43 @@ export type Database = {
           women_owned?: boolean | null
           zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "funding_clients_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "funding_clients_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "funding_clients_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_clients_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "funding_clients_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_referral_tree"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       funding_credit_items: {
         Row: {
@@ -158145,6 +158211,10 @@ export type Database = {
         Returns: Json
       }
       revoke_va_invite: { Args: { p_invite_id: string }; Returns: Json }
+      route_ambassador_to_funding: {
+        Args: { p_ambassador_id: string }
+        Returns: string
+      }
       route_order_to_supplier: { Args: { p_order_id: string }; Returns: Json }
       sbo_evaluate_clamp_gates: {
         Args: { p_days?: number; p_sport: string }
