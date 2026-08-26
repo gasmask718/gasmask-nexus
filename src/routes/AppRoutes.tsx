@@ -1036,7 +1036,7 @@ const UnforgettableInfluencers = lazy(() => import('@/pages/crm/unforgettable').
 const UnforgettableMediaVault = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableMediaVault })));
 const UnforgettablePartySuppliers = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettablePartySuppliers })));
 const UnforgettableGifts = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableGifts })));
-const UnforgettablePartnerLeads = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettablePartnerLeads })));
+const UnforgettableCRMDashboard = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableCRMDashboard })));
 
 // Other OS modules
 const ICleanDashboard = lazy(() => import('@/pages/os/iclean/ICleanDashboard'));
@@ -2301,7 +2301,7 @@ export default function AppRoutes() {
         <Route path="/crm/unforgettable_times_usa/media" element={<UnforgettableMediaVault />} />
         <Route path="/crm/unforgettable_times_usa/party-suppliers" element={<UnforgettablePartySuppliers />} />
         <Route path="/crm/unforgettable_times_usa/gifts" element={<UnforgettableGifts />} />
-        <Route path="/crm/unforgettable_times_usa/partner-leads" element={<UnforgettablePartnerLeads />} />
+        <Route path="/crm/unforgettable_times_usa/partner-leads" element={<UnforgettableCRMDashboard />} />
         <Route path="/os/iclean" element={<ICleanDashboard />} />
         <Route path="/os/playboxxx" element={<PlayboxxxDashboard />} />
         <Route path="/os/special-needs" element={<SpecialNeedsDashboard />} />

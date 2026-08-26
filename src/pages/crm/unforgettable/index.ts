@@ -5,4 +5,4 @@ export { default as UnforgettableInfluencers } from './UnforgettableInfluencers'
 export { default as UnforgettableMediaVault } from './UnforgettableMediaVault';
 export { default as UnforgettablePartySuppliers } from './UnforgettablePartySuppliers';
 export { default as UnforgettableGifts } from './UnforgettableGifts';
-export { default as UnforgettablePartnerLeads } from './UnforgettablePartnerLeads';
+export { default as UnforgettableCRMDashboard } from './UnforgettableCRMDashboard';
