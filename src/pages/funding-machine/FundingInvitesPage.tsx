@@ -218,7 +218,6 @@ export default function FundingInvitesPage() {
               {route.isPending ? 'Sending…' : 'Confirm invite'}
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
