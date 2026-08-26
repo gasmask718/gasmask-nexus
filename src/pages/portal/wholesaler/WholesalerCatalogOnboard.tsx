@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Lock, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Lock, ShieldCheck, AlertTriangle, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DynastyDirectCatalogOnboard from '@/pages/dynasty-direct/DynastyDirectCatalogOnboard';
+import { QuickAddCamera } from '@/components/dynasty-direct/QuickAddCamera';
 
 /**
  * Wholesaler self-serve catalog onboarding (Phase 2).
