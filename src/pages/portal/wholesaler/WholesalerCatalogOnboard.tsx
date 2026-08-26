@@ -93,21 +93,32 @@ export default function WholesalerCatalogOnboard() {
     );
   }
 
+  if (advanced) {
+    return (
+      <div>
+        <div className="flex items-center justify-between px-4 pt-4">
+          <Button variant="ghost" size="sm" onClick={() => setAdvanced(false)}>
+            <Camera className="h-4 w-4 mr-2" /> Back to camera
+          </Button>
+        </div>
+        <DynastyDirectCatalogOnboard
+          lockedSupplierId={supplier.id}
+          lockedSupplierName={supplier.name}
+          submitForReviewMode
+        />
+      </div>
+    );
+  }
+
   return (
     <div>
-      <Alert className="m-4">
-        <ShieldCheck className="h-4 w-4" />
-        <AlertTitle>Submissions are reviewed before going live</AlertTitle>
-        <AlertDescription>
-          Your draft is auto-attached to <strong>{supplier.name}</strong> and sent to Dynasty
-          Direct's admin queue for the exactness gate. You'll be notified when it's published.
-        </AlertDescription>
-      </Alert>
-      <DynastyDirectCatalogOnboard
-        lockedSupplierId={supplier.id}
-        lockedSupplierName={supplier.name}
-        submitForReviewMode
-      />
+      <QuickAddCamera supplierId={supplier.id} supplierName={supplier.name} />
+      <div className="pb-8 text-center">
+        <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setAdvanced(true)}>
+          Use the full form instead
+        </Button>
+      </div>
     </div>
   );
 }
+
