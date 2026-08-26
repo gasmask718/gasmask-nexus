@@ -96,14 +96,17 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
 
   // ── Download Template ─────────────────────────────────
   const downloadTemplate = () => {
-    const headers = ['product_name', 'description', 'category', 'subcategory', 'price', 'image_url'];
+    const headers = [
+      'product_name', 'description', 'category', 'subcategory', 'sku',
+      'supplier_cost', 'inventory_qty', 'weight_oz', 'length_in', 'width_in', 'height_in', 'image_url',
+    ];
     const sampleRows = [
-      ['Premium Cotton T-Shirt', 'High-quality 100% cotton crew neck tee', 'Apparel', 'Tops', '24.99', 'https://example.com/image1.jpg'],
-      ['Wireless Bluetooth Earbuds', 'Noise-cancelling earbuds with 24h battery', 'Electronics', 'Audio', '49.99', 'https://example.com/image2.jpg'],
-      ['Leather Crossbody Bag', 'Genuine leather bag with adjustable strap', 'Accessories', 'Bags', '89.99', ''],
+      ['Premium Cotton T-Shirt', 'High-quality 100% cotton crew neck tee', 'Apparel', 'Tops', 'TEE-BLK-M', '6.50', '120', '7', '10', '8', '1.5', 'https://example.com/image1.jpg'],
+      ['Wireless Bluetooth Earbuds', 'Noise-cancelling earbuds with 24h battery', 'Electronics', 'Audio', 'EAR-BT-01', '14.00', '60', '5.5', '4', '3', '2', 'https://example.com/image2.jpg'],
+      ['Leather Crossbody Bag', 'Genuine leather bag with adjustable strap', 'Accessories', 'Bags', 'BAG-LTH-BR', '28.75', '25', '22', '12', '9', '4', ''],
     ];
     const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
-    ws['!cols'] = [{ wch: 28 }, { wch: 45 }, { wch: 16 }, { wch: 16 }, { wch: 10 }, { wch: 40 }];
+    ws['!cols'] = [{ wch: 28 }, { wch: 45 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 13 }, { wch: 13 }, { wch: 11 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 40 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Products');
     XLSX.writeFile(wb, 'bulk_upload_template.xlsx');
@@ -111,6 +114,24 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
   };
 
   // ── Upload Handlers ──────────────────────────────────
+  const mapRow = (raw: Record<string, string>, idx: number): RawProduct => ({
+    id: `raw-${idx}-${Date.now()}`,
+    product_name: raw['product_name'] || raw['name'] || raw['title'] || raw['Product Name'] || raw['Name'] || `Item ${idx + 1}`,
+    description: raw['description'] || raw['desc'] || raw['Description'] || '',
+    category: raw['category'] || raw['Category'] || '',
+    subcategory: raw['subcategory'] || raw['Subcategory'] || '',
+    price: num(raw['price'] ?? raw['Price'] ?? raw['retail_price']),
+    images: (raw['images'] || raw['image'] || raw['image_url'] || raw['Image'] || '').toString().split(';').filter(Boolean),
+    sku: (raw['sku'] || raw['SKU'] || raw['upc'] || '').toString().trim(),
+    inventory_qty: num(raw['inventory_qty'] ?? raw['inventory'] ?? raw['qty'] ?? raw['quantity']),
+    supplier_cost: num(raw['supplier_cost'] ?? raw['cost'] ?? raw['your_price'] ?? raw['Cost']),
+    weight_oz: num(raw['weight_oz'] ?? raw['weight'] ?? raw['Weight']),
+    length_in: num(raw['length_in'] ?? raw['length']),
+    width_in: num(raw['width_in'] ?? raw['width']),
+    height_in: num(raw['height_in'] ?? raw['height']),
+    raw_data: raw,
+  });
+
   const parseCSV = (text: string): RawProduct[] => {
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
@@ -119,16 +140,7 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
       const vals = line.split(',').map(v => v.trim().replace(/"/g, ''));
       const raw: Record<string, string> = {};
       headers.forEach((h, i) => { raw[h] = vals[i] || ''; });
-      return {
-        id: `raw-${idx}-${Date.now()}`,
-        product_name: raw['product_name'] || raw['name'] || raw['title'] || raw['Product Name'] || raw['Name'] || `Item ${idx + 1}`,
-        description: raw['description'] || raw['desc'] || raw['Description'] || '',
-        category: raw['category'] || raw['Category'] || '',
-        subcategory: raw['subcategory'] || raw['Subcategory'] || '',
-        price: parseFloat(raw['price'] || raw['Price'] || raw['retail_price'] || '0') || null,
-        images: (raw['images'] || raw['image'] || raw['Image'] || '').split(';').filter(Boolean),
-        raw_data: raw,
-      };
+      return mapRow(raw, idx);
     });
   };
 
@@ -156,16 +168,7 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' });
         setParseProgress(80);
-        const items: RawProduct[] = json.map((row, idx) => ({
-          id: `raw-${idx}-${Date.now()}`,
-          product_name: row['product_name'] || row['name'] || row['title'] || row['Product Name'] || row['Name'] || `Item ${idx + 1}`,
-          description: row['description'] || row['desc'] || row['Description'] || '',
-          category: row['category'] || row['Category'] || '',
-          subcategory: row['subcategory'] || row['Subcategory'] || '',
-          price: parseFloat(row['price'] || row['Price'] || row['retail_price'] || '0') || null,
-          images: (row['images'] || row['image'] || row['Image'] || '').toString().split(';').filter(Boolean),
-          raw_data: row,
-        }));
+        const items: RawProduct[] = json.map((row, idx) => mapRow(row as Record<string, string>, idx));
         setParseProgress(100);
         setRawItems(items);
         toast.success(`Parsed ${items.length} items from Excel`);
