@@ -279,31 +279,74 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
     toast.success('All items approved');
   };
 
-  // ── Publish ──────────────────────────────────────────
+  // ── Submit to review queue ───────────────────────────
+  // Bulk rows land in dd_catalog_drafts as pending_admin_review — the SAME gate the
+  // camera flow uses. Nothing here writes a live product. Every Postgres error is
+  // surfaced per row; a failure is NEVER counted as a success.
   const publishItems = async () => {
     const toPublish = processedItems.filter(p => p.status === 'accepted');
-    if (!toPublish.length) { toast.error('No approved items to publish'); return; }
+    if (!toPublish.length) { toast.error('No approved items to submit'); return; }
 
     setStep('publish');
     setIsPublishing(true);
+    setFailedRows([]);
 
-    let published = 0;
+    const { data: userRes } = await supabase.auth.getUser();
+    const uid = userRes.user?.id ?? null;
+
+    let created = 0;
+    const failures: FailedRow[] = [];
+
     for (const item of toPublish) {
-      try {
-        await supabase.from('products_all').insert({
-          wholesaler_id: wholesalerId,
-          product_name: item.ai_name,
-          description: item.ai_description,
-          images: item.images,
-          retail_price: item.price,
-          status: 'active',
-        });
-        published++;
-      } catch (e) { console.error('Publish error:', e); }
+      const dims = (item.length_in && item.width_in && item.height_in)
+        ? { length_in: item.length_in, width_in: item.width_in, height_in: item.height_in }
+        : null;
+
+      const { error } = await supabase.from('dd_catalog_drafts').insert({
+        created_by: uid,
+        supplier_id: wholesalerId ?? null,
+        submitted_by: uid,
+        submitted_by_wholesaler_id: wholesalerId ?? null,
+        submitted_at: new Date().toISOString(),
+        source: 'bulk_upload',
+        status: 'pending_admin_review',
+        product_name: item.ai_name,
+        category: item.ai_category || null,
+        sku: item.sku || null,
+        cost: item.supplier_cost,
+        inventory_qty: item.inventory_qty ?? 0,
+        weight_oz: item.weight_oz,
+        dimensions: dims,
+        input_photos: item.images,
+        selected: item.images,
+        copy: {
+          title: item.ai_name,
+          short_description: item.ai_description,
+          long_description: item.ai_description,
+          category_guess: item.ai_category,
+          subcategory: item.ai_subcategory,
+        },
+      });
+
+      if (error) {
+        failures.push({ name: item.ai_name, message: error.message });
+        console.error('Draft insert failed:', item.ai_name, error);
+      } else {
+        created++;
+      }
     }
 
+    setFailedRows(failures);
+    setPublishedCount(created);
     setIsPublishing(false);
-    toast.success(`Published ${published} products to catalog`);
+
+    if (failures.length === 0) {
+      toast.success(`${created} drafts created and sent for review.`);
+    } else if (created === 0) {
+      toast.error(`0 drafts created, ${failures.length} rows failed — see below.`);
+    } else {
+      toast.warning(`${created} drafts created, ${failures.length} rows failed — see below.`);
+    }
   };
 
   // ── Derived State ────────────────────────────────────
