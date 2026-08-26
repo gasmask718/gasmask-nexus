@@ -120,6 +120,12 @@ export default function AmbassadorPortal() {
           </Card>
         </div>
 
+        {/* Credit & Funding */}
+        <AmbassadorCreditFundingSection
+          ambassadorId={ambassadorProfile?.id}
+          interestExpressed={ambassadorProfile?.funding_interest_expressed}
+        />
+
         {/* Recent Referrals */}
         <Card>
           <CardHeader>
