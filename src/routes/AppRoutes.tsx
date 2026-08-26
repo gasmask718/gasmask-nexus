@@ -1077,6 +1077,7 @@ const FundingMachineAutoFinancing = lazy(() => import('@/pages/funding-machine/A
 const FundingMachineShelfCorp = lazy(() => import('@/pages/funding-machine/ShelfCorpPage'));
 const FundingMachineRevenue = lazy(() => import('@/pages/funding-machine/RevenueDashboardPage'));
 const FundingMachineClientsList = lazy(() => import('@/pages/funding-machine/ClientsListPage'));
+const FundingInvitesPage = lazy(() => import('@/pages/funding-machine/FundingInvitesPage'));
 const FundingModuleStub = lazy(() => import('@/pages/funding-machine/FundingModuleStub'));
 const FundingApplicationAutomation = lazy(() => import('@/pages/funding-machine/ApplicationAutomationPage'));
 const UbenHQ = lazy(() => import('@/pages/os/uben/UbenHQ'));
@@ -2352,6 +2353,7 @@ export default function AppRoutes() {
         <Route path="/funding-machine/briefing" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineMorningBriefing /></RequireRole>} />
         <Route path="/funding-machine/grants" element={<Navigate to="/os/grants/funder-crm" replace />} />
         <Route path="/funding-machine/clients" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingMachineClientsList /></RequireRole>} />
+        <Route path="/funding-machine/funding-invites" element={<RequireRole allowedRoles={['owner','admin']} showLocked><FundingInvitesPage /></RequireRole>} />
         <Route path="/funding-machine/credit-stacking" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="Credit Stacking" description="Sequenced multi-lender credit stacking playbook" /></RequireRole>} />
         <Route path="/funding-machine/sba" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="SBA Loans" description="SBA 7(a), 504, and microloan pipeline" /></RequireRole>} />
         <Route path="/funding-machine/cdfi" element={<RequireRole allowedRoles={['owner','admin','employee','accountant']} showLocked><FundingModuleStub title="CDFI Network" description="Community Development Financial Institution partners" /></RequireRole>} />

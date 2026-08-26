@@ -67136,10 +67136,14 @@ export type Database = {
       }
       funding_sms_queue: {
         Row: {
+          attempts: number
+          claimed_at: string | null
           error: string | null
           id: string
+          last_attempt_at: string | null
           message_body: string
           phone_number: string
+          provider_status: string | null
           queued_at: string
           related_id: string | null
           related_kind: string
@@ -67148,10 +67152,14 @@ export type Database = {
           twilio_sid: string | null
         }
         Insert: {
+          attempts?: number
+          claimed_at?: string | null
           error?: string | null
           id?: string
+          last_attempt_at?: string | null
           message_body: string
           phone_number: string
+          provider_status?: string | null
           queued_at?: string
           related_id?: string | null
           related_kind: string
@@ -67160,10 +67168,14 @@ export type Database = {
           twilio_sid?: string | null
         }
         Update: {
+          attempts?: number
+          claimed_at?: string | null
           error?: string | null
           id?: string
+          last_attempt_at?: string | null
           message_body?: string
           phone_number?: string
+          provider_status?: string | null
           queued_at?: string
           related_id?: string | null
           related_kind?: string
@@ -156264,6 +156276,31 @@ export type Database = {
         }
       }
       claim_funding_portal_account: { Args: never; Returns: string }
+      claim_funding_sms_batch: {
+        Args: { p_limit?: number; p_max_attempts?: number }
+        Returns: {
+          attempts: number
+          claimed_at: string | null
+          error: string | null
+          id: string
+          last_attempt_at: string | null
+          message_body: string
+          phone_number: string
+          provider_status: string | null
+          queued_at: string
+          related_id: string | null
+          related_kind: string
+          sent_at: string | null
+          status: string
+          twilio_sid: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "funding_sms_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_queue_items:
         | {
             Args: {

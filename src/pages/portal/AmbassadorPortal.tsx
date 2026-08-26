@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PortalLayout from '@/components/portal/PortalLayout';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import AmbassadorCreditFundingSection from '@/components/ambassador/AmbassadorCreditFundingSection';
 import { toast } from 'sonner';
 
 // Mock data
@@ -118,6 +119,12 @@ export default function AmbassadorPortal() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Credit & Funding */}
+        <AmbassadorCreditFundingSection
+          ambassadorId={ambassadorProfile?.id}
+          interestExpressed={ambassadorProfile?.funding_interest_expressed}
+        />
 
         {/* Recent Referrals */}
         <Card>
