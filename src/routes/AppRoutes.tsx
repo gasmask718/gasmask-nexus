@@ -4096,6 +4096,7 @@ export default function AppRoutes() {
              <Route path="global-supplier-control" element={<UTGlobalSupplierControl />} />
              <Route path="event-spaces" element={<UTEventSpaces />} />
              <Route path="virtual-tours" element={<UTVirtualTours />} />
+             <Route path="coverage-map" element={<UTCoverageMap />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
           <Route path="rentals" element={<Navigate to="/os/unforgettable/venues" replace />} />
