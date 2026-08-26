@@ -72,8 +72,9 @@ function StatusPill({ status }: { status: HealthStatus }) {
     warn: { c: "border-amber-500/40 bg-amber-500/10 text-amber-300", I: AlertTriangle },
     fail: { c: "border-red-500/40 bg-red-500/10 text-red-300", I: XCircle },
     unknown: { c: "border-muted text-muted-foreground", I: Activity },
+    paused: { c: "border-slate-500/40 bg-slate-500/10 text-slate-300", I: Activity },
   } as const;
-  const { c, I } = map[status];
+  const { c, I } = map[status] ?? map.unknown;
   return (
     <Badge variant="outline" className={cn("text-[10px] gap-1", c)}>
       <I className="h-3 w-3" /> {status}
