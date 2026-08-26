@@ -1401,7 +1401,7 @@ export default function AppRoutes() {
       </Route>
 
       <Route path="/install" element={<InstallPwa />} />
-      <Route path="/system-health" element={<ProtectedRoute><SystemHealthPage /></ProtectedRoute>} />
+      <Route path="/system-health" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} strict><SystemHealthPage /></RequireRole></ProtectedRoute>} />
       <Route path="/admin/training" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><TrainingAdminPage /></RequireRole></ProtectedRoute>} />
       <Route path="/admin/notification-settings" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><AdminNotificationSettings /></RequireRole></ProtectedRoute>} />
       <Route path="/admin/notification-log" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><AdminNotificationLog /></RequireRole></ProtectedRoute>} />

@@ -22,23 +22,39 @@ const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID") || "";
 const TWILIO_API_SID = Deno.env.get("TWILIO_API_SID") || "";
 const TWILIO_API_SECRET = Deno.env.get("TWILIO_API_SECRET") || "";
 const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") || "";
-const ESCALATION_PHONE = Deno.env.get("HEALTH_ESCALATION_PHONE") ||
-  Deno.env.get("DAVID_PHONE_NUMBER") ||
-  Deno.env.get("ADMIN_ALERT_PHONE") ||
-  Deno.env.get("DAVID_PHONE") || "";
-const ESCALATION_FROM = Deno.env.get("HEALTH_ESCALATION_FROM") ||
-  Deno.env.get("TWILIO_FROM_NUMBER") ||
-  Deno.env.get("TWILIO_PHONE_NUMBER") ||
-  "+18776818621";
 const BLAND_API_KEY = Deno.env.get("BLAND_API_KEY") || "";
 const MAPBOX_TOKEN = Deno.env.get("MAPBOX_ACCESS_TOKEN") || Deno.env.get("VITE_MAPBOX_TOKEN") || "";
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
-const ALERT_DEDUPE_HOURS = 6;
 
 type Status = "pass" | "warn" | "fail";
 interface CheckResult { status: Status; message: string; details?: Record<string, unknown> }
 
+interface MonitoringConfig {
+  monitoringEnabled: boolean;
+  smsEnabled: boolean;
+  throttleMinutes: number;
+}
+
 const sb = () => createClient(SUPABASE_URL, SERVICE_KEY);
+const INCIDENT_KEY = "incident.system-health";
+
+async function readMonitoringConfig(client: ReturnType<typeof sb>): Promise<MonitoringConfig> {
+  const { data, error } = await client
+    .from("system_alert_config")
+    .select("system_name, alerts_enabled, sms_throttle_minutes")
+    .in("system_name", ["system_health_monitoring", "system_health_sms"]);
+  if (error) {
+    console.error("[system-health] config read failed; keeping checks on and SMS off:", error.message);
+    return { monitoringEnabled: true, smsEnabled: false, throttleMinutes: 360 };
+  }
+  const monitoring = data?.find((row) => row.system_name === "system_health_monitoring");
+  const sms = data?.find((row) => row.system_name === "system_health_sms");
+  return {
+    monitoringEnabled: monitoring?.alerts_enabled !== false,
+    smsEnabled: sms?.alerts_enabled === true,
+    throttleMinutes: Math.max(30, Number(sms?.sms_throttle_minutes ?? 360)),
+  };
+}
 
 function twAuthHeader(): string | null {
   if (TWILIO_API_SID && TWILIO_API_SECRET) return "Basic " + btoa(`${TWILIO_API_SID}:${TWILIO_API_SECRET}`);
@@ -263,26 +279,57 @@ async function runOne(client: ReturnType<typeof sb>, check: any): Promise<CheckR
 }
 
 // ─── ESCALATION ─────────────────────────────────────────────────────────────
-async function maybeEscalate(client: ReturnType<typeof sb>, check: any, result: CheckResult) {
-  if (result.status !== "fail") return;
-  const { data: prev } = await client.from("health_check_alerts").select("last_alert_at").eq("check_key", check.check_key).maybeSingle();
-  if (prev?.last_alert_at) {
-    const ageHr = (Date.now() - new Date(prev.last_alert_at).getTime()) / 3600_000;
-    if (ageHr < ALERT_DEDUPE_HOURS) return;
+async function maybeEscalate(
+  client: ReturnType<typeof sb>,
+  checks: any[],
+  results: Array<CheckResult & { key: string }>,
+  config: MonitoringConfig,
+) {
+  const failures = results.filter((result) => result.status === "fail");
+  const { data: prev } = await client
+    .from("health_check_alerts")
+    .select("last_alert_at, last_status, last_message")
+    .eq("check_key", INCIDENT_KEY)
+    .maybeSingle();
+  if (failures.length === 0) {
+    if (prev?.last_status === "fail") {
+      const { error } = await client.from("health_check_alerts").update({
+        last_status: "pass",
+        last_message: "Incident recovered; ready to alert on the next failure transition",
+      }).eq("check_key", INCIDENT_KEY);
+      if (error) console.error("[system-health] incident recovery update failed:", error.message);
+    }
+    return;
   }
-  const body = `[${check.business}/${check.floor ?? ''}] ${check.label}\n${result.message}`.slice(0, 1000);
-  // Group A: email-first ops channel. A failing health check used to be
-  // announced over the same Twilio credential the check was watching.
+
+  const priorAlertIncludedSms = prev?.last_message?.includes("sms_enabled=true") === true;
+  if (prev?.last_status === "fail" && (!config.smsEnabled || priorAlertIncludedSms)) return;
+  if (prev?.last_alert_at) {
+    const ageMinutes = (Date.now() - new Date(prev.last_alert_at).getTime()) / 60_000;
+    if (ageMinutes < config.throttleMinutes) return;
+  }
+
+  const checkByKey = new Map(checks.map((check) => [check.check_key, check]));
+  const lines = failures.map((result) => {
+    const check = checkByKey.get(result.key);
+    return `• [${check?.business ?? "unknown"}/${check?.floor ?? "unknown"}] ${check?.label ?? result.key} — ${result.message}`;
+  });
+  const subject = `System health: ${failures.length} failing check${failures.length === 1 ? "" : "s"}`;
   const alert = await sendOpsAlert({
     source: "system-health-runner",
     severity: "critical",
-    subject: `Health check FAIL: ${check.label}`,
-    message: body,
-    context: { check_key: check.check_key, business: check.business, floor: check.floor, details: result.details },
+    subject,
+    message: [subject, ...lines].join("\n").slice(0, 6000),
+    context: { failing_total: failures.length, check_keys: failures.map((result) => result.key) },
+    sms: config.smsEnabled,
   });
-  if (alert.emailSent || alert.smsSent) {
-    await client.from("health_check_alerts").upsert({ check_key: check.check_key, last_alert_at: new Date().toISOString(), last_status: result.status, last_message: result.message });
-  }
+  const { error } = await client.from("health_check_alerts").upsert({
+    check_key: INCIDENT_KEY,
+    last_alert_at: new Date().toISOString(),
+    last_status: "fail",
+    last_message: `${failures.length} failing checks; email=${alert.emailSent}; sms=${alert.smsSent}; sms_enabled=${config.smsEnabled}`,
+  });
+  if (error) console.error("[system-health] incident state upsert failed:", error.message);
 }
 
 Deno.serve(async (req) => {
@@ -290,6 +337,12 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const onlyKey = url.searchParams.get("key");
   const client = sb();
+  const monitoringConfig = await readMonitoringConfig(client);
+  if (!monitoringConfig.monitoringEnabled) {
+    return new Response(JSON.stringify({ ran: 0, monitoring_enabled: false, sms_enabled: monitoringConfig.smsEnabled, results: [] }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   let q = client.from("health_checks").select("*").eq("enabled", true);
   if (onlyKey) q = q.eq("check_key", onlyKey);
   const { data: checks, error } = await q;
@@ -308,9 +361,10 @@ Deno.serve(async (req) => {
       last_message: r.message,
       details: r.details ?? {},
     }).eq("check_key", c.check_key);
-    await maybeEscalate(client, c, r);
     results.push({ key: c.check_key, ...r, duration_ms });
   }
+
+  await maybeEscalate(client, checks ?? [], results, monitoringConfig);
 
   const counts = { pass: 0, warn: 0, fail: 0 };
   for (const r of results) counts[r.status]++;

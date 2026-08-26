@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type HealthStatus = "pass" | "warn" | "fail" | "unknown";
@@ -28,6 +28,13 @@ export interface HealthRun {
   message: string | null;
   duration_ms: number | null;
   created_at: string;
+}
+
+export interface MonitoringControl {
+  system_name: "system_health_monitoring" | "system_health_sms" | "comms_health_monitoring" | "comms_health_sms";
+  alerts_enabled: boolean;
+  sms_throttle_minutes: number;
+  updated_at: string;
 }
 
 export function useHealthChecks() {
@@ -63,6 +70,36 @@ export function useHealthRuns(check_key: string | null) {
       return (data ?? []) as unknown as HealthRun[];
     },
     enabled: !!check_key,
+  });
+}
+
+export function useMonitoringControls() {
+  return useQuery({
+    queryKey: ["monitoring_controls"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("system_alert_config")
+        .select("system_name, alerts_enabled, sms_throttle_minutes, updated_at")
+        .in("system_name", ["system_health_monitoring", "system_health_sms", "comms_health_monitoring", "comms_health_sms"])
+        .order("system_name");
+      if (error) throw error;
+      return (data ?? []) as MonitoringControl[];
+    },
+    refetchInterval: 30_000,
+  });
+}
+
+export function useUpdateMonitoringControl() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ systemName, enabled }: { systemName: MonitoringControl["system_name"]; enabled: boolean }) => {
+      const { error } = await supabase
+        .from("system_alert_config")
+        .update({ alerts_enabled: enabled, updated_at: new Date().toISOString() })
+        .eq("system_name", systemName);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["monitoring_controls"] }),
   });
 }
 

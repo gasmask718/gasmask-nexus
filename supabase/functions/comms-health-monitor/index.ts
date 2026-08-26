@@ -1139,23 +1139,36 @@ async function checkFeatureModes(): Promise<Result[]> {
 // ────────────────────────────────────────────────────────────────────────────
 // ALERT SINK
 // Detection existed; notification did not. Every `fail` result is escalated
-// to Slack and/or SMS, deduped per (layer:target) for ALERT_DEDUPE_HOURS.
+// to the canonical ops sink and optional Slack, deduped by persistent incident state.
 //
-// Destinations (first configured wins; both fire if both are set):
-//   COMMS_ALERT_SLACK_WEBHOOK  — Slack incoming-webhook URL
-//   COMMS_ALERT_SMS_TO         — E.164 number (falls back to
-//                                ADMIN_ALERT_PHONE, then DAVID_PHONE_NUMBER)
+// Optional Slack remains separate; SMS uses only the canonical ops sender.
 // Alert state lives in public.comms_health_alerts.
 // ────────────────────────────────────────────────────────────────────────────
-const ALERT_DEDUPE_HOURS = parseFloat(Deno.env.get("COMMS_ALERT_DEDUPE_HOURS") || "6");
 const SLACK_WEBHOOK = Deno.env.get("COMMS_ALERT_SLACK_WEBHOOK") || "";
-const ALERT_SMS_TO =
-  Deno.env.get("COMMS_ALERT_SMS_TO") ||
-  Deno.env.get("ADMIN_ALERT_PHONE") ||
-  Deno.env.get("DAVID_PHONE_NUMBER") ||
-  "";
-const ALERT_SMS_FROM =
-  Deno.env.get("TWILIO_FROM_NUMBER") || Deno.env.get("TWILIO_PHONE_NUMBER") || "";
+
+type MonitoringConfig = {
+  monitoringEnabled: boolean;
+  smsEnabled: boolean;
+  throttleMinutes: number;
+};
+
+async function readMonitoringConfig(): Promise<MonitoringConfig> {
+  const { data, error } = await sb()
+    .from("system_alert_config")
+    .select("system_name, alerts_enabled, sms_throttle_minutes")
+    .in("system_name", ["comms_health_monitoring", "comms_health_sms"]);
+  if (error) {
+    console.error("[comms-health] config read failed; keeping checks on and SMS off:", error.message);
+    return { monitoringEnabled: true, smsEnabled: false, throttleMinutes: 360 };
+  }
+  const monitoring = data?.find((row) => row.system_name === "comms_health_monitoring");
+  const sms = data?.find((row) => row.system_name === "comms_health_sms");
+  return {
+    monitoringEnabled: monitoring?.alerts_enabled !== false,
+    smsEnabled: sms?.alerts_enabled === true,
+    throttleMinutes: Math.max(30, Number(sms?.sms_throttle_minutes ?? 360)),
+  };
+}
 
 async function sendSlack(text: string): Promise<boolean> {
   if (!SLACK_WEBHOOK) return false;
@@ -1173,30 +1186,8 @@ async function sendSlack(text: string): Promise<boolean> {
   }
 }
 
-async function sendAlertSms(body: string): Promise<boolean> {
-  if (!ALERT_SMS_TO || !ALERT_SMS_FROM) return false;
-  const auth = twAuth();
-  if (!auth || !TWILIO_ACCOUNT_SID) return false;
-  try {
-    const r = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-      {
-        method: "POST",
-        headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ To: ALERT_SMS_TO, From: ALERT_SMS_FROM, Body: body.slice(0, 600) }),
-      },
-    );
-    if (!r.ok) console.error(`[comms-health] sms alert failed ${r.status}: ${(await r.text()).slice(0, 200)}`);
-    return r.ok;
-  } catch (e) {
-    console.error("[comms-health] sms alert threw:", (e as Error).message);
-    return false;
-  }
-}
-
-async function escalateFailures(results: Result[]): Promise<number> {
+async function escalateFailures(results: Result[], config: MonitoringConfig): Promise<number> {
   const failures = results.filter((r) => r.status === "fail");
-  if (failures.length === 0) return 0;
   // NOTE (2026-08-20): this function used to return early when neither Slack
   // nor an SMS number was configured — which is exactly what happened for
   // weeks: correct detection, zero notification. sendOpsAlert() is the
@@ -1206,29 +1197,42 @@ async function escalateFailures(results: Result[]): Promise<number> {
 
 
   const supa = sb();
-  const keys = failures.map((f) => `${f.layer}:${f.target}`);
+  const keys = [...failures.map((f) => `${f.layer}:${f.target}`), "__incident__"];
   const { data: prior } = await supa
     .from("comms_health_alerts")
-    .select("alert_key, last_alert_at")
+    .select("alert_key, last_alert_at, last_status, last_message")
     .in("alert_key", keys);
-  const lastByKey = new Map<string, string>((prior ?? []).map((p: any) => [p.alert_key, p.last_alert_at]));
-
-  const due = failures.filter((f) => {
-    const last = lastByKey.get(`${f.layer}:${f.target}`);
-    if (!last) return true;
-    return (Date.now() - new Date(last).getTime()) / 3_600_000 >= ALERT_DEDUPE_HOURS;
-  });
-  if (due.length === 0) {
-    console.log(`[comms-health] ${failures.length} failures, all within ${ALERT_DEDUPE_HOURS}h dedupe window`);
+  const priorByKey = new Map<string, any>((prior ?? []).map((p: any) => [p.alert_key, p]));
+  const incident = priorByKey.get("__incident__");
+  if (failures.length === 0) {
+    if (incident?.last_status === "fail") {
+      const { error } = await supa.from("comms_health_alerts").update({
+        last_status: "pass",
+        last_message: "Incident recovered; ready to alert on the next failure transition",
+        updated_at: new Date().toISOString(),
+      }).eq("alert_key", "__incident__");
+      if (error) console.error("[comms-health] incident recovery update failed:", error.message);
+    }
     return 0;
   }
+
+  const priorAlertIncludedSms = incident?.last_message?.includes("sms_enabled=true") === true;
+  if (incident?.last_status === "fail" && (!config.smsEnabled || priorAlertIncludedSms)) {
+    console.log(`[comms-health] persistent incident already recorded; suppressing repeat alert`);
+    return 0;
+  }
+  if (incident?.last_alert_at && (Date.now() - new Date(incident.last_alert_at).getTime()) / 60_000 < config.throttleMinutes) {
+    console.log(`[comms-health] incident within ${config.throttleMinutes}m monitoring safety limit`);
+    return 0;
+  }
+
+  const due = failures;
 
   const lines = due.map((f) => `• [${f.provider || "twilio"}/${f.layer}] ${f.target} — ${f.message || "fail"}`);
   const header = `🚨 COMMS HEALTH: ${due.length} new failure${due.length === 1 ? "" : "s"} (${failures.length} failing total)`;
   const slackText = [header, ...lines].join("\n").slice(0, 3800);
-  const smsText = [header, ...lines.slice(0, 5)].join("\n") + (due.length > 5 ? `\n…+${due.length - 5} more` : "");
 
-  // Canonical sink first, then the optional extras.
+  // Canonical sink first, then optional Slack. Never send a second direct SMS.
   const ops = await sendOpsAlert({
     source: "comms-health-monitor",
     severity: "critical",
@@ -1239,13 +1243,14 @@ async function escalateFailures(results: Result[]): Promise<number> {
       failing_total: failures.length,
       keys: due.map((f) => `${f.layer}:${f.target}`).slice(0, 40),
     },
+    sms: config.smsEnabled,
   });
-  const [slackOk, smsOk] = await Promise.all([sendSlack(slackText), sendAlertSms(smsText)]);
+  const slackOk = await sendSlack(slackText);
   // Dedupe keys on the ATTEMPT, not on success: a monitor that only records
   // itself as "alerted" when delivery succeeded goes quiet exactly when the
   // comms estate is broken. Delivery failures are visible in
   // admin_notifications_log and in this log line.
-  if (!ops.emailSent && !ops.smsSent && !slackOk && !smsOk) {
+  if (!ops.emailSent && !ops.smsSent && !slackOk) {
     console.error(
       `[comms-health] alert attempted but ALL channels failed: ${ops.errors.join("; ")}`,
     );
@@ -1254,17 +1259,23 @@ async function escalateFailures(results: Result[]): Promise<number> {
 
   const now = new Date().toISOString();
   const { error } = await supa.from("comms_health_alerts").upsert(
-    due.map((f) => ({
+    [...due.map((f) => ({
       alert_key: `${f.layer}:${f.target}`,
       last_alert_at: now,
       last_status: f.status,
       last_message: f.message || null,
       updated_at: now,
-    })),
+    })), {
+      alert_key: "__incident__",
+      last_alert_at: now,
+      last_status: "fail",
+      last_message: `${failures.length} failing checks; sms_enabled=${config.smsEnabled}`,
+      updated_at: now,
+    }],
     { onConflict: "alert_key" },
   );
   if (error) console.error("[comms-health] alert state upsert failed:", error.message);
-  console.log(`[comms-health] alerted on ${due.length} failures (ops_email=${ops.emailSent} ops_sms=${ops.smsSent} slack=${slackOk} sms=${smsOk})`);
+  console.log(`[comms-health] alerted on ${due.length} failures (ops_email=${ops.emailSent} ops_sms=${ops.smsSent} slack=${slackOk})`);
   return due.length;
 }
 
@@ -1507,6 +1518,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const t0 = Date.now();
+  const monitoringConfig = await readMonitoringConfig();
+  if (!monitoringConfig.monitoringEnabled) {
+    return new Response(
+      JSON.stringify({ ok: true, monitoring_enabled: false, sms_enabled: monitoringConfig.smsEnabled, results: [] }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
   const results: Result[] = [];
   const layers: Array<{ name: string; provider: string; fn: () => Promise<Result[]> }> = [
     // Twilio
@@ -1569,7 +1587,7 @@ Deno.serve(async (req) => {
   }
 
   // ── ALERTING ── (6h dedupe per layer:target)
-  const alerted = await escalateFailures(results);
+  const alerted = await escalateFailures(results, monitoringConfig);
 
 
   const failed = results.filter((r) => r.status === "fail");
