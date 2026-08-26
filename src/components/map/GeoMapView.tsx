@@ -21,6 +21,8 @@ export interface GeoPoint {
   subtitle?: string;
   groupKey?: string;
   statusKey?: string;
+  /** Optional marker radius in px (clustering === false only). Defaults to a 4px radius dot. */
+  radius?: number;
   meta?: Record<string, any>;
 }
 
@@ -347,11 +349,14 @@ export function GeoMapView({
 
     visiblePoints.forEach(p => {
       const el = document.createElement('div');
-      el.style.width = '8px';
-      el.style.height = '8px';
+      // Optional per-point sizing; defaults to the original 8px dot.
+      const size = p.radius != null ? `${Math.max(4, p.radius * 2)}px` : '8px';
+      el.style.width = size;
+      el.style.height = size;
       el.style.borderRadius = '50%';
       el.style.backgroundColor = colorOf(p.statusKey);
       el.style.border = '1px solid rgba(255,255,255,0.4)';
+      el.style.cursor = 'pointer';
 
       const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([p.lng, p.lat])

@@ -453,6 +453,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/unforgettable/pricing-intelligence', label: '💰 Floor 8 — Pricing Intelligence', icon: DollarSign },
       { path: '/os/unforgettable/event-spaces', label: '🏛️ Floor 9 — Event Spaces', icon: Building },
       { path: '/os/unforgettable/virtual-tours', label: '📸 Floor 10 — Virtual Tours', icon: Camera },
+      { path: '/os/unforgettable/coverage-map', label: '🗺️ Coverage Map', icon: Map },
     ],
   },
   uftPlatform: {

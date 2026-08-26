@@ -144960,14 +144960,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -147791,6 +147791,16 @@ export type Database = {
           security_n: number | null
           state: string | null
           total_n: number | null
+        }
+        Relationships: []
+      }
+      ut_coverage_by_metro_category: {
+        Row: {
+          category: string | null
+          metro_id: number | null
+          metro_name: string | null
+          n: number | null
+          source: string | null
         }
         Relationships: []
       }
