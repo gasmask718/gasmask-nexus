@@ -12170,6 +12170,8 @@ export type Database = {
           deleted_at: string | null
           email: string | null
           funding_client_id: string | null
+          funding_interest_expressed: boolean | null
+          funding_interest_expressed_at: string | null
           funding_qualified: boolean | null
           funding_qualified_at: string | null
           id: string
@@ -12204,6 +12206,8 @@ export type Database = {
           deleted_at?: string | null
           email?: string | null
           funding_client_id?: string | null
+          funding_interest_expressed?: boolean | null
+          funding_interest_expressed_at?: string | null
           funding_qualified?: boolean | null
           funding_qualified_at?: string | null
           id?: string
@@ -12238,6 +12242,8 @@ export type Database = {
           deleted_at?: string | null
           email?: string | null
           funding_client_id?: string | null
+          funding_interest_expressed?: boolean | null
+          funding_interest_expressed_at?: string | null
           funding_qualified?: boolean | null
           funding_qualified_at?: string | null
           id?: string
@@ -65701,6 +65707,47 @@ export type Database = {
           },
         ]
       }
+      funding_client_expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          expense_type: string
+          funding_client_id: string
+          id: string
+          incurred_at: string
+          notes: string | null
+          paid_by: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          expense_type: string
+          funding_client_id: string
+          id?: string
+          incurred_at?: string
+          notes?: string | null
+          paid_by: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          expense_type?: string
+          funding_client_id?: string
+          id?: string
+          incurred_at?: string
+          notes?: string | null
+          paid_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_client_expenses_funding_client_id_fkey"
+            columns: ["funding_client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funding_client_lender_matches: {
         Row: {
           applied_at: string | null
@@ -65784,6 +65831,8 @@ export type Database = {
           email: string | null
           email_access_method: string | null
           employment_status: string | null
+          fee_due_amount: number | null
+          fee_rate: number | null
           first_name: string
           full_name: string | null
           funding_goal: string | null
@@ -65799,6 +65848,7 @@ export type Database = {
           monthly_income: number | null
           monthly_revenue: number | null
           notes: string | null
+          payment_model: string | null
           personal_guarantee_ok: boolean | null
           phone: string | null
           portal_invite_sent_at: string | null
@@ -65846,6 +65896,8 @@ export type Database = {
           email?: string | null
           email_access_method?: string | null
           employment_status?: string | null
+          fee_due_amount?: number | null
+          fee_rate?: number | null
           first_name: string
           full_name?: string | null
           funding_goal?: string | null
@@ -65861,6 +65913,7 @@ export type Database = {
           monthly_income?: number | null
           monthly_revenue?: number | null
           notes?: string | null
+          payment_model?: string | null
           personal_guarantee_ok?: boolean | null
           phone?: string | null
           portal_invite_sent_at?: string | null
@@ -65908,6 +65961,8 @@ export type Database = {
           email?: string | null
           email_access_method?: string | null
           employment_status?: string | null
+          fee_due_amount?: number | null
+          fee_rate?: number | null
           first_name?: string
           full_name?: string | null
           funding_goal?: string | null
@@ -65923,6 +65978,7 @@ export type Database = {
           monthly_income?: number | null
           monthly_revenue?: number | null
           notes?: string | null
+          payment_model?: string | null
           personal_guarantee_ok?: boolean | null
           phone?: string | null
           portal_invite_sent_at?: string | null
@@ -67077,6 +67133,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      funding_sms_queue: {
+        Row: {
+          error: string | null
+          id: string
+          message_body: string
+          phone_number: string
+          queued_at: string
+          related_id: string | null
+          related_kind: string
+          sent_at: string | null
+          status: string
+          twilio_sid: string | null
+        }
+        Insert: {
+          error?: string | null
+          id?: string
+          message_body: string
+          phone_number: string
+          queued_at?: string
+          related_id?: string | null
+          related_kind: string
+          sent_at?: string | null
+          status?: string
+          twilio_sid?: string | null
+        }
+        Update: {
+          error?: string | null
+          id?: string
+          message_body?: string
+          phone_number?: string
+          queued_at?: string
+          related_id?: string | null
+          related_kind?: string
+          sent_at?: string | null
+          status?: string
+          twilio_sid?: string | null
+        }
+        Relationships: []
       }
       funding_strategy_rules: {
         Row: {
@@ -158002,6 +158097,7 @@ export type Database = {
       }
       recompute_all_funding_dfs: { Args: never; Returns: number }
       recompute_answer_rates: { Args: never; Returns: undefined }
+      recompute_funding_fee: { Args: { p_client_id: string }; Returns: number }
       record_application_status: {
         Args: {
           _application_id: string
