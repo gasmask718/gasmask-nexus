@@ -163,6 +163,8 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
         supplier_id: supplierId,
         product_name: 'Pending photo read',
         input_photos: inputPhotos,
+        label_photo_url: currentShots[1],
+
         status: 'candidates',
       }).select('id').single();
       if (draftErr || !draft) throw new Error(draftErr?.message || 'could not start a draft');
