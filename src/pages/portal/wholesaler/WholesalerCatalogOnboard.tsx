@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Loader2, Lock, ShieldCheck, AlertTriangle, Camera } from 'lucide-react';
+import { Loader2, Lock, ShieldCheck, AlertTriangle, Camera, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DynastyDirectCatalogOnboard from '@/pages/dynasty-direct/DynastyDirectCatalogOnboard';
 import { QuickAddCamera } from '@/components/dynasty-direct/QuickAddCamera';
+import { BulkUploadModule } from '@/components/wholesaler-console/BulkUploadModule';
 
 /**
  * Wholesaler self-serve catalog onboarding (Phase 2).
@@ -22,6 +23,7 @@ export default function WholesalerCatalogOnboard() {
   const [resolving, setResolving] = useState(true);
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState(false);
+  const [spreadsheet, setSpreadsheet] = useState(false);
 
 
   useEffect(() => {
