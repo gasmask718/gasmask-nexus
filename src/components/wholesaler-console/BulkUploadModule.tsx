@@ -92,6 +92,8 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [dragOver, setDragOver] = useState(false);
+  const [failedRows, setFailedRows] = useState<FailedRow[]>([]);
+  const [publishedCount, setPublishedCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Download Template ─────────────────────────────────
