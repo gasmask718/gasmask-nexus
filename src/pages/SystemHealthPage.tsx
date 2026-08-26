@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useHealthChecks, useHealthRuns, runHealthCheck, type HealthCheck, type HealthStatus } from "@/hooks/useHealthChecks";
+import { useHealthChecks, useHealthRuns, runHealthCheck, useMonitoringControls, useUpdateMonitoringControl, type HealthCheck, type HealthStatus, type MonitoringControl } from "@/hooks/useHealthChecks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,60 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+
+const CONTROL_LABELS: Record<MonitoringControl["system_name"], { title: string; description: string }> = {
+  system_health_monitoring: { title: "Health Monitoring", description: "Run and persist OS-wide health checks." },
+  system_health_sms: { title: "Health Failure SMS", description: "Send one aggregated SMS incident alert at most every six hours." },
+  comms_health_monitoring: { title: "Communications Monitoring", description: "Run and persist communications diagnostics." },
+  comms_health_sms: { title: "Communications Failure SMS", description: "Send one aggregated communications incident SMS at most every six hours." },
+};
+
+function MonitoringControls() {
+  const { data: controls = [], isLoading, error } = useMonitoringControls();
+  const updateControl = useUpdateMonitoringControl();
+  const byName = new Map(controls.map((control) => [control.system_name, control]));
+  const names = Object.keys(CONTROL_LABELS) as MonitoringControl["system_name"][];
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm">Monitoring Controls</CardTitle>
+      </CardHeader>
+      <CardContent className="divide-y divide-border/50">
+        {isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+        {error && <p className="text-sm text-destructive">{error.message}</p>}
+        {!isLoading && names.map((name) => {
+          const control = byName.get(name);
+          const copy = CONTROL_LABELS[name];
+          return (
+            <div key={name} className="flex items-center justify-between gap-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{copy.title}</p>
+                <p className="text-xs text-muted-foreground">{copy.description}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {control ? `Persisted ${formatDistanceToNow(new Date(control.updated_at), { addSuffix: true })}` : "Control unavailable — safe state applies"}
+                </p>
+              </div>
+              <Switch
+                checked={control?.alerts_enabled === true}
+                disabled={!control || updateControl.isPending}
+                onCheckedChange={(enabled) => updateControl.mutate(
+                  { systemName: name, enabled },
+                  {
+                    onSuccess: () => toast.success(`${copy.title} ${enabled ? "enabled" : "disabled"}`),
+                    onError: (mutationError) => toast.error(mutationError.message),
+                  },
+                )}
+                aria-label={copy.title}
+              />
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
 
 function StatusPill({ status }: { status: HealthStatus }) {
   const map = {
@@ -310,6 +364,7 @@ export default function SystemHealthPage() {
       </div>
 
       <AllGreenBanner checks={checks ?? []} />
+      <MonitoringControls />
       <CommsHealthFold />
 
       <Tabs defaultValue="grid">
