@@ -24,7 +24,7 @@ const ALL = '__all__';
 
 type Lead = Record<string, any>;
 
-export default function UnforgettablePartnerLeads() {
+export default function UnforgettableCRMDashboard() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState(ALL);
