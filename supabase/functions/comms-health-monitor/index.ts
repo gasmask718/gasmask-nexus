@@ -1189,7 +1189,6 @@ async function sendSlack(text: string): Promise<boolean> {
 
 async function escalateFailures(results: Result[], config: MonitoringConfig): Promise<number> {
   const failures = results.filter((r) => r.status === "fail");
-  if (failures.length === 0) return 0;
   // NOTE (2026-08-20): this function used to return early when neither Slack
   // nor an SMS number was configured — which is exactly what happened for
   // weeks: correct detection, zero notification. sendOpsAlert() is the
@@ -1202,25 +1201,33 @@ async function escalateFailures(results: Result[], config: MonitoringConfig): Pr
   const keys = [...failures.map((f) => `${f.layer}:${f.target}`), "__incident__"];
   const { data: prior } = await supa
     .from("comms_health_alerts")
-    .select("alert_key, last_alert_at")
+    .select("alert_key, last_alert_at, last_status, last_message")
     .in("alert_key", keys);
-  const lastByKey = new Map<string, string>((prior ?? []).map((p: any) => [p.alert_key, p.last_alert_at]));
-
-  const incidentLast = lastByKey.get("__incident__");
-  if (incidentLast && (Date.now() - new Date(incidentLast).getTime()) / 60_000 < config.throttleMinutes) {
-    console.log(`[comms-health] incident within ${config.throttleMinutes}m monitoring throttle`);
+  const priorByKey = new Map<string, any>((prior ?? []).map((p: any) => [p.alert_key, p]));
+  const incident = priorByKey.get("__incident__");
+  if (failures.length === 0) {
+    if (incident?.last_status === "fail") {
+      const { error } = await supa.from("comms_health_alerts").update({
+        last_status: "pass",
+        last_message: "Incident recovered; ready to alert on the next failure transition",
+        updated_at: new Date().toISOString(),
+      }).eq("alert_key", "__incident__");
+      if (error) console.error("[comms-health] incident recovery update failed:", error.message);
+    }
     return 0;
   }
 
-  const due = failures.filter((f) => {
-    const last = lastByKey.get(`${f.layer}:${f.target}`);
-    if (!last) return true;
-    return (Date.now() - new Date(last).getTime()) / 3_600_000 >= ALERT_DEDUPE_HOURS;
-  });
-  if (due.length === 0) {
-    console.log(`[comms-health] ${failures.length} failures, all within ${ALERT_DEDUPE_HOURS}h dedupe window`);
+  const priorAlertIncludedSms = incident?.last_message?.includes("sms_enabled=true") === true;
+  if (incident?.last_status === "fail" && (!config.smsEnabled || priorAlertIncludedSms)) {
+    console.log(`[comms-health] persistent incident already recorded; suppressing repeat alert`);
     return 0;
   }
+  if (incident?.last_alert_at && (Date.now() - new Date(incident.last_alert_at).getTime()) / 60_000 < config.throttleMinutes) {
+    console.log(`[comms-health] incident within ${config.throttleMinutes}m monitoring safety limit`);
+    return 0;
+  }
+
+  const due = failures;
 
   const lines = due.map((f) => `• [${f.provider || "twilio"}/${f.layer}] ${f.target} — ${f.message || "fail"}`);
   const header = `🚨 COMMS HEALTH: ${due.length} new failure${due.length === 1 ? "" : "s"} (${failures.length} failing total)`;

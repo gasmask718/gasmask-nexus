@@ -286,8 +286,24 @@ async function maybeEscalate(
   config: MonitoringConfig,
 ) {
   const failures = results.filter((result) => result.status === "fail");
-  if (failures.length === 0) return;
-  const { data: prev } = await client.from("health_check_alerts").select("last_alert_at").eq("check_key", INCIDENT_KEY).maybeSingle();
+  const { data: prev } = await client
+    .from("health_check_alerts")
+    .select("last_alert_at, last_status, last_message")
+    .eq("check_key", INCIDENT_KEY)
+    .maybeSingle();
+  if (failures.length === 0) {
+    if (prev?.last_status === "fail") {
+      const { error } = await client.from("health_check_alerts").update({
+        last_status: "pass",
+        last_message: "Incident recovered; ready to alert on the next failure transition",
+      }).eq("check_key", INCIDENT_KEY);
+      if (error) console.error("[system-health] incident recovery update failed:", error.message);
+    }
+    return;
+  }
+
+  const priorAlertIncludedSms = prev?.last_message?.includes("sms_enabled=true") === true;
+  if (prev?.last_status === "fail" && (!config.smsEnabled || priorAlertIncludedSms)) return;
   if (prev?.last_alert_at) {
     const ageMinutes = (Date.now() - new Date(prev.last_alert_at).getTime()) / 60_000;
     if (ageMinutes < config.throttleMinutes) return;
