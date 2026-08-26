@@ -128883,6 +128883,86 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_call_notes: {
+        Row: {
+          business: string
+          contact_kind: string
+          created_at: string
+          created_by: string | null
+          id: number
+          lead_id: string | null
+          note: string
+        }
+        Insert: {
+          business?: string
+          contact_kind: string
+          created_at?: string
+          created_by?: string | null
+          id?: number
+          lead_id?: string | null
+          note: string
+        }
+        Update: {
+          business?: string
+          contact_kind?: string
+          created_at?: string
+          created_by?: string | null
+          id?: number
+          lead_id?: string | null
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_call_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_call_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_call_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_call_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_call_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_call_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_toptier_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_call_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supply"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_campaigns: {
         Row: {
           audience_type: string
@@ -130414,6 +130494,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ut_metro_centroids: {
+        Row: {
+          latitude: number | null
+          longitude: number | null
+          metro_id: number
+          metro_name: string
+          phase: number
+          state: string
+        }
+        Insert: {
+          latitude?: number | null
+          longitude?: number | null
+          metro_id: number
+          metro_name: string
+          phase: number
+          state: string
+        }
+        Update: {
+          latitude?: number | null
+          longitude?: number | null
+          metro_id?: number
+          metro_name?: string
+          phase?: number
+          state?: string
+        }
+        Relationships: []
       }
       ut_orders: {
         Row: {
@@ -147669,6 +147776,21 @@ export type Database = {
           supply_count: number | null
           supply_gap_level: string | null
           total_leads: number | null
+        }
+        Relationships: []
+      }
+      ut_coverage_by_metro: {
+        Row: {
+          latitude: number | null
+          longitude: number | null
+          metro_id: number | null
+          metro_name: string | null
+          overture_n: number | null
+          phase: number | null
+          places_n: number | null
+          security_n: number | null
+          state: string | null
+          total_n: number | null
         }
         Relationships: []
       }
