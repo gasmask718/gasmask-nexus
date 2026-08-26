@@ -33,6 +33,7 @@ const CRM_MODULES = [
   { label: 'Influencers', path: '/crm/unforgettable_times_usa/influencers', icon: Star, description: 'Partner influencers' },
   { label: 'Media Vault', path: '/crm/unforgettable_times_usa/media', icon: Camera, description: 'Promo content & assets' },
   { label: 'Gift Ideas', path: '/crm/unforgettable_times_usa/gifts', icon: Gift, description: 'Dropship & promo gifts' },
+  { label: 'Partner Leads', path: '/crm/unforgettable_times_usa/partner-leads', icon: Users, description: '297k UT leads + call notes' },
 ];
 
 export default function UnforgettableDashboard() {
