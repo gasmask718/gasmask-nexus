@@ -114,10 +114,32 @@ export default function WholesalerCatalogOnboard() {
     );
   }
 
+  if (spreadsheet) {
+    return (
+      <div className="p-4 space-y-4">
+        <Button variant="ghost" size="sm" onClick={() => setSpreadsheet(false)}>
+          <Camera className="h-4 w-4 mr-2" /> Back to camera
+        </Button>
+        <Alert>
+          <ShieldCheck className="h-4 w-4" />
+          <AlertTitle>Spreadsheet uploads go to the same review queue</AlertTitle>
+          <AlertDescription>
+            Rows become drafts for our review team. Nothing goes live until we approve it and set the
+            retail price. Weight and box dimensions are required before an item can ship.
+          </AlertDescription>
+        </Alert>
+        <BulkUploadModule wholesalerId={supplier.id} />
+      </div>
+    );
+  }
+
   return (
     <div>
       <QuickAddCamera supplierId={supplier.id} supplierName={supplier.name} />
-      <div className="pb-8 text-center">
+      <div className="pb-8 flex flex-col items-center gap-1">
+        <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setSpreadsheet(true)}>
+          <FileSpreadsheet className="h-4 w-4 mr-2" /> Upload a spreadsheet instead
+        </Button>
         <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setAdvanced(true)}>
           Use the full form instead
         </Button>
