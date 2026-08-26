@@ -322,39 +322,12 @@ export default function WholesalerProductForm() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">
-            {isEditing ? 'Edit Product' : 'Add Products'}
-          </h1>
-          <p className="text-muted-foreground">
-            {isEditing ? 'Update product details' : 'Add a single product or bulk upload your catalog'}
-          </p>
+          <h1 className="text-2xl font-bold">Edit Product</h1>
+          <p className="text-muted-foreground">Update product details</p>
         </div>
       </div>
 
-      {isEditing ? (
-        singleProductForm
-      ) : (
-        <Tabs defaultValue="single" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="single" className="gap-2">
-              <Package className="h-4 w-4" />
-              Single Product
-            </TabsTrigger>
-            <TabsTrigger value="bulk" className="gap-2">
-              <Upload className="h-4 w-4" />
-              Bulk Upload
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="single">
-            {singleProductForm}
-          </TabsContent>
-
-          <TabsContent value="bulk">
-            <BulkUploadModule wholesalerId={profile?.id} />
-          </TabsContent>
-        </Tabs>
-      )}
+      {singleProductForm}
     </div>
   );
 }

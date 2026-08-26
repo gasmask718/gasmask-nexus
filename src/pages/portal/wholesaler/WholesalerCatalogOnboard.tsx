@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Loader2, Lock, ShieldCheck, AlertTriangle, Camera } from 'lucide-react';
+import { Loader2, Lock, ShieldCheck, AlertTriangle, Camera, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DynastyDirectCatalogOnboard from '@/pages/dynasty-direct/DynastyDirectCatalogOnboard';
 import { QuickAddCamera } from '@/components/dynasty-direct/QuickAddCamera';
+import { BulkUploadModule } from '@/components/wholesaler-console/BulkUploadModule';
 
 /**
  * Wholesaler self-serve catalog onboarding (Phase 2).
@@ -22,6 +23,7 @@ export default function WholesalerCatalogOnboard() {
   const [resolving, setResolving] = useState(true);
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState(false);
+  const [spreadsheet, setSpreadsheet] = useState(false);
 
 
   useEffect(() => {
@@ -114,10 +116,32 @@ export default function WholesalerCatalogOnboard() {
     );
   }
 
+  if (spreadsheet) {
+    return (
+      <div className="p-4 space-y-4">
+        <Button variant="ghost" size="sm" onClick={() => setSpreadsheet(false)}>
+          <Camera className="h-4 w-4 mr-2" /> Back to camera
+        </Button>
+        <Alert>
+          <ShieldCheck className="h-4 w-4" />
+          <AlertTitle>Spreadsheet uploads go to the same review queue</AlertTitle>
+          <AlertDescription>
+            Rows become drafts for our review team. Nothing goes live until we approve it and set the
+            retail price. Weight and box dimensions are required before an item can ship.
+          </AlertDescription>
+        </Alert>
+        <BulkUploadModule wholesalerId={supplier.id} />
+      </div>
+    );
+  }
+
   return (
     <div>
       <QuickAddCamera supplierId={supplier.id} supplierName={supplier.name} />
-      <div className="pb-8 text-center">
+      <div className="pb-8 flex flex-col items-center gap-1">
+        <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setSpreadsheet(true)}>
+          <FileSpreadsheet className="h-4 w-4 mr-2" /> Upload a spreadsheet instead
+        </Button>
         <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setAdvanced(true)}>
           Use the full form instead
         </Button>

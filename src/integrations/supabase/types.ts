@@ -47250,6 +47250,7 @@ export type Database = {
           measurements_estimate: Json | null
           measurements_verified_at: string | null
           measurements_verified_by: string | null
+          no_printed_label: boolean
           notes: string | null
           price_research: Json | null
           pricing: Json
@@ -47261,6 +47262,8 @@ export type Database = {
           reviewed_by: string | null
           selected: Json
           selected_candidate_urls: string[]
+          sku: string | null
+          source: string
           staged: Json
           status: string
           submitted_at: string | null
@@ -47291,6 +47294,7 @@ export type Database = {
           measurements_estimate?: Json | null
           measurements_verified_at?: string | null
           measurements_verified_by?: string | null
+          no_printed_label?: boolean
           notes?: string | null
           price_research?: Json | null
           pricing?: Json
@@ -47302,6 +47306,8 @@ export type Database = {
           reviewed_by?: string | null
           selected?: Json
           selected_candidate_urls?: string[]
+          sku?: string | null
+          source?: string
           staged?: Json
           status?: string
           submitted_at?: string | null
@@ -47332,6 +47338,7 @@ export type Database = {
           measurements_estimate?: Json | null
           measurements_verified_at?: string | null
           measurements_verified_by?: string | null
+          no_printed_label?: boolean
           notes?: string | null
           price_research?: Json | null
           pricing?: Json
@@ -47343,6 +47350,8 @@ export type Database = {
           reviewed_by?: string | null
           selected?: Json
           selected_candidate_urls?: string[]
+          sku?: string | null
+          source?: string
           staged?: Json
           status?: string
           submitted_at?: string | null
@@ -47721,7 +47730,21 @@ export type Database = {
             foreignKeyName: "dd_content_briefs_draft_id_fkey"
             columns: ["draft_id"]
             isOneToOne: false
+            referencedRelation: "dd_admin_catalog_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_content_briefs_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
             referencedRelation: "dd_catalog_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_content_briefs_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_drafts_safe"
             referencedColumns: ["id"]
           },
           {
@@ -49974,6 +49997,13 @@ export type Database = {
             foreignKeyName: "dd_reserve_ledger_fulfillment_id_fkey"
             columns: ["fulfillment_id"]
             isOneToOne: false
+            referencedRelation: "v_wholesaler_pick_slip"
+            referencedColumns: ["fulfillment_id"]
+          },
+          {
+            foreignKeyName: "dd_reserve_ledger_fulfillment_id_fkey"
+            columns: ["fulfillment_id"]
+            isOneToOne: false
             referencedRelation: "vendor_fulfillment_view"
             referencedColumns: ["fulfillment_id"]
           },
@@ -50654,6 +50684,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "marketplace_fulfillments"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_split_ledger_fulfillment_id_fkey"
+            columns: ["fulfillment_id"]
+            isOneToOne: true
+            referencedRelation: "v_wholesaler_pick_slip"
+            referencedColumns: ["fulfillment_id"]
           },
           {
             foreignKeyName: "dd_split_ledger_fulfillment_id_fkey"
@@ -84342,6 +84379,13 @@ export type Database = {
             foreignKeyName: "notification_events_related_fulfillment_id_fkey"
             columns: ["related_fulfillment_id"]
             isOneToOne: false
+            referencedRelation: "v_wholesaler_pick_slip"
+            referencedColumns: ["fulfillment_id"]
+          },
+          {
+            foreignKeyName: "notification_events_related_fulfillment_id_fkey"
+            columns: ["related_fulfillment_id"]
+            isOneToOne: false
             referencedRelation: "vendor_fulfillment_view"
             referencedColumns: ["fulfillment_id"]
           },
@@ -110162,6 +110206,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "marketplace_fulfillments"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipping_label_events_fulfillment_id_fkey"
+            columns: ["fulfillment_id"]
+            isOneToOne: false
+            referencedRelation: "v_wholesaler_pick_slip"
+            referencedColumns: ["fulfillment_id"]
           },
           {
             foreignKeyName: "shipping_label_events_fulfillment_id_fkey"
@@ -145166,6 +145217,219 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_admin_catalog_drafts: {
+        Row: {
+          candidates: Json | null
+          category: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
+          copy: Json | null
+          cost: number | null
+          created_at: string | null
+          created_by: string | null
+          dimensions: Json | null
+          enhanced: Json | null
+          id: string | null
+          image_variants: Json | null
+          input_photos: Json | null
+          inventory_qty: number | null
+          label_extraction: Json | null
+          label_photo_url: string | null
+          market_check: Json | null
+          measurements_estimate: Json | null
+          measurements_verified_at: string | null
+          measurements_verified_by: string | null
+          no_printed_label: boolean | null
+          notes: string | null
+          price_research: Json | null
+          pricing: Json | null
+          product_name: string | null
+          published_product_id: string | null
+          recognition: Json | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selected: Json | null
+          selected_candidate_urls: string[] | null
+          sku: string | null
+          source: string | null
+          staged: Json | null
+          status: string | null
+          submitted_at: string | null
+          submitted_by: string | null
+          submitted_by_wholesaler_id: string | null
+          supplier_id: string | null
+          updated_at: string | null
+          weight_oz: number | null
+        }
+        Insert: {
+          candidates?: Json | null
+          category?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          copy?: Json | null
+          cost?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          dimensions?: Json | null
+          enhanced?: Json | null
+          id?: string | null
+          image_variants?: Json | null
+          input_photos?: Json | null
+          inventory_qty?: number | null
+          label_extraction?: Json | null
+          label_photo_url?: string | null
+          market_check?: Json | null
+          measurements_estimate?: Json | null
+          measurements_verified_at?: string | null
+          measurements_verified_by?: string | null
+          no_printed_label?: boolean | null
+          notes?: string | null
+          price_research?: Json | null
+          pricing?: Json | null
+          product_name?: string | null
+          published_product_id?: string | null
+          recognition?: Json | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selected?: Json | null
+          selected_candidate_urls?: string[] | null
+          sku?: string | null
+          source?: string | null
+          staged?: Json | null
+          status?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+          submitted_by_wholesaler_id?: string | null
+          supplier_id?: string | null
+          updated_at?: string | null
+          weight_oz?: number | null
+        }
+        Update: {
+          candidates?: Json | null
+          category?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          copy?: Json | null
+          cost?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          dimensions?: Json | null
+          enhanced?: Json | null
+          id?: string | null
+          image_variants?: Json | null
+          input_photos?: Json | null
+          inventory_qty?: number | null
+          label_extraction?: Json | null
+          label_photo_url?: string | null
+          market_check?: Json | null
+          measurements_estimate?: Json | null
+          measurements_verified_at?: string | null
+          measurements_verified_by?: string | null
+          no_printed_label?: boolean | null
+          notes?: string | null
+          price_research?: Json | null
+          pricing?: Json | null
+          product_name?: string | null
+          published_product_id?: string | null
+          recognition?: Json | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selected?: Json | null
+          selected_candidate_urls?: string[] | null
+          sku?: string | null
+          source?: string | null
+          staged?: Json | null
+          status?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+          submitted_by_wholesaler_id?: string | null
+          supplier_id?: string | null
+          updated_at?: string | null
+          weight_oz?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_products_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_submitted_by_wholesaler_id_fkey"
+            columns: ["submitted_by_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_supplier_map_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_submitted_by_wholesaler_id_fkey"
+            columns: ["submitted_by_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_submitted_by_wholesaler_id_fkey"
+            columns: ["submitted_by_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_submitted_by_wholesaler_id_fkey"
+            columns: ["submitted_by_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_submitted_by_wholesaler_id_fkey"
+            columns: ["submitted_by_wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_low_stock_products: {
         Row: {
           id: string | null
@@ -145227,6 +145491,145 @@ export type Database = {
           total_orders: number | null
         }
         Relationships: []
+      }
+      dd_wholesaler_drafts_safe: {
+        Row: {
+          category: string | null
+          confirmed_at: string | null
+          copy: Json | null
+          cost: number | null
+          created_at: string | null
+          created_by: string | null
+          dimensions: Json | null
+          enhanced: Json | null
+          id: string | null
+          image_variants: Json | null
+          input_photos: Json | null
+          inventory_qty: number | null
+          label_extraction: Json | null
+          label_photo_url: string | null
+          measurements_verified_at: string | null
+          no_printed_label: boolean | null
+          notes: string | null
+          product_name: string | null
+          published_product_id: string | null
+          recognition: Json | null
+          rejection_reason: string | null
+          selected: Json | null
+          sku: string | null
+          source: string | null
+          status: string | null
+          submitted_at: string | null
+          supplier_id: string | null
+          updated_at: string | null
+          weight_oz: number | null
+        }
+        Insert: {
+          category?: string | null
+          confirmed_at?: string | null
+          copy?: Json | null
+          cost?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          dimensions?: Json | null
+          enhanced?: Json | null
+          id?: string | null
+          image_variants?: Json | null
+          input_photos?: Json | null
+          inventory_qty?: number | null
+          label_extraction?: Json | null
+          label_photo_url?: string | null
+          measurements_verified_at?: string | null
+          no_printed_label?: boolean | null
+          notes?: string | null
+          product_name?: string | null
+          published_product_id?: string | null
+          recognition?: Json | null
+          rejection_reason?: string | null
+          selected?: Json | null
+          sku?: string | null
+          source?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          supplier_id?: string | null
+          updated_at?: string | null
+          weight_oz?: number | null
+        }
+        Update: {
+          category?: string | null
+          confirmed_at?: string | null
+          copy?: Json | null
+          cost?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          dimensions?: Json | null
+          enhanced?: Json | null
+          id?: string | null
+          image_variants?: Json | null
+          input_photos?: Json | null
+          inventory_qty?: number | null
+          label_extraction?: Json | null
+          label_photo_url?: string | null
+          measurements_verified_at?: string | null
+          no_printed_label?: boolean | null
+          notes?: string | null
+          product_name?: string | null
+          published_product_id?: string | null
+          recognition?: Json | null
+          rejection_reason?: string | null
+          selected?: Json | null
+          sku?: string | null
+          source?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          supplier_id?: string | null
+          updated_at?: string | null
+          weight_oz?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_products_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dd_wholesaler_grabba_orders: {
         Row: {
@@ -155551,6 +155954,51 @@ export type Database = {
           wholesale_status?: string | null
         }
         Relationships: []
+      }
+      v_wholesaler_pick_slip: {
+        Row: {
+          billable_weight_oz: number | null
+          box_count: number | null
+          box_name: string | null
+          fulfillment_id: string | null
+          height_in: number | null
+          length_in: number | null
+          order_id: string | null
+          pick_items: Json | null
+          status: string | null
+          wholesaler_id: string | null
+          width_in: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_fulfillments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_fulfillments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_marketplace_order_timeline"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "marketplace_fulfillments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "marketplace_fulfillments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_yield_watch: {
         Row: {

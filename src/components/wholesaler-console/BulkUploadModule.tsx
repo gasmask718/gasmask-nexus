@@ -25,6 +25,13 @@ interface RawProduct {
   subcategory: string;
   price: number | null;
   images: string[];
+  sku: string;
+  inventory_qty: number | null;
+  supplier_cost: number | null;
+  weight_oz: number | null;
+  length_in: number | null;
+  width_in: number | null;
+  height_in: number | null;
   raw_data: Record<string, string>;
 }
 
@@ -39,7 +46,18 @@ interface ProcessedProduct extends RawProduct {
   color_label: string;
 }
 
+interface FailedRow {
+  name: string;
+  message: string;
+}
+
 type Step = 'upload' | 'processing' | 'review' | 'publish';
+
+const num = (v: unknown): number | null => {
+  if (v === null || v === undefined || v === '') return null;
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+};
 
 const STEPS: { key: Step; label: string; icon: React.ReactNode }[] = [
   { key: 'upload', label: 'Upload', icon: <Upload className="h-4 w-4" /> },
@@ -74,18 +92,23 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [dragOver, setDragOver] = useState(false);
+  const [failedRows, setFailedRows] = useState<FailedRow[]>([]);
+  const [publishedCount, setPublishedCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Download Template ─────────────────────────────────
   const downloadTemplate = () => {
-    const headers = ['product_name', 'description', 'category', 'subcategory', 'price', 'image_url'];
+    const headers = [
+      'product_name', 'description', 'category', 'subcategory', 'sku',
+      'supplier_cost', 'inventory_qty', 'weight_oz', 'length_in', 'width_in', 'height_in', 'image_url',
+    ];
     const sampleRows = [
-      ['Premium Cotton T-Shirt', 'High-quality 100% cotton crew neck tee', 'Apparel', 'Tops', '24.99', 'https://example.com/image1.jpg'],
-      ['Wireless Bluetooth Earbuds', 'Noise-cancelling earbuds with 24h battery', 'Electronics', 'Audio', '49.99', 'https://example.com/image2.jpg'],
-      ['Leather Crossbody Bag', 'Genuine leather bag with adjustable strap', 'Accessories', 'Bags', '89.99', ''],
+      ['Premium Cotton T-Shirt', 'High-quality 100% cotton crew neck tee', 'Apparel', 'Tops', 'TEE-BLK-M', '6.50', '120', '7', '10', '8', '1.5', 'https://example.com/image1.jpg'],
+      ['Wireless Bluetooth Earbuds', 'Noise-cancelling earbuds with 24h battery', 'Electronics', 'Audio', 'EAR-BT-01', '14.00', '60', '5.5', '4', '3', '2', 'https://example.com/image2.jpg'],
+      ['Leather Crossbody Bag', 'Genuine leather bag with adjustable strap', 'Accessories', 'Bags', 'BAG-LTH-BR', '28.75', '25', '22', '12', '9', '4', ''],
     ];
     const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
-    ws['!cols'] = [{ wch: 28 }, { wch: 45 }, { wch: 16 }, { wch: 16 }, { wch: 10 }, { wch: 40 }];
+    ws['!cols'] = [{ wch: 28 }, { wch: 45 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 13 }, { wch: 13 }, { wch: 11 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 40 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Products');
     XLSX.writeFile(wb, 'bulk_upload_template.xlsx');
@@ -93,6 +116,24 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
   };
 
   // ── Upload Handlers ──────────────────────────────────
+  const mapRow = (raw: Record<string, string>, idx: number): RawProduct => ({
+    id: `raw-${idx}-${Date.now()}`,
+    product_name: raw['product_name'] || raw['name'] || raw['title'] || raw['Product Name'] || raw['Name'] || `Item ${idx + 1}`,
+    description: raw['description'] || raw['desc'] || raw['Description'] || '',
+    category: raw['category'] || raw['Category'] || '',
+    subcategory: raw['subcategory'] || raw['Subcategory'] || '',
+    price: num(raw['price'] ?? raw['Price'] ?? raw['retail_price']),
+    images: (raw['images'] || raw['image'] || raw['image_url'] || raw['Image'] || '').toString().split(';').filter(Boolean),
+    sku: (raw['sku'] || raw['SKU'] || raw['upc'] || '').toString().trim(),
+    inventory_qty: num(raw['inventory_qty'] ?? raw['inventory'] ?? raw['qty'] ?? raw['quantity']),
+    supplier_cost: num(raw['supplier_cost'] ?? raw['cost'] ?? raw['your_price'] ?? raw['Cost']),
+    weight_oz: num(raw['weight_oz'] ?? raw['weight'] ?? raw['Weight']),
+    length_in: num(raw['length_in'] ?? raw['length']),
+    width_in: num(raw['width_in'] ?? raw['width']),
+    height_in: num(raw['height_in'] ?? raw['height']),
+    raw_data: raw,
+  });
+
   const parseCSV = (text: string): RawProduct[] => {
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
@@ -101,16 +142,7 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
       const vals = line.split(',').map(v => v.trim().replace(/"/g, ''));
       const raw: Record<string, string> = {};
       headers.forEach((h, i) => { raw[h] = vals[i] || ''; });
-      return {
-        id: `raw-${idx}-${Date.now()}`,
-        product_name: raw['product_name'] || raw['name'] || raw['title'] || raw['Product Name'] || raw['Name'] || `Item ${idx + 1}`,
-        description: raw['description'] || raw['desc'] || raw['Description'] || '',
-        category: raw['category'] || raw['Category'] || '',
-        subcategory: raw['subcategory'] || raw['Subcategory'] || '',
-        price: parseFloat(raw['price'] || raw['Price'] || raw['retail_price'] || '0') || null,
-        images: (raw['images'] || raw['image'] || raw['Image'] || '').split(';').filter(Boolean),
-        raw_data: raw,
-      };
+      return mapRow(raw, idx);
     });
   };
 
@@ -138,16 +170,7 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' });
         setParseProgress(80);
-        const items: RawProduct[] = json.map((row, idx) => ({
-          id: `raw-${idx}-${Date.now()}`,
-          product_name: row['product_name'] || row['name'] || row['title'] || row['Product Name'] || row['Name'] || `Item ${idx + 1}`,
-          description: row['description'] || row['desc'] || row['Description'] || '',
-          category: row['category'] || row['Category'] || '',
-          subcategory: row['subcategory'] || row['Subcategory'] || '',
-          price: parseFloat(row['price'] || row['Price'] || row['retail_price'] || '0') || null,
-          images: (row['images'] || row['image'] || row['Image'] || '').toString().split(';').filter(Boolean),
-          raw_data: row,
-        }));
+        const items: RawProduct[] = json.map((row, idx) => mapRow(row as Record<string, string>, idx));
         setParseProgress(100);
         setRawItems(items);
         toast.success(`Parsed ${items.length} items from Excel`);
@@ -258,31 +281,74 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
     toast.success('All items approved');
   };
 
-  // ── Publish ──────────────────────────────────────────
+  // ── Submit to review queue ───────────────────────────
+  // Bulk rows land in dd_catalog_drafts as pending_admin_review — the SAME gate the
+  // camera flow uses. Nothing here writes a live product. Every Postgres error is
+  // surfaced per row; a failure is NEVER counted as a success.
   const publishItems = async () => {
     const toPublish = processedItems.filter(p => p.status === 'accepted');
-    if (!toPublish.length) { toast.error('No approved items to publish'); return; }
+    if (!toPublish.length) { toast.error('No approved items to submit'); return; }
 
     setStep('publish');
     setIsPublishing(true);
+    setFailedRows([]);
 
-    let published = 0;
+    const { data: userRes } = await supabase.auth.getUser();
+    const uid = userRes.user?.id ?? null;
+
+    let created = 0;
+    const failures: FailedRow[] = [];
+
     for (const item of toPublish) {
-      try {
-        await supabase.from('products_all').insert({
-          wholesaler_id: wholesalerId,
-          product_name: item.ai_name,
-          description: item.ai_description,
-          images: item.images,
-          retail_price: item.price,
-          status: 'active',
-        });
-        published++;
-      } catch (e) { console.error('Publish error:', e); }
+      const dims = (item.length_in && item.width_in && item.height_in)
+        ? { length_in: item.length_in, width_in: item.width_in, height_in: item.height_in }
+        : null;
+
+      const { error } = await supabase.from('dd_catalog_drafts').insert({
+        created_by: uid,
+        supplier_id: wholesalerId ?? null,
+        submitted_by: uid,
+        submitted_by_wholesaler_id: wholesalerId ?? null,
+        submitted_at: new Date().toISOString(),
+        source: 'bulk_upload',
+        status: 'pending_admin_review',
+        product_name: item.ai_name,
+        category: item.ai_category || null,
+        sku: item.sku || null,
+        cost: item.supplier_cost,
+        inventory_qty: item.inventory_qty ?? 0,
+        weight_oz: item.weight_oz,
+        dimensions: dims,
+        input_photos: item.images,
+        selected: item.images,
+        copy: {
+          title: item.ai_name,
+          short_description: item.ai_description,
+          long_description: item.ai_description,
+          category_guess: item.ai_category,
+          subcategory: item.ai_subcategory,
+        },
+      });
+
+      if (error) {
+        failures.push({ name: item.ai_name, message: error.message });
+        console.error('Draft insert failed:', item.ai_name, error);
+      } else {
+        created++;
+      }
     }
 
+    setFailedRows(failures);
+    setPublishedCount(created);
     setIsPublishing(false);
-    toast.success(`Published ${published} products to catalog`);
+
+    if (failures.length === 0) {
+      toast.success(`${created} drafts created and sent for review.`);
+    } else if (created === 0) {
+      toast.error(`0 drafts created, ${failures.length} rows failed — see below.`);
+    } else {
+      toast.warning(`${created} drafts created, ${failures.length} rows failed — see below.`);
+    }
   };
 
   // ── Derived State ────────────────────────────────────
@@ -635,49 +701,83 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
             </Button>
             <Button onClick={publishItems} disabled={accepted === 0} className="gap-2">
               <Send className="h-4 w-4" />
-              Publish {accepted} Items
+              Submit {accepted} for review
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
       )}
 
-      {/* Step 4: Publish Summary */}
+      {/* Step 4: Submission Summary — reports what actually happened */}
       {step === 'publish' && (
         <Card className="border-border/50">
-          <CardContent className="py-16 text-center space-y-6">
+          <CardContent className="py-12 space-y-6">
             {isPublishing ? (
-              <>
+              <div className="text-center space-y-4">
                 <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-                <h3 className="text-xl font-bold">Publishing to Catalog…</h3>
-              </>
+                <h3 className="text-xl font-bold">Creating drafts…</h3>
+              </div>
             ) : (
               <>
-                <div className="mx-auto w-20 h-20 rounded-2xl bg-green-500/10 flex items-center justify-center">
-                  <CheckCircle className="h-10 w-10 text-green-400" />
+                <div className="text-center space-y-4">
+                  <div className={`mx-auto w-20 h-20 rounded-2xl flex items-center justify-center ${failedRows.length ? 'bg-amber-500/10' : 'bg-green-500/10'}`}>
+                    {failedRows.length
+                      ? <AlertTriangle className="h-10 w-10 text-amber-400" />
+                      : <CheckCircle className="h-10 w-10 text-green-400" />}
+                  </div>
+                  <h3 className="text-xl font-bold">
+                    {publishedCount} draft{publishedCount === 1 ? '' : 's'} created
+                    {failedRows.length > 0 && `, ${failedRows.length} row${failedRows.length === 1 ? '' : 's'} failed`}
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    Drafts are queued for our review team. Nothing is live on the storefront until we approve it
+                    and set the retail price.
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-lg mx-auto">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold">{rawItems.length}</div>
+                      <div className="text-xs text-muted-foreground">Uploaded</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">{accepted}</div>
+                      <div className="text-xs text-muted-foreground">Approved by you</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-400">{publishedCount}</div>
+                      <div className="text-xs text-muted-foreground">Drafts created</div>
+                    </div>
+                    <div className="text-center">
+                      <div className={`text-2xl font-bold ${failedRows.length ? 'text-destructive' : ''}`}>{failedRows.length}</div>
+                      <div className="text-xs text-muted-foreground">Failed</div>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold">Catalog Updated!</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-lg mx-auto">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{rawItems.length}</div>
-                    <div className="text-xs text-muted-foreground">Uploaded</div>
+
+                {failedRows.length > 0 && (
+                  <div className="max-w-3xl mx-auto rounded-lg border border-destructive/30 bg-destructive/10 overflow-hidden">
+                    <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-destructive border-b border-destructive/20">
+                      Rows that did not save — exact database error
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <tbody>
+                          {failedRows.map((f, i) => (
+                            <tr key={i} className="border-b border-destructive/10 align-top">
+                              <td className="p-3 font-medium w-1/3">{f.name}</td>
+                              <td className="p-3 font-mono text-[11px] text-destructive">{f.message}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{processedItems.length}</div>
-                    <div className="text-xs text-muted-foreground">Categorized</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-amber-400">{flagged}</div>
-                    <div className="text-xs text-muted-foreground">Flagged</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-400">{accepted}</div>
-                    <div className="text-xs text-muted-foreground">Published</div>
-                  </div>
+                )}
+
+                <div className="text-center">
+                  <Button variant="outline" onClick={() => { setStep('upload'); setRawItems([]); setProcessedItems([]); setParseProgress(0); setFailedRows([]); setPublishedCount(0); }}>
+                    <Upload className="h-4 w-4 mr-2" /> Upload more products
+                  </Button>
                 </div>
-                <Button variant="outline" onClick={() => { setStep('upload'); setRawItems([]); setProcessedItems([]); setParseProgress(0); }}>
-                  <Upload className="h-4 w-4 mr-2" /> Upload More Products
-                </Button>
               </>
             )}
           </CardContent>
