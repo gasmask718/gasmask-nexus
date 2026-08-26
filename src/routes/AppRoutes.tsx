@@ -2843,7 +2843,8 @@ export default function AppRoutes() {
         <Route path="/portal/join" element={<JoinOrg />} />
         <Route path="/portal/wholesaler" element={<WholesalerDashboard />} />
         <Route path="/portal/wholesaler/products" element={<WholesalerProducts />} />
-        <Route path="/portal/wholesaler/products/new" element={<WholesalerProductForm />} />
+        {/* ONE supplier-facing path to add products: the camera-first onboard flow. */}
+        <Route path="/portal/wholesaler/products/new" element={<Navigate to="/portal/wholesaler/catalog/onboard" replace />} />
         <Route path="/portal/wholesaler/products/:productId" element={<WholesalerProductForm />} />
         <Route path="/portal/wholesaler/products/:productId/edit" element={<WholesalerProductForm />} />
         <Route path="/portal/wholesaler/orders" element={<WholesalerOrders />} />
@@ -2855,7 +2856,7 @@ export default function AppRoutes() {
         <Route path="/portal/wholesaler/team" element={<WholesalerTeam />} />
         <Route path="/portal/wholesaler/transactions" element={<WholesalerTransactionHistory />} />
         <Route path="/portal/wholesaler/inventory" element={<WholesalerInventoryWorkflow />} />
-        <Route path="/portal/wholesaler/marketplace-inventory" element={<WholesalerMarketplaceInventory />} />
+        <Route path="/portal/wholesaler/marketplace-inventory" element={<Navigate to="/portal/wholesaler/catalog/onboard" replace />} />
         <Route path="/portal/wholesaler/order-grabba" element={<WholesalerOrderGrabba />} />
         <Route path="/portal/wholesaler/catalog/onboard" element={<WholesalerCatalogOnboard />} />
         <Route path="/portal/production/*" element={<ProductionPortal />} />
