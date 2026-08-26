@@ -20,7 +20,7 @@ export default function WholesalerCatalogOnboard() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [supplier, setSupplier] = useState<{ id: string; name: string } | null>(null);
   const [resolving, setResolving] = useState(true);
-  const [resolveError, setResolveError] = useState<string | null>(null);
+  const [advanced, setAdvanced] = useState(false);
 
   useEffect(() => {
     (async () => {
