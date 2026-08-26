@@ -157447,6 +157447,18 @@ export type Database = {
       get_creator_profile_completion: { Args: never; Returns: Json }
       get_creator_public_profile: { Args: { p_slug: string }; Returns: Json }
       get_creator_recommendations: { Args: never; Returns: Json }
+      get_cron_job_state: {
+        Args: { p_jobname: string }
+        Returns: {
+          job_active: boolean
+          jobname: string
+          last_start: string
+          last_status: string
+          return_message: string
+          switch_enabled: boolean
+          switch_key: string
+        }[]
+      }
       get_cross_sell_recommendations: {
         Args: { p_city?: string; p_trigger_category: string }
         Returns: {
