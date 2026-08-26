@@ -25,6 +25,13 @@ interface RawProduct {
   subcategory: string;
   price: number | null;
   images: string[];
+  sku: string;
+  inventory_qty: number | null;
+  supplier_cost: number | null;
+  weight_oz: number | null;
+  length_in: number | null;
+  width_in: number | null;
+  height_in: number | null;
   raw_data: Record<string, string>;
 }
 
@@ -39,7 +46,18 @@ interface ProcessedProduct extends RawProduct {
   color_label: string;
 }
 
+interface FailedRow {
+  name: string;
+  message: string;
+}
+
 type Step = 'upload' | 'processing' | 'review' | 'publish';
+
+const num = (v: unknown): number | null => {
+  if (v === null || v === undefined || v === '') return null;
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+};
 
 const STEPS: { key: Step; label: string; icon: React.ReactNode }[] = [
   { key: 'upload', label: 'Upload', icon: <Upload className="h-4 w-4" /> },
