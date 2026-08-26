@@ -70,7 +70,6 @@ export interface FundingInviteCandidate {
   phone_primary: string | null;
   city: string | null;
   state: string | null;
-  status: string | null;
   funding_interest_expressed: boolean | null;
   funding_interest_expressed_at: string | null;
   funding_qualified: boolean | null;
@@ -85,7 +84,7 @@ export function useFundingInviteCandidates() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ambassadors')
-        .select('id, name, email, phone_primary, city, state, status, funding_interest_expressed, funding_interest_expressed_at, funding_qualified, funding_qualified_at, funding_client_id')
+        .select('id, name, email, phone_primary, city, state, funding_interest_expressed, funding_interest_expressed_at, funding_qualified, funding_qualified_at, funding_client_id')
         .or('funding_interest_expressed.eq.true,funding_qualified.eq.true')
         .order('funding_interest_expressed_at', { ascending: false, nullsFirst: false });
       if (error) throw error;
