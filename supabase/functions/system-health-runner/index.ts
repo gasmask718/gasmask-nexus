@@ -26,7 +26,7 @@ const BLAND_API_KEY = Deno.env.get("BLAND_API_KEY") || "";
 const MAPBOX_TOKEN = Deno.env.get("MAPBOX_ACCESS_TOKEN") || Deno.env.get("VITE_MAPBOX_TOKEN") || "";
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
 
-type Status = "pass" | "warn" | "fail";
+type Status = "pass" | "warn" | "fail" | "paused";
 interface CheckResult { status: Status; message: string; details?: Record<string, unknown> }
 
 interface MonitoringConfig {
@@ -63,26 +63,58 @@ function twAuthHeader(): string | null {
 }
 
 // ─── CHECK IMPLEMENTATIONS ──────────────────────────────────────────────────
+interface CronState {
+  jobname: string;
+  job_active: boolean | null;
+  last_start: string | null;
+  last_status: string | null;
+  return_message: string | null;
+  switch_key: string | null;
+  switch_enabled: boolean | null;
+}
+
+async function readCronState(client: ReturnType<typeof sb>, jobname: string): Promise<CronState | null> {
+  const { data, error } = await client.rpc("get_cron_job_state", { p_jobname: jobname });
+  if (error) {
+    console.error(`[system-health] get_cron_job_state('${jobname}') failed:`, error.message);
+    return null;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  return (row as CronState) ?? null;
+}
+
+// A job that is intentionally OFF via the outreach switchboard (switch disabled AND
+// cron deactivated) is PAUSED, not failing. If the switch is ON, staleness is a real failure.
+function pausedByOutreachSwitch(row: CronState): CheckResult | null {
+  if (row.switch_key && row.switch_enabled === false && row.job_active === false) {
+    return {
+      status: "paused",
+      message: `Intentionally disabled via outreach switch '${row.switch_key}'`,
+      details: row as unknown as Record<string, unknown>,
+    };
+  }
+  return null;
+}
+
 async function checkCron(client: ReturnType<typeof sb>, check: any): Promise<CheckResult> {
   const jobname = check.config?.jobname;
   if (!jobname) return { status: "warn", message: "Registry missing jobname" };
-  const { data, error } = await client.rpc("get_last_cron_run", { p_jobname: jobname });
-  if (error) {
-    // Fallback: query via raw select
-    const r = await client.from("cron_last_runs_v" as any).select("*").eq("jobname", jobname).maybeSingle();
-    if (!r.data) return { status: "warn", message: `Could not look up cron '${jobname}': ${error.message}` };
-  }
-  const row = (data && data[0]) || data;
-  if (!row) return { status: "warn", message: `Cron '${jobname}' has no run history yet` };
+  const row = await readCronState(client, jobname);
+  if (!row) return { status: "warn", message: `Could not look up cron '${jobname}'` };
+
+  const paused = pausedByOutreachSwitch(row);
+  if (paused) return paused;
+
   const lastStart = row.last_start ? new Date(row.last_start) : null;
   const lastStatus = row.last_status as string;
-  if (!lastStart) return { status: "warn", message: `Cron '${jobname}' never run`, details: row };
+  if (!lastStart) return { status: "warn", message: `Cron '${jobname}' never run`, details: row as unknown as Record<string, unknown> };
   const ageMin = (Date.now() - lastStart.getTime()) / 60000;
   const cad = check.cadence_expected_minutes || 60;
-  if (lastStatus === "failed") return { status: "fail", message: `Last run FAILED ${Math.round(ageMin)}m ago`, details: row };
-  if (ageMin > cad * 2) return { status: "fail", message: `Stale ${Math.round(ageMin)}m (cadence ${cad}m)`, details: row };
-  if (ageMin > cad) return { status: "warn", message: `Late ${Math.round(ageMin)}m (cadence ${cad}m)`, details: row };
-  return { status: "pass", message: `Last ran ${Math.round(ageMin)}m ago (${lastStatus})`, details: row };
+  const det = row as unknown as Record<string, unknown>;
+  if (lastStatus === "failed") return { status: "fail", message: `Last run FAILED ${Math.round(ageMin)}m ago`, details: det };
+  if (ageMin > cad * 2) return { status: "fail", message: `Stale ${Math.round(ageMin)}m (cadence ${cad}m)`, details: det };
+  if (ageMin > cad) return { status: "warn", message: `Late ${Math.round(ageMin)}m (cadence ${cad}m)`, details: det };
+  return { status: "pass", message: `Last ran ${Math.round(ageMin)}m ago (${lastStatus})`, details: det };
 }
 
 async function checkIntegrationTwilio(): Promise<CheckResult> {
