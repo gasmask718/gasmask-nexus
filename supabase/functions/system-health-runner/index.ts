@@ -272,8 +272,32 @@ async function checkFunction(check: any): Promise<CheckResult> {
 }
 
 async function checkAgent(client: ReturnType<typeof sb>, check: any): Promise<CheckResult> {
+  // Preferred signal: did the agent's scheduled job actually EXECUTE recently and succeed?
+  // Business output (drafts, findings) is legitimately zero on quiet days, so it is never
+  // used as a liveness proxy when a cron job name is registered.
+  const jobname = check.config?.cron_jobname;
+  if (jobname) {
+    const row = await readCronState(client, jobname);
+    if (!row) return { status: "warn", message: `Could not look up agent job '${jobname}'` };
+
+    const paused = pausedByOutreachSwitch(row);
+    if (paused) return paused;
+
+    const det = row as unknown as Record<string, unknown>;
+    if (row.job_active === false) {
+      return { status: "paused", message: `Agent job '${jobname}' is deactivated in the scheduler`, details: det };
+    }
+    if (!row.last_start) return { status: "warn", message: `Agent job '${jobname}' has never run`, details: det };
+    const ageMin = (Date.now() - new Date(row.last_start).getTime()) / 60000;
+    const cad = check.cadence_expected_minutes || 1500;
+    if (row.last_status === "failed") return { status: "fail", message: `Agent job '${jobname}' last execution FAILED ${Math.round(ageMin)}m ago`, details: det };
+    if (ageMin > cad * 2) return { status: "fail", message: `Agent job '${jobname}' has not executed for ${Math.round(ageMin)}m (expected ≤${cad})`, details: det };
+    if (ageMin > cad) return { status: "warn", message: `Agent job '${jobname}' late ${Math.round(ageMin)}m`, details: det };
+    return { status: "pass", message: `Executed ${Math.round(ageMin)}m ago (${row.last_status})`, details: det };
+  }
+
   const tbl = check.config?.outputs_table;
-  if (!tbl) return { status: "pass", message: "Agent registered (no outputs table to probe)" };
+  if (!tbl) return { status: "pass", message: "Agent registered (no execution job or outputs table to probe)" };
   try {
     const { data, error } = await client.from(tbl).select("created_at").order("created_at", { ascending: false }).limit(1);
     if (error) return { status: "warn", message: `Probe error on ${tbl}: ${error.message}` };
