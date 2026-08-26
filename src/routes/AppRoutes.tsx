@@ -1026,6 +1026,7 @@ const UTCategoryDomination = lazy(() => import('@/pages/os/unforgettable/UTCateg
 const UTGlobalSupplierControl = lazy(() => import('@/pages/os/unforgettable/UTGlobalSupplierControl'));
 const UTEventSpaces = lazy(() => import('@/pages/os/unforgettable/UTEventSpaces'));
 const UTVirtualTours = lazy(() => import('@/pages/os/unforgettable/UTVirtualTours'));
+const UTCoverageMap = lazy(() => import('@/pages/os/unforgettable/UTCoverageMap'));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
