@@ -701,49 +701,83 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
             </Button>
             <Button onClick={publishItems} disabled={accepted === 0} className="gap-2">
               <Send className="h-4 w-4" />
-              Publish {accepted} Items
+              Submit {accepted} for review
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
       )}
 
-      {/* Step 4: Publish Summary */}
+      {/* Step 4: Submission Summary — reports what actually happened */}
       {step === 'publish' && (
         <Card className="border-border/50">
-          <CardContent className="py-16 text-center space-y-6">
+          <CardContent className="py-12 space-y-6">
             {isPublishing ? (
-              <>
+              <div className="text-center space-y-4">
                 <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-                <h3 className="text-xl font-bold">Publishing to Catalog…</h3>
-              </>
+                <h3 className="text-xl font-bold">Creating drafts…</h3>
+              </div>
             ) : (
               <>
-                <div className="mx-auto w-20 h-20 rounded-2xl bg-green-500/10 flex items-center justify-center">
-                  <CheckCircle className="h-10 w-10 text-green-400" />
+                <div className="text-center space-y-4">
+                  <div className={`mx-auto w-20 h-20 rounded-2xl flex items-center justify-center ${failedRows.length ? 'bg-amber-500/10' : 'bg-green-500/10'}`}>
+                    {failedRows.length
+                      ? <AlertTriangle className="h-10 w-10 text-amber-400" />
+                      : <CheckCircle className="h-10 w-10 text-green-400" />}
+                  </div>
+                  <h3 className="text-xl font-bold">
+                    {publishedCount} draft{publishedCount === 1 ? '' : 's'} created
+                    {failedRows.length > 0 && `, ${failedRows.length} row${failedRows.length === 1 ? '' : 's'} failed`}
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    Drafts are queued for our review team. Nothing is live on the storefront until we approve it
+                    and set the retail price.
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-lg mx-auto">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold">{rawItems.length}</div>
+                      <div className="text-xs text-muted-foreground">Uploaded</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">{accepted}</div>
+                      <div className="text-xs text-muted-foreground">Approved by you</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-400">{publishedCount}</div>
+                      <div className="text-xs text-muted-foreground">Drafts created</div>
+                    </div>
+                    <div className="text-center">
+                      <div className={`text-2xl font-bold ${failedRows.length ? 'text-destructive' : ''}`}>{failedRows.length}</div>
+                      <div className="text-xs text-muted-foreground">Failed</div>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold">Catalog Updated!</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-lg mx-auto">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{rawItems.length}</div>
-                    <div className="text-xs text-muted-foreground">Uploaded</div>
+
+                {failedRows.length > 0 && (
+                  <div className="max-w-3xl mx-auto rounded-lg border border-destructive/30 bg-destructive/10 overflow-hidden">
+                    <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-destructive border-b border-destructive/20">
+                      Rows that did not save — exact database error
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <tbody>
+                          {failedRows.map((f, i) => (
+                            <tr key={i} className="border-b border-destructive/10 align-top">
+                              <td className="p-3 font-medium w-1/3">{f.name}</td>
+                              <td className="p-3 font-mono text-[11px] text-destructive">{f.message}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{processedItems.length}</div>
-                    <div className="text-xs text-muted-foreground">Categorized</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-amber-400">{flagged}</div>
-                    <div className="text-xs text-muted-foreground">Flagged</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-400">{accepted}</div>
-                    <div className="text-xs text-muted-foreground">Published</div>
-                  </div>
+                )}
+
+                <div className="text-center">
+                  <Button variant="outline" onClick={() => { setStep('upload'); setRawItems([]); setProcessedItems([]); setParseProgress(0); setFailedRows([]); setPublishedCount(0); }}>
+                    <Upload className="h-4 w-4 mr-2" /> Upload more products
+                  </Button>
                 </div>
-                <Button variant="outline" onClick={() => { setStep('upload'); setRawItems([]); setProcessedItems([]); setParseProgress(0); }}>
-                  <Upload className="h-4 w-4 mr-2" /> Upload More Products
-                </Button>
               </>
             )}
           </CardContent>
