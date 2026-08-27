@@ -1041,6 +1041,14 @@ const UnforgettableCRMDashboard = lazy(() => import('@/pages/crm/unforgettable')
 // Other OS modules
 const ICleanDashboard = lazy(() => import('@/pages/os/iclean/ICleanDashboard'));
 const PlayboxxxDashboard = lazy(() => import('@/pages/os/playboxxx/PlayboxxxDashboard'));
+const PbxRecruitingDashboard = lazy(() => import('@/pages/os/playboxxx/recruiting/RecruitingDashboard'));
+const PbxStaffSourcing = lazy(() => import('@/pages/os/playboxxx/recruiting/StaffSourcing'));
+const PbxCreatorSourcing = lazy(() => import('@/pages/os/playboxxx/recruiting/CreatorSourcing'));
+const PbxSearchAssignments = lazy(() => import('@/pages/os/playboxxx/recruiting/SearchAssignments'));
+const PbxCandidates = lazy(() => import('@/pages/os/playboxxx/recruiting/Candidates'));
+const PbxAutomationRuns = lazy(() => import('@/pages/os/playboxxx/recruiting/AutomationRuns'));
+const PbxAuditLogs = lazy(() => import('@/pages/os/playboxxx/recruiting/AuditLogs'));
+const PbxRecruitingSettings = lazy(() => import('@/pages/os/playboxxx/recruiting/RecruitingSettings'));
 const SpecialNeedsDashboard = lazy(() => import('@/pages/os/specialneeds/SpecialNeedsDashboard'));
 // FundingDashboard (orphan /os/funding) — REMOVED, use /funding-machine instead
 const GrantsDashboard = lazy(() => import('@/pages/os/grants/GrantsDashboard'));
