@@ -107,7 +107,18 @@ function FulfillmentRow({ f, pickSlip, onGenerateLabel, onMarkShipped, isGenerat
     }
   };
 
-  const itemCount = Array.isArray(f.items_snapshot) ? f.items_snapshot.length : 0;
+  // Pick slip beats a count: names + quantities, and the box ddBoxing already
+  // chose when the rate was bought. Fall back to the snapshot only if the view
+  // has no row yet.
+  const pickItems = pickSlip?.pick_items?.length
+    ? pickSlip.pick_items
+    : (Array.isArray(f.items_snapshot) ? f.items_snapshot : []).map((i: any) => ({
+        name: i?.name ?? i?.product_name ?? i?.title ?? 'Item',
+        qty: Number(i?.qty ?? i?.quantity ?? 1),
+        sku: i?.sku ?? null,
+      }));
+  const itemCount = pickItems.reduce((s, i) => s + (Number(i.qty) || 1), 0);
+
   const isActing = actionId === f.id;
 
   return (
