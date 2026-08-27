@@ -17,15 +17,38 @@ function json(body: Record<string, unknown>, status = 200) {
 
 async function findUserByEmail(admin: AdminClient, email: string) {
   const normalized = email.toLowerCase();
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  // Targeted lookup first (avoids listing every user, which can fail at scale).
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/auth/v1/admin/users?per_page=50&filter=${encodeURIComponent(normalized)}`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    if (res.ok) {
+      const payload = await res.json();
+      const match = (payload.users ?? []).find(
+        (candidate: { email?: string }) => candidate.email?.toLowerCase() === normalized,
+      );
+      if (match) return match;
+    } else {
+      console.error("admin users filter lookup failed", res.status, await res.text());
+    }
+  } catch (err) {
+    console.error("admin users filter lookup threw", err);
+  }
+
   for (let page = 1; page <= 20; page += 1) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
     if (error) throw error;
     const user = data.users.find((candidate) => candidate.email?.toLowerCase() === normalized);
     if (user) return user;
-    if (data.users.length < 1000) break;
+    if (data.users.length < 200) break;
   }
   return null;
 }
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -83,14 +106,35 @@ serve(async (req) => {
         console.error("admin createUser failed", createError);
         return json({ error: createError.message }, 500);
       }
-      if (existing.email_confirmed_at) {
+      // Same-email adoption: the email is taken from the server-verified
+      // invitation row (never from the client), so an existing auth user with
+      // this exact normalized email is the invited person. Adopt it instead of
+      // creating a second account. Any mismatch fails closed.
+      if ((existing.email ?? "").toLowerCase() !== email) {
         return json({ error: "Account already exists. Please sign in to accept the invite." }, 409);
       }
 
+      // Conflicting identity guard: an accepted invitation for this email that
+      // resolved to a different auth user means the state is ambiguous.
+      const { data: conflicting, error: conflictError } = await admin
+        .from("user_invitations")
+        .select("id, accepted_user_id")
+        .eq("email", email)
+        .eq("invite_status", "accepted")
+        .not("accepted_user_id", "is", null)
+        .neq("accepted_user_id", existing.id)
+        .limit(1);
+      if (conflictError) throw conflictError;
+      if (conflicting && conflicting.length > 0) {
+        return json({ error: "Conflicting account state. Contact an administrator." }, 409);
+      }
+
+      // Preserves the existing Google identity: only password/metadata change.
       const { error: updateError } = await admin.auth.admin.updateUserById(existing.id, {
         password,
         email_confirm: true,
         user_metadata: {
+
           ...(existing.user_metadata ?? {}),
           ...(fullName ? { full_name: fullName } : {}),
         },
