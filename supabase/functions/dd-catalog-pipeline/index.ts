@@ -611,10 +611,24 @@ async function runPublish(body: any) {
 
   // images jsonb array — confirmed B2 hero MUST be images[0]; selected[0] is the user-confirmed hero,
   // remaining selected items form the detail-page gallery. Fall back to enhanced[0] only as a safety net.
-  const selectedUrls = selected.map((s: any) => (typeof s === 'string' ? s : s.url)).filter(Boolean);
-  const enhancedUrls = ((draft.enhanced as any[]) || []).map((e: any) => e.url).filter(Boolean);
+  // LABEL SHOTS NEVER REACH THE STOREFRONT: the label photo is kept on the draft for our
+  // reference (weight/dims provenance) and is filtered out of the published gallery here.
+  const labelUrl = (draft as any).label_photo_url || null;
+  const isLabel = (s: any) => {
+    const url = typeof s === 'string' ? s : s?.url;
+    const role = typeof s === 'string' ? null : s?.role;
+    return role === 'label' || (!!labelUrl && url === labelUrl);
+  };
+  const selectedUrls = selected
+    .filter((s: any) => !isLabel(s))
+    .map((s: any) => (typeof s === 'string' ? s : s.url))
+    .filter(Boolean);
+  const enhancedUrls = ((draft.enhanced as any[]) || [])
+    .filter((e: any) => !isLabel(e))
+    .map((e: any) => e.url)
+    .filter(Boolean);
   const images = selectedUrls.length ? selectedUrls : enhancedUrls;
-  if (!images.length) throw new Error('cannot publish: no selected images (need at least 1 for images[0] hero)');
+  if (!images.length) throw new Error('cannot publish: no non-label images (need at least 1 for images[0] hero)');
 
   const recognitionEarly = (draft.recognition || {}) as any;
 

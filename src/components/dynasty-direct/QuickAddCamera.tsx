@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
-  Camera, Loader2, Check, SkipForward, RotateCcw, AlertTriangle, CheckCircle2, DollarSign,
+  Camera, Loader2, Check, SkipForward, RotateCcw, AlertTriangle, CheckCircle2, DollarSign, Tag,
 } from 'lucide-react';
 
 /**
@@ -13,20 +13,19 @@ import {
  *
  * Point → point → (point) → type a price → done. Extraction runs by itself the
  * moment the shots are in. We only interrupt when something genuinely cannot
- * proceed (no label, unreadable weight/dims, low product confidence). Quality
- * control lives in the Dynasty admin review queue, NOT in the wholesaler's hands.
+ * proceed (no label, unreadable weight/dims, low product confidence), and then
+ * ONE question at a time — never a form. Quality control lives in the Dynasty
+ * admin review queue, NOT in the wholesaler's hands.
  *
- * Shots are uploaded immediately and remembered in localStorage, so a dropped
- * connection in a warehouse never loses work already taken.
+ * PHOTO ORGANISATION: front first, extra angles next, LABEL LAST. selected[0] is
+ * the primary image. The label shot is tagged role='label' and is filtered out of
+ * the storefront gallery at publish time — it exists only as our weight/dimension
+ * provenance. Every non-label image is normalised through remove.bg (key lives in
+ * dd_ai_config.remove_bg_api_key, read server-side). If that call fails we keep
+ * the original photo and flag the draft for retry rather than blocking the supplier.
  */
 
 type Phase = 'capture' | 'processing' | 'gaps' | 'price' | 'submitting' | 'done';
-
-const SHOTS = [
-  { key: 'front', label: 'Front of the product', hint: 'Fill the frame. Straight on.', optional: false },
-  { key: 'label', label: 'The label', hint: 'The panel with weight and dimensions.', optional: false },
-  { key: 'angle', label: 'Another angle', hint: 'Optional — side, back, or the case.', optional: true },
-] as const;
 
 interface Props {
   supplierId: string;
@@ -40,11 +39,16 @@ interface Measurements {
   height_in: number | null;
 }
 
+const FRONT = 0;
+const LABEL = 1;
+const ANGLE = 2;
+
 export function QuickAddCamera({ supplierId, supplierName }: Props) {
   const storageKey = `dd_quickadd_shots_${supplierId}`;
 
   const [phase, setPhase] = useState<Phase>('capture');
   const [shots, setShots] = useState<(string | null)[]>([null, null, null]);
+  const [noLabel, setNoLabel] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [activeShot, setActiveShot] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -53,20 +57,34 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [recognition, setRecognition] = useState<any>(null);
   const [copy, setCopy] = useState<any>({});
+  const [organisedPhotos, setOrganisedPhotos] = useState<any[]>([]);
+  const [imageVariants, setImageVariants] = useState<any[]>([]);
+  const [imageRetry, setImageRetry] = useState(false);
   const [measurements, setMeasurements] = useState<Measurements>({
     weight_oz: null, length_in: null, width_in: null, height_in: null,
   });
   const [gaps, setGaps] = useState<string[]>([]);
+  const [gapIndex, setGapIndex] = useState(0);
   const [productName, setProductName] = useState('');
   const [cost, setCost] = useState('');
   const [addedToday, setAddedToday] = useState(0);
   const [lastAdded, setLastAdded] = useState<string>('');
 
+  const shotSpec = [
+    { key: 'front', label: 'Front of the product', hint: 'Fill the frame. Straight on.' },
+    noLabel
+      ? { key: 'angle1', label: 'Another angle', hint: 'Optional — side, back, or the case.' }
+      : { key: 'label', label: 'The label', hint: 'The panel with weight and dimensions.' },
+    { key: 'angle', label: 'Another angle', hint: 'Optional — side, back, or the case.' },
+  ];
+
   // ---- running count -------------------------------------------------------
   const loadCount = useCallback(async () => {
     const since = new Date(); since.setHours(0, 0, 0, 0);
-    const { count } = await supabase
-      .from('dd_catalog_drafts')
+    // Supplier-side read: the raw drafts table is not readable by wholesalers —
+    // dd_wholesaler_drafts_safe scopes rows to their own account and hides our pricing.
+    const { count } = await (supabase as any)
+      .from('dd_wholesaler_drafts_safe')
       .select('id', { count: 'exact', head: true })
       .eq('supplier_id', supplierId)
       .gte('created_at', since.toISOString());
@@ -121,9 +139,9 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
 
       // AUTO-ADVANCE. No Next button to hunt for.
       if (index < 2) setActiveShot(index + 1);
-      if (index === 1 || index === 2) {
+      if (!noLabel && (index === LABEL || index === ANGLE)) {
         // Both required shots are in — start processing by itself.
-        if (next[0] && next[1]) setTimeout(() => runProcessing(next), 350);
+        if (next[FRONT] && next[LABEL]) setTimeout(() => runProcessing(next, false), 350);
       }
     } catch (e: any) {
       toast.error('That shot did not upload', { description: e.message ?? 'Tap the button and try again — nothing else was lost.' });
@@ -140,8 +158,15 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     uploadShot(file, activeShot);
   }
 
-  function skipThird() {
-    if (shots[0] && shots[1]) runProcessing(shots);
+  function declareNoLabel() {
+    setNoLabel(true);
+    toast.message('No printed label', { description: 'We will ask you for the weight and size in a moment.' });
+    if (activeShot === LABEL) setActiveShot(ANGLE);
+  }
+
+  function finishShooting() {
+    if (!shots[FRONT]) { toast.error('We need at least the front of the product'); return; }
+    runProcessing(shots, noLabel);
   }
 
   // ---- automatic processing -----------------------------------------------
@@ -152,38 +177,48 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     return data;
   }
 
-  async function runProcessing(currentShots: (string | null)[]) {
+  async function runProcessing(currentShots: (string | null)[], skipLabel: boolean) {
     setPhase('processing');
     setProgress(['Saving your photos…']);
     try {
       const { data: userRes } = await supabase.auth.getUser();
       const inputPhotos = currentShots.filter(Boolean) as string[];
+      const labelUrl = skipLabel ? null : currentShots[LABEL];
+      // Storefront-eligible shots, already in display order: front first, then angles.
+      const galleryUrls = (skipLabel
+        ? [currentShots[FRONT], currentShots[LABEL], currentShots[ANGLE]]
+        : [currentShots[FRONT], currentShots[ANGLE]]
+      ).filter(Boolean) as string[];
+
       const { data: draft, error: draftErr } = await supabase.from('dd_catalog_drafts').insert({
         created_by: userRes.user?.id ?? null,
         supplier_id: supplierId,
         product_name: 'Pending photo read',
         input_photos: inputPhotos,
-        label_photo_url: currentShots[1],
-
+        label_photo_url: labelUrl,
+        no_printed_label: skipLabel,
+        source: 'quick_add_camera',
         status: 'candidates',
       }).select('id').single();
       if (draftErr || !draft) throw new Error(draftErr?.message || 'could not start a draft');
       setDraftId(draft.id);
 
       setProgress((p) => [...p, 'Reading the product…']);
-      const rec = await pipeline({ mode: 'recognize_product', draft_id: draft.id, photo_url: currentShots[0] });
+      const rec = await pipeline({ mode: 'recognize_product', draft_id: draft.id, photo_url: currentShots[FRONT] });
       setRecognition(rec);
       setProductName(rec.product_name || '');
 
-      setProgress((p) => [...p, 'Reading the label…']);
       let label: any = null;
-      try {
-        label = await pipeline({
-          mode: 'read_package_label', draft_id: draft.id,
-          product_name: rec.product_name, photo_url: currentShots[1],
-        });
-      } catch (e: any) {
-        setProgress((p) => [...p, `Label read failed — ${e.message}`]);
+      if (!skipLabel) {
+        setProgress((p) => [...p, 'Reading the label…']);
+        try {
+          label = await pipeline({
+            mode: 'read_package_label', draft_id: draft.id,
+            product_name: rec.product_name, photo_url: labelUrl,
+          });
+        } catch (e: any) {
+          setProgress((p) => [...p, `Label read failed — ${e.message}`]);
+        }
       }
       const n = label?.normalized ?? {};
       const m: Measurements = {
@@ -194,17 +229,58 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       };
       setMeasurements(m);
 
-      setProgress((p) => [...p, 'Cleaning up the image…']);
-      try {
-        await pipeline({ mode: 'standardize_image', draft_id: draft.id, photo_url: currentShots[0] });
-      } catch { setProgress((p) => [...p, 'Image cleanup skipped']); }
+      // ---- ORGANISE + NORMALISE THE PHOTOS ---------------------------------
+      // Every storefront image goes through the same remove.bg + resize pass so the
+      // whole catalogue shares one backdrop, framing and aspect ratio. A failure is
+      // never fatal: we keep the original and mark the draft for a retry.
+      setProgress((p) => [...p, 'Cleaning up the images…']);
+      const variants: any[] = [];
+      const organised: any[] = [];
+      let retry = false;
+      for (let i = 0; i < galleryUrls.length; i++) {
+        const url = galleryUrls[i];
+        let displayUrl = url;
+        try {
+          const res = await pipeline({ mode: 'standardize_image', draft_id: draft.id, photo_url: url });
+          const vs = (res?.variants || []) as { size: string; url: string }[];
+          vs.forEach((v) => variants.push({ ...v, source_url: url }));
+          displayUrl = vs.find((v) => v.size === 'card')?.url
+            || vs.find((v) => v.size === 'clean')?.url
+            || url;
+          if (!res?.removebg_used) {
+            retry = true;
+            variants.push({ size: 'retry', url, retry: true, reason: 'background removal unavailable' });
+          }
+        } catch (e: any) {
+          retry = true;
+          variants.push({ size: 'retry', url, retry: true, reason: e?.message || 'standardize failed' });
+        }
+        organised.push({
+          url: displayUrl,
+          original_url: url,
+          role: i === 0 ? 'front' : 'angle',
+          primary: i === 0,
+          position: i,
+        });
+      }
+      // LABEL LAST — stored for our reference, excluded from the storefront gallery.
+      if (labelUrl) {
+        organised.push({
+          url: labelUrl, original_url: labelUrl, role: 'label',
+          primary: false, storefront: false, position: organised.length,
+        });
+      }
+      setOrganisedPhotos(organised);
+      setImageVariants(variants);
+      setImageRetry(retry);
+      if (retry) setProgress((p) => [...p, 'Image cleanup will be finished on our side']);
 
       setProgress((p) => [...p, 'Writing the listing…']);
       try {
         const c = await pipeline({
           mode: 'copy_pricing', draft_id: draft.id,
           product_name: rec.product_name, brand_hint: rec.brand_visible || '',
-          cost: 0, hero_url: currentShots[0], supplier_id: supplierId,
+          cost: 0, hero_url: currentShots[FRONT], supplier_id: supplierId,
         });
         setCopy({
           title: c.title, short_description: c.short_description, long_description: c.long_description,
@@ -216,12 +292,14 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       // WHAT ACTUALLY BLOCKS US — nothing else gets asked.
       const missing: string[] = [];
       if (!rec.product_name || rec.confidence === 'low') missing.push('name');
-      if (label && label.label_detected === false) missing.push('weight', 'dims');
-      else {
+      if (skipLabel || (label && label.label_detected === false)) {
+        missing.push('weight', 'dims');
+      } else {
         if (!(Number(m.weight_oz) > 0)) missing.push('weight');
         if (!(Number(m.length_in) > 0 && Number(m.width_in) > 0 && Number(m.height_in) > 0)) missing.push('dims');
       }
       setGaps(missing);
+      setGapIndex(0);
       setPhase(missing.length ? 'gaps' : 'price');
     } catch (e: any) {
       toast.error(e.message ?? 'Processing failed');
@@ -243,7 +321,11 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
         recognition: recognition ?? null,
         copy,
         category: copy?.category_guess || null,
-        selected: (shots.filter(Boolean) as string[]).map((url) => ({ url })),
+        selected: organisedPhotos.length
+          ? organisedPhotos
+          : (shots.filter(Boolean) as string[]).map((url) => ({ url })),
+        image_variants: imageVariants,
+        no_printed_label: noLabel,
         weight_oz: measurements.weight_oz,
         dimensions: dims,
         status: 'pending_admin_review',
@@ -264,12 +346,17 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
 
   function reset() {
     setShots([null, null, null]);
+    setNoLabel(false);
     setActiveShot(0);
     setDraftId(null);
     setRecognition(null);
     setCopy({});
+    setOrganisedPhotos([]);
+    setImageVariants([]);
+    setImageRetry(false);
     setMeasurements({ weight_oz: null, length_in: null, width_in: null, height_in: null });
     setGaps([]);
+    setGapIndex(0);
     setProductName('');
     setCost('');
     setProgress([]);
@@ -277,10 +364,18 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     setPhase('capture');
   }
 
-  const gapsSatisfied =
-    (!gaps.includes('name') || productName.trim().length > 1) &&
-    (!gaps.includes('weight') || Number(measurements.weight_oz) > 0) &&
-    (!gaps.includes('dims') || (Number(measurements.length_in) > 0 && Number(measurements.width_in) > 0 && Number(measurements.height_in) > 0));
+  // ---- ONE QUESTION AT A TIME ---------------------------------------------
+  const currentGap = gaps[gapIndex];
+  const currentGapAnswered =
+    currentGap === 'name' ? productName.trim().length > 1
+    : currentGap === 'weight' ? Number(measurements.weight_oz) > 0
+    : currentGap === 'dims' ? (Number(measurements.length_in) > 0 && Number(measurements.width_in) > 0 && Number(measurements.height_in) > 0)
+    : true;
+
+  function nextGap() {
+    if (gapIndex + 1 < gaps.length) setGapIndex(gapIndex + 1);
+    else setPhase('price');
+  }
 
   // -------------------------------------------------------------------------
   return (
@@ -306,8 +401,8 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
             <div className="text-xs uppercase tracking-wide text-muted-foreground">
               Step {activeShot + 1} of 3
             </div>
-            <h1 className="text-2xl font-bold leading-tight">{SHOTS[activeShot].label}</h1>
-            <p className="text-sm text-muted-foreground">{SHOTS[activeShot].hint}</p>
+            <h1 className="text-2xl font-bold leading-tight">{shotSpec[activeShot].label}</h1>
+            <p className="text-sm text-muted-foreground">{shotSpec[activeShot].hint}</p>
           </div>
 
           <button
@@ -330,7 +425,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
           </button>
 
           <div className="grid grid-cols-3 gap-2">
-            {SHOTS.map((s, i) => (
+            {shotSpec.map((s, i) => (
               <button
                 key={s.key}
                 type="button"
@@ -355,9 +450,26 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
             ))}
           </div>
 
-          {activeShot === 2 && shots[0] && shots[1] && (
-            <Button variant="secondary" size="lg" className="w-full h-14 text-base" onClick={skipThird}>
-              <SkipForward className="h-5 w-5 mr-2" /> Skip — that is enough
+          {/* LOOSE GOODS — no printed label anywhere on the item */}
+          {!noLabel && (
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full h-12 text-sm"
+              onClick={declareNoLabel}
+            >
+              <Tag className="h-4 w-4 mr-2" /> This item has no printed label
+            </Button>
+          )}
+          {noLabel && (
+            <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+              No printed label — we will ask you for the weight and size after the photos.
+            </div>
+          )}
+
+          {shots[FRONT] && (
+            <Button variant="secondary" size="lg" className="w-full h-14 text-base" onClick={finishShooting}>
+              <SkipForward className="h-5 w-5 mr-2" /> Done — that is enough
             </Button>
           )}
 
@@ -396,21 +508,26 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
         </Card>
       )}
 
-      {/* ---------------- GAPS — only what genuinely blocks ---------------- */}
-      {phase === 'gaps' && (
+      {/* ---------------- GAPS — ONE question, never a form ---------------- */}
+      {phase === 'gaps' && currentGap && (
         <div className="space-y-4">
           <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3">
             <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
             <p className="text-sm">
-              Almost there — {gaps.includes('name') ? 'we could not read the product clearly' : 'the label did not read cleanly'}.
-              Just this and you are done.
+              {noLabel
+                ? 'No label on this one — just tell us this and you are done.'
+                : currentGap === 'name'
+                  ? 'We could not read the product clearly.'
+                  : 'The label did not read cleanly.'}
+              {gaps.length > 1 && <span className="text-muted-foreground"> ({gapIndex + 1} of {gaps.length})</span>}
             </p>
           </div>
 
-          {gaps.includes('name') && (
+          {currentGap === 'name' && (
             <div className="space-y-1">
               <label className="text-base font-semibold">What is this item?</label>
               <Input
+                autoFocus
                 className="h-14 text-lg"
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
@@ -419,10 +536,11 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
             </div>
           )}
 
-          {gaps.includes('weight') && (
+          {currentGap === 'weight' && (
             <div className="space-y-1">
-              <label className="text-base font-semibold">We could not read the weight — what is it?</label>
+              <label className="text-base font-semibold">How much does it weigh?</label>
               <Input
+                autoFocus
                 type="number" inputMode="decimal" className="h-14 text-lg"
                 value={measurements.weight_oz ?? ''}
                 onChange={(e) => setMeasurements((m) => ({ ...m, weight_oz: Number(e.target.value) || null }))}
@@ -431,7 +549,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
             </div>
           )}
 
-          {gaps.includes('dims') && (
+          {currentGap === 'dims' && (
             <div className="space-y-1">
               <label className="text-base font-semibold">Box size in inches</label>
               <div className="grid grid-cols-3 gap-2">
@@ -449,8 +567,8 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
 
           <Button
             size="lg" className="w-full h-14 text-base"
-            disabled={!gapsSatisfied}
-            onClick={() => setPhase('price')}
+            disabled={!currentGapAnswered}
+            onClick={nextGap}
           >
             Continue
           </Button>
@@ -461,7 +579,9 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       {(phase === 'price' || phase === 'submitting') && (
         <div className="space-y-5">
           <div className="flex items-center gap-3">
-            {shots[0] && <img src={shots[0] as string} alt="" className="h-16 w-16 rounded-lg object-cover" />}
+            {(organisedPhotos[0]?.url || shots[FRONT]) && (
+              <img src={organisedPhotos[0]?.url || (shots[FRONT] as string)} alt="" className="h-16 w-16 rounded-lg object-cover" />
+            )}
             <div className="min-w-0">
               <div className="font-semibold truncate">{productName || recognition?.product_name || 'Your item'}</div>
               <div className="text-xs text-muted-foreground">
@@ -497,6 +617,11 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
               ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Submitting…</>
               : <>Submit item</>}
           </Button>
+          {imageRetry && (
+            <p className="text-center text-xs text-muted-foreground">
+              We will finish tidying the photos on our side — nothing for you to do.
+            </p>
+          )}
           <p className="text-center text-xs text-muted-foreground">
             Dynasty Direct reviews every item before it goes live. You can edit it later from your product list.
           </p>

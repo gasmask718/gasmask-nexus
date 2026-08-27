@@ -37,6 +37,9 @@ interface PendingDraft {
   weight_oz: number | null;
   dimensions: any;
   measurements_verified_at: string | null;
+  label_photo_url?: string | null;
+  image_variants?: any;
+  no_printed_label?: boolean | null;
   supplier_name?: string;
 }
 
@@ -62,9 +65,11 @@ export default function DynastyDirectCatalogReview() {
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('dd_catalog_drafts')
-      .select('id, product_name, supplier_id, created_by, created_at, cost, selected, copy, pricing, price_research, weight_oz, dimensions, measurements_verified_at')
+    // ADMIN READ PATH: raw dd_catalog_drafts SELECT is revoked from authenticated.
+    // Admin/owner reads go through the role-gated dd_admin_catalog_drafts view.
+    const { data, error } = await (supabase as any)
+      .from('dd_admin_catalog_drafts')
+      .select('id, product_name, supplier_id, created_by, created_at, cost, selected, copy, pricing, price_research, weight_oz, dimensions, measurements_verified_at, label_photo_url, image_variants, no_printed_label')
       .eq('status', 'pending_admin_review')
       .order('created_at', { ascending: false });
     if (error) { toast.error(error.message); setLoading(false); return; }
@@ -243,6 +248,42 @@ export default function DynastyDirectCatalogReview() {
                     <code className="text-[10px] text-muted-foreground">draft {d.id.slice(0, 8)} · wholesaler {d.supplier_id?.slice(0, 8) || '—'}</code>
                   </div>
                 </div>
+
+                {/* ORGANISED PHOTOS — storefront gallery order, label kept separate */}
+                {(() => {
+                  const sel = Array.isArray(d.selected) ? d.selected : [];
+                  const norm = sel.map((s: any) => (typeof s === 'string' ? { url: s } : s)).filter((s: any) => s?.url);
+                  const gallery = norm.filter((s: any) => s.role !== 'label' && s.url !== d.label_photo_url);
+                  const retry = Array.isArray(d.image_variants)
+                    ? (d.image_variants as any[]).some((v: any) => v?.retry)
+                    : false;
+                  if (!gallery.length && !d.label_photo_url) return null;
+                  return (
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="text-xs font-semibold flex items-center gap-2">
+                        Storefront gallery ({gallery.length})
+                        {retry && <Badge variant="destructive" className="text-[10px]">image cleanup needs retry</Badge>}
+                        {d.no_printed_label && <Badge variant="outline" className="text-[10px]">no printed label</Badge>}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {gallery.map((s: any, i: number) => (
+                          <div key={s.url} className="relative">
+                            <img src={s.url} alt="" className="h-20 w-20 object-contain bg-muted rounded border" referrerPolicy="no-referrer" />
+                            <span className="absolute bottom-0 left-0 rounded-tr bg-background/90 px-1 text-[9px]">
+                              {i === 0 ? 'primary' : (s.role || 'angle')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {d.label_photo_url && (
+                        <div className="pt-1">
+                          <div className="text-[10px] text-muted-foreground mb-1">Label — reference only, never shown on the storefront</div>
+                          <img src={d.label_photo_url} alt="" className="h-20 w-20 object-contain bg-muted rounded border opacity-80" referrerPolicy="no-referrer" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* PRICING INTELLIGENCE */}
                 <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
