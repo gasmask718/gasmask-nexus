@@ -308,7 +308,10 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
         created_by: uid,
         supplier_id: wholesalerId ?? null,
         submitted_by: uid,
-        submitted_by_wholesaler_id: wholesalerId ?? null,
+        // NOTE: submitted_by_wholesaler_id FKs to `wholesalers`, NOT `wholesaler_profiles`.
+        // The portal's supplier id is a wholesaler_profiles.id and there is zero id overlap
+        // between the two tables, so setting it here failed every row with a foreign-key
+        // violation. Ownership is carried by supplier_id + created_by, which review uses.
         submitted_at: new Date().toISOString(),
         source: 'bulk_upload',
         status: 'pending_admin_review',
@@ -671,7 +674,15 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
                             </Badge>
                           )}
                           {item.status === 'rejected' && <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-[10px]">Rejected</Badge>}
+                          {/* Drafts accept a missing weight, but nothing can SHIP without it —
+                              say so here rather than letting it surface at publish. */}
+                          {(!(Number(item.weight_oz) > 0) || !(Number(item.length_in) > 0 && Number(item.width_in) > 0 && Number(item.height_in) > 0)) && (
+                            <Badge className="mt-1 bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px]">
+                              needs weight / size
+                            </Badge>
+                          )}
                         </td>
+
                         <td className="p-3">
                           <div className="flex items-center justify-center gap-1">
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(editingId === item.id ? null : item.id)}>

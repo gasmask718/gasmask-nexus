@@ -1,6 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { useWholesalerProfile } from "./useWholesalerProfile";
 
 export interface WholesalerPayout {
@@ -42,9 +41,14 @@ export interface FinancialSummary {
   averageOrderValue: number;
 }
 
+/**
+ * LEGACY payout view (wholesaler_payouts). The money truth is dd_split_ledger —
+ * see useWholesalerLedger. There is no payout request: Stripe Connect transfers
+ * are pushed on approval, so the old requestPayout mutation was removed rather
+ * than left contradicting the transfer model.
+ */
 export function useWholesalerPayouts() {
   const { profile } = useWholesalerProfile();
-  const queryClient = useQueryClient();
 
   const payoutsQuery = useQuery({
     queryKey: ['wholesaler-payouts', profile?.id],
@@ -121,54 +125,9 @@ export function useWholesalerPayouts() {
     enabled: !!profile,
   });
 
-  const requestPayout = useMutation({
-    mutationFn: async () => {
-      if (!profile) throw new Error('No wholesaler profile');
-
-      // Calculate pending earnings
-      const { data: orders } = await supabase
-        .from('marketplace_orders')
-        .select('subtotal')
-        .eq('wholesaler_id', profile.id)
-        .eq('payment_status', 'paid')
-        .eq('fulfillment_status', 'delivered');
-
-      const totalEarnings = orders?.reduce((sum, o) => sum + (Number(o.subtotal) || 0), 0) || 0;
-      const platformFee = totalEarnings * 0.10; // 10% platform fee
-      const netAmount = totalEarnings - platformFee;
-
-      if (netAmount < 50) {
-        throw new Error('Minimum payout amount is $50');
-      }
-
-      const { error } = await supabase
-        .from('wholesaler_payouts')
-        .insert([{
-          wholesaler_id: profile.id,
-          amount: totalEarnings,
-          platform_fee: platformFee,
-          net_amount: netAmount,
-          status: 'pending',
-          period_end: new Date().toISOString().split('T')[0],
-        }]);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wholesaler-payouts'] });
-      queryClient.invalidateQueries({ queryKey: ['wholesaler-financial-summary'] });
-      toast.success('Payout requested');
-    },
-    onError: (error) => {
-      toast.error(`Failed to request payout: ${error.message}`);
-    },
-  });
-
   return {
     payouts: payoutsQuery.data || [],
     financialSummary: financialSummaryQuery.data,
     isLoading: payoutsQuery.isLoading || financialSummaryQuery.isLoading,
-    requestPayout: requestPayout.mutateAsync,
-    isRequesting: requestPayout.isPending,
   };
 }
