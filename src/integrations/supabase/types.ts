@@ -71332,6 +71332,184 @@ export type Database = {
           },
         ]
       }
+      icw_dispatch_log: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          job_id: string | null
+          note: string | null
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          job_id?: string | null
+          note?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          job_id?: string | null
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "icw_dispatch_log_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "icw_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      icw_jobs: {
+        Row: {
+          address: string | null
+          assigned_worker_id: string | null
+          category: string
+          created_at: string
+          external_booking_id: string | null
+          id: string
+          price: number | null
+          scheduled_at: string | null
+          state: string | null
+          status: Database["public"]["Enums"]["icw_job_status"]
+          sub_service: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          assigned_worker_id?: string | null
+          category: string
+          created_at?: string
+          external_booking_id?: string | null
+          id?: string
+          price?: number | null
+          scheduled_at?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["icw_job_status"]
+          sub_service?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          assigned_worker_id?: string | null
+          category?: string
+          created_at?: string
+          external_booking_id?: string | null
+          id?: string
+          price?: number | null
+          scheduled_at?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["icw_job_status"]
+          sub_service?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "icw_jobs_assigned_worker_id_fkey"
+            columns: ["assigned_worker_id"]
+            isOneToOne: false
+            referencedRelation: "icw_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      icw_state_config: {
+        Row: {
+          confidence: string
+          created_at: string
+          deli_oven_market_density: string | null
+          handyman_license_gate: string | null
+          id: string
+          notes: string | null
+          priority_rank: number | null
+          snow_vertical: boolean
+          specialty_license_gate: string | null
+          state: string
+          tier: string | null
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          confidence?: string
+          created_at?: string
+          deli_oven_market_density?: string | null
+          handyman_license_gate?: string | null
+          id?: string
+          notes?: string | null
+          priority_rank?: number | null
+          snow_vertical?: boolean
+          specialty_license_gate?: string | null
+          state: string
+          tier?: string | null
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          confidence?: string
+          created_at?: string
+          deli_oven_market_density?: string | null
+          handyman_license_gate?: string | null
+          id?: string
+          notes?: string | null
+          priority_rank?: number | null
+          snow_vertical?: boolean
+          specialty_license_gate?: string | null
+          state?: string
+          tier?: string | null
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
+      icw_workers: {
+        Row: {
+          approved: boolean
+          availability: string | null
+          category_groups: string[]
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          license_status: string
+          notes: string | null
+          phone: string | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved?: boolean
+          availability?: string | null
+          category_groups?: string[]
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          license_status?: string
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved?: boolean
+          availability?: string | null
+          category_groups?: string[]
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          license_status?: string
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       idea_internal_notes: {
         Row: {
           author_id: string
@@ -160023,6 +160201,12 @@ export type Database = {
         | "on_site_service"
         | "virtual"
         | "digital"
+      icw_job_status:
+        | "pending"
+        | "matched"
+        | "in_progress"
+        | "complete"
+        | "cancelled"
       idea_status:
         | "new"
         | "triaged"
@@ -160683,6 +160867,13 @@ export const Constants = {
         "on_site_service",
         "virtual",
         "digital",
+      ],
+      icw_job_status: [
+        "pending",
+        "matched",
+        "in_progress",
+        "complete",
+        "cancelled",
       ],
       idea_status: [
         "new",
