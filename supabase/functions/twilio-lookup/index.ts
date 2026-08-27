@@ -76,7 +76,13 @@ Deno.serve(async (req) => {
     let looked_up = 0, phone_live = 0, phone_dead = 0, skipped = 0, errors = 0;
 
     for (const row of rows ?? []) {
-      const phone = (row.phone_e164 ?? "").trim();
+      const raw = (row.phone_e164 ?? "").trim();
+      const phone = normalize(raw);
+
+      // Store the normalized value back so the pool stays clean.
+      if (phone && phone !== raw) {
+        await supabase.from("leads").update({ phone_e164: phone }).eq("id", row.id);
+      }
 
       if (!E164.test(phone)) {
         await supabase.from("leads").update({
@@ -129,7 +135,9 @@ Deno.serve(async (req) => {
           verified_at: new Date().toISOString(),
           verified_by: "twilio_lookup",
           verify_status: dead ? "phone_dead" : "phone_live",
+          verify_notes: null,
         }).eq("id", row.id);
+
 
         looked_up++;
         if (dead) phone_dead++; else phone_live++;
