@@ -13,6 +13,7 @@ import {
   MOCK_RUNS,
   MOCK_SCRAPERS,
 } from './shared';
+import OverpassStaffDiscovery from './OverpassStaffDiscovery';
 
 export default function AutomationRuns() {
   const rows = MOCK_RUNS;
@@ -98,6 +99,8 @@ export default function AutomationRuns() {
         </TabsContent>
 
         <TabsContent value="scrapers" className="mt-4 space-y-4">
+          <OverpassStaffDiscovery />
+
           <Card>
             <CardHeader><CardTitle className="text-base">Registered Scrapers</CardTitle></CardHeader>
             <CardContent className="overflow-x-auto">
@@ -129,15 +132,24 @@ export default function AutomationRuns() {
                       <TableCell>{s.schedule}</TableCell>
                       <TableCell className="text-muted-foreground">{s.lastRun}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="border-destructive/40 text-destructive">
-                          {s.status}
+                        <Badge
+                          variant="outline"
+                          className={s.id === 'scraper-overpass-staff'
+                            ? 'border-primary/40 text-primary'
+                            : 'border-destructive/40 text-destructive'}
+                        >
+                          {s.id === 'scraper-overpass-staff' ? 'Live (Discovery Only)' : s.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => toast.info('Scraper is not connected yet — this is a UI placeholder.')}
+                          onClick={() =>
+                            s.id === 'scraper-overpass-staff'
+                              ? toast.info('Use the Overpass Staff Discovery console above to run this scraper.')
+                              : toast.info('Scraper is not connected yet — this is a UI placeholder.')
+                          }
                         >
                           <Play className="h-3.5 w-3.5 mr-1" />
                           Run Now
