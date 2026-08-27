@@ -120,7 +120,11 @@ export default function AutomationRuns() {
                 </TableHeader>
                 <TableBody>
                   {MOCK_SCRAPERS.map((s) => (
-                    <TableRow key={s.id}>
+                    <TableRow
+                      key={s.id}
+                      className={s.id === 'scraper-overpass-staff' ? 'cursor-pointer hover:bg-muted/50' : ''}
+                      onClick={() => s.id === 'scraper-overpass-staff' && setOverpassOpen(true)}
+                    >
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <Bot className="h-4 w-4 text-muted-foreground" />
@@ -146,11 +150,14 @@ export default function AutomationRuns() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            s.id === 'scraper-overpass-staff'
-                              ? toast.info('Use the Overpass Staff Discovery console above to run this scraper.')
-                              : toast.info('Scraper is not connected yet — this is a UI placeholder.')
-                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (s.id === 'scraper-overpass-staff') {
+                              setOverpassOpen(true);
+                            } else {
+                              toast.info('Scraper is not connected yet — this is a UI placeholder.');
+                            }
+                          }}
                         >
                           <Play className="h-3.5 w-3.5 mr-1" />
                           Run Now
