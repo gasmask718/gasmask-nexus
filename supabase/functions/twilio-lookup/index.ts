@@ -148,7 +148,8 @@ Deno.serve(async (req) => {
           const body = await res.text();
           console.error(`Twilio lookup failed [${res.status}] ${phone}: ${body}`);
           errors++;
-          await sleep(150);
+          // Instant-fail (401/5xx): short backoff only, no full pacing tick.
+          await sleep(25);
           continue;
         }
 
