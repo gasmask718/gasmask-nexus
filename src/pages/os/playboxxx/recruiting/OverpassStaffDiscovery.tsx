@@ -75,10 +75,19 @@ export default function OverpassStaffDiscovery() {
 
   const query = useMemo(() => buildQuery(areaId, categories), [areaId, categories]);
   const payload = useMemo(() => `data=${encodeURIComponent(query)}`, [query]);
+  // Exact overpass-turbo.eu reference headers. Origin/Referer/User-Agent are
+  // forbidden in browser fetch — they are applied by the overpass-discovery
+  // backend proxy, which sends exactly this request to Overpass.
   const headers = useMemo(
     () => ({
       Accept: '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      Connection: 'keep-alive',
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      Origin: 'https://overpass-turbo.eu',
+      Referer: 'https://overpass-turbo.eu/',
+      'User-Agent':
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36',
     }),
     [],
   );
@@ -89,6 +98,8 @@ export default function OverpassStaffDiscovery() {
         ...Object.entries(headers).map(([k, v]) => `${k}: ${v}`),
         '',
         payload,
+        '',
+        '(sent server-side via the overpass-discovery proxy — browsers cannot set Origin/Referer/User-Agent)',
       ].join('\n'),
     [headers, payload],
   );
