@@ -18,7 +18,15 @@ const CATEGORIES = [
 
 const E164 = /^\+[1-9]\d{1,14}$/;
 
+function normalize(raw: string): string {
+  const digits = (raw ?? "").replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return (raw ?? "").trim();
+}
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
