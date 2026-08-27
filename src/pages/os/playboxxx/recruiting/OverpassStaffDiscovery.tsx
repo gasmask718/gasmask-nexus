@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dialog';
 import { Copy, Loader2, Play, Plus, Pencil, Trash2, Info, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { FunctionsHttpError } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { EmptyState } from './shared';
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
