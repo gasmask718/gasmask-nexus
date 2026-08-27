@@ -38,12 +38,12 @@ interface OsmResult {
   tags: Record<string, string>;
 }
 
-function buildQuery(areaId: string, categories: OsmCategory[]) {
+function buildQuery(location: string, categories: OsmCategory[]) {
   const lines = categories
     .filter((c) => c.key.trim() && c.value.trim())
     .map((c) => `  nwr["${c.key.trim()}"="${c.value.trim()}"](area.searchArea);`)
     .join('\n');
-  return `[out:json][timeout:60];\narea(id:${areaId})->.searchArea;\n(\n${lines}\n);\nout center tags;`;
+  return `[out:json][timeout:60];\n{{geocodeArea:${location}}}->.searchArea;\n(\n${lines}\n);\nout center tags;`;
 }
 
 async function copy(label: string, text: string) {
