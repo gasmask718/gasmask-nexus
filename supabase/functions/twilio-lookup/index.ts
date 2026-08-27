@@ -85,11 +85,11 @@ Deno.serve(async (req) => {
       const probe = normalize(testNumber);
       const res = await fetch(
         `https://lookups.twilio.com/v2/PhoneNumbers/${encodeURIComponent(probe)}?Fields=line_type_intelligence`,
-        { headers: { Authorization: auth } },
+        { headers: { Authorization: probeAuth } },
       );
       const text = await res.text();
       return new Response(
-        JSON.stringify({ mode: "test", auth_mode: authMode, number: probe, status: res.status, body: text.slice(0, 800) }),
+        JSON.stringify({ mode: "test", auth_mode: probeMode, number: probe, status: res.status, body: text.slice(0, 800) }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
