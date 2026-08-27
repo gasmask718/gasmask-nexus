@@ -39,23 +39,52 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Prefer the scoped API-key pair; fall back to the master SID/token.
+    const apiSid = Deno.env.get("TWILIO_API_SID");
+    const apiSecret = Deno.env.get("TWILIO_API_SECRET");
     const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const token = Deno.env.get("TWILIO_AUTH_TOKEN");
-    if (!sid || !token) {
+
+    let authUser: string | undefined;
+    let authPass: string | undefined;
+    let authMode = "";
+    if (apiSid && apiSecret) {
+      authUser = apiSid; authPass = apiSecret; authMode = "api_key";
+    } else if (sid && token) {
+      authUser = sid; authPass = token; authMode = "master";
+    }
+    if (!authUser || !authPass) {
       return new Response(
         JSON.stringify({ error: "Twilio credentials not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    const auth = "Basic " + btoa(`${sid}:${token}`);
+    const auth = "Basic " + btoa(`${authUser}:${authPass}`);
 
-    let limit = 200;
+    let limit = 300;
+    let testNumber: string | null = null;
     try {
       const body = await req.json();
       if (body && typeof body.limit === "number" && body.limit > 0) {
-        limit = Math.min(Math.floor(body.limit), 1000);
+        limit = Math.min(Math.floor(body.limit), 300);
       }
+      if (body && typeof body.test_number === "string") testNumber = body.test_number;
     } catch (_) { /* no body */ }
+
+    // Single-number auth probe: no DB reads or writes.
+    if (testNumber) {
+      const probe = normalize(testNumber);
+      const res = await fetch(
+        `https://lookups.twilio.com/v2/PhoneNumbers/${encodeURIComponent(probe)}?Fields=line_type_intelligence`,
+        { headers: { Authorization: auth } },
+      );
+      const text = await res.text();
+      return new Response(
+        JSON.stringify({ mode: "test", auth_mode: authMode, number: probe, status: res.status, body: text.slice(0, 800) }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
 
     const { data: rows, error: selErr } = await supabase
       .from("leads")
