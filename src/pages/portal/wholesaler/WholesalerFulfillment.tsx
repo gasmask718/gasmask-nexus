@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useWholesalerFulfillments, type WholesalerFulfillment as WholesalerFulfillmentType } from "@/services/wholesaler/useWholesalerFulfillments";
+import { useWholesalerPickSlips, type PickSlip } from "@/services/wholesaler/useWholesalerPickSlips";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
