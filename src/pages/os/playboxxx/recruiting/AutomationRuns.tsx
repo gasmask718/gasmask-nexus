@@ -13,6 +13,7 @@ import {
   MOCK_RUNS,
   MOCK_SCRAPERS,
 } from './shared';
+import OverpassStaffDiscovery from './OverpassStaffDiscovery';
 
 export default function AutomationRuns() {
   const rows = MOCK_RUNS;
