@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dialog';
 import { Copy, Loader2, Play, Plus, Pencil, Trash2, Info, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { FunctionsHttpError } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { EmptyState } from './shared';
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
@@ -73,10 +75,19 @@ export default function OverpassStaffDiscovery() {
 
   const query = useMemo(() => buildQuery(areaId, categories), [areaId, categories]);
   const payload = useMemo(() => `data=${encodeURIComponent(query)}`, [query]);
+  // Exact overpass-turbo.eu reference headers. Origin/Referer/User-Agent are
+  // forbidden in browser fetch — they are applied by the overpass-discovery
+  // backend proxy, which sends exactly this request to Overpass.
   const headers = useMemo(
     () => ({
       Accept: '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      Connection: 'keep-alive',
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      Origin: 'https://overpass-turbo.eu',
+      Referer: 'https://overpass-turbo.eu/',
+      'User-Agent':
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36',
     }),
     [],
   );
@@ -87,6 +98,8 @@ export default function OverpassStaffDiscovery() {
         ...Object.entries(headers).map(([k, v]) => `${k}: ${v}`),
         '',
         payload,
+        '',
+        '(sent server-side via the overpass-discovery proxy — browsers cannot set Origin/Referer/User-Agent)',
       ].join('\n'),
     [headers, payload],
   );
@@ -110,20 +123,21 @@ export default function OverpassStaffDiscovery() {
     if (categories.length === 0) { toast.error('Add at least one category first'); return; }
     setRunning(true); setError(null); setResults(null); setRunMeta(null);
     const started = performance.now();
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 90_000);
     try {
-      const res = await fetch(OVERPASS_URL, {
-        method: 'POST',
-        headers,
-        body: payload,
-        signal: controller.signal,
+      // Sent via the overpass-discovery edge function, which issues the exact
+      // reference POST (overpass-turbo.eu headers) to Overpass. No persistence.
+      const { data: json, error: fnError } = await supabase.functions.invoke('overpass-discovery', {
+        body: { query },
       });
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`Overpass API error ${res.status}: ${text.slice(0, 300) || res.statusText}`);
+      if (fnError) {
+        const details = fnError instanceof FunctionsHttpError ? await fnError.context.text() : fnError.message;
+        let msg = details;
+        try {
+          const parsed = JSON.parse(details);
+          msg = parsed.details ? `${parsed.error}: ${String(parsed.details).slice(0, 200)}` : parsed.error || details;
+        } catch { /* keep raw details */ }
+        throw new Error(msg || 'Overpass proxy request failed');
       }
-      const json = await res.json();
       const elements: any[] = Array.isArray(json?.elements) ? json.elements : [];
       const parsed: OsmResult[] = elements.map((el) => {
         const tags: Record<string, string> = el.tags || {};
@@ -149,20 +163,15 @@ export default function OverpassStaffDiscovery() {
       if (parsed.length === 0) toast.info('No results found for the selected location and categories.');
       else toast.success('Search completed successfully.');
     } catch (e: any) {
-      const msg =
-        e?.name === 'AbortError'
-          ? 'Overpass request timed out.'
-          : e instanceof TypeError
-            ? 'Network error — could not reach the Overpass API.'
-            : e?.message || 'Unexpected error running the Overpass request.';
+      const msg = e?.message || 'Unexpected error running the Overpass request.';
       setError(msg);
       setRunMeta({ ms: performance.now() - started, location, categories: categoryLabel, status: 'Failed' });
       toast.error(msg);
     } finally {
-      clearTimeout(timer);
       setRunning(false);
     }
   };
+
 
   const Field = ({ label, value }: { label: string; value: string }) => (
     <div>
