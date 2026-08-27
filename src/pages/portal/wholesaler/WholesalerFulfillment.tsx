@@ -381,6 +381,8 @@ export default function WholesalerFulfillment() {
                 <FulfillmentRow
                   key={f.id}
                   f={f}
+                  pickSlip={pickSlips[f.id]}
+
                   onGenerateLabel={generateLabel}
                   onMarkShipped={markShipped}
                   isGenerating={isGeneratingLabel}
