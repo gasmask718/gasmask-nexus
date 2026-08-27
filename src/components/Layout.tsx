@@ -1418,6 +1418,17 @@ const Layout = ({ children }: LayoutProps) => {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🎭 PLAYBOXX OS HUB */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.playboxxHub.id,
+          DYNASTY_NAVIGATION.playboxxHub.name,
+          DYNASTY_NAVIGATION.playboxxHub.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 🚗 TOPTIER EXPERIENCE — dedicated hub */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="pt-2 border-t" style={{ borderTopColor: '#C9A84C' }}>
