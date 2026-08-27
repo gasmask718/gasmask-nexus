@@ -674,7 +674,15 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
                             </Badge>
                           )}
                           {item.status === 'rejected' && <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-[10px]">Rejected</Badge>}
+                          {/* Drafts accept a missing weight, but nothing can SHIP without it —
+                              say so here rather than letting it surface at publish. */}
+                          {(!(Number(item.weight_oz) > 0) || !(Number(item.length_in) > 0 && Number(item.width_in) > 0 && Number(item.height_in) > 0)) && (
+                            <Badge className="mt-1 bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px]">
+                              needs weight / size
+                            </Badge>
+                          )}
                         </td>
+
                         <td className="p-3">
                           <div className="flex items-center justify-center gap-1">
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(editingId === item.id ? null : item.id)}>
