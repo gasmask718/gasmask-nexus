@@ -63,16 +63,25 @@ Deno.serve(async (req) => {
 
     let limit = 300;
     let testNumber: string | null = null;
+    let authOverride: string | null = null;
     try {
       const body = await req.json();
       if (body && typeof body.limit === "number" && body.limit > 0) {
         limit = Math.min(Math.floor(body.limit), 300);
       }
       if (body && typeof body.test_number === "string") testNumber = body.test_number;
+      if (body && typeof body.auth === "string") authOverride = body.auth;
     } catch (_) { /* no body */ }
 
     // Single-number auth probe: no DB reads or writes.
     if (testNumber) {
+      let probeUser = authUser, probePass = authPass, probeMode = authMode;
+      if (authOverride === "master" && sid && token) {
+        probeUser = sid; probePass = token; probeMode = "master";
+      } else if (authOverride === "api_key_alt" && Deno.env.get("TWILIO_API_KEY") && apiSecret) {
+        probeUser = Deno.env.get("TWILIO_API_KEY")!; probePass = apiSecret; probeMode = "api_key_alt";
+      }
+      const probeAuth = "Basic " + btoa(`${probeUser}:${probePass}`);
       const probe = normalize(testNumber);
       const res = await fetch(
         `https://lookups.twilio.com/v2/PhoneNumbers/${encodeURIComponent(probe)}?Fields=line_type_intelligence`,
