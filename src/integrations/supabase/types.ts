@@ -77297,6 +77297,228 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          addr_key: string | null
+          address_line: string
+          assigned_to: string | null
+          business_name: string
+          business_status: string | null
+          carrier: string | null
+          category: string | null
+          city: string | null
+          county: string | null
+          created_at: string | null
+          do_not_contact: boolean | null
+          fit_score: number | null
+          hours_json: Json | null
+          id: string
+          lat: number | null
+          lead_type: string
+          line_type: string | null
+          lng: number | null
+          neighborhood: string | null
+          open_24h: boolean | null
+          phone_e164: string | null
+          promoted_at: string | null
+          promoted_store_id: string | null
+          rating: number | null
+          review_count: number | null
+          scraped_at: string | null
+          source: string
+          source_id: string | null
+          source_payload: Json | null
+          state: string
+          tier: number | null
+          updated_at: string | null
+          verified_at: string | null
+          verified_by: string | null
+          verify_notes: string | null
+          verify_status: string | null
+          website: string | null
+          zip: string | null
+        }
+        Insert: {
+          addr_key?: string | null
+          address_line: string
+          assigned_to?: string | null
+          business_name: string
+          business_status?: string | null
+          carrier?: string | null
+          category?: string | null
+          city?: string | null
+          county?: string | null
+          created_at?: string | null
+          do_not_contact?: boolean | null
+          fit_score?: number | null
+          hours_json?: Json | null
+          id?: string
+          lat?: number | null
+          lead_type: string
+          line_type?: string | null
+          lng?: number | null
+          neighborhood?: string | null
+          open_24h?: boolean | null
+          phone_e164?: string | null
+          promoted_at?: string | null
+          promoted_store_id?: string | null
+          rating?: number | null
+          review_count?: number | null
+          scraped_at?: string | null
+          source: string
+          source_id?: string | null
+          source_payload?: Json | null
+          state: string
+          tier?: number | null
+          updated_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          verify_notes?: string | null
+          verify_status?: string | null
+          website?: string | null
+          zip?: string | null
+        }
+        Update: {
+          addr_key?: string | null
+          address_line?: string
+          assigned_to?: string | null
+          business_name?: string
+          business_status?: string | null
+          carrier?: string | null
+          category?: string | null
+          city?: string | null
+          county?: string | null
+          created_at?: string | null
+          do_not_contact?: boolean | null
+          fit_score?: number | null
+          hours_json?: Json | null
+          id?: string
+          lat?: number | null
+          lead_type?: string
+          line_type?: string | null
+          lng?: number | null
+          neighborhood?: string | null
+          open_24h?: boolean | null
+          phone_e164?: string | null
+          promoted_at?: string | null
+          promoted_store_id?: string | null
+          rating?: number | null
+          review_count?: number | null
+          scraped_at?: string | null
+          source?: string
+          source_id?: string | null
+          source_payload?: Json | null
+          state?: string
+          tier?: number | null
+          updated_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          verify_notes?: string | null
+          verify_status?: string | null
+          website?: string | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_orphan_watch"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_addressless_call_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_prior_customer_segments"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_profile_completeness"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_public_store_locator"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_restock_alerts"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_product_mix"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_products_carried"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "leads_promoted_store_id_fkey"
+            columns: ["promoted_store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       leads_raw: {
         Row: {
           address: string
@@ -121487,6 +121709,63 @@ export type Database = {
           },
         ]
       }
+      sweep_runs: {
+        Row: {
+          after_dedupe: number | null
+          api_cost_usd: number | null
+          dupes_skipped: number | null
+          finished_at: string | null
+          grid_cells: number | null
+          id: string
+          lead_type: string
+          metro: string
+          new_leads: number | null
+          notes: string | null
+          queries_run: number | null
+          raw_results: number | null
+          started_at: string | null
+          state: string
+          status: string | null
+          tier: number | null
+        }
+        Insert: {
+          after_dedupe?: number | null
+          api_cost_usd?: number | null
+          dupes_skipped?: number | null
+          finished_at?: string | null
+          grid_cells?: number | null
+          id?: string
+          lead_type: string
+          metro: string
+          new_leads?: number | null
+          notes?: string | null
+          queries_run?: number | null
+          raw_results?: number | null
+          started_at?: string | null
+          state: string
+          status?: string | null
+          tier?: number | null
+        }
+        Update: {
+          after_dedupe?: number | null
+          api_cost_usd?: number | null
+          dupes_skipped?: number | null
+          finished_at?: string | null
+          grid_cells?: number | null
+          id?: string
+          lead_type?: string
+          metro?: string
+          new_leads?: number | null
+          notes?: string | null
+          queries_run?: number | null
+          raw_results?: number | null
+          started_at?: string | null
+          state?: string
+          status?: string | null
+          tier?: number | null
+        }
+        Relationships: []
+      }
       system_alert_config: {
         Row: {
           alert_phone: string | null
@@ -145190,14 +145469,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -152064,6 +152343,21 @@ export type Database = {
           },
         ]
       }
+      v_lead_reach: {
+        Row: {
+          avg_fit: number | null
+          category: string | null
+          confirmed_carries: number | null
+          lead_type: string | null
+          leads: number | null
+          live_lines: number | null
+          promoted: number | null
+          state: string | null
+          tier: number | null
+          with_phone: number | null
+        }
+        Relationships: []
+      }
       v_legacy_invoice_price_clusters: {
         Row: {
           avg_total: number | null
@@ -158610,6 +158904,10 @@ export type Database = {
         Returns: boolean
       }
       production_staff: { Args: { p_user: string }; Returns: boolean }
+      promote_lead: {
+        Args: { p_by: string; p_lead_id: string }
+        Returns: string
+      }
       promote_quick_contact: {
         Args: {
           p_due_date?: string
