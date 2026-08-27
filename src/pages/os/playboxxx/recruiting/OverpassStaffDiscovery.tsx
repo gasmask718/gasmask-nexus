@@ -73,7 +73,7 @@ export default function OverpassStaffDiscovery() {
   const [runMeta, setRunMeta] = useState<{ ms: number; location: string; categories: string; status: string } | null>(null);
   const [selected, setSelected] = useState<OsmResult | null>(null);
 
-  const query = useMemo(() => buildQuery(areaId, categories), [areaId, categories]);
+  const query = useMemo(() => buildQuery(location, categories), [location, categories]);
   const payload = useMemo(() => `data=${encodeURIComponent(query)}`, [query]);
   // Exact overpass-turbo.eu reference headers. Origin/Referer/User-Agent are
   // forbidden in browser fetch — they are applied by the overpass-discovery
