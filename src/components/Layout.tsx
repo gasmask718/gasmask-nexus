@@ -481,6 +481,20 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/special-needs', label: '♿ Special Needs App OS', icon: Accessibility },
     ],
   },
+  playboxxHub: {
+    id: 'playboxx-hub',
+    name: '🎭 Playboxx OS Hub',
+    items: [
+      { path: '/os/playboxxx/recruiting', label: '📊 Recruiting Dashboard', icon: Sparkles },
+      { path: '/os/playboxxx/recruiting/staff-sourcing', label: '👷 Staff Sourcing', icon: Sparkles },
+      { path: '/os/playboxxx/recruiting/creator-sourcing', label: '✨ Creator / Model Sourcing', icon: Sparkles },
+      { path: '/os/playboxxx/recruiting/search-assignments', label: '🗂 Search Assignments', icon: Sparkles },
+      { path: '/os/playboxxx/recruiting/candidates', label: '🧑‍🤝‍🧑 Candidates', icon: Sparkles },
+      { path: '/os/playboxxx/recruiting/automation-runs', label: '⚙️ Automation Runs', icon: Sparkles },
+      { path: '/os/playboxxx/recruiting/audit-logs', label: '📝 Audit / Logs', icon: Sparkles },
+      { path: '/os/playboxxx/recruiting/settings', label: '🔧 Settings', icon: Sparkles },
+    ],
+  },
   topTierExperience: {
     id: 'toptier-experience',
     name: '🚗 TopTier Experience',
