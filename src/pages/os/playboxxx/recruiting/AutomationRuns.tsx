@@ -18,6 +18,7 @@ import {
 import OverpassStaffDiscovery from './OverpassStaffDiscovery';
 
 export default function AutomationRuns() {
+  const [overpassOpen, setOverpassOpen] = useState(false);
   const rows = MOCK_RUNS;
   const summary = [
     { label: 'Last Run', value: 'Aug 27, 2026 · 12:04 PM' },
