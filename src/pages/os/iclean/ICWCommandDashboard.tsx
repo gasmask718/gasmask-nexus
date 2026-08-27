@@ -51,15 +51,16 @@ export default function ICWCommandDashboard() {
     },
   });
 
+  // ICW brand accent: blue (#1B4F72 / #4FC3E8) → green (#3C9F40 / #B4D334)
   const stats = [
-    { label: 'Total Workers', value: data?.totalWorkers ?? 0, icon: Users, color: 'text-cyan-500' },
-    { label: 'Active Jobs', value: data?.activeJobs ?? 0, icon: Activity, color: 'text-blue-500' },
-    { label: 'Jobs This Week', value: data?.jobsThisWeek ?? 0, icon: CalendarRange, color: 'text-purple-500' },
+    { label: 'Total Workers', value: data?.totalWorkers ?? 0, icon: Users, color: 'text-[#4FC3E8]' },
+    { label: 'Active Jobs', value: data?.activeJobs ?? 0, icon: Activity, color: 'text-[#3C9F40]' },
+    { label: 'Jobs This Week', value: data?.jobsThisWeek ?? 0, icon: CalendarRange, color: 'text-[#B4D334]' },
     {
       label: 'Revenue This Week',
       value: `$${(data?.revenueThisWeek ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
       icon: DollarSign,
-      color: 'text-emerald-500',
+      color: 'text-[#3C9F40]',
     },
   ];
 
@@ -67,7 +68,7 @@ export default function ICWCommandDashboard() {
     <div className="min-h-screen p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#4FC3E8] to-[#B4D334] bg-clip-text text-transparent">
             I Clean We Clean — Command
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -78,7 +79,7 @@ export default function ICWCommandDashboard() {
           <Badge variant="outline" className="border-amber-500/30 text-amber-500 bg-amber-500/10">
             Public booking site not connected yet
           </Badge>
-          <Button asChild className="bg-gradient-to-r from-cyan-600 to-blue-500 hover:from-cyan-700 hover:to-blue-600">
+          <Button asChild className="bg-gradient-to-r from-[#1B4F72] to-[#3C9F40] hover:from-[#16405d] hover:to-[#338536] text-white">
             <Link to="/os/icw/workers">
               <Users className="h-4 w-4 mr-2" />
               Worker Roster
@@ -116,7 +117,7 @@ export default function ICWCommandDashboard() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-cyan-500" />
+            <Sparkles className="h-5 w-5 text-[#4FC3E8]" />
             Build Status
           </CardTitle>
         </CardHeader>

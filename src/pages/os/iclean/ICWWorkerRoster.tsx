@@ -54,7 +54,7 @@ export default function ICWWorkerRoster() {
     <div className="min-h-screen p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#4FC3E8] to-[#B4D334] bg-clip-text text-transparent">
             ICW Worker Roster
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -75,7 +75,7 @@ export default function ICWWorkerRoster() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-cyan-500" />
+            <Users className="h-5 w-5 text-[#4FC3E8]" />
             Workers
           </CardTitle>
         </CardHeader>
@@ -115,7 +115,7 @@ export default function ICWWorkerRoster() {
                             <span className="text-sm text-muted-foreground">—</span>
                           ) : (
                             (w.category_groups ?? []).map((c) => (
-                              <Badge key={c} variant="outline" className="bg-cyan-500/10 text-cyan-500 border-cyan-500/20">
+                              <Badge key={c} variant="outline" className="bg-[#4FC3E8]/10 text-[#4FC3E8] border-[#4FC3E8]/20">
                                 {c}
                               </Badge>
                             ))
