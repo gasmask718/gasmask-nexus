@@ -17,15 +17,38 @@ function json(body: Record<string, unknown>, status = 200) {
 
 async function findUserByEmail(admin: AdminClient, email: string) {
   const normalized = email.toLowerCase();
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  // Targeted lookup first (avoids listing every user, which can fail at scale).
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/auth/v1/admin/users?per_page=50&filter=${encodeURIComponent(normalized)}`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    if (res.ok) {
+      const payload = await res.json();
+      const match = (payload.users ?? []).find(
+        (candidate: { email?: string }) => candidate.email?.toLowerCase() === normalized,
+      );
+      if (match) return match;
+    } else {
+      console.error("admin users filter lookup failed", res.status, await res.text());
+    }
+  } catch (err) {
+    console.error("admin users filter lookup threw", err);
+  }
+
   for (let page = 1; page <= 20; page += 1) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
     if (error) throw error;
     const user = data.users.find((candidate) => candidate.email?.toLowerCase() === normalized);
     if (user) return user;
-    if (data.users.length < 1000) break;
+    if (data.users.length < 200) break;
   }
   return null;
 }
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
