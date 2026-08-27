@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Bot, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -16,6 +18,7 @@ import {
 import OverpassStaffDiscovery from './OverpassStaffDiscovery';
 
 export default function AutomationRuns() {
+  const [overpassOpen, setOverpassOpen] = useState(false);
   const rows = MOCK_RUNS;
   const summary = [
     { label: 'Last Run', value: 'Aug 27, 2026 · 12:04 PM' },
@@ -99,8 +102,6 @@ export default function AutomationRuns() {
         </TabsContent>
 
         <TabsContent value="scrapers" className="mt-4 space-y-4">
-          <OverpassStaffDiscovery />
-
           <Card>
             <CardHeader><CardTitle className="text-base">Registered Scrapers</CardTitle></CardHeader>
             <CardContent className="overflow-x-auto">
@@ -119,7 +120,11 @@ export default function AutomationRuns() {
                 </TableHeader>
                 <TableBody>
                   {MOCK_SCRAPERS.map((s) => (
-                    <TableRow key={s.id}>
+                    <TableRow
+                      key={s.id}
+                      className={s.id === 'scraper-overpass-staff' ? 'cursor-pointer hover:bg-muted/50' : ''}
+                      onClick={() => s.id === 'scraper-overpass-staff' && setOverpassOpen(true)}
+                    >
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <Bot className="h-4 w-4 text-muted-foreground" />
@@ -145,11 +150,14 @@ export default function AutomationRuns() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            s.id === 'scraper-overpass-staff'
-                              ? toast.info('Use the Overpass Staff Discovery console above to run this scraper.')
-                              : toast.info('Scraper is not connected yet — this is a UI placeholder.')
-                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (s.id === 'scraper-overpass-staff') {
+                              setOverpassOpen(true);
+                            } else {
+                              toast.info('Scraper is not connected yet — this is a UI placeholder.');
+                            }
+                          }}
                         >
                           <Play className="h-3.5 w-3.5 mr-1" />
                           Run Now
@@ -177,6 +185,18 @@ export default function AutomationRuns() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={overpassOpen} onOpenChange={setOverpassOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Overpass Staff Discovery</DialogTitle>
+            <DialogDescription>
+              Live Overpass/OpenStreetMap discovery console — results are displayed only, never saved.
+            </DialogDescription>
+          </DialogHeader>
+          <OverpassStaffDiscovery />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
