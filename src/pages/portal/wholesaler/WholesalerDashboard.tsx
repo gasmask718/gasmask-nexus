@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useWholesalerProfile } from "@/services/wholesaler/useWholesalerProfile";
 import { useWholesalerProducts } from "@/services/wholesaler/useWholesalerProducts";
 import { useWholesalerOrders } from "@/services/wholesaler/useWholesalerOrders";
-import { useWholesalerPayouts } from "@/services/wholesaler/useWholesalerPayouts";
+import { useWholesalerLedger } from "@/services/wholesaler/useWholesalerLedger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,8 @@ export default function WholesalerDashboard() {
   const { profile, isLoading: profileLoading } = useWholesalerProfile();
   const { products, lowStockProducts, isLoading: productsLoading } = useWholesalerProducts();
   const { orders, pendingCount, processingCount, shippedCount, isLoading: ordersLoading } = useWholesalerOrders();
-  const { financialSummary, isLoading: financeLoading } = useWholesalerPayouts();
+  // Money comes from dd_split_ledger — the settled-order truth, not the empty payouts table.
+  const { summary: ledger, isLoading: financeLoading } = useWholesalerLedger();
 
   const isLoading = profileLoading || productsLoading || ordersLoading || financeLoading;
 
@@ -97,8 +98,8 @@ export default function WholesalerDashboard() {
 
         <HudCard variant="purple" glow>
           <HudMetric
-            label="Total Earnings"
-            value={`$${(financialSummary?.totalEarnings || 0).toFixed(0)}`}
+            label="Net Earned (settled)"
+            value={ledger.hasSettledOrders ? `$${ledger.netTotal.toFixed(0)}` : '—'}
             icon={<DollarSign className="h-4 w-4" />}
             variant="purple"
           />
@@ -253,17 +254,17 @@ export default function WholesalerDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Orders</span>
-                <span className="font-medium">{financialSummary?.totalOrders || 0}</span>
+                <span className="text-muted-foreground">Settled orders</span>
+                <span className="font-medium">{ledger.entryCount}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Revenue</span>
-                <span className="font-medium">${(financialSummary?.totalEarnings || 0).toFixed(2)}</span>
+                <span className="text-muted-foreground">Sales settled</span>
+                <span className="font-medium">{ledger.hasSettledOrders ? `$${ledger.grossTotal.toFixed(2)}` : 'No settled orders yet'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Pending Payout</span>
+                <span className="text-muted-foreground">Awaiting transfer</span>
                 <span className="font-medium text-green-600">
-                  ${(financialSummary?.pendingPayout || 0).toFixed(2)}
+                  {ledger.hasSettledOrders ? `$${ledger.awaitingTransferTotal.toFixed(2)}` : '—'}
                 </span>
               </div>
             </CardContent>
