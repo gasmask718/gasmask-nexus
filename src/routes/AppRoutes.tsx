@@ -1041,6 +1041,14 @@ const UnforgettableCRMDashboard = lazy(() => import('@/pages/crm/unforgettable')
 // Other OS modules
 const ICleanDashboard = lazy(() => import('@/pages/os/iclean/ICleanDashboard'));
 const PlayboxxxDashboard = lazy(() => import('@/pages/os/playboxxx/PlayboxxxDashboard'));
+const PbxRecruitingDashboard = lazy(() => import('@/pages/os/playboxxx/recruiting/RecruitingDashboard'));
+const PbxStaffSourcing = lazy(() => import('@/pages/os/playboxxx/recruiting/StaffSourcing'));
+const PbxCreatorSourcing = lazy(() => import('@/pages/os/playboxxx/recruiting/CreatorSourcing'));
+const PbxSearchAssignments = lazy(() => import('@/pages/os/playboxxx/recruiting/SearchAssignments'));
+const PbxCandidates = lazy(() => import('@/pages/os/playboxxx/recruiting/Candidates'));
+const PbxAutomationRuns = lazy(() => import('@/pages/os/playboxxx/recruiting/AutomationRuns'));
+const PbxAuditLogs = lazy(() => import('@/pages/os/playboxxx/recruiting/AuditLogs'));
+const PbxRecruitingSettings = lazy(() => import('@/pages/os/playboxxx/recruiting/RecruitingSettings'));
 const SpecialNeedsDashboard = lazy(() => import('@/pages/os/specialneeds/SpecialNeedsDashboard'));
 // FundingDashboard (orphan /os/funding) — REMOVED, use /funding-machine instead
 const GrantsDashboard = lazy(() => import('@/pages/os/grants/GrantsDashboard'));
@@ -2305,6 +2313,14 @@ export default function AppRoutes() {
         <Route path="/crm/unforgettable_times_usa/partner-leads" element={<UnforgettableCRMDashboard />} />
         <Route path="/os/iclean" element={<ICleanDashboard />} />
         <Route path="/os/playboxxx" element={<PlayboxxxDashboard />} />
+        <Route path="/os/playboxxx/recruiting" element={<PbxRecruitingDashboard />} />
+        <Route path="/os/playboxxx/recruiting/staff-sourcing" element={<PbxStaffSourcing />} />
+        <Route path="/os/playboxxx/recruiting/creator-sourcing" element={<PbxCreatorSourcing />} />
+        <Route path="/os/playboxxx/recruiting/search-assignments" element={<PbxSearchAssignments />} />
+        <Route path="/os/playboxxx/recruiting/candidates" element={<PbxCandidates />} />
+        <Route path="/os/playboxxx/recruiting/automation-runs" element={<PbxAutomationRuns />} />
+        <Route path="/os/playboxxx/recruiting/audit-logs" element={<PbxAuditLogs />} />
+        <Route path="/os/playboxxx/recruiting/settings" element={<PbxRecruitingSettings />} />
         <Route path="/os/special-needs" element={<SpecialNeedsDashboard />} />
         {/* /os/funding removed — orphan mock page, real system is /funding-machine */}
         <Route path="/os/grants" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantsDashboard /></RequireRole>} />
