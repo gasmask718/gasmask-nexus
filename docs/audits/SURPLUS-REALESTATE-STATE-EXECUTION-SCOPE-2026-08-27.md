@@ -22,8 +22,8 @@ Base: `docs/audits/SURPLUS-REALESTATE-STATE-SCOPE-AUDIT-2026-08-27.md`. Every fi
 
 | Table / pool | Rows | States | Surplus $ | Phones | Notes |
 |---|---:|---|---:|---:|---|
-| `surplus_funds_leads` pool **A** | 13,557 | FL, GA, MS, TX | $58.05M | 399 | [CORRECTED] 13,557 not 13,657 (FL split across two holder_type groups) |
-| `surplus_funds_leads` pool **B** | 12,901 | CO, IL, IN, NY, OH | $56.01M | 45 | |
+| `surplus_funds_leads` pool **A** | 13,657 | FL, GA, MS, TX | $60.05M | 399 | FL 2,196 · MS 10,229 · TX 826 · GA 406 |
+| `surplus_funds_leads` pool **B** | 12,901 | CO, IL, IN, NY, OH | $56.01M | 45 | OH 12,592 · NY 146 · IN 72 · IL 70 · CO 21 |
 | `surplus_funds_leads` pool **C** | 13 | NY | $2.13M | 0 | escheat, `state_treasurer` |
 | `raw_scraper_leads` | 25,499 | 14 source states | — | — | ingest landing table |
 | `raw_scraper_leads_flagged` | 793 | — | — | — | promotion-rejected |
@@ -46,7 +46,7 @@ Pool letters A/B/C are real data with **zero written definition**. The lane mapp
 
 ### Lane 1 — Tax-deed / tax-sale surplus (overbid / excess funds)
 - LIVE TABLE(S): `surplus_funds_leads` (pool A), `raw_scraper_leads`
-- ROW COUNT: 13,557 · $58.05M · 399 phones
+- ROW COUNT: 13,657 · $60.05M · 399 phones
 - STATES: FL (2,196), MS (10,229), TX (826), GA (406)
 - PURPOSE: recover overbid from tax sales for the former owner
 - SOURCE TYPE: public county records (clerk of court, chancery clerk, tax commissioner), scraped
