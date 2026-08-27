@@ -98,6 +98,8 @@ export default function AutomationRuns() {
         </TabsContent>
 
         <TabsContent value="scrapers" className="mt-4 space-y-4">
+          <OverpassStaffDiscovery />
+
           <Card>
             <CardHeader><CardTitle className="text-base">Registered Scrapers</CardTitle></CardHeader>
             <CardContent className="overflow-x-auto">
