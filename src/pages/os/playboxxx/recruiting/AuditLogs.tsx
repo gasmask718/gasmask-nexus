@@ -25,20 +25,22 @@ export default function AuditLogs() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Timestamp</TableHead>
-                  <TableHead>Actor</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Target</TableHead>
+                  <TableHead>Lane</TableHead>
+                  <TableHead>Event</TableHead>
+                  <TableHead>Detail</TableHead>
+                  <TableHead>Source</TableHead>
                   <TableHead>Result</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((l, i) => (
                   <TableRow key={i}>
-                    <TableCell className="text-muted-foreground whitespace-nowrap">{l.timestamp}</TableCell>
-                    <TableCell>{l.actor}</TableCell>
-                    <TableCell className="font-medium">{l.action}</TableCell>
-                    <TableCell>{l.target}</TableCell>
-                    <TableCell><Badge variant="secondary">{l.result}</Badge></TableCell>
+                    <TableCell className="text-muted-foreground whitespace-nowrap">{l.when}</TableCell>
+                    <TableCell>{l.lane}</TableCell>
+                    <TableCell className="font-medium">{l.event}</TableCell>
+                    <TableCell>{l.detail}</TableCell>
+                    <TableCell>{l.source}</TableCell>
+                    <TableCell><Badge variant="secondary">{l.status}</Badge></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
