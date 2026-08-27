@@ -142,6 +142,31 @@ export const MOCK_RUNS = [
   { id: '#1840', date: 'Aug 27, 2026 · 12:04 AM', lane: 'Staff', source: 'Overpass', searches: 2, results: 0, newCandidates: 0, duplicates: 0, status: 'No Results' },
 ];
 
+export const MOCK_SCRAPERS = [
+  {
+    id: 'scraper-overpass-staff',
+    name: 'Overpass Staff Discovery',
+    lane: 'staff' as const,
+    provider: 'Overpass / OpenStreetMap',
+    target: 'Hair / Makeup, Nails, Decorator, Chef, Seamstress',
+    schedule: 'Manual only',
+    status: 'Not Connected',
+    lastRun: '—',
+    notes: 'Will query OpenStreetMap category nodes per assignment location. No scheduling wired yet.',
+  },
+  {
+    id: 'scraper-apify-creators',
+    name: 'Apify Creator Discovery',
+    lane: 'creator' as const,
+    provider: 'Apify / Approved Social Discovery',
+    target: 'Creators, Models, Model Recruiting',
+    schedule: 'Manual only',
+    status: 'Not Connected',
+    lastRun: '—',
+    notes: 'Will pull from approved social discovery actors. Requires approval and credentials before activation.',
+  },
+];
+
 export const MOCK_ACTIVITY = [
   { title: 'Staff search — Davao City / Hairdresser', detail: '32 candidates discovered', time: '2 hours ago' },
   { title: 'Creator discovery — Manila / Models', detail: '18 candidates discovered', time: '5 hours ago' },
