@@ -43,6 +43,46 @@ serve(async (req) => {
     });
   }
 
+  // `{{geocodeArea:...}}` is overpass-turbo shorthand, NOT valid Overpass QL.
+  // Expand it here the same way overpass-turbo does: geocode via Nominatim and
+  // substitute the resulting area id.
+  const geocodeMatches = [...query.matchAll(/\{\{geocodeArea:([^}]+)\}\}/g)];
+  for (const match of geocodeMatches) {
+    const place = match[1].trim();
+    try {
+      const nomUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(place)}`;
+      const nomRes = await fetch(nomUrl, {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "PlayboxxxRecruitingEngine/1.0 (staff discovery)",
+        },
+      });
+      const hits = await nomRes.json();
+      const hit = Array.isArray(hits) ? hits[0] : null;
+      if (!hit) {
+        return new Response(
+          JSON.stringify({ error: `Could not geocode location "${place}"` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const osmId = Number(hit.osm_id);
+      const offset = hit.osm_type === "relation" ? 3600000000 : hit.osm_type === "way" ? 2400000000 : null;
+      if (!offset) {
+        return new Response(
+          JSON.stringify({ error: `Location "${place}" has no usable OSM area (type: ${hit.osm_type})` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      query = query.replace(match[0], `area(id:${offset + osmId})`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return new Response(JSON.stringify({ error: `Geocoding failed for "${place}": ${msg}` }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
   // Exact request shape from the overpass-turbo.eu reference.
   const payload = `data=${encodeURIComponent(query)}`;
 
