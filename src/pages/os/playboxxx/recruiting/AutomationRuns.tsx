@@ -185,6 +185,18 @@ export default function AutomationRuns() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={overpassOpen} onOpenChange={setOverpassOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Overpass Staff Discovery</DialogTitle>
+            <DialogDescription>
+              Live Overpass/OpenStreetMap discovery console — results are displayed only, never saved.
+            </DialogDescription>
+          </DialogHeader>
+          <OverpassStaffDiscovery />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
