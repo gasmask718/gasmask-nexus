@@ -59,13 +59,15 @@ function statusLabel(status: string) {
 
 interface FulfillmentRowProps {
   f: WholesalerFulfillmentType;
+  pickSlip?: PickSlip;
   onGenerateLabel: (id: string) => Promise<any>;
   onMarkShipped: (id: string) => Promise<any>;
   isGenerating: boolean;
   isShipping: boolean;
 }
 
-function FulfillmentRow({ f, onGenerateLabel, onMarkShipped, isGenerating, isShipping }: FulfillmentRowProps) {
+function FulfillmentRow({ f, pickSlip, onGenerateLabel, onMarkShipped, isGenerating, isShipping }: FulfillmentRowProps) {
+
   const [actionId, setActionId] = useState<string | null>(null);
 
   const handleGenerate = async () => {
