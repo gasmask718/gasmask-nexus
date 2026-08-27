@@ -2313,6 +2313,14 @@ export default function AppRoutes() {
         <Route path="/crm/unforgettable_times_usa/partner-leads" element={<UnforgettableCRMDashboard />} />
         <Route path="/os/iclean" element={<ICleanDashboard />} />
         <Route path="/os/playboxxx" element={<PlayboxxxDashboard />} />
+        <Route path="/os/playboxxx/recruiting" element={<PbxRecruitingDashboard />} />
+        <Route path="/os/playboxxx/recruiting/staff-sourcing" element={<PbxStaffSourcing />} />
+        <Route path="/os/playboxxx/recruiting/creator-sourcing" element={<PbxCreatorSourcing />} />
+        <Route path="/os/playboxxx/recruiting/search-assignments" element={<PbxSearchAssignments />} />
+        <Route path="/os/playboxxx/recruiting/candidates" element={<PbxCandidates />} />
+        <Route path="/os/playboxxx/recruiting/automation-runs" element={<PbxAutomationRuns />} />
+        <Route path="/os/playboxxx/recruiting/audit-logs" element={<PbxAuditLogs />} />
+        <Route path="/os/playboxxx/recruiting/settings" element={<PbxRecruitingSettings />} />
         <Route path="/os/special-needs" element={<SpecialNeedsDashboard />} />
         {/* /os/funding removed — orphan mock page, real system is /funding-machine */}
         <Route path="/os/grants" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantsDashboard /></RequireRole>} />
