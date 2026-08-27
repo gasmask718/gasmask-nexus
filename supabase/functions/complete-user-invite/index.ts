@@ -106,7 +106,12 @@ serve(async (req) => {
         return json({ error: "Conflicting account state. Contact an administrator." }, 409);
       }
 
+      // Preserves the existing Google identity: only password/metadata change.
+      const { error: updateError } = await admin.auth.admin.updateUserById(existing.id, {
+        password,
+        email_confirm: true,
         user_metadata: {
+
           ...(existing.user_metadata ?? {}),
           ...(fullName ? { full_name: fullName } : {}),
         },
