@@ -266,6 +266,8 @@ export default function WholesalerFulfillment() {
     generateLabel, isGeneratingLabel,
     markShipped, isMarkingShipped,
   } = useWholesalerFulfillments();
+  const { pickSlips } = useWholesalerPickSlips();
+
 
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("pending");
