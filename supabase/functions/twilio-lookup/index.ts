@@ -39,23 +39,61 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Prefer the scoped API-key pair; fall back to the master SID/token.
+    const apiSid = Deno.env.get("TWILIO_API_SID");
+    const apiSecret = Deno.env.get("TWILIO_API_SECRET");
     const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const token = Deno.env.get("TWILIO_AUTH_TOKEN");
-    if (!sid || !token) {
+
+    let authUser: string | undefined;
+    let authPass: string | undefined;
+    let authMode = "";
+    if (apiSid && apiSecret) {
+      authUser = apiSid; authPass = apiSecret; authMode = "api_key";
+    } else if (sid && token) {
+      authUser = sid; authPass = token; authMode = "master";
+    }
+    if (!authUser || !authPass) {
       return new Response(
         JSON.stringify({ error: "Twilio credentials not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    const auth = "Basic " + btoa(`${sid}:${token}`);
+    const auth = "Basic " + btoa(`${authUser}:${authPass}`);
 
-    let limit = 200;
+    let limit = 300;
+    let testNumber: string | null = null;
+    let authOverride: string | null = null;
     try {
       const body = await req.json();
       if (body && typeof body.limit === "number" && body.limit > 0) {
-        limit = Math.min(Math.floor(body.limit), 1000);
+        limit = Math.min(Math.floor(body.limit), 300);
       }
+      if (body && typeof body.test_number === "string") testNumber = body.test_number;
+      if (body && typeof body.auth === "string") authOverride = body.auth;
     } catch (_) { /* no body */ }
+
+    // Single-number auth probe: no DB reads or writes.
+    if (testNumber) {
+      let probeUser = authUser, probePass = authPass, probeMode = authMode;
+      if (authOverride === "master" && sid && token) {
+        probeUser = sid; probePass = token; probeMode = "master";
+      } else if (authOverride === "api_key_alt" && Deno.env.get("TWILIO_API_KEY") && apiSecret) {
+        probeUser = Deno.env.get("TWILIO_API_KEY")!; probePass = apiSecret; probeMode = "api_key_alt";
+      }
+      const probeAuth = "Basic " + btoa(`${probeUser}:${probePass}`);
+      const probe = normalize(testNumber);
+      const res = await fetch(
+        `https://lookups.twilio.com/v2/PhoneNumbers/${encodeURIComponent(probe)}?Fields=line_type_intelligence`,
+        { headers: { Authorization: probeAuth } },
+      );
+      const text = await res.text();
+      return new Response(
+        JSON.stringify({ mode: "test", auth_mode: probeMode, number: probe, status: res.status, body: text.slice(0, 800) }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
 
     const { data: rows, error: selErr } = await supabase
       .from("leads")
@@ -119,7 +157,8 @@ Deno.serve(async (req) => {
           const body = await res.text();
           console.error(`Twilio lookup failed [${res.status}] ${phone}: ${body}`);
           errors++;
-          await sleep(150);
+          // Instant-fail (401/5xx): short backoff only, no full pacing tick.
+          await sleep(25);
           continue;
         }
 
@@ -144,8 +183,11 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error(`Lookup exception ${phone}:`, e);
         errors++;
+        await sleep(25);
+        continue;
       }
 
+      // Pace only successful lookups.
       await sleep(150);
     }
 
