@@ -167,6 +167,42 @@ function FulfillmentRow({ f, pickSlip, onGenerateLabel, onMarkShipped, isGenerat
               </div>
             )}
 
+            {/* PICK SLIP — what actually goes in the box */}
+            {pickItems.length > 0 && (
+              <div className="mt-2 rounded-md border border-border/60 bg-muted/30 p-2 space-y-1">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Pick slip
+                </div>
+                <ul className="text-sm space-y-0.5">
+                  {pickItems.map((i, idx) => (
+                    <li key={`${i.sku || i.name}-${idx}`} className="flex items-baseline gap-2">
+                      <span className="font-mono font-semibold w-8 shrink-0">{i.qty}×</span>
+                      <span className="truncate">{i.name}</span>
+                      {i.sku && <span className="text-[10px] text-muted-foreground shrink-0">{i.sku}</span>}
+                    </li>
+                  ))}
+                </ul>
+                {pickSlip?.box_name ? (
+                  <div className="flex items-center gap-1 text-sm font-medium pt-1">
+                    <Package className="h-3.5 w-3.5" />
+                    Use box: {pickSlip.box_name}
+                    {(pickSlip.box_count || 1) > 1 && <span> ×{pickSlip.box_count}</span>}
+                    {pickSlip.length_in && (
+                      <span className="text-xs text-muted-foreground">
+                        ({pickSlip.length_in}×{pickSlip.width_in}×{pickSlip.height_in} in
+                        {pickSlip.billable_weight_oz ? `, ${pickSlip.billable_weight_oz} oz billable` : ''})
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground pt-1">
+                    Box is chosen when the label is created.
+                  </div>
+                )}
+              </div>
+            )}
+
+
             {f.dispute_status && (
               <div className="text-xs text-red-600 flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
