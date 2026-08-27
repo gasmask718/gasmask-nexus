@@ -140,6 +140,7 @@ export default function ICWWorkerRoster() {
                         <Button
                           size="sm"
                           variant={w.approved ? 'outline' : 'default'}
+                          className={w.approved ? '' : 'bg-gradient-to-r from-[#1B4F72] to-[#3C9F40] hover:from-[#16405d] hover:to-[#338536] text-white border-0'}
                           disabled={setApproval.isPending}
                           onClick={() => setApproval.mutate({ id: w.id, approved: !w.approved })}
                         >
