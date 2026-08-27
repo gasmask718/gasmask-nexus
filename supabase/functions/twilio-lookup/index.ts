@@ -174,8 +174,11 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error(`Lookup exception ${phone}:`, e);
         errors++;
+        await sleep(25);
+        continue;
       }
 
+      // Pace only successful lookups.
       await sleep(150);
     }
 
