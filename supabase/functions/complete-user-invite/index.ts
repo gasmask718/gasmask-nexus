@@ -83,13 +83,29 @@ serve(async (req) => {
         console.error("admin createUser failed", createError);
         return json({ error: createError.message }, 500);
       }
-      if (existing.email_confirmed_at) {
+      // Same-email adoption: the email is taken from the server-verified
+      // invitation row (never from the client), so an existing auth user with
+      // this exact normalized email is the invited person. Adopt it instead of
+      // creating a second account. Any mismatch fails closed.
+      if ((existing.email ?? "").toLowerCase() !== email) {
         return json({ error: "Account already exists. Please sign in to accept the invite." }, 409);
       }
 
-      const { error: updateError } = await admin.auth.admin.updateUserById(existing.id, {
-        password,
-        email_confirm: true,
+      // Conflicting identity guard: an accepted invitation for this email that
+      // resolved to a different auth user means the state is ambiguous.
+      const { data: conflicting, error: conflictError } = await admin
+        .from("user_invitations")
+        .select("id, accepted_user_id")
+        .eq("email", email)
+        .eq("invite_status", "accepted")
+        .not("accepted_user_id", "is", null)
+        .neq("accepted_user_id", existing.id)
+        .limit(1);
+      if (conflictError) throw conflictError;
+      if (conflicting && conflicting.length > 0) {
+        return json({ error: "Conflicting account state. Contact an administrator." }, 409);
+      }
+
         user_metadata: {
           ...(existing.user_metadata ?? {}),
           ...(fullName ? { full_name: fullName } : {}),
