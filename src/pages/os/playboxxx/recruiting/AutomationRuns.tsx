@@ -187,7 +187,7 @@ export default function AutomationRuns() {
       </Tabs>
 
       <Dialog open={overpassOpen} onOpenChange={setOverpassOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Overpass Staff Discovery</DialogTitle>
             <DialogDescription>
