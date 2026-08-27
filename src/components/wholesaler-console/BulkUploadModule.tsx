@@ -308,7 +308,10 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
         created_by: uid,
         supplier_id: wholesalerId ?? null,
         submitted_by: uid,
-        submitted_by_wholesaler_id: wholesalerId ?? null,
+        // NOTE: submitted_by_wholesaler_id FKs to `wholesalers`, NOT `wholesaler_profiles`.
+        // The portal's supplier id is a wholesaler_profiles.id and there is zero id overlap
+        // between the two tables, so setting it here failed every row with a foreign-key
+        // violation. Ownership is carried by supplier_id + created_by, which review uses.
         submitted_at: new Date().toISOString(),
         source: 'bulk_upload',
         status: 'pending_admin_review',
