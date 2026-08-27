@@ -45,10 +45,25 @@ Deno.serve(async (req) => {
       // ── WHOLESALER (supplier payout account) ────────────────────────────
       const { data: ws, error } = await supabase
         .from("wholesaler_profiles")
-        .select("id, email, company_name, stripe_connect_id")
+        .select("id, email, company_name, stripe_connect_id, is_caretaker, transfer_pending_email")
         .eq("id", wholesalerId)
         .maybeSingle();
       if (error || !ws) throw new Error("wholesaler not found");
+
+      // Money safety: a caretaker account is loaded by staff and handed to the
+      // real supplier later. Connecting a bank here would pay the wrong person.
+      if (ws.is_caretaker === true) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "This supplier account is caretaker-held and pending transfer" +
+              (ws.transfer_pending_email ? ` to ${ws.transfer_pending_email}` : "") +
+              ". Stripe Connect onboarding is blocked until the real supplier accepts the handover and connects their own bank account.",
+            code: "caretaker_transfer_pending",
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
 
       accountId = (ws.stripe_connect_id as string | null) ?? null;
       if (!accountId) {

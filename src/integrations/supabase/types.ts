@@ -140516,6 +140516,66 @@ export type Database = {
           },
         ]
       }
+      wholesaler_account_transfers: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          initiated_by: string | null
+          invite_id: string | null
+          new_email: string
+          new_user_id: string | null
+          notes: string | null
+          previous_user_id: string | null
+          status: string
+          stripe_connect_id_cleared: string | null
+          wholesaler_profile_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          initiated_by?: string | null
+          invite_id?: string | null
+          new_email: string
+          new_user_id?: string | null
+          notes?: string | null
+          previous_user_id?: string | null
+          status?: string
+          stripe_connect_id_cleared?: string | null
+          wholesaler_profile_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          initiated_by?: string | null
+          invite_id?: string | null
+          new_email?: string
+          new_user_id?: string | null
+          notes?: string | null
+          previous_user_id?: string | null
+          status?: string
+          stripe_connect_id_cleared?: string | null
+          wholesaler_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_account_transfers_wholesaler_profile_id_fkey"
+            columns: ["wholesaler_profile_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_migration_status"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_account_transfers_wholesaler_profile_id_fkey"
+            columns: ["wholesaler_profile_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wholesaler_accounts: {
         Row: {
           commission_rate: number | null
@@ -141781,6 +141841,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          is_caretaker: boolean
           is_default_supplier: boolean
           margin_pct_override: number | null
           notes: string | null
@@ -141795,6 +141856,9 @@ export type Database = {
           stripe_connect_updated_at: string | null
           stripe_payouts_enabled: boolean
           tax_id: string | null
+          transfer_pending_email: string | null
+          transferred_at: string | null
+          transferred_from_user_id: string | null
           user_id: string
           warehouse_address: string | null
           warehouse_city: string | null
@@ -141815,6 +141879,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_caretaker?: boolean
           is_default_supplier?: boolean
           margin_pct_override?: number | null
           notes?: string | null
@@ -141829,6 +141894,9 @@ export type Database = {
           stripe_connect_updated_at?: string | null
           stripe_payouts_enabled?: boolean
           tax_id?: string | null
+          transfer_pending_email?: string | null
+          transferred_at?: string | null
+          transferred_from_user_id?: string | null
           user_id: string
           warehouse_address?: string | null
           warehouse_city?: string | null
@@ -141849,6 +141917,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_caretaker?: boolean
           is_default_supplier?: boolean
           margin_pct_override?: number | null
           notes?: string | null
@@ -141863,6 +141932,9 @@ export type Database = {
           stripe_connect_updated_at?: string | null
           stripe_payouts_enabled?: boolean
           tax_id?: string | null
+          transfer_pending_email?: string | null
+          transferred_at?: string | null
+          transferred_from_user_id?: string | null
           user_id?: string
           warehouse_address?: string | null
           warehouse_city?: string | null
@@ -159250,6 +159322,16 @@ export type Database = {
           _token: string
         }
         Returns: string
+      }
+      transfer_wholesaler_account: {
+        Args: {
+          p_company_name?: string
+          p_contact_name?: string
+          p_new_email: string
+          p_phone?: string
+          p_profile_id: string
+        }
+        Returns: Json
       }
       tt_claim_dispatch: { Args: { p_token: string }; Returns: Json }
       tt_claim_partner: {

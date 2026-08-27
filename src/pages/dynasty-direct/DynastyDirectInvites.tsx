@@ -12,6 +12,7 @@ import { DDPageHeader } from "@/components/dynasty-direct/DDPageHeader";
 import { DDEmpty, DDSkeleton } from "@/components/dynasty-direct/DDStates";
 import { DDBulkBar } from "@/components/dynasty-direct/DDBulkBar";
 import { DDPersonalizeInviteDialog } from "@/components/dynasty-direct/DDPersonalizeInviteDialog";
+import { WholesalerTransferDialog } from "@/components/dynasty-direct/WholesalerTransferDialog";
 
 export default function DynastyDirectInvites() {
   const qc = useQueryClient();
@@ -37,6 +38,19 @@ export default function DynastyDirectInvites() {
         .from("wholesaler_profiles")
         .select("id, company_name, contact_name, phone, email, status")
         .is("user_id", null);
+      return data || [];
+    },
+  });
+
+  const { data: linkedWholesalers = [] } = useQuery({
+    queryKey: ["dd-linked-wholesalers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("wholesaler_profiles")
+        .select("id, company_name, contact_name, email, status, is_caretaker, transfer_pending_email, transferred_at")
+        .not("user_id", "is", null)
+        .order("created_at");
+      if (error) throw error;
       return data || [];
     },
   });
@@ -166,6 +180,39 @@ export default function DynastyDirectInvites() {
                     defaultEmail={w.email || ""}
                     defaultPhone={w.phone || ""}
                     label="Invite & Link"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {linkedWholesalers.length > 0 && (
+        <div className="border rounded-lg p-4 bg-muted/30 mb-6">
+          <h2 className="font-semibold mb-1">Supplier Account Handover ({linkedWholesalers.length})</h2>
+          <p className="text-xs text-muted-foreground mb-3">
+            Load a catalogue under a caretaker login, then hand the account to the real supplier.
+            Products, drafts, orders and history stay attached. Stripe Connect is cleared on
+            handover so the new owner connects their own bank.
+          </p>
+          <div className="grid gap-2">
+            {linkedWholesalers.map((w: any) => (
+              <div key={w.id} className="flex items-center justify-between bg-card border rounded p-2 text-sm gap-2">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{w.company_name}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {w.email} · {w.status}
+                    {w.is_caretaker && ` · caretaker-held → ${w.transfer_pending_email || "pending"}`}
+                    {w.transferred_at && ` · transferred ${formatDistanceToNow(new Date(w.transferred_at), { addSuffix: true })}`}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {w.is_caretaker && <Badge variant="secondary">Pending transfer</Badge>}
+                  <WholesalerTransferDialog
+                    profileId={w.id}
+                    companyName={w.company_name}
+                    onDone={() => qc.invalidateQueries({ queryKey: ["dd-linked-wholesalers"] })}
                   />
                 </div>
               </div>
