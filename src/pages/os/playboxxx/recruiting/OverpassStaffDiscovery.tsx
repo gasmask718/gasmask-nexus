@@ -38,12 +38,12 @@ interface OsmResult {
   tags: Record<string, string>;
 }
 
-function buildQuery(areaId: string, categories: OsmCategory[]) {
+function buildQuery(location: string, categories: OsmCategory[]) {
   const lines = categories
     .filter((c) => c.key.trim() && c.value.trim())
     .map((c) => `  nwr["${c.key.trim()}"="${c.value.trim()}"](area.searchArea);`)
     .join('\n');
-  return `[out:json][timeout:60];\narea(id:${areaId})->.searchArea;\n(\n${lines}\n);\nout center tags;`;
+  return `[out:json][timeout:60];\n{{geocodeArea:${location}}}->.searchArea;\n(\n${lines}\n);\nout center tags;`;
 }
 
 async function copy(label: string, text: string) {
@@ -73,7 +73,7 @@ export default function OverpassStaffDiscovery() {
   const [runMeta, setRunMeta] = useState<{ ms: number; location: string; categories: string; status: string } | null>(null);
   const [selected, setSelected] = useState<OsmResult | null>(null);
 
-  const query = useMemo(() => buildQuery(areaId, categories), [areaId, categories]);
+  const query = useMemo(() => buildQuery(location, categories), [location, categories]);
   const payload = useMemo(() => `data=${encodeURIComponent(query)}`, [query]);
   // Exact overpass-turbo.eu reference headers. Origin/Referer/User-Agent are
   // forbidden in browser fetch — they are applied by the overpass-discovery
