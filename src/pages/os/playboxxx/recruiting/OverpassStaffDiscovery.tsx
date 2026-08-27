@@ -139,6 +139,39 @@ export default function OverpassStaffDiscovery() {
         throw new Error(msg || 'Overpass proxy request failed');
       }
       const elements: any[] = Array.isArray(json?.elements) ? json.elements : [];
+      const parsed: OsmResult[] = elements.map((el) => {
+        const tags: Record<string, string> = el.tags || {};
+        const matched = categories.find((c) => tags[c.key] === c.value);
+        const street = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' ');
+        return {
+          type: el.type,
+          id: el.id,
+          name: tags.name || null,
+          category: matched ? `${matched.key}=${matched.value}` : '—',
+          address: street || null,
+          city: tags['addr:city'] || null,
+          lat: el.lat ?? el.center?.lat ?? null,
+          lon: el.lon ?? el.center?.lon ?? null,
+          phone: tags.phone || tags['contact:phone'] || null,
+          website: tags.website || tags['contact:website'] || null,
+          tags,
+        };
+      });
+      const ms = performance.now() - started;
+      setResults(parsed);
+      setRunMeta({ ms, location, categories: categoryLabel, status: 'Completed' });
+      if (parsed.length === 0) toast.info('No results found for the selected location and categories.');
+      else toast.success('Search completed successfully.');
+    } catch (e: any) {
+      const msg = e?.message || 'Unexpected error running the Overpass request.';
+      setError(msg);
+      setRunMeta({ ms: performance.now() - started, location, categories: categoryLabel, status: 'Failed' });
+      toast.error(msg);
+    } finally {
+      setRunning(false);
+    }
+  };
+
 
   const Field = ({ label, value }: { label: string; value: string }) => (
     <div>
