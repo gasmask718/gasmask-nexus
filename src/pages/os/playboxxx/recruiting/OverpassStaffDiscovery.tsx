@@ -123,59 +123,22 @@ export default function OverpassStaffDiscovery() {
     if (categories.length === 0) { toast.error('Add at least one category first'); return; }
     setRunning(true); setError(null); setResults(null); setRunMeta(null);
     const started = performance.now();
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 90_000);
     try {
-      const res = await fetch(OVERPASS_URL, {
-        method: 'POST',
-        headers,
-        body: payload,
-        signal: controller.signal,
+      // Sent via the overpass-discovery edge function, which issues the exact
+      // reference POST (overpass-turbo.eu headers) to Overpass. No persistence.
+      const { data: json, error: fnError } = await supabase.functions.invoke('overpass-discovery', {
+        body: { query },
       });
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`Overpass API error ${res.status}: ${text.slice(0, 300) || res.statusText}`);
+      if (fnError) {
+        const details = fnError instanceof FunctionsHttpError ? await fnError.context.text() : fnError.message;
+        let msg = details;
+        try {
+          const parsed = JSON.parse(details);
+          msg = parsed.details ? `${parsed.error}: ${String(parsed.details).slice(0, 200)}` : parsed.error || details;
+        } catch { /* keep raw details */ }
+        throw new Error(msg || 'Overpass proxy request failed');
       }
-      const json = await res.json();
       const elements: any[] = Array.isArray(json?.elements) ? json.elements : [];
-      const parsed: OsmResult[] = elements.map((el) => {
-        const tags: Record<string, string> = el.tags || {};
-        const matched = categories.find((c) => tags[c.key] === c.value);
-        const street = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' ');
-        return {
-          type: el.type,
-          id: el.id,
-          name: tags.name || null,
-          category: matched ? `${matched.key}=${matched.value}` : '—',
-          address: street || null,
-          city: tags['addr:city'] || null,
-          lat: el.lat ?? el.center?.lat ?? null,
-          lon: el.lon ?? el.center?.lon ?? null,
-          phone: tags.phone || tags['contact:phone'] || null,
-          website: tags.website || tags['contact:website'] || null,
-          tags,
-        };
-      });
-      const ms = performance.now() - started;
-      setResults(parsed);
-      setRunMeta({ ms, location, categories: categoryLabel, status: 'Completed' });
-      if (parsed.length === 0) toast.info('No results found for the selected location and categories.');
-      else toast.success('Search completed successfully.');
-    } catch (e: any) {
-      const msg =
-        e?.name === 'AbortError'
-          ? 'Overpass request timed out.'
-          : e instanceof TypeError
-            ? 'Network error — could not reach the Overpass API.'
-            : e?.message || 'Unexpected error running the Overpass request.';
-      setError(msg);
-      setRunMeta({ ms: performance.now() - started, location, categories: categoryLabel, status: 'Failed' });
-      toast.error(msg);
-    } finally {
-      clearTimeout(timer);
-      setRunning(false);
-    }
-  };
 
   const Field = ({ label, value }: { label: string; value: string }) => (
     <div>
