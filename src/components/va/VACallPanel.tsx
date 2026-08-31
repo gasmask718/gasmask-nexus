@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Phone, PhoneOff, Mic, MicOff, X, FileText, Send, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { VAScripts } from './VAScripts';
+import { GasMaskStoreWorkPanel } from './GasMaskStoreWorkPanel';
 import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
@@ -49,6 +50,8 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
   const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
   const [wrapUpOpen, setWrapUpOpen] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  // GasMask VAs work store accounts, not service quotes.
+  const isGasMask = vaCompany?.activeCompany?.slug === 'gasmask_grabba';
 
   // Fetch the most recent prior wrap-up for this lead so the VA never starts from scratch
   const { data: priorContext } = useQuery({
