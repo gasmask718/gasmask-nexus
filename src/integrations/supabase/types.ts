@@ -67678,6 +67678,166 @@ export type Database = {
         }
         Relationships: []
       }
+      gasmask_store_call_observations: {
+        Row: {
+          bags_level: string | null
+          business_id: string | null
+          call_status: string | null
+          callback_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          observed_at: string
+          observed_by: string
+          reorder_needed: boolean | null
+          reorder_quantity: number | null
+          source: string
+          store_id: string
+          tubes_level: string | null
+          updated_at: string
+        }
+        Insert: {
+          bags_level?: string | null
+          business_id?: string | null
+          call_status?: string | null
+          callback_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          observed_at?: string
+          observed_by?: string
+          reorder_needed?: boolean | null
+          reorder_quantity?: number | null
+          source?: string
+          store_id: string
+          tubes_level?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bags_level?: string | null
+          business_id?: string | null
+          call_status?: string | null
+          callback_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          observed_at?: string
+          observed_by?: string
+          reorder_needed?: boolean | null
+          reorder_quantity?: number | null
+          source?: string
+          store_id?: string
+          tubes_level?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gasmask_store_call_observations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_orphan_watch"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_addressless_call_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_prior_customer_segments"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_profile_completeness"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_public_store_locator"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_restock_alerts"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_product_mix"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_products_carried"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "gasmask_store_call_observations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       gasmask_trigger_rules: {
         Row: {
           conditions: Json | null
@@ -137199,10 +137359,89 @@ export type Database = {
           },
         ]
       }
+      va_call_rebuttals: {
+        Row: {
+          aggressive_rebuttal: string | null
+          company_slug: string
+          created_at: string
+          human_response: string | null
+          id: string
+          is_active: boolean
+          label: string
+          soft_rebuttal: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          aggressive_rebuttal?: string | null
+          company_slug: string
+          created_at?: string
+          human_response?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          soft_rebuttal?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          aggressive_rebuttal?: string | null
+          company_slug?: string
+          created_at?: string
+          human_response?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          soft_rebuttal?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      va_call_scripts: {
+        Row: {
+          coaching_tip: string | null
+          company_slug: string
+          created_at: string
+          display_label: string | null
+          id: string
+          is_active: boolean
+          step_name: string
+          step_number: number
+          updated_at: string
+          va_says: string
+        }
+        Insert: {
+          coaching_tip?: string | null
+          company_slug: string
+          created_at?: string
+          display_label?: string | null
+          id?: string
+          is_active?: boolean
+          step_name: string
+          step_number: number
+          updated_at?: string
+          va_says: string
+        }
+        Update: {
+          coaching_tip?: string | null
+          company_slug?: string
+          created_at?: string
+          display_label?: string | null
+          id?: string
+          is_active?: boolean
+          step_name?: string
+          step_number?: number
+          updated_at?: string
+          va_says?: string
+        }
+        Relationships: []
+      }
       va_companies: {
         Row: {
           brand_color: string | null
           brands: string[] | null
+          business_id: string | null
           business_ids: string[] | null
           calls_for: string | null
           created_at: string
@@ -137216,6 +137455,7 @@ export type Database = {
         Insert: {
           brand_color?: string | null
           brands?: string[] | null
+          business_id?: string | null
           business_ids?: string[] | null
           calls_for?: string | null
           created_at?: string
@@ -137229,6 +137469,7 @@ export type Database = {
         Update: {
           brand_color?: string | null
           brands?: string[] | null
+          business_id?: string | null
           business_ids?: string[] | null
           calls_for?: string | null
           created_at?: string
@@ -137239,7 +137480,15 @@ export type Database = {
           slug?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "va_companies_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       va_company_memberships: {
         Row: {
@@ -145788,14 +146037,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -156530,6 +156779,7 @@ export type Database = {
           calls_for: string | null
           company: string | null
           company_id: string | null
+          dc_number_id: string | null
           friendly_name: string | null
           is_ai_number: boolean | null
           is_default_caller_id: boolean | null
@@ -160084,6 +160334,7 @@ export type Database = {
           was_insert: boolean
         }[]
       }
+      va_can_access_store: { Args: { _store_id: string }; Returns: boolean }
       va_owns_brandaro_lead: { Args: { _lead_id: string }; Returns: boolean }
       validate_agent_state_transition: {
         Args: { p_current_status: string; p_new_status: string }
