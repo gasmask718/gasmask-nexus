@@ -97,10 +97,10 @@ async function fetchCandidates(input: ICWLeadInput): Promise<ICWSourcedLead[]> {
   // Pull a narrow candidate set, then decide the winner in ordered logic below.
   const filters: string[] = [];
   const license = normLicense(input.license_number);
-  const last10 = phoneLast10(input.phone);
+  const phoneKey = normalizePhoneKey(input.phone);
 
   if (license) filters.push(`license_number.not.is.null`);
-  if (last10) filters.push(`phone.not.is.null`);
+  if (phoneKey) filters.push(`phone.not.is.null`);
   if (input.source_id) filters.push(`source_id.eq.${input.source_id}`);
   if (input.full_name) filters.push(`full_name.not.is.null`);
 
@@ -124,7 +124,7 @@ export async function findExistingLead(input: ICWLeadInput): Promise<DedupeMatch
   if (candidates.length === 0) return null;
 
   const license = normLicense(input.license_number);
-  const last10 = phoneLast10(input.phone);
+  const phoneKey = normalizePhoneKey(input.phone);
   const name = normText(input.full_name);
   const addr = normText(input.address);
   const city = normText(input.city);
@@ -141,8 +141,8 @@ export async function findExistingLead(input: ICWLeadInput): Promise<DedupeMatch
     if (bySource) return { lead: bySource, reason: 'source_id' };
   }
 
-  if (last10) {
-    const byPhone = candidates.find((c) => phoneLast10(c.phone) === last10);
+  if (phoneKey) {
+    const byPhone = candidates.find((c) => normalizePhoneKey(c.phone) === phoneKey);
     if (byPhone) return { lead: byPhone, reason: 'phone' };
   }
 
