@@ -45,7 +45,8 @@ export const VA_COMPANY_CONFIG: Record<string, VACompanyConfig> = {
     slug: 'gasmask_grabba',
     businessSlugs: ['gasmask', 'grabba_r_us', 'hot_scolatti', 'hot_mama'],
     leadSource: 'v_store_who_to_contact',
-    hasScripts: false,
+    // Scripts/rebuttals now come from va_call_scripts / va_call_rebuttals.
+    hasScripts: true,
   },
   dynasty_connect: { slug: 'dynasty_connect', ...NO_LIST },
   toptier: { slug: 'toptier', ...NO_LIST },

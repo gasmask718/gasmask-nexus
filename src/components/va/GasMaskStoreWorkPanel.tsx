@@ -1,0 +1,473 @@
+/**
+ * GasMaskStoreWorkPanel — the scoped GasMask account/work surface a VA gets
+ * while working a store from /va/dashboard.
+ *
+ * Deliberately NOT the admin /stores/:id surface: no financials, no deletes,
+ * no user management, no cross-business data. Everything here is reachable by
+ * the VA's own RLS (store_master VA business scope, store_contacts /
+ * store_notes VA business scope, gasmask_store_call_observations).
+ *
+ * Stock levels captured on a call are OBSERVATIONS. They are appended to
+ * gasmask_store_call_observations with a timestamp and never overwrite the
+ * authoritative numeric counts in store_tube_inventory.
+ */
+import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  Loader2, MapPin, Package, PhoneCall, Save, History, StickyNote, Plus, ShieldCheck,
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const STOCK_LEVELS = [
+  { value: 'full', label: 'Full' },
+  { value: 'three_quarter', label: '3/4' },
+  { value: 'half', label: '1/2' },
+  { value: 'quarter', label: '1/4' },
+  { value: 'few', label: 'A few left' },
+  { value: 'empty', label: 'Empty' },
+];
+
+const CALL_STATUSES = [
+  { value: 'needs_reorder', label: 'Needs reorder' },
+  { value: 'not_yet', label: 'Not yet' },
+  { value: 'no_answer', label: 'No answer' },
+  { value: 'call_back', label: 'Call back' },
+];
+
+const levelLabel = (v: string | null) =>
+  STOCK_LEVELS.find((l) => l.value === v)?.label ?? '—';
+
+interface Props {
+  storeId: string | null | undefined;
+}
+
+export function GasMaskStoreWorkPanel({ storeId }: Props) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const valid = !!storeId && UUID_RE.test(storeId);
+
+  const storeQ = useQuery({
+    queryKey: ['gm-va-store', storeId],
+    enabled: valid,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('store_master')
+        .select(
+          'id, store_name, address, city, state, zip, owner_name, contact_name, phone, ' +
+          'gasmask_call_status, last_contacted_at, notes, business_id',
+        )
+        .eq('id', storeId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const contactsQ = useQuery({
+    queryKey: ['gm-va-store-contacts', storeId],
+    enabled: valid,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('store_contacts')
+        .select('id, name, role, phone, is_primary, number_verification_status')
+        .eq('store_id', storeId)
+        .is('deleted_at', null)
+        .order('is_primary', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const obsQ = useQuery({
+    queryKey: ['gm-va-store-observations', storeId],
+    enabled: valid,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('gasmask_store_call_observations')
+        .select('id, observed_at, tubes_level, bags_level, reorder_needed, reorder_quantity, call_status, callback_at, notes, source')
+        .eq('store_id', storeId)
+        .order('observed_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const notesQ = useQuery({
+    queryKey: ['gm-va-store-notes', storeId],
+    enabled: valid,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('store_notes')
+        .select('id, note_text, created_at, source')
+        .eq('store_id', storeId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(8);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const store = storeQ.data;
+
+  // --- account fields (scoped edit) ---
+  const [ownerName, setOwnerName] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [callStatusField, setCallStatusField] = useState('');
+  const [savingAccount, setSavingAccount] = useState(false);
+
+  useEffect(() => {
+    if (!store) return;
+    setOwnerName(store.owner_name ?? '');
+    setContactName(store.contact_name ?? '');
+    setPhone(store.phone ?? '');
+    setCallStatusField(store.gasmask_call_status ?? '');
+  }, [store?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const saveAccount = async () => {
+    if (!valid) return;
+    setSavingAccount(true);
+    const { error } = await (supabase as any)
+      .from('store_master')
+      .update({
+        owner_name: ownerName.trim() || null,
+        contact_name: contactName.trim() || null,
+        phone: phone.trim() || null,
+        gasmask_call_status: callStatusField || null,
+      })
+      .eq('id', storeId);
+    setSavingAccount(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Account details saved');
+    qc.invalidateQueries({ queryKey: ['gm-va-store', storeId] });
+  };
+
+  // --- alternate numbers ---
+  const [altPhone, setAltPhone] = useState('');
+  const [altName, setAltName] = useState('');
+  const [addingAlt, setAddingAlt] = useState(false);
+
+  const addAlternate = async () => {
+    if (!valid || !altPhone.trim()) return;
+    setAddingAlt(true);
+    const { error } = await (supabase as any).from('store_contacts').insert({
+      store_id: storeId,
+      name: altName.trim() || 'Alternate contact',
+      phone: altPhone.trim(),
+      role: 'alt',
+      source: 'va_call',
+    });
+    setAddingAlt(false);
+    if (error) { toast.error(error.message); return; }
+    setAltPhone(''); setAltName('');
+    toast.success('Alternate number added');
+    qc.invalidateQueries({ queryKey: ['gm-va-store-contacts', storeId] });
+  };
+
+  const setVerification = async (contactId: string, status: string) => {
+    const { error } = await (supabase as any)
+      .from('store_contacts')
+      .update({ number_verification_status: status, verified_at: new Date().toISOString() })
+      .eq('id', contactId);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Number marked ${status}`);
+    qc.invalidateQueries({ queryKey: ['gm-va-store-contacts', storeId] });
+  };
+
+  // --- call observation capture ---
+  const [tubes, setTubes] = useState('');
+  const [bags, setBags] = useState('');
+  const [reorderNeeded, setReorderNeeded] = useState('');
+  const [reorderQty, setReorderQty] = useState('');
+  const [obsStatus, setObsStatus] = useState('');
+  const [callbackAt, setCallbackAt] = useState('');
+  const [obsNotes, setObsNotes] = useState('');
+  const [savingObs, setSavingObs] = useState(false);
+
+  const saveObservation = async () => {
+    if (!valid) return;
+    if (!tubes && !bags && !obsStatus) {
+      toast.error('Capture at least a stock level or a call status');
+      return;
+    }
+    setSavingObs(true);
+    const { error } = await (supabase as any)
+      .from('gasmask_store_call_observations')
+      .insert({
+        store_id: storeId,
+        business_id: store?.business_id ?? null,
+        observed_by: user?.id,
+        source: 'va_call',
+        tubes_level: tubes || null,
+        bags_level: bags || null,
+        reorder_needed: reorderNeeded === '' ? null : reorderNeeded === 'yes',
+        reorder_quantity: reorderQty === '' ? null : Number(reorderQty),
+        call_status: obsStatus || null,
+        callback_at: callbackAt ? new Date(callbackAt).toISOString() : null,
+        notes: obsNotes.trim() || null,
+      });
+    if (error) { setSavingObs(false); toast.error(error.message); return; }
+
+    // Roll the outcome up onto the account so the call list reflects it.
+    const { error: upErr } = await (supabase as any)
+      .from('store_master')
+      .update({
+        gasmask_call_status: obsStatus || callStatusField || null,
+        last_contacted_at: new Date().toISOString(),
+      })
+      .eq('id', storeId);
+    setSavingObs(false);
+    if (upErr) { toast.error(`Observation saved, account status not updated: ${upErr.message}`); }
+    else { toast.success('Call observation logged'); }
+
+    if (obsStatus) setCallStatusField(obsStatus);
+    setTubes(''); setBags(''); setReorderNeeded(''); setReorderQty('');
+    setObsStatus(''); setCallbackAt(''); setObsNotes('');
+    qc.invalidateQueries({ queryKey: ['gm-va-store-observations', storeId] });
+    qc.invalidateQueries({ queryKey: ['gm-va-store', storeId] });
+  };
+
+  // --- VA note ---
+  const [note, setNote] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+
+  const saveNote = async () => {
+    if (!valid || !note.trim()) return;
+    setSavingNote(true);
+    const { error } = await (supabase as any).from('store_notes').insert({
+      store_id: storeId,
+      note_text: note.trim(),
+      created_by: user?.id,
+      source: 'va_call',
+      brand_scope: 'gasmask',
+    });
+    setSavingNote(false);
+    if (error) { toast.error(error.message); return; }
+    setNote('');
+    toast.success('Note saved');
+    qc.invalidateQueries({ queryKey: ['gm-va-store-notes', storeId] });
+  };
+
+  if (!valid) {
+    return (
+      <div className="text-xs text-slate-400 py-6 text-center">
+        This dial isn't linked to a GasMask store record, so there's no account to work.
+      </div>
+    );
+  }
+
+  if (storeQ.isLoading) {
+    return <div className="space-y-2"><Skeleton className="h-24 w-full bg-slate-700/40" /><Skeleton className="h-24 w-full bg-slate-700/40" /></div>;
+  }
+
+  if (storeQ.error || !store) {
+    return (
+      <div className="text-xs text-rose-300 py-6 text-center">
+        {storeQ.error ? (storeQ.error as any).message : 'Store not visible to your account.'}
+      </div>
+    );
+  }
+
+  const lastObs = obsQ.data?.[0];
+
+  return (
+    <div className="space-y-4">
+      {/* Identity */}
+      <div className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h4 className="text-sm font-bold text-white">{store.store_name}</h4>
+            <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+              <MapPin className="h-3 w-3" />
+              {[store.address, store.city, store.state, store.zip].filter(Boolean).join(', ') || 'No address on file'}
+            </p>
+          </div>
+          <div className="text-right space-y-1">
+            {store.gasmask_call_status && (
+              <Badge className="bg-cyan-500/20 text-cyan-300 text-[10px]">{store.gasmask_call_status}</Badge>
+            )}
+            <p className="text-[10px] text-slate-500">
+              Last contacted: {store.last_contacted_at ? new Date(store.last_contacted_at).toLocaleDateString() : 'never'}
+            </p>
+          </div>
+        </div>
+        {lastObs && (
+          <p className="text-[11px] text-slate-400 mt-2 border-t border-slate-700/40 pt-2">
+            Last observed — Tubes: <span className="text-slate-200">{levelLabel(lastObs.tubes_level)}</span>
+            {' · '}Bags: <span className="text-slate-200">{levelLabel(lastObs.bags_level)}</span>
+            {lastObs.callback_at && <> · Follow-up {new Date(lastObs.callback_at).toLocaleString()}</>}
+          </p>
+        )}
+      </div>
+
+      {/* Account fields */}
+      <div className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-3 space-y-3">
+        <div className="text-[11px] uppercase font-bold text-slate-400">Account details</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><Label className="text-[11px] text-slate-400">Owner name</Label>
+            <Input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className="h-8 bg-slate-800 border-slate-700 text-white text-xs" /></div>
+          <div><Label className="text-[11px] text-slate-400">Contact name</Label>
+            <Input value={contactName} onChange={(e) => setContactName(e.target.value)} className="h-8 bg-slate-800 border-slate-700 text-white text-xs" /></div>
+          <div><Label className="text-[11px] text-slate-400">Primary phone</Label>
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="h-8 bg-slate-800 border-slate-700 text-white text-xs font-mono" /></div>
+          <div><Label className="text-[11px] text-slate-400">GasMask call status</Label>
+            <Select value={callStatusField} onValueChange={setCallStatusField}>
+              <SelectTrigger className="h-8 bg-slate-800 border-slate-700 text-white text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
+              <SelectContent>{CALL_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+            </Select></div>
+        </div>
+        <Button size="sm" onClick={saveAccount} disabled={savingAccount} className="gap-1.5">
+          {savingAccount ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save details
+        </Button>
+      </div>
+
+      {/* Numbers */}
+      <div className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-3 space-y-3">
+        <div className="text-[11px] uppercase font-bold text-slate-400 flex items-center gap-1">
+          <PhoneCall className="h-3 w-3" /> Numbers on file
+        </div>
+        {contactsQ.isLoading ? <Skeleton className="h-10 w-full bg-slate-700/40" /> : (
+          <div className="space-y-1.5">
+            {(contactsQ.data || []).length === 0 && (
+              <p className="text-[11px] text-slate-500">No alternate numbers recorded.</p>
+            )}
+            {(contactsQ.data || []).map((c: any) => (
+              <div key={c.id} className="flex items-center justify-between gap-2 text-xs bg-slate-800/60 rounded px-2 py-1.5">
+                <div className="min-w-0">
+                  <span className="text-slate-200 font-mono">{c.phone || '—'}</span>
+                  <span className="text-slate-500"> · {c.name || 'unnamed'}{c.role ? ` (${c.role})` : ''}</span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {c.number_verification_status && (
+                    <Badge className="bg-slate-700 text-slate-300 text-[9px]">{c.number_verification_status}</Badge>
+                  )}
+                  <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-emerald-300"
+                    onClick={() => setVerification(c.id, 'verified')}>
+                    <ShieldCheck className="h-3 w-3" /> Good
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-rose-300"
+                    onClick={() => setVerification(c.id, 'failed')}>
+                    Dead
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex gap-2">
+          <Input value={altPhone} onChange={(e) => setAltPhone(e.target.value)} placeholder="Alternate phone"
+            className="h-8 bg-slate-800 border-slate-700 text-white text-xs font-mono" />
+          <Input value={altName} onChange={(e) => setAltName(e.target.value)} placeholder="Whose number?"
+            className="h-8 bg-slate-800 border-slate-700 text-white text-xs" />
+          <Button size="sm" variant="outline" onClick={addAlternate} disabled={addingAlt || !altPhone.trim()} className="gap-1 shrink-0">
+            {addingAlt ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Add
+          </Button>
+        </div>
+      </div>
+
+      {/* Call-side inventory capture */}
+      <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3 space-y-3">
+        <div className="text-[11px] uppercase font-bold text-cyan-300 flex items-center gap-1">
+          <Package className="h-3 w-3" /> Stock observed on this call
+        </div>
+        <p className="text-[10px] text-slate-400 -mt-1">
+          What the store TELLS you. Appended as history — it never overwrites warehouse counts.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><Label className="text-[11px] text-slate-400">Tubes</Label>
+            <Select value={tubes} onValueChange={setTubes}>
+              <SelectTrigger className="h-8 bg-slate-800 border-slate-700 text-white text-xs"><SelectValue placeholder="Select level" /></SelectTrigger>
+              <SelectContent>{STOCK_LEVELS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+            </Select></div>
+          <div><Label className="text-[11px] text-slate-400">Bags</Label>
+            <Select value={bags} onValueChange={setBags}>
+              <SelectTrigger className="h-8 bg-slate-800 border-slate-700 text-white text-xs"><SelectValue placeholder="Select level" /></SelectTrigger>
+              <SelectContent>{STOCK_LEVELS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+            </Select></div>
+          <div><Label className="text-[11px] text-slate-400">Reorder needed?</Label>
+            <Select value={reorderNeeded} onValueChange={setReorderNeeded}>
+              <SelectTrigger className="h-8 bg-slate-800 border-slate-700 text-white text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="yes">Yes</SelectItem>
+                <SelectItem value="no">No</SelectItem>
+              </SelectContent>
+            </Select></div>
+          <div><Label className="text-[11px] text-slate-400">Reorder quantity</Label>
+            <Input type="number" min={0} value={reorderQty} onChange={(e) => setReorderQty(e.target.value)}
+              className="h-8 bg-slate-800 border-slate-700 text-white text-xs" /></div>
+          <div><Label className="text-[11px] text-slate-400">Call status</Label>
+            <Select value={obsStatus} onValueChange={setObsStatus}>
+              <SelectTrigger className="h-8 bg-slate-800 border-slate-700 text-white text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
+              <SelectContent>{CALL_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+            </Select></div>
+          <div><Label className="text-[11px] text-slate-400">Callback / follow-up</Label>
+            <Input type="datetime-local" value={callbackAt} onChange={(e) => setCallbackAt(e.target.value)}
+              className="h-8 bg-slate-800 border-slate-700 text-white text-xs" /></div>
+        </div>
+        <Textarea value={obsNotes} onChange={(e) => setObsNotes(e.target.value)} rows={2}
+          placeholder="What did they say about stock?"
+          className="bg-slate-800 border-slate-700 text-white text-xs" />
+        <Button size="sm" onClick={saveObservation} disabled={savingObs} className="gap-1.5 bg-cyan-600 hover:bg-cyan-700">
+          {savingObs ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Log observation
+        </Button>
+      </div>
+
+      {/* Observation history */}
+      <div className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-3">
+        <div className="text-[11px] uppercase font-bold text-slate-400 flex items-center gap-1 mb-2">
+          <History className="h-3 w-3" /> Previous call observations
+        </div>
+        {obsQ.isLoading ? <Skeleton className="h-10 w-full bg-slate-700/40" /> : (
+          <div className="space-y-1.5">
+            {(obsQ.data || []).length === 0 && <p className="text-[11px] text-slate-500">No prior observations.</p>}
+            {(obsQ.data || []).map((o: any) => (
+              <div key={o.id} className="text-[11px] text-slate-300 bg-slate-800/50 rounded px-2 py-1.5">
+                <span className="text-slate-500">{new Date(o.observed_at).toLocaleString()}</span>
+                {' — Tubes '}<span className="text-slate-100">{levelLabel(o.tubes_level)}</span>
+                {' · Bags '}<span className="text-slate-100">{levelLabel(o.bags_level)}</span>
+                {o.call_status && <> · <span className="text-cyan-300">{o.call_status}</span></>}
+                {o.reorder_needed && <> · reorder {o.reorder_quantity ?? 'yes'}</>}
+                {o.notes && <div className="text-slate-400 italic mt-0.5">{o.notes}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* VA notes */}
+      <div className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-3 space-y-2">
+        <div className="text-[11px] uppercase font-bold text-slate-400 flex items-center gap-1">
+          <StickyNote className="h-3 w-3" /> Notes
+        </div>
+        <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2}
+          placeholder="Add a note for the next caller…"
+          className="bg-slate-800 border-slate-700 text-white text-xs" />
+        <Button size="sm" variant="outline" onClick={saveNote} disabled={savingNote || !note.trim()} className="gap-1.5">
+          {savingNote ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save note
+        </Button>
+        <div className="space-y-1.5 pt-1">
+          {(notesQ.data || []).map((n: any) => (
+            <div key={n.id} className="text-[11px] text-slate-300 bg-slate-800/50 rounded px-2 py-1.5">
+              <span className="text-slate-500">{new Date(n.created_at).toLocaleDateString()}</span> — {n.note_text}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

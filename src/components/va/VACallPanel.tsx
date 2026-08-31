@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Phone, PhoneOff, Mic, MicOff, X, FileText, Send, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { VAScripts } from './VAScripts';
+import { GasMaskStoreWorkPanel } from './GasMaskStoreWorkPanel';
 import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
@@ -25,6 +26,8 @@ interface ActiveCallLead {
   id: string;
   business_name: string;
   phone: string;
+  /** store_master id when the dial came from the GasMask store book */
+  store_id?: string | null;
 }
 
 interface VACallPanelProps {
@@ -47,6 +50,8 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
   const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
   const [wrapUpOpen, setWrapUpOpen] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  // GasMask VAs work store accounts, not service quotes.
+  const isGasMask = vaCompany?.activeCompany?.slug === 'gasmask_grabba';
 
   // Fetch the most recent prior wrap-up for this lead so the VA never starts from scratch
   const { data: priorContext } = useQuery({
@@ -345,14 +350,24 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
 
       {/* Contextual Tabs */}
       <div className="glass-card rounded-2xl border border-border/50 overflow-hidden">
-        <Tabs defaultValue="services">
+        <Tabs defaultValue={isGasMask ? 'account' : 'services'}>
           <TabsList className="w-full bg-accent/30 rounded-none border-b border-border/30 h-10">
-            <TabsTrigger value="services" className="flex-1 text-xs data-[state=active]:bg-background/50">Services & Pricing</TabsTrigger>
+            {isGasMask && (
+              <TabsTrigger value="account" className="flex-1 text-xs data-[state=active]:bg-background/50">Account</TabsTrigger>
+            )}
+            {!isGasMask && (
+              <TabsTrigger value="services" className="flex-1 text-xs data-[state=active]:bg-background/50">Services & Pricing</TabsTrigger>
+            )}
             <TabsTrigger value="faqs" className="flex-1 text-xs data-[state=active]:bg-background/50">{t('va.call.faqs')}</TabsTrigger>
             <TabsTrigger value="scripts" className="flex-1 text-xs data-[state=active]:bg-background/50">{t('va.call.scripts')}</TabsTrigger>
             <TabsTrigger value="rebuttals" className="flex-1 text-xs data-[state=active]:bg-background/50">{t('va.call.rebuttals')}</TabsTrigger>
           </TabsList>
-          <TabsContent value="services" className="p-4"><VAServicesPricing /></TabsContent>
+          {isGasMask && (
+            <TabsContent value="account" className="p-4">
+              <GasMaskStoreWorkPanel storeId={lead.store_id ?? lead.id} />
+            </TabsContent>
+          )}
+          {!isGasMask && <TabsContent value="services" className="p-4"><VAServicesPricing /></TabsContent>}
           <TabsContent value="faqs" className="p-4"><VAFAQs /></TabsContent>
           <TabsContent value="scripts" className="p-4">
             <VAScripts
@@ -360,7 +375,9 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
               companyName={vaCompany?.activeCompany?.name}
             />
           </TabsContent>
-          <TabsContent value="rebuttals" className="p-4"><VARebuttals /></TabsContent>
+          <TabsContent value="rebuttals" className="p-4">
+            <VARebuttals companySlug={vaCompany?.activeCompany?.slug} />
+          </TabsContent>
         </Tabs>
       </div>
 

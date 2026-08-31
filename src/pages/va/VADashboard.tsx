@@ -128,6 +128,7 @@ function VADashboardInner() {
           .limit(500);
         return (data || []).map((s: any) => ({
           id: s.store_id,
+          store_id: s.store_id,
           business_name: s.store_name,
           phone: s.phone,
           email: null,
@@ -396,7 +397,7 @@ function VADashboardInner() {
             )}
             {view === 'scripts' && (
               <div className="h-[calc(100vh-8rem)] rounded-xl border border-slate-700 overflow-hidden">
-                <VAScriptsRebuttalsPanel />
+                <VAScriptsRebuttalsPanel companySlug={activeCompany?.slug} />
               </div>
             )}
             {view === 'faqs' && <div className="max-w-2xl"><VAFAQs /></div>}

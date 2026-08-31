@@ -1,26 +1,19 @@
 /**
- * VARebuttals — DB-backed objection rebuttals.
- * Single source of truth: brandaro_closer_rebuttals (same table powering
- * the dashboard's Scripts & Rebuttals panel).
+ * VARebuttals — DB-backed objection rebuttals for the ACTIVE VA company.
+ * Brandaro reads brandaro_closer_rebuttals; every other company reads the
+ * shared va_call_rebuttals table (see useVACompanyRebuttals).
  */
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useVASession } from '@/contexts/VASessionContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useVACompanyRebuttals } from '@/hooks/useVACompanyScript';
 
-export function VARebuttals() {
+interface VARebuttalsProps {
+  companySlug?: string | null;
+}
+
+export function VARebuttals({ companySlug }: VARebuttalsProps = {}) {
   const { t } = useVASession();
-  const { data, isLoading } = useQuery({
-    queryKey: ['brandaro-rebuttals'],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('brandaro_closer_rebuttals')
-        .select('*')
-        .eq('is_current', true)
-        .order('label');
-      return data || [];
-    },
-  });
+  const { data, isLoading } = useVACompanyRebuttals(companySlug);
 
   if (isLoading) {
     return (
@@ -34,7 +27,7 @@ export function VARebuttals() {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-bold text-white">{t('va.rebuttals.title')}</h3>
-      {(data || []).map((r: any) => (
+      {(data || []).map((r) => (
         <div key={r.id} className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-bold text-orange-400">"{r.label}"</span>
