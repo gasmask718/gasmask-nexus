@@ -260,6 +260,19 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
     return <Navigate to="/pending-approval" replace />;
   }
 
+  // Developer: business-scoped OS module access.
+  // Requires BOTH the `developer` role AND a public.business_members row for the
+  // business that owns the module. No membership → no module access (never global).
+  if (effectiveRoles.includes("developer")) {
+    const memberSlugs = (memberships || [])
+      .map((m) => m.slug)
+      .filter((s): s is string => !!s);
+    const devPaths = memberSlugs.flatMap((slug) => DEVELOPER_BUSINESS_PATHS[slug] || []);
+    if (devPaths.some((prefix) => currentPath === prefix || currentPath.startsWith(prefix + "/"))) {
+      return <>{children}</>;
+    }
+  }
+
   // Check if any of the user's roles grant access to the current path
   const hasPathAccess = effectiveRoles.some((role) => {
     const allowedPaths = ROLE_ALLOWED_PATHS[role];
