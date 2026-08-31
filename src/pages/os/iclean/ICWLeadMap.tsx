@@ -13,24 +13,30 @@ const STATUS_COLORS: Record<string, string> = {
   rejected: '#ef4444',
 };
 
+const hasCoords = (l: ICWSourcedLead) =>
+  l.latitude != null &&
+  l.longitude != null &&
+  Number.isFinite(Number(l.latitude)) &&
+  Number.isFinite(Number(l.longitude));
+
 export default function ICWLeadMap() {
   const { data: leads = [], error } = useQuery({
     queryKey: ['icw-sourced-leads', 'map'],
     queryFn: async (): Promise<ICWSourcedLead[]> => {
-      const { data, error } = await supabase
-        .from('icw_sourced_leads')
-        .select('*')
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null);
+      // Fetch ALL leads — unmapped rows are reported as a mapping gap,
+      // never silently dropped and never given fabricated coordinates.
+      const { data, error } = await supabase.from('icw_sourced_leads').select('*');
       if (error) throw error;
       return (data ?? []) as unknown as ICWSourcedLead[];
     },
   });
 
+  const unmapped = useMemo(() => leads.filter((l) => !hasCoords(l)), [leads]);
+
   const points = useMemo<GeoPoint[]>(
     () =>
       leads
-        .filter((l) => l.latitude != null && l.longitude != null)
+        .filter(hasCoords)
         .map((l) => ({
           id: l.id,
           lng: Number(l.longitude),
@@ -43,6 +49,7 @@ export default function ICWLeadMap() {
         })),
     [leads],
   );
+
 
   return (
     <div className="min-h-screen p-6 space-y-6">
