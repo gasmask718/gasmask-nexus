@@ -46,13 +46,27 @@ export interface ICWSourcedLead {
 
 export type ICWLeadInput = Partial<Omit<ICWSourcedLead, 'id' | 'created_at' | 'updated_at'>>;
 
-/** Last-10-digit normalization, consistent with the rest of the OS. */
-export function phoneLast10(raw: string | null | undefined): string | null {
+/**
+ * Canonical phone dedupe key.
+ * Digits-only: strips spaces, dashes, parentheses, dots, plus signs, and a
+ * leading "1" country code. "(213) 555-0123", "213-555-0123", "+1 213 555 0123"
+ * and "12135550123" all collapse to "2135550123".
+ *
+ * This is the ONLY phone comparison allowed anywhere in ICW dedupe — never
+ * compare raw phone strings.
+ */
+export function normalizePhoneKey(raw: string | null | undefined): string | null {
   if (!raw) return null;
-  const digits = raw.replace(/\D/g, '');
+  let digits = raw.replace(/\D/g, '');
+  if (!digits) return null;
+  if (digits.length === 11 && digits.startsWith('1')) digits = digits.slice(1);
   if (digits.length < 10) return null;
   return digits.slice(-10);
 }
+
+/** Back-compat alias — same last-10 normalization used across the OS. */
+export const phoneLast10 = normalizePhoneKey;
+
 
 export function normText(raw: string | null | undefined): string {
   return (raw ?? '')
