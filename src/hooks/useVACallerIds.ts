@@ -2,6 +2,11 @@
  * useVACallerIds — the phone numbers a VA may present as caller ID for one
  * company, read from v_va_caller_ids (owner-maintained mapping of
  * dc_phone_numbers → va_companies with default + AI/human-line flags).
+ *
+ * Column names below MUST match the view. The view exposes:
+ *   company_id, company, slug, brand_color, calls_for, dc_number_id,
+ *   phone_number, friendly_name, number_type, is_ai_number,
+ *   is_default_caller_id, status, use_note
  */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface VACallerId {
   dc_number_id: string;
   phone_number: string;
-  number_friendly_name: string | null;
+  friendly_name: string | null;
   is_default_caller_id: boolean;
   is_ai_number: boolean;
   use_note: string | null;
@@ -25,13 +30,13 @@ export function useVACallerIds(companyId: string | null | undefined) {
       const { data, error } = await (supabase as any)
         .from('v_va_caller_ids')
         .select(
-          'dc_number_id, phone_number, number_friendly_name, is_default_caller_id, is_ai_number, use_note, calls_for',
+          'dc_number_id, phone_number, friendly_name, is_default_caller_id, is_ai_number, use_note, calls_for',
         )
         .eq('company_id', companyId)
-        .eq('number_status', 'active')
+        .eq('status', 'active')
         .not('phone_number', 'is', null)
         .order('is_default_caller_id', { ascending: false })
-        .order('number_friendly_name');
+        .order('friendly_name');
       if (error) throw error;
       return (data || []) as VACallerId[];
     },
