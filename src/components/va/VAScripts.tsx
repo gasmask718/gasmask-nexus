@@ -1,37 +1,32 @@
 /**
- * VAScripts — DB-backed call script steps.
- * Single source of truth: brandaro_sales_script_steps (same table powering
- * the dashboard's Scripts & Rebuttals panel).
+ * VAScripts — DB-backed call script steps for the ACTIVE VA company.
+ * Brandaro reads brandaro_sales_script_steps; every other company reads the
+ * shared va_call_scripts table (see useVACompanyScript).
  */
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useVASession } from '@/contexts/VASessionContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useVACompanyScript } from '@/hooks/useVACompanyScript';
 
 interface VAScriptsProps {
-  /** Active VA company slug — scripts only exist for Brandaro today */
+  /** Active VA company slug */
   companySlug?: string | null;
   companyName?: string | null;
 }
 
 export function VAScripts({ companySlug, companyName }: VAScriptsProps = {}) {
   const { t } = useVASession();
-  const scriptsConfigured = !companySlug || companySlug === 'brandaro';
-  const { data, isLoading } = useQuery({
-    queryKey: ['brandaro-script-steps'],
-    enabled: scriptsConfigured,
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('brandaro_sales_script_steps')
-        .select('*')
-        .eq('is_active', true)
-        .eq('is_current', true)
-        .order('step_number');
-      return data || [];
-    },
-  });
+  const { data, isLoading } = useVACompanyScript(companySlug);
 
-  if (!scriptsConfigured) {
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-20 w-full bg-slate-700/40" />
+        <Skeleton className="h-20 w-full bg-slate-700/40" />
+      </div>
+    );
+  }
+
+  if (!data || data.length === 0) {
     return (
       <div className="text-center py-6 space-y-1">
         <p className="text-sm text-slate-300">
@@ -44,22 +39,13 @@ export function VAScripts({ companySlug, companyName }: VAScriptsProps = {}) {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="space-y-2">
-        <Skeleton className="h-20 w-full bg-slate-700/40" />
-        <Skeleton className="h-20 w-full bg-slate-700/40" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-bold text-white">{t('va.scripts.title')}</h3>
       <p className="text-[11px] text-slate-400 -mt-2">
         Read naturally — don't sound like a robot. Pause for their answers.
       </p>
-      {(data || []).map((s: any) => (
+      {data.map((s) => (
         <div key={s.id} className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-bold text-cyan-400 uppercase">
@@ -76,11 +62,6 @@ export function VAScripts({ companySlug, companyName }: VAScriptsProps = {}) {
           )}
         </div>
       ))}
-      {(data || []).length === 0 && (
-        <div className="text-xs text-slate-400 text-center py-4">
-          No active script steps. Add some in the Scripts & Rebuttals admin.
-        </div>
-      )}
     </div>
   );
 }
