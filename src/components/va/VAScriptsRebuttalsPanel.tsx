@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useVACompanyScript, useVACompanyRebuttals } from '@/hooks/useVACompanyScript';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
