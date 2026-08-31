@@ -37,7 +37,7 @@ export function VAActiveNumberSwitcher() {
     try {
       await switchNumber(picked.dc_number_id, picked.phone_number);
       toast.success(
-        `Caller ID set to ${picked.number_friendly_name || picked.phone_number} · ${picked.phone_number}`,
+        `Caller ID set to ${picked.friendly_name || picked.phone_number} · ${picked.phone_number}`,
       );
     } catch (err: any) {
       toast.error(`Failed to switch number: ${err?.message || 'unknown error'}`);
@@ -63,7 +63,7 @@ export function VAActiveNumberSwitcher() {
           >
             <div className="flex flex-col">
               <span className="text-xs font-medium flex items-center gap-1.5">
-                {num.number_friendly_name || num.phone_number}
+                {num.friendly_name || num.phone_number}
                 {num.is_default_caller_id && (
                   <span className="text-[9px] text-slate-400">(default)</span>
                 )}
