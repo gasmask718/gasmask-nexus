@@ -58,7 +58,7 @@ export default function ICWLeadMap() {
           IClean Hub Map
         </h1>
         <p className="text-muted-foreground mt-1">
-          Sourced leads with coordinates · same canonical records as the ICW CRM
+          {points.length} of {leads.length} sourced leads mapped · same canonical records as the ICW CRM
         </p>
       </div>
 
@@ -67,6 +67,26 @@ export default function ICWLeadMap() {
           {(error as Error).message}
         </p>
       )}
+
+      {unmapped.length > 0 && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 space-y-2">
+          <p className="text-sm font-medium text-amber-500">
+            Mapping gap: {unmapped.length} lead{unmapped.length === 1 ? '' : 's'} without coordinates
+          </p>
+          <ul className="text-xs text-muted-foreground space-y-0.5">
+            {unmapped.slice(0, 10).map((l) => (
+              <li key={l.id} className="truncate">
+                {l.full_name || 'Unnamed lead'} ·{' '}
+                {l.address || [l.city, l.state].filter(Boolean).join(', ') || 'no address on file'}
+              </li>
+            ))}
+          </ul>
+          {unmapped.length > 10 && (
+            <p className="text-xs text-muted-foreground">+{unmapped.length - 10} more</p>
+          )}
+        </div>
+      )}
+
 
       <GeoMapView
         points={points}
