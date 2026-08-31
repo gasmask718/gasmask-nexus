@@ -181,6 +181,7 @@ const ROLE_HOME: Record<string, string> = {
   va: "/va/dashboard",
   production: "/portal/production",
   influencer: "/portal/influencer",
+  developer: "/portal/home",
 };
 
 // Public paths that all authenticated users can access
