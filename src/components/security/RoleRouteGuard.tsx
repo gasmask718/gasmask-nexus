@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
-import { useBusinessRoles } from "@/hooks/useBusinessMembership";
+import { useBusinessRoles, useBusinessMemberships } from "@/hooks/useBusinessMembership";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { Shield } from "lucide-react";
 
@@ -146,6 +146,26 @@ const ROLE_ALLOWED_PATHS: Record<string, string[]> = {
     "/portal/join",
     "/install",
   ],
+  // Developers are NOT elevated. They only get the generic authenticated
+  // surfaces here; module access is granted per-business below via
+  // DEVELOPER_BUSINESS_PATHS + business_members membership.
+  developer: [
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/join",
+    "/install",
+  ],
+};
+
+/**
+ * Per-business developer surface map.
+ * key   = businesses.slug the user must be a member of (public.business_members)
+ * value = OS path prefixes that membership unlocks for the `developer` role.
+ * Membership is required — a developer with no matching membership gets nothing here.
+ */
+const DEVELOPER_BUSINESS_PATHS: Record<string, string[]> = {
+  iclean_weclean: ["/os/icw"],
 };
 
 // Default redirect per role
@@ -161,6 +181,7 @@ const ROLE_HOME: Record<string, string> = {
   va: "/va/dashboard",
   production: "/portal/production",
   influencer: "/portal/influencer",
+  developer: "/portal/home",
 };
 
 // Public paths that all authenticated users can access
@@ -186,9 +207,10 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
   const { roles, loading: rolesLoading } = useUserRole(activeBusinessId);
   const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
   const { roles: businessRoles, isLoading: membershipLoading } = useBusinessRoles(activeBusinessId);
+  const { data: memberships, isLoading: membershipsLoading } = useBusinessMemberships();
 
   // Don't block while loading
-  if (rolesLoading || profileLoading || businessLoading || membershipLoading) {
+  if (rolesLoading || profileLoading || businessLoading || membershipLoading || membershipsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -237,6 +259,19 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
   // protected workspaces. Send them to the explicit approval state instead.
   if (effectiveRoles.length === 0) {
     return <Navigate to="/pending-approval" replace />;
+  }
+
+  // Developer: business-scoped OS module access.
+  // Requires BOTH the `developer` role AND a public.business_members row for the
+  // business that owns the module. No membership → no module access (never global).
+  if (effectiveRoles.includes("developer")) {
+    const memberSlugs = (memberships || [])
+      .map((m) => m.slug)
+      .filter((s): s is string => !!s);
+    const devPaths = memberSlugs.flatMap((slug) => DEVELOPER_BUSINESS_PATHS[slug] || []);
+    if (devPaths.some((prefix) => currentPath === prefix || currentPath.startsWith(prefix + "/"))) {
+      return <>{children}</>;
+    }
   }
 
   // Check if any of the user's roles grant access to the current path
