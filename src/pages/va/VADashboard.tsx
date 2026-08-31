@@ -128,6 +128,7 @@ function VADashboardInner() {
           .limit(500);
         return (data || []).map((s: any) => ({
           id: s.store_id,
+          store_id: s.store_id,
           business_name: s.store_name,
           phone: s.phone,
           email: null,
