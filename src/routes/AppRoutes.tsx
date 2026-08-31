@@ -1042,6 +1042,8 @@ const UnforgettableCRMDashboard = lazy(() => import('@/pages/crm/unforgettable')
 const ICleanDashboard = lazy(() => import('@/pages/os/iclean/ICleanDashboard'));
 const ICWCommandDashboard = lazy(() => import('@/pages/os/iclean/ICWCommandDashboard'));
 const ICWWorkerRoster = lazy(() => import('@/pages/os/iclean/ICWWorkerRoster'));
+const ICWLeadMap = lazy(() => import('@/pages/os/iclean/ICWLeadMap'));
+const ICWCrm = lazy(() => import('@/pages/os/iclean/ICWCrm'));
 const PlayboxxxDashboard = lazy(() => import('@/pages/os/playboxxx/PlayboxxxDashboard'));
 const PbxRecruitingDashboard = lazy(() => import('@/pages/os/playboxxx/recruiting/RecruitingDashboard'));
 const PbxStaffSourcing = lazy(() => import('@/pages/os/playboxxx/recruiting/StaffSourcing'));
