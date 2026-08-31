@@ -46,13 +46,27 @@ export interface ICWSourcedLead {
 
 export type ICWLeadInput = Partial<Omit<ICWSourcedLead, 'id' | 'created_at' | 'updated_at'>>;
 
-/** Last-10-digit normalization, consistent with the rest of the OS. */
-export function phoneLast10(raw: string | null | undefined): string | null {
+/**
+ * Canonical phone dedupe key.
+ * Digits-only: strips spaces, dashes, parentheses, dots, plus signs, and a
+ * leading "1" country code. "(213) 555-0123", "213-555-0123", "+1 213 555 0123"
+ * and "12135550123" all collapse to "2135550123".
+ *
+ * This is the ONLY phone comparison allowed anywhere in ICW dedupe — never
+ * compare raw phone strings.
+ */
+export function normalizePhoneKey(raw: string | null | undefined): string | null {
   if (!raw) return null;
-  const digits = raw.replace(/\D/g, '');
+  let digits = raw.replace(/\D/g, '');
+  if (!digits) return null;
+  if (digits.length === 11 && digits.startsWith('1')) digits = digits.slice(1);
   if (digits.length < 10) return null;
   return digits.slice(-10);
 }
+
+/** Back-compat alias — same last-10 normalization used across the OS. */
+export const phoneLast10 = normalizePhoneKey;
+
 
 export function normText(raw: string | null | undefined): string {
   return (raw ?? '')
@@ -83,10 +97,10 @@ async function fetchCandidates(input: ICWLeadInput): Promise<ICWSourcedLead[]> {
   // Pull a narrow candidate set, then decide the winner in ordered logic below.
   const filters: string[] = [];
   const license = normLicense(input.license_number);
-  const last10 = phoneLast10(input.phone);
+  const phoneKey = normalizePhoneKey(input.phone);
 
   if (license) filters.push(`license_number.not.is.null`);
-  if (last10) filters.push(`phone.not.is.null`);
+  if (phoneKey) filters.push(`phone.not.is.null`);
   if (input.source_id) filters.push(`source_id.eq.${input.source_id}`);
   if (input.full_name) filters.push(`full_name.not.is.null`);
 
@@ -110,7 +124,7 @@ export async function findExistingLead(input: ICWLeadInput): Promise<DedupeMatch
   if (candidates.length === 0) return null;
 
   const license = normLicense(input.license_number);
-  const last10 = phoneLast10(input.phone);
+  const phoneKey = normalizePhoneKey(input.phone);
   const name = normText(input.full_name);
   const addr = normText(input.address);
   const city = normText(input.city);
@@ -127,8 +141,8 @@ export async function findExistingLead(input: ICWLeadInput): Promise<DedupeMatch
     if (bySource) return { lead: bySource, reason: 'source_id' };
   }
 
-  if (last10) {
-    const byPhone = candidates.find((c) => phoneLast10(c.phone) === last10);
+  if (phoneKey) {
+    const byPhone = candidates.find((c) => normalizePhoneKey(c.phone) === phoneKey);
     if (byPhone) return { lead: byPhone, reason: 'phone' };
   }
 
