@@ -121,7 +121,7 @@ function ObjectionsTab({ companySlug }: { companySlug?: string | null }) {
       {data?.map((r: any) => (
         <AccordionItem
           key={r.id}
-          value={r.objection_key}
+          value={r.id}
           className="border-slate-700/50"
         >
           <AccordionTrigger className="text-left hover:no-underline py-2">
