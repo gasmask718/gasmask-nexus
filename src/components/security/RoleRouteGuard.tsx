@@ -146,6 +146,26 @@ const ROLE_ALLOWED_PATHS: Record<string, string[]> = {
     "/portal/join",
     "/install",
   ],
+  // Developers are NOT elevated. They only get the generic authenticated
+  // surfaces here; module access is granted per-business below via
+  // DEVELOPER_BUSINESS_PATHS + business_members membership.
+  developer: [
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/join",
+    "/install",
+  ],
+};
+
+/**
+ * Per-business developer surface map.
+ * key   = businesses.slug the user must be a member of (public.business_members)
+ * value = OS path prefixes that membership unlocks for the `developer` role.
+ * Membership is required — a developer with no matching membership gets nothing here.
+ */
+const DEVELOPER_BUSINESS_PATHS: Record<string, string[]> = {
+  iclean_weclean: ["/os/icw"],
 };
 
 // Default redirect per role
