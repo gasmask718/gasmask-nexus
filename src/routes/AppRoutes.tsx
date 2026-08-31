@@ -1042,6 +1042,8 @@ const UnforgettableCRMDashboard = lazy(() => import('@/pages/crm/unforgettable')
 const ICleanDashboard = lazy(() => import('@/pages/os/iclean/ICleanDashboard'));
 const ICWCommandDashboard = lazy(() => import('@/pages/os/iclean/ICWCommandDashboard'));
 const ICWWorkerRoster = lazy(() => import('@/pages/os/iclean/ICWWorkerRoster'));
+const ICWLeadMap = lazy(() => import('@/pages/os/iclean/ICWLeadMap'));
+const ICWCrm = lazy(() => import('@/pages/os/iclean/ICWCrm'));
 const PlayboxxxDashboard = lazy(() => import('@/pages/os/playboxxx/PlayboxxxDashboard'));
 const PbxRecruitingDashboard = lazy(() => import('@/pages/os/playboxxx/recruiting/RecruitingDashboard'));
 const PbxStaffSourcing = lazy(() => import('@/pages/os/playboxxx/recruiting/StaffSourcing'));
@@ -2316,6 +2318,8 @@ export default function AppRoutes() {
         <Route path="/os/iclean" element={<ICleanDashboard />} />
         <Route path="/os/icw" element={<ICWCommandDashboard />} />
         <Route path="/os/icw/workers" element={<ICWWorkerRoster />} />
+        <Route path="/os/icw/map" element={<ICWLeadMap />} />
+        <Route path="/os/icw/crm" element={<ICWCrm />} />
         <Route path="/os/playboxxx" element={<PlayboxxxDashboard />} />
         <Route path="/os/playboxxx/recruiting" element={<PbxRecruitingDashboard />} />
         <Route path="/os/playboxxx/recruiting/staff-sourcing" element={<PbxStaffSourcing />} />

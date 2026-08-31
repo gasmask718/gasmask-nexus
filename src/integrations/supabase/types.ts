@@ -71364,6 +71364,54 @@ export type Database = {
           },
         ]
       }
+      icw_ingestion_runs: {
+        Row: {
+          category: string | null
+          completed_at: string | null
+          created_at: string
+          duplicate_count: number
+          error_detail: string | null
+          geography: string | null
+          id: string
+          new_lead_count: number
+          outcome: string | null
+          query_term: string | null
+          raw_result_count: number
+          source: string | null
+          started_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          duplicate_count?: number
+          error_detail?: string | null
+          geography?: string | null
+          id?: string
+          new_lead_count?: number
+          outcome?: string | null
+          query_term?: string | null
+          raw_result_count?: number
+          source?: string | null
+          started_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          duplicate_count?: number
+          error_detail?: string | null
+          geography?: string | null
+          id?: string
+          new_lead_count?: number
+          outcome?: string | null
+          query_term?: string | null
+          raw_result_count?: number
+          source?: string | null
+          started_at?: string | null
+        }
+        Relationships: []
+      }
       icw_jobs: {
         Row: {
           address: string | null
@@ -71411,6 +71459,99 @@ export type Database = {
           {
             foreignKeyName: "icw_jobs_assigned_worker_id_fkey"
             columns: ["assigned_worker_id"]
+            isOneToOne: false
+            referencedRelation: "icw_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      icw_sourced_leads: {
+        Row: {
+          address: string | null
+          category_groups: string[]
+          city: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          ingestion_run_id: string | null
+          latitude: number | null
+          license_number: string | null
+          license_status: string | null
+          license_type: string | null
+          longitude: number | null
+          phone: string | null
+          postal_code: string | null
+          promoted_worker_id: string | null
+          source_id: string | null
+          source_platform: string | null
+          source_url: string | null
+          state: string | null
+          status: string
+          updated_at: string
+          website_social: string | null
+        }
+        Insert: {
+          address?: string | null
+          category_groups?: string[]
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          ingestion_run_id?: string | null
+          latitude?: number | null
+          license_number?: string | null
+          license_status?: string | null
+          license_type?: string | null
+          longitude?: number | null
+          phone?: string | null
+          postal_code?: string | null
+          promoted_worker_id?: string | null
+          source_id?: string | null
+          source_platform?: string | null
+          source_url?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          website_social?: string | null
+        }
+        Update: {
+          address?: string | null
+          category_groups?: string[]
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          ingestion_run_id?: string | null
+          latitude?: number | null
+          license_number?: string | null
+          license_status?: string | null
+          license_type?: string | null
+          longitude?: number | null
+          phone?: string | null
+          postal_code?: string | null
+          promoted_worker_id?: string | null
+          source_id?: string | null
+          source_platform?: string | null
+          source_url?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          website_social?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "icw_sourced_leads_ingestion_run_id_fkey"
+            columns: ["ingestion_run_id"]
+            isOneToOne: false
+            referencedRelation: "icw_ingestion_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "icw_sourced_leads_promoted_worker_id_fkey"
+            columns: ["promoted_worker_id"]
             isOneToOne: false
             referencedRelation: "icw_workers"
             referencedColumns: ["id"]
