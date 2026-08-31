@@ -6,7 +6,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Shield, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const OPS_ROLES = ['driver', 'biker', 'ambassador', 'influencer', 'store', 'store_owner', 'wholesaler', 'customer', 'production', 'owner', 'admin', 'ceo', 'va', 'manager', 'accountant', 'csr', 'dynasty_owner', 'super_admin'];
+const OPS_ROLES = ['driver', 'biker', 'ambassador', 'influencer', 'store', 'store_owner', 'wholesaler', 'customer', 'production', 'owner', 'admin', 'ceo', 'va', 'manager', 'accountant', 'csr', 'dynasty_owner', 'super_admin', 'developer'];
 
 interface OpsAccessGateProps {
   children: React.ReactNode;
