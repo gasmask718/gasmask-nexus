@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
-import { useBusinessRoles } from "@/hooks/useBusinessMembership";
+import { useBusinessRoles, useBusinessMemberships } from "@/hooks/useBusinessMembership";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { Shield } from "lucide-react";
 
