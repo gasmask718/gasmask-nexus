@@ -25,6 +25,8 @@ interface ActiveCallLead {
   id: string;
   business_name: string;
   phone: string;
+  /** store_master id when the dial came from the GasMask store book */
+  store_id?: string | null;
 }
 
 interface VACallPanelProps {
