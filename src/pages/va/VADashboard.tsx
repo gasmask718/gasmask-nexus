@@ -396,7 +396,7 @@ function VADashboardInner() {
             )}
             {view === 'scripts' && (
               <div className="h-[calc(100vh-8rem)] rounded-xl border border-slate-700 overflow-hidden">
-                <VAScriptsRebuttalsPanel />
+                <VAScriptsRebuttalsPanel companySlug={activeCompany?.slug} />
               </div>
             )}
             {view === 'faqs' && <div className="max-w-2xl"><VAFAQs /></div>}
