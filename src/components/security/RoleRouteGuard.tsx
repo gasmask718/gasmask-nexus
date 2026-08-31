@@ -206,9 +206,10 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
   const { roles, loading: rolesLoading } = useUserRole(activeBusinessId);
   const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
   const { roles: businessRoles, isLoading: membershipLoading } = useBusinessRoles(activeBusinessId);
+  const { data: memberships, isLoading: membershipsLoading } = useBusinessMemberships();
 
   // Don't block while loading
-  if (rolesLoading || profileLoading || businessLoading || membershipLoading) {
+  if (rolesLoading || profileLoading || businessLoading || membershipLoading || membershipsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
