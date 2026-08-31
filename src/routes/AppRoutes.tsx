@@ -2318,6 +2318,8 @@ export default function AppRoutes() {
         <Route path="/os/iclean" element={<ICleanDashboard />} />
         <Route path="/os/icw" element={<ICWCommandDashboard />} />
         <Route path="/os/icw/workers" element={<ICWWorkerRoster />} />
+        <Route path="/os/icw/map" element={<ICWLeadMap />} />
+        <Route path="/os/icw/crm" element={<ICWCrm />} />
         <Route path="/os/playboxxx" element={<PlayboxxxDashboard />} />
         <Route path="/os/playboxxx/recruiting" element={<PbxRecruitingDashboard />} />
         <Route path="/os/playboxxx/recruiting/staff-sourcing" element={<PbxStaffSourcing />} />
