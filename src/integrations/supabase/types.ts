@@ -71720,14 +71720,25 @@ export type Database = {
       }
       icw_state_config: {
         Row: {
+          abbreviation: string | null
+          biohazard_license_required_notes: string | null
           confidence: string
           created_at: string
           deli_oven_market_density: string | null
+          handyman_city_county_override_notes: string | null
           handyman_license_gate: string | null
+          handyman_license_status: string | null
+          handyman_threshold_usd: string | null
           id: string
+          last_verified_date: string | null
+          mold_remediation_specific_license_notes: string | null
           notes: string | null
+          pest_control_agency: string | null
+          pest_control_license_required: boolean | null
           priority_rank: number | null
+          restoration_threshold_usd: string | null
           snow_vertical: boolean
+          source: string | null
           specialty_license_gate: string | null
           state: string
           tier: string | null
@@ -71735,14 +71746,25 @@ export type Database = {
           verified: boolean
         }
         Insert: {
+          abbreviation?: string | null
+          biohazard_license_required_notes?: string | null
           confidence?: string
           created_at?: string
           deli_oven_market_density?: string | null
+          handyman_city_county_override_notes?: string | null
           handyman_license_gate?: string | null
+          handyman_license_status?: string | null
+          handyman_threshold_usd?: string | null
           id?: string
+          last_verified_date?: string | null
+          mold_remediation_specific_license_notes?: string | null
           notes?: string | null
+          pest_control_agency?: string | null
+          pest_control_license_required?: boolean | null
           priority_rank?: number | null
+          restoration_threshold_usd?: string | null
           snow_vertical?: boolean
+          source?: string | null
           specialty_license_gate?: string | null
           state: string
           tier?: string | null
@@ -71750,14 +71772,25 @@ export type Database = {
           verified?: boolean
         }
         Update: {
+          abbreviation?: string | null
+          biohazard_license_required_notes?: string | null
           confidence?: string
           created_at?: string
           deli_oven_market_density?: string | null
+          handyman_city_county_override_notes?: string | null
           handyman_license_gate?: string | null
+          handyman_license_status?: string | null
+          handyman_threshold_usd?: string | null
           id?: string
+          last_verified_date?: string | null
+          mold_remediation_specific_license_notes?: string | null
           notes?: string | null
+          pest_control_agency?: string | null
+          pest_control_license_required?: boolean | null
           priority_rank?: number | null
+          restoration_threshold_usd?: string | null
           snow_vertical?: boolean
+          source?: string | null
           specialty_license_gate?: string | null
           state?: string
           tier?: string | null
