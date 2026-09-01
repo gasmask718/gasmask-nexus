@@ -85019,6 +85019,45 @@ export type Database = {
         }
         Relationships: []
       }
+      note_order_recovery: {
+        Row: {
+          address: string | null
+          applied: boolean | null
+          confidence: string | null
+          evidence: string | null
+          extracted_amount: number | null
+          phone: string | null
+          run_id: string | null
+          staged_at: string | null
+          store_id: string
+          store_name: string | null
+        }
+        Insert: {
+          address?: string | null
+          applied?: boolean | null
+          confidence?: string | null
+          evidence?: string | null
+          extracted_amount?: number | null
+          phone?: string | null
+          run_id?: string | null
+          staged_at?: string | null
+          store_id: string
+          store_name?: string | null
+        }
+        Update: {
+          address?: string | null
+          applied?: boolean | null
+          confidence?: string | null
+          evidence?: string | null
+          extracted_amount?: number | null
+          phone?: string | null
+          run_id?: string | null
+          staged_at?: string | null
+          store_id?: string
+          store_name?: string | null
+        }
+        Relationships: []
+      }
       notification_events: {
         Row: {
           channel: string
@@ -90372,6 +90411,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      phantom_invoice_review: {
+        Row: {
+          address: string | null
+          business_date: string | null
+          evidence: string | null
+          fault: string | null
+          invoice_id: string
+          owed: number | null
+          run_id: string | null
+          staged_at: string | null
+          store_id: string | null
+          store_name: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_date?: string | null
+          evidence?: string | null
+          fault?: string | null
+          invoice_id: string
+          owed?: number | null
+          run_id?: string | null
+          staged_at?: string | null
+          store_id?: string | null
+          store_name?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_date?: string | null
+          evidence?: string | null
+          fault?: string | null
+          invoice_id?: string
+          owed?: number | null
+          run_id?: string | null
+          staged_at?: string | null
+          store_id?: string | null
+          store_name?: string | null
+        }
+        Relationships: []
       }
       phase5_agreement_log: {
         Row: {
