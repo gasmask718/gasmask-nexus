@@ -71640,6 +71640,7 @@ export type Database = {
           license_status: string | null
           license_type: string | null
           longitude: number | null
+          notes: string | null
           phone: string | null
           postal_code: string | null
           promoted_worker_id: string | null
@@ -71665,6 +71666,7 @@ export type Database = {
           license_status?: string | null
           license_type?: string | null
           longitude?: number | null
+          notes?: string | null
           phone?: string | null
           postal_code?: string | null
           promoted_worker_id?: string | null
@@ -71690,6 +71692,7 @@ export type Database = {
           license_status?: string | null
           license_type?: string | null
           longitude?: number | null
+          notes?: string | null
           phone?: string | null
           postal_code?: string | null
           promoted_worker_id?: string | null

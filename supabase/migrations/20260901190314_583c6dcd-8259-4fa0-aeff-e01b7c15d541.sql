@@ -1,0 +1,1 @@
+ALTER TABLE public.icw_sourced_leads ADD COLUMN IF NOT EXISTS notes text;

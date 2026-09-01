@@ -37,6 +37,7 @@ export interface ICWSourcedLead {
   license_number: string | null;
   license_type: string | null;
   license_status: string | null;
+  notes: string | null;
   status: string;
   promoted_worker_id: string | null;
   ingestion_run_id: string | null;
