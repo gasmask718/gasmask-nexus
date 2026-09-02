@@ -261,45 +261,203 @@ function mergePatch(existing: ICWSourcedLead, input: ICWLeadInput): ICWLeadInput
   return patch as ICWLeadInput;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// REGISTERED / LEGAL ADDRESS vs VERIFIED OPERATING LOCATION
+// ═══════════════════════════════════════════════════════════════════════════
+// A company-registry address (Companies House, CRO, ASIC, Corporations Canada,
+// OpenCorporates, a Secretary-of-State filing, …) is a LEGAL address. It is not
+// evidence the business operates there. Such a lead NEVER gets a map pin: it is
+// forced into mapping-gap treatment (lat/long cleared) and its note is stamped
+// REGISTERED-ADDRESS-ONLY. A pin is only allowed once a SECOND reliable source
+// confirms the address as an actual operating/service location — expressed by
+// passing `addressProvenance.operatingConfirmedBy`.
+//
+// This is enforced inside upsertSourcedLead, so it applies to every ingestion
+// path (UI, script, one-shot edge function) with no per-lead reminder.
+
+export const REGISTERED_ADDRESS_ONLY_MARKER = 'REGISTERED-ADDRESS-ONLY';
+
+/** Source platforms whose address is, by definition, a registered/legal office. */
+export const REGISTRY_SOURCE_PLATFORMS = new Set([
+  'companies_house',
+  'companies-house',
+  'uk_companies_house',
+  'cro',
+  'cro_ie',
+  'irish_cro',
+  'asic',
+  'abr',
+  'corporations_canada',
+  'ontario_business_registry',
+  'opencorporates',
+  'sos_business_registry',
+  'secretary_of_state',
+  'state_business_registry',
+]);
+
+export interface AddressProvenance {
+  /** True when the only address we hold came from a company registry filing. */
+  registryRegisteredOffice?: boolean;
+  /** Name/URL of the SECOND independent source confirming real operations there. */
+  operatingConfirmedBy?: string | null;
+}
+
+/** Registry-sourced address with no independent operating confirmation? */
+export function isRegisteredAddressOnly(
+  input: ICWLeadInput,
+  provenance?: AddressProvenance,
+): boolean {
+  if (provenance?.operatingConfirmedBy) return false;
+  if (provenance?.registryRegisteredOffice) return true;
+  const platform = (input.source_platform ?? '').toLowerCase().trim().replace(/\s+/g, '_');
+  if (platform && REGISTRY_SOURCE_PLATFORMS.has(platform)) return true;
+  // Belt and braces: an explicit registered-office note counts as registry-only.
+  return /registered\s+(office|address)/i.test(input.notes ?? '');
+}
+
+/**
+ * Force mapping-gap treatment on registry-only addresses: clear the pin and
+ * stamp the note. Idempotent — re-stamping an already-marked note is a no-op.
+ */
+export function applyAddressProvenanceRule(
+  input: ICWLeadInput,
+  provenance?: AddressProvenance,
+): ICWLeadInput {
+  if (!isRegisteredAddressOnly(input, provenance)) return input;
+  const note = input.notes ?? '';
+  const stamped = note.includes(REGISTERED_ADDRESS_ONLY_MARKER)
+    ? note
+    : [
+        `${REGISTERED_ADDRESS_ONLY_MARKER}: address is a company-registry registered/legal office, not a confirmed operating location. No map pin until a second reliable source confirms operations at this address.`,
+        note,
+      ]
+        .filter(Boolean)
+        .join(' | ');
+  return { ...input, latitude: null, longitude: null, notes: stamped };
+}
+
+export type UpsertOutcome =
+  /** No match at all — brand new row. */
+  | 'inserted'
+  /** Matched a row that existed BEFORE this run started. */
+  | 'duplicate_preexisting'
+  /** Matched a row THIS run inserted earlier — counts as a fresh insert. */
+  | 'same_run_self_match';
+
 export interface UpsertResult {
   lead: ICWSourcedLead;
   action: 'inserted' | 'updated';
+  outcome: UpsertOutcome;
   matchReason?: MatchReason;
+  registeredAddressOnly: boolean;
+}
+
+/** Tracks the ids this run has inserted so self-matches are never misreported. */
+export interface IngestRunContext {
+  insertedIds: Set<string>;
+}
+
+export function createIngestRunContext(): IngestRunContext {
+  return { insertedIds: new Set<string>() };
+}
+
+export interface UpsertOptions {
+  run?: IngestRunContext;
+  addressProvenance?: AddressProvenance;
 }
 
 /**
  * Canonical entry point for ingesting a sourced lead.
  * Matches → verifiedUpdate; no match → verifiedInsert.
  */
-export async function upsertSourcedLead(input: ICWLeadInput): Promise<UpsertResult> {
+export async function upsertSourcedLead(
+  rawInput: ICWLeadInput,
+  options: UpsertOptions = {},
+): Promise<UpsertResult> {
+  const input = applyAddressProvenanceRule(rawInput, options.addressProvenance);
+  const registeredAddressOnly = isRegisteredAddressOnly(rawInput, options.addressProvenance);
   const match = await findExistingLead(input);
 
   if (match) {
     const patch = mergePatch(match.lead, input);
+    // Registry-only leads must lose any pre-existing pin too — mergePatch skips
+    // nulls, so clear the coordinates explicitly.
+    if (registeredAddressOnly) {
+      (patch as Record<string, unknown>).latitude = null;
+      (patch as Record<string, unknown>).longitude = null;
+    }
     const rows = await verifiedUpdate<ICWSourcedLead>('update ICW sourced lead', () =>
       supabase
         .from('icw_sourced_leads')
         .update({ ...patch, updated_at: new Date().toISOString() } as never)
         .eq('id', match.lead.id),
     );
-    return { lead: rows[0] ?? match.lead, action: 'updated', matchReason: match.reason };
+    const selfMatch = Boolean(options.run?.insertedIds.has(match.lead.id));
+    return {
+      lead: rows[0] ?? match.lead,
+      action: 'updated',
+      outcome: selfMatch ? 'same_run_self_match' : 'duplicate_preexisting',
+      matchReason: match.reason,
+      registeredAddressOnly,
+    };
   }
 
   const rows = await verifiedInsert<ICWSourcedLead>('insert ICW sourced lead', () =>
     supabase.from('icw_sourced_leads').insert(input as never),
   );
-  return { lead: rows[0], action: 'inserted' };
+  if (rows[0]?.id) options.run?.insertedIds.add(rows[0].id);
+  return { lead: rows[0], action: 'inserted', outcome: 'inserted', registeredAddressOnly };
 }
 
-/** Batch helper returning counts an ingestion run can record. */
-export async function ingestSourcedLeads(inputs: ICWLeadInput[]) {
-  let newLeads = 0;
-  let duplicates = 0;
+export interface IngestBatchSummary {
+  results: UpsertResult[];
+  /** (c) brand-new rows with no match at all. */
+  newLeadCount: number;
+  /** (b) matched a row this same run inserted — reported as a fresh insert. */
+  sameRunSelfMatchCount: number;
+  /** (a) matched a row that pre-dated this run. */
+  preExistingDuplicateCount: number;
+  /** newLeadCount + sameRunSelfMatchCount — rows this run actually added. */
+  netNewRowCount: number;
+  registeredAddressOnlyCount: number;
+  rawResultCount: number;
+}
+
+/**
+ * Batch helper. Reports the three outcomes SEPARATELY — a same-run self-match
+ * is never lumped in with a true pre-existing duplicate.
+ */
+export async function ingestSourcedLeads(
+  inputs: ICWLeadInput[],
+  options: { addressProvenanceFor?: (input: ICWLeadInput) => AddressProvenance | undefined } = {},
+): Promise<IngestBatchSummary> {
+  const run = createIngestRunContext();
   const results: UpsertResult[] = [];
+  let newLeadCount = 0;
+  let sameRunSelfMatchCount = 0;
+  let preExistingDuplicateCount = 0;
+  let registeredAddressOnlyCount = 0;
+
   for (const input of inputs) {
-    const res = await upsertSourcedLead(input);
-    res.action === 'inserted' ? newLeads++ : duplicates++;
+    const res = await upsertSourcedLead(input, {
+      run,
+      addressProvenance: options.addressProvenanceFor?.(input),
+    });
+    if (res.outcome === 'inserted') newLeadCount++;
+    else if (res.outcome === 'same_run_self_match') sameRunSelfMatchCount++;
+    else preExistingDuplicateCount++;
+    if (res.registeredAddressOnly) registeredAddressOnlyCount++;
     results.push(res);
   }
-  return { results, newLeadCount: newLeads, duplicateCount: duplicates, rawResultCount: inputs.length };
+
+  return {
+    results,
+    newLeadCount,
+    sameRunSelfMatchCount,
+    preExistingDuplicateCount,
+    netNewRowCount: newLeadCount + sameRunSelfMatchCount,
+    registeredAddressOnlyCount,
+    rawResultCount: inputs.length,
+  };
 }
+
