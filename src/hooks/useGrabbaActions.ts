@@ -10,6 +10,7 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { writeStoreTubeCounts } from '@/lib/inventory/writeTubeCounts';
 import { toast } from 'sonner';
 import { useGrabbaPermissions } from '@/hooks/useGrabbaPermissions';
 import { useActivityLogger } from '@/hooks/useActivityFeed';
