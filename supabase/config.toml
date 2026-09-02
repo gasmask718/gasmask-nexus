@@ -614,5 +614,3 @@ verify_jwt = false
 [functions.dd-provision-wholesaler]
 verify_jwt = false
 
-[functions.icw-oneshot-lead-batch-t2]
-verify_jwt = false
