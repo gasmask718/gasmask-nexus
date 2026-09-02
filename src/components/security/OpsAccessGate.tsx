@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePortalDevice } from '@/hooks/usePortalDevice';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
@@ -24,10 +24,13 @@ export default function OpsAccessGate({ children }: OpsAccessGateProps) {
   const portalType = (profileData?.profile?.primary_role as 'driver' | 'biker') || 'driver';
   const { device, isLoading: deviceLoading, error: deviceError } = usePortalDevice(portalType);
   const [accessState, setAccessState] = useState<'loading' | 'granted' | 'no_role' | 'device_blocked'>('loading');
+  // Once access has been granted, a background refetch of profile/role/device
+  // data must not flash the "Verifying access..." screen again.
+  const grantedOnce = useRef(false);
 
   useEffect(() => {
     if (!user || profileLoading || deviceLoading || rolesLoading) {
-      setAccessState('loading');
+      if (!grantedOnce.current) setAccessState('loading');
       return;
     }
 
@@ -41,6 +44,9 @@ export default function OpsAccessGate({ children }: OpsAccessGateProps) {
     // Check if user has any ops role from either source
     const hasOpsRole = allRoles.some(r => OPS_ROLES.includes(r));
     if (!hasOpsRole) {
+      // Identity data momentarily empty after a refetch — keep prior grant
+      // instead of showing "Access Restricted" to a valid ops user.
+      if (grantedOnce.current && !profileData) return;
       setAccessState('no_role');
       return;
     }

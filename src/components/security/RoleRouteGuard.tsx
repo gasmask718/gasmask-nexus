@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
@@ -209,8 +209,22 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
   const { roles: businessRoles, isLoading: membershipLoading } = useBusinessRoles(activeBusinessId);
   const { data: memberships, isLoading: membershipsLoading } = useBusinessMemberships();
 
-  // Don't block while loading
-  if (rolesLoading || profileLoading || businessLoading || membershipLoading || membershipsLoading) {
+  // Remembers the last path this guard actually authorized, so a background
+  // refresh of identity data does not re-show "Verifying access..." or bounce
+  // an already-authorized user off the page they are working on.
+  const lastGrantedPath = useRef<string | null>(null);
+
+  const isResolving =
+    rolesLoading || profileLoading || businessLoading || membershipLoading || membershipsLoading;
+
+  // Identity data is unresolved but we already granted THIS exact path in this
+  // session → keep rendering it (state A: loading, not state C/D).
+  if (isResolving && lastGrantedPath.current === location.pathname) {
+    return <>{children}</>;
+  }
+
+  // Don't block (and never redirect) while loading
+  if (isResolving) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -236,28 +250,43 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
     !activeBusinessId || businessRoles.length > 0;
   const effectiveRoles = isVAScoped ? allRoles : allRoles.filter((r) => r !== "va");
 
+  const currentPath = location.pathname;
+  const grant = () => {
+    lastGrantedPath.current = currentPath;
+    return <>{children}</>;
+  };
+
   // If user has any elevated role → full access
   const hasElevatedAccess = effectiveRoles.some((r) => ELEVATED_ROLES.includes(r));
   if (hasElevatedAccess) {
-    return <>{children}</>;
+    return grant();
   }
-
-
-  const currentPath = location.pathname;
 
   // Check universal paths
   if (UNIVERSAL_PATHS.some((p) => currentPath === p || currentPath.startsWith(p + "/"))) {
-    return <>{children}</>;
+    return grant();
   }
 
   // Exact match for portal root (role router)
   if (currentPath === "/portal") {
-    return <>{children}</>;
+    return grant();
   }
 
-  // Authenticated users with no assigned OS role should not fall through into
-  // protected workspaces. Send them to the explicit approval state instead.
+  // No roles at all. Distinguish "genuinely unassigned" from "identity data has
+  // not materialized yet" — only the former is an authorization decision.
   if (effectiveRoles.length === 0) {
+    if (!profileData) {
+      // Profile fetch resolved without data (e.g. transient error) — hold,
+      // never redirect a signed-in user off their page on missing data.
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="text-center space-y-4">
+            <Shield className="h-12 w-12 text-primary animate-pulse mx-auto" />
+            <p className="text-muted-foreground">Verifying access...</p>
+          </div>
+        </div>
+      );
+    }
     return <Navigate to="/pending-approval" replace />;
   }
 
@@ -270,7 +299,7 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
       .filter((s): s is string => !!s);
     const devPaths = memberSlugs.flatMap((slug) => DEVELOPER_BUSINESS_PATHS[slug] || []);
     if (devPaths.some((prefix) => currentPath === prefix || currentPath.startsWith(prefix + "/"))) {
-      return <>{children}</>;
+      return grant();
     }
   }
 
@@ -282,8 +311,12 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
   });
 
   if (hasPathAccess) {
-    return <>{children}</>;
+    return grant();
   }
+
+  // Genuinely unauthorized for this path → clear the sticky grant so a real
+  // permission change still redirects on subsequent renders.
+  lastGrantedPath.current = null;
 
   // Denied — redirect to the user's primary portal home
   const primaryRole = profileRole || effectiveRoles[0];

@@ -70,6 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const initialized = useRef(false);
   const manualSignIn = useRef(false);
+  // Last authenticated user id — used to tell a real login apart from a
+  // background session recovery / token refresh.
+  const lastUserId = useRef<string | null>(null);
 
   markManualSignInFn = () => {
     manualSignIn.current = true;
@@ -152,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (sess) {
           setSession(sess);
+          lastUserId.current = sess.user.id;
           setUser(sess.user);
           fetchUserRole(sess.user.id);
           setBackendUnreachable(false);
@@ -182,26 +186,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       switch (event) {
         case "SIGNED_IN": {
+          // Supabase re-emits SIGNED_IN when the tab regains focus / the session
+          // is recovered. That is NOT a new login — only treat it as one when the
+          // user identity actually changes. Otherwise we would wipe the profile
+          // cache and send the whole app back through "Verifying access...".
+          const nextUserId = newSession?.user?.id ?? null;
+          const isSameUser = nextUserId !== null && nextUserId === lastUserId.current;
+
           setSession(newSession);
-          setUser(newSession?.user ?? null);
           setBackendUnreachable(false);
-          if (newSession?.user) fetchUserRole(newSession.user.id);
-          qc.removeQueries({ queryKey: ["currentUserProfile"] });
-          qc.invalidateQueries({ queryKey: ["dp-is-admin"] });
+
+          if (!isSameUser) {
+            lastUserId.current = nextUserId;
+            setUser(newSession?.user ?? null);
+            if (newSession?.user) fetchUserRole(newSession.user.id);
+            qc.removeQueries({ queryKey: ["currentUserProfile"] });
+            qc.invalidateQueries({ queryKey: ["dp-is-admin"] });
+          }
+
           if (manualSignIn.current) {
             manualSignIn.current = false;
           }
           break;
         }
         case "TOKEN_REFRESHED": {
+          // Credentials only. Identity/role/company state must stay untouched.
           setSession(newSession);
-          setUser(newSession?.user ?? null);
           setBackendUnreachable(false);
-          qc.invalidateQueries({ queryKey: ["dp-is-admin"] });
           break;
         }
         case "SIGNED_OUT": {
           setSession(null);
+          lastUserId.current = null;
           setUser(null);
           setUserRole(null);
           setBackendUnreachable(false);

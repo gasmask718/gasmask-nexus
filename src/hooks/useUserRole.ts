@@ -236,9 +236,10 @@ export function useUserRole(currentBusinessId?: string | null) {
           setRoles([]);
         }
       } catch (error) {
+        // Network/transient failure (common right after a tab regains focus):
+        // keep the previously resolved roles instead of dropping the user to
+        // "no role" and triggering a guard redirect.
         console.error('Error fetching user role:', error);
-        setRole(null);
-        setRoles([]);
       } finally {
         setLoading(false);
       }
