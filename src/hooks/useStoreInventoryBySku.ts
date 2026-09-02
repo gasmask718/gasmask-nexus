@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CANONICAL_TUBE_SKUS, resolveProductIdForBrand, type SkuStatus } from '@/lib/inventory/skuDisplay';
+import { CANONICAL_TUBE_SKUS, type SkuStatus } from '@/lib/inventory/skuDisplay';
+import { productIdForBrandId } from '@/lib/inventory/tubeSkuKeys';
 
 export interface SkuInventoryRow {
   product_id: string;
@@ -18,6 +19,8 @@ export interface SkuInventoryRow {
  * when there's no inventory row for a given SKU). Status icon (🟢🟡🔴) is
  * derived inline so the Stock chip can render with one read.
  *
+ * Source of truth: public.store_tube_inventory_status (store_tube_inventory is RETIRED).
+ *
  * - tubes_remaining > 0  → 🟢 'bought'  (in stock)
  * - tubes_remaining = 0 but row exists → 🟡 'staged' (counted, depleted)
  * - no row at all        → 🔴 'never_offered'
@@ -31,26 +34,27 @@ export function useStoreInventoryBySku(storeId: string | null | undefined) {
       if (!storeId) return [];
 
       const { data, error } = await supabase
-        .from('store_tube_inventory')
-        .select('product_id, brand, current_tubes_left, last_updated, needs_operator_verification')
+        .from('store_tube_inventory_status')
+        .select('brand_id, current_tubes_left, last_updated_at, tubes_updated_at')
         .eq('store_id', storeId)
         .eq('is_simulation', false);
 
       if (error) throw error;
 
-      // Bucket rows by product_id (resolving brand → product_id when product_id is null).
+      // Bucket rows by product_id (resolving canonical brand_id → product_id).
       const byProductId = new Map<string, { tubes: number; last_updated: string | null; needs_verification: boolean }>();
-      for (const row of data ?? []) {
-        const pid = row.product_id ?? resolveProductIdForBrand(row.brand);
+      for (const row of (data ?? []) as any[]) {
+        const pid = productIdForBrandId(row.brand_id);
         if (!pid) continue;
         const existing = byProductId.get(pid) ?? { tubes: 0, last_updated: null, needs_verification: false };
         existing.tubes += Number(row.current_tubes_left ?? 0);
-        if (row.last_updated && (!existing.last_updated || row.last_updated > existing.last_updated)) {
-          existing.last_updated = row.last_updated;
+        const stamp = row.tubes_updated_at ?? row.last_updated_at ?? null;
+        if (stamp && (!existing.last_updated || stamp > existing.last_updated)) {
+          existing.last_updated = stamp;
         }
-        if (row.needs_operator_verification) existing.needs_verification = true;
         byProductId.set(pid, existing);
       }
+
 
       return CANONICAL_TUBE_SKUS.map((sku) => {
         const bucket = byProductId.get(sku.product_id);

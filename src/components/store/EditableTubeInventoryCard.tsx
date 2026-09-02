@@ -15,7 +15,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { dynastyStampWithRelative } from '@/lib/dates';
 import { toast } from 'sonner';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
-import { resolveProductIdForBrand } from '@/lib/inventory/skuDisplay';
+import { writeStoreTubeCounts } from '@/lib/inventory/writeTubeCounts';
 
 // AUTHORITATIVE TUBE BRANDS - only these are valid
 export const VALID_TUBE_BRANDS = [
@@ -50,14 +50,19 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
     queryKey: ['store-tube-inventory', storeId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('store_tube_inventory')
-        .select('*')
+        .from('store_tube_inventory_status')
+        .select('id, brand_id, current_tubes_left, last_updated_at, tubes_updated_at, last_updated_by')
         .eq('store_id', storeId)
-        .neq('brand', 'hotscolatti') // Exclude legacy hotscolatti, show only light/dark variants
-        .order('brand');
-      
+        .order('brand_id');
+
       if (error) throw error;
-      return data as TubeInventory[];
+      return ((data ?? []) as any[]).map((r) => ({
+        id: r.id,
+        brand: r.brand_id,
+        current_tubes_left: r.current_tubes_left ?? 0,
+        last_updated: r.tubes_updated_at ?? r.last_updated_at,
+        created_by: r.last_updated_by ?? '',
+      })) as TubeInventory[];
     },
     enabled: !!storeId,
   });
@@ -71,7 +76,7 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
         {
           event: '*',
           schema: 'public',
-          table: 'store_tube_inventory',
+          table: 'store_tube_inventory_status',
           filter: `store_id=eq.${storeId}`,
         },
         () => {
@@ -107,58 +112,14 @@ export function EditableTubeInventoryCard({ storeId }: EditableTubeInventoryCard
     mutationFn: async (updates: { brand: string; count: number }[], isSimulation: boolean) => {
       const { data: { user } } = await supabase.auth.getUser();
 
-      for (const update of updates) {
-        const productId = resolveProductIdForBrand(update.brand);
-
-        // Prefer match by (store_id, product_id, is_simulation) — the canonical unique key.
-        let existing: { id: string } | null = null;
-        if (productId) {
-          const { data } = await supabase
-            .from('store_tube_inventory')
-            .select('id')
-            .eq('store_id', storeId)
-            .eq('product_id', productId)
-            .eq('is_simulation', isSimulation)
-            .maybeSingle();
-          existing = data;
-        }
-        if (!existing) {
-          const { data } = await supabase
-            .from('store_tube_inventory')
-            .select('id')
-            .eq('store_id', storeId)
-            .eq('brand', update.brand)
-            .eq('is_simulation', isSimulation)
-            .order('last_updated', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          existing = data;
-        }
-
-        if (existing) {
-          await supabase
-            .from('store_tube_inventory')
-            .update({
-              current_tubes_left: update.count,
-              last_updated: new Date().toISOString(),
-              created_by: user?.id || 'system',
-              is_simulation: isSimulation,
-              ...(productId ? { product_id: productId } : {}),
-            })
-            .eq('id', existing.id);
-        } else if (update.count > 0) {
-          await supabase
-            .from('store_tube_inventory')
-            .insert({
-              store_id: storeId,
-              brand: update.brand,
-              product_id: productId,
-              current_tubes_left: update.count,
-              created_by: user?.id || 'system',
-              is_simulation: isSimulation,
-            });
-        }
-      }
+      // Canonical inventory write → store_tube_inventory_status
+      await writeStoreTubeCounts({
+        storeId,
+        updates: updates.map((u) => ({ brandId: u.brand, count: u.count })),
+        isSimulation,
+        actorId: user?.id ?? null,
+        method: 'store_profile',
+      });
       return updates;
     },
     simulationMessage: 'Saving inventory to simulation database...',

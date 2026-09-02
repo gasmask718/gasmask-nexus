@@ -25,7 +25,9 @@ import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { useStoreInventoryStamps } from '@/hooks/useStoreInventoryStamps';
 import { dynastyStamp } from '@/lib/dates';
 import { Eye } from 'lucide-react';
-import { getSkuStatusIcon, brandForProductId } from '@/lib/inventory/skuDisplay';
+import { getSkuStatusIcon } from '@/lib/inventory/skuDisplay';
+import { brandIdForProductId } from '@/lib/inventory/tubeSkuKeys';
+import { writeStoreTubeCounts } from '@/lib/inventory/writeTubeCounts';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
 import { useStoreRecentInvoices } from '@/hooks/useStoreRecentInvoices';
 import { StoreCardContactsQuickSection } from './StoreCardContactsQuickSection';
@@ -234,45 +236,25 @@ function InventorySection({ storeId }: { storeId: string }) {
     mutationFn: async ({ productId, count }: { productId: string; count: number }) => {
       if (isNaN(count) || count < 0) throw new Error('Invalid count');
 
-      const { data: existing } = await supabase
-        .from('store_tube_inventory')
-        .select('id')
-        .eq('store_id', storeId)
-        .eq('product_id', productId)
-        .eq('is_simulation', false)
-        .maybeSingle();
+      const brandId = brandIdForProductId(productId);
+      if (!brandId) throw new Error(`Unknown product ${productId} — no canonical SKU mapping`);
 
       const nowIso = new Date().toISOString();
-      const actor = user?.email || user?.id || 'quickview';
 
-      if (existing) {
-        const { error } = await supabase
-          .from('store_tube_inventory')
-          .update({
-            current_tubes_left: count,
-            last_updated: nowIso,
-            created_by: actor,
-          })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const brand = brandForProductId(productId);
-        if (!brand) throw new Error(`Unknown product ${productId} — no brand mapping`);
-        const { error } = await supabase.from('store_tube_inventory').insert({
-          store_id: storeId,
-          product_id: productId,
-          brand,
-          current_tubes_left: count,
-          created_by: actor,
-        } as any);
-        if (error) throw error;
-      }
+      // Canonical inventory write → store_tube_inventory_status
+      await writeStoreTubeCounts({
+        storeId,
+        updates: [{ brandId, count }],
+        actorId: user?.id ?? null,
+        method: 'quick_view',
+      });
 
       // Stamp store updated_at + updated_by
       await supabase
         .from('store_master')
         .update({ updated_at: nowIso, updated_by: user?.id ?? null } as any)
         .eq('id', storeId);
+
     },
     onSuccess: (_d, vars) => {
       toast.success('Inventory updated');
