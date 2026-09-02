@@ -685,8 +685,8 @@ const NationalWholesale = lazy(() => import('@/pages/portal/NationalWholesale'))
 const MarketplaceAdmin = lazy(() => import('@/pages/portal/MarketplaceAdmin'));
 
 // New Role Portals
-const DriverPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.DriverPortalPage })));
-const BikerPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.BikerPortalPage })));
+// Driver/Biker simulation shells are retained as source files for historical reference,
+// but their route entries now redirect to the canonical worker portals below.
 // AmbassadorPortalPage (mock simulation) removed — /portals/ambassador redirects to /ambassador/dashboard
 const StorePortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.StorePortalPage })));
 const WholesalerPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.WholesalerPortalPage })));
