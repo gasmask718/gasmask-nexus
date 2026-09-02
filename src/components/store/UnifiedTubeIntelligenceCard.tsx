@@ -30,7 +30,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
-import { resolveProductIdForBrand } from '@/lib/inventory/skuDisplay';
+import { writeStoreTubeCounts } from '@/lib/inventory/writeTubeCounts';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TUBE_BRAND_COLORS } from '@/constants/tubeColors';
 import { StoreInventoryStamps } from '@/components/store/StoreInventoryStamps';
@@ -53,7 +53,7 @@ import { unitLabelForBrandId } from '@/lib/inventory/unitLabel';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // AUTHORITATIVE TUBE SKUs — the 9 canonical product SKUs operators count.
-// Each lane saves to its own product_id row in store_tube_inventory via resolveProductIdForBrand().
+// Each lane saves to its own brand_id row in store_tube_inventory_status (canonical).
 // Brand strings here are stable keys used by KPI views, intel rows, and active-toggle mappings.
 export const VALID_TUBE_BRANDS = [
   { id: 'gasmasktubes',       name: 'GasMask Tubes',        color: TUBE_BRAND_COLORS.gasmasktubes.hex },
@@ -250,7 +250,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
       .channel(`unified-tube-intel-${storeId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'store_tube_inventory', filter: `store_id=eq.${storeId}` },
+        { event: '*', schema: 'public', table: 'store_tube_inventory_status', filter: `store_id=eq.${storeId}` },
         () => {
           invalidateStoreInventoryQueries(queryClient, storeId);
         }
