@@ -186,12 +186,14 @@ export function useGrabbaActions() {
   // INVENTORY ACTIONS (Floor 3)
   // ─────────────────────────────────────────────────────────────────────────────
   
+  // Canonical target: store_tube_inventory_status (store_tube_inventory RETIRED)
   const addInventory = useMutation({
     mutationFn: async (data: { store_id: string; brand: string; current_tubes_left: number; boxes_on_hand?: number }) => {
-      const { error } = await supabase
-        .from('store_tube_inventory')
-        .insert({ ...data, last_updated: new Date().toISOString() });
-      if (error) throw error;
+      await writeStoreTubeCounts({
+        storeId: data.store_id,
+        updates: [{ brandId: data.brand, count: data.current_tubes_left }],
+        method: 'grabba_ops',
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grabba-live-inventory'] });
