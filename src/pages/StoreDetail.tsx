@@ -58,7 +58,14 @@ import { useStoreMasterResolver } from "@/hooks/useStoreMasterResolver";
 // CANONICAL SHARED SECTIONS — Drift prevention layer
 // Adding a section to these components propagates to ALL store profile pages.
 // ═══════════════════════════════════════════════════════════════════════════════
-import { SharedStoreCoreIntelligence } from "@/components/store/SharedStoreCoreIntelligence";
+import {
+  StoreProfileFieldOpsGroup,
+  StoreProfileFinanceGroup,
+  StoreProfileInventoryGroup,
+  StoreProfileNotesGroup,
+  StoreProfileRelationshipGroup,
+  StoreProfileTasksGroup,
+} from "@/components/store/SharedStoreCoreIntelligence";
 import { TubesSoldHeroStrip } from "@/components/store-profile/TubesSoldHeroStrip";
 import { BagsSection } from "@/components/store-profile/BagsSection";
 import { EngagementBanner } from "@/components/store-profile/EngagementBanner";
@@ -67,10 +74,11 @@ import { RelationshipStatusInline } from "@/components/store/RelationshipStatusI
 import { BrandInterestChips } from "@/components/store/BrandInterestChips";
 import { StorePaymentBadge } from "@/components/store/StorePaymentBadge";
 import { StoreBalanceBanner } from "@/components/store/StoreBalanceBanner";
+import { StoreExecutiveOverview } from "@/components/store/StoreExecutiveOverview";
+import { StoreProfileSection } from "@/components/store/StoreProfileSection";
 import { SkuOrderHistoryPanel } from "@/components/store/SkuOrderHistoryPanel";
 import { QuickStatsBrandPaymentMatrix } from "@/components/store/QuickStatsBrandPaymentMatrix";
 import { CanonicalStoreDataProvider } from "@/components/store/CanonicalStoreDataProvider";
-import { PinnedNotesSection } from "@/components/store/PinnedNotesSection";
 import { EscalationFlagsPanel } from "@/components/delivery/EscalationFlagsPanel";
 import {
   MapPin,
@@ -412,6 +420,33 @@ const StoreDetail = () => {
     }
   };
 
+  const handleStoreContactUpdate = () => {
+    supabase
+      .from('stores')
+      .select('*')
+      .eq('id', id)
+      .single()
+      .then(({ data }) => {
+        if (!data) return;
+        setStore((previous) => previous ? {
+          ...previous,
+          name: data.name || previous.name,
+          phone: data.phone || previous.phone,
+          alt_phone: data.alt_phone || previous.alt_phone,
+          email: data.email || previous.email,
+          address_street: data.address_street || previous.address_street,
+          address_city: data.address_city || previous.address_city,
+          address_state: data.address_state || previous.address_state,
+          address_zip: data.address_zip || previous.address_zip,
+          notes: data.notes || previous.notes,
+          responsiveness: data.responsiveness || previous.responsiveness,
+          payment_type: data.payment_type || previous.payment_type,
+          primary_contact_name: data.primary_contact_name || previous.primary_contact_name,
+          owner_name: data.primary_contact_name || previous.owner_name,
+        } : previous);
+      });
+  };
+
   const fetchInventoryAndVisits = async () => {
     if (!id) return;
 
@@ -621,1061 +656,252 @@ const StoreDetail = () => {
     },
   };
 
+  const storeId = id || '';
+  const address = [store.address_street, store.address_city, store.address_state, store.address_zip]
+    .filter(Boolean)
+    .join(', ');
+
   return (
     <CanonicalStoreDataProvider storeId={id}>
-    <CanonicalStoreProfileProvider storeId={id || ''}>
-    <div className="space-y-6 animate-fade-in">
-      <PagePurpose 
-        pageKey="page.store_profile" 
-        config={storeProfileConfig}
-        variant="default"
-      />
-      
-      {/* Header */}
-      <div className="flex items-start gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/stores")} className="mt-1">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <h2 className="text-3xl font-bold tracking-tight">{store.name}</h2>
-                {store.nickname && <span className="text-lg text-muted-foreground">"{store.nickname}"</span>}
-                <Badge className={getStatusColor(store.status)}>{store.status}</Badge>
-                {id && <StoreHealthBadge storeId={id} />}
-              </div>
-              <div className="flex items-center gap-3 text-muted-foreground">
-                <p className="capitalize">{store.type.replace("_", " ")}</p>
-                {store.owner_name && <span>• Owner: {store.owner_name}</span>}
-                {store.email && <span>• {store.email}</span>}
-              </div>
-              {/* Primary Responsive Contact — subtle header badge */}
-              <PrimaryContactHeaderBadge storeId={id} />
-              {/* Brand Payment Quick View — executive intelligence */}
-              {/* 🎯 Brand Interest — top-of-profile glance answer for ambassadors */}
-              <BrandInterestChips storeId={id || ''} />
-              <div className="mt-1"><StorePaymentBadge storeId={id || ''} /></div>
-              <BrandPaymentQuickView storeId={id || ''} />
-              {/* 9-state Relationship Status — direct from profile header */}
-              {id && <RelationshipStatusInline storeId={id} />}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="border-border/50"
-                onClick={handleGeocodeAddress}
-                disabled={geocoding || !store.address_street}
-              >
-                <Navigation className="h-4 w-4 mr-2" />
-                {geocoding ? "Geocoding..." : "Geocode Address"}
-              </Button>
-              <Button className="bg-primary hover:bg-primary-hover" onClick={() => setUnifiedInteractionModalOpen(true)}>
-                Log Interaction
-              </Button>
-              {isAmbassador && (
-                <Button
-                  variant="outline"
-                  className="border-primary/40"
-                  onClick={() => navigate(`/ambassador/visit/${id}`)}
-                >
-                  Recon Visit / Questionnaire
-                </Button>
-              )}
+      <CanonicalStoreProfileProvider storeId={storeId}>
+        <div className="mx-auto max-w-[1500px] space-y-5 animate-fade-in">
+          <PagePurpose pageKey="page.store_profile" config={storeProfileConfig} variant="default" />
+
+          <div className="flex items-start gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/stores')} aria-label="Back to stores">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              <StoreExecutiveOverview
+                storeId={storeId}
+                name={store.name}
+                address={address}
+                primaryContact={store.primary_contact_name || store.owner_name}
+                phone={store.phone || store.alt_phone}
+                lastOrderAt={store.last_order_at}
+                paymentTerms={store.payment_type}
+              />
             </div>
           </div>
-        </div>
-      </div>
 
-      {id && (
-        <div className="px-6 -mt-2">
-          <StoreBalanceBanner storeId={id} storeName={store.name} />
-        </div>
-      )}
-
-
-      <CommunicationLogModal
-        open={communicationModalOpen}
-        onOpenChange={setCommunicationModalOpen}
-        entityType="store"
-        entityId={id || ""}
-        entityName={store.name}
-        entityPhone={store.phone || store.alt_phone || undefined}
-        onSuccess={() => setTimelineRefresh((prev) => prev + 1)}
-      />
-
-      <UnifiedInteractionModal
-        open={unifiedInteractionModalOpen}
-        onOpenChange={(open) => {
-          setUnifiedInteractionModalOpen(open);
-          if (!open) {
-            setUnifiedInteractionModalType('delivery'); // Reset to default when closed
-          }
-        }}
-        storeId={id || ""}
-        storeName={store.name}
-        storeContacts={storeContacts || []}
-        initialInteractionType={unifiedInteractionModalType as any}
-        onSuccess={() => {
-          fetchInventoryAndVisits();
-          setTimelineRefresh((prev) => prev + 1);
-          // Order history will be refreshed automatically via query invalidation in UnifiedInteractionModal
-        }}
-      />
-
-      <CreateStoreInvoiceModal
-        open={createInvoiceModalOpen}
-        onOpenChange={setCreateInvoiceModalOpen}
-        storeId={id || ""}
-        storeName={store.name}
-        onSuccess={() => {
-          // Order history will refresh automatically via query invalidation
-        }}
-      />
-
-      <BulkCommunicationLogModal
-        open={bulkCommModalOpen}
-        onOpenChange={setBulkCommModalOpen}
-        onSuccess={() => setTimelineRefresh((prev) => prev + 1)}
-      />
-
-      {/* 📌 Pinned Notes — Store Profile authoring surface */}
-      <PinnedNotesSection storeId={id || ''} />
-
-      {/* 🚨 Escalation Flags — Read-only derived signals */}
-      <EscalationFlagsPanel storeId={id || ''} />
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column - Main Info */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Contact Information - With Edit Button and Clear Phone Labels */}
-          <StoreContactInfoCard
-            store={store}
-            onUpdate={() => {
-              // Refetch store data — sync header (name, owner) and contact fields after edit
-              supabase
-                .from("stores")
-                .select("*")
-                .eq("id", id)
-                .single()
-                .then(({ data }) => {
-                  if (data && store)
-                    setStore((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            name: data.name || prev.name,
-                            phone: data.phone || prev.phone,
-                            alt_phone: data.alt_phone || prev.alt_phone,
-                            email: data.email || prev.email,
-                            address_street: data.address_street || prev.address_street,
-                            address_city: data.address_city || prev.address_city,
-                            address_state: data.address_state || prev.address_state,
-                            address_zip: data.address_zip || prev.address_zip,
-                            notes: data.notes || prev.notes,
-                            responsiveness: data.responsiveness || prev.responsiveness,
-                            payment_type: data.payment_type || prev.payment_type,
-
-                            // Trigger trg_sync_store_primary_contact_name keeps stores.primary_contact_name in sync
-                            primary_contact_name: data.primary_contact_name || prev.primary_contact_name,
-                            owner_name: data.primary_contact_name || prev.owner_name,
-                          }
-                        : prev,
-                    );
-                });
-            }}
-          />
-
-          {/* Storefront preview — Google Street View at store's geocoded point */}
-          <StoreStreetView
-            lat={store.lat}
-            lng={store.lng}
-            storeName={store.name}
-            address={`${store.address_street}, ${store.address_city}`}
-          />
-
-
-
-          {/* ═══════════════════════════════════════════════════════════ */}
-          {/* CANONICAL SHARED SECTIONS — Auto-synced with all profiles */}
-          {/* ═══════════════════════════════════════════════════════════ */}
-          <StoreTaskRouteButtons storeId={id || ""} storeName={store.name} />
-          <StoreContactsSection storeId={id || ""} storeName={store.name} />
-          <Card className="glass-card border-border/50">
-            <CardContent className="pt-6">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Review / Sign-Off
-              </div>
-              <StoreReviewControls storeId={id || ""} />
-            </CardContent>
-          </Card>
-          <Card className="glass-card border-border/50">
-            <CardContent className="pt-6">
-              <StoreQuickNotes storeId={id || ""} />
-            </CardContent>
-          </Card>
-          <Card className="glass-card border-border/50">
-            <CardContent className="pt-6">
-              <SamplesGivenSection storeId={id || ""} variant="full" />
-            </CardContent>
-          </Card>
-          <TubesSoldHeroStrip storeId={id || ""} />
-          <BagsSection storeId={id || ""} />
-          <EngagementBanner storeId={id || ""} />
-          <SharedStoreCoreIntelligence
-            storeId={id || ""}
-            storeName={store.name}
-            role="admin"
-            storeGroupId={store.connected_group_id}
-            storeOwnerName={store.primary_contact_name}
-            sellsFlowers={store?.sells_flowers || false}
-            onConnectionChange={() => {
-              supabase
-                .from("stores")
-                .select("connected_group_id")
-                .eq("id", id)
-                .single()
-                .then(({ data }) => {
-                  if (data) setStore(prev => prev ? { ...prev, connected_group_id: data.connected_group_id } : prev);
-                });
-            }}
-            onLogInteraction={(resolvedId) => {
-              setResolvedStoreMasterId(resolvedId as string);
-              setUnifiedInteractionModalOpen(true);
-            }}
-            onCreateInvoice={() => setCreateInvoiceModalOpen(true)}
-            onSellsFlowersUpdate={() => {
-              supabase
-                .from("stores")
-                .select("sells_flowers")
-                .eq("id", id)
-                .single()
-                .then(({ data }) => {
-                  if (data) setStore(prev => prev ? { ...prev, sells_flowers: data.sells_flowers ?? prev.sells_flowers } : prev);
-                });
-            }}
-          />
-
-          {/* Communication Stats & AI */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="glass-card border-border/50">
-              <CardContent className="pt-6">
-                <CommunicationStats entityType="store" entityId={id || ""} />
-              </CardContent>
-            </Card>
-
-            <FollowUpAIRecommendation storeId={id || ""} />
-          </div>
-
-          {/* AI Relationship Health */}
-          <AIRelationshipHealth entityType="store" entityId={id || ""} />
-
-          {/* Route Intelligence — hidden: route_checkins has no writer anywhere */}
-          {isFeatureEnabled('routeCheckinsPanel') && (
-            <RouteIntelligence storeId={id || ""} storeName={store?.name} />
-          )}
-
-          {/* Replenishment AI */}
-          <ReplenishmentAI storeId={id || ""} />
-
-          {/* Last Order Snapshot Intelligence */}
-          <LastOrderSnapshotPanel storeId={id || ""} />
-
-          {/* Per-SKU drill-down — pairs with brand-level snapshot above */}
-          <SkuOrderHistoryPanel storeId={id || ""} />
-
-          {/* Route Intelligence Insights — hidden: route_insights has no live writer */}
-          {isFeatureEnabled('routeInsightsPanel') && routeInsight && (
-            <Card className="glass-card border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" />
-                  Route Intelligence Insights
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Avg Service Time</p>
-                    <p className="text-2xl font-bold">
-                      {routeInsight.average_service_time_minutes != null
-                        ? `${routeInsight.average_service_time_minutes} min`
-                        : "—"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Success Rate</p>
-                    <p className="text-2xl font-bold">
-                      {routeInsight.visit_success_rate != null ? `${routeInsight.visit_success_rate.toFixed(1)}%` : "—"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Difficulty Score</span>
-                    <Badge
-                      variant={
-                        (routeInsight as any).difficulty_score === 1
-                          ? "default"
-                          : (routeInsight as any).difficulty_score === 5
-                            ? "destructive"
-                            : "secondary"
-                      }
-                    >
-                      {(routeInsight as any).difficulty_score ?? "—"}/5
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Best Time</span>
-                    <Badge variant="outline" className="capitalize">
-                      {routeInsight.best_time_window ?? "—"}
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Route Group</span>
-                    <Badge variant="outline" className="capitalize">
-                      {(routeInsight as any).recommended_route_group ?? "Unassigned"}
-                    </Badge>
-                  </div>
-                </div>
-
-
-                {routeInsight.notes && (
-                  <div className="pt-3 border-t">
-                    <p className="text-sm text-muted-foreground">{routeInsight.notes}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Communication Timeline */}
-          {/* <Card className="glass-card border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                Communication Timeline
-              </CardTitle>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setBulkCommModalOpen(true)}
-                  className="border-border/50 gap-2"
-                >
-                  <Users className="h-4 w-4" />
-                  Bulk Log
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCommunicationModalOpen(true)}
-                  className="border-border/50"
-                >
-                  Log Communication
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CommunicationTimelineCRM storeId={id || ""} />
-            </CardContent>
-          </Card> */}
-
-          {/* Dynasty Direct Product Intelligence — captured via field questionnaire */}
-          {id && <StoreReconCard storeId={id} />}
-
-          {/* Per-store communication preferences (TCPA / cadence) */}
-          {id && <StoreCommunicationPreferences storeId={id} />}
-
-          {/* Tabs for Inventory & History */}
-          <Tabs defaultValue="inventory" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-1">
-              <TabsTrigger value="inventory" className="text-xs sm:text-sm">
-                <Package className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Inventory</span>
-                <span className="sm:hidden">Inv</span>
-              </TabsTrigger>
-              <TabsTrigger value="performance" className="text-xs sm:text-sm">
-                <TrendingUp className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Performance</span>
-                <span className="sm:hidden">Perf</span>
-              </TabsTrigger>
-              <TabsTrigger value="calls" className="text-xs sm:text-sm">
-                <Headphones className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Calls</span>
-                <span className="sm:hidden">Calls</span>
-              </TabsTrigger>
-              <TabsTrigger value="route-coverage" className="text-xs sm:text-sm">
-                <MapPin className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Coverage</span>
-                <span className="sm:hidden">Cov</span>
-              </TabsTrigger>
-              <TabsTrigger value="revenue" className="text-xs sm:text-sm">
-                <Flame className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Revenue</span>
-                <span className="sm:hidden">Rev</span>
-              </TabsTrigger>
-              <TabsTrigger value="history" className="text-xs sm:text-sm">
-                <Clock className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">History</span>
-                <span className="sm:hidden">Hist</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="inventory" className="space-y-4">
-              {/* store_product_state panels — hidden: table has no INSERT writer */}
-              {isFeatureEnabled('storeProductStatePanel') && (
-              <>
-              {/* AI Prediction Card */}
-              {inventory.length > 0 && inventory.some((i) => i.urgency_score > 0) && (
-                <InventoryPredictionCard
-                  storeName={store.name}
-                  urgencyScore={Math.max(...inventory.map((i) => i.urgency_score || 0))}
-                  predictedStockoutDate={
-                    inventory.find((i) => i.predicted_stockout_date)?.predicted_stockout_date || null
-                  }
-                  velocity={inventory.reduce((sum, i) => sum + (i.velocity_boxes_per_day || 0), 0) / inventory.length}
-                />
-              )}
-
-              <Card className="glass-card border-border/50">
-                <CardHeader>
-                  <CardTitle>Product Inventory Levels</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {inventory.length > 0 ? (
-                    inventory.map((item) => {
-                      const level = getInventoryLevel(item.last_inventory_level);
-                      return (
-                        <div key={item.id} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="h-3 w-3 rounded-full"
-                                style={{ backgroundColor: item.product.brand.color }}
-                              />
-                              <span className="text-sm font-medium">
-                                {item.product.brand.name} - {item.product.name}
-                              </span>
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                              {level.label}
-                            </Badge>
-                          </div>
-                          <Progress value={level.value} className={`h-2 ${level.color}`} />
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>
-                              Last checked:{" "}
-                              {item.last_inventory_check_at
-                                ? new Date(item.last_inventory_check_at).toLocaleDateString()
-                                : "Never"}
-                            </span>
-                            {item.next_estimated_reorder_date && (
-                              <span>
-                                Next reorder: {new Date(item.next_estimated_reorder_date).toLocaleDateString()}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">No inventory data available</p>
-                  )}
-                </CardContent>
-              </Card>
-              </>
-              )}
-              {!isFeatureEnabled('storeProductStatePanel') && (
-                <StoreTubeInventoryCard storeId={id || ''} onAddCount={() => {}} />
-              )}
-            </TabsContent>
-
-
-            <TabsContent value="performance">
-              <StorePerformanceTab storeId={id!} storeName={store.name} />
-            </TabsContent>
-
-            <TabsContent value="calls" className="space-y-4">
-              <StoreCallIntelligenceTab storeId={id!} />
-              <StorePhoneLogSection storeId={id!} />
-            </TabsContent>
-
-
-            <TabsContent value="route-coverage">
-              <Card className="glass-card border-border/50">
-                <CardHeader>
-                  <CardTitle>Route & Coverage</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {store.last_visit_date ? (
-                    <>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Last Visit</p>
-                        <p className="font-semibold">
-                          {new Date(store.last_visit_date).toLocaleDateString()} (
-                          {Math.floor((Date.now() - new Date(store.last_visit_date).getTime()) / (1000 * 60 * 60 * 24))}{" "}
-                          days ago)
-                        </p>
-                      </div>
-                      {store.last_visit_driver_id && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">Last Visit Driver</p>
-                          <p className="font-semibold">Driver #{store.last_visit_driver_id.slice(0, 8)}</p>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Last Visit</p>
-                      <p className="font-semibold text-orange-600">Never visited</p>
-                    </div>
-                  )}
-
-                  <Separator />
-
-                  <div>
-                    <p className="text-sm text-muted-foreground">Coverage Status</p>
-                    <div className="mt-2">
-                      {store.visit_risk_level === "critical" && (
-                        <Badge variant="destructive" className="text-base">
-                          Critical - Needs Immediate Visit
-                        </Badge>
-                      )}
-                      {store.visit_risk_level === "at_risk" && (
-                        <Badge className="bg-orange-500 text-base">At Risk - Schedule Visit Soon</Badge>
-                      )}
-                      {(!store.visit_risk_level || store.visit_risk_level === "normal") && (
-                        <Badge variant="secondary" className="text-base">
-                          Normal - On Schedule
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div>
-                    <p className="text-sm text-muted-foreground">Visit Frequency Target</p>
-                    <p className="font-semibold">Every {store.visit_frequency_target || 7} days</p>
-                  </div>
-
-                  {(store.visit_risk_level === "critical" || store.visit_risk_level === "at_risk") && (
-                    <>
-                      <Separator />
-                      <div className="p-4 bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg">
-                        <p className="font-semibold text-orange-900 dark:text-orange-100 flex items-center gap-2">
-                          <AlertCircle className="h-5 w-5" />
-                          Action Required
-                        </p>
-                        <p className="text-sm text-orange-800 dark:text-orange-200 mt-1">
-                          This store has not been visited recently and should be prioritized for the next route.
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="history" className="space-y-4">
-              <Card className="glass-card border-border/50">
-                <CardHeader>
-                  <CardTitle>Recent Visits</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {visits.length > 0 ? (
-                    visits.map((visit) => (
-                      <div key={visit.id} className="p-4 rounded-lg bg-secondary/30 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <Badge variant="outline" className="text-xs capitalize">
-                              {formatVisitType(visit.visit_type)}
-                            </Badge>
-                            <p className="text-sm text-muted-foreground">
-                              by {visit.user.name} • {getSourceFromRole(visit.user.role)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium">{new Date(visit.visit_datetime).toLocaleDateString()}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(visit.visit_datetime).toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-                        {visit.cash_collected && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <DollarSign className="h-4 w-4 text-green-500" />
-                            <span className="font-medium text-green-500">${visit.cash_collected.toFixed(2)}</span>
-                            {visit.payment_method && (
-                              <span className="text-muted-foreground">via {visit.payment_method}</span>
-                            )}
-                          </div>
-                        )}
-                        {visit.customer_response && (
-                          <p className="text-sm text-muted-foreground italic">"{visit.customer_response}"</p>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">No visit history available</p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Right Column - Quick Stats & Actions */}
-        <div className="space-y-6">
-          {/* Quick Stats */}
-          <Card className="glass-card border-border/50">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Quick Stats
-                </CardTitle>
-                {!isEditingQuickStats ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsEditingQuickStats(true)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleSaveQuickStats}
-                      disabled={savingQuickStats}
-                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
-                    >
-                      <Check className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCancelQuickStats}
-                      disabled={savingQuickStats}
-                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Total Visits</p>
-                <p className="text-2xl font-bold">{visits.length}</p>
-              </div>
-              <Separator />
-              
-              {/* Responsiveness - Editable */}
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Responsiveness</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-blue-500" />
-                      <Label className="text-xs">Text</Label>
-                    </div>
-                    {isEditingQuickStats ? (
-                      <Switch
-                        checked={getResponsivenessStatus("text")}
-                        onCheckedChange={() => toggleResponsiveness("text")}
-                        disabled={savingQuickStats}
-                      />
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className={`ml-auto text-xs ${
-                          getResponsivenessStatus("text")
-                            ? "bg-green-500/10 text-green-600 border-green-500/30"
-                            : "bg-red-500/10 text-red-600 border-red-500/30"
-                        }`}
-                      >
-                        {getResponsivenessStatus("text") ? "Yes" : "No"}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-purple-500" />
-                      <Label className="text-xs">Call</Label>
-                    </div>
-                    {isEditingQuickStats ? (
-                      <Switch
-                        checked={getResponsivenessStatus("call")}
-                        onCheckedChange={() => toggleResponsiveness("call")}
-                        disabled={savingQuickStats}
-                      />
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className={`ml-auto text-xs ${
-                          getResponsivenessStatus("call")
-                            ? "bg-green-500/10 text-green-600 border-green-500/30"
-                            : "bg-red-500/10 text-red-600 border-red-500/30"
-                        }`}
-                      >
-                        {getResponsivenessStatus("call") ? "Yes" : "No"}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <Separator />
-
-              {/* Contact Responsiveness Snapshot — Quick Stats intelligence */}
-              {id && <QuickStatsContactSnapshot storeId={id} />}
-              <Separator />
-              
-              {/* Brand Stickers - Canonical Quick Stats Display */}
-              {id && <QuickStatsStickersSummary storeId={id} />}
-              <Separator />
-              
-              {/* Brand Payment Status — 4-brand matrix from store_brand_relationships */}
-              <QuickStatsBrandPaymentMatrix storeId={id || ''} />
-              <Separator />
-              
-              <MemberSinceDisplay storeId={id || ""} />
-            </CardContent>
-          </Card>
-
-          {/* Visit cadence override — Task 29 */}
-          {storeMasterId && (
-            <StoreCadenceOverrideCard
-              storeId={storeMasterId}
-              relationshipStatus={(store as any).relationship_status ?? null}
-            />
-          )}
-
-          {/* Danger Zone — Owner Only, GDS v1.0, inside KPI cards section */}
-          {storeMasterId && (
-            <StoreDangerZone storeId={storeMasterId} storeName={store.name} sourceUi="store_profile_kpi_cards" />
-          )}
-
-          {/* Notes */}
-          {store.notes && (
-            <Card className="glass-card border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  Notes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{store.notes}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Additional Notes (Overview / Old / Special) */}
-          {(store.notes_overview || store.notes_old || store.special_information) && (
-            <Card className="glass-card border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  Additional Notes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {store.notes_overview && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Overview</p>
-                    <p className="text-sm whitespace-pre-wrap">{store.notes_overview}</p>
-                  </div>
-                )}
-                {store.special_information && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Special Information</p>
-                    <p className="text-sm whitespace-pre-wrap">{store.special_information}</p>
-                  </div>
-                )}
-                {store.notes_old && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Legacy Notes</p>
-                    <p className="text-sm whitespace-pre-wrap text-muted-foreground">{store.notes_old}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Owner / CRM Intelligence */}
-          {(store.nickname || store.country_of_origin || store.influence_level || store.risk_score || store.personality_notes || store.languages?.length || store.loyalty_triggers?.length || store.frustration_triggers?.length) && (
-            <Card className="glass-card border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-primary" />
-                  Owner & CRM Intelligence
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  {store.nickname && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Nickname</p>
-                      <p className="font-medium">{store.nickname}</p>
-                    </div>
-                  )}
-                  {store.country_of_origin && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Country of Origin</p>
-                      <p className="font-medium">{store.country_of_origin}</p>
-                    </div>
-                  )}
-                  {store.influence_level && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Influence Level</p>
-                      <Badge variant="outline" className="text-xs capitalize">{store.influence_level}</Badge>
-                    </div>
-                  )}
-                  {store.risk_score && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Risk Score</p>
-                      <Badge variant="outline" className="text-xs capitalize">{store.risk_score}</Badge>
-                    </div>
-                  )}
-                </div>
-                {store.languages && store.languages.length > 0 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Languages</p>
-                    <div className="flex flex-wrap gap-1">
-                      {store.languages.map(lang => (
-                        <Badge key={lang} variant="secondary" className="text-xs">{lang}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {store.loyalty_triggers && store.loyalty_triggers.length > 0 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Loyalty Triggers</p>
-                    <div className="flex flex-wrap gap-1">
-                      {store.loyalty_triggers.map(t => (
-                        <Badge key={t} className="text-xs bg-green-500/10 text-green-600 border-green-500/30">{t}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {store.frustration_triggers && store.frustration_triggers.length > 0 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Frustration Triggers</p>
-                    <div className="flex flex-wrap gap-1">
-                      {store.frustration_triggers.map(t => (
-                        <Badge key={t} className="text-xs bg-red-500/10 text-red-600 border-red-500/30">{t}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {store.personality_notes && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Personality Notes</p>
-                    <p className="text-sm whitespace-pre-wrap">{store.personality_notes}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Communication Preferences */}
-          {(store.communication_preference || store.preferred_channel || store.language_preference || store.formality_level || store.notes_for_tone) && (
-            <Card className="glass-card border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5 text-primary" />
-                  Communication Preferences
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  {store.preferred_channel && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Preferred Channel</p>
-                      <p className="font-medium capitalize">{store.preferred_channel}</p>
-                    </div>
-                  )}
-                  {store.communication_preference && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Communication Style</p>
-                      <p className="font-medium capitalize">{store.communication_preference}</p>
-                    </div>
-                  )}
-                  {store.language_preference && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Language Preference</p>
-                      <p className="font-medium">{store.language_preference}</p>
-                    </div>
-                  )}
-                  {store.dialect_preference && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Dialect</p>
-                      <p className="font-medium">{store.dialect_preference}</p>
-                    </div>
-                  )}
-                  {store.formality_level && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Formality</p>
-                      <Badge variant="outline" className="text-xs capitalize">{store.formality_level}</Badge>
-                    </div>
-                  )}
-                </div>
-                {store.notes_for_tone && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Tone Notes</p>
-                    <p className="text-sm whitespace-pre-wrap">{store.notes_for_tone}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Expansion Info */}
-          {(store.has_expansion || store.expansion_notes || (store.new_store_addresses && store.new_store_addresses.length > 0)) && (
-            <Card className="glass-card border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Expansion
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {store.has_expansion && (
-                  <Badge className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/30">Has Expansion Plans</Badge>
-                )}
-                {store.new_store_addresses && store.new_store_addresses.length > 0 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">New Store Addresses</p>
-                    {store.new_store_addresses.map((addr, i) => (
-                      <p key={i} className="text-sm">{addr}</p>
-                    ))}
-                  </div>
-                )}
-                {store.expected_open_dates && store.expected_open_dates.length > 0 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Expected Open Dates</p>
-                    <div className="flex flex-wrap gap-1">
-                      {store.expected_open_dates.map((d, i) => (
-                        <Badge key={i} variant="outline" className="text-xs">{d}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {store.expansion_notes && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Notes</p>
-                    <p className="text-sm whitespace-pre-wrap">{store.expansion_notes}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Operations & Legacy Info */}
-          {(store.wholesaler_name || store.store_code || store.market_code || store.boro || store.neighborhood || store.rpa_status || store.health_status || store.last_visit_at || store.last_order_at) && (
-            <Card className="glass-card border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-primary" />
-                  Operations Info
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  {store.health_status && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Health Status</p>
-                      <Badge variant="outline" className="text-xs capitalize">{store.health_status}</Badge>
-                    </div>
-                  )}
-                  {store.wholesaler_name && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Wholesaler</p>
-                      <p className="font-medium">{store.wholesaler_name}</p>
-                    </div>
-                  )}
-                  {store.store_code && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Store Code</p>
-                      <p className="font-medium">{store.store_code}</p>
-                    </div>
-                  )}
-                  {store.market_code && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Market Code</p>
-                      <p className="font-medium">{store.market_code}</p>
-                    </div>
-                  )}
-                  {store.boro && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Borough</p>
-                      <p className="font-medium">{store.boro}</p>
-                    </div>
-                  )}
-                  {store.neighborhood && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Neighborhood</p>
-                      <p className="font-medium">{store.neighborhood}</p>
-                    </div>
-                  )}
-                  {store.rpa_status && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">RPA Status</p>
-                      <Badge variant="outline" className="text-xs">{store.rpa_status}</Badge>
-                    </div>
-                  )}
-                  {store.last_visit_at && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Last Visit</p>
-                      <p className="font-medium">{new Date(store.last_visit_at).toLocaleDateString()}</p>
-                    </div>
-                  )}
-                  {store.last_order_at && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Last Order</p>
-                      <p className="font-medium">{new Date(store.last_order_at).toLocaleDateString()}</p>
-                    </div>
-                  )}
-                  {store.member_since && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Member Since</p>
-                      <p className="font-medium">{new Date(store.member_since).toLocaleDateString()}</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Quick Actions */}
           <StoreQuickActions
-            storeId={id || ""}
+            storeId={storeId}
             storeName={store.name}
             storePhone={store.phone}
-            onInventoryUpdated={() => {
-              // Trigger refetch of tube inventory
+            compact
+            onCreateInvoice={() => setCreateInvoiceModalOpen(true)}
+            onAddFollowUp={() => {
+              setUnifiedInteractionModalType('followUp');
+              setUnifiedInteractionModalOpen(true);
             }}
-            onInvoiceCreated={(invoiceId) => {
-              // Navigate to invoice or show success
+            onScheduleVisit={() => {
+              setUnifiedInteractionModalType('delivery');
+              setUnifiedInteractionModalOpen(true);
             }}
+            onLogInteraction={() => setUnifiedInteractionModalOpen(true)}
+            onInventoryUpdated={fetchInventoryAndVisits}
           />
 
-        </div>
-      </div>
+          <CommunicationLogModal
+            open={communicationModalOpen}
+            onOpenChange={setCommunicationModalOpen}
+            entityType="store"
+            entityId={storeId}
+            entityName={store.name}
+            entityPhone={store.phone || store.alt_phone || undefined}
+            onSuccess={() => setTimelineRefresh((prev) => prev + 1)}
+          />
+          <UnifiedInteractionModal
+            open={unifiedInteractionModalOpen}
+            onOpenChange={(open) => {
+              setUnifiedInteractionModalOpen(open);
+              if (!open) setUnifiedInteractionModalType('delivery');
+            }}
+            storeId={storeId}
+            storeName={store.name}
+            storeContacts={storeContacts || []}
+            initialInteractionType={unifiedInteractionModalType as any}
+            onSuccess={() => {
+              fetchInventoryAndVisits();
+              setTimelineRefresh((prev) => prev + 1);
+            }}
+          />
+          <CreateStoreInvoiceModal
+            open={createInvoiceModalOpen}
+            onOpenChange={setCreateInvoiceModalOpen}
+            storeId={storeId}
+            storeName={store.name}
+          />
+          <BulkCommunicationLogModal
+            open={bulkCommModalOpen}
+            onOpenChange={setBulkCommModalOpen}
+            onSuccess={() => setTimelineRefresh((prev) => prev + 1)}
+          />
 
-    </div>
-    </CanonicalStoreProfileProvider>
+          <EscalationFlagsPanel storeId={storeId} />
+
+          <StoreProfileSection
+            id="inventory-sales"
+            title="Inventory & Sales"
+            description="Current inventory is canonical; sales and field-delivery history remain separately labeled."
+          >
+            <div className="space-y-4">
+              <TubesSoldHeroStrip storeId={storeId} />
+              <StoreProfileInventoryGroup storeId={storeId} role="admin" />
+              <details className="rounded-md border border-border/50 p-4">
+                <summary className="cursor-pointer text-sm font-medium">Bag history & velocity</summary>
+                <div className="mt-4"><BagsSection storeId={storeId} /></div>
+              </details>
+            </div>
+          </StoreProfileSection>
+
+          <StoreProfileSection
+            id="contacts"
+            title="Contacts"
+            description="People, roles, verified numbers, responsiveness, and contact actions."
+          >
+            <StoreContactsSection storeId={storeId} storeName={store.name} />
+          </StoreProfileSection>
+
+          <StoreProfileSection
+            id="tasks-follow-ups"
+            title="Tasks & Follow-ups"
+            description="Open follow-ups and route-backed field requirements stay in their original workflows."
+          >
+            <div className="space-y-4">
+              <StoreTaskRouteButtons storeId={storeId} storeName={store.name} />
+              <StoreProfileTasksGroup storeId={storeId} storeName={store.name} />
+            </div>
+          </StoreProfileSection>
+
+          <StoreProfileSection
+            id="orders-finance"
+            title="Orders & Finance"
+            description="Balance, invoices, last order, line items, and sell-through in one place."
+            action={<Button size="sm" onClick={() => setCreateInvoiceModalOpen(true)}><FileText className="mr-2 h-4 w-4" />Create Invoice</Button>}
+          >
+            <div className="space-y-4">
+              <StoreBalanceBanner storeId={storeId} storeName={store.name} />
+              <StoreProfileFinanceGroup storeId={storeId} onCreateInvoice={() => setCreateInvoiceModalOpen(true)} />
+              <details className="rounded-md border border-border/50 p-4">
+                <summary className="cursor-pointer text-sm font-medium">Per-product order history</summary>
+                <div className="mt-4"><SkuOrderHistoryPanel storeId={storeId} /></div>
+              </details>
+            </div>
+          </StoreProfileSection>
+
+          <StoreProfileSection
+            id="relationship-communication"
+            title="Relationship & Communication"
+            description="Overall store health and brand relationships are intentionally distinct measures."
+          >
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="w-full justify-start overflow-x-auto">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="communication">Communication</TabsTrigger>
+                <TabsTrigger value="ai">AI Insights</TabsTrigger>
+                <TabsTrigger value="preferences">Preferences</TabsTrigger>
+              </TabsList>
+              <TabsContent value="overview" className="mt-4"><StoreProfileRelationshipGroup storeId={storeId} storeName={store.name} /></TabsContent>
+              <TabsContent value="communication" className="mt-4"><CommunicationStats entityType="store" entityId={storeId} /></TabsContent>
+              <TabsContent value="ai" className="mt-4 space-y-4"><FollowUpAIRecommendation storeId={storeId} /><AIRelationshipHealth entityType="store" entityId={storeId} /></TabsContent>
+              <TabsContent value="preferences" className="mt-4 space-y-4"><StoreCommunicationPreferences storeId={storeId} />{storeMasterId && <StoreCadenceOverrideCard storeId={storeMasterId} relationshipStatus={(store as any).relationship_status ?? null} />}</TabsContent>
+            </Tabs>
+          </StoreProfileSection>
+
+          <StoreProfileSection
+            id="field-ops"
+            title="Field Ops & Compliance"
+            description="Visit execution, field evidence, route intelligence, and compliance controls."
+          >
+            <div className="space-y-4">
+              <StoreProfileFieldOpsGroup
+                storeId={storeId}
+                role="admin"
+                sellsFlowers={store.sells_flowers}
+                onSellsFlowersUpdate={() => undefined}
+              />
+              <Tabs defaultValue="visits" className="w-full">
+                <TabsList className="w-full justify-start overflow-x-auto">
+                  <TabsTrigger value="visits">Visit History</TabsTrigger>
+                  <TabsTrigger value="review">Review & Sign-off</TabsTrigger>
+                  <TabsTrigger value="recon">Recon</TabsTrigger>
+                  <TabsTrigger value="location">Location</TabsTrigger>
+                </TabsList>
+                <TabsContent value="visits" className="mt-4 space-y-3">
+                  {visits.length ? visits.map((visit) => (
+                    <div key={visit.id} className="rounded-md border border-border/50 p-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-medium">{formatVisitType(visit.visit_type)}</span>
+                        <span className="text-muted-foreground">{new Date(visit.visit_datetime).toLocaleString()}</span>
+                      </div>
+                      <p className="mt-1 text-muted-foreground">{visit.user.name} · {getSourceFromRole(visit.user.role)}</p>
+                    </div>
+                  )) : <p className="py-6 text-center text-sm text-muted-foreground">No visit history available</p>}
+                </TabsContent>
+                <TabsContent value="review" className="mt-4"><StoreReviewControls storeId={storeId} /></TabsContent>
+                <TabsContent value="recon" className="mt-4"><StoreReconCard storeId={storeId} /></TabsContent>
+                <TabsContent value="location" className="mt-4 space-y-4">
+                  <StoreStreetView lat={store.lat} lng={store.lng} storeName={store.name} address={address} />
+                  <Button variant="outline" onClick={handleGeocodeAddress} disabled={geocoding || !store.address_street}>
+                    <Navigation className="mr-2 h-4 w-4" />{geocoding ? 'Geocoding…' : 'Geocode Address'}
+                  </Button>
+                </TabsContent>
+              </Tabs>
+              {isFeatureEnabled('routeCheckinsPanel') && <RouteIntelligence storeId={storeId} storeName={store.name} />}
+              <ReplenishmentAI storeId={storeId} />
+            </div>
+          </StoreProfileSection>
+
+          <StoreProfileSection
+            id="notes-activity"
+            title="Notes & Activity"
+            description="One primary area for authored notes, interactions, field activity, and legacy context."
+          >
+            <div className="space-y-4">
+              <StoreProfileNotesGroup
+                storeId={storeId}
+                storeName={store.name}
+                onLogInteraction={(resolvedId) => {
+                  if (resolvedId) setResolvedStoreMasterId(resolvedId);
+                  setUnifiedInteractionModalOpen(true);
+                }}
+              />
+              {(store.notes || store.notes_overview || store.notes_old || store.special_information) && (
+                <details className="rounded-md border border-border/50 p-4">
+                  <summary className="cursor-pointer text-sm font-medium">Legacy & system context</summary>
+                  <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+                    {store.notes && <p className="whitespace-pre-wrap">{store.notes}</p>}
+                    {store.notes_overview && <p className="whitespace-pre-wrap">{store.notes_overview}</p>}
+                    {store.special_information && <p className="whitespace-pre-wrap">{store.special_information}</p>}
+                    {store.notes_old && <p className="whitespace-pre-wrap">{store.notes_old}</p>}
+                  </div>
+                </details>
+              )}
+            </div>
+          </StoreProfileSection>
+
+          <details className="border-t border-border/60 pt-5">
+            <summary className="cursor-pointer text-lg font-semibold">Advanced & legacy information</summary>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <StoreContactInfoCard
+                store={store}
+                onUpdate={handleStoreContactUpdate}
+              />
+              <SamplesGivenSection storeId={storeId} variant="full" />
+              <EngagementBanner storeId={storeId} />
+              {storeMasterId && <StoreDangerZone storeId={storeMasterId} storeName={store.name} sourceUi="store_profile_advanced" />}
+              <StorePerformanceTab storeId={storeId} storeName={store.name} />
+              <StoreCallIntelligenceTab storeId={storeId} />
+              <StorePhoneLogSection storeId={storeId} />
+              <StoreRevenueIntelligenceTab storeId={storeId} />
+            </div>
+          </details>
+        </div>
+      </CanonicalStoreProfileProvider>
     </CanonicalStoreDataProvider>
   );
+
 };
 
 export default StoreDetail;

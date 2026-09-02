@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, Phone, MapPin, FileText, MessageSquare, Mail } from 'lucide-react';
+import { Package, Phone, MapPin, FileText, MessageSquare, Mail, CalendarPlus, ClipboardPlus } from 'lucide-react';
 import { UpdateInventoryModal } from './UpdateInventoryModal';
 import { CreateStoreInvoiceModal } from './CreateStoreInvoiceModal';
 import { UnifiedInteractionModal } from './UnifiedInteractionModal';
@@ -18,6 +18,11 @@ interface StoreQuickActionsProps {
   storePhone?: string | null;
   onInventoryUpdated?: () => void;
   onInvoiceCreated?: (invoiceId: string) => void;
+  onCreateInvoice?: () => void;
+  onAddFollowUp?: () => void;
+  onScheduleVisit?: () => void;
+  onLogInteraction?: () => void;
+  compact?: boolean;
 }
 
 export function StoreQuickActions({
@@ -26,6 +31,11 @@ export function StoreQuickActions({
   storePhone,
   onInventoryUpdated,
   onInvoiceCreated,
+  onCreateInvoice,
+  onAddFollowUp,
+  onScheduleVisit,
+  onLogInteraction,
+  compact = false,
 }: StoreQuickActionsProps) {
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
@@ -189,14 +199,13 @@ export function StoreQuickActions({
 
   return (
     <>
-      <Card className="glass-card border-border/50">
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
+      <Card className="border-border/60">
+        {!compact && <CardHeader><CardTitle>Quick Actions</CardTitle></CardHeader>}
+        <CardContent className={compact ? 'p-3' : 'space-y-2'}>
+          <div className={compact ? 'flex gap-2 overflow-x-auto pb-1 sm:flex-wrap' : 'space-y-2'}>
           <Button
             variant="outline"
-            className="w-full justify-start"
+            className={compact ? 'shrink-0' : 'w-full justify-start'}
             onClick={() => setInventoryModalOpen(true)}
           >
             <Package className="h-4 w-4 mr-2" />
@@ -205,7 +214,7 @@ export function StoreQuickActions({
 
           <Button
             variant="outline"
-            className="w-full justify-start"
+            className={compact ? 'shrink-0' : 'w-full justify-start'}
             onClick={handleCallStore}
             disabled={!contactPhone}
           >
@@ -215,7 +224,7 @@ export function StoreQuickActions({
 
           <Button
             variant="outline"
-            className="w-full justify-start"
+            className={compact ? 'shrink-0' : 'w-full justify-start'}
             onClick={handleSendText}
             disabled={!contactPhone}
           >
@@ -225,7 +234,7 @@ export function StoreQuickActions({
 
           <Button
             variant="outline"
-            className="w-full justify-start"
+            className={compact ? 'shrink-0' : 'w-full justify-start'}
             onClick={handleSendEmail}
           >
             <Mail className="h-4 w-4 mr-2" />
@@ -234,22 +243,33 @@ export function StoreQuickActions({
 
           <Button
             variant="outline"
-            className="w-full justify-start"
-            onClick={handleAddToRoute}
+            className={compact ? 'shrink-0' : 'w-full justify-start'}
+            onClick={onScheduleVisit || handleAddToRoute}
             disabled={addingToRoute}
           >
             <MapPin className="h-4 w-4 mr-2" />
-            {addingToRoute ? 'Adding...' : 'Add to Route'}
+            {addingToRoute ? 'Adding...' : compact ? 'Schedule Visit' : 'Add to Route'}
           </Button>
 
           <Button
             variant="outline"
-            className="w-full justify-start"
-            onClick={() => setInvoiceModalOpen(true)}
+            className={compact ? 'shrink-0' : 'w-full justify-start'}
+            onClick={onCreateInvoice || (() => setInvoiceModalOpen(true))}
           >
             <FileText className="h-4 w-4 mr-2" />
             Create Invoice
           </Button>
+          {onAddFollowUp && (
+            <Button variant="outline" className={compact ? 'shrink-0' : 'w-full justify-start'} onClick={onAddFollowUp}>
+              <CalendarPlus className="h-4 w-4 mr-2" />Add Follow-up
+            </Button>
+          )}
+          {onLogInteraction && (
+            <Button variant="outline" className={compact ? 'shrink-0' : 'w-full justify-start'} onClick={onLogInteraction}>
+              <ClipboardPlus className="h-4 w-4 mr-2" />Log Interaction
+            </Button>
+          )}
+          </div>
         </CardContent>
       </Card>
 
@@ -261,13 +281,15 @@ export function StoreQuickActions({
         onSuccess={onInventoryUpdated}
       />
 
-      <CreateStoreInvoiceModal
-        open={invoiceModalOpen}
-        onOpenChange={setInvoiceModalOpen}
-        storeId={storeId}
-        storeName={storeName}
-        onSuccess={onInvoiceCreated}
-      />
+      {!onCreateInvoice && (
+        <CreateStoreInvoiceModal
+          open={invoiceModalOpen}
+          onOpenChange={setInvoiceModalOpen}
+          storeId={storeId}
+          storeName={storeName}
+          onSuccess={onInvoiceCreated}
+        />
+      )}
 
       <UnifiedInteractionModal
         open={textModalOpen}
