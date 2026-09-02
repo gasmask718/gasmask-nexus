@@ -56,55 +56,15 @@ export function UpdateInventoryModal({
         throw new Error('Invalid tube count');
       }
 
-      const productId = resolveProductIdForBrand(brand);
+      const { data: { user } } = await supabase.auth.getUser();
 
-      // Prefer matching by product_id (canonical SKU); fall back to brand for legacy rows.
-      let existing: { id: string } | null = null;
-      if (productId) {
-        const { data } = await supabase
-          .from('store_tube_inventory')
-          .select('id')
-          .eq('store_id', storeId)
-          .eq('product_id', productId)
-          .eq('is_simulation', false)
-          .maybeSingle();
-        existing = data;
-      }
-      if (!existing) {
-        const { data } = await supabase
-          .from('store_tube_inventory')
-          .select('id')
-          .eq('store_id', storeId)
-          .eq('brand', brand)
-          .order('last_updated', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        existing = data;
-      }
-
-      if (existing) {
-        const { error } = await supabase
-          .from('store_tube_inventory')
-          .update({
-            current_tubes_left: count,
-            last_updated: new Date().toISOString(),
-            created_by: 'manual_update',
-            ...(productId ? { product_id: productId } : {}),
-          })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('store_tube_inventory')
-          .insert({
-            store_id: storeId,
-            brand,
-            product_id: productId,
-            current_tubes_left: count,
-            created_by: 'manual_update',
-          });
-        if (error) throw error;
-      }
+      // Canonical inventory write → store_tube_inventory_status
+      await writeStoreTubeCounts({
+        storeId,
+        updates: [{ brandId: brand, count }],
+        actorId: user?.id ?? null,
+        method: 'manual_update',
+      });
 
       // Log the inventory event
       await supabase.from('inventory_events').insert({
@@ -116,6 +76,7 @@ export function UpdateInventoryModal({
         created_by: 'manual_update',
       });
     },
+
     onSuccess: () => {
       toast.success(`Inventory updated: ${tubeCount} ${brand} tubes`);
       invalidateStoreInventoryQueries(queryClient, storeId);
