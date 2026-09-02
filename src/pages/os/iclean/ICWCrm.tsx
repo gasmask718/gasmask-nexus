@@ -29,6 +29,7 @@ const statusClass = (s: string) =>
 export default function ICWCrm() {
   const [status, setStatus] = useState<string>('all');
   const [category, setCategory] = useState<string>('all');
+  const [country, setCountry] = useState<string>('all');
   const [search, setSearch] = useState('');
 
   const { data: leads, isLoading, error } = useQuery({
@@ -43,21 +44,50 @@ export default function ICWCrm() {
     },
   });
 
+  // Countries actually present in the data — never a hardcoded US-only list.
+  const countries = useMemo(
+    () =>
+      Array.from(new Set((leads ?? []).map((l) => l.country?.trim()).filter((value): value is string => Boolean(value)))).sort(),
+    [leads],
+  );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (leads ?? []).filter((l) => {
       if (status !== 'all' && l.status !== status) return false;
       if (category !== 'all' && !(l.category_groups ?? []).includes(category)) return false;
+      if (country !== 'all' && l.country?.trim() !== country) return false;
       if (
         q &&
-        ![l.full_name, l.phone, l.email, l.city, l.state, l.source_platform]
+        [
+          l.full_name,
+          l.phone,
+          l.email,
+          l.website_social,
+          l.address,
+          l.city,
+          l.state,
+          l.region,
+          l.country,
+          l.postal_code,
+          l.source_platform,
+          l.source_url,
+          l.source_id,
+          l.license_number,
+          l.license_type,
+          l.license_status,
+          l.notes,
+          l.status,
+          ...(l.category_groups ?? []),
+        ]
           .filter(Boolean)
           .some((v) => String(v).toLowerCase().includes(q))
       )
         return false;
       return true;
     });
-  }, [leads, status, category, search]);
+  }, [leads, status, category, country, search]);
+
 
   return (
     <div className="min-h-screen p-6 space-y-6">
@@ -89,7 +119,7 @@ export default function ICWCrm() {
           </CardTitle>
           <div className="flex flex-wrap gap-3">
             <Input
-              placeholder="Search name, phone, city…"
+              placeholder="Search name, phone, city, country…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full sm:w-64"
@@ -114,6 +144,19 @@ export default function ICWCrm() {
               <SelectContent>
                 <SelectItem value="all">All categories</SelectItem>
                 {ICW_CATEGORIES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={country} onValueChange={setCountry}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Country" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All countries</SelectItem>
+                {countries.map((c) => (
                   <SelectItem key={c} value={c}>
                     {c}
                   </SelectItem>
@@ -158,7 +201,8 @@ export default function ICWCrm() {
                         <div>{l.email || ''}</div>
                       </td>
                       <td className="p-3 text-sm">
-                        {[l.city, l.state].filter(Boolean).join(', ') || '—'}
+                        <div>{[l.city, l.region || l.state].filter(Boolean).join(', ') || '—'}</div>
+                        <div className="text-xs text-muted-foreground">{l.country || 'Unknown country'}</div>
                       </td>
                       <td className="p-3">
                         <div className="flex flex-wrap gap-1">
