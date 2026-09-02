@@ -5,30 +5,20 @@ import { GeocodingService } from "@/services/geocoding";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StorePhoneLogSection } from "@/components/phone/StorePhoneLogSection";
 import { StorePerformanceTab } from "@/components/store/StorePerformanceTab";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { InventoryPredictionCard } from "@/components/map/InventoryPredictionCard";
 import { CommunicationLogModal } from "@/components/CommunicationLogModal";
 import { CommunicationStats } from "@/components/communication/CommunicationStats";
 import { FollowUpAIRecommendation } from "@/components/store/FollowUpAIRecommendation";
 import { ReplenishmentAI } from "@/components/store/ReplenishmentAI";
-import { LastOrderSnapshotPanel } from "@/components/store/LastOrderSnapshotPanel";
 import { AIRelationshipHealth } from "@/components/communication/AIRelationshipHealth";
 import { RouteIntelligence } from "@/components/store/RouteIntelligence";
 import { isFeatureEnabled } from "@/config/featureFlags";
-import { StoreTubeInventoryCard } from "@/components/store/StoreTubeInventoryCard";
 import { StoreCallIntelligenceTab } from "@/components/store/StoreCallIntelligenceTab";
 import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIntelligenceTab";
-import { Activity, Headphones, Flame } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
-import { StoreQuickNotes } from "@/components/store/StoreQuickNotes";
 import { StoreTaskRouteButtons } from "@/components/store/StoreTaskRouteButtons";
 import { SamplesGivenSection } from "@/components/store/SamplesGivenSection";
 import { StoreReviewControls } from "@/components/store/StoreReviewControls";
@@ -39,7 +29,6 @@ import { StoreReconCard } from "@/components/store/StoreReconCard";
 import { StoreCommunicationPreferences } from "@/components/store/StoreCommunicationPreferences";
 import { useUserRole } from "@/hooks/useUserRole";
 import { QuickStatsStickersSummary } from "@/components/store/QuickStatsStickersSummary";
-import { StoreHealthBadge } from "@/components/delivery/StoreHealthBadge";
 import { QuickStatsContactSnapshot } from "@/components/store/QuickStatsContactSnapshot";
 import { usePrimaryResponsiveContact } from "@/hooks/usePrimaryResponsiveContact";
 import { StoreContactIntelBadge } from "@/components/contact/StoreContactIntelBadge";
@@ -232,7 +221,6 @@ const StoreDetail = () => {
   const { roles } = useUserRole();
   const isAmbassador = roles?.includes('ambassador' as any);
   const [store, setStore] = useState<Store | null>(null);
-  const [inventory, setInventory] = useState<ProductInventory[]>([]);
   const [visits, setVisits] = useState<VisitLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
@@ -240,13 +228,8 @@ const StoreDetail = () => {
   const [unifiedInteractionModalOpen, setUnifiedInteractionModalOpen] = useState(false);
   const [unifiedInteractionModalType, setUnifiedInteractionModalType] = useState<string>('delivery');
   const [createInvoiceModalOpen, setCreateInvoiceModalOpen] = useState(false);
-  const [resolvedStoreMasterId, setResolvedStoreMasterId] = useState<string | null>(null);
   const [timelineRefresh, setTimelineRefresh] = useState(0);
   const [geocoding, setGeocoding] = useState(false);
-  const [isEditingQuickStats, setIsEditingQuickStats] = useState(false);
-  const [quickStatsResponsiveness, setQuickStatsResponsiveness] = useState<"call" | "text" | "both" | "none">("none");
-  const [quickStatsPaymentType, setQuickStatsPaymentType] = useState<"pays_upfront" | "bill_to_bill" | null>(null); // legacy — kept for responsiveness save
-  const [savingQuickStats, setSavingQuickStats] = useState(false);
 
   // Resolve store_master ID for GDS operations
   const { storeMasterId } = useStoreMasterResolver(id);
@@ -260,17 +243,6 @@ const StoreDetail = () => {
       return data || [];
     },
     enabled: !!id,
-  });
-
-  const { data: routeInsight } = useQuery({
-    queryKey: ["route-insight", id],
-    queryFn: async () => {
-      if (!id) return null;
-      const { data, error } = await supabase.from("route_insights").select("*").eq("store_id", id).maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
   });
 
   useEffect(() => {
@@ -373,9 +345,6 @@ const StoreDetail = () => {
         };
 
         setStore(unified);
-        setQuickStatsResponsiveness((unified.responsiveness as "call" | "text" | "both" | "none") || "none");
-        setQuickStatsPaymentType((unified.payment_type as "pays_upfront" | "bill_to_bill") || null);
-
         await fetchInventoryAndVisits();
       } catch (error) {
         console.error("Error fetching store data:", error);
@@ -451,28 +420,6 @@ const StoreDetail = () => {
     if (!id) return;
 
     try {
-      // Fetch inventory state
-      const { data: inventoryData } = await supabase
-        .from("store_product_state")
-        .select(
-          `
-          id,
-          last_inventory_level,
-          last_inventory_check_at,
-          next_estimated_reorder_date,
-          urgency_score,
-          velocity_boxes_per_day,
-          predicted_stockout_date,
-          product:products(
-            name,
-            brand:brands(name, color)
-          )
-        `,
-        )
-        .eq("store_id", id);
-
-      setInventory((inventoryData as any) || []);
-
       // Fetch visit logs
       const { data: visitsData } = await supabase
         .from("visit_logs")
@@ -517,109 +464,8 @@ const StoreDetail = () => {
     );
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-500/10 text-green-500 border-green-500/20";
-      case "inactive":
-        return "bg-gray-500/10 text-gray-500 border-gray-500/20";
-      case "prospect":
-        return "bg-blue-500/10 text-blue-500 border-blue-500/20";
-      case "needsFollowUp":
-        return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
-
-  const getInventoryLevel = (level: string) => {
-    switch (level) {
-      case "full":
-        return { value: 100, color: "bg-green-500", label: "Full" };
-      case "threeQuarters":
-        return { value: 75, color: "bg-blue-500", label: "75%" };
-      case "half":
-        return { value: 50, color: "bg-yellow-500", label: "50%" };
-      case "quarter":
-        return { value: 25, color: "bg-orange-500", label: "25%" };
-      case "empty":
-        return { value: 0, color: "bg-red-500", label: "Empty" };
-      default:
-        return { value: 0, color: "bg-gray-500", label: "Unknown" };
-    }
-  };
-
   const formatVisitType = (type: string) => {
     return type.replace(/([A-Z])/g, " $1").trim();
-  };
-
-  const handleSaveQuickStats = async () => {
-    if (!store || !id) return;
-
-    setSavingQuickStats(true);
-    try {
-      const { error } = await supabase
-        .from("stores")
-        .update({ 
-          responsiveness: quickStatsResponsiveness as "call" | "text" | "both" | "none",
-          payment_type: quickStatsPaymentType,
-        })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      setStore({ ...store, responsiveness: quickStatsResponsiveness, payment_type: quickStatsPaymentType });
-      setIsEditingQuickStats(false);
-      toast.success("Quick stats updated");
-    } catch (error: any) {
-      console.error("Error updating quick stats:", error);
-      toast.error("Failed to update quick stats");
-    } finally {
-      setSavingQuickStats(false);
-    }
-  };
-
-  const handleCancelQuickStats = () => {
-    if (store) {
-      setQuickStatsResponsiveness((store.responsiveness as "call" | "text" | "both" | "none") || "none");
-      setQuickStatsPaymentType((store.payment_type as "pays_upfront" | "bill_to_bill") || null);
-    }
-    setIsEditingQuickStats(false);
-  };
-
-  const toggleResponsiveness = (type: "text" | "call") => {
-    const current = quickStatsResponsiveness;
-    let newValue: "call" | "text" | "both" | "none";
-
-    if (type === "text") {
-      if (current === "text" || current === "both") {
-        // Remove text, keep call if it exists
-        newValue = current === "both" ? "call" : "none";
-      } else {
-        // Add text
-        newValue = current === "call" ? "both" : "text";
-      }
-    } else {
-      // type === "call"
-      if (current === "call" || current === "both") {
-        // Remove call, keep text if it exists
-        newValue = current === "both" ? "text" : "none";
-      } else {
-        // Add call
-        newValue = current === "text" ? "both" : "call";
-      }
-    }
-
-    setQuickStatsResponsiveness(newValue);
-  };
-
-  const getResponsivenessStatus = (type: "text" | "call") => {
-    const current = isEditingQuickStats ? quickStatsResponsiveness : (store?.responsiveness as "call" | "text" | "both" | "none" | undefined) || "none";
-    if (type === "text") {
-      return current === "text" || current === "both";
-    } else {
-      return current === "call" || current === "both";
-    }
   };
 
   const storeProfileConfig = {
@@ -692,10 +538,6 @@ const StoreDetail = () => {
             onCreateInvoice={() => setCreateInvoiceModalOpen(true)}
             onAddFollowUp={() => {
               setUnifiedInteractionModalType('followUp');
-              setUnifiedInteractionModalOpen(true);
-            }}
-            onScheduleVisit={() => {
-              setUnifiedInteractionModalType('delivery');
               setUnifiedInteractionModalOpen(true);
             }}
             onLogInteraction={() => setUnifiedInteractionModalOpen(true)}
@@ -862,8 +704,7 @@ const StoreDetail = () => {
               <StoreProfileNotesGroup
                 storeId={storeId}
                 storeName={store.name}
-                onLogInteraction={(resolvedId) => {
-                  if (resolvedId) setResolvedStoreMasterId(resolvedId);
+                onLogInteraction={() => {
                   setUnifiedInteractionModalOpen(true);
                 }}
               />

@@ -232,14 +232,12 @@ export function StoreQuickActions({
             Send Text
           </Button>
 
-          <Button
-            variant="outline"
-            className={compact ? 'shrink-0' : 'w-full justify-start'}
-            onClick={handleSendEmail}
-          >
-            <Mail className="h-4 w-4 mr-2" />
-            Send Email
-          </Button>
+          {!compact && (
+            <Button variant="outline" className="w-full justify-start" onClick={handleSendEmail}>
+              <Mail className="h-4 w-4 mr-2" />
+              Send Email
+            </Button>
+          )}
 
           <Button
             variant="outline"
