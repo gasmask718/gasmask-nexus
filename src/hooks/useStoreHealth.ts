@@ -83,7 +83,16 @@ async function calculateHealthFromData(storeId: string) {
       .select('last_order_date, days_since_last_order, total_sales')
       .eq('store_id', storeId)
       .maybeSingle(),
+    // Invoice dates → average reorder gap (existing canonical order records).
+    supabase
+      .from('invoices')
+      .select('business_date')
+      .eq('store_id', storeId)
+      .is('deleted_at', null)
+      .order('business_date', { ascending: false })
+      .limit(12),
   ]);
+
 
   const checklists = checklistsRes.data || [];
   const contacts = contactsRes.data || [];
