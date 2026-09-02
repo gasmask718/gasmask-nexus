@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { Package } from 'lucide-react';
 import { VALID_TUBE_BRANDS } from './UnifiedTubeIntelligenceCard';
 import { invalidateStoreInventoryQueries } from '@/lib/inventory/invalidation';
-import { resolveProductIdForBrand } from '@/lib/inventory/skuDisplay';
+
 import { writeStoreTubeCounts } from '@/lib/inventory/writeTubeCounts';
 
 interface UpdateInventoryModalProps {
