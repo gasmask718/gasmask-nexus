@@ -30,9 +30,9 @@ export function StoreExecutiveOverview({ storeId, name, address, primaryContact,
   const { data: lastContact } = useQuery({
     queryKey: ['store-executive-last-contact', storeId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('contact_interactions').select('interaction_date').eq('store_id', storeId).order('interaction_date', { ascending: false }).limit(1).maybeSingle();
+      const { data, error } = await supabase.from('contact_interactions').select('created_at').eq('store_id', storeMasterId).order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
-      return data?.interaction_date ?? null;
+      return data?.created_at ?? null;
     },
   });
 
@@ -41,7 +41,7 @@ export function StoreExecutiveOverview({ storeId, name, address, primaryContact,
     ['Last Contact', formatDate(lastContact)],
     ['Last Order', formatDate(lastOrderAt)],
     ['Outstanding Balance', `$${Number(summary?.owed ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-    ['Payment Terms', paymentTerms ? paymentTerms.replaceAll('_', ' ') : 'Not set'],
+    ['Payment Terms', paymentTerms ? paymentTerms.replace(/_/g, ' ') : 'Not set'],
   ];
 
   return (
