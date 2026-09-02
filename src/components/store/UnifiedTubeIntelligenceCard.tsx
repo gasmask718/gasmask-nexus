@@ -221,21 +221,28 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     enabled: !!storeId,
   });
 
-  // ── Fetch editable inventory records (tube counts) ──
+  // ── Fetch editable inventory records (tube counts) — canonical table ──
   const { data: inventory, isLoading: invLoading, refetch: refetchInv } = useQuery({
     queryKey: ['store-tube-inventory', storeId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('store_tube_inventory')
-        .select('*')
+        .from('store_tube_inventory_status')
+        .select('id, brand_id, current_tubes_left, last_updated_at, tubes_updated_at, last_inventory_check_at, last_updated_by')
         .eq('store_id', storeId)
-        .neq('brand', 'hotscolatti')
-        .order('brand');
+        .order('brand_id');
       if (error) throw error;
-      return data as TubeInventoryRecord[];
+      return ((data ?? []) as any[]).map((r) => ({
+        id: r.id,
+        brand: r.brand_id,
+        current_tubes_left: r.current_tubes_left ?? 0,
+        last_updated: r.tubes_updated_at ?? r.last_updated_at,
+        last_checked_at: r.last_inventory_check_at ?? null,
+        created_by: r.last_updated_by ?? '',
+      })) as TubeInventoryRecord[];
     },
     enabled: !!storeId,
   });
+
 
   // Realtime subscription
   useEffect(() => {
