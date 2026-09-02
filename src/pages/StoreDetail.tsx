@@ -52,7 +52,11 @@ import {
   StoreProfileFinanceGroup,
   StoreProfileInventoryGroup,
   StoreProfileNotesGroup,
-  StoreProfileRelationshipGroup,
+  StoreRelationshipOverview,
+  StoreRelationshipCommunication,
+  StoreRelationshipBriefing,
+  StoreRelationshipCadence,
+
   StoreProfileTasksGroup,
 } from "@/components/store/SharedStoreCoreIntelligence";
 import { TubesSoldHeroStrip } from "@/components/store-profile/TubesSoldHeroStrip";
