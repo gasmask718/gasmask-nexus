@@ -166,7 +166,7 @@ async function calculateHealthFromData(storeId: string) {
     totalBrands: CANONICAL_BRAND_IDS.length,
     avgInventoryCount,
     hasRecentOrder: daysSinceLastOrder != null && daysSinceLastOrder <= 30,
-    avgDaysBetweenOrders: null,
+    avgDaysBetweenOrders,
     daysSinceLastOrder,
     hasResponsiveContact: hasResponsive,
     bossNameConfirmed: hasBossName,
