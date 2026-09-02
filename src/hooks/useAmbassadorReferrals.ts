@@ -172,7 +172,14 @@ export function useReviewReferral() {
             const detail = (sendErr as any)?.context ? await (sendErr as any).context.text() : sendErr.message;
             return { ...result, sent: false, sendError: detail || sendErr.message };
           }
-          return { ...result, sent: !!sendData?.success, sendLog: sendData?.send_log || [], sendError: sendData?.error };
+          return {
+            ...result,
+            sent: !!sendData?.success,
+            sendLog: sendData?.send_log || [],
+            emailInvalid: !!sendData?.email_invalid,
+            invalidEmail: sendData?.invalid_email,
+            sendError: sendData?.error,
+          };
         } catch (e) {
           return { ...result, sent: false, sendError: String(e) };
         }
@@ -186,9 +193,14 @@ export function useReviewReferral() {
       if (input.decision === 'approve') {
         if (result.sent) {
           toast.success('Approved — invite sent by text and email');
+        } else if (result.emailInvalid) {
+          toast.warning(
+            'Approved. Invite created, but email was not sent because the contact email is invalid. Correct the email and resend the invite from Invite Governance.',
+          );
         } else {
-          toast.warning(`Approved, but invite delivery failed: ${result.sendError || 'unknown error'}. Resend from Invite Governance.`);
+          toast.warning(`Approved and invite created, but delivery failed: ${result.sendError || 'unknown error'}. Resend from Invite Governance.`);
         }
+
       } else {
         toast.success('Referral declined');
       }
