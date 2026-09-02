@@ -79,7 +79,6 @@ import { StoreProfileSection } from "@/components/store/StoreProfileSection";
 import { SkuOrderHistoryPanel } from "@/components/store/SkuOrderHistoryPanel";
 import { QuickStatsBrandPaymentMatrix } from "@/components/store/QuickStatsBrandPaymentMatrix";
 import { CanonicalStoreDataProvider } from "@/components/store/CanonicalStoreDataProvider";
-import { PinnedNotesSection } from "@/components/store/PinnedNotesSection";
 import { EscalationFlagsPanel } from "@/components/delivery/EscalationFlagsPanel";
 import {
   MapPin,
@@ -419,6 +418,33 @@ const StoreDetail = () => {
     } finally {
       setGeocoding(false);
     }
+  };
+
+  const handleStoreContactUpdate = () => {
+    supabase
+      .from('stores')
+      .select('*')
+      .eq('id', id)
+      .single()
+      .then(({ data }) => {
+        if (!data) return;
+        setStore((previous) => previous ? {
+          ...previous,
+          name: data.name || previous.name,
+          phone: data.phone || previous.phone,
+          alt_phone: data.alt_phone || previous.alt_phone,
+          email: data.email || previous.email,
+          address_street: data.address_street || previous.address_street,
+          address_city: data.address_city || previous.address_city,
+          address_state: data.address_state || previous.address_state,
+          address_zip: data.address_zip || previous.address_zip,
+          notes: data.notes || previous.notes,
+          responsiveness: data.responsiveness || previous.responsiveness,
+          payment_type: data.payment_type || previous.payment_type,
+          primary_contact_name: data.primary_contact_name || previous.primary_contact_name,
+          owner_name: data.primary_contact_name || previous.owner_name,
+        } : previous);
+      });
   };
 
   const fetchInventoryAndVisits = async () => {
@@ -833,7 +859,6 @@ const StoreDetail = () => {
             description="One primary area for authored notes, interactions, field activity, and legacy context."
           >
             <div className="space-y-4">
-              <PinnedNotesSection storeId={storeId} />
               <StoreProfileNotesGroup
                 storeId={storeId}
                 storeName={store.name}
@@ -861,7 +886,7 @@ const StoreDetail = () => {
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <StoreContactInfoCard
                 store={store}
-                onUpdate={() => window.location.reload()}
+                onUpdate={handleStoreContactUpdate}
               />
               <SamplesGivenSection storeId={storeId} variant="full" />
               <EngagementBanner storeId={storeId} />
