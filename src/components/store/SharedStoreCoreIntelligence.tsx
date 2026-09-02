@@ -103,6 +103,29 @@ export function StoreProfileFinanceGroup({ storeId, onCreateInvoice }: Pick<Grou
   );
 }
 
+// Individual relationship panes — exported so a host page can render ONE
+// navigation layer instead of nesting tabs inside tabs.
+export function StoreRelationshipOverview({ storeId }: Pick<GroupProps, 'storeId'>) {
+  return (
+    <div className="space-y-4">
+      <BrandRelationshipsPanel storeId={storeId} />
+      <StoreHealthScoreCard storeId={storeId} />
+    </div>
+  );
+}
+
+export function StoreRelationshipCommunication({ storeId, storeName }: Pick<GroupProps, 'storeId' | 'storeName'>) {
+  return <StoreCadencePanel storeId={storeId} storeName={storeName} />;
+}
+
+export function StoreRelationshipBriefing({ storeId }: Pick<GroupProps, 'storeId'>) {
+  return <StoreAccountBriefing storeId={storeId} />;
+}
+
+export function StoreRelationshipCadence({ storeId, storeName }: Pick<GroupProps, 'storeId' | 'storeName'>) {
+  return <StoreCadenceSettings storeId={storeId} storeName={storeName} />;
+}
+
 export function StoreProfileRelationshipGroup({ storeId, storeName }: Pick<GroupProps, 'storeId' | 'storeName'>) {
   return (
     <Tabs defaultValue="overview" className="w-full">
@@ -112,13 +135,14 @@ export function StoreProfileRelationshipGroup({ storeId, storeName }: Pick<Group
         <TabsTrigger value="briefing">AI Briefing</TabsTrigger>
         <TabsTrigger value="preferences">Cadence</TabsTrigger>
       </TabsList>
-      <TabsContent value="overview" className="mt-4 space-y-4"><BrandRelationshipsPanel storeId={storeId} /><StoreHealthScoreCard storeId={storeId} /></TabsContent>
-      <TabsContent value="communication" className="mt-4"><StoreCadencePanel storeId={storeId} storeName={storeName} /></TabsContent>
-      <TabsContent value="briefing" className="mt-4"><StoreAccountBriefing storeId={storeId} /></TabsContent>
-      <TabsContent value="preferences" className="mt-4"><StoreCadenceSettings storeId={storeId} storeName={storeName} /></TabsContent>
+      <TabsContent value="overview" className="mt-4 space-y-4"><StoreRelationshipOverview storeId={storeId} /></TabsContent>
+      <TabsContent value="communication" className="mt-4"><StoreRelationshipCommunication storeId={storeId} storeName={storeName} /></TabsContent>
+      <TabsContent value="briefing" className="mt-4"><StoreRelationshipBriefing storeId={storeId} /></TabsContent>
+      <TabsContent value="preferences" className="mt-4"><StoreRelationshipCadence storeId={storeId} storeName={storeName} /></TabsContent>
     </Tabs>
   );
 }
+
 
 export function StoreProfileFieldOpsGroup({
   storeId,
