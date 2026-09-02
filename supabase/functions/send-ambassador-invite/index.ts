@@ -1,6 +1,8 @@
 // Ambassador invite dispatcher — creates (or resends) an ambassador invite and
 // delivers the signup link over SMS (Twilio via send-sms) and/or email (Resend).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isValidRecipientEmail, normalizeRecipientEmail } from "../_shared/recipientEmail.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -72,6 +74,26 @@ Deno.serve(async (req) => {
         return json({ error: "invite_pending_owner_approval" }, 403);
       }
       invite = { ...data, token: data.invite_token };
+
+      // Correction path: an admin may supply a corrected recipient email on
+      // resend. Persist it onto the SAME invite (no duplicate invite, token,
+      // approval metadata and attribution untouched). Invalid input is never
+      // persisted and never "repaired".
+      const corrected = normalizeRecipientEmail(email);
+      if (corrected && isValidRecipientEmail(corrected) && corrected !== normalizeRecipientEmail(data.email)) {
+        const { error: updErr } = await admin
+          .from("ambassador_invites")
+          .update({ email: corrected })
+          .eq("id", data.id);
+        if (updErr) return json({ error: `email_update_failed: ${updErr.message}` }, 400);
+        invite.email = corrected;
+        await admin.from("ambassador_invite_events").insert({
+          invite_id: data.id,
+          event_type: "sent",
+          actor_user_id: userData.user.id,
+          metadata: { action: "email_corrected", previous_email: data.email, new_email: corrected },
+        });
+      }
     } else {
       const { data, error } = await userClient.rpc("create_ambassador_invite", {
         p_email: email || null,
@@ -93,8 +115,11 @@ Deno.serve(async (req) => {
     const msg = `${greeting}you've been invited to join GasMask as an Ambassador. Set up your account: ${link}`;
 
     const toPhone = phone || invite.phone;
-    const toEmail = email || invite.email;
+    const rawEmail = email || invite.email || "";
+    const toEmail = normalizeRecipientEmail(rawEmail);
+    const emailInvalid = !!rawEmail && !isValidRecipientEmail(rawEmail);
     const sendLog: any[] = [];
+
 
     if ((channel === "sms" || channel === "both") && toPhone) {
       try {
@@ -118,8 +143,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    if ((channel === "email" || channel === "both") && toEmail) {
-      if (!RESEND_KEY) {
+    if ((channel === "email" || channel === "both") && (toEmail || emailInvalid)) {
+      if (emailInvalid) {
+        // Never hand a malformed address to the provider — the 422 it returns
+        // is noise. Mark delivery as not-sent and leave the invite intact for
+        // correction + resend.
+        sendLog.push({
+          channel: "email",
+          to: rawEmail,
+          ok: false,
+          code: "invalid_email",
+          error: "invalid_email_format",
+        });
+      } else if (!RESEND_KEY) {
         sendLog.push({ channel: "email", to: toEmail, ok: false, error: "RESEND_API_KEY not configured" });
       } else {
         try {
@@ -153,11 +189,15 @@ Deno.serve(async (req) => {
         invite_id: invite.id,
         event_type: "sent",
         actor_user_id: userData.user.id,
-        metadata: { channel, send_log: sendLog, name, resend: !!invite_id },
+        metadata: { channel, send_log: sendLog, name, resend: !!invite_id, email_invalid: emailInvalid },
       });
     }
 
     const delivered = sendLog.some((s) => s.ok);
+    // An invalid recipient email is an expected, recoverable outcome — report
+    // it as a 200 with success:false so callers can show a clear message
+    // instead of a transport-level failure.
+    const httpStatus = delivered || emailInvalid ? 200 : 502;
     return json({
       success: delivered,
       resent: !!invite_id,
@@ -165,8 +205,11 @@ Deno.serve(async (req) => {
       token,
       link,
       send_log: sendLog,
+      email_invalid: emailInvalid,
+      invalid_email: emailInvalid ? rawEmail : undefined,
       error: delivered ? undefined : sendLog.map((s) => s.error || `status ${s.status}`).join("; "),
-    }, delivered ? 200 : 502);
+    }, httpStatus);
+
   } catch (e) {
     return json({ error: String(e) }, 500);
   }

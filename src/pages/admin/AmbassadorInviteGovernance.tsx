@@ -17,17 +17,21 @@ import { useAllInvites, useRevokeInvite, useInvitesEnabled, useToggleInvites, us
 import { InviteDeliveryInfo } from '@/components/ambassador/InviteDeliveryInfo';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { isValidRecipientEmail, normalizeRecipientEmail } from '@/lib/validation/recipientEmail';
 
 export default function AmbassadorInviteGovernance() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
   const [revokeReason, setRevokeReason] = useState('');
+  const [fixTarget, setFixTarget] = useState<string | null>(null);
+  const [fixEmail, setFixEmail] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newChannel, setNewChannel] = useState<'sms' | 'email' | 'both'>('both');
+
 
   const { data: enabled, isLoading: enabledLoading } = useInvitesEnabled();
   const toggleInvites = useToggleInvites();
@@ -205,6 +209,11 @@ export default function AmbassadorInviteGovernance() {
                 <TableRow key={inv.id}>
                   <TableCell className="font-medium">
                     {inv.email || inv.phone || <span className="text-muted-foreground">—</span>}
+                    {inv.email && !isValidRecipientEmail(inv.email) && (
+                      <Badge variant="outline" className="ml-2 border-destructive/40 text-destructive">
+                        Invalid email — not sent
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground font-mono">
                     {inv.invited_by_user_id?.slice(0, 8)}...
@@ -224,6 +233,16 @@ export default function AmbassadorInviteGovernance() {
                       : '—'}
                   </TableCell>
                   <TableCell>
+                    {inv.status === 'pending' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mr-2"
+                        onClick={() => { setFixTarget(inv.id); setFixEmail(inv.email || ''); }}
+                      >
+                        Fix email
+                      </Button>
+                    )}
                     {inv.status === 'pending' && (inv.email || inv.phone) && (
                       <Button
                         variant="outline"
@@ -235,6 +254,7 @@ export default function AmbassadorInviteGovernance() {
                         Resend
                       </Button>
                     )}
+
                     {inv.status === 'pending' && (
                       <Button
                         variant="destructive"
@@ -282,6 +302,49 @@ export default function AmbassadorInviteGovernance() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Correct recipient email + resend the SAME invite (no duplicate) */}
+      <Dialog open={!!fixTarget} onOpenChange={() => setFixTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Correct invite email</DialogTitle>
+            <DialogDescription>
+              Updates the recipient on this existing invite and resends it. The invite id,
+              token, approval and referral attribution are preserved — no new invite is created.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Recipient email</Label>
+            <Input
+              type="email"
+              placeholder="email@example.com"
+              value={fixEmail}
+              onChange={e => setFixEmail(e.target.value)}
+            />
+            {fixEmail && !isValidRecipientEmail(fixEmail) && (
+              <p className="text-xs text-destructive">Not a valid email address.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFixTarget(null)}>Cancel</Button>
+            <Button
+              disabled={!isValidRecipientEmail(fixEmail) || resendInvite.isPending}
+              onClick={async () => {
+                if (!fixTarget) return;
+                await resendInvite.mutateAsync({
+                  inviteId: fixTarget,
+                  channel: 'email',
+                  email: normalizeRecipientEmail(fixEmail),
+                });
+                setFixTarget(null);
+              }}
+            >
+              Save & resend
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Create & Send Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>

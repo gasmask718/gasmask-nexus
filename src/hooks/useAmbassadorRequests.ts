@@ -137,6 +137,8 @@ export function useApproveRequest() {
       if (!result?.success) throw new Error(result?.error || 'Failed to approve request');
 
       // Deliver through the existing dispatcher (resend path), both channels.
+      // The recipient email is validated dispatcher-side: an invalid address is
+      // reported back as email_invalid instead of being handed to the provider.
       try {
         const { data: sendData, error: sendErr } = await supabase.functions.invoke('send-ambassador-invite', {
           body: {
@@ -151,7 +153,13 @@ export function useApproveRequest() {
           const detail = (sendErr as any)?.context ? await (sendErr as any).context.text() : sendErr.message;
           return { ...result, sent: false, sendError: detail || sendErr.message };
         }
-        return { ...result, sent: !!sendData?.success, sendError: sendData?.error };
+        return {
+          ...result,
+          sent: !!sendData?.success,
+          emailInvalid: !!sendData?.email_invalid,
+          invalidEmail: sendData?.invalid_email,
+          sendError: sendData?.error,
+        };
       } catch (e) {
         return { ...result, sent: false, sendError: String(e) };
       }
@@ -162,10 +170,15 @@ export function useApproveRequest() {
       queryClient.invalidateQueries({ queryKey: ['ambassador-invite-send-events'] });
       if (result?.sent) {
         toast.success('Request approved — invite sent by text and email');
+      } else if (result?.emailInvalid) {
+        toast.warning(
+          'Approved. Invite created, but email was not sent because the contact email is invalid. Correct the email and resend the invite from Invite Governance.',
+        );
       } else {
-        toast.warning(`Approved, but invite delivery failed: ${result?.sendError || 'unknown error'}. Resend from Invite Governance.`);
+        toast.warning(`Approved and invite created, but delivery failed: ${result?.sendError || 'unknown error'}. Resend from Invite Governance.`);
       }
     },
+
     onError: (err: Error) => toast.error(err.message),
   });
 }

@@ -7,6 +7,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { isValidRecipientEmail, normalizeRecipientEmail } from '@/lib/validation/recipientEmail';
+
 
 export interface AmbassadorInvite {
   id: string;
@@ -198,20 +200,29 @@ export function useSendAmbassadorInvite() {
   });
 }
 
-// Resend an existing pending invite
+// Resend an existing pending invite. An optional corrected `email` is applied
+// to the SAME invite (same id, token, approval metadata and attribution) —
+// never a duplicate invite.
 export function useResendAmbassadorInvite() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ inviteId, channel = 'both' }: { inviteId: string; channel?: 'sms' | 'email' | 'both' }) => {
+    mutationFn: async ({ inviteId, channel = 'both', email }: { inviteId: string; channel?: 'sms' | 'email' | 'both'; email?: string }) => {
+      const corrected = normalizeRecipientEmail(email);
+      if (corrected && !isValidRecipientEmail(corrected)) {
+        throw new Error('That email is not a valid address (expected email@example.com).');
+      }
       const { data, error } = await supabase.functions.invoke('send-ambassador-invite', {
-        body: { invite_id: inviteId, channel },
+        body: { invite_id: inviteId, channel, ...(corrected ? { email: corrected } : {}) },
       });
       if (error) {
         const details = (error as any)?.context ? await (error as any).context.text() : error.message;
         throw new Error(details || error.message);
       }
       const r = data as any;
+      if (r?.email_invalid && !r?.success) {
+        throw new Error('Email not sent — the invite\'s contact email is invalid. Use "Fix email" to correct it, then resend.');
+      }
       if (!r?.success) throw new Error(r?.error || 'Resend failed');
       return r;
     },
@@ -224,6 +235,7 @@ export function useResendAmbassadorInvite() {
     onError: (err: Error) => toast.error(err.message),
   });
 }
+
 
 // Delivery history: which channels each invite was sent over, and when.
 // RLS: actors read their own send events; admin/owner read all.
