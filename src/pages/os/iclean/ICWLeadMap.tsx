@@ -19,6 +19,9 @@ const hasCoords = (l: ICWSourcedLead) =>
   Number.isFinite(Number(l.latitude)) &&
   Number.isFinite(Number(l.longitude));
 
+const formatLocation = (l: ICWSourcedLead) =>
+  [l.city, l.region || l.state, l.country].filter(Boolean).join(', ') || 'Unknown location';
+
 export default function ICWLeadMap() {
   const { data: leads = [], error } = useQuery({
     queryKey: ['icw-sourced-leads', 'map'],
@@ -42,8 +45,8 @@ export default function ICWLeadMap() {
           lng: Number(l.longitude),
           lat: Number(l.latitude),
           title: l.full_name || 'Unnamed lead',
-          subtitle: l.address || [l.city, l.state].filter(Boolean).join(', ') || '—',
-          groupKey: l.state || 'Unknown',
+          subtitle: l.address || formatLocation(l),
+          groupKey: [l.country || 'Unknown country', l.region || l.state || 'Unknown region'].join(' · '),
           statusKey: (l.status || 'prospect').toLowerCase(),
           meta: l as unknown as Record<string, any>,
         })),
@@ -74,12 +77,12 @@ export default function ICWLeadMap() {
             Mapping gap: {unmapped.length} lead{unmapped.length === 1 ? '' : 's'} without coordinates
           </p>
           <ul className="text-xs text-muted-foreground space-y-0.5">
-            {unmapped.slice(0, 10).map((l) => (
-              <li key={l.id} className="truncate">
-                {l.full_name || 'Unnamed lead'} ·{' '}
-                {l.address || [l.city, l.state].filter(Boolean).join(', ') || 'no address on file'}
-              </li>
-            ))}
+              {unmapped.slice(0, 10).map((l) => (
+                <li key={l.id} className="truncate">
+                  {l.full_name || 'Unnamed lead'} ·{' '}
+                  {l.address ? `${l.address} · ${formatLocation(l)}` : formatLocation(l)}
+                </li>
+              ))}
           </ul>
           {unmapped.length > 10 && (
             <p className="text-xs text-muted-foreground">+{unmapped.length - 10} more</p>
@@ -91,16 +94,26 @@ export default function ICWLeadMap() {
       <GeoMapView
         points={points}
         statusColors={STATUS_COLORS}
-        initialCenter={[-98.5, 39.8]}
-        initialZoom={3.6}
+        initialCenter={[-15, 35]}
+        initialZoom={2.1}
         clustering
         resolveGroup={(p) => p.groupKey ?? null}
-        groupFilterLabel="All States"
+        groupFilterLabel="All countries / regions"
         groupCountLabel={(n) => `${n} sourced leads`}
         searchPlaceholder="Search leads..."
         searchFields={(p) => {
           const l = p.meta as ICWSourcedLead;
-          return [l?.full_name || '', l?.address || '', l?.city || '', l?.source_platform || ''];
+          return [
+            l?.full_name || '',
+            l?.address || '',
+            l?.city || '',
+            l?.state || '',
+            l?.region || '',
+            l?.country || '',
+            l?.postal_code || '',
+            l?.source_platform || '',
+            ...(l?.category_groups ?? []),
+          ];
         }}
         renderPopupHTML={(p) => {
           const l = p.meta as ICWSourcedLead;
@@ -117,7 +130,7 @@ export default function ICWLeadMap() {
                 <p className="font-medium text-sm truncate">{l.full_name || 'Unnamed lead'}</p>
                 <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                   <MapPin className="h-3 w-3 shrink-0" />
-                  {l.address || [l.city, l.state].filter(Boolean).join(', ') || '—'}
+                  {l.address || formatLocation(l)}
                 </p>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {(l.category_groups ?? []).map((c) => (

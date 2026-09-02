@@ -11,13 +11,30 @@ const supabase = createClient(
 
 type Lead = Record<string, unknown>;
 
-const normalizePhoneKey = (raw: unknown): string | null => {
+const COUNTRY_ALIASES: Record<string, string> = {
+  us: 'US', usa: 'US', 'united states': 'US', ca: 'CA', canada: 'CA',
+  gb: 'GB', uk: 'GB', 'united kingdom': 'GB', au: 'AU', australia: 'AU',
+  ie: 'IE', ireland: 'IE',
+};
+const normalizeCountry = (raw: unknown): string => {
+  const key = String(raw ?? '').toLowerCase().trim();
+  return COUNTRY_ALIASES[key] ?? (key ? key.toUpperCase() : 'US');
+};
+const phoneDedupeKey = (raw: unknown, country: unknown): string | null => {
   if (!raw || typeof raw !== 'string') return null;
+  const cc = normalizeCountry(country);
   let d = raw.replace(/\D/g, '');
   if (!d) return null;
-  if (d.length === 11 && d.startsWith('1')) d = d.slice(1);
-  if (d.length < 10) return null;
-  return d.slice(-10);
+  if (cc === 'US' || cc === 'CA') {
+    if (d.length === 11 && d.startsWith('1')) d = d.slice(1);
+    if (d.length < 10) return null;
+    return `${cc}:${d.slice(-10)}`;
+  }
+  d = d.replace(/^00/, '').replace(/^011/, '');
+  const callingCode = cc === 'GB' ? '44' : cc === 'AU' ? '61' : cc === 'IE' ? '353' : '';
+  if (callingCode && d.length > callingCode.length + 4 && d.startsWith(callingCode)) d = d.slice(callingCode.length);
+  d = d.replace(/^0+/, '');
+  return d.length >= (cc === 'GB' ? 9 : cc === 'AU' ? 8 : cc === 'IE' ? 7 : 6) ? `${cc}:${d}` : null;
 };
 const normText = (raw: unknown): string =>
   String(raw ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -138,23 +155,27 @@ Deno.serve(async (req) => {
     const pool = [...(existingAll ?? [])] as Record<string, unknown>[];
 
     for (const input of BATCH) {
-      const phoneKey = normalizePhoneKey(input.phone);
+      const inputCountry = normalizeCountry(input.country);
+      const phoneKey = phoneDedupeKey(input.phone, inputCountry);
       const name = normText(input.full_name);
       const city = normText(input.city);
-      const state = normText(input.state);
+      const place = normText(input.region || input.state);
 
       let match: Record<string, unknown> | null = null;
       let reason = '';
       if (phoneKey) {
-        const m = pool.find((c) => normalizePhoneKey(c.phone) === phoneKey);
+        const m = pool.find(
+          (c) => normalizeCountry(c.country) === inputCountry && phoneDedupeKey(c.phone, c.country) === phoneKey,
+        );
         if (m) { match = m; reason = 'phone'; }
       }
       if (!match && name) {
         const m = pool.find(
           (c) =>
+            normalizeCountry(c.country) === inputCountry &&
             normText(c.full_name) === name &&
             normText(c.city) === city &&
-            normText(c.state) === state,
+            normText(c.region || c.state) === place,
         );
         if (m) { match = m; reason = 'name_city_state'; }
       }

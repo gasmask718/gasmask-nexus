@@ -27,6 +27,8 @@ export interface ICWSourcedLead {
   address: string | null;
   city: string | null;
   state: string | null;
+  region: string | null;
+  country: string | null;
   postal_code: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -47,14 +49,38 @@ export interface ICWSourcedLead {
 
 export type ICWLeadInput = Partial<Omit<ICWSourcedLead, 'id' | 'created_at' | 'updated_at'>>;
 
+// ── Country normalization ──────────────────────────────────────────────────
+// `country` is stored as the human label used at ingest time ('US', 'Canada',
+// 'United Kingdom', …). Dedupe compares ISO-ish codes, never raw labels.
+const COUNTRY_ALIASES: Record<string, string> = {
+  us: 'US', usa: 'US', 'u s a': 'US', 'united states': 'US', 'united states of america': 'US',
+  ca: 'CA', canada: 'CA',
+  gb: 'GB', uk: 'GB', 'united kingdom': 'GB', 'great britain': 'GB', england: 'GB', scotland: 'GB', wales: 'GB',
+  au: 'AU', australia: 'AU',
+  ie: 'IE', ireland: 'IE', eire: 'IE', 'republic of ireland': 'IE',
+};
+
+/** Default is 'US' — matches the icw_sourced_leads.country column default. */
+export function normalizeCountry(raw: string | null | undefined): string {
+  const key = (raw ?? '').toLowerCase().replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!key) return 'US';
+  return COUNTRY_ALIASES[key] ?? key.toUpperCase().replace(/\s+/g, '_');
+}
+
+// Calling code + how the national number is derived, per country.
+// NANP (US/CA) keeps the exact legacy last-10 behaviour.
+const COUNTRY_PHONE: Record<string, { code: string; nanp?: boolean; minLen: number }> = {
+  US: { code: '1', nanp: true, minLen: 10 },
+  CA: { code: '1', nanp: true, minLen: 10 },
+  GB: { code: '44', minLen: 9 },
+  AU: { code: '61', minLen: 8 },
+  IE: { code: '353', minLen: 7 },
+};
+
 /**
- * Canonical phone dedupe key.
- * Digits-only: strips spaces, dashes, parentheses, dots, plus signs, and a
- * leading "1" country code. "(213) 555-0123", "213-555-0123", "+1 213 555 0123"
- * and "12135550123" all collapse to "2135550123".
- *
- * This is the ONLY phone comparison allowed anywhere in ICW dedupe — never
- * compare raw phone strings.
+ * Canonical US/NANP phone key — UNCHANGED legacy behaviour.
+ * Digits-only, drops a leading "1", returns the last 10 digits.
+ * Use `phoneDedupeKey` for anything that may not be US.
  */
 export function normalizePhoneKey(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -67,6 +93,48 @@ export function normalizePhoneKey(raw: string | null | undefined): string | null
 
 /** Back-compat alias — same last-10 normalization used across the OS. */
 export const phoneLast10 = normalizePhoneKey;
+
+/**
+ * Country-scoped phone dedupe key: `"<COUNTRY>:<national significant number>"`.
+ *
+ * - US / CA (NANP): last 10 digits after dropping a leading 1 — identical to
+ *   normalizePhoneKey, so existing US matching is bit-for-bit unchanged.
+ * - GB / AU / IE: strip an international prefix (00/011), strip the country
+ *   calling code, then strip the national trunk "0".
+ * - Any other country: digits only, international prefix + trunk 0 removed.
+ *
+ * The country prefix means two rows in DIFFERENT countries can never match on
+ * phone, even when their trailing digits coincide.
+ */
+export function phoneDedupeKey(
+  raw: string | null | undefined,
+  country: string | null | undefined,
+): string | null {
+  if (!raw) return null;
+  const cc = normalizeCountry(country);
+  const rules = COUNTRY_PHONE[cc];
+
+  // Preserve the legacy NANP algorithm exactly, while adding the country
+  // namespace so US and CA numbers never match each other on phone alone.
+  if (rules?.nanp) {
+    const nationalKey = normalizePhoneKey(raw);
+    return nationalKey ? `${cc}:${nationalKey}` : null;
+  }
+
+  let digits = raw.replace(/\D/g, '');
+  if (!digits) return null;
+  // International access prefixes for non-NANP formats.
+  digits = digits.replace(/^00/, '').replace(/^011/, '');
+
+  const code = rules?.code;
+  if (code && digits.length > code.length + 4 && digits.startsWith(code)) {
+    digits = digits.slice(code.length);
+  }
+  digits = digits.replace(/^0+/, '');
+  const minLen = rules?.minLen ?? 6;
+  if (digits.length < minLen) return null;
+  return `${cc}:${digits}`;
+}
 
 
 export function normText(raw: string | null | undefined): string {
@@ -94,11 +162,12 @@ export interface DedupeMatch {
   reason: MatchReason;
 }
 
+
 async function fetchCandidates(input: ICWLeadInput): Promise<ICWSourcedLead[]> {
   // Pull a narrow candidate set, then decide the winner in ordered logic below.
   const filters: string[] = [];
   const license = normLicense(input.license_number);
-  const phoneKey = normalizePhoneKey(input.phone);
+  const phoneKey = phoneDedupeKey(input.phone, input.country);
 
   if (license) filters.push(`license_number.not.is.null`);
   if (phoneKey) filters.push(`phone.not.is.null`);
@@ -119,31 +188,40 @@ async function fetchCandidates(input: ICWLeadInput): Promise<ICWSourcedLead[]> {
 /**
  * Find the existing canonical lead for this input, if any.
  * Regulated leads (a license number present) use the licensed match order.
+ *
+ * Every locality-based match (license, phone, name+place) is scoped to the
+ * SAME normalized country, so an Ontario business can never collide with a
+ * US business that happens to share trailing digits or a name.
  */
 export async function findExistingLead(input: ICWLeadInput): Promise<DedupeMatch | null> {
-  const candidates = await fetchCandidates(input);
-  if (candidates.length === 0) return null;
+  const all = await fetchCandidates(input);
+  if (all.length === 0) return null;
 
+  const country = normalizeCountry(input.country);
   const license = normLicense(input.license_number);
-  const phoneKey = normalizePhoneKey(input.phone);
+  const phoneKey = phoneDedupeKey(input.phone, input.country);
   const name = normText(input.full_name);
   const addr = normText(input.address);
   const city = normText(input.city);
-  const state = normText(input.state);
+  const place = normText(input.region || input.state);
   const isRegulated = Boolean(license);
+
+  // Country-scoped candidate pool for locality-based matching.
+  const candidates = all.filter((c) => normalizeCountry(c.country) === country);
 
   if (isRegulated) {
     const byLicense = candidates.find((c) => normLicense(c.license_number) === license);
     if (byLicense) return { lead: byLicense, reason: 'license_number' };
   } else if (input.source_id && input.source_platform) {
-    const bySource = candidates.find(
+    // source_id is globally unique per platform — not country-scoped.
+    const bySource = all.find(
       (c) => c.source_id === input.source_id && c.source_platform === input.source_platform,
     );
     if (bySource) return { lead: bySource, reason: 'source_id' };
   }
 
   if (phoneKey) {
-    const byPhone = candidates.find((c) => normalizePhoneKey(c.phone) === phoneKey);
+    const byPhone = candidates.find((c) => phoneDedupeKey(c.phone, c.country) === phoneKey);
     if (byPhone) return { lead: byPhone, reason: 'phone' };
   }
 
@@ -154,16 +232,18 @@ export async function findExistingLead(input: ICWLeadInput): Promise<DedupeMatch
       );
       if (byNameAddr) return { lead: byNameAddr, reason: 'name_address' };
     }
-    if (!isRegulated && (city || state)) {
+    if (!isRegulated && (city || place)) {
       const byNameCityState = candidates.find(
         (c) =>
           normText(c.full_name) === name &&
           normText(c.city) === city &&
-          normText(c.state) === state,
+          normText(c.region || c.state) === place,
       );
       if (byNameCityState) return { lead: byNameCityState, reason: 'name_city_state' };
     }
   }
+
+
 
   return null;
 }
