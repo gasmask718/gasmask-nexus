@@ -49,6 +49,8 @@ async function calculateHealthFromData(storeId: string) {
     storeRes,
     inventoryRes,
     summaryRes,
+    invoiceDatesRes,
+
   ] = await Promise.all([
     supabase
       .from('delivery_checklists')
