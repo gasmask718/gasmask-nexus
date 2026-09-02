@@ -104,9 +104,19 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
   };
   const restock = restockMap[s.restock_status || ''] || { label: s.restock_status || '—', cls: 'text-muted-foreground' };
 
-  // Brand bar
-  const brandRows = brands.data || [];
-  const brandTotal = brandRows.reduce((acc, b) => acc + (b.sold_lifetime || 0), 0);
+  // Brand bar — canonical invoice-derived lifetime (same source as the
+  // "Lifetime sold" chip), rolled up by parent brand. The tube_sale_ledger
+  // KPI path double-counted brands that map to multiple SKU rows.
+  const brandTotals = new Map<string, number>();
+  (lifetimeByBrand.data ?? []).forEach((r) => {
+    if (!r.tubes) return;
+    brandTotals.set(r.parent_brand, (brandTotals.get(r.parent_brand) ?? 0) + r.tubes);
+  });
+  const brandRows = Array.from(brandTotals.entries())
+    .map(([brand_name, sold_lifetime]) => ({ brand_id: brand_name, brand_name, sold_lifetime }))
+    .sort((a, b) => b.sold_lifetime - a.sold_lifetime);
+  const brandTotal = brandRows.reduce((acc, b) => acc + b.sold_lifetime, 0);
+
 
   const brandInventory = inventoryByBrand.data ?? [];
   const lifetimeRows = lifetimeByBrand.data ?? [];
@@ -278,8 +288,10 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
               </div>
               <div className="min-w-0">
                 <p className="text-2xl font-bold text-blue-600">{fmt(onHand)}</p>
-                <p className={cn('text-xs', restock.cls)}>{restock.label}</p>
+                <p className="text-xs text-muted-foreground">total on hand · units</p>
+                <p className={cn('text-[11px]', restock.cls)}>{restock.label}</p>
               </div>
+
             </div>
           }
           expandedView={
