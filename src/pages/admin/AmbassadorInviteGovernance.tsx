@@ -17,17 +17,21 @@ import { useAllInvites, useRevokeInvite, useInvitesEnabled, useToggleInvites, us
 import { InviteDeliveryInfo } from '@/components/ambassador/InviteDeliveryInfo';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { isValidRecipientEmail, normalizeRecipientEmail } from '@/lib/validation/recipientEmail';
 
 export default function AmbassadorInviteGovernance() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
   const [revokeReason, setRevokeReason] = useState('');
+  const [fixTarget, setFixTarget] = useState<string | null>(null);
+  const [fixEmail, setFixEmail] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newChannel, setNewChannel] = useState<'sms' | 'email' | 'both'>('both');
+
 
   const { data: enabled, isLoading: enabledLoading } = useInvitesEnabled();
   const toggleInvites = useToggleInvites();
