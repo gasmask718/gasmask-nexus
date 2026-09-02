@@ -283,54 +283,18 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   const saveMutation = useSimulationSafeMutation({
     mutationFn: async (updates: { brand: string; count: number }[], isSimulation: boolean) => {
       const { data: { user } } = await supabase.auth.getUser();
-      for (const update of updates) {
-        const productId = resolveProductIdForBrand(update.brand);
-
-        let existing: { id: string } | null = null;
-        if (productId) {
-          const { data } = await supabase
-            .from('store_tube_inventory')
-            .select('id')
-            .eq('store_id', storeId)
-            .eq('product_id', productId)
-            .eq('is_simulation', isSimulation)
-            .maybeSingle();
-          existing = data;
-        }
-        if (!existing) {
-          const { data } = await supabase
-            .from('store_tube_inventory')
-            .select('id')
-            .eq('store_id', storeId)
-            .eq('brand', update.brand)
-            .eq('is_simulation', isSimulation)
-            .order('last_updated', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          existing = data;
-        }
-
-        if (existing) {
-          await supabase.from('store_tube_inventory').update({
-            current_tubes_left: update.count,
-            last_updated: new Date().toISOString(),
-            created_by: user?.id || 'system',
-            is_simulation: isSimulation,
-            ...(productId ? { product_id: productId } : {}),
-          }).eq('id', existing.id);
-        } else if (update.count > 0) {
-          await supabase.from('store_tube_inventory').insert({
-            store_id: storeId,
-            brand: update.brand,
-            product_id: productId,
-            current_tubes_left: update.count,
-            created_by: user?.id || 'system',
-            is_simulation: isSimulation,
-          });
-        }
-      }
+      // Canonical inventory write → store_tube_inventory_status
+      await writeStoreTubeCounts({
+        storeId,
+        updates: updates.map((u) => ({ brandId: u.brand, count: u.count })),
+        isSimulation,
+        actorId: user?.id ?? null,
+        actorRole: role ?? null,
+        method: 'store_profile',
+      });
       return updates;
     },
+
     simulationMessage: 'Saving inventory to simulation database...',
     onSuccess: () => {
       invalidateStoreInventoryQueries(queryClient, storeId);
