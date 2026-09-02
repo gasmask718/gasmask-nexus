@@ -685,8 +685,8 @@ const NationalWholesale = lazy(() => import('@/pages/portal/NationalWholesale'))
 const MarketplaceAdmin = lazy(() => import('@/pages/portal/MarketplaceAdmin'));
 
 // New Role Portals
-const DriverPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.DriverPortalPage })));
-const BikerPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.BikerPortalPage })));
+// Driver/Biker simulation shells are retained as source files for historical reference,
+// but their route entries now redirect to the canonical worker portals below.
 // AmbassadorPortalPage (mock simulation) removed — /portals/ambassador redirects to /ambassador/dashboard
 const StorePortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.StorePortalPage })));
 const WholesalerPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.WholesalerPortalPage })));
@@ -2898,9 +2898,9 @@ export default function AppRoutes() {
          <Route path="/portal/tasks" element={<OpsTaskListPage />} />
         <Route path="/portal/dashboard" element={<PortalDashboard />} />
 
-        {/* NEW ROLE PORTALS - Enterprise-grade (/portals/*) */}
-        <Route path="/portals/driver" element={<DriverPortalPage />} />
-        <Route path="/portals/biker" element={<BikerPortalPage />} />
+        {/* Retired simulation worker shells — canonical homes are under /portal/* */}
+        <Route path="/portals/driver" element={<Navigate to="/portal/driver" replace />} />
+        <Route path="/portals/biker" element={<Navigate to="/portal/biker" replace />} />
         {/* /portals/ambassador was a mock simulation page with hardcoded data — the real portal is /ambassador/dashboard */}
         <Route path="/portals/ambassador" element={<Navigate to="/ambassador/dashboard" replace />} />
         <Route path="/portals/store" element={<StorePortalPage />} />
