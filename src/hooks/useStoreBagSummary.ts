@@ -3,6 +3,8 @@
 // to produce lifetime / 30d / on-hand counters by product.
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { productIdForBrandId } from '@/lib/inventory/tubeSkuKeys';
+import { unitLabelForProductId } from '@/lib/inventory/unitLabel';
 
 export interface StoreBagSummary {
   lifetime_bags_sold: number;
@@ -43,11 +45,23 @@ export function useStoreBagSummary(storeId: string | undefined | null) {
         .eq('store_id', storeId);
       if (sErr) throw new Error(`BAG_SALES_FAILED: ${sErr.message}`);
 
-      const { data: inv, error: iErr } = await supabase
-        .from('bag_inventory_ledger' as any)
-        .select('product_id, bags_delta')
-        .eq('store_id', storeId);
+      // CURRENT ON-HAND comes from the canonical inventory table
+      // (store_tube_inventory_status), NOT bag_inventory_ledger — that ledger
+      // has no live writer and produced a false 0. Sales history below still
+      // comes from bag_sale_ledger.
+      const { data: statusRows, error: iErr } = await supabase
+        .from('store_tube_inventory_status')
+        .select('brand_id, current_tubes_left')
+        .eq('store_id', storeId)
+        .eq('is_simulation', false);
       if (iErr) throw new Error(`BAG_INV_FAILED: ${iErr.message}`);
+
+      const inv = (statusRows ?? [])
+        .map((r: any) => ({
+          product_id: productIdForBrandId(r.brand_id),
+          bags_delta: Number(r.current_tubes_left ?? 0),
+        }))
+        .filter((r) => r.product_id && unitLabelForProductId(r.product_id) === 'bags');
 
       const now = Date.now();
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();

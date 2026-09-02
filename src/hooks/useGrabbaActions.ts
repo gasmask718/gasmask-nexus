@@ -10,6 +10,7 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { writeStoreTubeCounts } from '@/lib/inventory/writeTubeCounts';
 import { toast } from 'sonner';
 import { useGrabbaPermissions } from '@/hooks/useGrabbaPermissions';
 import { useActivityLogger } from '@/hooks/useActivityFeed';
@@ -186,12 +187,14 @@ export function useGrabbaActions() {
   // INVENTORY ACTIONS (Floor 3)
   // ─────────────────────────────────────────────────────────────────────────────
   
+  // Canonical target: store_tube_inventory_status (store_tube_inventory RETIRED)
   const addInventory = useMutation({
     mutationFn: async (data: { store_id: string; brand: string; current_tubes_left: number; boxes_on_hand?: number }) => {
-      const { error } = await supabase
-        .from('store_tube_inventory')
-        .insert({ ...data, last_updated: new Date().toISOString() });
-      if (error) throw error;
+      await writeStoreTubeCounts({
+        storeId: data.store_id,
+        updates: [{ brandId: data.brand, count: data.current_tubes_left }],
+        method: 'grabba_ops',
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grabba-live-inventory'] });
@@ -205,8 +208,8 @@ export function useGrabbaActions() {
   const adjustInventory = useMutation({
     mutationFn: async (data: { id: string; current_tubes_left: number; adjustment_reason?: string }) => {
       const { error } = await supabase
-        .from('store_tube_inventory')
-        .update({ current_tubes_left: data.current_tubes_left, last_updated: new Date().toISOString() })
+        .from('store_tube_inventory_status')
+        .update({ current_tubes_left: data.current_tubes_left, tubes_updated_at: new Date().toISOString(), last_updated_at: new Date().toISOString() })
         .eq('id', data.id);
       if (error) throw error;
     },

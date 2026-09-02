@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { writeStoreTubeCounts } from "@/lib/inventory/writeTubeCounts";
+import { normalizeTubeBrandId } from "@/lib/inventory/tubeSkuKeys";
 
 // Grabba brand IDs from the database
 export const GRABBA_COMPANY_IDS = {
@@ -203,38 +205,31 @@ export function useUpdateStoreTubeInventory() {
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
 
+      // Canonical inventory table is store_tube_inventory_status.
+      // store_tube_inventory is RETIRED (write-guarded at the DB).
       for (const update of brandUpdates) {
-        // Get current inventory - use most recent if multiple records exist
+        const brandId = normalizeTubeBrandId(update.brand);
+        if (!brandId) continue;
+
         const { data: existing } = await supabase
-          .from('store_tube_inventory')
-          .select('id, current_tubes_left')
+          .from('store_tube_inventory_status')
+          .select('current_tubes_left')
           .eq('store_id', storeId)
-          .eq('brand', update.brand)
-          .order('last_updated', { ascending: false })
-          .limit(1)
+          .eq('brand_id', brandId)
+          .eq('is_simulation', false)
           .maybeSingle();
 
-        if (existing) {
-          // Update existing - ADD to current count
-          await supabase
-            .from('store_tube_inventory')
-            .update({
-              current_tubes_left: (existing.current_tubes_left || 0) + update.quantity,
-              last_updated: new Date().toISOString(),
-              created_by: user?.id || 'system',
-            })
-            .eq('id', existing.id);
-        } else {
-          // Create new record
-          await supabase
-            .from('store_tube_inventory')
-            .insert({
-              store_id: storeId,
-              brand: update.brand,
-              current_tubes_left: update.quantity,
-              created_by: user?.id || 'system',
-            });
-        }
+        // Visit deliveries ADD to the current count.
+        const nextCount = (existing?.current_tubes_left || 0) + update.quantity;
+
+        await writeStoreTubeCounts({
+          storeId,
+          updates: [{ brandId, count: nextCount }],
+          isSimulation: false,
+          actorId: user?.id ?? null,
+          actorRole: null,
+          method: 'visit',
+        });
       }
     },
     onSuccess: (_, variables) => {

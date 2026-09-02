@@ -37,7 +37,7 @@ export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInvento
         {
           event: '*',
           schema: 'public',
-          table: 'store_tube_inventory',
+          table: 'store_tube_inventory_status',
           filter: `store_id=eq.${storeId}`,
         },
         () => queryClient.invalidateQueries({ queryKey: ['store-inventory-by-sku', storeId] }),
@@ -46,7 +46,13 @@ export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInvento
     return () => { supabase.removeChannel(channel); };
   }, [storeId, queryClient]);
 
-  const totalTubes = skus?.reduce((sum, s) => sum + s.tubes_remaining, 0) ?? 0;
+  // Tubes and bags are DIFFERENT units — never summed under a "tubes" label.
+  const tubesOnHand = skus
+    ?.filter((s) => unitLabelForProductId(s.product_id) === 'tubes')
+    .reduce((sum, s) => sum + s.tubes_remaining, 0) ?? 0;
+  const bagsOnHand = skus
+    ?.filter((s) => unitLabelForProductId(s.product_id) === 'bags')
+    .reduce((sum, s) => sum + s.tubes_remaining, 0) ?? 0;
   const lastUpdated = skus
     ?.map((s) => s.last_updated)
     .filter((d): d is string => !!d)
@@ -77,10 +83,16 @@ export function StoreTubeInventoryCard({ storeId, onAddCount }: StoreTubeInvento
           </div>
         ) : (
           <>
-            {/* Total summary across all 9 SKUs */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <span className="font-medium">Total Tubes</span>
-              <span className="text-2xl font-bold text-primary">{totalTubes.toLocaleString()}</span>
+            {/* Unit-separated totals across the canonical SKUs */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
+                <span className="font-medium">Tubes On Hand</span>
+                <span className="text-2xl font-bold text-primary">{tubesOnHand.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <span className="font-medium">Bags On Hand</span>
+                <span className="text-2xl font-bold text-amber-600">{bagsOnHand.toLocaleString()}</span>
+              </div>
             </div>
 
             {/* All 9 canonical SKUs (always rendered, status icon shows pitch state) */}
