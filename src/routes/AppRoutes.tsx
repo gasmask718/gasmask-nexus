@@ -3638,7 +3638,7 @@ export default function AppRoutes() {
       } />
 
       {/* Admin Ambassador Invite Governance */}
-      <Route path="/admin/ambassador-invites" element={<Navigate to="/admin/field-assignments" replace />} />
+      <Route path="/admin/ambassador-invites" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><AmbassadorInviteGovernance /></RequireRole></ProtectedRoute>} />
 
       {/* Admin Payouts */}
       <Route path="/admin/payouts" element={
