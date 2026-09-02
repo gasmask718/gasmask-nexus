@@ -142,6 +142,44 @@ const BATCH: Lead[] = [
   },
 ];
 
+// ── Registered / legal address vs verified operating location ──────────────
+// Mirrors src/lib/icw/leadIngestion.ts. A company-registry address is a LEGAL
+// address: no map pin, mapping-gap treatment, note stamped, unless a SECOND
+// reliable source confirms operations there (`operating_confirmed_by`).
+const REGISTERED_ADDRESS_ONLY_MARKER = 'REGISTERED-ADDRESS-ONLY';
+const REGISTRY_SOURCE_PLATFORMS = new Set([
+  'companies_house', 'companies-house', 'uk_companies_house', 'cro', 'cro_ie', 'irish_cro',
+  'asic', 'abr', 'corporations_canada', 'ontario_business_registry', 'opencorporates',
+  'sos_business_registry', 'secretary_of_state', 'state_business_registry',
+]);
+
+const isRegisteredAddressOnly = (input: Lead): boolean => {
+  if (input.operating_confirmed_by) return false;
+  if (input.registry_registered_office === true) return true;
+  const platform = String(input.source_platform ?? '').toLowerCase().trim().replace(/\s+/g, '_');
+  if (platform && REGISTRY_SOURCE_PLATFORMS.has(platform)) return true;
+  return /registered\s+(office|address)/i.test(String(input.notes ?? ''));
+};
+
+/** Strips ingest-only meta keys and forces mapping-gap treatment when required. */
+const prepareLead = (input: Lead): { row: Lead; registeredAddressOnly: boolean } => {
+  const { registry_registered_office: _r, operating_confirmed_by: _o, ...rest } = input;
+  const row = { ...rest } as Lead;
+  const registeredAddressOnly = isRegisteredAddressOnly(input);
+  if (registeredAddressOnly) {
+    row.latitude = null;
+    row.longitude = null;
+    const note = String(row.notes ?? '');
+    row.notes = note.includes(REGISTERED_ADDRESS_ONLY_MARKER)
+      ? note
+      : [
+          `${REGISTERED_ADDRESS_ONLY_MARKER}: address is a company-registry registered/legal office, not a confirmed operating location. No map pin until a second reliable source confirms operations at this address.`,
+          note,
+        ].filter(Boolean).join(' | ');
+  }
+  return { row, registeredAddressOnly };
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -153,8 +191,19 @@ Deno.serve(async (req) => {
       .limit(5000);
     if (readErr) throw readErr;
     const pool = [...(existingAll ?? [])] as Record<string, unknown>[];
+    // Ids inserted by THIS run — a later match against one of these is a
+    // same-run self-match (a fresh insert), never a pre-existing duplicate.
+    const insertedThisRun = new Set<string>();
 
-    for (const input of BATCH) {
+    let newLeadCount = 0;
+    let sameRunSelfMatchCount = 0;
+    let preExistingDuplicateCount = 0;
+    let registeredAddressOnlyCount = 0;
+
+    for (const rawInput of BATCH) {
+      const { row: input, registeredAddressOnly } = prepareLead(rawInput);
+      if (registeredAddressOnly) registeredAddressOnlyCount++;
+
       const inputCountry = normalizeCountry(input.country);
       const phoneKey = phoneDedupeKey(input.phone, inputCountry);
       const name = normText(input.full_name);
@@ -189,6 +238,7 @@ Deno.serve(async (req) => {
           if (k === 'status' && match.status !== 'prospect') continue;
           patch[k] = v;
         }
+        if (registeredAddressOnly) { patch.latitude = null; patch.longitude = null; }
         const { data, error } = await supabase
           .from('icw_sourced_leads')
           .update({ ...patch, updated_at: new Date().toISOString() })
@@ -196,7 +246,16 @@ Deno.serve(async (req) => {
           .select();
         if (error) throw error;
         if (!data || data.length === 0) throw new Error(`zero rows updated for ${name}`);
-        results.push({ name: input.full_name, action: 'updated', reason });
+
+        const selfMatch = insertedThisRun.has(String(match.id));
+        if (selfMatch) sameRunSelfMatchCount++; else preExistingDuplicateCount++;
+        results.push({
+          name: input.full_name,
+          outcome: selfMatch ? 'same_run_self_match' : 'duplicate_preexisting',
+          counts_as: selfMatch ? 'fresh insert' : 'duplicate',
+          reason,
+          registered_address_only: registeredAddressOnly,
+        });
       } else {
         const { data, error } = await supabase
           .from('icw_sourced_leads')
@@ -205,7 +264,15 @@ Deno.serve(async (req) => {
         if (error) throw error;
         if (!data || data.length === 0) throw new Error(`zero rows inserted for ${name}`);
         pool.push(data[0]);
-        results.push({ name: input.full_name, action: 'inserted', id: data[0].id });
+        insertedThisRun.add(String(data[0].id));
+        newLeadCount++;
+        results.push({
+          name: input.full_name,
+          outcome: 'inserted',
+          counts_as: 'fresh insert',
+          id: data[0].id,
+          registered_address_only: registeredAddressOnly,
+        });
       }
     }
 
@@ -213,9 +280,22 @@ Deno.serve(async (req) => {
       .from('icw_sourced_leads')
       .select('id', { count: 'exact', head: true });
 
-    return new Response(JSON.stringify({ ok: true, results, total: count }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        summary: {
+          new_inserts: newLeadCount,
+          same_run_self_matches: sameRunSelfMatchCount,
+          pre_existing_duplicates: preExistingDuplicateCount,
+          net_new_rows: newLeadCount + sameRunSelfMatchCount,
+          registered_address_only: registeredAddressOnlyCount,
+          leads_submitted: BATCH.length,
+        },
+        results,
+        total: count,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
   } catch (e) {
     return new Response(
       JSON.stringify({ ok: false, error: String(e), results }),
@@ -223,3 +303,4 @@ Deno.serve(async (req) => {
     );
   }
 });
+
