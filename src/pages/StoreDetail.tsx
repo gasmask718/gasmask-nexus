@@ -594,8 +594,10 @@ const StoreDetail = () => {
             <div className="space-y-4">
               <TubesSoldHeroStrip storeId={storeId} />
               <StoreProfileInventoryGroup storeId={storeId} role="admin" />
+              <ReplenishmentAI storeId={storeId} />
               <details className="rounded-md border border-border/50 p-4">
                 <summary className="cursor-pointer text-sm font-medium">Bag history & velocity</summary>
+
                 <div className="mt-4"><BagsSection storeId={storeId} /></div>
               </details>
             </div>
@@ -696,7 +698,7 @@ const StoreDetail = () => {
                 </TabsContent>
               </Tabs>
               {isFeatureEnabled('routeCheckinsPanel') && <RouteIntelligence storeId={storeId} storeName={store.name} />}
-              <ReplenishmentAI storeId={storeId} />
+              
             </div>
           </StoreProfileSection>
 
