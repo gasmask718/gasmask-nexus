@@ -47,6 +47,10 @@ async function calculateHealthFromData(storeId: string) {
     checklistsRes,
     contactsRes,
     storeRes,
+    inventoryRes,
+    summaryRes,
+    invoiceDatesRes,
+
   ] = await Promise.all([
     supabase
       .from('delivery_checklists')
@@ -54,9 +58,11 @@ async function calculateHealthFromData(storeId: string) {
       .eq('store_id', storeId)
       .gte('visit_date', thirtyDaysAgo.toISOString().split('T')[0])
       .order('visit_date', { ascending: false }),
+    // store_contacts has no `responsiveness` column — the old select failed
+    // silently and made every store look like it had zero verified contacts.
     supabase
       .from('store_contacts')
-      .select('id, name, phone, responsiveness')
+      .select('id, name, phone, responsiveness_status, responsive_by_call, responsive_by_text, owner_confirmed, verified_at')
       .is('deleted_at', null)
       .eq('store_id', storeId)
       .limit(10),
@@ -65,11 +71,48 @@ async function calculateHealthFromData(storeId: string) {
       .select('visit_frequency_target, sells_flowers, responsiveness, last_visit_date')
       .eq('id', storeId)
       .maybeSingle(),
+    // Canonical inventory (P0 source of truth), not checklist snapshots.
+    supabase
+      .from('store_tube_inventory_status')
+      .select('brand_id, current_tubes_left')
+      .eq('store_id', storeId)
+      .eq('is_simulation', false),
+    // Canonical order cadence from the same view the Account Summary uses.
+    (supabase as any)
+      .from('v_store_summary')
+      .select('last_order_date, days_since_last_order, total_sales')
+      .eq('store_id', storeId)
+      .maybeSingle(),
+    // Invoice dates → average reorder gap (existing canonical order records).
+    supabase
+      .from('invoices')
+      .select('business_date')
+      .eq('store_id', storeId)
+      .is('deleted_at', null)
+      .order('business_date', { ascending: false })
+      .limit(12),
   ]);
+
 
   const checklists = checklistsRes.data || [];
   const contacts = contactsRes.data || [];
   const store = storeRes.data;
+  const inventoryRows = (inventoryRes.data || []) as any[];
+  const summary = (summaryRes as any)?.data as
+    | { last_order_date: string | null; days_since_last_order: number | null; total_sales: number | null }
+    | null;
+  const invoiceDates = ((invoiceDatesRes as any)?.data || [])
+    .map((r: any) => r.business_date)
+    .filter(Boolean) as string[];
+  let avgDaysBetweenOrders: number | null = null;
+  if (invoiceDates.length >= 2) {
+    const ts = invoiceDates.map((d) => new Date(d).getTime()).sort((a, b) => b - a);
+    const gaps: number[] = [];
+    for (let i = 0; i < ts.length - 1; i++) gaps.push((ts[i] - ts[i + 1]) / 86400000);
+    const positive = gaps.filter((g) => g > 0);
+    if (positive.length) avgDaysBetweenOrders = positive.reduce((s, g) => s + g, 0) / positive.length;
+  }
+
 
   // Derive inputs from data
   const expectedVisits = store?.visit_frequency_target
@@ -81,18 +124,29 @@ async function calculateHealthFromData(storeId: string) {
     ? Math.floor((Date.now() - new Date(lastVisitDate as string).getTime()) / (1000 * 60 * 60 * 24))
     : null;
 
-  // Inventory: check latest checklist for brand coverage
-  const latestChecklist = checklists[0];
-  const invUpdates = (latestChecklist?.inventory_updates || {}) as Record<string, any>;
-  const brandsWithData = Object.keys(invUpdates).length;
+  // Inventory accuracy: canonical parent brands with a tracked SKU count
+  const trackedBrands = new Set<string>();
+  inventoryRows.forEach((r) => {
+    if (r.current_tubes_left == null) return;
+    const key = String(r.brand_id || '').toLowerCase().replace(/[^a-z]/g, '');
+    const parent = CANONICAL_BRAND_IDS.find((b) => key.includes(b.replace(/[^a-z]/g, '')));
+    if (parent) trackedBrands.add(parent);
+  });
+  const brandsWithData = trackedBrands.size;
+
+  const avgInventoryCount = inventoryRows.length
+    ? inventoryRows.reduce((s, r) => s + Number(r.current_tubes_left ?? 0), 0) / inventoryRows.length
+    : null;
 
   // Contact reliability
-  const hasResponsive = contacts.some((c: any) => c.responsiveness === 'responsive') ||
-    store?.responsiveness === 'call' || store?.responsiveness === 'text' || store?.responsiveness === 'both';
+  const hasResponsive = contacts.some((c: any) =>
+    c.responsiveness_status === 'responsive' || c.responsive_by_call || c.responsive_by_text || !!c.verified_at || c.owner_confirmed,
+  ) || store?.responsiveness === 'call' || store?.responsiveness === 'text' || store?.responsiveness === 'both';
   const hasBossName = contacts.some((c: any) => c.name && c.name.length > 0);
   const hasBossPhone = contacts.some((c: any) => c.phone && c.phone.length > 0);
 
   // Stickers from latest checklist
+  const latestChecklist = checklists[0];
   const stickerData = (latestChecklist?.sticker_status || {}) as Record<string, any>;
   const tasksCompleted = (latestChecklist?.tasks_completed || {}) as Record<string, any>;
 
@@ -102,16 +156,18 @@ async function calculateHealthFromData(storeId: string) {
     return g.new_store_name || g.new_store_address;
   }).length;
 
+  const daysSinceLastOrder = summary?.days_since_last_order ?? null;
+
   const result = calculateStoreHealth({
     visitsLast30Days: checklists.length,
     expectedVisitsPerMonth: expectedVisits,
     daysSinceLastVisit,
     brandsWithInventoryData: brandsWithData,
     totalBrands: CANONICAL_BRAND_IDS.length,
-    avgInventoryCount: null,
-    hasRecentOrder: false,
-    avgDaysBetweenOrders: null,
-    daysSinceLastOrder: null,
+    avgInventoryCount,
+    hasRecentOrder: daysSinceLastOrder != null && daysSinceLastOrder <= 30,
+    avgDaysBetweenOrders,
+    daysSinceLastOrder,
     hasResponsiveContact: hasResponsive,
     bossNameConfirmed: hasBossName,
     bossPhoneConfirmed: hasBossPhone,
@@ -120,6 +176,7 @@ async function calculateHealthFromData(storeId: string) {
     sellsFlowers: store?.sells_flowers ?? null,
     newLeadsCaptured: newLeads,
   });
+
 
   return {
     ...result,

@@ -2,7 +2,6 @@ import { Flame, TrendingUp, TrendingDown, Minus, Snowflake, Boxes, Calendar, Dol
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStoreTubeSummary } from '@/hooks/useStoreTubeSummary';
-import { useStoreTubeBrandsKpi } from '@/hooks/useStoreTubeBrandsKpi';
 import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { useStoreLifetimeByBrand } from '@/hooks/useStoreLifetimeByBrand';
 import { useStoreSoldByBrandWindow } from '@/hooks/useStoreSoldByBrandWindow';
@@ -45,7 +44,7 @@ const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString();
 
 export function TubesSoldHeroStrip({ storeId }: Props) {
   const summary = useStoreTubeSummary(storeId);
-  const brands = useStoreTubeBrandsKpi(storeId);
+// brand mix is derived from useStoreLifetimeByBrand below
   const inventoryByBrand = useStoreInventoryBySku(storeId);
   const lifetimeByBrand = useStoreLifetimeByBrand(storeId);
   const last30ByBrand = useStoreSoldByBrandWindow(storeId, 'last_30_days');
@@ -104,9 +103,19 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
   };
   const restock = restockMap[s.restock_status || ''] || { label: s.restock_status || '—', cls: 'text-muted-foreground' };
 
-  // Brand bar
-  const brandRows = brands.data || [];
-  const brandTotal = brandRows.reduce((acc, b) => acc + (b.sold_lifetime || 0), 0);
+  // Brand bar — canonical invoice-derived lifetime (same source as the
+  // "Lifetime sold" chip), rolled up by parent brand. The tube_sale_ledger
+  // KPI path double-counted brands that map to multiple SKU rows.
+  const brandTotals = new Map<string, number>();
+  (lifetimeByBrand.data ?? []).forEach((r) => {
+    if (!r.tubes) return;
+    brandTotals.set(r.parent_brand, (brandTotals.get(r.parent_brand) ?? 0) + r.tubes);
+  });
+  const brandRows = Array.from(brandTotals.entries())
+    .map(([brand_name, sold_lifetime]) => ({ brand_id: brand_name, brand_name, sold_lifetime }))
+    .sort((a, b) => b.sold_lifetime - a.sold_lifetime);
+  const brandTotal = brandRows.reduce((acc, b) => acc + b.sold_lifetime, 0);
+
 
   const brandInventory = inventoryByBrand.data ?? [];
   const lifetimeRows = lifetimeByBrand.data ?? [];
@@ -278,8 +287,10 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
               </div>
               <div className="min-w-0">
                 <p className="text-2xl font-bold text-blue-600">{fmt(onHand)}</p>
-                <p className={cn('text-xs', restock.cls)}>{restock.label}</p>
+                <p className="text-xs text-muted-foreground">total on hand · units</p>
+                <p className={cn('text-[11px]', restock.cls)}>{restock.label}</p>
               </div>
+
             </div>
           }
           expandedView={
@@ -303,7 +314,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
               <div className="border-t border-border pt-2 space-y-0.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
-                  <span className="text-sm font-bold text-blue-600">{fmt(onHand)} tubes</span>
+                  <span className="text-sm font-bold text-blue-600">{fmt(onHand)} units (tubes + bags)</span>
                 </div>
                 {(() => {
                   const latest = brandInventory.map(b => b.last_updated).filter((d): d is string => !!d).sort().reverse()[0];

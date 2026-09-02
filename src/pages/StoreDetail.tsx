@@ -52,7 +52,11 @@ import {
   StoreProfileFinanceGroup,
   StoreProfileInventoryGroup,
   StoreProfileNotesGroup,
-  StoreProfileRelationshipGroup,
+  StoreRelationshipOverview,
+  StoreRelationshipCommunication,
+  StoreRelationshipBriefing,
+  StoreRelationshipCadence,
+
   StoreProfileTasksGroup,
 } from "@/components/store/SharedStoreCoreIntelligence";
 import { TubesSoldHeroStrip } from "@/components/store-profile/TubesSoldHeroStrip";
@@ -590,8 +594,10 @@ const StoreDetail = () => {
             <div className="space-y-4">
               <TubesSoldHeroStrip storeId={storeId} />
               <StoreProfileInventoryGroup storeId={storeId} role="admin" />
+              <ReplenishmentAI storeId={storeId} />
               <details className="rounded-md border border-border/50 p-4">
                 <summary className="cursor-pointer text-sm font-medium">Bag history & velocity</summary>
+
                 <div className="mt-4"><BagsSection storeId={storeId} /></div>
               </details>
             </div>
@@ -642,13 +648,14 @@ const StoreDetail = () => {
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="communication">Communication</TabsTrigger>
                 <TabsTrigger value="ai">AI Insights</TabsTrigger>
-                <TabsTrigger value="preferences">Preferences</TabsTrigger>
+                <TabsTrigger value="preferences">Preferences & Cadence</TabsTrigger>
               </TabsList>
-              <TabsContent value="overview" className="mt-4"><StoreProfileRelationshipGroup storeId={storeId} storeName={store.name} /></TabsContent>
-              <TabsContent value="communication" className="mt-4"><CommunicationStats entityType="store" entityId={storeId} /></TabsContent>
-              <TabsContent value="ai" className="mt-4 space-y-4"><FollowUpAIRecommendation storeId={storeId} /><AIRelationshipHealth entityType="store" entityId={storeId} /></TabsContent>
-              <TabsContent value="preferences" className="mt-4 space-y-4"><StoreCommunicationPreferences storeId={storeId} />{storeMasterId && <StoreCadenceOverrideCard storeId={storeMasterId} relationshipStatus={(store as any).relationship_status ?? null} />}</TabsContent>
+              <TabsContent value="overview" className="mt-4"><StoreRelationshipOverview storeId={storeId} /></TabsContent>
+              <TabsContent value="communication" className="mt-4 space-y-4"><StoreRelationshipCommunication storeId={storeId} storeName={store.name} /><CommunicationStats entityType="store" entityId={storeId} /></TabsContent>
+              <TabsContent value="ai" className="mt-4 space-y-4"><StoreRelationshipBriefing storeId={storeId} /><FollowUpAIRecommendation storeId={storeId} /><AIRelationshipHealth entityType="store" entityId={storeId} /></TabsContent>
+              <TabsContent value="preferences" className="mt-4 space-y-4"><StoreRelationshipCadence storeId={storeId} storeName={store.name} /><StoreCommunicationPreferences storeId={storeId} />{storeMasterId && <StoreCadenceOverrideCard storeId={storeMasterId} relationshipStatus={(store as any).relationship_status ?? null} />}</TabsContent>
             </Tabs>
+
           </StoreProfileSection>
 
           <StoreProfileSection
@@ -691,7 +698,7 @@ const StoreDetail = () => {
                 </TabsContent>
               </Tabs>
               {isFeatureEnabled('routeCheckinsPanel') && <RouteIntelligence storeId={storeId} storeName={store.name} />}
-              <ReplenishmentAI storeId={storeId} />
+              
             </div>
           </StoreProfileSection>
 
