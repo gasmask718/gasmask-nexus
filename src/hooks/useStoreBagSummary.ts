@@ -3,6 +3,8 @@
 // to produce lifetime / 30d / on-hand counters by product.
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { productIdForBrandId } from '@/lib/inventory/tubeSkuKeys';
+import { unitLabelForProductId } from '@/lib/inventory/unitLabel';
 
 export interface StoreBagSummary {
   lifetime_bags_sold: number;
