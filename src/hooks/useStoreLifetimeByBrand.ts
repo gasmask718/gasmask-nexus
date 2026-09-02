@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CANONICAL_TUBE_SKUS, resolveProductIdForBrand, type SkuStatus } from '@/lib/inventory/skuDisplay';
+import { CANONICAL_TUBE_SKUS, type SkuStatus } from '@/lib/inventory/skuDisplay';
+import { productIdForBrandId } from '@/lib/inventory/tubeSkuKeys';
 
 export interface BrandLifetime {
   product_id: string;
