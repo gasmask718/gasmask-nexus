@@ -57,6 +57,7 @@ export default function OpsAccessGate({ children }: OpsAccessGateProps) {
       return;
     }
 
+    grantedOnce.current = true;
     setAccessState('granted');
   }, [user, profileData, profileLoading, systemRoles, rolesLoading, device, deviceLoading]);
 
