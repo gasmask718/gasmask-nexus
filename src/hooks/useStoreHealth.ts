@@ -101,6 +101,18 @@ async function calculateHealthFromData(storeId: string) {
   const summary = (summaryRes as any)?.data as
     | { last_order_date: string | null; days_since_last_order: number | null; total_sales: number | null }
     | null;
+  const invoiceDates = ((invoiceDatesRes as any)?.data || [])
+    .map((r: any) => r.business_date)
+    .filter(Boolean) as string[];
+  let avgDaysBetweenOrders: number | null = null;
+  if (invoiceDates.length >= 2) {
+    const ts = invoiceDates.map((d) => new Date(d).getTime()).sort((a, b) => b - a);
+    const gaps: number[] = [];
+    for (let i = 0; i < ts.length - 1; i++) gaps.push((ts[i] - ts[i + 1]) / 86400000);
+    const positive = gaps.filter((g) => g > 0);
+    if (positive.length) avgDaysBetweenOrders = positive.reduce((s, g) => s + g, 0) / positive.length;
+  }
+
 
   // Derive inputs from data
   const expectedVisits = store?.visit_frequency_target
