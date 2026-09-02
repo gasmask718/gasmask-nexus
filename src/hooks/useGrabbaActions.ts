@@ -207,8 +207,8 @@ export function useGrabbaActions() {
   const adjustInventory = useMutation({
     mutationFn: async (data: { id: string; current_tubes_left: number; adjustment_reason?: string }) => {
       const { error } = await supabase
-        .from('store_tube_inventory')
-        .update({ current_tubes_left: data.current_tubes_left, last_updated: new Date().toISOString() })
+        .from('store_tube_inventory_status')
+        .update({ current_tubes_left: data.current_tubes_left, tubes_updated_at: new Date().toISOString(), last_updated_at: new Date().toISOString() })
         .eq('id', data.id);
       if (error) throw error;
     },
