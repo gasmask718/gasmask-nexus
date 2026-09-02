@@ -58,7 +58,7 @@ export function useMyAssignedRoutes(): MyAssignedRoutesResult {
       // 1. Fetch routes assigned to this worker for today or active status
       const { data: routeData, error: routeError } = await supabase
         .from('routes')
-        .select('id, date, type, territory, status, brand_ids')
+        .select('id, name, date, type, territory, status, brand_ids')
         .eq('assigned_to', userId)
         .or(
           `and(gte(date,${today}),lte(date,${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]})),status.in.(pending,active,in_progress,paused)`

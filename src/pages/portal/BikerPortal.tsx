@@ -13,9 +13,9 @@ import {
   ProfilePage,
   BikerDeliveryTasks,
   EndOfDayNotes,
+  AssignedRoutesPage,
 } from "@/components/portal/field";
 import { AssignedOrdersPage } from "@/components/portal/field/AssignedOrdersPage";
-import BikerTodaysRoutesPage from "@/pages/delivery/biker/TodaysRoutesPage";
 import { PortalAuthGuard } from "@/components/portal/PortalAuthGuard";
 import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 import { Button } from "@/components/ui/button";
@@ -47,8 +47,8 @@ export default function BikerPortal() {
           <Route path="delivery" element={<MakeDeliveryPage portalType="biker" />} />
           <Route path="delivery/:deliveryId" element={<MakeDeliveryPage portalType="biker" />} />
           <Route path="delivery-tasks" element={<BikerDeliveryTasks />} />
-          <Route path="route" element={<BikerTodaysRoutesPage />} />
-          <Route path="routes" element={<BikerTodaysRoutesPage />} />
+          <Route path="route" element={<AssignedRoutesPage portalType="biker" />} />
+          <Route path="routes" element={<AssignedRoutesPage portalType="biker" />} />
           <Route path="assigned-orders" element={<AssignedOrdersPage portalType="biker" />} />
           <Route path="changes" element={<ChangeListsPage portalType="biker" />} />
           <Route path="history" element={<HistoryPage portalType="biker" />} />

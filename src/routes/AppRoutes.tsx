@@ -2898,9 +2898,9 @@ export default function AppRoutes() {
          <Route path="/portal/tasks" element={<OpsTaskListPage />} />
         <Route path="/portal/dashboard" element={<PortalDashboard />} />
 
-        {/* NEW ROLE PORTALS - Enterprise-grade (/portals/*) */}
-        <Route path="/portals/driver" element={<DriverPortalPage />} />
-        <Route path="/portals/biker" element={<BikerPortalPage />} />
+        {/* Retired simulation worker shells — canonical homes are under /portal/* */}
+        <Route path="/portals/driver" element={<Navigate to="/portal/driver" replace />} />
+        <Route path="/portals/biker" element={<Navigate to="/portal/biker" replace />} />
         {/* /portals/ambassador was a mock simulation page with hardcoded data — the real portal is /ambassador/dashboard */}
         <Route path="/portals/ambassador" element={<Navigate to="/ambassador/dashboard" replace />} />
         <Route path="/portals/store" element={<StorePortalPage />} />
