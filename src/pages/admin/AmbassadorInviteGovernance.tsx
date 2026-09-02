@@ -205,6 +205,11 @@ export default function AmbassadorInviteGovernance() {
                 <TableRow key={inv.id}>
                   <TableCell className="font-medium">
                     {inv.email || inv.phone || <span className="text-muted-foreground">—</span>}
+                    {inv.email && !isValidRecipientEmail(inv.email) && (
+                      <Badge variant="outline" className="ml-2 border-destructive/40 text-destructive">
+                        Invalid email — not sent
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground font-mono">
                     {inv.invited_by_user_id?.slice(0, 8)}...
@@ -224,6 +229,16 @@ export default function AmbassadorInviteGovernance() {
                       : '—'}
                   </TableCell>
                   <TableCell>
+                    {inv.status === 'pending' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mr-2"
+                        onClick={() => { setFixTarget(inv.id); setFixEmail(inv.email || ''); }}
+                      >
+                        Fix email
+                      </Button>
+                    )}
                     {inv.status === 'pending' && (inv.email || inv.phone) && (
                       <Button
                         variant="outline"
@@ -235,6 +250,7 @@ export default function AmbassadorInviteGovernance() {
                         Resend
                       </Button>
                     )}
+
                     {inv.status === 'pending' && (
                       <Button
                         variant="destructive"
