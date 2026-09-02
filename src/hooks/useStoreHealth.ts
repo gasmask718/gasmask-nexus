@@ -101,14 +101,16 @@ async function calculateHealthFromData(storeId: string) {
     ? Math.floor((Date.now() - new Date(lastVisitDate as string).getTime()) / (1000 * 60 * 60 * 24))
     : null;
 
-  // Inventory accuracy: distinct canonical SKUs with a tracked count
-  const trackedBrands = new Set(
-    inventoryRows
-      .filter((r) => r.current_tubes_left != null)
-      .map((r) => String(r.brand_id || '').toLowerCase())
-      .filter(Boolean),
-  );
+  // Inventory accuracy: canonical parent brands with a tracked SKU count
+  const trackedBrands = new Set<string>();
+  inventoryRows.forEach((r) => {
+    if (r.current_tubes_left == null) return;
+    const key = String(r.brand_id || '').toLowerCase().replace(/[^a-z]/g, '');
+    const parent = CANONICAL_BRAND_IDS.find((b) => key.includes(b.replace(/[^a-z]/g, '')));
+    if (parent) trackedBrands.add(parent);
+  });
   const brandsWithData = trackedBrands.size;
+
   const avgInventoryCount = inventoryRows.length
     ? inventoryRows.reduce((s, r) => s + Number(r.current_tubes_left ?? 0), 0) / inventoryRows.length
     : null;
