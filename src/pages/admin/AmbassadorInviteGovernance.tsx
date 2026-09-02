@@ -303,6 +303,49 @@ export default function AmbassadorInviteGovernance() {
         </DialogContent>
       </Dialog>
 
+      {/* Correct recipient email + resend the SAME invite (no duplicate) */}
+      <Dialog open={!!fixTarget} onOpenChange={() => setFixTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Correct invite email</DialogTitle>
+            <DialogDescription>
+              Updates the recipient on this existing invite and resends it. The invite id,
+              token, approval and referral attribution are preserved — no new invite is created.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Recipient email</Label>
+            <Input
+              type="email"
+              placeholder="email@example.com"
+              value={fixEmail}
+              onChange={e => setFixEmail(e.target.value)}
+            />
+            {fixEmail && !isValidRecipientEmail(fixEmail) && (
+              <p className="text-xs text-destructive">Not a valid email address.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFixTarget(null)}>Cancel</Button>
+            <Button
+              disabled={!isValidRecipientEmail(fixEmail) || resendInvite.isPending}
+              onClick={async () => {
+                if (!fixTarget) return;
+                await resendInvite.mutateAsync({
+                  inviteId: fixTarget,
+                  channel: 'email',
+                  email: normalizeRecipientEmail(fixEmail),
+                });
+                setFixTarget(null);
+              }}
+            >
+              Save & resend
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
       {/* Create & Send Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
