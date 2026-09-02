@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { writeStoreTubeCounts } from "@/lib/inventory/writeTubeCounts";
+import { normalizeTubeBrandId } from "@/lib/inventory/tubeSkuKeys";
 
 // Grabba brand IDs from the database
 export const GRABBA_COMPANY_IDS = {
