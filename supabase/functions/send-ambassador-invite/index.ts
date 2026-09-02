@@ -1,6 +1,8 @@
 // Ambassador invite dispatcher — creates (or resends) an ambassador invite and
 // delivers the signup link over SMS (Twilio via send-sms) and/or email (Resend).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isValidRecipientEmail, normalizeRecipientEmail } from "../_shared/recipientEmail.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
