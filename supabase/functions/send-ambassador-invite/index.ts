@@ -72,6 +72,26 @@ Deno.serve(async (req) => {
         return json({ error: "invite_pending_owner_approval" }, 403);
       }
       invite = { ...data, token: data.invite_token };
+
+      // Correction path: an admin may supply a corrected recipient email on
+      // resend. Persist it onto the SAME invite (no duplicate invite, token,
+      // approval metadata and attribution untouched). Invalid input is never
+      // persisted and never "repaired".
+      const corrected = normalizeRecipientEmail(email);
+      if (corrected && isValidRecipientEmail(corrected) && corrected !== normalizeRecipientEmail(data.email)) {
+        const { error: updErr } = await admin
+          .from("ambassador_invites")
+          .update({ email: corrected })
+          .eq("id", data.id);
+        if (updErr) return json({ error: `email_update_failed: ${updErr.message}` }, 400);
+        invite.email = corrected;
+        await admin.from("ambassador_invite_events").insert({
+          invite_id: data.id,
+          event_type: "sent",
+          actor_user_id: userData.user.id,
+          metadata: { action: "email_corrected", previous_email: data.email, new_email: corrected },
+        });
+      }
     } else {
       const { data, error } = await userClient.rpc("create_ambassador_invite", {
         p_email: email || null,
@@ -93,8 +113,11 @@ Deno.serve(async (req) => {
     const msg = `${greeting}you've been invited to join GasMask as an Ambassador. Set up your account: ${link}`;
 
     const toPhone = phone || invite.phone;
-    const toEmail = email || invite.email;
+    const rawEmail = email || invite.email || "";
+    const toEmail = normalizeRecipientEmail(rawEmail);
+    const emailInvalid = !!rawEmail && !isValidRecipientEmail(rawEmail);
     const sendLog: any[] = [];
+
 
     if ((channel === "sms" || channel === "both") && toPhone) {
       try {
