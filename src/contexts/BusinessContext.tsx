@@ -40,6 +40,9 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Never blank out an already-resolved business while refetching —
+      // guards read currentBusiness and would redirect on a transient null.
+
       const { data, error } = await supabase
         .rpc('get_user_businesses', { user_id: user.id });
 
@@ -57,17 +60,24 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       })) as Business[];
       setBusinesses(businessList);
 
-      // Load saved business from localStorage or use first one
+      // Keep the business the user is already working in if it is still valid.
+      // Otherwise fall back to the persisted selection, then the first business.
       const savedBusinessId = localStorage.getItem('currentBusinessId');
-      const businessToSet = savedBusinessId 
-        ? businessList.find(b => b.id === savedBusinessId) || businessList[0]
-        : businessList[0];
+      const stillValid = currentBusiness
+        ? businessList.find(b => b.id === currentBusiness.id)
+        : undefined;
+      const businessToSet =
+        stillValid ||
+        (savedBusinessId ? businessList.find(b => b.id === savedBusinessId) : undefined) ||
+        businessList[0];
 
       if (businessToSet) {
         setCurrentBusiness(businessToSet);
         localStorage.setItem('currentBusinessId', businessToSet.id);
       }
     } catch (error: any) {
+      // Transient fetch failure: keep the previously resolved context rather
+      // than dropping the user out of their business.
       toast({
         title: 'Error loading businesses',
         description: error.message,
@@ -91,7 +101,8 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshBusinesses = async () => {
-    setLoading(true);
+    // Do NOT flip `loading` back on here — guards treat that as "unresolved"
+    // and would blank/redirect the page during a background refresh.
     await fetchBusinesses();
   };
 

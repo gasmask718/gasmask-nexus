@@ -35,10 +35,12 @@ export function useDPAdminStatus() {
 
       return data ? { state: "admin" } : { state: "not_admin" };
     },
-    staleTime: 0,
-    gcTime: 0,
+    // Identity check: cache briefly and never re-verify on tab focus — the
+    // window-focus refetch was part of the alt-tab re-verification loop.
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 }
 
