@@ -377,7 +377,16 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   };
 
   const isLoading = kpiLoading || invLoading || intelLoading;
-  const totalTubes = Object.values(editedCounts).reduce((sum, count) => sum + count, 0);
+  // Tubes vs bags are DIFFERENT units — split by the canonical unit classifier
+  // so bag SKUs (GasMask Bags) are never counted as "tubes".
+  const { totalTubes, totalBags } = Object.entries(editedCounts).reduce(
+    (acc, [brandId, count]) => {
+      if (unitLabelForBrandId(brandId) === 'bags') acc.totalBags += count;
+      else acc.totalTubes += count;
+      return acc;
+    },
+    { totalTubes: 0, totalBags: 0 },
+  );
 
   const getLastUpdated = () => {
     if (!inventory?.length) return null;
@@ -502,10 +511,16 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
               ))}
             </div>
 
-            {/* Total summary */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <span className="font-medium">{t('card.tube_intel.total_tubes')}</span>
-              <span className="text-2xl font-bold text-primary font-mono">{totalTubes.toLocaleString()}</span>
+            {/* Unit-separated totals (tubes vs bags are different units) */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
+                <span className="font-medium">Tubes On Hand</span>
+                <span className="text-2xl font-bold text-primary font-mono">{totalTubes.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <span className="font-medium">Bags On Hand</span>
+                <span className="text-2xl font-bold text-amber-600 font-mono">{totalBags.toLocaleString()}</span>
+              </div>
             </div>
 
             {/* Brand breakdown - ALL IN ONE */}
