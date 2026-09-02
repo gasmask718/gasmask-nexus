@@ -281,13 +281,15 @@ export function StoreQuickActions({
         onSuccess={onInventoryUpdated}
       />
 
-      <CreateStoreInvoiceModal
-        open={invoiceModalOpen}
-        onOpenChange={setInvoiceModalOpen}
-        storeId={storeId}
-        storeName={storeName}
-        onSuccess={onInvoiceCreated}
-      />
+      {!onCreateInvoice && (
+        <CreateStoreInvoiceModal
+          open={invoiceModalOpen}
+          onOpenChange={setInvoiceModalOpen}
+          storeId={storeId}
+          storeName={storeName}
+          onSuccess={onInvoiceCreated}
+        />
+      )}
 
       <UnifiedInteractionModal
         open={textModalOpen}

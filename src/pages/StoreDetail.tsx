@@ -859,6 +859,11 @@ const StoreDetail = () => {
           <details className="border-t border-border/60 pt-5">
             <summary className="cursor-pointer text-lg font-semibold">Advanced & legacy information</summary>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <StoreContactInfoCard
+                store={store}
+                onUpdate={() => window.location.reload()}
+              />
+              <SamplesGivenSection storeId={storeId} variant="full" />
               <EngagementBanner storeId={storeId} />
               {storeMasterId && <StoreDangerZone storeId={storeMasterId} storeName={store.name} sourceUi="store_profile_advanced" />}
               <StorePerformanceTab storeId={storeId} storeName={store.name} />

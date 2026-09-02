@@ -28,7 +28,8 @@ export function StoreExecutiveOverview({ storeId, name, address, primaryContact,
     },
   });
   const { data: lastContact } = useQuery({
-    queryKey: ['store-executive-last-contact', storeId],
+    queryKey: ['store-executive-last-contact', storeMasterId],
+    enabled: !!storeMasterId,
     queryFn: async () => {
       const { data, error } = await supabase.from('contact_interactions').select('created_at').eq('store_id', storeMasterId).order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
