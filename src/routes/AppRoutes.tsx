@@ -249,6 +249,7 @@ const AdminDailyReports = lazy(() => import('@/pages/admin/AdminDailyReports'));
 const AdminPartnerPerformance = lazy(() => import('@/pages/admin/AdminPartnerPerformance'));
 const AdminOpsDashboard = lazy(() => import('@/pages/admin/AdminOpsDashboard'));
 const FieldAssignments = lazy(() => import('@/pages/admin/FieldAssignments'));
+const AmbassadorInviteGovernance = lazy(() => import('@/pages/admin/AmbassadorInviteGovernance'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
 const ClipperApplication = lazy(() => import('@/pages/apply/ClipperApplication'));
 const ClipperLogin = lazy(() => import('@/pages/clipper/ClipperLogin'));
@@ -3637,7 +3638,7 @@ export default function AppRoutes() {
       } />
 
       {/* Admin Ambassador Invite Governance */}
-      <Route path="/admin/ambassador-invites" element={<Navigate to="/admin/field-assignments" replace />} />
+      <Route path="/admin/ambassador-invites" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><AmbassadorInviteGovernance /></RequireRole></ProtectedRoute>} />
 
       {/* Admin Payouts */}
       <Route path="/admin/payouts" element={
