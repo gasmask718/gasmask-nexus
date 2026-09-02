@@ -2,7 +2,6 @@ import { Flame, TrendingUp, TrendingDown, Minus, Snowflake, Boxes, Calendar, Dol
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStoreTubeSummary } from '@/hooks/useStoreTubeSummary';
-import { useStoreTubeBrandsKpi } from '@/hooks/useStoreTubeBrandsKpi';
 import { useStoreInventoryBySku } from '@/hooks/useStoreInventoryBySku';
 import { useStoreLifetimeByBrand } from '@/hooks/useStoreLifetimeByBrand';
 import { useStoreSoldByBrandWindow } from '@/hooks/useStoreSoldByBrandWindow';
@@ -45,7 +44,7 @@ const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString();
 
 export function TubesSoldHeroStrip({ storeId }: Props) {
   const summary = useStoreTubeSummary(storeId);
-  const brands = useStoreTubeBrandsKpi(storeId);
+// brand mix is derived from useStoreLifetimeByBrand below
   const inventoryByBrand = useStoreInventoryBySku(storeId);
   const lifetimeByBrand = useStoreLifetimeByBrand(storeId);
   const last30ByBrand = useStoreSoldByBrandWindow(storeId, 'last_30_days');
@@ -315,7 +314,7 @@ export function TubesSoldHeroStrip({ storeId }: Props) {
               <div className="border-t border-border pt-2 space-y-0.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</span>
-                  <span className="text-sm font-bold text-blue-600">{fmt(onHand)} tubes</span>
+                  <span className="text-sm font-bold text-blue-600">{fmt(onHand)} units (tubes + bags)</span>
                 </div>
                 {(() => {
                   const latest = brandInventory.map(b => b.last_updated).filter((d): d is string => !!d).sort().reverse()[0];
