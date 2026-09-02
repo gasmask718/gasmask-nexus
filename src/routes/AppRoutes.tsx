@@ -1532,6 +1532,7 @@ export default function AppRoutes() {
         <Route path="/security/roles" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><RolesPermissionsPage /></RequireRole>} />
         <Route path="/security/audit" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
         <Route path="/security/ambassador-requests" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><AmbassadorRequests /></RequireRole>} />
+        <Route path="/admin/ambassador-invites" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><AmbassadorInviteGovernance /></RequireRole>} />
         <Route path="/admin/pending-users" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><PendingUsers /></RequireRole>} />
         <Route path="/security/pending-users" element={<Navigate to="/admin/pending-users" replace />} />
 
@@ -3636,9 +3637,6 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
-
-      {/* Admin Ambassador Invite Governance */}
-      <Route path="/admin/ambassador-invites" element={<ProtectedRoute><RequireRole allowedRoles={['owner','admin']} showLocked><AmbassadorInviteGovernance /></RequireRole></ProtectedRoute>} />
 
       {/* Admin Payouts */}
       <Route path="/admin/payouts" element={
