@@ -4,9 +4,9 @@
  * two surfaces can never drift apart again.
  *
  * Fields:
- *  - lastUpdated  → most recent store_tube_inventory.last_updated  ("Counts updated")
- *  - lastChecked  → most recent store_tube_inventory.last_checked_at,
- *                   falling back to store_tube_inventory_status.last_inventory_check_at
+ *  - lastUpdated  → most recent store_tube_inventory_status.tubes_updated_at,
+ *                   falling back to last_updated_at ("Counts updated")
+ *  - lastChecked  → most recent store_tube_inventory_status.last_inventory_check_at
  *  - checkedBy    → store_tube_inventory_status.last_inventory_check_by (user id)
  */
 
@@ -39,18 +39,11 @@ export function useStoreInventoryStampsBatch(storeIds: string[]) {
     enabled: ids.length > 0,
     staleTime: 30_000,
     queryFn: async () => {
-      const [invRes, statusRes] = await Promise.all([
-        (supabase as any)
-          .from('store_tube_inventory')
-          .select('store_id, last_updated, last_checked_at')
-          .in('store_id', ids),
-        (supabase as any)
-          .from('store_tube_inventory_status')
-          .select('store_id, brand_id, last_updated_at, last_inventory_check_at, last_inventory_check_by')
-          .in('store_id', ids),
-      ]);
-      if (invRes.error) throw invRes.error;
-      if (statusRes.error) throw statusRes.error;
+      const { data: statusRows, error } = await (supabase as any)
+        .from('store_tube_inventory_status')
+        .select('store_id, brand_id, tubes_updated_at, last_updated_at, last_inventory_check_at, last_inventory_check_by')
+        .in('store_id', ids);
+      if (error) throw error;
 
       const map = new Map<string, StoreInventoryStampData>();
       const get = (id: string) => {
@@ -59,14 +52,9 @@ export function useStoreInventoryStampsBatch(storeIds: string[]) {
         return e;
       };
 
-      for (const r of invRes.data ?? []) {
+      for (const r of statusRows ?? []) {
         const e = get(r.store_id);
-        e.lastUpdated = newest([e.lastUpdated, r.last_updated]);
-        e.lastChecked = newest([e.lastChecked, r.last_checked_at]);
-      }
-      for (const r of statusRes.data ?? []) {
-        const e = get(r.store_id);
-        e.lastUpdated = newest([e.lastUpdated, r.last_updated_at]);
+        e.lastUpdated = newest([e.lastUpdated, r.tubes_updated_at, r.last_updated_at]);
         const prev = e.lastChecked;
         e.lastChecked = newest([prev, r.last_inventory_check_at]);
         if (r.last_inventory_check_by && e.lastChecked === r.last_inventory_check_at) {
@@ -76,7 +64,7 @@ export function useStoreInventoryStampsBatch(storeIds: string[]) {
           const cur = e.perSku[r.brand_id] ?? { lastChecked: null, lastUpdated: null };
           e.perSku[r.brand_id] = {
             lastChecked: newest([cur.lastChecked, r.last_inventory_check_at]),
-            lastUpdated: newest([cur.lastUpdated, r.last_updated_at]),
+            lastUpdated: newest([cur.lastUpdated, r.tubes_updated_at, r.last_updated_at]),
           };
         }
       }

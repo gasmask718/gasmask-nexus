@@ -23,6 +23,7 @@ export interface CanonicalRouteStop {
 
 export interface CanonicalRoute {
   id: string;
+  name: string | null;
   date: string;
   type: string;
   territory: string | null;
