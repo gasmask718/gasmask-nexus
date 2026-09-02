@@ -71630,6 +71630,7 @@ export type Database = {
           address: string | null
           category_groups: string[]
           city: string | null
+          country: string
           created_at: string
           email: string | null
           full_name: string | null
@@ -71644,6 +71645,7 @@ export type Database = {
           phone: string | null
           postal_code: string | null
           promoted_worker_id: string | null
+          region: string | null
           source_id: string | null
           source_platform: string | null
           source_url: string | null
@@ -71656,6 +71658,7 @@ export type Database = {
           address?: string | null
           category_groups?: string[]
           city?: string | null
+          country?: string
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -71670,6 +71673,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           promoted_worker_id?: string | null
+          region?: string | null
           source_id?: string | null
           source_platform?: string | null
           source_url?: string | null
@@ -71682,6 +71686,7 @@ export type Database = {
           address?: string | null
           category_groups?: string[]
           city?: string | null
+          country?: string
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -71696,6 +71701,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           promoted_worker_id?: string | null
+          region?: string | null
           source_id?: string | null
           source_platform?: string | null
           source_url?: string | null
