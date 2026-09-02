@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CANONICAL_TUBE_SKUS, resolveProductIdForBrand, type SkuStatus } from '@/lib/inventory/skuDisplay';
+import { CANONICAL_TUBE_SKUS, type SkuStatus } from '@/lib/inventory/skuDisplay';
+import { productIdForBrandId } from '@/lib/inventory/tubeSkuKeys';
 
 export interface BrandWindowSold {
   product_id: string;
@@ -81,15 +82,16 @@ export function useStoreSoldByBrandWindow(
         });
       }
 
-      // Inventory rolled up by product_id (brand string is fallback)
+      // Inventory rolled up by product_id from the canonical status table
+      // (store_tube_inventory is RETIRED; brand_id is the canonical SKU key).
       const { data: inventory } = await supabase
-        .from('store_tube_inventory')
-        .select('product_id, brand, current_tubes_left')
+        .from('store_tube_inventory_status')
+        .select('brand_id, current_tubes_left')
         .eq('store_id', storeId)
         .eq('is_simulation', false);
       const invByProductId = new Map<string, number>();
       inventory?.forEach((inv) => {
-        const pid = inv.product_id ?? resolveProductIdForBrand(inv.brand);
+        const pid = productIdForBrandId(inv.brand_id);
         if (!pid) return;
         invByProductId.set(pid, (invByProductId.get(pid) ?? 0) + Number(inv.current_tubes_left ?? 0));
       });
