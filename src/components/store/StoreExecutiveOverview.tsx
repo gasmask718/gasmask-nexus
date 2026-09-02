@@ -18,13 +18,33 @@ const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDa
 
 export function StoreExecutiveOverview({ storeId, name, address, primaryContact, phone, lastOrderAt, paymentTerms }: Props) {
   const { storeMasterId } = useStoreMasterResolver(storeId);
+  // Canonical account facts — same row the Account Summary brief is generated from.
   const { data: summary } = useQuery({
     queryKey: ['store-executive-summary', storeMasterId],
     enabled: !!storeMasterId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from('v_store_summary').select('owed').eq('store_id', storeMasterId).maybeSingle();
+      const { data, error } = await (supabase as any)
+        .from('v_store_summary')
+        .select('owed, contact_name, last_order_date')
+        .eq('store_id', storeMasterId)
+        .maybeSingle();
       if (error) throw error;
-      return data as { owed: number | null } | null;
+      return data as { owed: number | null; contact_name: string | null; last_order_date: string | null } | null;
+    },
+  });
+  // Terms live on store_master.invoice_payment_method — the exact field the
+  // Account Summary "Terms:" line renders. No duplicate/derived state.
+  const { data: master } = useQuery({
+    queryKey: ['store-executive-terms', storeMasterId],
+    enabled: !!storeMasterId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('store_master')
+        .select('invoice_payment_method')
+        .eq('id', storeMasterId)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { invoice_payment_method: string | null } | null;
     },
   });
   const { data: lastContact } = useQuery({
@@ -37,13 +57,20 @@ export function StoreExecutiveOverview({ storeId, name, address, primaryContact,
     },
   });
 
+  // Primary contact rule: the authoritative designated contact on store_master
+  // (contact_name), falling back to the legacy mirror passed in by the page.
+  // Never guessed from an arbitrary store_contacts row.
+  const contactName = summary?.contact_name?.trim() || primaryContact?.trim() || null;
+  const terms = master?.invoice_payment_method || paymentTerms || null;
+
   const facts = [
-    ['Primary Contact', primaryContact || 'Not assigned'],
+    ['Primary Contact', contactName || 'Not assigned'],
     ['Last Contact', formatDate(lastContact)],
-    ['Last Order', formatDate(lastOrderAt)],
+    ['Last Order', formatDate(lastOrderAt ?? summary?.last_order_date ?? null)],
     ['Outstanding Balance', `$${Number(summary?.owed ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-    ['Payment Terms', paymentTerms ? paymentTerms.replace(/_/g, ' ') : 'Not set'],
+    ['Payment Terms', terms ? terms.replace(/_/g, ' ') : 'Not set'],
   ];
+
 
   return (
     <section className="border-b border-border/60 pb-5">
