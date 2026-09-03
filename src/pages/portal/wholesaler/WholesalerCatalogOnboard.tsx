@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Loader2, Lock, ShieldCheck, AlertTriangle, Camera, FileSpreadsheet } from 'lucide-react';
+import { Loader2, Lock, ShieldCheck, AlertTriangle, Camera, FileSpreadsheet, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DynastyDirectCatalogOnboard from '@/pages/dynasty-direct/DynastyDirectCatalogOnboard';
 import { QuickAddCamera } from '@/components/dynasty-direct/QuickAddCamera';
