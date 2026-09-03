@@ -4,7 +4,7 @@ import {
   DollarSign, ClipboardList,
   BarChart3, Megaphone, FileText,
   Package, ShoppingCart, Settings, Receipt,
-  Gift, HeadphonesIcon, Factory, CheckSquare, Gauge,
+  Gift, HeadphonesIcon, Factory, CheckSquare, Gauge, Camera,
   type LucideIcon
 } from 'lucide-react';
 
