@@ -57,7 +57,13 @@ export default function WholesalerDashboard() {
             </Link>
           </Button>
           <Button asChild>
-            <Link to="/portal/wholesaler/products/new">
+            <Link to="/portal/wholesaler/catalog/onboard">
+              <Camera className="h-4 w-4 mr-2" />
+              Quick Add by Photo
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/portal/wholesaler/catalog/onboard?mode=form">
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Link>
