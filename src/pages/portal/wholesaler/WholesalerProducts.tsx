@@ -89,12 +89,20 @@ export default function WholesalerProducts() {
             <p className="text-muted-foreground mb-4">
               {search ? "Try a different search term" : "Start by adding your first product"}
             </p>
-            <Button asChild>
-              <Link to="/portal/wholesaler/products/new">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Product
-              </Link>
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button asChild>
+                <Link to="/portal/wholesaler/catalog/onboard">
+                  <Camera className="h-4 w-4 mr-2" />
+                  Quick Add by Photo
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/portal/wholesaler/catalog/onboard?mode=form">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Product
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
