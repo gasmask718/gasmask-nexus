@@ -87,8 +87,8 @@ export function useWholesalerProducts() {
       // PROVENANCE: anything typed in this form is manual entry, never label OCR.
       const touchesSpecs =
         data.weight_oz != null || data.length_in != null ||
-        (data as Record<string, unknown>).width_in != null ||
-        (data as Record<string, unknown>).height_in != null;
+        data.width_in != null || data.height_in != null;
+
 
       const { data: product, error } = await supabase
         .from('products_all')
