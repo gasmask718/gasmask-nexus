@@ -11,7 +11,7 @@ import { HudMetric } from "@/components/portal/HudMetric";
 import { 
   Package, ShoppingCart, Truck, DollarSign, AlertTriangle, 
   Plus, ArrowRight, Settings, TrendingUp, Clock, CheckCircle,
-  FileText, Warehouse
+  FileText, Warehouse, Camera
 } from "lucide-react";
 
 export default function WholesalerDashboard() {
