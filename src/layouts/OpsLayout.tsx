@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
-import { LogOut, Crown, Download } from 'lucide-react';
+import { LogOut, Crown, Download, Boxes } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import OpsBottomNav from '@/layouts/OpsBottomNav';
 import PwaGate from '@/components/pwa/PwaGate';
@@ -33,6 +33,10 @@ export default function OpsLayout() {
 
   const userName = data?.profile?.full_name || 'User';
   const userRole = data?.profile?.primary_role || '';
+  // The wholesaler portal is a Dynasty Direct surface, not a GasMask one —
+  // brand the shell by the portal being viewed, not by the hosting project.
+  const { pathname } = useLocation();
+  const isWholesalerPortal = pathname.startsWith('/portal/wholesaler');
 
   return (
     <OpsAccessGate>
