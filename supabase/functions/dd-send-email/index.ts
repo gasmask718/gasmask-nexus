@@ -10,7 +10,7 @@ const corsHeaders = {
 
 const FROM = Deno.env.get("DD_EMAIL_FROM") || "Dynasty Direct <orders@dynastydirect.com>";
 
-type TemplateName = "order-confirmation" | "shipped-with-tracking";
+type TemplateName = "order-confirmation" | "shipped-with-tracking" | "wholesaler-portal-access";
 
 const wrap = (title: string, inner: string) => `<!doctype html>
 <html><body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#e5e5e5">
@@ -41,6 +41,16 @@ const templates: Record<TemplateName, (data: any) => { subject: string; html: st
       <strong>Tracking:</strong> ${d.tracking_number || "—"}<br/>
       ${d.estimated_delivery ? `<strong>Estimated delivery:</strong> ${d.estimated_delivery}<br/>` : ""}</p>
       ${d.tracking_url ? `<p><a href="${d.tracking_url}" style="display:inline-block;padding:12px 20px;background:#c9a84c;color:#0a0a0a;text-decoration:none;border-radius:6px;font-weight:600">Track package</a></p>` : ""}
+    `),
+  }),
+  "wholesaler-portal-access": (d) => ({
+    subject: "Your Dynasty Direct Wholesaler Portal access",
+    html: wrap("Wholesaler Portal access", `
+      <p>Your existing account now has Dynasty Direct wholesaler access.</p>
+      <p><strong>Sign in with the email you already use</strong> — no new account was created, and your existing access is unchanged.</p>
+      ${d.company_name ? `<p><strong>Supplier account:</strong> ${d.company_name}</p>` : ""}
+      <p><a href="${d.portal_url}" style="display:inline-block;padding:12px 20px;background:#c9a84c;color:#0a0a0a;text-decoration:none;border-radius:6px;font-weight:600">Open Wholesaler Portal</a></p>
+      <p style="font-size:13px;color:#a3a3a3">If the button does not work, paste this link into your browser:<br/>${d.portal_url}</p>
     `),
   }),
 };
