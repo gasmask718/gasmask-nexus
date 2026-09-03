@@ -15,6 +15,7 @@ import { Package } from 'lucide-react';
 import { getRoleRedirectPath, type OSRole } from '@/config/osNavigation';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useUserRole } from '@/hooks/useUserRole';
+import { consumePendingNext, isSafeNextPath, peekPendingNext, storePendingNext } from '@/lib/authNext';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -39,6 +40,11 @@ const Auth = () => {
     }
   }, [location.search]);
 
+  // Capture ?next= immediately (before any provider round-trip loses the query).
+  useEffect(() => {
+    storePendingNext(new URLSearchParams(location.search).get('next'));
+  }, [location.search]);
+
   useEffect(() => {
     if (!user) return;
     if (profileLoading || rbacLoading) return;
@@ -51,18 +57,17 @@ const Auth = () => {
       (rbacRole as OSRole | null | undefined) ??
       null;
 
-    if (resolvedRole) {
-      // Deep-link support: an access link may carry ?next=/portal/wholesaler so a
-      // multi-role user (e.g. owner who is also a wholesaler) lands on the portal
-      // they were invited to instead of their default role home.
-      const nextParam = new URLSearchParams(location.search).get('next');
-      const returnTo = nextParam ?? (location.state as { returnTo?: string } | null)?.returnTo;
-      const safeReturnTo =
-        returnTo?.startsWith('/') && !returnTo.startsWith('//') && !returnTo.startsWith('/auth')
-          ? returnTo
-          : null;
-      navigate(safeReturnTo || getRoleRedirectPath(resolvedRole), { replace: true });
+    // Explicit destination wins over the generic role home — including for an
+    // already-authenticated user who simply opens the access link.
+    const nextParam = new URLSearchParams(location.search).get('next');
+    const stateReturnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+    const explicit = [nextParam, stateReturnTo, peekPendingNext()].find(isSafeNextPath) ?? null;
+    if (explicit) consumePendingNext();
 
+    if (explicit) {
+      navigate(explicit, { replace: true });
+    } else if (resolvedRole) {
+      navigate(getRoleRedirectPath(resolvedRole), { replace: true });
     } else {
       // Genuinely no role assigned — new signup awaiting admin approval.
       navigate('/pending-approval', { replace: true });
@@ -139,8 +144,11 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     markManualSignIn();
+    // The provider round-trip drops ?next=, so it is already parked in
+    // sessionStorage and re-applied by /auth/callback.
+    storePendingNext(new URLSearchParams(location.search).get('next'));
     const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/auth/callback`,
     });
     if (error) {
       toast.error(error.message || 'Google sign-in failed');
