@@ -51047,6 +51047,54 @@ export type Database = {
           },
         ]
       }
+      dd_supplier_lines: {
+        Row: {
+          created_at: string | null
+          id: string
+          item: string
+          markup_pct: number | null
+          notes: string | null
+          our_cost: number
+          our_profit_per_pack: number | null
+          pack_count: number | null
+          store_price: number | null
+          street_price_each: number | null
+          supplier_name: string
+          supplier_phone: string | null
+          supplier_store_address: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item: string
+          markup_pct?: number | null
+          notes?: string | null
+          our_cost: number
+          our_profit_per_pack?: number | null
+          pack_count?: number | null
+          store_price?: number | null
+          street_price_each?: number | null
+          supplier_name: string
+          supplier_phone?: string | null
+          supplier_store_address?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item?: string
+          markup_pct?: number | null
+          notes?: string | null
+          our_cost?: number
+          our_profit_per_pack?: number | null
+          pack_count?: number | null
+          store_price?: number | null
+          street_price_each?: number | null
+          supplier_name?: string
+          supplier_phone?: string | null
+          supplier_store_address?: string | null
+        }
+        Relationships: []
+      }
       dd_supplier_metrics: {
         Row: {
           avg_fulfillment_hours: number | null
