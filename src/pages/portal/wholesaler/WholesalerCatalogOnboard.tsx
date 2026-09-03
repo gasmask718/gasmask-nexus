@@ -18,12 +18,14 @@ import { BulkUploadModule } from '@/components/wholesaler-console/BulkUploadModu
  *   non-bypassable even if a wholesaler crafts a direct INSERT/UPDATE.
  */
 export default function WholesalerCatalogOnboard() {
+  const [searchParams] = useSearchParams();
+  const mode = searchParams.get('mode');
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [supplier, setSupplier] = useState<{ id: string; name: string } | null>(null);
   const [resolving, setResolving] = useState(true);
   const [resolveError, setResolveError] = useState<string | null>(null);
-  const [advanced, setAdvanced] = useState(false);
-  const [spreadsheet, setSpreadsheet] = useState(false);
+  const [advanced, setAdvanced] = useState(mode === 'form');
+  const [spreadsheet, setSpreadsheet] = useState(mode === 'spreadsheet');
 
 
   useEffect(() => {
