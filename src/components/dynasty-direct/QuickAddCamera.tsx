@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
-  Camera, Loader2, Check, SkipForward, RotateCcw, AlertTriangle, CheckCircle2, DollarSign, Tag,
+  Camera, Loader2, Check, SkipForward, RotateCcw, ArrowLeft, AlertTriangle, CheckCircle2, DollarSign, Tag,
 } from 'lucide-react';
 
 /**
@@ -75,7 +75,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     noLabel
       ? { key: 'angle1', label: 'Another angle', hint: 'Optional — side, back, or the case.' }
       : { key: 'label', label: 'The label', hint: 'The panel with weight and dimensions.' },
-    { key: 'angle', label: 'Another angle', hint: 'Optional — side, back, or the case.' },
+    { key: 'angle', label: 'Another angle', hint: 'Side, back, or the case — last shot.' },
   ];
 
   // ---- running count -------------------------------------------------------
@@ -137,12 +137,12 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       setShots(next);
       persist(next);
 
-      // AUTO-ADVANCE. No Next button to hunt for.
+      // AUTO-ADVANCE through the 3-shot sequence. Processing only starts once
+      // ALL THREE shots are in — the extra angle is never silently skipped.
       if (index < 2) setActiveShot(index + 1);
-      if (!noLabel && (index === LABEL || index === ANGLE)) {
-        // Both required shots are in — start processing by itself.
-        if (next[FRONT] && next[LABEL]) setTimeout(() => runProcessing(next, false), 350);
-      }
+      const allThree = Boolean(next[FRONT] && next[LABEL] && next[ANGLE]);
+      if (allThree) setTimeout(() => runProcessing(next, noLabel), 350);
+
     } catch (e: any) {
       toast.error('That shot did not upload', { description: e.message ?? 'Tap the button and try again — nothing else was lost.' });
     } finally {
@@ -467,11 +467,34 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
             </div>
           )}
 
-          {shots[FRONT] && (
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-12 text-sm"
+              disabled={activeShot === 0 || uploading}
+              onClick={() => setActiveShot(Math.max(0, activeShot - 1))}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" /> Back
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-12 text-sm"
+              disabled={!shots[activeShot] || uploading}
+              onClick={() => fileRef.current?.click()}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" /> Retake
+            </Button>
+          </div>
+
+          {/* Explicit skip — only on the LAST shot, never automatic. */}
+          {activeShot === 2 && shots[FRONT] && !shots[ANGLE] && (
             <Button variant="secondary" size="lg" className="w-full h-14 text-base" onClick={finishShooting}>
-              <SkipForward className="h-5 w-5 mr-2" /> Done — that is enough
+              <SkipForward className="h-5 w-5 mr-2" /> Skip the extra angle — done
             </Button>
           )}
+
 
           {shots.some(Boolean) && (
             <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={reset}>
