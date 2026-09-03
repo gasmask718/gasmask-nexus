@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Loader2, Lock, ShieldCheck, AlertTriangle, Camera, FileSpreadsheet } from 'lucide-react';
+import { Loader2, Lock, ShieldCheck, AlertTriangle, Camera, FileSpreadsheet, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DynastyDirectCatalogOnboard from '@/pages/dynasty-direct/DynastyDirectCatalogOnboard';
 import { QuickAddCamera } from '@/components/dynasty-direct/QuickAddCamera';
@@ -18,12 +19,14 @@ import { BulkUploadModule } from '@/components/wholesaler-console/BulkUploadModu
  *   non-bypassable even if a wholesaler crafts a direct INSERT/UPDATE.
  */
 export default function WholesalerCatalogOnboard() {
+  const [searchParams] = useSearchParams();
+  const mode = searchParams.get('mode');
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [supplier, setSupplier] = useState<{ id: string; name: string } | null>(null);
   const [resolving, setResolving] = useState(true);
   const [resolveError, setResolveError] = useState<string | null>(null);
-  const [advanced, setAdvanced] = useState(false);
-  const [spreadsheet, setSpreadsheet] = useState(false);
+  const [advanced, setAdvanced] = useState(mode === 'form');
+  const [spreadsheet, setSpreadsheet] = useState(mode === 'spreadsheet');
 
 
   useEffect(() => {
@@ -137,6 +140,13 @@ export default function WholesalerCatalogOnboard() {
 
   return (
     <div>
+      <div className="px-4 pt-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/portal/wholesaler/products">
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to my products
+          </Link>
+        </Button>
+      </div>
       <QuickAddCamera supplierId={supplier.id} supplierName={supplier.name} />
       <div className="pb-8 flex flex-col items-center gap-1">
         <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setSpreadsheet(true)}>

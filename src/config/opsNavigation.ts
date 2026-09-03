@@ -4,7 +4,7 @@ import {
   DollarSign, ClipboardList,
   BarChart3, Megaphone, FileText,
   Package, ShoppingCart, Settings, Receipt,
-  Gift, HeadphonesIcon, Factory, CheckSquare, Gauge,
+  Gift, HeadphonesIcon, Factory, CheckSquare, Gauge, Camera,
   type LucideIcon
 } from 'lucide-react';
 
@@ -78,6 +78,7 @@ export const opsNavigation: Record<OpsRole, OpsNavItem[]> = {
   wholesaler: [
     { label: 'Dashboard', path: '/portal/wholesaler', icon: Home },
     { label: 'Products', path: '/portal/wholesaler/products', icon: Package },
+    { label: 'Quick Add', path: '/portal/wholesaler/catalog/onboard', icon: Camera },
     { label: 'Inbox', path: '/portal/inbox', icon: Inbox },
     { label: 'Orders', path: '/portal/wholesaler/orders', icon: ShoppingCart },
     { label: 'Settings', path: '/portal/wholesaler/settings', icon: Settings },

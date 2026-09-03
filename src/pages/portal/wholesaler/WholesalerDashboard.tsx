@@ -11,7 +11,7 @@ import { HudMetric } from "@/components/portal/HudMetric";
 import { 
   Package, ShoppingCart, Truck, DollarSign, AlertTriangle, 
   Plus, ArrowRight, Settings, TrendingUp, Clock, CheckCircle,
-  FileText, Warehouse
+  FileText, Warehouse, Camera
 } from "lucide-react";
 
 export default function WholesalerDashboard() {
@@ -57,7 +57,13 @@ export default function WholesalerDashboard() {
             </Link>
           </Button>
           <Button asChild>
-            <Link to="/portal/wholesaler/products/new">
+            <Link to="/portal/wholesaler/catalog/onboard">
+              <Camera className="h-4 w-4 mr-2" />
+              Quick Add by Photo
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/portal/wholesaler/catalog/onboard?mode=form">
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Link>
@@ -206,7 +212,13 @@ export default function WholesalerDashboard() {
             </CardHeader>
             <CardContent className="space-y-2">
               <Button variant="outline" className="w-full justify-start" asChild>
-                <Link to="/portal/wholesaler/products/new">
+                <Link to="/portal/wholesaler/catalog/onboard">
+                  <Camera className="h-4 w-4 mr-2" />
+                  Quick Add by Photo
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link to="/portal/wholesaler/catalog/onboard?mode=form">
                   <Plus className="h-4 w-4 mr-2" />
                   Add New Product
                 </Link>
