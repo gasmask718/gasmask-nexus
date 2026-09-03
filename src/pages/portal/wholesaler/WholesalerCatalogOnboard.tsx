@@ -140,6 +140,13 @@ export default function WholesalerCatalogOnboard() {
 
   return (
     <div>
+      <div className="px-4 pt-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/portal/wholesaler/products">
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to my products
+          </Link>
+        </Button>
+      </div>
       <QuickAddCamera supplierId={supplier.id} supplierName={supplier.name} />
       <div className="pb-8 flex flex-col items-center gap-1">
         <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setSpreadsheet(true)}>
