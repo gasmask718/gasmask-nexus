@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { 
   Package, Plus, Search, MoreVertical, Edit, Trash2, 
-  ArrowLeft, AlertTriangle, Eye
+  ArrowLeft, AlertTriangle, Eye, Camera
 } from "lucide-react";
 
 export default function WholesalerProducts() {
