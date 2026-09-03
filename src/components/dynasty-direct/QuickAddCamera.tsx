@@ -137,12 +137,12 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       setShots(next);
       persist(next);
 
-      // AUTO-ADVANCE. No Next button to hunt for.
+      // AUTO-ADVANCE through the 3-shot sequence. Processing only starts once
+      // ALL THREE shots are in — the extra angle is never silently skipped.
       if (index < 2) setActiveShot(index + 1);
-      if (!noLabel && (index === LABEL || index === ANGLE)) {
-        // Both required shots are in — start processing by itself.
-        if (next[FRONT] && next[LABEL]) setTimeout(() => runProcessing(next, false), 350);
-      }
+      const allThree = Boolean(next[FRONT] && next[LABEL] && next[ANGLE]);
+      if (allThree) setTimeout(() => runProcessing(next, noLabel), 350);
+
     } catch (e: any) {
       toast.error('That shot did not upload', { description: e.message ?? 'Tap the button and try again — nothing else was lost.' });
     } finally {
