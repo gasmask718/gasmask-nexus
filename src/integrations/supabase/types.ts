@@ -71545,6 +71545,7 @@ export type Database = {
           availability_summary: string | null
           category_groups: string[] | null
           city: string | null
+          consent_acknowledged_at: string | null
           contact_method: string | null
           converted_worker_id: string | null
           country: string
@@ -71560,6 +71561,7 @@ export type Database = {
           owns_supplies: boolean | null
           owns_supplies_source: string | null
           phone: string | null
+          referral_source: string | null
           region: string | null
           service_area: string | null
           source_id: string | null
@@ -71569,11 +71571,15 @@ export type Database = {
           state: string | null
           status: string
           updated_at: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
           availability_summary?: string | null
           category_groups?: string[] | null
           city?: string | null
+          consent_acknowledged_at?: string | null
           contact_method?: string | null
           converted_worker_id?: string | null
           country?: string
@@ -71589,6 +71595,7 @@ export type Database = {
           owns_supplies?: boolean | null
           owns_supplies_source?: string | null
           phone?: string | null
+          referral_source?: string | null
           region?: string | null
           service_area?: string | null
           source_id?: string | null
@@ -71598,11 +71605,15 @@ export type Database = {
           state?: string | null
           status?: string
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
           availability_summary?: string | null
           category_groups?: string[] | null
           city?: string | null
+          consent_acknowledged_at?: string | null
           contact_method?: string | null
           converted_worker_id?: string | null
           country?: string
@@ -71618,6 +71629,7 @@ export type Database = {
           owns_supplies?: boolean | null
           owns_supplies_source?: string | null
           phone?: string | null
+          referral_source?: string | null
           region?: string | null
           service_area?: string | null
           source_id?: string | null
@@ -71627,6 +71639,9 @@ export type Database = {
           state?: string | null
           status?: string
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: [
           {
