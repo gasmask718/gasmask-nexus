@@ -67,7 +67,7 @@ serve(async (req) => {
       );
     }
 
-    const { template, to, data, subject_override } = await req.json();
+    const { template, to, data, subject_override, from_override } = await req.json();
     if (!template || !to) throw new Error("template + to required");
     const tpl = templates[template as TemplateName];
     if (!tpl) throw new Error(`Unknown template: ${template}`);
@@ -77,7 +77,7 @@ serve(async (req) => {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: [to], subject: subject_override || subject, html }),
+      body: JSON.stringify({ from: from_override || FROM, to: [to], subject: subject_override || subject, html }),
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(json?.message || `Resend ${res.status}`);
