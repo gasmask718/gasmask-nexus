@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
-  Camera, Loader2, Check, SkipForward, RotateCcw, AlertTriangle, CheckCircle2, DollarSign, Tag,
+  Camera, Loader2, Check, SkipForward, RotateCcw, ArrowLeft, AlertTriangle, CheckCircle2, DollarSign, Tag,
 } from 'lucide-react';
 
 /**
