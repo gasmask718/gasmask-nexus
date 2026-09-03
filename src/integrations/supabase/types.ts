@@ -71492,6 +71492,86 @@ export type Database = {
           },
         ]
       }
+      icw_candidate_leads: {
+        Row: {
+          availability_summary: string | null
+          category_groups: string[] | null
+          city: string | null
+          converted_worker_id: string | null
+          country: string
+          created_at: string
+          email: string | null
+          experience_summary: string | null
+          full_name: string | null
+          id: string
+          ingestion_run_id: string | null
+          notes: string | null
+          phone: string | null
+          region: string | null
+          service_area: string | null
+          source_id: string | null
+          source_platform: string | null
+          source_url: string | null
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          availability_summary?: string | null
+          category_groups?: string[] | null
+          city?: string | null
+          converted_worker_id?: string | null
+          country?: string
+          created_at?: string
+          email?: string | null
+          experience_summary?: string | null
+          full_name?: string | null
+          id?: string
+          ingestion_run_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          region?: string | null
+          service_area?: string | null
+          source_id?: string | null
+          source_platform?: string | null
+          source_url?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          availability_summary?: string | null
+          category_groups?: string[] | null
+          city?: string | null
+          converted_worker_id?: string | null
+          country?: string
+          created_at?: string
+          email?: string | null
+          experience_summary?: string | null
+          full_name?: string | null
+          id?: string
+          ingestion_run_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          region?: string | null
+          service_area?: string | null
+          source_id?: string | null
+          source_platform?: string | null
+          source_url?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "icw_candidate_leads_converted_worker_id_fkey"
+            columns: ["converted_worker_id"]
+            isOneToOne: false
+            referencedRelation: "icw_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       icw_dispatch_log: {
         Row: {
           created_at: string
