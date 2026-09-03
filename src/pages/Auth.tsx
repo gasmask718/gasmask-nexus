@@ -67,7 +67,7 @@ const Auth = () => {
       // Genuinely no role assigned — new signup awaiting admin approval.
       navigate('/pending-approval', { replace: true });
     }
-  }, [user, profileData, profileLoading, rbacRole, rbacLoading, navigate, location.state]);
+  }, [user, profileData, profileLoading, rbacRole, rbacLoading, navigate, location.state, location.search]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
