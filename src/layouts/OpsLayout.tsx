@@ -42,10 +42,17 @@ export default function OpsLayout() {
           <div className="flex items-center justify-between px-3 sm:px-4 h-14">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Crown className="h-4 w-4 text-primary" />
+                {isWholesalerPortal ? (
+                  <Boxes className="h-4 w-4 text-primary" />
+                ) : (
+                  <Crown className="h-4 w-4 text-primary" />
+                )}
               </div>
-              <span className="font-bold text-sm text-foreground">GasMask Ops</span>
+              <span className="font-bold text-sm text-foreground">
+                {isWholesalerPortal ? 'Dynasty Direct Wholesaler' : 'GasMask Ops'}
+              </span>
             </div>
+
 
             <div className="flex items-center gap-1.5 sm:gap-2">
               {canInstall && (
