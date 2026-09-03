@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { getOpsNavItems } from '@/config/opsNavigation';
 import { useOpsUnreadCount } from '@/hooks/useOpsInbox';
@@ -7,11 +7,18 @@ import { cn } from '@/lib/utils';
 export default function OpsBottomNav() {
   const { data, isLoading } = useCurrentUserProfile();
   const { data: unreadCount = 0 } = useOpsUnreadCount();
+  const { pathname } = useLocation();
 
   if (isLoading || !data?.profile) return null;
 
   const role = data.profile.primary_role;
-  const items = getOpsNavItems(role);
+  // Inside the Dynasty Direct wholesaler portal the nav follows the portal,
+  // not the user's primary role (an owner/admin visiting it still needs the
+  // wholesaler tabs, never the GasMask ops tabs).
+  const items = pathname.startsWith('/portal/wholesaler')
+    ? getOpsNavItems('wholesaler')
+    : getOpsNavItems(role);
+
 
   if (items.length === 0) return null;
 
