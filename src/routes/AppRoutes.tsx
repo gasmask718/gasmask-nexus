@@ -252,6 +252,7 @@ const FieldAssignments = lazy(() => import('@/pages/admin/FieldAssignments'));
 const AmbassadorInviteGovernance = lazy(() => import('@/pages/admin/AmbassadorInviteGovernance'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
 const ClipperApplication = lazy(() => import('@/pages/apply/ClipperApplication'));
+const ICWCleanerApplication = lazy(() => import('@/pages/apply/ICWCleanerApplication'));
 const ClipperLogin = lazy(() => import('@/pages/clipper/ClipperLogin'));
 const ClipperPortal = lazy(() => import('@/pages/clipper/ClipperPortal'));
 
@@ -1454,6 +1455,8 @@ export default function AppRoutes() {
       {/* Public GasMask ambassador referral form (shared by ambassadors, no login) */}
       <Route path="/ambassador-referral/:code" element={<AmbassadorReferralPage />} />
       <Route path="/apply/beauty-specialist" element={<BeautyProviderSignup />} />
+      {/* ICW independent cleaner application (public, no login) */}
+      <Route path="/apply/cleaner" element={<ICWCleanerApplication />} />
       {/* Brandaro paid-client intake (public, no login) */}
       <Route path="/intake" element={<BrandaroIntakePage />} />
       <Route path="/ambassador/login" element={<AmbassadorLogin />} />

@@ -614,3 +614,6 @@ verify_jwt = false
 [functions.dd-provision-wholesaler]
 verify_jwt = false
 
+
+[functions.icw-candidate-apply]
+verify_jwt = false
