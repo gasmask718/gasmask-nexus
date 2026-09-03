@@ -84,13 +84,21 @@ export function useWholesalerProducts() {
     mutationFn: async (data: CreateProductData) => {
       if (!profile) throw new Error('No wholesaler profile');
 
+      // PROVENANCE: anything typed in this form is manual entry, never label OCR.
+      const touchesSpecs =
+        data.weight_oz != null || data.length_in != null ||
+        data.width_in != null || data.height_in != null;
+
+
       const { data: product, error } = await supabase
         .from('products_all')
         .insert([{
           ...data,
+          ...(touchesSpecs ? { spec_source: 'manual', specs_verified_at: new Date().toISOString() } : {}),
           wholesaler_id: profile.id,
           status: 'active',
         }])
+
         .select()
         .single();
 

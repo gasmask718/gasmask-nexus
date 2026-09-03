@@ -660,6 +660,30 @@ async function runPublish(body: any) {
 
   const recognition = recognitionEarly;
 
+  // ---- IDENTIFIERS: never invent one. Carry through only what was actually read/typed. ----
+  const label = (draft.label_extraction || {}) as any;
+  const rawUpc = String(label.upc ?? '').replace(/\D/g, '');
+  // Valid retail identifier lengths only (UPC-E 8, UPC-A 12, EAN-13, GTIN-14).
+  const upc = [8, 12, 13, 14].includes(rawUpc.length) ? rawUpc : null;
+  const gtin = upc ? upc.padStart(14, '0') : null;
+  const supplierSku = (draft.sku ? String(draft.sku).trim() : '') || null;
+
+  // ---- SHIPPING MEASUREMENTS: dedicated columns are authoritative; jsonb stays mirrored. ----
+  const draftDims = (draft.dimensions || {}) as any;
+  const num = (v: any) => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
+  const length_in = num(draftDims.length_in ?? draftDims.length);
+  const width_in = num(draftDims.width_in ?? draftDims.width);
+  const height_in = num(draftDims.height_in ?? draftDims.height);
+  const weight_oz = num(draft.weight_oz);
+
+  // ---- PROVENANCE: label OCR vs manual/estimate. No external enrichment in this pass. ----
+  const ocrNormalized = (label.normalized || {}) as any;
+  const ocrMatchesDraft =
+    !!label.label_detected &&
+    num(ocrNormalized.weight_oz) != null &&
+    num(ocrNormalized.weight_oz) === weight_oz;
+  const specSource = ocrMatchesDraft ? 'label_ocr' : draft.measurements_estimate ? 'estimate' : 'manual';
+
   const { data: prod, error: insErr } = await sb.from('products_all').insert({
     wholesaler_id: wholesalerProfileId,
     product_name: copy.title || draft.product_name,
@@ -675,8 +699,26 @@ async function runPublish(body: any) {
     supplier_cost_cents: draft.cost != null ? Math.round(Number(draft.cost) * 100) : null,
     street_price: pricing.suggested_street || null,
     inventory_qty: typeof draft.inventory_qty === 'number' ? draft.inventory_qty : 0,
-    weight_oz: draft.weight_oz ?? null,
-    dimensions: draft.dimensions ?? null,
+    // SHIPPING PACKAGE weight + dims (case_* stays the case-level set).
+    weight_oz,
+    length_in,
+    width_in,
+    height_in,
+    dimensions: draft.dimensions ?? null, // kept in sync by dd_aa_sync_shipping_dimensions_trg
+    upc,
+    gtin,
+    supplier_sku: supplierSku,
+    spec_source: specSource,
+    spec_source_ref: {
+      draft_id,
+      label_photo_url: labelUrl,
+      label_confidence: label.confidence ?? null,
+      label_complete: label.complete ?? null,
+      units_per_case: label.units_per_case ?? null,
+      measurements_verified_at: draft.measurements_verified_at,
+    },
+    specs_verified_at: draft.measurements_verified_at ?? null,
+    specs_verified_by: draft.measurements_verified_by ?? null,
     key_features: Array.isArray(recognition.key_features) && recognition.key_features.length ? recognition.key_features : null,
     item_type: recognition.item_type || null,
     package_text: recognition.package_text || null,
@@ -686,6 +728,7 @@ async function runPublish(body: any) {
     recognition: Object.keys(recognition).length ? recognition : null,
     status: 'active',
   }).select().single();
+
   if (insErr) throw new Error(`publish insert: ${insErr.message}`);
 
   // Safety check: if the confirm-gate trigger downgraded status (e.g. missing confirmed_at race),
