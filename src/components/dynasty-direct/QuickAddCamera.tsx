@@ -467,11 +467,34 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
             </div>
           )}
 
-          {shots[FRONT] && (
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-12 text-sm"
+              disabled={activeShot === 0 || uploading}
+              onClick={() => setActiveShot(Math.max(0, activeShot - 1))}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" /> Back
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-12 text-sm"
+              disabled={!shots[activeShot] || uploading}
+              onClick={() => fileRef.current?.click()}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" /> Retake
+            </Button>
+          </div>
+
+          {/* Explicit skip — only on the LAST shot, never automatic. */}
+          {activeShot === 2 && shots[FRONT] && !shots[ANGLE] && (
             <Button variant="secondary" size="lg" className="w-full h-14 text-base" onClick={finishShooting}>
-              <SkipForward className="h-5 w-5 mr-2" /> Done — that is enough
+              <SkipForward className="h-5 w-5 mr-2" /> Skip the extra angle — done
             </Button>
           )}
+
 
           {shots.some(Boolean) && (
             <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={reset}>
