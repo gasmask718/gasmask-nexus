@@ -144,8 +144,11 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     markManualSignIn();
+    // The provider round-trip drops ?next=, so it is already parked in
+    // sessionStorage and re-applied by /auth/callback.
+    storePendingNext(new URLSearchParams(location.search).get('next'));
     const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/auth/callback`,
     });
     if (error) {
       toast.error(error.message || 'Google sign-in failed');

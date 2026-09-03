@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { getRoleRedirectPath, type OSRole } from '@/config/osNavigation';
+import { consumePendingNext, isSafeNextPath } from '@/lib/authNext';
 
 async function resolveRoleDestination(fallback: string): Promise<string> {
   try {
@@ -39,15 +40,14 @@ export default function AuthCallback() {
     (async () => {
       const url = new URL(window.location.href);
       const code = url.searchParams.get('code');
-      const nextParam = url.searchParams.get('next');
+      // OAuth providers drop the original query string — fall back to the
+      // destination parked before the round-trip (e.g. /portal/wholesaler).
+      const nextParam = url.searchParams.get('next') ?? consumePendingNext();
       const errorDesc =
         url.searchParams.get('error_description') ||
         url.searchParams.get('error');
 
-      const safeNext =
-        nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.startsWith('/auth')
-          ? nextParam
-          : '/';
+      const safeNext = isSafeNextPath(nextParam) ? nextParam : '/';
 
       const bounceFail = (reason: string) => {
         navigate(`/auth?verify=failed&reason=${encodeURIComponent(reason)}`, { replace: true });
