@@ -98058,6 +98058,7 @@ export type Database = {
           dtc_price_b: number | null
           flavor_or_variant: string | null
           geo_blocked_states: string[] | null
+          gtin: string | null
           has_variants: boolean
           height_in: number | null
           id: string
@@ -98094,6 +98095,10 @@ export type Database = {
           shipping_from_city: string | null
           shipping_from_state: string | null
           size_or_count: string | null
+          spec_source: string | null
+          spec_source_ref: Json | null
+          specs_verified_at: string | null
+          specs_verified_by: string | null
           stackable: boolean | null
           status: string | null
           store_margin_pct: number | null
@@ -98105,11 +98110,13 @@ export type Database = {
           supplier_cost_cents: number | null
           supplier_id: string | null
           supplier_ships: boolean
+          supplier_sku: string | null
           target_dtc_margin_pct: number | null
           target_store_margin_pct: number | null
           track_inventory: boolean | null
           unit_type: string | null
           units_per_case: number | null
+          upc: string | null
           updated_at: string | null
           variant_types: string[]
           weight_oz: number | null
@@ -98139,6 +98146,7 @@ export type Database = {
           dtc_price_b?: number | null
           flavor_or_variant?: string | null
           geo_blocked_states?: string[] | null
+          gtin?: string | null
           has_variants?: boolean
           height_in?: number | null
           id?: string
@@ -98175,6 +98183,10 @@ export type Database = {
           shipping_from_city?: string | null
           shipping_from_state?: string | null
           size_or_count?: string | null
+          spec_source?: string | null
+          spec_source_ref?: Json | null
+          specs_verified_at?: string | null
+          specs_verified_by?: string | null
           stackable?: boolean | null
           status?: string | null
           store_margin_pct?: number | null
@@ -98186,11 +98198,13 @@ export type Database = {
           supplier_cost_cents?: number | null
           supplier_id?: string | null
           supplier_ships?: boolean
+          supplier_sku?: string | null
           target_dtc_margin_pct?: number | null
           target_store_margin_pct?: number | null
           track_inventory?: boolean | null
           unit_type?: string | null
           units_per_case?: number | null
+          upc?: string | null
           updated_at?: string | null
           variant_types?: string[]
           weight_oz?: number | null
@@ -98220,6 +98234,7 @@ export type Database = {
           dtc_price_b?: number | null
           flavor_or_variant?: string | null
           geo_blocked_states?: string[] | null
+          gtin?: string | null
           has_variants?: boolean
           height_in?: number | null
           id?: string
@@ -98256,6 +98271,10 @@ export type Database = {
           shipping_from_city?: string | null
           shipping_from_state?: string | null
           size_or_count?: string | null
+          spec_source?: string | null
+          spec_source_ref?: Json | null
+          specs_verified_at?: string | null
+          specs_verified_by?: string | null
           stackable?: boolean | null
           status?: string | null
           store_margin_pct?: number | null
@@ -98267,11 +98286,13 @@ export type Database = {
           supplier_cost_cents?: number | null
           supplier_id?: string | null
           supplier_ships?: boolean
+          supplier_sku?: string | null
           target_dtc_margin_pct?: number | null
           target_store_margin_pct?: number | null
           track_inventory?: boolean | null
           unit_type?: string | null
           units_per_case?: number | null
+          upc?: string | null
           updated_at?: string | null
           variant_types?: string[]
           weight_oz?: number | null
@@ -158516,6 +158537,7 @@ export type Database = {
           dtc_price_b: number | null
           flavor_or_variant: string | null
           geo_blocked_states: string[] | null
+          gtin: string | null
           has_variants: boolean
           height_in: number | null
           id: string
@@ -158552,6 +158574,10 @@ export type Database = {
           shipping_from_city: string | null
           shipping_from_state: string | null
           size_or_count: string | null
+          spec_source: string | null
+          spec_source_ref: Json | null
+          specs_verified_at: string | null
+          specs_verified_by: string | null
           stackable: boolean | null
           status: string | null
           store_margin_pct: number | null
@@ -158563,11 +158589,13 @@ export type Database = {
           supplier_cost_cents: number | null
           supplier_id: string | null
           supplier_ships: boolean
+          supplier_sku: string | null
           target_dtc_margin_pct: number | null
           target_store_margin_pct: number | null
           track_inventory: boolean | null
           unit_type: string | null
           units_per_case: number | null
+          upc: string | null
           updated_at: string | null
           variant_types: string[]
           weight_oz: number | null
@@ -158680,6 +158708,7 @@ export type Database = {
           dtc_price_b: number | null
           flavor_or_variant: string | null
           geo_blocked_states: string[] | null
+          gtin: string | null
           has_variants: boolean
           height_in: number | null
           id: string
@@ -158716,6 +158745,10 @@ export type Database = {
           shipping_from_city: string | null
           shipping_from_state: string | null
           size_or_count: string | null
+          spec_source: string | null
+          spec_source_ref: Json | null
+          specs_verified_at: string | null
+          specs_verified_by: string | null
           stackable: boolean | null
           status: string | null
           store_margin_pct: number | null
@@ -158727,11 +158760,13 @@ export type Database = {
           supplier_cost_cents: number | null
           supplier_id: string | null
           supplier_ships: boolean
+          supplier_sku: string | null
           target_dtc_margin_pct: number | null
           target_store_margin_pct: number | null
           track_inventory: boolean | null
           unit_type: string | null
           units_per_case: number | null
+          upc: string | null
           updated_at: string | null
           variant_types: string[]
           weight_oz: number | null
