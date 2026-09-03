@@ -75,7 +75,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     noLabel
       ? { key: 'angle1', label: 'Another angle', hint: 'Optional — side, back, or the case.' }
       : { key: 'label', label: 'The label', hint: 'The panel with weight and dimensions.' },
-    { key: 'angle', label: 'Another angle', hint: 'Optional — side, back, or the case.' },
+    { key: 'angle', label: 'Another angle', hint: 'Side, back, or the case — last shot.' },
   ];
 
   // ---- running count -------------------------------------------------------
