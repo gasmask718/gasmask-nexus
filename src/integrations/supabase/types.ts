@@ -71545,6 +71545,7 @@ export type Database = {
           availability_summary: string | null
           category_groups: string[] | null
           city: string | null
+          contact_method: string | null
           converted_worker_id: string | null
           country: string
           created_at: string
@@ -71552,13 +71553,18 @@ export type Database = {
           experience_summary: string | null
           full_name: string | null
           id: string
+          independent_signal: string | null
+          independent_signal_source: string | null
           ingestion_run_id: string | null
           notes: string | null
+          owns_supplies: boolean | null
+          owns_supplies_source: string | null
           phone: string | null
           region: string | null
           service_area: string | null
           source_id: string | null
           source_platform: string | null
+          source_posted_at: string | null
           source_url: string | null
           state: string | null
           status: string
@@ -71568,6 +71574,7 @@ export type Database = {
           availability_summary?: string | null
           category_groups?: string[] | null
           city?: string | null
+          contact_method?: string | null
           converted_worker_id?: string | null
           country?: string
           created_at?: string
@@ -71575,13 +71582,18 @@ export type Database = {
           experience_summary?: string | null
           full_name?: string | null
           id?: string
+          independent_signal?: string | null
+          independent_signal_source?: string | null
           ingestion_run_id?: string | null
           notes?: string | null
+          owns_supplies?: boolean | null
+          owns_supplies_source?: string | null
           phone?: string | null
           region?: string | null
           service_area?: string | null
           source_id?: string | null
           source_platform?: string | null
+          source_posted_at?: string | null
           source_url?: string | null
           state?: string | null
           status?: string
@@ -71591,6 +71603,7 @@ export type Database = {
           availability_summary?: string | null
           category_groups?: string[] | null
           city?: string | null
+          contact_method?: string | null
           converted_worker_id?: string | null
           country?: string
           created_at?: string
@@ -71598,13 +71611,18 @@ export type Database = {
           experience_summary?: string | null
           full_name?: string | null
           id?: string
+          independent_signal?: string | null
+          independent_signal_source?: string | null
           ingestion_run_id?: string | null
           notes?: string | null
+          owns_supplies?: boolean | null
+          owns_supplies_source?: string | null
           phone?: string | null
           region?: string | null
           service_area?: string | null
           source_id?: string | null
           source_platform?: string | null
+          source_posted_at?: string | null
           source_url?: string | null
           state?: string | null
           status?: string

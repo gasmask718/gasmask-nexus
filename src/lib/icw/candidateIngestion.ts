@@ -44,6 +44,17 @@ export interface ICWCandidateLead {
   experience_summary: string | null;
   availability_summary: string | null;
   notes: string | null;
+  /** Original listing/profile date — distinct from created_at (our ingest time). */
+  source_posted_at: string | null;
+  /** 'explicit_yes' | 'explicit_no' | null. Never inferred — only when the source states it. */
+  independent_signal: string | null;
+  /** Brief note of what in the source stated the independence signal. */
+  independent_signal_source: string | null;
+  /** true/false/null. Never inferred — only when the source states it. */
+  owns_supplies: boolean | null;
+  owns_supplies_source: string | null;
+  /** 'platform_relay' | 'public_phone' | 'public_email' | null. */
+  contact_method: string | null;
   status: string;
   ingestion_run_id: string | null;
   converted_worker_id: string | null;
@@ -159,10 +170,26 @@ export interface CandidateUpsertOptions {
  * Canonical entry point for ingesting one candidate lead.
  * Match → verifiedUpdate; no match → verifiedInsert.
  */
+/**
+ * Zero-outreach phase: ingestion never advances a candidate past 'reviewing'.
+ * Any status outside {'candidate','reviewing'} on an input is dropped — moving
+ * to contacted/qualified/converted/rejected is an app-side manual action only.
+ */
+const INGEST_ALLOWED_STATUSES = new Set(['candidate', 'reviewing']);
+
+function sanitizeCandidateInput(input: ICWCandidateInput): ICWCandidateInput {
+  if (input.status !== undefined && !INGEST_ALLOWED_STATUSES.has(input.status)) {
+    const { status: _dropped, ...rest } = input;
+    return rest;
+  }
+  return input;
+}
+
 export async function upsertCandidateLead(
-  input: ICWCandidateInput,
+  rawInput: ICWCandidateInput,
   options: CandidateUpsertOptions = {},
 ): Promise<CandidateUpsertResult> {
+  const input = sanitizeCandidateInput(rawInput);
   const match = await findExistingCandidate(input);
 
   if (match) {
