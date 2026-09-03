@@ -52,14 +52,22 @@ const Auth = () => {
       null;
 
     if (resolvedRole) {
-      const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
-      const safeReturnTo = returnTo?.startsWith('/') && !returnTo.startsWith('/auth') ? returnTo : null;
+      // Deep-link support: an access link may carry ?next=/portal/wholesaler so a
+      // multi-role user (e.g. owner who is also a wholesaler) lands on the portal
+      // they were invited to instead of their default role home.
+      const nextParam = new URLSearchParams(location.search).get('next');
+      const returnTo = nextParam ?? (location.state as { returnTo?: string } | null)?.returnTo;
+      const safeReturnTo =
+        returnTo?.startsWith('/') && !returnTo.startsWith('//') && !returnTo.startsWith('/auth')
+          ? returnTo
+          : null;
       navigate(safeReturnTo || getRoleRedirectPath(resolvedRole), { replace: true });
+
     } else {
       // Genuinely no role assigned — new signup awaiting admin approval.
       navigate('/pending-approval', { replace: true });
     }
-  }, [user, profileData, profileLoading, rbacRole, rbacLoading, navigate, location.state]);
+  }, [user, profileData, profileLoading, rbacRole, rbacLoading, navigate, location.state, location.search]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
