@@ -78,6 +78,8 @@ export interface HwLeadFilters {
   alreadyDelivers?: boolean | null;
   medicalOnly?: boolean;
   hasPhone?: boolean;
+  /** Map surfaces only: skip rows without coordinates so the row budget goes to pins. */
+  geoOnly?: boolean;
   search?: string;
   bbox?: { west: number; south: number; east: number; north: number } | null;
   limit?: number;
@@ -92,6 +94,7 @@ export async function fetchHwLeads(filters: HwLeadFilters = {}): Promise<HwLead[
   if (filters.alreadyDelivers != null) q = q.eq('already_delivers', filters.alreadyDelivers);
   if (filters.medicalOnly) q = q.eq('medical_flag', true);
   if (filters.hasPhone) q = q.not('phone', 'is', null);
+  if (filters.geoOnly) q = q.not('lat', 'is', null).not('long', 'is', null);
   if (filters.search) q = q.ilike('business_name', `%${filters.search}%`);
   if (filters.bbox) {
     q = q

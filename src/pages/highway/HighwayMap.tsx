@@ -39,6 +39,7 @@ export default function HighwayMap() {
     alreadyDelivers: deliversOnly ? true : null,
     search: search || undefined,
     bbox,
+    geoOnly: true,
     limit: 2000,
   };
 
