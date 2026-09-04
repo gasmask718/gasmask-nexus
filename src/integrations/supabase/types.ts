@@ -115657,6 +115657,7 @@ export type Database = {
           deleted_by: string | null
           email: string | null
           escalation_flag: boolean | null
+          gift_request: string | null
           homie_set_at: string | null
           homie_set_by: string | null
           id: string
@@ -115724,6 +115725,7 @@ export type Database = {
           deleted_by?: string | null
           email?: string | null
           escalation_flag?: boolean | null
+          gift_request?: string | null
           homie_set_at?: string | null
           homie_set_by?: string | null
           id?: string
@@ -115791,6 +115793,7 @@ export type Database = {
           deleted_by?: string | null
           email?: string | null
           escalation_flag?: boolean | null
+          gift_request?: string | null
           homie_set_at?: string | null
           homie_set_by?: string | null
           id?: string
@@ -118914,6 +118917,45 @@ export type Database = {
             referencedColumns: ["store_id"]
           },
         ]
+      }
+      store_sample_checks: {
+        Row: {
+          brand: string | null
+          checked_at: string
+          checked_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          product_id: string | null
+          qty_remaining: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          checked_at?: string
+          checked_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          product_id?: string | null
+          qty_remaining: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          checked_at?: string
+          checked_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          product_id?: string | null
+          qty_remaining?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       store_samples_given: {
         Row: {
