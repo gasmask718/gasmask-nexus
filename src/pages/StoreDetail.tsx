@@ -26,6 +26,8 @@ import { CommunicationTimeline } from "@/components/CommunicationTimeline";
 import { StoreReviewControls } from "@/components/store/StoreReviewControls";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreStreetView } from "@/components/store/StoreStreetView";
+import { StoreLocationMap } from "@/components/store/StoreLocationMap";
+import { ConnectedStoresCard } from "@/components/store/ConnectedStoresCard";
 
 import { StoreReconCard } from "@/components/store/StoreReconCard";
 import { StoreCommunicationPreferences } from "@/components/store/StoreCommunicationPreferences";
@@ -535,6 +537,32 @@ const StoreDetail = () => {
               />
             </div>
           </div>
+
+          {/* Map first — sharp, interactive, right at the top of the profile. */}
+          <StoreProfileSection
+            id="location"
+            title="Location"
+            description="Interactive map for this store. Street view stays in Field Ops below."
+          >
+            <StoreLocationMap
+              lat={store.lat}
+              lng={store.lng}
+              storeName={store.name}
+              address={address}
+            />
+          </StoreProfileSection>
+
+          <StoreProfileSection
+            id="connected-stores"
+            title="Connected Stores"
+            description="Same-owner locations linked to this store."
+          >
+            <ConnectedStoresCard
+              storeId={storeId}
+              currentStoreName={store.name}
+              currentStoreGroupId={store.connected_group_id}
+            />
+          </StoreProfileSection>
 
           <StoreProfileJumpNav />
 

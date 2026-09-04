@@ -1,9 +1,11 @@
 // Quick jump bar for the customer profile. Anchors only — it never
 // duplicates a section, it scrolls to the canonical one below.
 import { Button } from '@/components/ui/button';
-import { Gift, MessageSquare, StickyNote, Users } from 'lucide-react';
+import { Gift, Link2, MapPin, MessageSquare, StickyNote, Users } from 'lucide-react';
 
 const TARGETS = [
+  { id: 'location', label: 'Map', Icon: MapPin },
+  { id: 'connected-stores', label: 'Connected Stores', Icon: Link2 },
   { id: 'samples', label: 'Samples', Icon: Gift },
   { id: 'messages-calls', label: 'Messages & Calls', Icon: MessageSquare },
   { id: 'notes-activity', label: 'Notes', Icon: StickyNote },

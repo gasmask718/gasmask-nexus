@@ -56,6 +56,8 @@ interface StoreContact {
   owner_confirmed?: boolean | null;
   owner_confirmed_at?: string | null;
   owner_confirmed_by?: string | null;
+  shirt_size?: string | null;
+  gift_request?: string | null;
   is_homie?: boolean | null;
   homie_set_at?: string | null;
   homie_set_by?: string | null;
@@ -263,6 +265,16 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
                             storeId={storeId}
                             invalidateKeys={[['store-contacts-responsiveness', storeId]]}
                           />
+                          {contact.shirt_size && (
+                            <Badge variant="outline" className="text-xs">
+                              Shirt: {contact.shirt_size}
+                            </Badge>
+                          )}
+                          {contact.gift_request && (
+                            <Badge variant="outline" className="text-xs">
+                              Wants: {contact.gift_request}
+                            </Badge>
+                          )}
                           {/* Per-number note (field context) */}
                           <ContactPhoneNote
                             contactId={contact.id}

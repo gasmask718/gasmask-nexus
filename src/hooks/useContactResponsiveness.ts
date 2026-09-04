@@ -169,7 +169,9 @@ export function useStoreContactsWithResponsiveness(storeId: string) {
           owner_confirmed_by,
           is_homie,
           homie_set_at,
-          homie_set_by
+          homie_set_by,
+          shirt_size,
+          gift_request
         `)
         .is('deleted_at', null)
         .eq('store_id', storeId)

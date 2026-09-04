@@ -17,6 +17,8 @@ interface StoreContact {
   is_primary: boolean;
   can_receive_sms: boolean;
   email: string | null;
+  shirt_size?: string | null;
+  gift_request?: string | null;
 }
 
 interface StorePeopleSectionProps {
@@ -133,6 +135,12 @@ export function StorePeopleSection({ storeId }: StorePeopleSectionProps) {
             <Badge variant="secondary" className="text-xs">
               {ROLE_LABELS[contact.role] || contact.role}
             </Badge>
+            {contact.shirt_size && (
+              <Badge variant="outline" className="text-xs">Shirt: {contact.shirt_size}</Badge>
+            )}
+            {contact.gift_request && (
+              <Badge variant="outline" className="text-xs">Wants: {contact.gift_request}</Badge>
+            )}
             {contact.phone && (
               <span className="flex items-center gap-1">
                 {contact.phone}

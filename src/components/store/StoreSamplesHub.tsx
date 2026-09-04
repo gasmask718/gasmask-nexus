@@ -1,10 +1,12 @@
 // ════════════════════════════════════════════════════════════════════
 // STORE SAMPLES HUB — the permanent, always-visible Samples home on the
-// customer profile. Three panels, one workflow:
+// customer profile. One workflow, four panels:
 //   A. Available Samples  → products.promo_sample_available_qty (authoritative)
-//   B. Bring Samples      → store_tube_inventory_status (one promo item/brand)
-//   C. Samples Given      → existing store_samples_given history (reused)
-// No parallel sample system, no new history table, no invented quantities.
+//   B. Amount To Give     → store_tube_inventory_status (one promo item/brand)
+//   C. Samples Left       → store_sample_checks (dated checks, never overwritten)
+//   D. Samples Given      → existing store_samples_given history (reused as-is)
+// Brands come from the authoritative promo-sample flag on products, so every
+// configured brand shows up automatically. No parallel sample system.
 // ════════════════════════════════════════════════════════════════════
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,9 +15,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Boxes, Gift, Loader2, PackageCheck, Truck } from 'lucide-react';
+import { Boxes, ClipboardList, Loader2, PackageCheck, Truck } from 'lucide-react';
 import { toast } from 'sonner';
-import { CANONICAL_TUBE_SKUS } from '@/lib/inventory/skuDisplay';
+import { CANONICAL_TUBE_SKUS, brandForProductId } from '@/lib/inventory/skuDisplay';
 import { SamplesGivenSection } from '@/components/store/SamplesGivenSection';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -29,14 +31,11 @@ interface PromoSample {
   promo_sample_available_qty: number | null;
   parent_brand: string;
   display: string;
+  brand_key: string;
 }
 
-function parentBrandFor(productId: string, fallback: string) {
-  return CANONICAL_TUBE_SKUS.find((s) => s.product_id === productId)?.parent_brand ?? fallback;
-}
-
-function displayFor(productId: string, fallback: string) {
-  return CANONICAL_TUBE_SKUS.find((s) => s.product_id === productId)?.display ?? fallback;
+function skuFor(productId: string) {
+  return CANONICAL_TUBE_SKUS.find((s) => s.product_id === productId);
 }
 
 export function StoreSamplesHub({ storeId }: Props) {
@@ -44,8 +43,9 @@ export function StoreSamplesHub({ storeId }: Props) {
   const { user } = useAuth();
   const [availableDraft, setAvailableDraft] = useState<Record<string, string>>({});
   const [bringDraft, setBringDraft] = useState<Record<string, string>>({});
+  const [leftDraft, setLeftDraft] = useState<Record<string, string>>({});
 
-  // ── A. Configured promotional samples (one per brand, authoritative flag) ──
+  // ── Configured promotional samples: one per brand (authoritative flag) ──
   const { data: promos = [], isLoading: promosLoading } = useQuery({
     queryKey: ['promo-samples'],
     queryFn: async () => {
@@ -55,27 +55,57 @@ export function StoreSamplesHub({ storeId }: Props) {
         .eq('is_promo_sample', true)
         .eq('is_active', true);
       if (error) throw error;
-      return (data || []).map((p: any) => ({
-        ...p,
-        parent_brand: parentBrandFor(p.id, p.name),
-        display: displayFor(p.id, p.name),
-      })) as PromoSample[];
+      return (data || [])
+        .map((p: any) => {
+          const sku = skuFor(p.id);
+          return {
+            ...p,
+            parent_brand: sku?.parent_brand ?? p.name,
+            display: sku?.display ?? p.name,
+            brand_key: brandForProductId(p.id) ?? '',
+            order: sku?.order ?? 99,
+          } as PromoSample & { order: number };
+        })
+        .sort((a, b) => a.order - b.order) as PromoSample[];
     },
   });
 
-  // ── B. This store's per-brand bring-samples rows ──
+  // ── This store's per-brand bring-samples rows ──
   const { data: bringRows = [] } = useQuery({
     queryKey: ['store-bring-samples', storeId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('store_tube_inventory_status')
-        .select('id,brand_name,bring_samples,sample_qty_to_bring')
+        .select('id,brand_id,brand_name,bring_samples,sample_qty_to_bring')
         .eq('store_id', storeId);
       if (error) throw error;
       return data || [];
     },
     enabled: !!storeId,
   });
+
+  // ── Samples-left checks (dated history, newest first) ──
+  const { data: checks = [] } = useQuery({
+    queryKey: ['store-sample-checks', storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('store_sample_checks' as any)
+        .select('id,product_id,brand,qty_remaining,checked_at,checked_by,note')
+        .eq('store_id', storeId)
+        .order('checked_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: !!storeId,
+  });
+
+  const rowFor = (p: PromoSample) =>
+    (bringRows as any[]).find(
+      (r) =>
+        (r.brand_id && p.brand_key && r.brand_id.toLowerCase().replace(/[\s_-]/g, '') === p.brand_key.toLowerCase().replace(/[\s_-]/g, '')) ||
+        r.brand_name === p.display,
+    );
 
   const saveAvailable = useMutation({
     mutationFn: async (productId: string) => {
@@ -102,7 +132,7 @@ export function StoreSamplesHub({ storeId }: Props) {
     mutationFn: async (promo: PromoSample) => {
       const raw = bringDraft[promo.id];
       const qty = raw === '' || raw == null ? null : Math.max(0, parseInt(raw, 10) || 0);
-      const existing = (bringRows as any[]).find((r) => r.brand_name === promo.display);
+      const existing = rowFor(promo);
       if (existing) {
         const { error } = await supabase
           .from('store_tube_inventory_status')
@@ -114,6 +144,9 @@ export function StoreSamplesHub({ storeId }: Props) {
           .from('store_tube_inventory_status')
           .insert({
             store_id: storeId,
+            // brand_id must resolve to the brand's promo product, otherwise the
+            // one-promo-per-brand rule in the database clears the flag.
+            brand_id: promo.brand_key,
             brand_name: promo.display,
             sample_qty_to_bring: qty,
             bring_samples: !!qty,
@@ -122,11 +155,39 @@ export function StoreSamplesHub({ storeId }: Props) {
       }
     },
     onSuccess: () => {
-      toast.success('Samples to bring saved');
+      toast.success('Amount to give saved');
       qc.invalidateQueries({ queryKey: ['store-bring-samples', storeId] });
     },
-    onError: (e: any) => toast.error(e?.message || 'Failed to save samples to bring'),
+    onError: (e: any) => toast.error(e?.message || 'Failed to save amount to give'),
   });
+
+  const saveLeft = useMutation({
+    mutationFn: async (promo: PromoSample) => {
+      const raw = leftDraft[promo.id];
+      if (raw === '' || raw == null) throw new Error('Enter how many are left');
+      const qty = Math.max(0, parseInt(raw, 10) || 0);
+      const { error } = await supabase.from('store_sample_checks' as any).insert({
+        store_id: storeId,
+        product_id: promo.id,
+        brand: promo.parent_brand,
+        qty_remaining: qty,
+        checked_by: user?.id ?? null,
+      } as any);
+      if (error) throw error;
+    },
+    onSuccess: (_d, promo) => {
+      toast.success('Sample check recorded');
+      setLeftDraft((d) => ({ ...d, [promo.id]: '' }));
+      qc.invalidateQueries({ queryKey: ['store-sample-checks', storeId] });
+    },
+    onError: (e: any) => toast.error(e?.message || 'Failed to record sample check'),
+  });
+
+  const latestCheck = (productId: string) => checks.find((c) => c.product_id === productId);
+
+  const emptyState = (
+    <p className="text-sm italic text-muted-foreground">No promotional sample is configured yet.</p>
+  );
 
   return (
     <div className="space-y-4">
@@ -135,6 +196,7 @@ export function StoreSamplesHub({ storeId }: Props) {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
             <Boxes className="h-4 w-4" /> Available Samples
+            <Badge variant="outline" className="text-[10px]">{promos.length} brands</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -143,9 +205,7 @@ export function StoreSamplesHub({ storeId }: Props) {
               <Loader2 className="h-4 w-4 animate-spin" /> Loading…
             </div>
           ) : promos.length === 0 ? (
-            <p className="text-sm italic text-muted-foreground">
-              No promotional sample is configured yet.
-            </p>
+            emptyState
           ) : (
             promos.map((p) => (
               <div key={p.id} className="flex flex-wrap items-center gap-3 rounded-md border border-border/50 p-3">
@@ -183,72 +243,140 @@ export function StoreSamplesHub({ storeId }: Props) {
         </CardContent>
       </Card>
 
-      {/* ── B. BRING SAMPLES ── */}
+      {/* ── B. AMOUNT TO GIVE (BRING SAMPLES) ── */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <Truck className="h-4 w-4" /> Bring Samples
+            <Truck className="h-4 w-4" /> Amount To Give
             <Badge variant="outline" className="text-[10px]">One promo item per brand</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {promos.length === 0 ? (
-            <p className="text-sm italic text-muted-foreground">
-              No promotional sample is configured yet.
-            </p>
-          ) : (
-            promos.map((p) => {
-              const row = (bringRows as any[]).find((r) => r.brand_name === p.display);
-              return (
-                <div key={p.id} className="flex flex-wrap items-center gap-3 rounded-md border border-border/50 p-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {p.parent_brand}
-                    </p>
-                    <p className="text-sm font-medium">{p.display}</p>
+          {promos.length === 0
+            ? emptyState
+            : promos.map((p) => {
+                const row = rowFor(p);
+                return (
+                  <div key={p.id} className="flex flex-wrap items-center gap-3 rounded-md border border-border/50 p-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {p.parent_brand}
+                      </p>
+                      <p className="text-sm font-medium">{p.display}</p>
+                    </div>
+                    {row?.bring_samples && (
+                      <Badge variant="secondary" className="gap-1 text-[10px]">
+                        <PackageCheck className="h-3 w-3" /> Flagged
+                      </Badge>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Amount to give:</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        className="h-8 w-24 text-sm"
+                        placeholder={row?.sample_qty_to_bring == null ? '—' : ''}
+                        value={bringDraft[p.id] ?? (row?.sample_qty_to_bring ?? '').toString()}
+                        onChange={(e) => setBringDraft((d) => ({ ...d, [p.id]: e.target.value }))}
+                      />
+                      <Button
+                        size="sm"
+                        className="h-8"
+                        onClick={() => saveBring.mutate(p)}
+                        disabled={saveBring.isPending}
+                      >
+                        {saveBring.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
+                      </Button>
+                    </div>
                   </div>
-                  {row?.bring_samples && (
-                    <Badge variant="secondary" className="gap-1 text-[10px]">
-                      <PackageCheck className="h-3 w-3" /> Flagged
-                    </Badge>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Quantity to bring:</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      className="h-8 w-24 text-sm"
-                      placeholder={row?.sample_qty_to_bring == null ? '—' : ''}
-                      value={bringDraft[p.id] ?? (row?.sample_qty_to_bring ?? '').toString()}
-                      onChange={(e) => setBringDraft((d) => ({ ...d, [p.id]: e.target.value }))}
-                    />
-                    <Button
-                      size="sm"
-                      className="h-8"
-                      onClick={() => saveBring.mutate(p)}
-                      disabled={saveBring.isPending}
-                    >
-                      {saveBring.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
-                    </Button>
+                );
+              })}
+        </CardContent>
+      </Card>
+
+      {/* ── C. SAMPLES LEFT (DATED CHECKS) ── */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <ClipboardList className="h-4 w-4" /> Samples Left At This Store
+            <Badge variant="outline" className="text-[10px]">Every check is kept</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {promos.length === 0
+            ? emptyState
+            : promos.map((p) => {
+                const last = latestCheck(p.id);
+                return (
+                  <div key={p.id} className="rounded-md border border-border/50 p-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {p.parent_brand}
+                        </p>
+                        <p className="text-sm font-medium">{p.display}</p>
+                        {last ? (
+                          <p className="text-[11px] text-muted-foreground">
+                            Last check: {last.qty_remaining} left ·{' '}
+                            {new Date(last.checked_at).toLocaleString()}
+                          </p>
+                        ) : (
+                          <p className="text-[11px] italic text-muted-foreground">No check recorded yet</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Left now:</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          className="h-8 w-24 text-sm"
+                          placeholder="—"
+                          value={leftDraft[p.id] ?? ''}
+                          onChange={(e) => setLeftDraft((d) => ({ ...d, [p.id]: e.target.value }))}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8"
+                          onClick={() => saveLeft.mutate(p)}
+                          disabled={saveLeft.isPending}
+                        >
+                          {saveLeft.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Record'}
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+
+          {checks.length > 0 && (
+            <div className="rounded-md border border-border/40 bg-muted/20 p-3">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Check history
+              </p>
+              <ul className="space-y-1">
+                {checks.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between gap-2 text-xs">
+                    <span>
+                      <span className="font-medium">{skuFor(c.product_id)?.display ?? c.brand ?? 'Sample'}</span>
+                      <span className="text-muted-foreground"> · {c.qty_remaining} left</span>
+                    </span>
+                    <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+                      {new Date(c.checked_at).toLocaleString()}
+                      {c.checked_by ? ' · logged by rep' : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* ── C. SAMPLES GIVEN (existing history, unchanged storage) ── */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Gift className="h-4 w-4" /> Samples Given
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SamplesGivenSection storeId={storeId} variant="full" />
-        </CardContent>
-      </Card>
+      {/* ── D. SAMPLES GIVEN (existing history, untouched) ── */}
+      <SamplesGivenSection storeId={storeId} variant="full" />
     </div>
   );
 }
+
+export default StoreSamplesHub;
