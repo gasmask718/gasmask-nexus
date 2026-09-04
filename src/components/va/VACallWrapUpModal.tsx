@@ -30,7 +30,7 @@ const STATUS_OPTIONS: { value: FollowUpStatus; label: string; color: string }[] 
   { value: 'closed_deal',      label: '✅ Closed deal',            color: 'bg-emerald-600/20 text-emerald-300' },
   { value: 'callback_needed',  label: '📞 Need to call again',     color: 'bg-orange-500/15 text-orange-300' },
   { value: 'follow_up_later',  label: '🗓 Follow up later',         color: 'bg-amber-500/15 text-amber-300' },
-  { value: 'nurture',          label: '🌱 Nurture / long-term',     color: 'bg-gasmask/15 text-gasmask-glow' },
+  { value: 'nurture',          label: '🌱 Nurture / long-term',     color: 'bg-caller/15 text-caller-glow' },
   { value: 'no_answer',        label: '📵 No answer / voicemail',  color: 'bg-slate-500/20 text-slate-300' },
   { value: 'not_interested',   label: '❌ Not interested',          color: 'bg-red-500/15 text-red-300' },
 ];
@@ -208,9 +208,9 @@ export function VACallWrapUpModal({
       <DialogContent className="max-w-2xl bg-slate-900 text-white border-slate-700 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Phone className="h-5 w-5 text-gasmask-glow" />
+            <Phone className="h-5 w-5 text-caller-glow" />
             Call Wrap-Up
-            {leadName && <span className="text-gasmask-glow font-normal">— {leadName}</span>}
+            {leadName && <span className="text-caller-glow font-normal">— {leadName}</span>}
           </DialogTitle>
           <DialogDescription className="text-slate-400">
             Capture what happened so the next call starts where you left off.
@@ -274,7 +274,7 @@ export function VACallWrapUpModal({
           </div>
 
           {/* 1. Disposition (Call Outcome) — REQUIRED */}
-          <div className="rounded-lg border border-gasmask/30 bg-gasmask/5 p-3">
+          <div className="rounded-lg border border-caller/30 bg-caller/5 p-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm text-slate-100 font-medium">
                 Call Outcome <span className="text-red-400">*</span>
@@ -376,7 +376,7 @@ export function VACallWrapUpModal({
           {/* 4b. Next call context */}
           <div>
             <Label className="text-sm text-slate-200 flex items-center gap-1">
-              <RotateCcw className="h-3 w-3 text-gasmask-glow" />
+              <RotateCcw className="h-3 w-3 text-caller-glow" />
               Context for the next call
             </Label>
             <p className="text-[11px] text-slate-500 mb-1">
@@ -396,7 +396,7 @@ export function VACallWrapUpModal({
           <Button
             onClick={handleSave}
             disabled={saving || !canSave}
-            className="bg-gasmask text-gasmask-foreground hover:bg-gasmask-glow gap-1.5 disabled:opacity-50"
+            className="bg-caller text-caller-foreground hover:bg-caller-glow gap-1.5 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {saving ? 'Saving…' : 'Save Wrap-Up'}

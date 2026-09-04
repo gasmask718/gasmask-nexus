@@ -178,7 +178,7 @@ export function VACallHistory() {
       {/* Header / scope indicator */}
       <div className="flex items-center justify-between text-xs text-slate-400">
         <div className="flex items-center gap-2">
-          <User className="h-3.5 w-3.5 text-gasmask-glow" />
+          <User className="h-3.5 w-3.5 text-caller-glow" />
           <span>
             Showing calls for VA <span className="font-mono text-slate-300">{user?.email || user?.id?.slice(0, 8)}</span>
           </span>
@@ -278,15 +278,15 @@ export function VACallHistory() {
             return (
               <div
                 key={c.id}
-                className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 md:p-4 hover:border-gasmask/40 transition-colors"
+                className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 md:p-4 hover:border-caller/40 transition-colors"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 md:gap-4">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="w-9 h-9 rounded-lg bg-gasmask/10 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-caller/10 flex items-center justify-center shrink-0">
                       {isInbound ? (
                         <PhoneIncoming className="h-4 w-4 text-emerald-400" />
                       ) : (
-                        <PhoneOutgoing className="h-4 w-4 text-gasmask-glow" />
+                        <PhoneOutgoing className="h-4 w-4 text-caller-glow" />
                       )}
                     </div>
                     <div className="min-w-0">
@@ -307,7 +307,7 @@ export function VACallHistory() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0 flex-wrap">
                     {aiSummary && (
-                      <Badge className="text-[10px] bg-gasmask/15 text-gasmask-glow border border-gasmask/30 gap-1">
+                      <Badge className="text-[10px] bg-caller/15 text-caller-glow border border-caller/30 gap-1">
                         <Sparkles className="h-2.5 w-2.5" /> AI
                       </Badge>
                     )}
@@ -345,7 +345,7 @@ export function VACallHistory() {
 
                 {/* VA notes */}
                 {c.va_notes && (
-                  <p className="mt-2 text-xs text-slate-400 italic border-l-2 border-gasmask/40 pl-2">
+                  <p className="mt-2 text-xs text-slate-400 italic border-l-2 border-caller/40 pl-2">
                     VA note: {c.va_notes}
                   </p>
                 )}
@@ -354,7 +354,7 @@ export function VACallHistory() {
                 {(c.transcript || aiSummary) && (
                   <button
                     onClick={() => setExpanded(isOpen ? null : c.id)}
-                    className="mt-2 inline-flex items-center gap-1 text-[11px] text-gasmask-glow hover:text-gasmask-glow"
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] text-caller-glow hover:text-caller-glow"
                   >
                     <FileText className="h-3 w-3" />
                     {isOpen ? "Hide transcript" : "View transcript"}

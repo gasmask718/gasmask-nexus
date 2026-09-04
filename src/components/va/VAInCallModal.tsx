@@ -94,7 +94,7 @@ export function VAInCallModal({
   };
 
   const statusConfig = {
-    dialing: { label: '📞 Dialing...', cls: 'bg-gasmask/20 text-gasmask-glow' },
+    dialing: { label: '📞 Dialing...', cls: 'bg-caller/20 text-caller-glow' },
     ringing: { label: '📞 Ringing...', cls: 'bg-yellow-500/20 text-yellow-400 animate-pulse' },
     connected: { label: '🟢 Connected', cls: 'bg-emerald-500/20 text-emerald-400 animate-pulse' },
     ended: { label: '🔴 Ended', cls: 'bg-red-500/20 text-red-400' },
@@ -228,7 +228,7 @@ export function VAInCallModal({
                 <Button size="sm" variant="outline" className="text-emerald-400 border-emerald-500/30 gap-1" onClick={onCreateInvoice}>
                   <FileText className="h-3.5 w-3.5" /> Create Invoice
                 </Button>
-                <Button size="sm" variant="outline" className="text-gasmask-glow border-gasmask/30 gap-1" onClick={onSendSMS}>
+                <Button size="sm" variant="outline" className="text-caller-glow border-caller/30 gap-1" onClick={onSendSMS}>
                   <MessageSquare className="h-3.5 w-3.5" /> Send Follow-Up SMS
                 </Button>
               </div>

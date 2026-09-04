@@ -659,13 +659,13 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       <Card className="bg-slate-900/60 border-slate-700">
         <CardHeader>
           <CardTitle className="text-white text-base flex items-center gap-2">
-            <PlayCircle className="h-4 w-4 text-gasmask-glow" /> VA Auto Dialer
+            <PlayCircle className="h-4 w-4 text-caller-glow" /> VA Auto Dialer
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {listMode ? (
-            <div className="rounded-lg border border-gasmask/30 bg-gasmask/5 p-3">
-              <div className="text-xs uppercase tracking-wide text-gasmask-glow font-semibold mb-1">
+            <div className="rounded-lg border border-caller/30 bg-caller/5 p-3">
+              <div className="text-xs uppercase tracking-wide text-caller-glow font-semibold mb-1">
                 Lead-List Campaign
               </div>
               <div className="text-sm text-white">
@@ -718,7 +718,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           <Button
             onClick={startDialerSession}
             disabled={(listMode ? false : !selectedCampaign) || !selectedNumber}
-            className="w-full bg-gasmask text-gasmask-foreground hover:bg-gasmask-glow gap-2"
+            className="w-full bg-caller text-caller-foreground hover:bg-caller-glow gap-2"
           >
             <Phone className="h-4 w-4" />
             {listMode ? `Start Calling ${leadList!.length} Leads` : 'Start VA Dialer'}
@@ -727,7 +727,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           {/* ── Quick Dial: type any number and call ─────────────────── */}
           <div className="pt-2 border-t border-slate-700/60">
             <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-2 flex items-center gap-2">
-              <PhoneCall className="h-3 w-3 text-gasmask-glow" /> Quick Dial · Manual Number
+              <PhoneCall className="h-3 w-3 text-caller-glow" /> Quick Dial · Manual Number
             </div>
             <div className="grid grid-cols-1 gap-2">
               <Input
@@ -746,7 +746,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
               <Button
                 onClick={dialManualNumber}
                 disabled={!selectedNumber || !manualPhone || manualDialing}
-                className="w-full bg-gasmask text-gasmask-foreground hover:bg-gasmask-glow gap-2"
+                className="w-full bg-caller text-caller-foreground hover:bg-caller-glow gap-2"
               >
                 {manualDialing
                   ? <><Loader2 className="h-4 w-4 animate-spin" /> Dialing…</>
@@ -807,7 +807,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
           <div className="flex gap-2">
             <Button
-              className="flex-1 gap-2 bg-gasmask text-gasmask-foreground hover:bg-gasmask-glow"
+              className="flex-1 gap-2 bg-caller text-caller-foreground hover:bg-caller-glow"
               disabled={!ready || confirmingDone}
               onClick={confirmAccountDone}
             >
@@ -836,7 +836,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           <CardTitle className="text-white text-base flex items-center gap-2">
             <span className={`h-2 w-2 rounded-full ${
               phase === 'connected' ? 'bg-emerald-400 animate-pulse' :
-              phase === 'dialing'   ? 'bg-gasmask animate-pulse'    :
+              phase === 'dialing'   ? 'bg-caller animate-pulse'    :
                                       'bg-amber-400 animate-pulse'
             }`} />
             {phase === 'fetching_lead' ? 'Fetching next lead…' :
@@ -851,7 +851,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           {currentLead ? (
             <div className="space-y-2 text-sm">
               <div className="text-white font-semibold">{currentLead.business_name}</div>
-              <div className="font-mono text-gasmask-glow">{currentLead.phone}</div>
+              <div className="font-mono text-caller-glow">{currentLead.phone}</div>
               {currentLead.notes && (
                 <div className="text-xs text-slate-400 bg-slate-800/60 rounded p-2 border border-slate-700">
                   {currentLead.notes}
@@ -881,7 +881,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
               onClick={() => setReferenceOpen(true)}
               variant="outline"
               size="sm"
-              className="flex-1 gap-2 border-gasmask/40 text-gasmask-glow hover:text-gasmask"
+              className="flex-1 gap-2 border-caller/40 text-caller-glow hover:text-caller"
             >
               <BookOpen className="h-4 w-4" /> Scripts · FAQs · Rebuttals · Pricing
             </Button>
@@ -950,7 +950,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           <Button
             onClick={() => setSummaryOpen(true)}
             variant="outline"
-            className="gap-2 text-gasmask-glow border-gasmask/40 flex-1"
+            className="gap-2 text-caller-glow border-caller/40 flex-1"
           >
             Re-open wrap-up
           </Button>
@@ -994,7 +994,7 @@ function ReferenceModal({ open, onOpenChange }: { open: boolean; onOpenChange: (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl bg-slate-900 border-slate-700 text-white max-h-[85vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-5 pt-5 pb-2">
-          <DialogTitle className="text-gasmask-glow flex items-center gap-2 text-base">
+          <DialogTitle className="text-caller-glow flex items-center gap-2 text-base">
             <BookOpen className="h-4 w-4" /> Call Reference
           </DialogTitle>
         </DialogHeader>
