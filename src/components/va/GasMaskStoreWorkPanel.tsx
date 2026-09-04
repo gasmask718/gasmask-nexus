@@ -597,3 +597,93 @@ export function GasMaskStoreWorkPanel({ storeId, onNumbersProgress }: Props) {
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NumberRow — one phone number on the account: its canonical status, the
+// outcome buttons that record it, and inline correction of name / role / phone.
+// Writes go straight to store_contacts (the canonical contact record).
+// ─────────────────────────────────────────────────────────────────────────────
+function NumberRow({
+  row, worked, busy, outcomes, onMark, onSave,
+}: {
+  row: any;
+  worked: boolean;
+  busy: boolean;
+  outcomes: { key: string; label: string; vs: string | null; rs: string; cls: string }[];
+  onMark: (o: any) => void;
+  onSave: (patch: { name: string; role: string; phone: string }) => Promise<boolean>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(row.name || '');
+  const [role, setRole] = useState(row.role || '');
+  const [phone, setPhone] = useState(row.phone || '');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setName(row.name || ''); setRole(row.role || ''); setPhone(row.phone || '');
+  }, [row.id, row.name, row.role, row.phone]);
+
+  const status = row.responsiveness_status && row.responsiveness_status !== 'unknown'
+    ? row.responsiveness_status
+    : (row.number_verification_status || 'unverified');
+
+  return (
+    <div className={`rounded px-2 py-1.5 text-xs border ${worked
+      ? 'bg-slate-800/60 border-slate-700/60'
+      : 'bg-amber-500/5 border-amber-500/30'}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <span className="text-slate-200 font-mono">{row.phone || '—'}</span>
+          <span className="text-slate-500"> · {row.name || 'unnamed'}{row.role ? ` (${row.role})` : ''}</span>
+          {row.is_primary && <span className="ml-1 text-[9px] text-cyan-400 uppercase">primary</span>}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Badge className={worked
+            ? 'bg-emerald-500/15 text-emerald-300 text-[9px]'
+            : 'bg-amber-500/15 text-amber-300 text-[9px]'}>
+            {status}
+          </Badge>
+          {row.id && (
+            <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-slate-400"
+              onClick={() => setEditing((v) => !v)}>
+              {editing ? 'Cancel' : 'Edit'}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1 mt-1">
+        {busy && <Loader2 className="h-3 w-3 animate-spin text-slate-400" />}
+        {outcomes.map((o) => (
+          <Button key={o.key} size="sm" variant="ghost" disabled={busy}
+            className={`h-6 px-1.5 text-[10px] ${o.cls}`}
+            onClick={() => onMark(o)}>
+            {o.key === 'good' && <ShieldCheck className="h-3 w-3 mr-0.5" />}{o.label}
+          </Button>
+        ))}
+      </div>
+
+      {editing && row.id && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Contact name"
+            className="h-7 bg-slate-800 border-slate-700 text-white text-[11px]" />
+          <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role"
+            className="h-7 bg-slate-800 border-slate-700 text-white text-[11px]" />
+          <div className="flex gap-1">
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone"
+              className="h-7 bg-slate-800 border-slate-700 text-white text-[11px] font-mono" />
+            <Button size="sm" disabled={saving} className="h-7 px-2 text-[10px]"
+              onClick={async () => {
+                setSaving(true);
+                const ok = await onSave({ name, role, phone });
+                setSaving(false);
+                if (ok) setEditing(false);
+              }}>
+              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
