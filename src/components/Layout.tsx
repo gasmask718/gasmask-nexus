@@ -1391,6 +1391,30 @@ const Layout = ({ children }: LayoutProps) => {
         )}
       </div>
 
+      {/* 💜 GODDESS IN YOU HUB — INDEPENDENT HUB */}
+      <div className="pt-2 border-t border-purple-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-purple-400/80 tracking-wider">
+          💜 Goddess In You Hub
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.goddessInYou.id,
+          DYNASTY_NAVIGATION.goddessInYou.name,
+          DYNASTY_NAVIGATION.goddessInYou.items
+        )}
+      </div>
+
+      {/* 🛠️ SERVICES.IO HUB — INDEPENDENT HUB */}
+      <div className="pt-2 border-t border-sky-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-sky-400/80 tracking-wider">
+          🛠️ Services.io Hub
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.servicesIo.id,
+          DYNASTY_NAVIGATION.servicesIo.name,
+          DYNASTY_NAVIGATION.servicesIo.items
+        )}
+      </div>
+
       {/* 🧠 SBO AI ENGINE — OWN HUB (UNDER BRIGHTSUN SOLAR HUB) */}
       <div className="pt-2 border-t border-lime-500/30">
         <div className="px-3 py-1 text-[10px] font-semibold uppercase text-lime-400/80 tracking-wider">
