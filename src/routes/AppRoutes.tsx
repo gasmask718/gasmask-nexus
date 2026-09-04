@@ -1545,27 +1545,27 @@ export default function AppRoutes() {
         <Route path="/security/pending-users" element={<Navigate to="/admin/pending-users" replace />} />
 
         {/* Territory Control Center (Floor 0-2 visibility — read-only) */}
-        <Route path="/territory" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryOverview /></RequireRole>} />
-        <Route path="/territory/tube-intelligence" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TubeTerritoryPage /></RequireRole>} />
-        <Route path="/territory/tube-intelligence/:neighborhood" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><NeighborhoodDetailPage /></RequireRole>} />
-        <Route path="/territory/neighborhoods" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryNeighborhoods /></RequireRole>} />
-        <Route path="/territory/coverage" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><NeighborhoodCoverage /></RequireRole>} />
-        <Route path="/territory/city-coverage/:city/:state" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><CityCoveragePage /></RequireRole>} />
+        <Route path="/territory" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><TerritoryOverview /></RequireRole>} />
+        <Route path="/territory/tube-intelligence" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><TubeTerritoryPage /></RequireRole>} />
+        <Route path="/territory/tube-intelligence/:neighborhood" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><NeighborhoodDetailPage /></RequireRole>} />
+        <Route path="/territory/neighborhoods" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><TerritoryNeighborhoods /></RequireRole>} />
+        <Route path="/territory/coverage" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><NeighborhoodCoverage /></RequireRole>} />
+        <Route path="/territory/city-coverage/:city/:state" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><CityCoveragePage /></RequireRole>} />
 
-        <Route path="/territory/tasks" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryTasks /></RequireRole>} />
-        <Route path="/territory/candidates" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryCandidates /></RequireRole>} />
-        <Route path="/territory/execute/scout" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><ScoutConsole /></RequireRole>} />
-        <Route path="/territory/execute/call" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><CallConsole /></RequireRole>} />
-        <Route path="/territory/execute/visit" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><VisitConsole /></RequireRole>} />
+        <Route path="/territory/tasks" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><TerritoryTasks /></RequireRole>} />
+        <Route path="/territory/candidates" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><TerritoryCandidates /></RequireRole>} />
+        <Route path="/territory/execute/scout" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><ScoutConsole /></RequireRole>} />
+        <Route path="/territory/execute/call" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><CallConsole /></RequireRole>} />
+        <Route path="/territory/execute/visit" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><VisitConsole /></RequireRole>} />
         <Route path="/territory/promotions/pending" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><PromotionsPending /></RequireRole>} />
         <Route path="/territory/promotions/history" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><PromotionsHistory /></RequireRole>} />
         <Route path="/territory/ingestion" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><TerritoryIngestion /></RequireRole>} />
-        <Route path="/territory/gap-intelligence" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryGapIntelligence /></RequireRole>} />
-        <Route path="/territory/planning" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryPlanning /></RequireRole>} />
-        <Route path="/territory/planning/history" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><CommitmentHistory /></RequireRole>} />
-        <Route path="/territory/ai-permissions" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><AIPermissionsOverview /></RequireRole>} />
-        <Route path="/territory/ai-permissions/neighborhoods" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><AIPermissionsNeighborhoods /></RequireRole>} />
-        <Route path="/territory/ai-permissions/actions" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><AIPermissionsActions /></RequireRole>} />
+        <Route path="/territory/gap-intelligence" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><TerritoryGapIntelligence /></RequireRole>} />
+        <Route path="/territory/planning" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><TerritoryPlanning /></RequireRole>} />
+        <Route path="/territory/planning/history" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><CommitmentHistory /></RequireRole>} />
+        <Route path="/territory/ai-permissions" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><AIPermissionsOverview /></RequireRole>} />
+        <Route path="/territory/ai-permissions/neighborhoods" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><AIPermissionsNeighborhoods /></RequireRole>} />
+        <Route path="/territory/ai-permissions/actions" element={<RequireRole allowedRoles={['owner', 'admin', 'staff', 'va']} showLocked><AIPermissionsActions /></RequireRole>} />
 
         {/* Floor 9.4 — AI Violation & Denial Monitor */}
         <Route path="/territory/ai-violations" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><AIViolationsPage /></RequireRole>} />
