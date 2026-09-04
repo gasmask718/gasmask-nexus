@@ -179,6 +179,48 @@ serve(async (req) => {
       if (vaProfileError) throw vaProfileError;
     }
 
+    // Server-verified provisioning carried on the invitation row (never from the
+    // client): business memberships + an idle dialer seat. Both are idempotent
+    // upserts and neither grants admin/owner privileges.
+    const meta = (invitation.metadata ?? {}) as Record<string, unknown>;
+
+    const memberships = Array.isArray(meta.business_memberships)
+      ? (meta.business_memberships as Array<{ business_id?: string; role?: string }>)
+      : [];
+    for (const m of memberships) {
+      if (!m?.business_id) continue;
+      const memberRole = m.role === "va" ? "va" : "member";
+      const { error: memberError } = await admin
+        .from("business_members")
+        .upsert(
+          { business_id: m.business_id, user_id: userId, role: memberRole },
+          { onConflict: "business_id,user_id" },
+        );
+      if (memberError) console.error("business_members upsert failed", memberError);
+    }
+
+    const seat = meta.dialer_seat as
+      | { business_id?: string; status?: string; max_concurrent_calls?: number }
+      | undefined;
+    if (seat?.business_id) {
+      // user_id is globally unique on this table — always upsert on user_id.
+      const { error: seatError } = await admin
+        .from("dialer_agent_availability")
+        .upsert(
+          {
+            user_id: userId,
+            business_id: seat.business_id,
+            status: "offline",
+            max_concurrent_calls: seat.max_concurrent_calls ?? 1,
+            base_max_concurrent: seat.max_concurrent_calls ?? 1,
+          },
+          { onConflict: "user_id" },
+        );
+      if (seatError) console.error("dialer seat upsert failed", seatError);
+    }
+
+
+
     const { error: acceptError } = await admin
       .from("user_invitations")
       .update({
