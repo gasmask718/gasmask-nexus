@@ -107,7 +107,7 @@ export function GasMaskStoreWorkPanel({ storeId, onNumbersProgress }: Props) {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('store_contacts')
-        .select('id, name, role, phone, is_primary, number_verification_status')
+        .select('id, name, role, phone, is_primary, number_verification_status, responsiveness_status')
         .eq('store_id', storeId)
         .is('deleted_at', null)
         .order('is_primary', { ascending: false });
