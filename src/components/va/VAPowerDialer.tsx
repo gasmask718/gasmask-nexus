@@ -98,6 +98,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   const voice = useVoiceDevice();
   const { setVACallMetadata, endActiveCall } = useCall();
   const { twilioNumber: sessionNumber } = useVASession();
+  const { activeCompany } = useVACompany();
 
   // ── Initialization data ─────────────────────────────────────────────
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
