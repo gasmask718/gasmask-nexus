@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.supersede_open_user_invitations() FROM PUBLIC, anon, authenticated;
