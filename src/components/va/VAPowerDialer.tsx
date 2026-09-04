@@ -27,6 +27,7 @@ import { VAScripts } from './VAScripts';
 import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
+import { GasMaskStoreWorkPanel } from './GasMaskStoreWorkPanel';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VA Auto Dialer — Sequential Lead Processing State Machine
@@ -766,6 +767,17 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           <Button onClick={stopDialer} variant="ghost" size="sm" className="w-full text-red-400 hover:text-red-300 gap-2">
             <X className="h-4 w-4" /> Stop Dialer
           </Button>
+
+          {/* Canonical account workspace for the store being dialed.
+              Same component the Active Call surface uses — store identity,
+              address, every contact/number with its verification status and
+              the existing verify/dead/add actions, notes and call history.
+              No second phone-verification system, no Store Profile clone. */}
+          {currentLead?.store_id && (
+            <div className="pt-1">
+              <GasMaskStoreWorkPanel storeId={currentLead.store_id} />
+            </div>
+          )}
 
           {/* Live 8-Stage Brandaro Sales Script */}
           <div className="pt-2">
