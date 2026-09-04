@@ -49,7 +49,7 @@ export function VAActiveNumberSwitcher() {
 
   return (
     <Select value={twilioNumberId ?? ''} onValueChange={handleChange}>
-      <SelectTrigger className="h-8 w-[230px] bg-cyan-500/10 border-cyan-500/30 text-cyan-300 text-xs">
+      <SelectTrigger className="h-8 w-[230px] bg-gasmask/10 border-gasmask/30 text-gasmask-glow text-xs">
         <div className="flex items-center gap-1.5 min-w-0">
           <Phone className="h-3 w-3 shrink-0" />
           <SelectValue placeholder="Select active number…">
@@ -62,7 +62,7 @@ export function VAActiveNumberSwitcher() {
           <SelectItem
             key={num.dc_number_id}
             value={num.dc_number_id}
-            className="focus:bg-cyan-500/10 focus:text-cyan-300"
+            className="focus:bg-gasmask/10 focus:text-gasmask"
           >
             <div className="flex flex-col">
               <span className="text-xs font-medium flex items-center gap-1.5">

@@ -94,7 +94,7 @@ export function VAInCallModal({
   };
 
   const statusConfig = {
-    dialing: { label: '📞 Dialing...', cls: 'bg-blue-500/20 text-blue-400' },
+    dialing: { label: '📞 Dialing...', cls: 'bg-gasmask/20 text-gasmask-glow' },
     ringing: { label: '📞 Ringing...', cls: 'bg-yellow-500/20 text-yellow-400 animate-pulse' },
     connected: { label: '🟢 Connected', cls: 'bg-emerald-500/20 text-emerald-400 animate-pulse' },
     ended: { label: '🔴 Ended', cls: 'bg-red-500/20 text-red-400' },
@@ -168,7 +168,7 @@ export function VAInCallModal({
                 {([
                   { key: 'hot' as ExcitementLevel, icon: Flame, label: 'HOT', active: 'bg-red-600 ring-2 ring-red-400', inactive: 'bg-red-600/30 hover:bg-red-600/50 text-red-300' },
                   { key: 'warm' as ExcitementLevel, icon: Sun, label: 'WARM', active: 'bg-amber-600 ring-2 ring-amber-400', inactive: 'bg-amber-600/30 hover:bg-amber-600/50 text-amber-300' },
-                  { key: 'cold' as ExcitementLevel, icon: Snowflake, label: 'COLD', active: 'bg-blue-600 ring-2 ring-blue-400', inactive: 'bg-blue-600/30 hover:bg-blue-600/50 text-blue-300' },
+                  { key: 'cold' as ExcitementLevel, icon: Snowflake, label: 'COLD', active: 'bg-gasmask ring-2 ring-gasmask/40', inactive: 'bg-gasmask/30 hover:bg-gasmask/50 text-gasmask-glow' },
                 ] as const).map(e => (
                   <Button
                     key={e.key}
@@ -227,7 +227,7 @@ export function VAInCallModal({
                 <Button size="sm" variant="outline" className="text-emerald-400 border-emerald-500/30 gap-1" onClick={onCreateInvoice}>
                   <FileText className="h-3.5 w-3.5" /> Create Invoice
                 </Button>
-                <Button size="sm" variant="outline" className="text-cyan-400 border-cyan-500/30 gap-1" onClick={onSendSMS}>
+                <Button size="sm" variant="outline" className="text-gasmask-glow border-gasmask/30 gap-1" onClick={onSendSMS}>
                   <MessageSquare className="h-3.5 w-3.5" /> Send Follow-Up SMS
                 </Button>
               </div>

@@ -427,7 +427,7 @@ export function GasMaskStoreWorkPanel({ storeId, onNumbersProgress }: Props) {
           </div>
           <div className="text-right space-y-1">
             {store.gasmask_call_status && (
-              <Badge className="bg-cyan-500/20 text-cyan-300 text-[10px]">{store.gasmask_call_status}</Badge>
+              <Badge className="bg-gasmask/20 text-gasmask-glow text-[10px]">{store.gasmask_call_status}</Badge>
             )}
             <p className="text-[10px] text-slate-500">
               Last contacted: {store.last_contacted_at ? new Date(store.last_contacted_at).toLocaleDateString() : 'never'}
@@ -507,8 +507,8 @@ export function GasMaskStoreWorkPanel({ storeId, onNumbersProgress }: Props) {
       </div>
 
       {/* Call-side inventory capture */}
-      <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3 space-y-3">
-        <div className="text-[11px] uppercase font-bold text-cyan-300 flex items-center gap-1">
+      <div className="rounded-lg border border-gasmask/30 bg-gasmask/5 p-3 space-y-3">
+        <div className="text-[11px] uppercase font-bold text-gasmask-glow flex items-center gap-1">
           <Package className="h-3 w-3" /> Stock observed on this call
         </div>
         <p className="text-[10px] text-slate-400 -mt-1">
@@ -548,7 +548,7 @@ export function GasMaskStoreWorkPanel({ storeId, onNumbersProgress }: Props) {
         <Textarea value={obsNotes} onChange={(e) => setObsNotes(e.target.value)} rows={2}
           placeholder="What did they say about stock?"
           className="bg-slate-800 border-slate-700 text-white text-xs" />
-        <Button size="sm" onClick={saveObservation} disabled={savingObs} className="gap-1.5 bg-cyan-600 hover:bg-cyan-700">
+        <Button size="sm" onClick={saveObservation} disabled={savingObs} className="gap-1.5 bg-gasmask hover:bg-gasmask-glow">
           {savingObs ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Log observation
         </Button>
       </div>
@@ -566,7 +566,7 @@ export function GasMaskStoreWorkPanel({ storeId, onNumbersProgress }: Props) {
                 <span className="text-slate-500">{new Date(o.observed_at).toLocaleString()}</span>
                 {' — Tubes '}<span className="text-slate-100">{levelLabel(o.tubes_level)}</span>
                 {' · Bags '}<span className="text-slate-100">{levelLabel(o.bags_level)}</span>
-                {o.call_status && <> · <span className="text-cyan-300">{o.call_status}</span></>}
+                {o.call_status && <> · <span className="text-gasmask-glow">{o.call_status}</span></>}
                 {o.reorder_needed && <> · reorder {o.reorder_quantity ?? 'yes'}</>}
                 {o.notes && <div className="text-slate-400 italic mt-0.5">{o.notes}</div>}
               </div>
@@ -635,7 +635,7 @@ function NumberRow({
         <div className="min-w-0">
           <span className="text-slate-200 font-mono">{row.phone || '—'}</span>
           <span className="text-slate-500"> · {row.name || 'unnamed'}{row.role ? ` (${row.role})` : ''}</span>
-          {row.is_primary && <span className="ml-1 text-[9px] text-cyan-400 uppercase">primary</span>}
+          {row.is_primary && <span className="ml-1 text-[9px] text-gasmask-glow uppercase">primary</span>}
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <Badge className={worked

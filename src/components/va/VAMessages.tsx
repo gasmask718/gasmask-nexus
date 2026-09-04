@@ -22,7 +22,7 @@ const MAX_CHARS = 1600;
 
 const STATUS_STYLE: Record<OutboundStatus, string> = {
   pending: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
-  approved: 'bg-sky-500/15 text-sky-600 border-sky-500/30',
+  approved: 'bg-gasmask/15 text-gasmask-glow border-gasmask/30',
   sent: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
   rejected: 'bg-muted text-muted-foreground border-border',
   edited: 'bg-violet-500/15 text-violet-600 border-violet-500/30',

@@ -103,11 +103,11 @@ export function VACallbacksQueue({ onDialLead }: VACallbacksQueueProps) {
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 gap-1"
+                  <Button size="sm" className="bg-gasmask hover:bg-gasmask-glow gap-1"
                     onClick={() => onDialLead({ id: cb.lead_id, business_name: cb.lead_name || '', phone: cb.lead_phone || '' })}>
                     <Phone className="h-3 w-3" /> Call
                   </Button>
-                  <Button size="sm" variant="outline" className="border-cyan-500/40 text-cyan-300 gap-1 h-7 text-xs"
+                  <Button size="sm" variant="outline" className="border-gasmask/40 text-gasmask-glow gap-1 h-7 text-xs"
                     onClick={() => {
                       setInvoiceLead({ id: cb.lead_id, business_name: cb.lead_name || '', phone: cb.lead_phone || '' });
                       setSendMode(true);
