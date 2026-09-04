@@ -72631,33 +72631,57 @@ export type Database = {
       }
       inbound_call_outcomes: {
         Row: {
+          ai_resolved: boolean | null
           call_sid: string
+          callback_requested: boolean
+          caller_phone: string | null
+          contact_name: string | null
           created_at: string
           id: string
           kind: string
           payload: Json
+          reason_category: string | null
+          requested_action: string | null
           store_id: string | null
           summary: string | null
+          unresolved_reason: string | null
+          urgency: string | null
           va_company_id: string | null
         }
         Insert: {
+          ai_resolved?: boolean | null
           call_sid: string
+          callback_requested?: boolean
+          caller_phone?: string | null
+          contact_name?: string | null
           created_at?: string
           id?: string
           kind: string
           payload?: Json
+          reason_category?: string | null
+          requested_action?: string | null
           store_id?: string | null
           summary?: string | null
+          unresolved_reason?: string | null
+          urgency?: string | null
           va_company_id?: string | null
         }
         Update: {
+          ai_resolved?: boolean | null
           call_sid?: string
+          callback_requested?: boolean
+          caller_phone?: string | null
+          contact_name?: string | null
           created_at?: string
           id?: string
           kind?: string
           payload?: Json
+          reason_category?: string | null
+          requested_action?: string | null
           store_id?: string | null
           summary?: string | null
+          unresolved_reason?: string | null
+          urgency?: string | null
           va_company_id?: string | null
         }
         Relationships: [
@@ -155018,6 +155042,24 @@ export type Database = {
         }
         Relationships: []
       }
+      v_store_activity: {
+        Row: {
+          activity_id: string | null
+          actor_id: string | null
+          contact_id: string | null
+          detail: string | null
+          direction: string | null
+          is_current: boolean | null
+          is_open: boolean | null
+          kind: string | null
+          occurred_at: string | null
+          status: string | null
+          store_id: string | null
+          subtype: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
       v_store_at_risk: {
         Row: {
           baseline_monthly_units: number | null
@@ -160105,6 +160147,17 @@ export type Database = {
         Returns: string
       }
       not_developer: { Args: { _user_id: string }; Returns: boolean }
+      notify_owners: {
+        Args: {
+          _action_url: string
+          _entity_id: string
+          _entity_type: string
+          _message: string
+          _title: string
+          _type: string
+        }
+        Returns: number
+      }
       number_can_dial_now: { Args: { p_number: string }; Returns: boolean }
       obs_date: { Args: { fallback: string; raw: string }; Returns: string }
       obs_date_src: { Args: { raw: string }; Returns: string }

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { AccountActivityTable } from '@/components/activity/AccountActivityTable';
 
 const URGENCY_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
   critical: { color: 'bg-red-500/10 text-red-500 border-red-500/30', icon: '🔴', label: 'Critical' },
@@ -1031,6 +1032,17 @@ export default function RouteEnginePage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* ONE canonical operational activity table — same feed as Delivery Floor
+          and the store profile. Opens the exact canonical store row. */}
+      <div className="mt-6">
+        <AccountActivityTable
+          title="Account activity — what still needs action"
+          defaultOpenState="open"
+          defaultPageSize={25}
+        />
+      </div>
     </div>
+
   );
 }

@@ -99,6 +99,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { BulkCommunicationLogModal } from "@/components/communication/BulkCommunicationLogModal";
+import { AccountActivityTable } from '@/components/activity/AccountActivityTable';
 
 type StickerStatus = "none" | "doorOnly" | "inStoreOnly" | "doorAndInStore";
 
@@ -719,13 +720,23 @@ const StoreDetail = () => {
                 sellsFlowers={store.sells_flowers}
                 onSellsFlowersUpdate={() => undefined}
               />
-              <Tabs defaultValue="visits" className="w-full">
+              <Tabs defaultValue="activity" className="w-full">
                 <TabsList className="w-full justify-start overflow-x-auto">
+                  <TabsTrigger value="activity">Activity</TabsTrigger>
                   <TabsTrigger value="visits">Visit History</TabsTrigger>
                   <TabsTrigger value="review">Review & Sign-off</TabsTrigger>
                   <TabsTrigger value="recon">Recon</TabsTrigger>
                   <TabsTrigger value="location">Location</TabsTrigger>
                 </TabsList>
+                <TabsContent value="activity" className="mt-4">
+                  <AccountActivityTable
+                    storeId={storeMasterId ?? storeId}
+                    title="Account activity"
+                    showStoreColumn={false}
+                    defaultPageSize={25}
+                  />
+                </TabsContent>
+
                 <TabsContent value="visits" className="mt-4 space-y-3">
                   {visits.length ? visits.map((visit) => (
                     <div key={visit.id} className="rounded-md border border-border/50 p-3 text-sm">
