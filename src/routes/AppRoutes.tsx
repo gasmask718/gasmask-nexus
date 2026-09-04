@@ -262,7 +262,6 @@ const VAAuthPage = lazy(() => import('@/pages/va/VAAuthPage'));
 const VAResetPasswordPage = lazy(() => import('@/pages/va/VAResetPasswordPage'));
 const VAAcceptInvitePage = lazy(() => import('@/pages/va/VAAcceptInvitePage'));
 const VADashboard = lazy(() => import('@/pages/va/VADashboard'));
-const TmpCallerAccount = lazy(() => import('@/pages/TmpCallerAccount'));
 const VAProfilePage = lazy(() => import('@/pages/va/VAProfilePage'));
 const VAManagementPage = lazy(() => import('@/pages/penthouse/VAManagementPage'));
 const AdminNumbersPage = lazy(() => import('@/pages/va/AdminNumbersPage'));
@@ -1489,7 +1488,6 @@ export default function AppRoutes() {
       <Route path="/brandaro/pay/:code" element={<ShortLinkRedirect />} />
 
       {/* VA Portal — Protected routes */}
-      <Route path="/__tmp-caller-account/:id" element={<TmpCallerAccount />} />
       <Route path="/va/dashboard" element={<ProtectedRoute><RequireRole allowedRoles={['va','admin','owner']}><VADashboard /></RequireRole></ProtectedRoute>} />
       <Route path="/va/profile" element={<ProtectedRoute><RequireRole allowedRoles={['va','admin','owner']}><VAProfilePage /></RequireRole></ProtectedRoute>} />
       <Route path="/va/lead-discovery" element={<ProtectedRoute><RequireRole allowedRoles={['va','admin','owner']}><VADashboard /></RequireRole></ProtectedRoute>} />
