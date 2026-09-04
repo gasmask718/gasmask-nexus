@@ -17,6 +17,8 @@ import { BrandaroCallScript } from './BrandaroCallScript';
 import { useVoiceDevice } from '@/contexts/VoiceDeviceProvider';
 import { useCall } from '@/components/communication/CallProvider';
 import { useVASession } from '@/contexts/VASessionContext';
+import { useVACompany } from '@/contexts/VACompanyContext';
+import { getVACompanyConfig } from '@/config/vaCompanies';
 import { VALiveAnalysisModal } from './VALiveAnalysisModal';
 import { VACallWrapUpModal } from './VACallWrapUpModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -157,13 +159,33 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     (async () => {
       setInitLoading(true);
       try {
+        // Campaigns are scoped to the businesses the ACTIVE VA company calls for.
+        // Without this a caller on one brand can see (and dial) another brand's
+        // campaigns. No company / no configured businesses = no campaigns.
+        const businessSlugs = getVACompanyConfig(activeCompany?.slug).businessSlugs;
+        let campaignBusinessIds: string[] = [];
+        if (businessSlugs.length > 0) {
+          const { data: bizRows, error: bizErr } = await (supabase as any)
+            .from('businesses')
+            .select('id, slug')
+            .in('slug', businessSlugs);
+          if (bizErr) console.warn('[AutoDialer] businesses:', bizErr);
+          campaignBusinessIds = (bizRows || []).map((b: any) => b.id);
+        }
+
+        let campaignQuery = (supabase as any)
+          .from('dialer_campaigns')
+          .select('id, name, status')
+          .eq('status', 'active')
+          .is('archived_at', null)
+          .order('created_at', { ascending: false });
+        campaignQuery = campaignBusinessIds.length > 0
+          ? campaignQuery.in('business_id', campaignBusinessIds)
+          // Nothing resolvable to scope by — return no campaigns rather than all.
+          : campaignQuery.eq('business_id', '00000000-0000-0000-0000-000000000000');
+
         const [campRes, numRes, dispRes] = await Promise.all([
-          (supabase as any)
-            .from('dialer_campaigns')
-            .select('id, name, status')
-            .eq('status', 'active')
-            .is('archived_at', null)
-            .order('created_at', { ascending: false }),
+          campaignQuery,
           // Pull from /communication/provision-numbers source of truth (dc_phone_numbers).
           // Exclude toll-free numbers and Brandaro AI Agent numbers per business rule.
           (supabase as any)
@@ -196,7 +218,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [activeCompany?.slug]);
 
   // ── Simulated call-drop timer (no live Twilio Device wired here) ────
   // The backend trigger is fire-and-forget; we surface a "Mark call ended"
