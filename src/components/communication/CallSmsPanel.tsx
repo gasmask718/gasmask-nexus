@@ -38,6 +38,9 @@ export function CallSmsPanel({ phone, contactName, leadId, callId }: CallSmsPane
         body: {
           to_number: phone,
           message_body: reply,
+          // send_class is mandatory (no default) — a 1:1 human reply in a live
+          // call thread is conversational traffic.
+          send_class: 'conversational',
           idempotency_key: `call-sms-${callId || 'manual'}-${Date.now()}`,
         },
       });

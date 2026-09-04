@@ -189,6 +189,8 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
         body: {
           to_number: contact.phone,
           message_body: newMessage,
+          // Inbox reply in an existing thread → conversational.
+          send_class: "conversational",
           idempotency_key: crypto.randomUUID(),
           explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
           skip_cooldown: true,

@@ -38,6 +38,8 @@ export function NewMessageModal({ open, onOpenChange, contact, onMessageSent }: 
         body: {
           to_number: contact.phone,
           message_body: message.trim(),
+          // Human-composed 1:1 message from the inbox → conversational.
+          send_class: "conversational",
           idempotency_key: crypto.randomUUID(),
           explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
           skip_cooldown: true,

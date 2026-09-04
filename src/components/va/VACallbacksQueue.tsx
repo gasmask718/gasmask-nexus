@@ -34,7 +34,10 @@ export function VACallbacksQueue({ onDialLead }: VACallbacksQueueProps) {
       .from('va_call_logs')
       .select('id, lead_id, callback_scheduled_at, va_notes, brandaro_qualified_leads(business_name, phone_number)')
       .eq('va_id', user.id)
-      .eq('disposition', 'callback')
+      // Dispositions are stored as UPPER_SNAKE codes (dialer_disposition_codes
+      // / va_call_logs_disposition_check). Filtering on 'callback' matched
+      // nothing, so scheduled callbacks never appeared in this queue.
+      .eq('disposition', 'CALL_BACK')
       .not('callback_scheduled_at', 'is', null)
       .order('callback_scheduled_at', { ascending: true });
 

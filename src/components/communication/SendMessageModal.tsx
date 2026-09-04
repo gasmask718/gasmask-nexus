@@ -126,6 +126,8 @@ export function SendMessageModal({
           body: {
             to_number: entityPhone,
             message_body: message.trim(),
+            // Human-composed 1:1 message to a CRM entity.
+            send_class: "conversational",
             idempotency_key: crypto.randomUUID(),
             explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
             skip_cooldown: true,
