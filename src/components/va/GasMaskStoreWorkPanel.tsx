@@ -50,14 +50,39 @@ const CALL_STATUSES = [
 const levelLabel = (v: string | null) =>
   STOCK_LEVELS.find((l) => l.value === v)?.label ?? '—';
 
-interface Props {
-  storeId: string | null | undefined;
+/**
+ * One canonical "worked" test for a number on file.
+ * Canonical columns only:
+ *   store_contacts.number_verification_status ∈ unverified|sent|delivered|confirmed|failed
+ *   store_contacts.responsiveness_status      ∈ unknown|responsive|unresponsive|wrong_number|not_active
+ * A number counts as WORKED once the caller has recorded any real outcome on
+ * it — good, no answer, wrong number, or dead line.
+ */
+export function isNumberWorked(c: { number_verification_status?: string | null; responsiveness_status?: string | null }) {
+  return (
+    c.number_verification_status === 'confirmed' ||
+    c.number_verification_status === 'failed' ||
+    ['responsive', 'unresponsive', 'wrong_number', 'not_active'].includes(c.responsiveness_status || '')
+  );
 }
 
-export function GasMaskStoreWorkPanel({ storeId }: Props) {
+export interface NumbersProgress {
+  total: number;
+  open: number;
+  openNumbers: string[];
+}
+
+interface Props {
+  storeId: string | null | undefined;
+  /** Reports how many numbers on this account still need to be worked. */
+  onNumbersProgress?: (p: NumbersProgress) => void;
+}
+
+export function GasMaskStoreWorkPanel({ storeId, onNumbersProgress }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const valid = !!storeId && UUID_RE.test(storeId);
+
 
   const storeQ = useQuery({
     queryKey: ['gm-va-store', storeId],
