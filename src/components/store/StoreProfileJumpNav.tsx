@@ -14,15 +14,26 @@ function jumpTo(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  // Focus the first input/textarea/button in the section so keyboard and
-  // mobile users land on the actual form, not just near it.
+  // Land on the actual form, not just near it. When the note composer is
+  // collapsed behind its "Add Note" button, open it first — this reuses the
+  // existing form, it never creates a second one.
   window.setTimeout(() => {
-    const focusable = el.querySelector<HTMLElement>(
-      'textarea, input:not([type="hidden"]), button',
-    );
-    focusable?.focus({ preventScroll: true });
+    const field = () =>
+      el.querySelector<HTMLElement>('textarea, input:not([type="hidden"])');
+    if (!field()) {
+      const opener = Array.from(el.querySelectorAll('button')).find((b) =>
+        /add note/i.test(b.textContent || ''),
+      );
+      opener?.click();
+    }
+    window.setTimeout(() => {
+      const target = field() ?? el.querySelector<HTMLElement>('button');
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 250);
   }, 500);
 }
+
 
 export function StoreProfileJumpNav() {
   return (
