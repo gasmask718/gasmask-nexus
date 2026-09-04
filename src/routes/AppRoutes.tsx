@@ -817,6 +817,10 @@ const DDOrderDetail = lazy(() => import('@/pages/dynasty-direct/DDOrderDetail'))
 const DDAnalytics = lazy(() => import('@/pages/dynasty-direct/DDAnalytics'));
 const DDSettings = lazy(() => import('@/pages/dynasty-direct/DDSettings'));
 const DDReadiness = lazy(() => import('@/pages/dynasty-direct/DDReadiness'));
+const DDWholesalerMap = lazy(() => import('@/pages/dynasty-direct/DDWholesalerMap'));
+const DDWholesalerCrm = lazy(() => import('@/pages/dynasty-direct/DDWholesalerCrm'));
+const HighwayMap = lazy(() => import('@/pages/highway/HighwayMap'));
+const HighwayCrm = lazy(() => import('@/pages/highway/HighwayCrm'));
 const DDReturnsQueue = lazy(() => import('@/pages/dynasty-direct/DDReturnsQueue'));
 const DDInrQueue = lazy(() => import('@/pages/dynasty-direct/DDInrQueue'));
 const DDSupportTickets = lazy(() => import('@/pages/dynasty-direct/DDSupportTickets'));
