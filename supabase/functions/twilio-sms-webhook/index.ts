@@ -76,15 +76,11 @@ Deno.serve(async (req) => {
       p_phone: From,
       p_method: "STOP_keyword",
     });
-    const { data: contact } = await sb
-      .from("store_contacts")
-      .select("id, store_id")
-      .eq("phone", From)
-      .maybeSingle();
-
+    // Association left to autolink_communication_log() (conversation-first).
     await sb.from("communication_logs").insert({
-      store_id: contact?.store_id ?? null,
-      contact_id: contact?.id ?? null, // no FK on communication_logs.contact_id
+      store_id: null,
+      contact_id: null,
+
       channel: "sms",
       direction: "inbound",
       message_content: Body,
@@ -112,15 +108,11 @@ Deno.serve(async (req) => {
   // START keyword
   if (START_RE.test(Body)) {
     await sb.rpc("handle_sms_opt_in", { p_phone: From });
-    const { data: contact } = await sb
-      .from("store_contacts")
-      .select("id, store_id")
-      .eq("phone", From)
-      .maybeSingle();
-
+    // Association left to autolink_communication_log() (conversation-first).
     await sb.from("communication_logs").insert({
-      store_id: contact?.store_id ?? null,
-      contact_id: contact?.id ?? null, // no FK on communication_logs.contact_id
+      store_id: null,
+      contact_id: null,
+
       channel: "sms",
       direction: "inbound",
       message_content: Body,
@@ -195,41 +187,19 @@ Deno.serve(async (req) => {
     console.error("[twilio-sms-webhook][VERIFY] error:", (vErr as Error).message);
   }
 
-  // Lookup store_contact by normalized last-10 digits (handles non-E.164 storage)
-  const fromLast10 = (From || "").replace(/\D/g, "").slice(-10);
+  // ── ACCOUNT ASSOCIATION ──
+  // Deliberately NOT resolved here. public.autolink_communication_log()
+  // is the single reusable rule for every inbound message:
+  //   1. reply → the exact store/contact of the most recent outbound message
+  //      to this number (conversation context wins, always)
+  //   2. otherwise a single matching contact
+  //   3. multiple stores on the same number → left unmatched + flagged.
+  // A first-match `.limit(1)` lookup here would silently override that and
+  // move a reply onto the wrong store.
+  const store_id: string | null = null;
+  const contact_id: string | null = null;
 
-  let contact: { id: string; store_id: string } | null = null;
-  if (fromLast10.length === 10) {
-    const { data: c } = await sb
-      .from("store_contacts")
-      .select("id, store_id")
-      .ilike("phone", `%${fromLast10}`)
-      .eq("opted_out", false)
-      .limit(1)
-      .maybeSingle();
-    contact = c as any;
-  }
-
-  let store_id: string | null = contact?.store_id ?? null;
-  // communication_logs.contact_id has no FK — store the store_contacts.id so the
-  // per-contact timeline on the store profile can match inbound messages.
-  let contact_id: string | null = contact?.id ?? null;
-
-  // Fallback: stores.phone (last-10)
-  if (!store_id && fromLast10.length === 10) {
-    const { data: store } = await sb
-      .from("stores")
-      .select("id")
-      .ilike("phone", `%${fromLast10}`)
-      .limit(1)
-      .maybeSingle();
-    store_id = store?.id ?? null;
-  }
-
-  const isOrphan = !store_id;
-  const summary = isOrphan
-    ? "Inbound from unknown number"
-    : Body.slice(0, 80);
+  const summary = Body.slice(0, 80) || "Inbound message";
 
   const { error: insertErr } = await sb.from("communication_logs").insert({
     store_id,
@@ -247,8 +217,8 @@ Deno.serve(async (req) => {
     source_business: numberBrand.source_business,
     summary,
     delivery_status: "received",
-    follow_up_required: isOrphan,
   });
+
 
   if (insertErr) {
     console.error("[twilio-sms-webhook] insert failed", insertErr.message);
