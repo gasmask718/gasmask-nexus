@@ -18,7 +18,10 @@ import { toast } from 'sonner';
 export function VAActiveNumberSwitcher() {
   const { twilioNumberId, twilioNumber, switchNumber, isOnboarded } = useVASession();
   const { activeCompany } = useVACompany();
-  const { numbers, hasNumbers } = useVACallerIds(activeCompany?.id);
+  const { numbers: allNumbers } = useVACallerIds(activeCompany?.id);
+  // Human VAs never present the AI agent line as their outbound caller ID.
+  const numbers = allNumbers.filter((n) => !n.is_ai_number);
+  const hasNumbers = numbers.length > 0;
 
   if (!isOnboarded) return null;
 
