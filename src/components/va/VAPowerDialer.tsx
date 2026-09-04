@@ -718,7 +718,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           <Button
             onClick={startDialerSession}
             disabled={(listMode ? false : !selectedCampaign) || !selectedNumber}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 gap-2"
+            className="w-full bg-gasmask text-gasmask-foreground hover:bg-gasmask-glow gap-2"
           >
             <Phone className="h-4 w-4" />
             {listMode ? `Start Calling ${leadList!.length} Leads` : 'Start VA Dialer'}
@@ -807,7 +807,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
           <div className="flex gap-2">
             <Button
-              className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-500"
+              className="flex-1 gap-2 bg-gasmask text-gasmask-foreground hover:bg-gasmask-glow"
               disabled={!ready || confirmingDone}
               onClick={confirmAccountDone}
             >
