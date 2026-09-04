@@ -111,12 +111,25 @@ function parseModelReply(raw: string): ModelReply {
       : "Got it — anything else I can help with?";
     let action: ModelReply["action"] = null;
     if (parsed.action && ACTION_KINDS.has(parsed.action.kind)) {
+      const a = parsed.action;
+      const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
       action = {
-        kind: parsed.action.kind,
-        summary: typeof parsed.action.summary === "string" ? parsed.action.summary : undefined,
-        details: typeof parsed.action.details === "object" && parsed.action.details ? parsed.action.details : {},
+        kind: a.kind,
+        summary: str(a.summary),
+        details: typeof a.details === "object" && a.details ? a.details : {},
+        reason_category: REASON_CATEGORIES.includes(str(a.reason_category) ?? "")
+          ? str(a.reason_category)
+          : "other",
+        requested_action: str(a.requested_action),
+        urgency: URGENCIES.has(str(a.urgency) ?? "") ? str(a.urgency) : "normal",
+        // Only an explicit true counts — never assume the caller declined.
+        callback_requested: a.callback_requested === true || a.kind === "callback_request",
+        // Only an explicit true counts as resolved, so unknowns escalate.
+        ai_resolved: a.ai_resolved === true,
+        unresolved_reason: str(a.unresolved_reason),
       };
     }
+
     return { say, action, done: parsed.done === true };
   } catch {
     // Model ignored the contract — speak whatever it said, keep going.
