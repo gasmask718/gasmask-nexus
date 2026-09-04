@@ -885,6 +885,20 @@ const DYNASTY_NAVIGATION = {
       { path: '/solar/crm', label: '📇 CRM', icon: Users },
     ],
   },
+  goddessInYou: {
+    id: 'goddess-in-you',
+    name: '💜 Goddess In You Hub',
+    items: [
+      { path: '/goddess-in-you/leads', label: '🎯 Leads Queue', icon: Target },
+    ],
+  },
+  servicesIo: {
+    id: 'services-io',
+    name: '🛠️ Services.io Hub',
+    items: [
+      { path: '/services-io/leads', label: '🎯 Leads Queue', icon: Target },
+    ],
+  },
   globalDashboard: {
     id: 'global-dashboard',
     name: '🌍 Global Dynasty Dashboard',
@@ -1374,6 +1388,30 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.solarOs.id,
           DYNASTY_NAVIGATION.solarOs.name,
           DYNASTY_NAVIGATION.solarOs.items
+        )}
+      </div>
+
+      {/* 💜 GODDESS IN YOU HUB — INDEPENDENT HUB */}
+      <div className="pt-2 border-t border-purple-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-purple-400/80 tracking-wider">
+          💜 Goddess In You Hub
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.goddessInYou.id,
+          DYNASTY_NAVIGATION.goddessInYou.name,
+          DYNASTY_NAVIGATION.goddessInYou.items
+        )}
+      </div>
+
+      {/* 🛠️ SERVICES.IO HUB — INDEPENDENT HUB */}
+      <div className="pt-2 border-t border-sky-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-sky-400/80 tracking-wider">
+          🛠️ Services.io Hub
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.servicesIo.id,
+          DYNASTY_NAVIGATION.servicesIo.name,
+          DYNASTY_NAVIGATION.servicesIo.items
         )}
       </div>
 
