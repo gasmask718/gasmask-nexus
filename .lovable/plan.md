@@ -37,6 +37,8 @@ Both maps use the existing shared map component with URL-synced filters and view
 
 - `/highway/map` — pins from `hw_leads` (color by bucket, truck icon when `already_delivers`), filters for state / bucket / delivery / license status / medical / source / has phone-email-license, side panel with all fields, "Open in CRM" deep link, export-visible CSV, `/highway/map/lead/:id` deep link. Renders an explicit empty state until the CSV is loaded.
 - `/dynasty-direct/map` — two toggleable layers (retail `gasmask`, wholesaler `dynasty_direct`), 4-tier state choropleth, filters for tier / state / category / lead type / verify status, side panels, state drill-down, `/dynasty-direct/map/wholesaler/:id` deep link.
+- The retail layer is **strictly read-only**: `SELECT` on `public.leads WHERE business = 'gasmask'` only. No update, delete, promotion, or re-tagging from any map or CRM surface, and the choropleth is a per-state `count(*)` aggregate query — no row writes. All Dynasty Direct pipeline state lives in `dd_wholesaler_stages` / `dd_outreach_log`, never in `leads`. GasMask territory pages are untouched. The one exception, which is a new insert and never an edit, is the manual "add wholesaler" form in Step 4.
+
 
 ## Step 4 — CRMs
 
