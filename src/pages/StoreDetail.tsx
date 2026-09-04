@@ -536,6 +536,8 @@ const StoreDetail = () => {
             </div>
           </div>
 
+          <StoreProfileJumpNav />
+
           <StoreQuickActions
             storeId={storeId}
             storeName={store.name}
