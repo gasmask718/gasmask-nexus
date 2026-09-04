@@ -766,7 +766,69 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     );
   }
 
+  // ── Account completion gate ─────────────────────────────────────────
+  // After the disposition is saved the account stays on screen until every
+  // number on it has been worked and the caller confirms it done.
+  if (phase === 'account_review' && pendingAccount) {
+    const open = numbersProgress?.open ?? 0;
+    const total = numbersProgress?.total ?? 0;
+    const ready = numbersProgress !== null && open === 0;
+    return (
+      <Card className="bg-slate-900/60 border-slate-700">
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle className="text-white text-base flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+            Finish this account
+          </CardTitle>
+          <Badge className={ready
+            ? 'bg-emerald-500/20 text-emerald-300 text-[10px]'
+            : 'bg-amber-500/20 text-amber-300 text-[10px]'}>
+            {ready ? `ALL ${total} NUMBERS WORKED` : `${open} NUMBER${open === 1 ? '' : 'S'} LEFT`}
+          </Badge>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-sm text-white font-semibold">{pendingAccount.lead.business_name}</div>
+          {!ready && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200 space-y-1">
+              <p className="font-semibold">Still to work on this account:</p>
+              <ul className="font-mono space-y-0.5">
+                {(numbersProgress?.openNumbers || []).map((n) => <li key={n}>{n}</li>)}
+              </ul>
+              <p className="text-amber-300/80">
+                Call or mark each number below (Good / No answer / Wrong # / Dead line) before finishing.
+              </p>
+            </div>
+          )}
+
+          <GasMaskStoreWorkPanel
+            storeId={pendingAccount.lead.store_id}
+            onNumbersProgress={setNumbersProgress}
+          />
+
+          <div className="flex gap-2">
+            <Button
+              className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-500"
+              disabled={!ready || confirmingDone}
+              onClick={confirmAccountDone}
+            >
+              {confirmingDone ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Confirm account done · next account
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-slate-400"
+              onClick={() => settleAccount(pendingAccount.lead, pendingAccount.disposition)}
+            >
+              Leave open, next account
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // ── Active call view ────────────────────────────────────────────────
+
   if (phase === 'fetching_lead' || phase === 'dialing' || phase === 'connected') {
     return (
       <Card className="bg-slate-900/60 border-slate-700">
