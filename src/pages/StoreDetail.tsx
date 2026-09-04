@@ -536,6 +536,32 @@ const StoreDetail = () => {
             </div>
           </div>
 
+          {/* Map first — sharp, interactive, right at the top of the profile. */}
+          <StoreProfileSection
+            id="location"
+            title="Location"
+            description="Interactive map for this store. Street view stays in Field Ops below."
+          >
+            <StoreLocationMap
+              lat={store.lat}
+              lng={store.lng}
+              storeName={store.name}
+              address={address}
+            />
+          </StoreProfileSection>
+
+          <StoreProfileSection
+            id="connected-stores"
+            title="Connected Stores"
+            description="Same-owner locations linked to this store."
+          >
+            <ConnectedStoresCard
+              storeId={storeId}
+              currentStoreName={store.name}
+              currentStoreGroupId={store.connected_group_id}
+            />
+          </StoreProfileSection>
+
           <StoreProfileJumpNav />
 
           <StoreQuickActions
