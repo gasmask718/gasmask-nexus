@@ -58,13 +58,14 @@ import {
   createIntelligenceSnapshot 
 } from "@/hooks/useIntelligenceHistory";
 import { 
-import { AccountActivityTable } from '@/components/activity/AccountActivityTable';
   AcknowledgeButton,
   AcknowledgmentBadge,
   ReviewedCardWrapper,
   HistoryTimelineIndicator,
   TodayIntelligenceSummary
 } from "@/components/delivery";
+import { AccountActivityTable } from '@/components/activity/AccountActivityTable';
+
 
 const BRANDS = ["GasMask", "Hot Mama", "Hotscolatti", "Grabba R Us"];
 
