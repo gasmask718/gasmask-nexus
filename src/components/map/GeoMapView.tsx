@@ -43,6 +43,8 @@ export interface GeoMapViewProps {
   searchPlaceholder?: string;
   emptyState?: React.ReactNode;
   onPointClick?: (p: GeoPoint) => void;
+  /** Fires after the map settles; lets callers load only what is in view. */
+  onBoundsChange?: (b: { west: number; south: number; east: number; north: number; zoom: number }) => void;
   className?: string;
 }
 
@@ -136,6 +138,7 @@ export function GeoMapView({
   searchPlaceholder = 'Search...',
   emptyState,
   onPointClick,
+  onBoundsChange,
   className,
 }: GeoMapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -247,6 +250,28 @@ export function GeoMapView({
     return () => { map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Report the viewport so callers can load only the visible slice.
+  const boundsCbRef = useRef(onBoundsChange);
+  boundsCbRef.current = onBoundsChange;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded || !onBoundsChange) return;
+    const emit = () => {
+      const b = map.getBounds();
+      if (!b) return;
+      boundsCbRef.current?.({
+        west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth(),
+        zoom: map.getZoom(),
+      });
+    };
+    emit();
+    map.on('moveend', emit);
+    return () => { map.off('moveend', emit); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapLoaded, !!onBoundsChange]);
+
+
 
   // Draw hull polygons whenever groups or the filter change
   const drawHulls = useCallback(() => {
