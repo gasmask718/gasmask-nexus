@@ -159787,6 +159787,7 @@ export type Database = {
       }
       is_production_admin: { Args: { _user_id: string }; Returns: boolean }
       is_production_worker: { Args: { _user_id: string }; Returns: boolean }
+      is_promo_sample_brand_key: { Args: { _key: string }; Returns: boolean }
       is_sbo_operator: { Args: { _user_id?: string }; Returns: boolean }
       is_simulation_mode: { Args: never; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
@@ -160548,6 +160549,10 @@ export type Database = {
         Returns: string
       }
       route_order_to_supplier: { Args: { p_order_id: string }; Returns: Json }
+      sample_brand_key_to_product_id: {
+        Args: { _key: string }
+        Returns: string
+      }
       sbo_evaluate_clamp_gates: {
         Args: { p_days?: number; p_sport: string }
         Returns: {

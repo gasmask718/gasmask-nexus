@@ -14,15 +14,20 @@ function jumpTo(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  // Focus the first input/textarea/button in the section so keyboard and
-  // mobile users land on the actual form, not just near it.
+  // Land on the section's own controls (e.g. the existing "Add Note" button),
+  // never a new form. The note composer itself stays exactly as it was.
   window.setTimeout(() => {
-    const focusable = el.querySelector<HTMLElement>(
-      'textarea, input:not([type="hidden"]), button',
-    );
-    focusable?.focus({ preventScroll: true });
+    const target =
+      el.querySelector<HTMLElement>('textarea, input:not([type="hidden"])') ??
+      Array.from(el.querySelectorAll('button')).find((b) =>
+        /add note/i.test(b.textContent || ''),
+      ) ??
+      el.querySelector<HTMLElement>('button');
+    target?.focus({ preventScroll: true });
   }, 500);
 }
+
+
 
 export function StoreProfileJumpNav() {
   return (

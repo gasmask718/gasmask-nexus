@@ -14,6 +14,7 @@ import {
   canEditField 
 } from '@/hooks/useTubeIntelligence';
 import { cn } from '@/lib/utils';
+import { usePromoSampleProductIds, isPromoSampleBrandKey } from '@/lib/inventory/promoSample';
 
 interface TubeIntelligenceCardProps {
   storeId: string;
@@ -30,6 +31,7 @@ export function TubeIntelligenceCard({
   compact = false 
 }: TubeIntelligenceCardProps) {
   const { data, isLoading, refetch, initializeBrands, updateField } = useTubeIntelligence(storeId);
+  const { data: promoSampleIds } = usePromoSampleProductIds();
 
   // Initialize brands if needed
   useEffect(() => {
@@ -265,7 +267,8 @@ export function TubeIntelligenceCard({
                   </Tooltip>
                 </TooltipProvider>
 
-                {/* Bring Samples */}
+                {/* Bring Samples — only the brand's one promo sample SKU */}
+                {isPromoSampleBrandKey(brand.id, promoSampleIds) && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -285,10 +288,12 @@ export function TubeIntelligenceCard({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Bring samples on next visit</p>
+                      <p>Bring the promo sample on next visit</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                )}
+
 
                 {/* Starter Kit */}
                 <TooltipProvider>
