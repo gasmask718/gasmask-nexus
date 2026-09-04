@@ -203,43 +203,85 @@ export async function loadOnShiftPhones(
     .filter((n) => n.startsWith("+"));
 }
 
-/** Resolve a caller number to a store + contact for attribution. */
+/**
+ * Resolve a caller number to a store + contact for attribution — SAFELY.
+ *
+ * A guessed id is worse than a null one. Same rule the SMS path uses
+ * (public.autolink_communication_log): never "first match wins".
+ *   - exactly one contact on that number  → link it
+ *   - several contacts, all one store     → link the store only, flag review
+ *   - several stores                      → link NOTHING, flag review
+ *   - no contact, exactly one store       → link the store
+ *   - no contact, several stores          → link NOTHING, flag review
+ */
 export async function matchCaller(
   supabase: SupabaseClient,
   callerNumber: string,
-): Promise<{ store_id: string | null; store_name: string | null; contact_id: string | null; contact_name: string | null }> {
+): Promise<{
+  store_id: string | null;
+  store_name: string | null;
+  contact_id: string | null;
+  contact_name: string | null;
+  ambiguous: boolean;
+  resolution: string;
+}> {
   const tail = last10(callerNumber);
-  const out = { store_id: null as string | null, store_name: null as string | null, contact_id: null as string | null, contact_name: null as string | null };
+  const out = {
+    store_id: null as string | null,
+    store_name: null as string | null,
+    contact_id: null as string | null,
+    contact_name: null as string | null,
+    ambiguous: false,
+    resolution: "no_number",
+  };
   if (!tail) return out;
 
-  // Contact match first — most specific attribution.
   try {
-    const { data: contact } = await supabase
+    const { data: contacts } = await supabase
       .from("store_contacts")
       .select("id, name, store_id")
       .ilike("phone", `%${tail}`)
-      .limit(1)
-      .maybeSingle();
-    if (contact) {
-      out.contact_id = contact.id;
-      out.contact_name = contact.name ?? null;
-      out.store_id = contact.store_id ?? null;
+      .not("store_id", "is", null)
+      .limit(50);
+
+    const rows = (contacts || []) as { id: string; name: string | null; store_id: string }[];
+    const stores = new Set(rows.map((c) => c.store_id));
+
+    if (rows.length === 1) {
+      out.contact_id = rows[0].id;
+      out.contact_name = rows[0].name ?? null;
+      out.store_id = rows[0].store_id ?? null;
+      out.resolution = "single_contact";
+    } else if (rows.length > 1 && stores.size === 1) {
+      out.store_id = rows[0].store_id ?? null;
+      out.ambiguous = true;
+      out.resolution = "ambiguous_contact_same_store";
+    } else if (rows.length > 1) {
+      out.ambiguous = true;
+      out.resolution = "ambiguous_multiple_stores";
+      return out;
     }
   } catch (e) {
     console.error("[gasmaskVoice] contact match failed", (e as Error).message);
   }
 
-  if (!out.store_id) {
+  if (!out.store_id && out.resolution !== "ambiguous_multiple_stores") {
     try {
-      const { data: store } = await supabase
+      const { data: storeRows } = await supabase
         .from("stores")
         .select("id, name")
         .ilike("phone", `%${tail}`)
-        .limit(1)
-        .maybeSingle();
-      if (store) {
-        out.store_id = store.id;
-        out.store_name = store.name ?? null;
+        .limit(50);
+      const list = (storeRows || []) as { id: string; name: string | null }[];
+      if (list.length === 1) {
+        out.store_id = list[0].id;
+        out.store_name = list[0].name ?? null;
+        if (out.resolution === "no_number") out.resolution = "single_store";
+      } else if (list.length > 1) {
+        out.ambiguous = true;
+        out.resolution = "ambiguous_multiple_stores";
+      } else if (out.resolution === "no_number") {
+        out.resolution = "unmatched_number";
       }
     } catch (e) {
       console.error("[gasmaskVoice] store match failed", (e as Error).message);
@@ -292,7 +334,9 @@ export async function upsertCallLog(
     return existing.id;
   }
 
-  const match = await matchCaller(supabase, args.direction === "outbound" ? args.to : args.from);
+  const isInbound = (args.direction || "inbound") !== "outbound";
+  const match = await matchCaller(supabase, isInbound ? args.from : args.to);
+  const who = match.contact_name || match.store_name || args.from;
   const { data, error } = await supabase
     .from("communication_logs")
     .insert({
@@ -303,8 +347,12 @@ export async function upsertCallLog(
       twilio_call_sid: args.callSid,
       sender_phone: args.from,
       recipient_phone: args.to,
-      store_id: match.store_id,
-      contact_id: match.contact_id,
+      // Ambiguous numbers are left NULL on purpose: the BEFORE INSERT trigger
+      // public.autolink_communication_log() resolves them conversation-first
+      // and flags anything it cannot prove. Never "first match wins".
+      store_id: match.ambiguous ? null : match.store_id,
+      contact_id: match.ambiguous ? null : match.contact_id,
+      follow_up_required: match.ambiguous ? true : undefined,
       business_id: numberBrand.business_id,
       brand,
       source_business: brand,
@@ -312,9 +360,17 @@ export async function upsertCallLog(
       // performed_by is constrained to ai|va|system — routing is a system action.
       performed_by: "system",
       started_at: new Date().toISOString(),
-      summary: args.summary || `Inbound call from ${match.store_name || match.contact_name || args.from}`,
-      event_type: "inbound_call",
-      metadata: { store_name: match.store_name, contact_name: match.contact_name, ...(args.extra?.metadata as object || {}) },
+      summary:
+        args.summary ||
+        (isInbound ? `Inbound call from ${who}` : `Outbound call to ${who}`),
+      event_type: isInbound ? "inbound_call" : "outbound_call",
+      metadata: {
+        store_name: match.store_name,
+        contact_name: match.contact_name,
+        phone_resolution: match.resolution,
+        phone_ambiguous: match.ambiguous,
+        ...(args.extra?.metadata as object || {}),
+      },
       ...(args.extra || {}),
     })
     .select("id")
@@ -332,9 +388,22 @@ export async function patchCallLog(
   callSid: string,
   patch: Record<string, unknown>,
 ): Promise<void> {
+  // `metadata_merge` is a convenience: merge into the existing metadata jsonb
+  // instead of clobbering whatever the ring engine already recorded.
+  const { metadata_merge, ...rest } = patch as { metadata_merge?: Record<string, unknown> };
+  const body: Record<string, unknown> = { ...rest };
+  if (metadata_merge) {
+    const { data: cur } = await supabase
+      .from("communication_logs")
+      .select("metadata")
+      .eq("twilio_call_sid", callSid)
+      .limit(1)
+      .maybeSingle();
+    body.metadata = { ...((cur?.metadata as object) || {}), ...metadata_merge };
+  }
   const { error } = await supabase
     .from("communication_logs")
-    .update(patch)
+    .update(body)
     .eq("twilio_call_sid", callSid);
   if (error) console.error("[gasmaskVoice] call log patch failed:", error.message);
 }

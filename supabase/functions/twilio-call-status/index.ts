@@ -16,25 +16,39 @@ const last10 = (v: string) => v.replace(/\D/g, '').slice(-10);
 
 /** Resolve store_id + contact_id from the counterparty number. */
 async function resolveStore(admin: any, phone: string) {
+  // Safe resolution: a guessed id is worse than a null one. Anything that
+  // matches more than one store stays NULL — the BEFORE INSERT trigger
+  // public.autolink_communication_log() then resolves it conversation-first
+  // and flags what it cannot prove. Never "first match wins".
   const p10 = last10(phone);
-  if (p10.length !== 10) return { store_id: null, contact_id: null };
+  const none = { store_id: null, contact_id: null, ambiguous: false };
+  if (p10.length !== 10) return none;
 
-  const { data: contact } = await admin
+  const { data: contacts } = await admin
     .from('store_contacts')
     .select('id, store_id')
     .is('deleted_at', null)
+    .not('store_id', 'is', null)
     .ilike('phone', `%${p10}`)
-    .limit(1)
-    .maybeSingle();
-  if (contact?.store_id) return { store_id: contact.store_id, contact_id: contact.id };
+    .limit(50);
+  const rows = (contacts || []) as { id: string; store_id: string }[];
+  if (rows.length === 1) return { store_id: rows[0].store_id, contact_id: rows[0].id, ambiguous: false };
+  if (rows.length > 1) {
+    const stores = new Set(rows.map((c) => c.store_id));
+    return stores.size === 1
+      ? { store_id: rows[0].store_id, contact_id: null, ambiguous: true }
+      : { store_id: null, contact_id: null, ambiguous: true };
+  }
 
-  const { data: store } = await admin
+  const { data: storeRows } = await admin
     .from('stores')
     .select('id')
     .ilike('phone', `%${p10}`)
-    .limit(1)
-    .maybeSingle();
-  return { store_id: store?.id ?? null, contact_id: contact?.id ?? null };
+    .limit(50);
+  const list = (storeRows || []) as { id: string }[];
+  if (list.length === 1) return { store_id: list[0].id, contact_id: null, ambiguous: false };
+  if (list.length > 1) return { store_id: null, contact_id: null, ambiguous: true };
+  return none;
 }
 
 Deno.serve(async (req) => {
@@ -80,7 +94,7 @@ Deno.serve(async (req) => {
     //    Create it now so the store profile gets a call history entry. ──
     if (!logId && callSid) {
       const counterparty = direction === 'inbound' ? fromNumber : toNumber;
-      const { store_id, contact_id } = await resolveStore(admin, counterparty);
+      const { store_id, contact_id, ambiguous } = await resolveStore(admin, counterparty);
 
       const { data: created, error: createErr } = await admin
         .from('communication_logs')
@@ -92,7 +106,13 @@ Deno.serve(async (req) => {
           twilio_call_sid: callSid,
           sender_phone: fromNumber || null,
           recipient_phone: toNumber || null,
-          summary: 'Call placed from browser',
+          summary:
+            direction === 'inbound'
+              ? `Inbound call from ${fromNumber || 'unknown number'}`
+              : 'Call placed from browser',
+          event_type: direction === 'inbound' ? 'inbound_call' : 'outbound_call',
+          follow_up_required: ambiguous ? true : undefined,
+          metadata: { phone_ambiguous: ambiguous },
           status: 'initiated',
           delivery_status: 'initiated',
           started_at: new Date().toISOString(),

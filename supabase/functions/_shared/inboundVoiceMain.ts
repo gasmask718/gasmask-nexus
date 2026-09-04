@@ -20,7 +20,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, readForm, verifyTwilio, canonicalUrl, escapeXml } from "./dialer.ts";
-import { matchCaller, normalizePhone, upsertCallLog } from "./gasmaskVoice.ts";
+import { matchCaller, normalizePhone, patchCallLog, upsertCallLog } from "./gasmaskVoice.ts";
 import {
   InboundCompany,
   InboundPolicy,
@@ -231,6 +231,13 @@ export async function handleInboundVoice(req: Request): Promise<Response> {
       : "no active ring targets";
     console.log(`[inbound] ${company.slug}: straight to AI (${reason})`);
     await logRingLeg(supabase, callSid, { stage: "ai-direct", legs: [], result: reason, at: new Date().toISOString() });
+    // No human was ever rung — say so plainly instead of "answered".
+    await patchCallLog(supabase, callSid, {
+      status: "ai-answered",
+      outcome: "answered_ai",
+      follow_up_required: true,
+      metadata_merge: { answered_by: "ai", ai_direct_reason: reason },
+    });
     return twiml(aiFallbackTwiml({ base, policy, company }));
   }
 
