@@ -396,7 +396,7 @@ export function VACallWrapUpModal({
           <Button
             onClick={handleSave}
             disabled={saving || !canSave}
-            className="bg-gasmask hover:bg-gasmask gap-1.5 disabled:opacity-50"
+            className="bg-gasmask text-gasmask-foreground hover:bg-gasmask-glow gap-1.5 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {saving ? 'Saving…' : 'Save Wrap-Up'}

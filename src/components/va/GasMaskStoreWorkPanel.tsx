@@ -548,7 +548,7 @@ export function GasMaskStoreWorkPanel({ storeId, onNumbersProgress }: Props) {
         <Textarea value={obsNotes} onChange={(e) => setObsNotes(e.target.value)} rows={2}
           placeholder="What did they say about stock?"
           className="bg-slate-800 border-slate-700 text-white text-xs" />
-        <Button size="sm" onClick={saveObservation} disabled={savingObs} className="gap-1.5 bg-gasmask hover:bg-gasmask-glow">
+        <Button size="sm" onClick={saveObservation} disabled={savingObs} className="gap-1.5 bg-gasmask text-gasmask-foreground hover:bg-gasmask-glow">
           {savingObs ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Log observation
         </Button>
       </div>

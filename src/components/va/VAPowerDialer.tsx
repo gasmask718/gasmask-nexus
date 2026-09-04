@@ -746,7 +746,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
               <Button
                 onClick={dialManualNumber}
                 disabled={!selectedNumber || !manualPhone || manualDialing}
-                className="w-full bg-gasmask hover:bg-gasmask-glow gap-2"
+                className="w-full bg-gasmask text-gasmask-foreground hover:bg-gasmask-glow gap-2"
               >
                 {manualDialing
                   ? <><Loader2 className="h-4 w-4 animate-spin" /> Dialing…</>

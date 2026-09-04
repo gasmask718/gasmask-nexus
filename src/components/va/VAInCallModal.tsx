@@ -168,7 +168,8 @@ export function VAInCallModal({
                 {([
                   { key: 'hot' as ExcitementLevel, icon: Flame, label: 'HOT', active: 'bg-red-600 ring-2 ring-red-400', inactive: 'bg-red-600/30 hover:bg-red-600/50 text-red-300' },
                   { key: 'warm' as ExcitementLevel, icon: Sun, label: 'WARM', active: 'bg-amber-600 ring-2 ring-amber-400', inactive: 'bg-amber-600/30 hover:bg-amber-600/50 text-amber-300' },
-                  { key: 'cold' as ExcitementLevel, icon: Snowflake, label: 'COLD', active: 'bg-gasmask ring-2 ring-gasmask/40', inactive: 'bg-gasmask/30 hover:bg-gasmask/50 text-gasmask-glow' },
+                  // Lead temperature stays semantic — GasMask red is the brand accent, not 'cold'.
+                  { key: 'cold' as ExcitementLevel, icon: Snowflake, label: 'COLD', active: 'bg-slate-600 ring-2 ring-slate-400', inactive: 'bg-slate-600/30 hover:bg-slate-600/50 text-slate-300' },
                 ] as const).map(e => (
                   <Button
                     key={e.key}
