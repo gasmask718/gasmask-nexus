@@ -40422,6 +40422,9 @@ export type Database = {
           follow_up_date: string | null
           follow_up_required: boolean | null
           full_message: string | null
+          handled_at: string | null
+          handled_by: string | null
+          handled_note: string | null
           id: string
           idempotency_key: string | null
           influencer_id: string | null
@@ -40439,6 +40442,8 @@ export type Database = {
           performed_by: string | null
           provider: string | null
           provider_message_id: string | null
+          read_at: string | null
+          read_by: string | null
           recipient_email: string | null
           recipient_phone: string | null
           recording_url: string | null
@@ -40495,6 +40500,9 @@ export type Database = {
           follow_up_date?: string | null
           follow_up_required?: boolean | null
           full_message?: string | null
+          handled_at?: string | null
+          handled_by?: string | null
+          handled_note?: string | null
           id?: string
           idempotency_key?: string | null
           influencer_id?: string | null
@@ -40512,6 +40520,8 @@ export type Database = {
           performed_by?: string | null
           provider?: string | null
           provider_message_id?: string | null
+          read_at?: string | null
+          read_by?: string | null
           recipient_email?: string | null
           recipient_phone?: string | null
           recording_url?: string | null
@@ -40568,6 +40578,9 @@ export type Database = {
           follow_up_date?: string | null
           follow_up_required?: boolean | null
           full_message?: string | null
+          handled_at?: string | null
+          handled_by?: string | null
+          handled_note?: string | null
           id?: string
           idempotency_key?: string | null
           influencer_id?: string | null
@@ -40585,6 +40598,8 @@ export type Database = {
           performed_by?: string | null
           provider?: string | null
           provider_message_id?: string | null
+          read_at?: string | null
+          read_by?: string | null
           recipient_email?: string | null
           recipient_phone?: string | null
           recording_url?: string | null
@@ -159910,6 +159925,11 @@ export type Database = {
         Args: { p_email: string; p_ip?: string; p_order_id: string }
         Returns: Json
       }
+      mark_call_handled: {
+        Args: { _id: string; _note?: string }
+        Returns: boolean
+      }
+      mark_communication_read: { Args: { _ids: string[] }; Returns: number }
       mark_invite_opened: { Args: { p_token: string }; Returns: undefined }
       mark_ops_thread_read: {
         Args: { p_thread_id: string }
