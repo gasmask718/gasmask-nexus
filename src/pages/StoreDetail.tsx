@@ -26,6 +26,8 @@ import { CommunicationTimeline } from "@/components/CommunicationTimeline";
 import { StoreReviewControls } from "@/components/store/StoreReviewControls";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreStreetView } from "@/components/store/StoreStreetView";
+import { StoreLocationMap } from "@/components/store/StoreLocationMap";
+import { ConnectedStoresCard } from "@/components/store/ConnectedStoresCard";
 
 import { StoreReconCard } from "@/components/store/StoreReconCard";
 import { StoreCommunicationPreferences } from "@/components/store/StoreCommunicationPreferences";
