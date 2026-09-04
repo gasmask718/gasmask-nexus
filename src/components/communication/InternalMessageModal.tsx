@@ -113,6 +113,8 @@ export function InternalMessageModal({
         body: {
           to_number: destinationPhone,
           message_body: message.trim(),
+          // Operator-to-operator/staff message → workforce class.
+          send_class: "workforce",
           idempotency_key: crypto.randomUUID(),
           explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
           skip_cooldown: true,

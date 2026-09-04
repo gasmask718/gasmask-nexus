@@ -143,6 +143,8 @@ export function OutreachActions({
         body: {
           to_number: phone,
           message_body: smsBody.trim(),
+          // Human-composed 1:1 outreach to a lead/store contact.
+          send_class: "conversational",
           idempotency_key: `outreach-${entityId || "anon"}-${Date.now()}`,
           metadata: {
             business: businessKey,
