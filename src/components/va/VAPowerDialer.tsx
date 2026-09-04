@@ -238,6 +238,18 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     }
   }, [phase]);
 
+  // One writer for queue-item state changes (outbound_call_queue — the table
+  // the call-list builder fills). Kept in one place so status columns stay
+  // consistent across skip / DNC / no-number / completed paths.
+  const markQueueItem = useCallback(async (queueId: string, status: 'skipped' | 'completed') => {
+    if (!queueId) return;
+    const { error } = await (supabase as any)
+      .from('outbound_call_queue')
+      .update({ status, ended_at: new Date().toISOString(), last_attempt_at: new Date().toISOString() })
+      .eq('id', queueId);
+    if (error) console.warn('[AutoDialer] queue update failed:', error.message);
+  }, []);
+
   // ── Core loop: fetch next lead ──────────────────────────────────────
   const leadIndexRef = useRef(0);
   useEffect(() => { leadIndexRef.current = leadIndex; }, [leadIndex]);
@@ -366,20 +378,19 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       if (data?.skipped) {
         toast.info(`${lead.business_name} skipped (${data.reason})`);
         if (lead.queue_id) {
-          await (supabase as any).from('campaign_call_queue')
-            .update({ status: 'skipped', completed_at: new Date().toISOString() })
-            .eq('id', lead.queue_id);
+          await markQueueItem(lead.queue_id, 'skipped');
         }
         return false;
       }
       setCallLogId(data?.callLogId || null);
       // mark queue item in-flight (auto-loop only)
       if (lead.queue_id) {
-        await (supabase as any).from('campaign_call_queue')
+        await (supabase as any).from('outbound_call_queue')
           .update({
             status: 'dialing',
-            started_at: new Date().toISOString(),
-            attempt_number: lead.attempt_number + 1,
+            dialing_started_at: new Date().toISOString(),
+            last_attempt_at: new Date().toISOString(),
+            attempt_count: lead.attempt_number + 1,
           })
           .eq('id', lead.queue_id);
       }
