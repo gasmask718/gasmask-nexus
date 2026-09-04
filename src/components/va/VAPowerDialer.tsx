@@ -27,7 +27,7 @@ import { VAScripts } from './VAScripts';
 import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
-import { GasMaskStoreWorkPanel } from './GasMaskStoreWorkPanel';
+import { GasMaskStoreWorkPanel, type NumbersProgress } from './GasMaskStoreWorkPanel';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VA Auto Dialer — Sequential Lead Processing State Machine
@@ -43,7 +43,7 @@ import { GasMaskStoreWorkPanel } from './GasMaskStoreWorkPanel';
 // "disposition"). Compliance (DNC) is enforced server-side.
 // ─────────────────────────────────────────────────────────────────────────────
 
-type CallPhase = 'idle' | 'fetching_lead' | 'dialing' | 'connected' | 'wrap_up';
+type CallPhase = 'idle' | 'fetching_lead' | 'dialing' | 'connected' | 'wrap_up' | 'account_review';
 
 interface Campaign {
   id: string;
@@ -128,6 +128,13 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   const [currentLead, setCurrentLead] = useState<QueueLead | null>(null);
   const [callLogId, setCallLogId] = useState<string | null>(null);
   const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
+
+  // ── Account completion gate ─────────────────────────────────────────
+  // An account is only finished once EVERY number on it has been worked.
+  // The work panel reports its own canonical progress here.
+  const [numbersProgress, setNumbersProgress] = useState<NumbersProgress | null>(null);
+  const [pendingAccount, setPendingAccount] = useState<{ lead: QueueLead; disposition: string | null } | null>(null);
+  const [confirmingDone, setConfirmingDone] = useState(false);
 
   // ── Wrap-up form ────────────────────────────────────────────────────
   const [dispositionCode, setDispositionCode] = useState<string>('');
