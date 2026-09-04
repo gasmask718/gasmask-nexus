@@ -53,7 +53,9 @@ Deno.serve(async (req) => {
   );
   const base = functionsBase(req);
 
-  // ── A human (or bridged AI) answered ──
+  // ── A configured human ring target answered ──
+  // Only the human ring legs reach this callback; the AI fallback leg carries
+  // vm=1 and never gets here. So "completed" here == a human picked up.
   if (dialStatus === "completed") {
     await logRingLeg(supabase, callSid, {
       stage: `stage-${stage}`,
@@ -61,7 +63,13 @@ Deno.serve(async (req) => {
       result: `answered (DialCallSid=${params.DialCallSid || "?"})`,
       at: new Date().toISOString(),
     });
-    await patchCallLog(supabase, callSid, { status: "answered" });
+    await patchCallLog(supabase, callSid, {
+      status: "answered",
+      outcome: "answered_human",
+      answered_at: new Date().toISOString(),
+      duration_seconds: parseInt(params.DialCallDuration || "0", 10) || 0,
+      metadata_merge: { answered_by: "human", answered_stage: stage },
+    });
     return twiml(`<Hangup/>`);
   }
 
@@ -109,7 +117,17 @@ Deno.serve(async (req) => {
 
   // ── Nobody answered anywhere → AI fallback ──
   console.log(`[inbound-dial-complete] ${company?.slug || cid}: humans missed → AI fallback`);
-  await patchCallLog(supabase, callSid, { status: "ai-fallback" });
+  // Truthful status: no human took this call. If the AI picks up it is
+  // "answered_ai", never "answered".
+  await patchCallLog(supabase, callSid, {
+    status: pol?.ai_fallback === false ? "missed" : "ai-fallback",
+    outcome: pol?.ai_fallback === false ? "missed" : "answered_ai",
+    follow_up_required: true,
+    metadata_merge: {
+      answered_by: pol?.ai_fallback === false ? "nobody" : "ai",
+      humans_missed_stages: total,
+    },
+  });
   return twiml(aiFallbackTwiml({
     base,
     policy: pol,
