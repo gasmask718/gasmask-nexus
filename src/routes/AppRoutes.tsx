@@ -2229,6 +2229,12 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/support" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDSupportTickets /></RequireRole>} />
         <Route path="/dynasty-direct/commission-rates" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDCommissionRates /></RequireRole>} />
         <Route path="/dynasty-direct/orders/:orderId" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDOrderDetail /></RequireRole>} />
+        <Route path="/dynasty-direct/wholesaler-map" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDWholesalerMap /></RequireRole>} />
+        <Route path="/dynasty-direct/wholesaler-crm" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDWholesalerCrm /></RequireRole>} />
+
+        {/* Highway — licensed dispensary hub */}
+        <Route path="/highway/map" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><HighwayMap /></RequireRole>} />
+        <Route path="/highway/crm" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><HighwayCrm /></RequireRole>} />
 
         {/* Marketplace Connection Pack - Dev Only, Admin/Owner */}
         <Route
