@@ -31,8 +31,11 @@ export function routeUserByRole(role: AppRole): string {
       return '/portal/customer';
     case 'staff':
       return '/';
+    case 'va':
+      return '/va/dashboard';
     case 'creator':
       return '/portal/creator';
+
     default:
       return '/portal/dashboard';
   }
