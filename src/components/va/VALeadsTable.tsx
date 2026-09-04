@@ -214,7 +214,7 @@ export function VALeadsTable({
           <Button
             size="sm"
             onClick={handleStartCampaign}
-            className="bg-cyan-600 hover:bg-cyan-700 text-white gap-2"
+            className="bg-caller hover:bg-caller-glow text-white gap-2"
             disabled={dialableFiltered.length === 0}
           >
             <Zap className="h-4 w-4" />
@@ -227,8 +227,8 @@ export function VALeadsTable({
 
       {/* Quick Dial bar */}
       {onQuickDial && (
-        <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-cyan-400 font-semibold pr-1">
+        <div className="rounded-xl border border-caller/20 bg-caller/5 p-3 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-caller font-semibold pr-1">
             <PhoneCall className="h-3.5 w-3.5" /> Quick Dial
           </div>
           <Input
@@ -248,7 +248,7 @@ export function VALeadsTable({
             size="sm"
             onClick={handleQuickDial}
             disabled={!quickPhone}
-            className="bg-cyan-600 hover:bg-cyan-700 text-white gap-2"
+            className="bg-caller hover:bg-caller-glow text-white gap-2"
           >
             <Phone className="h-4 w-4" /> Call Now
           </Button>

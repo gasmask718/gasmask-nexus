@@ -240,12 +240,12 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
 
       {/* Prior call context — never start from scratch */}
       {priorContext && (priorContext.next_call_context || priorContext.call_summary) && (
-        <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-3">
+        <div className="rounded-xl border border-caller/30 bg-caller/5 p-3">
           <div className="flex items-center gap-2 mb-1.5">
-            <History className="h-3.5 w-3.5 text-cyan-400" />
-            <span className="text-xs font-semibold text-cyan-300">Where you left off last time</span>
+            <History className="h-3.5 w-3.5 text-caller-glow" />
+            <span className="text-xs font-semibold text-caller-glow">Where you left off last time</span>
             {priorContext.follow_up_status && (
-              <Badge className="bg-cyan-500/20 text-cyan-300 text-[10px]">{priorContext.follow_up_status.replace(/_/g, ' ')}</Badge>
+              <Badge className="bg-caller/20 text-caller-glow text-[10px]">{priorContext.follow_up_status.replace(/_/g, ' ')}</Badge>
             )}
             <span className="ml-auto text-[10px] text-slate-500">
               {priorContext.called_at ? new Date(priorContext.called_at).toLocaleString() : ''}
@@ -386,7 +386,7 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
       {/* Manual reopen if VA dismissed */}
       {callStatus === 'ended' && callLogId && !wrapUpOpen && (
         <div className="flex justify-center">
-          <Button size="sm" variant="outline" className="gap-1.5 text-cyan-300 border-cyan-500/40" onClick={() => setWrapUpOpen(true)}>
+          <Button size="sm" variant="outline" className="gap-1.5 text-caller-glow border-caller/40" onClick={() => setWrapUpOpen(true)}>
             <RotateCcw className="h-3.5 w-3.5" /> Open call wrap-up
           </Button>
         </div>

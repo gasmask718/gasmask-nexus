@@ -193,14 +193,29 @@ function VADashboardInner() {
   return (
     <SidebarProvider>
       <AutoTranslateRoot>
-      <div className="min-h-screen flex w-full" style={{ background: 'hsl(222 47% 11%)' }}>
+      <div
+        className="min-h-screen flex w-full"
+        style={{
+          background: 'hsl(222 47% 11%)',
+          // Caller accent follows the company being called for: Brandaro keeps
+          // its cyan, every other company (GasMask/Grabba family) runs on the
+          // GasMask red defined in index.css.
+          ...(activeCompany?.slug === 'brandaro'
+            ? ({
+                '--caller-accent': '180 100% 50%',
+                '--caller-accent-glow': '180 100% 68%',
+                '--caller-accent-foreground': '222 47% 11%',
+              } as React.CSSProperties)
+            : {}),
+        }}
+      >
         <VAOnboardingModal />
 
         {/* Sidebar */}
         <Sidebar collapsible="icon" className="border-r border-slate-700/50">
           <SidebarContent className="bg-slate-900 text-white">
             <SidebarGroup>
-              <SidebarGroupLabel className="text-cyan-400 font-bold flex items-center gap-2">
+              <SidebarGroupLabel className="text-caller font-bold flex items-center gap-2">
                 <Headset className="h-4 w-4" />
                 <span>VA Portal</span>
               </SidebarGroupLabel>
@@ -211,12 +226,12 @@ function VADashboardInner() {
                       <SidebarMenuButton
                         onClick={() => setView(item.key)}
                         isActive={view === item.key}
-                        className="text-slate-300 hover:text-white hover:bg-slate-800 data-[active=true]:bg-cyan-500/10 data-[active=true]:text-cyan-400"
+                        className="text-slate-300 hover:text-white hover:bg-slate-800 data-[active=true]:bg-caller/10 data-[active=true]:text-caller"
                       >
                         <item.icon className="h-4 w-4" />
                         <span>{item.label}</span>
                         {(item as any).badge ? (
-                          <Badge className="ml-auto bg-cyan-500 text-white text-[10px] px-1.5 py-0 h-4">
+                          <Badge className="ml-auto bg-caller text-white text-[10px] px-1.5 py-0 h-4">
                             {(item as any).badge}
                           </Badge>
                         ) : null}
@@ -268,7 +283,7 @@ function VADashboardInner() {
               <Badge className="bg-slate-700 text-slate-300 text-xs">
                 {language === 'en' ? '🇺🇸 EN' : '🇪🇸 ES'}
               </Badge>
-              <Button size="sm" variant="ghost" className="text-cyan-400 hover:text-cyan-300 gap-1" onClick={() => navigate('/va/profile')}>
+              <Button size="sm" variant="ghost" className="text-caller hover:text-caller-glow gap-1" onClick={() => navigate('/va/profile')}>
                 <UserCircle className="h-3 w-3" /> Profile
               </Button>
               <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 gap-1" onClick={handleLogout}>
@@ -287,7 +302,7 @@ function VADashboardInner() {
                 <div className="flex justify-end">
                   <Button
                     onClick={handleStartDialer}
-                    className="bg-cyan-600 hover:bg-cyan-700 gap-2"
+                    className="bg-caller hover:bg-caller-glow gap-2"
                     disabled={allLeads.length === 0}
                   >
                     <Zap className="h-4 w-4" /> Start Power Dialer ({allLeads.length} leads)
@@ -334,7 +349,7 @@ function VADashboardInner() {
                 {/* Recent Calls */}
                 <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-4">
                   <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-cyan-400" /> Recent Calls
+                    <Phone className="h-4 w-4 text-caller" /> Recent Calls
                   </h3>
                   <VARecentCalls />
                 </div>
@@ -379,7 +394,7 @@ function VADashboardInner() {
               <div className="max-w-5xl">
                 <div className="mb-4">
                   <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <History className="h-5 w-5 text-cyan-400" /> Call History
+                    <History className="h-5 w-5 text-caller" /> Call History
                   </h2>
                   <p className="text-xs text-slate-400 mt-1">
                     Your recordings and transcripts. Same source as the admin review panel — scoped to your account.

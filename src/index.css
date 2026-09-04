@@ -75,6 +75,17 @@ All colors MUST be HSL.
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     
+    /* GasMask caller accent — the caller floor is GasMask red on OS black,
+       never Brandaro cyan. Used by the VA power dialer + store work panel. */
+    --gasmask: 0 100% 50%;
+    /* Live caller accent. Defaults to GasMask red; the VA portal root swaps it
+       to Brandaro cyan when the signed-in VA is calling for Brandaro. */
+    --caller-accent: 0 100% 50%;
+    --caller-accent-glow: 0 100% 64%;
+    --caller-accent-foreground: 0 0% 100%;
+    --gasmask-glow: 0 100% 64%;
+    --gasmask-foreground: 0 0% 100%;
+
     /* Portal HUD Colors */
     --hud-cyan: 180 100% 50%;
     --hud-green: 142 100% 50%;
