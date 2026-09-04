@@ -55,9 +55,9 @@ export default function ProviderLeadsHub({ config }: Props) {
   const leads = leadsQuery.data ?? [];
 
   const tagsOf = (l: ProviderLead): string[] =>
-    ((l as Record<string, unknown>)[config.tagsColumn] as string[] | null) ?? [];
+    ((l as unknown as Record<string, unknown>)[config.tagsColumn] as string[] | null) ?? [];
   const geoOf = (l: ProviderLead): string =>
-    ((l as Record<string, unknown>)[config.geoColumn] as string | null) ?? '';
+    ((l as unknown as Record<string, unknown>)[config.geoColumn] as string | null) ?? '';
 
   const tagOptions = useMemo(
     () => Array.from(new Set(leads.flatMap(tagsOf).filter(Boolean))).sort(),
