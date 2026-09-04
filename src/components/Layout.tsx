@@ -723,6 +723,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/delivery/pool', label: '📡 Live Delivery Pool', icon: Package },
       { path: '/delivery/orders', label: '📦 Orders & Deliveries', icon: Package },
       { path: '/gasmask/route-engine', label: '🗺 Route Engine', icon: Route },
+      { path: '/activity', label: '🧾 Account Activity', icon: Activity },
       { path: '/gasmask/driver-route', label: '🚗 Driver View', icon: MapPin },
       { path: '/delivery/payouts', label: 'Payouts', icon: DollarSign },
       { path: '/delivery/my-route', label: 'My Route', icon: Route },

@@ -78,6 +78,7 @@ const DeveloperPortal = lazy(() => import('@/pages/developer/DeveloperPortal'));
 // Protected pages
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Stores = lazy(() => import('@/pages/Stores'));
+const AccountActivity = lazy(() => import('@/pages/AccountActivity'));
 const StoreDetail = lazy(() => import('@/pages/StoreDetail'));
 const NewArrivals = lazy(() => import('@/pages/NewArrivals'));
 const RoutesPage = lazy(() => import('@/pages/Routes'));
@@ -1787,6 +1788,7 @@ export default function AppRoutes() {
         <Route path="/stores" element={<Stores />} />
         <Route path="/new-arrivals" element={<RequireRole allowedRoles={['owner','admin','employee','staff']} showLocked><NewArrivals /></RequireRole>} />
         <Route path="/stores/:id" element={<StoreDetail />} />
+        <Route path="/activity" element={<AccountActivity />} />
         <Route path="/sell-through-analytics" element={<SellThroughAnalytics />} />
         <Route path="/brand-crm" element={<BrandCRMPage />} />
         <Route path="/stores/performance" element={<StorePerformance />} />
