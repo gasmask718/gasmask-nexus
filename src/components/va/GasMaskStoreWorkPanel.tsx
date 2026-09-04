@@ -283,6 +283,39 @@ export function GasMaskStoreWorkPanel({ storeId, onNumbersProgress }: Props) {
     return true;
   };
 
+  // ── Every number on the account, in one list ────────────────────────────
+  // store_contacts rows + the store_master primary line when it isn't already
+  // represented there (matched on the last 10 digits).
+  const last10 = (p?: string | null) => (p || '').replace(/\D/g, '').slice(-10);
+  const contactRows: any[] = (contactsQ.data || []).filter((c: any) => c.phone);
+  const storeLineCovered = !!store?.phone && contactRows.some((c) => last10(c.phone) === last10(store.phone));
+  const numberRows: any[] = [
+    ...(store?.phone && !storeLineCovered
+      ? [{
+          id: null,
+          phone: store.phone,
+          name: store.contact_name || store.owner_name || 'Store line',
+          role: 'primary',
+          number_verification_status: null,
+          responsiveness_status: null,
+          fromStore: true,
+        }]
+      : []),
+    ...contactRows,
+  ];
+  const openNumbers = numberRows.filter((r) => !isNumberWorked(r));
+
+  useEffect(() => {
+    if (!onNumbersProgress) return;
+    onNumbersProgress({
+      total: numberRows.length,
+      open: openNumbers.length,
+      openNumbers: openNumbers.map((r) => r.phone),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeId, JSON.stringify(numberRows.map((r) => [r.id, r.phone, r.number_verification_status, r.responsiveness_status]))]);
+
+
 
   // --- call observation capture ---
   const [tubes, setTubes] = useState('');
