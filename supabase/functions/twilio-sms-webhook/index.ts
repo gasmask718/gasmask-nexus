@@ -195,41 +195,20 @@ Deno.serve(async (req) => {
     console.error("[twilio-sms-webhook][VERIFY] error:", (vErr as Error).message);
   }
 
-  // Lookup store_contact by normalized last-10 digits (handles non-E.164 storage)
+  // ── ACCOUNT ASSOCIATION ──
+  // Deliberately NOT resolved here. public.autolink_communication_log()
+  // is the single reusable rule for every inbound message:
+  //   1. reply → the exact store/contact of the most recent outbound message
+  //      to this number (conversation context wins, always)
+  //   2. otherwise a single matching contact
+  //   3. multiple stores on the same number → left unmatched + flagged.
+  // A first-match `.limit(1)` lookup here would silently override that and
+  // move a reply onto the wrong store.
   const fromLast10 = (From || "").replace(/\D/g, "").slice(-10);
+  const store_id: string | null = null;
+  const contact_id: string | null = null;
 
-  let contact: { id: string; store_id: string } | null = null;
-  if (fromLast10.length === 10) {
-    const { data: c } = await sb
-      .from("store_contacts")
-      .select("id, store_id")
-      .ilike("phone", `%${fromLast10}`)
-      .eq("opted_out", false)
-      .limit(1)
-      .maybeSingle();
-    contact = c as any;
-  }
-
-  let store_id: string | null = contact?.store_id ?? null;
-  // communication_logs.contact_id has no FK — store the store_contacts.id so the
-  // per-contact timeline on the store profile can match inbound messages.
-  let contact_id: string | null = contact?.id ?? null;
-
-  // Fallback: stores.phone (last-10)
-  if (!store_id && fromLast10.length === 10) {
-    const { data: store } = await sb
-      .from("stores")
-      .select("id")
-      .ilike("phone", `%${fromLast10}`)
-      .limit(1)
-      .maybeSingle();
-    store_id = store?.id ?? null;
-  }
-
-  const isOrphan = !store_id;
-  const summary = isOrphan
-    ? "Inbound from unknown number"
-    : Body.slice(0, 80);
+  const summary = Body.slice(0, 80) || "Inbound message";
 
   const { error: insertErr } = await sb.from("communication_logs").insert({
     store_id,
@@ -243,6 +222,7 @@ Deno.serve(async (req) => {
     recipient_phone: To,
     twilio_sid: MessageSid,
     business_id: numberBrand.business_id,
+
     brand: numberBrand.brand,
     source_business: numberBrand.source_business,
     summary,
