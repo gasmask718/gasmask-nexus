@@ -75,10 +75,14 @@ export default function RepPerformancePage() {
 
   return (
     <div className="w-full min-h-full space-y-6">
+      {/* Real activity from the canonical communication log — shown first. */}
+      <RepActivityBoard />
+
       <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center gap-3">
         <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
-        <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">SIMULATION DATA — Metrics reflect simulated call outcomes</p>
+        <p className="text-sm font-semibold text-amber-700">SIMULATION DATA — the cards and table below reflect simulated call outcomes, not live revenue</p>
       </div>
+
 
       <div className="flex items-center justify-between">
         <div>
