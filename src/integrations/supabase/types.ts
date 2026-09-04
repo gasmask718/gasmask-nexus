@@ -155018,6 +155018,24 @@ export type Database = {
         }
         Relationships: []
       }
+      v_store_activity: {
+        Row: {
+          activity_id: string | null
+          actor_id: string | null
+          contact_id: string | null
+          detail: string | null
+          direction: string | null
+          is_current: boolean | null
+          is_open: boolean | null
+          kind: string | null
+          occurred_at: string | null
+          status: string | null
+          store_id: string | null
+          subtype: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
       v_store_at_risk: {
         Row: {
           baseline_monthly_units: number | null
