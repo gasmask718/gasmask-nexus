@@ -83,6 +83,12 @@ async function sendViaTwilio(to: string, body: string, fromOverride?: string, me
   // route through here too, so nothing is silently downgraded to text.
   for (const m of mediaUrls ?? []) form.append("MediaUrl", m);
 
+  // Delivery status: without this, outbound_messages never advances past
+  // "sent" — Twilio only reports delivered/undelivered/failed to a callback.
+  const statusCallbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/twilio-sms-status`;
+  form.append("StatusCallback", statusCallbackUrl);
+
+
   // C5 STANDARD: TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN is the canonical pair.
   // The TWILIO_API_SID/TWILIO_API_SECRET ("connector" key) path is DEPRECATED
   // and kept only as a legacy fallback for accounts still rotating off the

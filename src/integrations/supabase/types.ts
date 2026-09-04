@@ -87847,6 +87847,7 @@ export type Database = {
           campaign_id: string | null
           created_at: string | null
           created_by: string | null
+          delivered_at: string | null
           error_code: string | null
           error_message: string | null
           id: string
@@ -87860,6 +87861,7 @@ export type Database = {
           send_class: string | null
           sent_at: string | null
           status: string
+          status_updated_at: string | null
           store_id: string | null
           to_number: string
         }
@@ -87867,6 +87869,7 @@ export type Database = {
           campaign_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          delivered_at?: string | null
           error_code?: string | null
           error_message?: string | null
           id?: string
@@ -87880,6 +87883,7 @@ export type Database = {
           send_class?: string | null
           sent_at?: string | null
           status?: string
+          status_updated_at?: string | null
           store_id?: string | null
           to_number: string
         }
@@ -87887,6 +87891,7 @@ export type Database = {
           campaign_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          delivered_at?: string | null
           error_code?: string | null
           error_message?: string | null
           id?: string
@@ -87900,6 +87905,7 @@ export type Database = {
           send_class?: string | null
           sent_at?: string | null
           status?: string
+          status_updated_at?: string | null
           store_id?: string | null
           to_number?: string
         }

@@ -1,10 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { readForm, verifyTwilio } from "../_shared/dialer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
 
 // Map Twilio status to our database status values
 const mapTwilioStatus = (twilioStatus: string): string => {
@@ -36,19 +38,28 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Parse the form-urlencoded body from Twilio
-    const formData = await req.formData();
-    
+    // Parse the form-urlencoded body from Twilio (single read — readForm also
+    // feeds signature verification below).
+    const params = await readForm(req);
+
     // Extract Twilio webhook fields
-    const messageSid = formData.get("MessageSid")?.toString() || "";
-    const messageStatus = formData.get("MessageStatus")?.toString() || "";
-    const to = formData.get("To")?.toString() || "";
-    const from = formData.get("From")?.toString() || "";
-    const errorCode = formData.get("ErrorCode")?.toString() || null;
-    const errorMessage = formData.get("ErrorMessage")?.toString() || null;
-    const accountSid = formData.get("AccountSid")?.toString() || "";
+    const messageSid = params.MessageSid || "";
+    const messageStatus = params.MessageStatus || "";
+    const to = params.To || "";
+    const from = params.From || "";
+    const errorCode = params.ErrorCode || null;
+    const errorMessage = params.ErrorMessage || null;
+    const accountSid = params.AccountSid || "";
 
     console.log(`📨 Twilio Status Callback: SID=${messageSid}, Status=${messageStatus}, To=${to}`);
+
+    // Signature validation — fail closed. Twilio signs every status callback
+    // with the Account Auth Token; anything unsigned is forged.
+    const v = verifyTwilio(req, params);
+    if (!v.ok) {
+      console.error(`[twilio-sms-status] signature invalid: ${v.reason}`);
+      return new Response("Forbidden", { status: 403, headers: corsHeaders });
+    }
 
     // Synthetic health-check probe (comms-health-monitor sends MessageSid=SMhealth*):
     // ack with 200 so the deployment layer reports green without us pretending
@@ -59,6 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
 
     if (!messageSid || !messageStatus) {
       console.error("❌ Missing required fields: MessageSid or MessageStatus");
@@ -78,6 +90,38 @@ const handler = async (req: Request): Promise<Response> => {
     const isError = messageStatus === "failed" || messageStatus === "undelivered";
 
     console.log(`🔄 Mapped status: ${messageStatus} → ${dbStatus}`);
+
+    // ── CANONICAL OUTBOUND LEDGER ────────────────────────────────────────
+    // outbound_messages is the row send-sms wrote. Without this update every
+    // outbound text is frozen at "sent" forever. Matched on the provider SID —
+    // never on phone+recency, which would mislabel a different message.
+    {
+      const nowIso = new Date().toISOString();
+      const ledgerStatus =
+        messageStatus.toLowerCase() === "undelivered" ? "undelivered" : dbStatus;
+      const patch: Record<string, any> = {
+        status: ledgerStatus,
+        status_updated_at: nowIso,
+        error_code: errorCode,
+        error_message: errorMessage,
+      };
+      if (ledgerStatus === "delivered") patch.delivered_at = nowIso;
+
+      const { data: ledgerRows, error: ledgerErr } = await supabase
+        .from("outbound_messages")
+        .update(patch)
+        .eq("provider_message_id", messageSid)
+        .select("id");
+
+      if (ledgerErr) {
+        console.error(`❌ outbound_messages update failed for ${messageSid}: ${ledgerErr.message}`);
+      } else if (!ledgerRows || ledgerRows.length === 0) {
+        console.warn(`⚠️ No outbound_messages row for SID ${messageSid} (status ${messageStatus}) — unmatched status callback`);
+      } else {
+        console.log(`✅ outbound_messages ${ledgerRows[0].id} → ${ledgerStatus}`);
+      }
+    }
+
 
     // Prepare the update payload
     const updatePayload: Record<string, any> = {
