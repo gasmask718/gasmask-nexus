@@ -76,8 +76,10 @@ export function SamplesGivenSection({ storeId, variant = 'compact' }: Props) {
     onError: (e: any) => toast.error(e?.message || 'Failed to log sample'),
   });
 
-  const displayName = (pid: string | null) =>
-    CANONICAL_TUBE_SKUS.find((s) => s.product_id === pid)?.display ?? 'Unknown';
+  // Historical rows keep their original product/brand naming — never rewritten.
+  const displayName = (s: Pick<SampleRow, 'product_id' | 'brand'>) =>
+    CANONICAL_TUBE_SKUS.find((c) => c.product_id === s.product_id)?.display ??
+    (s.brand?.trim() || 'Unknown');
 
   return (
     <div className="space-y-2 rounded-md border border-border/50 bg-background/30 p-2.5">
