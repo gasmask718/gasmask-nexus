@@ -12,6 +12,7 @@ import { Phone, PhoneOff, Mic, MicOff, X, FileText, Send, Wifi, WifiOff } from '
 import { toast } from 'sonner';
 import { VAScripts } from './VAScripts';
 import { GasMaskStoreWorkPanel } from './GasMaskStoreWorkPanel';
+import { StoreAccountWorkspace } from '@/pages/StoreDetail';
 import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
@@ -355,6 +356,9 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
             {isGasMask && (
               <TabsTrigger value="account" className="flex-1 text-xs data-[state=active]:bg-background/50">Account</TabsTrigger>
             )}
+            {isGasMask && (
+              <TabsTrigger value="full-account" className="flex-1 text-xs data-[state=active]:bg-background/50">Full account</TabsTrigger>
+            )}
             {!isGasMask && (
               <TabsTrigger value="services" className="flex-1 text-xs data-[state=active]:bg-background/50">Services & Pricing</TabsTrigger>
             )}
@@ -365,6 +369,15 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
           {isGasMask && (
             <TabsContent value="account" className="p-4">
               <GasMaskStoreWorkPanel storeId={lead.store_id ?? lead.id} />
+            </TabsContent>
+          )}
+          {isGasMask && (
+            <TabsContent value="full-account" className="p-4">
+              {/* Canonical store profile, caller-safe. Call state is owned by
+                  CallProvider, so tab switching never drops the live call. */}
+              <div className="max-h-[70vh] overflow-y-auto rounded-lg border border-border/50 bg-background p-4">
+                <StoreAccountWorkspace storeId={lead.store_id ?? lead.id} />
+              </div>
             </TabsContent>
           )}
           {!isGasMask && <TabsContent value="services" className="p-4"><VAServicesPricing /></TabsContent>}

@@ -223,8 +223,21 @@ const getSourceFromRole = (role?: string | null): string => {
   return "User";
 };
 
-const StoreDetail = () => {
-  const { id } = useParams();
+interface StoreDetailViewProps {
+  /** Explicit store id — used when the profile is embedded (caller workspace). */
+  storeId?: string;
+  /**
+   * 'page'   → the normal /stores/:id route (full admin profile)
+   * 'caller' → embedded in the VA caller workflow: identical canonical profile,
+   *            with finance/admin-only surfaces removed. NOT a second profile.
+   */
+  variant?: 'page' | 'caller';
+}
+
+const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailViewProps = {}) => {
+  const params = useParams();
+  const id = storeIdProp ?? params.id;
+  const isCaller = variant === 'caller';
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { roles } = useUserRole();
@@ -519,13 +532,15 @@ const StoreDetail = () => {
   return (
     <CanonicalStoreDataProvider storeId={id}>
       <CanonicalStoreProfileProvider storeId={storeId}>
-        <div className="mx-auto max-w-[1500px] space-y-5 animate-fade-in">
-          <PagePurpose pageKey="page.store_profile" config={storeProfileConfig} variant="default" />
+        <div className={isCaller ? "space-y-5" : "mx-auto max-w-[1500px] space-y-5 animate-fade-in"}>
+          {!isCaller && <PagePurpose pageKey="page.store_profile" config={storeProfileConfig} variant="default" />}
 
           <div className="flex items-start gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/stores')} aria-label="Back to stores">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+            {!isCaller && (
+              <Button variant="ghost" size="icon" onClick={() => navigate('/stores')} aria-label="Back to stores">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
             <div className="min-w-0 flex-1">
               <StoreExecutiveOverview
                 storeId={storeId}
@@ -535,6 +550,7 @@ const StoreDetail = () => {
                 phone={store.phone || store.alt_phone}
                 lastOrderAt={store.last_order_at}
                 paymentTerms={store.payment_type}
+                hideFinancials={isCaller}
               />
             </div>
           </div>
@@ -572,7 +588,8 @@ const StoreDetail = () => {
             storeName={store.name}
             storePhone={store.phone}
             compact
-            onCreateInvoice={() => setCreateInvoiceModalOpen(true)}
+            hideFinance={isCaller}
+            onCreateInvoice={isCaller ? undefined : () => setCreateInvoiceModalOpen(true)}
             onAddFollowUp={() => {
               setUnifiedInteractionModalType('followUp');
               setUnifiedInteractionModalOpen(true);
@@ -605,12 +622,12 @@ const StoreDetail = () => {
               setTimelineRefresh((prev) => prev + 1);
             }}
           />
-          <CreateStoreInvoiceModal
+          {!isCaller && <CreateStoreInvoiceModal
             open={createInvoiceModalOpen}
             onOpenChange={setCreateInvoiceModalOpen}
             storeId={storeId}
             storeName={store.name}
-          />
+          />}
           <BulkCommunicationLogModal
             open={bulkCommModalOpen}
             onOpenChange={setBulkCommModalOpen}
@@ -672,7 +689,7 @@ const StoreDetail = () => {
             </div>
           </StoreProfileSection>
 
-          <StoreProfileSection
+          {!isCaller && <StoreProfileSection
             id="orders-finance"
             title="Orders & Finance"
             description="Balance, invoices, last order, line items, and sell-through in one place."
@@ -686,7 +703,7 @@ const StoreDetail = () => {
                 <div className="mt-4"><SkuOrderHistoryPanel storeId={storeId} /></div>
               </details>
             </div>
-          </StoreProfileSection>
+          </StoreProfileSection>}
 
           <StoreProfileSection
             id="relationship-communication"
@@ -789,7 +806,7 @@ const StoreDetail = () => {
             </div>
           </StoreProfileSection>
 
-          <details className="border-t border-border/60 pt-5">
+          {!isCaller && <details className="border-t border-border/60 pt-5">
             <summary className="cursor-pointer text-lg font-semibold">Advanced & legacy information</summary>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <StoreContactInfoCard
@@ -804,7 +821,7 @@ const StoreDetail = () => {
               <StorePhoneLogSection storeId={storeId} />
               <StoreRevenueIntelligenceTab storeId={storeId} />
             </div>
-          </details>
+          </details>}
         </div>
       </CanonicalStoreProfileProvider>
     </CanonicalStoreDataProvider>
@@ -813,6 +830,15 @@ const StoreDetail = () => {
 };
 
 export default StoreDetail;
+
+/**
+ * Caller-safe embedding of THE canonical store profile.
+ * Same component, same data, same edit paths — finance/admin surfaces removed.
+ * Used by the VA Auto Dialer account workspace so there is no second profile.
+ */
+export function StoreAccountWorkspace({ storeId }: { storeId: string }) {
+  return <StoreDetail storeId={storeId} variant="caller" />;
+}
 
 /** Compact primary contact badge + predictive intel for the store header */
 function PrimaryContactHeaderBadge({ storeId }: { storeId: string | undefined }) {

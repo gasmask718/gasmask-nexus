@@ -28,6 +28,7 @@ import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
 import { GasMaskStoreWorkPanel, type NumbersProgress } from './GasMaskStoreWorkPanel';
+import { StoreAccountWorkspace } from '@/pages/StoreDetail';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VA Auto Dialer — Sequential Lead Processing State Machine
@@ -800,10 +801,23 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
             </div>
           )}
 
-          <GasMaskStoreWorkPanel
-            storeId={pendingAccount.lead.store_id}
-            onNumbersProgress={setNumbersProgress}
-          />
+          <Tabs defaultValue="numbers" className="w-full">
+            <TabsList className="bg-slate-800 border border-slate-700">
+              <TabsTrigger value="numbers" className="text-xs">Numbers &amp; call work</TabsTrigger>
+              <TabsTrigger value="account" className="text-xs">Full account</TabsTrigger>
+            </TabsList>
+            <TabsContent value="numbers" className="mt-3">
+              <GasMaskStoreWorkPanel
+                storeId={pendingAccount.lead.store_id}
+                onNumbersProgress={setNumbersProgress}
+              />
+            </TabsContent>
+            <TabsContent value="account" className="mt-3">
+              <div className="rounded-lg border border-slate-700 bg-background p-4 max-h-[70vh] overflow-y-auto">
+                <StoreAccountWorkspace storeId={pendingAccount.lead.store_id} />
+              </div>
+            </TabsContent>
+          </Tabs>
 
           <div className="flex gap-2">
             <Button
@@ -898,7 +912,23 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
               No second phone-verification system, no Store Profile clone. */}
           {currentLead?.store_id && (
             <div className="pt-1">
-              <GasMaskStoreWorkPanel storeId={currentLead.store_id} onNumbersProgress={setNumbersProgress} />
+              <Tabs defaultValue="numbers" className="w-full">
+                <TabsList className="bg-slate-800 border border-slate-700">
+                  <TabsTrigger value="numbers" className="text-xs">Numbers &amp; call work</TabsTrigger>
+                  <TabsTrigger value="account" className="text-xs">Full account</TabsTrigger>
+                </TabsList>
+                <TabsContent value="numbers" className="mt-3">
+                  <GasMaskStoreWorkPanel storeId={currentLead.store_id} onNumbersProgress={setNumbersProgress} />
+                </TabsContent>
+                <TabsContent value="account" className="mt-3">
+                  {/* THE canonical store profile, caller-safe variant. Call state
+                      lives in this component + CallProvider, so switching tabs
+                      never drops the live call or the queue item. */}
+                  <div className="rounded-lg border border-slate-700 bg-background p-4 max-h-[70vh] overflow-y-auto">
+                    <StoreAccountWorkspace storeId={currentLead.store_id} />
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
           )}
 

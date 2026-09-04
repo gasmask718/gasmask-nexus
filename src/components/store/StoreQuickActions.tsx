@@ -23,6 +23,8 @@ interface StoreQuickActionsProps {
   onScheduleVisit?: () => void;
   onLogInteraction?: () => void;
   compact?: boolean;
+  /** Caller/VA mode: hide invoice creation (finance-only action). */
+  hideFinance?: boolean;
 }
 
 export function StoreQuickActions({
@@ -36,6 +38,7 @@ export function StoreQuickActions({
   onScheduleVisit,
   onLogInteraction,
   compact = false,
+  hideFinance = false,
 }: StoreQuickActionsProps) {
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
@@ -249,14 +252,16 @@ export function StoreQuickActions({
             {addingToRoute ? 'Adding...' : compact ? 'Schedule Visit' : 'Add to Route'}
           </Button>
 
-          <Button
-            variant="outline"
-            className={compact ? 'shrink-0' : 'w-full justify-start'}
-            onClick={onCreateInvoice || (() => setInvoiceModalOpen(true))}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Create Invoice
-          </Button>
+          {!hideFinance && (
+            <Button
+              variant="outline"
+              className={compact ? 'shrink-0' : 'w-full justify-start'}
+              onClick={onCreateInvoice || (() => setInvoiceModalOpen(true))}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Create Invoice
+            </Button>
+          )}
           {onAddFollowUp && (
             <Button variant="outline" className={compact ? 'shrink-0' : 'w-full justify-start'} onClick={onAddFollowUp}>
               <CalendarPlus className="h-4 w-4 mr-2" />Add Follow-up
