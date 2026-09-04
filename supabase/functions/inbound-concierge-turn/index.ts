@@ -257,6 +257,15 @@ Deno.serve(async (req) => {
       kind: reply.action.kind,
       payload: reply.action.details || {},
       summary: reply.action.summary || null,
+      // Triage the owner-callback notification trigger reads.
+      reason_category: reply.action.reason_category ?? null,
+      requested_action: reply.action.requested_action ?? null,
+      urgency: reply.action.urgency ?? "normal",
+      callback_requested: reply.action.callback_requested === true,
+      ai_resolved: reply.action.ai_resolved === true,
+      unresolved_reason: reply.action.unresolved_reason ?? null,
+      caller_phone: session.from_number ?? null,
+      contact_name: session.contact_name ?? null,
     });
     if (error) console.error("[concierge-turn] outcome insert failed:", error.message);
     else console.log(`[concierge-turn] outcome: ${reply.action.kind} — ${reply.action.summary || ""}`);
