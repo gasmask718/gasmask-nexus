@@ -495,29 +495,13 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   // Fired after the unified VACallWrapUpModal saves successfully (or is
   // skipped). Handles queue close, DNC stamping, and advancing the loop.
   // The modal already wrote disposition + summary + follow-up to va_call_logs.
-  const finishWrapUp = useCallback(async (resolvedDisposition: string | null) => {
-    if (!user) return;
-    // Idempotency: ignore subsequent calls until the next wrap-up begins.
-    if (wrapUpInFlightRef.current) return;
-    wrapUpInFlightRef.current = true;
-    const lead = summaryLead;
-    const logId = summaryCallLogId;
+  /**
+   * Closes the account out and advances the loop. Called only once the caller
+   * has confirmed the account is done (or when there is no store account to
+   * work, e.g. a manual number).
+   */
+  const settleAccount = useCallback(async (lead: QueueLead | null, resolvedDisposition: string | null) => {
     try {
-      // Fallback insert: if no call_log existed yet, persist a minimal row
-      // so the disposition the VA picked is never lost.
-      if (!logId && lead && resolvedDisposition) {
-        await (supabase as any).from('va_call_logs').insert({
-          va_id: user.id,
-          lead_id: lead.store_id || null,
-          twilio_number: selectedNumber || 'unknown',
-          disposition: resolvedDisposition,
-          call_status: 'completed',
-          duration_seconds: summaryDuration,
-          direction: 'outbound',
-          wrap_up_completed_at: new Date().toISOString(),
-        });
-      }
-
       // Close the queue item (auto-loop only)
       if (lead?.queue_id) {
         await markQueueItem(lead.queue_id, 'completed');
@@ -537,6 +521,8 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       setCallStartedAt(null);
       setSummaryLead(null);
       setSummaryCallLogId(null);
+      setPendingAccount(null);
+      setNumbersProgress(null);
 
       if (listMode) setLeadIndex((i) => i + 1);
       if (sessionRunning && !stopFlagRef.current) {
@@ -545,7 +531,67 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
         setPhase('idle');
       }
     }
-  }, [user, summaryLead, summaryCallLogId, summaryDuration, selectedNumber, sessionRunning, runCycle, listMode]);
+  }, [markQueueItem, sessionRunning, runCycle, listMode]);
+
+  const finishWrapUp = useCallback(async (resolvedDisposition: string | null) => {
+    if (!user) return;
+    // Idempotency: ignore subsequent calls until the next wrap-up begins.
+    if (wrapUpInFlightRef.current) return;
+    wrapUpInFlightRef.current = true;
+    const lead = summaryLead;
+    const logId = summaryCallLogId;
+
+    // Fallback insert: if no call_log existed yet, persist a minimal row
+    // so the disposition the VA picked is never lost.
+    try {
+      if (!logId && lead && resolvedDisposition) {
+        await (supabase as any).from('va_call_logs').insert({
+          va_id: user.id,
+          lead_id: lead.store_id || null,
+          twilio_number: selectedNumber || 'unknown',
+          disposition: resolvedDisposition,
+          call_status: 'completed',
+          duration_seconds: summaryDuration,
+          direction: 'outbound',
+          wrap_up_completed_at: new Date().toISOString(),
+        });
+      }
+    } catch (err: any) {
+      toast.error('Could not save the disposition: ' + (err.message || 'unknown'));
+    }
+
+    // Account completion gate: a store account stays open until the caller
+    // has worked every number on it and confirmed it done.
+    if (lead?.store_id) {
+      setPendingAccount({ lead, disposition: resolvedDisposition });
+      setCurrentLead(lead);
+      setPhase('account_review');
+      wrapUpInFlightRef.current = false;
+      return;
+    }
+
+    await settleAccount(lead, resolvedDisposition);
+  }, [user, summaryLead, summaryCallLogId, summaryDuration, selectedNumber, settleAccount]);
+
+  /** Caller presses "Confirm account done" — only enabled when 0 numbers remain. */
+  const confirmAccountDone = useCallback(async () => {
+    if (!pendingAccount) return;
+    setConfirmingDone(true);
+    const { lead, disposition } = pendingAccount;
+    try {
+      if (lead.store_id) {
+        await (supabase as any).from('store_master')
+          .update({
+            last_contacted_at: new Date().toISOString(),
+            last_contacted_by: user?.id ?? null,
+          })
+          .eq('id', lead.store_id);
+      }
+    } catch (_) { /* stamping is best-effort; never block the queue */ }
+    setConfirmingDone(false);
+    await settleAccount(lead, disposition);
+  }, [pendingAccount, settleAccount, user]);
+
 
   const skipCurrent = async () => {
     if (!currentLead) return;
