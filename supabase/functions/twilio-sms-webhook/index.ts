@@ -76,15 +76,11 @@ Deno.serve(async (req) => {
       p_phone: From,
       p_method: "STOP_keyword",
     });
-    const { data: contact } = await sb
-      .from("store_contacts")
-      .select("id, store_id")
-      .eq("phone", From)
-      .maybeSingle();
-
+    // Association left to autolink_communication_log() (conversation-first).
     await sb.from("communication_logs").insert({
-      store_id: contact?.store_id ?? null,
-      contact_id: contact?.id ?? null, // no FK on communication_logs.contact_id
+      store_id: null,
+      contact_id: null,
+
       channel: "sms",
       direction: "inbound",
       message_content: Body,
