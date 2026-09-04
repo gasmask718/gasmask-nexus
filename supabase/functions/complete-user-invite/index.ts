@@ -199,6 +199,30 @@ serve(async (req) => {
       if (memberError) console.error("business_members upsert failed", memberError);
     }
 
+    // VA workspace memberships — the /va/dashboard lead list is scoped to
+    // va_companies, so a caller needs this in addition to business_members.
+    const vaMemberships = Array.isArray(meta.va_company_memberships)
+      ? (meta.va_company_memberships as Array<{ company_id?: string; is_primary?: boolean }>)
+      : [];
+    for (const vm of vaMemberships) {
+      if (!vm?.company_id) continue;
+      const { error: vaMemberError } = await admin
+        .from("va_company_memberships")
+        .upsert(
+          {
+            user_id: userId,
+            company_id: vm.company_id,
+            role: "va",
+            is_primary: vm.is_primary === true,
+            is_active: true,
+          },
+          { onConflict: "user_id,company_id" },
+        );
+      if (vaMemberError) console.error("va_company_memberships upsert failed", vaMemberError);
+    }
+
+
+
     const seat = meta.dialer_seat as
       | { business_id?: string; status?: string; max_concurrent_calls?: number }
       | undefined;
