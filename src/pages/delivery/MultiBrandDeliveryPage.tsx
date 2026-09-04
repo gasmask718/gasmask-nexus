@@ -58,6 +58,7 @@ import {
   createIntelligenceSnapshot 
 } from "@/hooks/useIntelligenceHistory";
 import { 
+import { AccountActivityTable } from '@/components/activity/AccountActivityTable';
   AcknowledgeButton,
   AcknowledgmentBadge,
   ReviewedCardWrapper,

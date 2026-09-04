@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { AccountActivityTable } from '@/components/activity/AccountActivityTable';
 
 const URGENCY_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
   critical: { color: 'bg-red-500/10 text-red-500 border-red-500/30', icon: '🔴', label: 'Critical' },

@@ -99,6 +99,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { BulkCommunicationLogModal } from "@/components/communication/BulkCommunicationLogModal";
+import { AccountActivityTable } from '@/components/activity/AccountActivityTable';
 
 type StickerStatus = "none" | "doorOnly" | "inStoreOnly" | "doorAndInStore";
 
