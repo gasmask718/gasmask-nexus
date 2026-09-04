@@ -513,6 +513,8 @@ const SFHumanQueue = lazy(() => import('@/pages/surplus-funds/SFHumanQueue').the
 const SolarLayout = lazy(() => import('@/pages/solar/SolarLayout'));
 const SolarCommandCenter = lazy(() => import('@/pages/solar/SolarCommandCenter'));
 const SolarLeadIntelligence = lazy(() => import('@/pages/solar/SolarLeadIntelligence'));
+const GIYLeadsQueue = lazy(() => import('@/pages/giy/GIYLeadsQueue'));
+const ServicesLeadsQueue = lazy(() => import('@/pages/services/ServicesLeadsQueue'));
 const SolarCRM = lazy(() => import('@/pages/solar/SolarCRM'));
 const SolarInstallerMap = lazy(() => import('@/pages/solar/SolarInstallerMap'));
 
@@ -3908,6 +3910,14 @@ export default function AppRoutes() {
           <Route path="followups" element={<SolarFollowUps />} />
           <Route path="bookings" element={<SolarBookings />} />
         </Route>
+      </Route>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* GODDESS IN YOU HUB / SERVICES.IO HUB                                       */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/goddess-in-you/leads" element={<RequireRole allowedRoles={['owner','admin','va','employee','staff']} showLocked><GIYLeadsQueue /></RequireRole>} />
+        <Route path="/services-io/leads" element={<RequireRole allowedRoles={['owner','admin','va','employee','staff']} showLocked><ServicesLeadsQueue /></RequireRole>} />
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
