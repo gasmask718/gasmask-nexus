@@ -55,6 +55,11 @@ export default {
         },
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
+        gasmask: {
+          DEFAULT: "hsl(var(--gasmask))",
+          glow: "hsl(var(--gasmask-glow))",
+          foreground: "hsl(var(--gasmask-foreground))",
+        },
         hud: {
           cyan: "hsl(var(--hud-cyan))",
           green: "hsl(var(--hud-green))",
