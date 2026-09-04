@@ -980,6 +980,7 @@ export default function MultiBrandDeliveryPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="deliveries">Deliveries</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
           <TabsTrigger value="matrix">Brand Matrix</TabsTrigger>
           <TabsTrigger value="opportunities">Opportunities ({intelligence.piggybackOpportunities.length})</TabsTrigger>
           <TabsTrigger value="dispatch">Dispatch Intake</TabsTrigger>
@@ -1279,6 +1280,15 @@ export default function MultiBrandDeliveryPage() {
 
         <TabsContent value="dispatch">
           <DispatchIntakePanel onStoresSelected={handleDispatchSignalsSelected} />
+        </TabsContent>
+
+        <TabsContent value="activity">
+          {/* Same canonical feed as Route Engine and the store profile. */}
+          <AccountActivityTable
+            title="Account activity — delivery floor"
+            defaultOpenState="open"
+            defaultPageSize={25}
+          />
         </TabsContent>
 
         <TabsContent value="ai-suggestions">
