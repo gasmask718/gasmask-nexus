@@ -243,7 +243,27 @@ serve(async (req) => {
       if (notes) updateData.va_notes = notes;
       if (callbackAt) updateData.callback_scheduled_at = callbackAt;
 
-      await supabaseAdmin.from("va_call_logs").update(updateData).eq("id", callLogId);
+      // ZERO SILENT FAILURES: this update was previously fire-and-forget, so a
+      // rejected disposition (check constraint) still returned success:true and
+      // the VA's wrap-up — disposition, notes, callback time — was lost with a
+      // green toast. Surface the raw error instead.
+      const { data: updatedRows, error: updErr } = await supabaseAdmin
+        .from("va_call_logs")
+        .update(updateData)
+        .eq("id", callLogId)
+        .select("id");
+
+      if (updErr) {
+        console.error(`[va-power-dialer] disposition save failed for ${callLogId}:`, updErr);
+        return new Response(JSON.stringify({ error: `Wrap-up not saved: ${updErr.message}` }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (!updatedRows || updatedRows.length === 0) {
+        return new Response(JSON.stringify({ error: `Wrap-up not saved: call log ${callLogId} not found` }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       if (disposition === "closed") {
         try {
