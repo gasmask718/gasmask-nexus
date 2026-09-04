@@ -22,6 +22,8 @@ interface StoreContact {
   notes: string | null;
   responsive_by_call: boolean | null;
   responsive_by_text: boolean | null;
+  shirt_size?: string | null;
+  gift_request?: string | null;
 }
 
 interface EditStoreContactModalProps {
@@ -62,6 +64,8 @@ export function EditStoreContactModal({ open, onOpenChange, contact, onSuccess }
     notes: '',
     responsive_by_call: false,
     responsive_by_text: false,
+    shirt_size: '',
+    gift_request: '',
   });
 
   useEffect(() => {
@@ -77,6 +81,8 @@ export function EditStoreContactModal({ open, onOpenChange, contact, onSuccess }
         notes: contact.notes || '',
         responsive_by_call: contact.responsive_by_call || false,
         responsive_by_text: contact.responsive_by_text || false,
+        shirt_size: contact.shirt_size || '',
+        gift_request: contact.gift_request || '',
       });
     }
   }, [contact, open]);
@@ -103,6 +109,8 @@ export function EditStoreContactModal({ open, onOpenChange, contact, onSuccess }
           notes: formData.notes || null,
           responsive_by_call: formData.responsive_by_call,
           responsive_by_text: formData.responsive_by_text,
+          shirt_size: formData.shirt_size.trim() || null,
+          gift_request: formData.gift_request.trim() || null,
         })
         .eq('id', contact.id);
 
@@ -214,6 +222,25 @@ export function EditStoreContactModal({ open, onOpenChange, contact, onSuccess }
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Shirt Size</Label>
+            <Input
+              value={formData.shirt_size}
+              onChange={(e) => setFormData({ ...formData, shirt_size: e.target.value })}
+              placeholder="e.g. XL"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Gift / Request</Label>
+            <Textarea
+              value={formData.gift_request}
+              onChange={(e) => setFormData({ ...formData, gift_request: e.target.value })}
+              placeholder="What this person asked for (hat, hoodie, lighter…)"
+              rows={2}
+            />
           </div>
 
           <div className="space-y-2">
