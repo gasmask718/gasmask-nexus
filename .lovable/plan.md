@@ -1,52 +1,51 @@
-# Store Profile P1 Consolidation
+# Highway Hub + Dynasty Direct Hub (Map + CRM)
 
-## Goal
-Turn the existing Store Profile into a coherent management page while preserving all current actions, data sources, permissions, and the verified P0 inventory behavior.
+Two new hub sections in the OS sidebar: a Highway hub (map + CRM for licensed cannabis dispensary leads) and a Dynasty Direct hub (map + CRM for wholesaler recruitment). GasMask's existing territory floor is untouched.
 
-## Implementation
+Leads in these hubs are internal intelligence only. No bulk-inserts into any platform table; the Highway handoff stays a human workflow.
 
-1. **Create reusable Store Profile section shells**
-   - Add lightweight presentation components for titled sections, responsive action rows, tabs, and collapsible advanced content.
-   - Keep existing feature components mounted inside these shells so their hooks and mutations remain unchanged.
+## Confirmed current state
 
-2. **Build a concise Store Overview**
-   - Replace the fragmented header/quick-stats presentation with one executive overview containing store identity, address, canonical primary contact, overall Store Health Score, relationship status, last contact, last order, balance, and payment terms.
-   - Label each signal by meaning: `Overall Store Health`, `Relationship Status`, and brand-level health only inside `Brand Relationships`.
-   - Remove the redundant raw `health_status` badge from the primary view without changing its stored value.
+- `public.leads`: 128,568 rows, 81,518 with coordinates, 262 rows with `lead_type = 'wholesaler'`. It has **no** `business` column yet.
+- No `hw_*` tables exist. The `dd_*` tables that exist are unrelated wholesaler-portal tables; `dd_wholesaler_stages` and `dd_outreach_log` are new.
+- The Highway CSVs (`master_leads_all.csv`, `call_list_export.csv`) are not present in the project or uploads. Per your answer, Highway ships with an empty table and gets loaded later.
+- A shared `GeoMapView` map component already exists (Mapbox based) and is reused.
 
-3. **Consolidate Quick Actions**
-   - Reuse the existing call, text, invoice, inventory, route/visit, follow-up, and interaction handlers/modals.
-   - Present them as one responsive action row directly below the overview; do not duplicate handler logic.
+## Step 1 — Schema
 
-4. **Recompose the primary sections in the requested order**
-   - **Inventory & Sales:** retain `UnifiedTubeIntelligenceCard` as the canonical editable inventory surface and its existing sold/on-hand table; keep bags historical/velocity information in a secondary tab; move field-delivery inventory and product catalog to clearly labeled secondary tabs/collapsibles; remove the duplicate bottom inventory card from the primary page.
-   - **Contacts:** use `StoreContactsSection` as the single people/contact surface; keep store address/general phone editing in the overview and stop separately rendering the overlapping contact summary list.
-   - **Tasks & Follow-ups:** group route-backed field requirements with opportunities/follow-ups using tabs for open/scheduled/completed views while preserving the distinct underlying workflows and actions.
-   - **Orders & Finance:** group balance/payment summary, the single `Last Order · Line Items` instance, sell-through, and invoice history; retain Refresh, Bulk Add, Create Invoice, and invoice actions.
-   - **Relationship & Communication:** group Brand Relationships, cadence, communication stats, AI recommendation/health, preferences, and account briefing into Overview, Communication, AI Insights, and Preferences tabs.
-   - **Field Ops & Compliance:** group visit history, field submissions, stickers/compliance, route intelligence, review/sign-off, recon, and related operational intelligence; retain critical warnings outside collapsed content.
-   - **Notes & Activity:** provide one tabbed area for Notes, Interactions, Field Activity, and legacy/system context. Existing note add/edit/delete, authorship, timestamps, source labels, detail modals, and field links remain intact; avoid rendering note records in two simultaneous surfaces.
+- Add `business text default 'gasmask'` to `public.leads`; tag `lead_type = 'wholesaler'` rows as `dynasty_direct`, everything else `gasmask`.
+- New Highway tables: `hw_leads`, `hw_lead_stages`, `hw_outreach_log`, `hw_team_members`, with the dedupe unique index on `(state, business_name, phone)`.
+- New Dynasty Direct tables: `dd_wholesaler_stages`, `dd_outreach_log` referencing `public.leads(id)`.
+- RLS as specified: authenticated read on `hw_leads` / `hw_team_members`; stage + outreach rows are **strictly own-rows** (`auth.uid() = team_member`) for read and insert. GRANTs to `authenticated` and `service_role` only, no anon.
+- Note on the consequence you chose: each person's kanban shows only the activity they logged themselves; teammates' touches are invisible.
 
-5. **Preserve lower-priority information without extending the page wall**
-   - Move storefront preview, CRM intelligence, connected stores, expansion, performance/calls/revenue analytics, product catalog, and danger-zone controls into clearly labeled secondary tabs or collapsible panels.
-   - Keep critical escalation/action-needed warnings visible near the top.
+## Step 2 — Data
 
-6. **Refactor the shared registry safely**
-   - Convert `SharedStoreCoreIntelligence` from a fixed long sequence into grouped exports/compositions that both Store Profile entry points can reuse.
-   - Verify the Grabba Store Master profile remains functional and does not lose shared sections.
+- Seed the ~17 named wholesalers from the spec into `public.leads` with `lead_type = 'wholesaler'`, `source = 'manual'`, tier 1.
+- `hw_leads` stays empty; a documented one-time CSV import path is included so the rows can be loaded later without code changes.
 
-## Technical constraints
-- Frontend/presentation changes only; no migrations, schema, RLS, database writes, or live mutations.
-- No changes to invoice/order calculations, health formulas, AI logic, contact compliance, or permissions.
-- Canonical inventory remains `store_tube_inventory_status`; no active `store_tube_inventory` read/write will be introduced.
-- Existing components and handlers remain authoritative; wrappers only control placement, labels, tabs, and collapse state.
-- Responsive tabs/actions will wrap or horizontally scroll without clipping; dense tables retain horizontal overflow on mobile.
+## Step 3 — Maps
 
-## Verification
-- Run focused TypeScript checks and existing relevant tests.
-- Inspect the Store Profile in the live preview at desktop and mobile widths without triggering mutations.
-- Confirm only one last-order line-item panel, one primary contacts list, one primary inventory surface, and one notes/activity area render.
-- Confirm health labels distinguish overall score, relationship status, and brand relationship.
-- Confirm action buttons open their existing dialogs/providers without submitting.
-- Confirm RAMMI displays `Tubes On Hand: 28`, `Bags On Hand: 10`, and never `38 Total Tubes`.
-- Search changed runtime paths to confirm no retired inventory table reference was added.
+Both maps use the existing shared map component with URL-synced filters and viewport-limited, clustered loading (server-side bounding-box queries) so 85k+ pins never load at once.
+
+- `/highway/map` — pins from `hw_leads` (color by bucket, truck icon when `already_delivers`), filters for state / bucket / delivery / license status / medical / source / has phone-email-license, side panel with all fields, "Open in CRM" deep link, export-visible CSV, `/highway/map/lead/:id` deep link. Renders an explicit empty state until the CSV is loaded.
+- `/dynasty-direct/map` — two toggleable layers (retail `gasmask`, wholesaler `dynasty_direct`), 4-tier state choropleth, filters for tier / state / category / lead type / verify status, side panels, state drill-down, `/dynasty-direct/map/wholesaler/:id` deep link.
+
+## Step 4 — CRMs
+
+- `/highway/crm` — 9-stage kanban (new → outreach → contacted → qualified → demo → negotiation → signed → onboarded → lost), drag-drop writes a stage row plus an outreach-log entry, filter bar, `/highway/crm/mine` and `/highway/crm/team`, lead detail with timeline and log-call/email/stage actions, onboarded-stage handoff banner ("send digest email, do not bulk-insert"), call-list CSV export.
+- `/dynasty-direct/crm` — 6-stage kanban (identified → contacted → negotiated → contracted → active → inactive), wholesaler detail with timeline, per-state coverage cards flagging uncovered Tier 1 states, manual add-wholesaler form.
+
+## Step 5 — Sidebar
+
+Add "Highway Hub" (Territory Map, Lead CRM) and "Dynasty Direct" (Wholesaler Map, Wholesaler CRM) sections to `src/components/Layout.tsx`, after the GasMask section. Existing entries unchanged.
+
+## Technical notes
+
+- Files follow the spec's structure: `src/pages/highway/*`, `src/pages/dynasty-direct/*`, `src/components/highway/*`, `src/components/dynasty-direct/*`, `src/lib/hwLeads.ts`, `src/lib/ddLeads.ts`, plus route registration in `AppRoutes.tsx`.
+- Map queries are paged by viewport bounds with a hard result cap and clustering; the choropleth uses a per-state aggregate query, not raw rows.
+- Two migrations: Highway schema, then Dynasty Direct schema + `leads.business`.
+
+## Out of scope
+
+No cannabis order management, driver dispatch, or payments; no writes to Highway's platform tables; no changes to GasMask territory, `stores` / `store_master`, UT, TopTier, BrightSun, or Surplus Funds.
