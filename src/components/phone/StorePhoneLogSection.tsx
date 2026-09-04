@@ -57,6 +57,7 @@ export function StorePhoneLogSection({ storeId }: { storeId: string }) {
 
   return (
     <div className="space-y-6">
+      <StoreAwarenessBar storeId={storeId} />
       {threads.map((t) => (
         <Card key={t.number} className="border-border/60">
           <CardHeader className="pb-3">
