@@ -885,6 +885,20 @@ const DYNASTY_NAVIGATION = {
       { path: '/solar/crm', label: '📇 CRM', icon: Users },
     ],
   },
+  goddessInYou: {
+    id: 'goddess-in-you',
+    name: '💜 Goddess In You Hub',
+    items: [
+      { path: '/goddess-in-you/leads', label: '🎯 Leads Queue', icon: Target },
+    ],
+  },
+  servicesIo: {
+    id: 'services-io',
+    name: '🛠️ Services.io Hub',
+    items: [
+      { path: '/services-io/leads', label: '🎯 Leads Queue', icon: Target },
+    ],
+  },
   globalDashboard: {
     id: 'global-dashboard',
     name: '🌍 Global Dynasty Dashboard',
