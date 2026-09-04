@@ -39,6 +39,7 @@ import { CardHelper } from '@/components/portal/guidance';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { UpdateMethod } from '@/services/fieldGovernance/types';
 import { unitLabelForBrandId } from '@/lib/inventory/unitLabel';
+import { usePromoSampleProductIds, isPromoSampleBrandKey } from '@/lib/inventory/promoSample';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UNIFIED TUBE INTELLIGENCE CARD
@@ -182,6 +183,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
 
   const canEditCounts = role === 'admin' || role === 'ambassador' || role === 'biker';
   const tubeIntelRole: TubeIntelRole = role as TubeIntelRole;
+  const { data: promoSampleIds } = usePromoSampleProductIds();
 
   // ── Fetch intelligence status from store_tube_inventory_status ──
   const {
@@ -734,7 +736,8 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                           </Label>
                         </div>
 
-                        {/* Bring Samples */}
+                        {/* Bring Samples — only the brand's one promo sample SKU */}
+                        {isPromoSampleBrandKey(brand.id, promoSampleIds) && (
                         <div className="flex items-center gap-2">
                           <Switch
                             id={`samples-${brand.id}`}
@@ -754,6 +757,8 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                             Bring Samples
                           </Label>
                         </div>
+                        )}
+
 
                         {/* Switch Tubes */}
                         <div className="flex items-center gap-2">
