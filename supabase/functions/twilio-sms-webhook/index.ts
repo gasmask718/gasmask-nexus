@@ -108,15 +108,11 @@ Deno.serve(async (req) => {
   // START keyword
   if (START_RE.test(Body)) {
     await sb.rpc("handle_sms_opt_in", { p_phone: From });
-    const { data: contact } = await sb
-      .from("store_contacts")
-      .select("id, store_id")
-      .eq("phone", From)
-      .maybeSingle();
-
+    // Association left to autolink_communication_log() (conversation-first).
     await sb.from("communication_logs").insert({
-      store_id: contact?.store_id ?? null,
-      contact_id: contact?.id ?? null, // no FK on communication_logs.contact_id
+      store_id: null,
+      contact_id: null,
+
       channel: "sms",
       direction: "inbound",
       message_content: Body,
