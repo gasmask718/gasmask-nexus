@@ -48953,6 +48953,54 @@ export type Database = {
           },
         ]
       }
+      dd_outreach_log: {
+        Row: {
+          channel: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          outcome: string | null
+          stage_id: string | null
+          team_member: string
+          wholesaler_id: string
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outcome?: string | null
+          stage_id?: string | null
+          team_member: string
+          wholesaler_id: string
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outcome?: string | null
+          stage_id?: string | null
+          team_member?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_outreach_log_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_outreach_log_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_partner_earnings: {
         Row: {
           ambassador_id: string | null
@@ -51444,6 +51492,50 @@ export type Database = {
           wholesaler_id?: string
         }
         Relationships: []
+      }
+      dd_wholesaler_stages: {
+        Row: {
+          contacted_at: string
+          created_at: string
+          id: string
+          next_action: string | null
+          next_action_due: string | null
+          notes: string | null
+          stage: string
+          team_member: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          contacted_at?: string
+          created_at?: string
+          id?: string
+          next_action?: string | null
+          next_action_due?: string | null
+          notes?: string | null
+          stage: string
+          team_member?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          contacted_at?: string
+          created_at?: string
+          id?: string
+          next_action?: string | null
+          next_action_due?: string | null
+          notes?: string | null
+          stage?: string
+          team_member?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_wholesaler_stages_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dd_wholesaler_store_link: {
         Row: {
@@ -71540,6 +71632,200 @@ export type Database = {
           },
         ]
       }
+      hw_lead_stages: {
+        Row: {
+          contact_method: string | null
+          contacted_at: string
+          created_at: string
+          id: string
+          lead_id: string
+          next_action: string | null
+          next_action_due: string | null
+          notes: string | null
+          stage: string
+          team_member: string | null
+        }
+        Insert: {
+          contact_method?: string | null
+          contacted_at?: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          next_action?: string | null
+          next_action_due?: string | null
+          notes?: string | null
+          stage: string
+          team_member?: string | null
+        }
+        Update: {
+          contact_method?: string | null
+          contacted_at?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          next_action?: string | null
+          next_action_due?: string | null
+          notes?: string | null
+          stage?: string
+          team_member?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hw_lead_stages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "hw_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hw_leads: {
+        Row: {
+          address: string | null
+          already_delivers: boolean
+          bucket: number | null
+          business_name: string
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          lat: number | null
+          license_number: string | null
+          license_status: string | null
+          license_type: string | null
+          long: number | null
+          medical_flag: boolean
+          phone: string | null
+          source: string | null
+          state: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          already_delivers?: boolean
+          bucket?: number | null
+          business_name: string
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lat?: number | null
+          license_number?: string | null
+          license_status?: string | null
+          license_type?: string | null
+          long?: number | null
+          medical_flag?: boolean
+          phone?: string | null
+          source?: string | null
+          state: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          already_delivers?: boolean
+          bucket?: number | null
+          business_name?: string
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lat?: number | null
+          license_number?: string | null
+          license_status?: string | null
+          license_type?: string | null
+          long?: number | null
+          medical_flag?: boolean
+          phone?: string | null
+          source?: string | null
+          state?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      hw_outreach_log: {
+        Row: {
+          channel: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          lead_id: string
+          notes: string | null
+          outcome: string | null
+          stage_id: string | null
+          team_member: string
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          lead_id: string
+          notes?: string | null
+          outcome?: string | null
+          stage_id?: string | null
+          team_member: string
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          outcome?: string | null
+          stage_id?: string | null
+          team_member?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hw_outreach_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "hw_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hw_outreach_log_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "hw_lead_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hw_team_members: {
+        Row: {
+          active: boolean
+          auth_user_id: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          role: string | null
+        }
+        Insert: {
+          active?: boolean
+          auth_user_id: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          role?: string | null
+        }
+        Update: {
+          active?: boolean
+          auth_user_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          role?: string | null
+        }
+        Relationships: []
+      }
       icw_candidate_leads: {
         Row: {
           availability_summary: string | null
@@ -77984,6 +78270,7 @@ export type Database = {
           addr_key: string | null
           address_line: string
           assigned_to: string | null
+          business: string | null
           business_name: string
           business_status: string | null
           carrier: string | null
@@ -78024,6 +78311,7 @@ export type Database = {
           addr_key?: string | null
           address_line: string
           assigned_to?: string | null
+          business?: string | null
           business_name: string
           business_status?: string | null
           carrier?: string | null
@@ -78064,6 +78352,7 @@ export type Database = {
           addr_key?: string | null
           address_line?: string
           assigned_to?: string | null
+          business?: string | null
           business_name?: string
           business_status?: string | null
           carrier?: string | null
@@ -152047,6 +152336,16 @@ export type Database = {
         }
         Relationships: []
       }
+      v_dd_state_counts: {
+        Row: {
+          retail_leads: number | null
+          state: string | null
+          total_leads: number | null
+          wholesaler_leads: number | null
+          with_phone: number | null
+        }
+        Relationships: []
+      }
       v_dialer_latest_run: {
         Row: {
           adaptive_lock_cycles_remaining: number | null
@@ -152697,6 +152996,17 @@ export type Database = {
             referencedColumns: ["store_id"]
           },
         ]
+      }
+      v_hw_state_counts: {
+        Row: {
+          bucket_1: number | null
+          bucket_2: number | null
+          delivering: number | null
+          leads: number | null
+          state: string | null
+          with_phone: number | null
+        }
+        Relationships: []
       }
       v_inventory_coverage_intelligence: {
         Row: {

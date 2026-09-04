@@ -687,8 +687,18 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-direct/invites', label: '✉️ Invites & Access', icon: Send },
       { path: '/dynasty-direct/store-applications', label: '🏪 Apply-as-Store Queue', icon: Send },
       { path: '/dynasty-direct/partners', label: '🤝 Partner Campaigns', icon: Handshake },
+      { path: '/dynasty-direct/wholesaler-map', label: '🗺️ Wholesaler Map', icon: Map },
+      { path: '/dynasty-direct/wholesaler-crm', label: '📊 Wholesaler CRM', icon: Users },
       { path: '/dynasty-direct/settings', label: '⚙️ Settings', icon: Settings },
       { path: '/admin/dynasty-direct-ops', label: '🛠️ Ops Console', icon: Settings },
+    ],
+  },
+  highway: {
+    id: 'highway',
+    name: '🛣️ Highway',
+    items: [
+      { path: '/highway/map', label: '🗺️ Dispensary Map', icon: Map },
+      { path: '/highway/crm', label: '📊 Highway CRM', icon: Users },
     ],
   },
   marketplaces: {
@@ -1493,6 +1503,21 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.dynastyDirect.items
         )}
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🛣️ HIGHWAY */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-emerald-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-emerald-400/80 tracking-wider">
+          🛣️ Highway
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.highway.id,
+          DYNASTY_NAVIGATION.highway.name,
+          DYNASTY_NAVIGATION.highway.items
+        )}
+      </div>
+
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 🛍️ MARKETPLACES & E-COMMERCE */}

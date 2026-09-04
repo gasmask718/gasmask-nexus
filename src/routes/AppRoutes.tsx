@@ -817,6 +817,10 @@ const DDOrderDetail = lazy(() => import('@/pages/dynasty-direct/DDOrderDetail'))
 const DDAnalytics = lazy(() => import('@/pages/dynasty-direct/DDAnalytics'));
 const DDSettings = lazy(() => import('@/pages/dynasty-direct/DDSettings'));
 const DDReadiness = lazy(() => import('@/pages/dynasty-direct/DDReadiness'));
+const DDWholesalerMap = lazy(() => import('@/pages/dynasty-direct/DDWholesalerMap'));
+const DDWholesalerCrm = lazy(() => import('@/pages/dynasty-direct/DDWholesalerCrm'));
+const HighwayMap = lazy(() => import('@/pages/highway/HighwayMap'));
+const HighwayCrm = lazy(() => import('@/pages/highway/HighwayCrm'));
 const DDReturnsQueue = lazy(() => import('@/pages/dynasty-direct/DDReturnsQueue'));
 const DDInrQueue = lazy(() => import('@/pages/dynasty-direct/DDInrQueue'));
 const DDSupportTickets = lazy(() => import('@/pages/dynasty-direct/DDSupportTickets'));
@@ -2225,6 +2229,12 @@ export default function AppRoutes() {
         <Route path="/dynasty-direct/support" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDSupportTickets /></RequireRole>} />
         <Route path="/dynasty-direct/commission-rates" element={<RequireRole allowedRoles={['admin', 'owner']} showLocked><DDCommissionRates /></RequireRole>} />
         <Route path="/dynasty-direct/orders/:orderId" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDOrderDetail /></RequireRole>} />
+        <Route path="/dynasty-direct/wholesaler-map" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDWholesalerMap /></RequireRole>} />
+        <Route path="/dynasty-direct/wholesaler-crm" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><DDWholesalerCrm /></RequireRole>} />
+
+        {/* Highway — licensed dispensary hub */}
+        <Route path="/highway/map" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><HighwayMap /></RequireRole>} />
+        <Route path="/highway/crm" element={<RequireRole allowedRoles={['admin', 'owner', 'employee']} showLocked><HighwayCrm /></RequireRole>} />
 
         {/* Marketplace Connection Pack - Dev Only, Admin/Owner */}
         <Route
