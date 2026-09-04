@@ -1031,6 +1031,17 @@ export default function RouteEnginePage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* ONE canonical operational activity table — same feed as Delivery Floor
+          and the store profile. Opens the exact canonical store row. */}
+      <div className="mt-6">
+        <AccountActivityTable
+          title="Account activity — what still needs action"
+          defaultOpenState="open"
+          defaultPageSize={25}
+        />
+      </div>
     </div>
+
   );
 }
