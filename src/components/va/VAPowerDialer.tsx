@@ -27,6 +27,7 @@ import { VAScripts } from './VAScripts';
 import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
+import { GasMaskStoreWorkPanel } from './GasMaskStoreWorkPanel';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VA Auto Dialer — Sequential Lead Processing State Machine
@@ -237,6 +238,18 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     }
   }, [phase]);
 
+  // One writer for queue-item state changes (outbound_call_queue — the table
+  // the call-list builder fills). Kept in one place so status columns stay
+  // consistent across skip / DNC / no-number / completed paths.
+  const markQueueItem = useCallback(async (queueId: string, status: 'skipped' | 'completed') => {
+    if (!queueId) return;
+    const { error } = await (supabase as any)
+      .from('outbound_call_queue')
+      .update({ status, ended_at: new Date().toISOString(), last_attempt_at: new Date().toISOString() })
+      .eq('id', queueId);
+    if (error) console.warn('[AutoDialer] queue update failed:', error.message);
+  }, []);
+
   // ── Core loop: fetch next lead ──────────────────────────────────────
   const leadIndexRef = useRef(0);
   useEffect(() => { leadIndexRef.current = leadIndex; }, [leadIndex]);
@@ -272,18 +285,16 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
     if (!selectedCampaign) return null;
 
-    // Pull oldest queued item for the selected campaign, joined with store.
+    // Pull the highest-priority queued item for the selected campaign.
+    // Queue table = outbound_call_queue: the SAME table the call-list builder
+    // (dialer-call-list-builder) writes into. campaign_call_queue is empty and
+    // has no writer, which is why the auto-loop found nothing to dial.
     const { data, error } = await (supabase as any)
-      .from('campaign_call_queue')
-      .select(`
-        id,
-        store_id,
-        attempt_number,
-        status,
-        store_master!campaign_call_queue_store_id_fkey ( id, store_name, phone, notes, do_not_call )
-      `)
+      .from('outbound_call_queue')
+      .select('id, store_id, phone_number, contact_name, notes, attempt_count, status')
       .eq('campaign_id', selectedCampaign)
       .eq('status', 'queued')
+      .order('priority_score', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: true })
       .limit(1)
       .maybeSingle();
@@ -300,22 +311,30 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       return null;
     }
 
-    const store = (data as any).store_master;
-    if (!store) {
-      toast.error('Queue item missing store record — skipping');
-      await (supabase as any).from('campaign_call_queue')
-        .update({ status: 'skipped', completed_at: new Date().toISOString() })
-        .eq('id', data.id);
+    // Resolve the canonical store record so the workspace opens on the exact
+    // account being dialed (queue rows only carry store_id + phone).
+    let store: any = null;
+    if ((data as any).store_id) {
+      const { data: st } = await (supabase as any)
+        .from('store_master')
+        .select('id, store_name, phone, notes, do_not_call')
+        .eq('id', (data as any).store_id)
+        .maybeSingle();
+      store = st;
+    }
+    if (!store && !(data as any).phone_number) {
+      toast.error('Queue item has no store and no number — skipping');
+      await markQueueItem(data.id, 'skipped');
       return null;
     }
     const lead: QueueLead = {
       queue_id: data.id,
-      store_id: store.id,
-      business_name: store.store_name || 'Unknown',
-      phone: store.phone || '',
-      notes: store.notes || null,
-      do_not_call: !!store.do_not_call,
-      attempt_number: data.attempt_number || 0,
+      store_id: store?.id || (data as any).store_id || '',
+      business_name: store?.store_name || (data as any).contact_name || 'Unknown',
+      phone: (data as any).phone_number || store?.phone || '',
+      notes: store?.notes || (data as any).notes || null,
+      do_not_call: !!store?.do_not_call,
+      attempt_number: (data as any).attempt_count || 0,
     };
     setCurrentLead(lead);
     return lead;
@@ -331,18 +350,14 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     if (lead.do_not_call) {
       toast.warning(`${lead.business_name} is marked Do-Not-Call — skipping`);
       if (lead.queue_id) {
-        await (supabase as any).from('campaign_call_queue')
-          .update({ status: 'skipped', completed_at: new Date().toISOString() })
-          .eq('id', lead.queue_id);
+        await markQueueItem(lead.queue_id, 'skipped');
       }
       return false;
     }
     if (!lead.phone) {
       toast.warning(`${lead.business_name} has no phone — skipping`);
       if (lead.queue_id) {
-        await (supabase as any).from('campaign_call_queue')
-          .update({ status: 'skipped', completed_at: new Date().toISOString() })
-          .eq('id', lead.queue_id);
+        await markQueueItem(lead.queue_id, 'skipped');
       }
       return false;
     }
@@ -363,20 +378,19 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       if (data?.skipped) {
         toast.info(`${lead.business_name} skipped (${data.reason})`);
         if (lead.queue_id) {
-          await (supabase as any).from('campaign_call_queue')
-            .update({ status: 'skipped', completed_at: new Date().toISOString() })
-            .eq('id', lead.queue_id);
+          await markQueueItem(lead.queue_id, 'skipped');
         }
         return false;
       }
       setCallLogId(data?.callLogId || null);
       // mark queue item in-flight (auto-loop only)
       if (lead.queue_id) {
-        await (supabase as any).from('campaign_call_queue')
+        await (supabase as any).from('outbound_call_queue')
           .update({
             status: 'dialing',
-            started_at: new Date().toISOString(),
-            attempt_number: lead.attempt_number + 1,
+            dialing_started_at: new Date().toISOString(),
+            last_attempt_at: new Date().toISOString(),
+            attempt_count: lead.attempt_number + 1,
           })
           .eq('id', lead.queue_id);
       }
@@ -499,9 +513,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
 
       // Close the queue item (auto-loop only)
       if (lead?.queue_id) {
-        await (supabase as any).from('campaign_call_queue')
-          .update({ status: 'completed', completed_at: new Date().toISOString() })
-          .eq('id', lead.queue_id);
+        await markQueueItem(lead.queue_id, 'completed');
       }
 
       // Stamp DNC if disposition demands
@@ -531,9 +543,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   const skipCurrent = async () => {
     if (!currentLead) return;
     if (currentLead.queue_id) {
-      await (supabase as any).from('campaign_call_queue')
-        .update({ status: 'skipped', completed_at: new Date().toISOString() })
-        .eq('id', currentLead.queue_id);
+      await markQueueItem(currentLead.queue_id, 'skipped');
     }
     setCallLogId(null);
     setCurrentLead(null);
@@ -766,6 +776,17 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
           <Button onClick={stopDialer} variant="ghost" size="sm" className="w-full text-red-400 hover:text-red-300 gap-2">
             <X className="h-4 w-4" /> Stop Dialer
           </Button>
+
+          {/* Canonical account workspace for the store being dialed.
+              Same component the Active Call surface uses — store identity,
+              address, every contact/number with its verification status and
+              the existing verify/dead/add actions, notes and call history.
+              No second phone-verification system, no Store Profile clone. */}
+          {currentLead?.store_id && (
+            <div className="pt-1">
+              <GasMaskStoreWorkPanel storeId={currentLead.store_id} />
+            </div>
+          )}
 
           {/* Live 8-Stage Brandaro Sales Script */}
           <div className="pt-2">
