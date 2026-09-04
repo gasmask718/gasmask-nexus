@@ -98144,6 +98144,7 @@ export type Database = {
           internal_notes: string | null
           is_active: boolean | null
           is_deleted: boolean
+          is_promo_sample: boolean
           low_stock_threshold: number | null
           min_order_qty: number | null
           moq: number | null
@@ -98153,6 +98154,9 @@ export type Database = {
           price_per_box: number | null
           price_per_tube: number | null
           price_per_unit: number
+          promo_sample_available_qty: number | null
+          promo_sample_qty_updated_at: string | null
+          promo_sample_qty_updated_by: string | null
           reorder_point: number | null
           reorder_qty: number | null
           requires_license: boolean | null
@@ -98209,6 +98213,7 @@ export type Database = {
           internal_notes?: string | null
           is_active?: boolean | null
           is_deleted?: boolean
+          is_promo_sample?: boolean
           low_stock_threshold?: number | null
           min_order_qty?: number | null
           moq?: number | null
@@ -98218,6 +98223,9 @@ export type Database = {
           price_per_box?: number | null
           price_per_tube?: number | null
           price_per_unit?: number
+          promo_sample_available_qty?: number | null
+          promo_sample_qty_updated_at?: string | null
+          promo_sample_qty_updated_by?: string | null
           reorder_point?: number | null
           reorder_qty?: number | null
           requires_license?: boolean | null
@@ -98274,6 +98282,7 @@ export type Database = {
           internal_notes?: string | null
           is_active?: boolean | null
           is_deleted?: boolean
+          is_promo_sample?: boolean
           low_stock_threshold?: number | null
           min_order_qty?: number | null
           moq?: number | null
@@ -98283,6 +98292,9 @@ export type Database = {
           price_per_box?: number | null
           price_per_tube?: number | null
           price_per_unit?: number
+          promo_sample_available_qty?: number | null
+          promo_sample_qty_updated_at?: string | null
+          promo_sample_qty_updated_by?: string | null
           reorder_point?: number | null
           reorder_qty?: number | null
           requires_license?: boolean | null
@@ -119688,6 +119700,7 @@ export type Database = {
           needs_switch: boolean
           owner_interested: boolean | null
           product_introduced: boolean
+          sample_qty_to_bring: number | null
           starter_kit_delivered: boolean
           store_id: string
           switch_flagged_at: string | null
@@ -119718,6 +119731,7 @@ export type Database = {
           needs_switch?: boolean
           owner_interested?: boolean | null
           product_introduced?: boolean
+          sample_qty_to_bring?: number | null
           starter_kit_delivered?: boolean
           store_id: string
           switch_flagged_at?: string | null
@@ -119748,6 +119762,7 @@ export type Database = {
           needs_switch?: boolean
           owner_interested?: boolean | null
           product_introduced?: boolean
+          sample_qty_to_bring?: number | null
           starter_kit_delivered?: boolean
           store_id?: string
           switch_flagged_at?: string | null

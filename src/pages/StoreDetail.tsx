@@ -20,7 +20,9 @@ import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIn
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreTaskRouteButtons } from "@/components/store/StoreTaskRouteButtons";
-import { SamplesGivenSection } from "@/components/store/SamplesGivenSection";
+import { StoreSamplesHub } from "@/components/store/StoreSamplesHub";
+import { StoreProfileJumpNav } from "@/components/store/StoreProfileJumpNav";
+import { CommunicationTimeline } from "@/components/CommunicationTimeline";
 import { StoreReviewControls } from "@/components/store/StoreReviewControls";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreStreetView } from "@/components/store/StoreStreetView";
@@ -534,6 +536,8 @@ const StoreDetail = () => {
             </div>
           </div>
 
+          <StoreProfileJumpNav />
+
           <StoreQuickActions
             storeId={storeId}
             storeName={store.name}
@@ -610,6 +614,23 @@ const StoreDetail = () => {
           >
             <StoreContactsSection storeId={storeId} storeName={store.name} />
           </StoreProfileSection>
+
+          <StoreProfileSection
+            id="samples"
+            title="Samples"
+            description="Available promotional samples, what to bring on the next visit, and the full history of samples already given."
+          >
+            <StoreSamplesHub storeId={storeId} />
+          </StoreProfileSection>
+
+          <StoreProfileSection
+            id="messages-calls"
+            title="Messages & Calls"
+            description="The same canonical communication records shown in the main messaging area — inbound and outbound texts and calls for this store."
+          >
+            <CommunicationTimeline entityType="store" entityId={storeId} />
+          </StoreProfileSection>
+
 
           <StoreProfileSection
             id="tasks-follow-ups"
@@ -736,7 +757,7 @@ const StoreDetail = () => {
                 store={store}
                 onUpdate={handleStoreContactUpdate}
               />
-              <SamplesGivenSection storeId={storeId} variant="full" />
+              {/* Samples moved to the permanent "Samples" section above — one home, no duplicate. */}
               <EngagementBanner storeId={storeId} />
               {storeMasterId && <StoreDangerZone storeId={storeMasterId} storeName={store.name} sourceUi="store_profile_advanced" />}
               <StorePerformanceTab storeId={storeId} storeName={store.name} />

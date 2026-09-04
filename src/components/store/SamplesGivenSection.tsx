@@ -76,8 +76,10 @@ export function SamplesGivenSection({ storeId, variant = 'compact' }: Props) {
     onError: (e: any) => toast.error(e?.message || 'Failed to log sample'),
   });
 
-  const displayName = (pid: string | null) =>
-    CANONICAL_TUBE_SKUS.find((s) => s.product_id === pid)?.display ?? 'Unknown';
+  // Historical rows keep their original product/brand naming — never rewritten.
+  const displayName = (s: Pick<SampleRow, 'product_id' | 'brand'>) =>
+    CANONICAL_TUBE_SKUS.find((c) => c.product_id === s.product_id)?.display ??
+    (s.brand?.trim() || 'Unknown');
 
   return (
     <div className="space-y-2 rounded-md border border-border/50 bg-background/30 p-2.5">
@@ -162,11 +164,15 @@ export function SamplesGivenSection({ storeId, variant = 'compact' }: Props) {
           {samples.slice(0, variant === 'compact' ? 5 : 50).map((s) => (
             <li key={s.id} className="flex items-start justify-between gap-2 text-xs">
               <div className="min-w-0 flex-1">
-                <span className="font-medium">{displayName(s.product_id)}</span>
+                <span className="font-medium">{displayName(s)}</span>
                 <span className="text-muted-foreground">
                   {' '}· {s.quantity} {unitLabelForProductId(s.product_id)}
                 </span>
-                {s.note && <p className="text-[10px] text-muted-foreground truncate">{s.note}</p>}
+                {s.note && <p className="text-[10px] text-muted-foreground whitespace-pre-wrap">{s.note}</p>}
+                <p className="text-[10px] text-muted-foreground">
+                  {new Date(s.given_at).toLocaleString()}
+                  {s.given_by ? ' · logged by rep' : ''}
+                </p>
               </div>
               <span className="whitespace-nowrap text-[10px] text-muted-foreground">
                 {formatDistanceToNow(new Date(s.given_at), { addSuffix: true })}
