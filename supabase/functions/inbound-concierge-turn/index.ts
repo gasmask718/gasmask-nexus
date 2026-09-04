@@ -34,11 +34,32 @@ interface Turn {
 
 interface ModelReply {
   say: string;
-  action: null | { kind: string; summary?: string; details?: Record<string, unknown> };
+  action: null | {
+    kind: string;
+    summary?: string;
+    details?: Record<string, unknown>;
+    reason_category?: string;
+    requested_action?: string;
+    urgency?: string;
+    callback_requested?: boolean;
+    ai_resolved?: boolean;
+    unresolved_reason?: string;
+  };
   done: boolean;
 }
 
 const ACTION_KINDS = new Set(["message", "callback_request", "reorder_intent", "address_capture", "note"]);
+const REASON_CATEGORIES = [
+  "order",
+  "delivery",
+  "billing",
+  "product_question",
+  "complaint",
+  "new_account",
+  "hours_or_location",
+  "other",
+];
+const URGENCIES = new Set(["low", "normal", "high"]);
 
 function systemPrompt(opts: {
   companyName: string;
@@ -57,16 +78,29 @@ function systemPrompt(opts: {
     `You are having a LIVE spoken phone conversation. Rules:`,
     `- Replies must be natural spoken English: one or two short sentences, no lists, no markdown, no emoji.`,
     `- Never claim to be human. If asked, say you are the automated assistant.`,
-    `- Your jobs: take a message, book a callback (ask for a good time), record a reorder request (product and quantity), capture an address correction, and answer simple questions about hours.`,
-    `- Confirm details back before recording them ("So that's two cases of ... — got it").`,
+    `- Your job is to find out WHY they are calling and collect enough for a human to resolve it without calling back twice.`,
+    `- Ask short follow-ups until you know: the reason for the call, which store/account they are with, what they want done, how urgent it is, and whether they want a callback (and the best time).`,
+    `- Ask ONE question at a time. Confirm details back before recording them ("So that's two cases of ... — got it").`,
+    `- You may only answer from approved basics: business hours, that a human will follow up, and repeating back what the caller told you.`,
+    `- NEVER invent or guess pricing, discounts, policies, order status, stock, delivery dates or promises, account balances, or any commitment. If asked, say you'll have someone confirm and book a callback.`,
+    `- If you cannot safely resolve it, escalate: tell them a human will follow up, and set ai_resolved=false with an unresolved_reason.`,
     `- When the caller is done, say a warm goodbye and mark done=true.`,
     `- Respond with STRICT JSON only, no code fences:`,
     `  {"say": "...", "action": null, "done": false}`,
-    `- When you have captured something concrete, include ONE action:`,
-    `  {"kind": "message"|"callback_request"|"reorder_intent"|"address_capture"|"note", "summary": "one line", "details": {...}}`,
+    `- When you have captured something concrete, include ONE action with the full triage:`,
+    `  {"kind": "message"|"callback_request"|"reorder_intent"|"address_capture"|"note",`,
+    `   "summary": "one line for the human",`,
+    `   "reason_category": ${REASON_CATEGORIES.map((c) => `"${c}"`).join("|")},`,
+    `   "requested_action": "what the caller wants done",`,
+    `   "urgency": "low"|"normal"|"high",`,
+    `   "callback_requested": true|false,`,
+    `   "ai_resolved": true|false,`,
+    `   "unresolved_reason": "why a human is still needed, or null",`,
+    `   "details": {"store_or_account": "...", "best_callback_time": "...", "verbatim": "..."}}`,
     `- Do not repeat an action you already recorded.`,
   ].join("\n");
 }
+
 
 function parseModelReply(raw: string): ModelReply {
   const cleaned = raw.replace(/```json|```/g, "").trim();
