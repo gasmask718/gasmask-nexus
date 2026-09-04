@@ -881,7 +881,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
               onClick={() => setReferenceOpen(true)}
               variant="outline"
               size="sm"
-              className="flex-1 gap-2 border-caller/40 text-caller-glow hover:text-caller"
+              className="flex-1 gap-2 border-caller/40 text-caller-glow hover:text-caller-glow"
             >
               <BookOpen className="h-4 w-4" /> Scripts · FAQs · Rebuttals · Pricing
             </Button>

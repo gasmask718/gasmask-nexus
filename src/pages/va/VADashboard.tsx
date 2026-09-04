@@ -283,7 +283,7 @@ function VADashboardInner() {
               <Badge className="bg-slate-700 text-slate-300 text-xs">
                 {language === 'en' ? '🇺🇸 EN' : '🇪🇸 ES'}
               </Badge>
-              <Button size="sm" variant="ghost" className="text-caller hover:text-caller gap-1" onClick={() => navigate('/va/profile')}>
+              <Button size="sm" variant="ghost" className="text-caller hover:text-caller-glow gap-1" onClick={() => navigate('/va/profile')}>
                 <UserCircle className="h-3 w-3" /> Profile
               </Button>
               <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 gap-1" onClick={handleLogout}>
@@ -302,7 +302,7 @@ function VADashboardInner() {
                 <div className="flex justify-end">
                   <Button
                     onClick={handleStartDialer}
-                    className="bg-caller hover:bg-caller gap-2"
+                    className="bg-caller hover:bg-caller-glow gap-2"
                     disabled={allLeads.length === 0}
                   >
                     <Zap className="h-4 w-4" /> Start Power Dialer ({allLeads.length} leads)
