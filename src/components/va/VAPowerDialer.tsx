@@ -27,7 +27,7 @@ import { VAScripts } from './VAScripts';
 import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
 import { VAServicesPricing } from './VAServicesPricing';
-import { GasMaskStoreWorkPanel } from './GasMaskStoreWorkPanel';
+import { GasMaskStoreWorkPanel, type NumbersProgress } from './GasMaskStoreWorkPanel';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VA Auto Dialer — Sequential Lead Processing State Machine
@@ -43,7 +43,7 @@ import { GasMaskStoreWorkPanel } from './GasMaskStoreWorkPanel';
 // "disposition"). Compliance (DNC) is enforced server-side.
 // ─────────────────────────────────────────────────────────────────────────────
 
-type CallPhase = 'idle' | 'fetching_lead' | 'dialing' | 'connected' | 'wrap_up';
+type CallPhase = 'idle' | 'fetching_lead' | 'dialing' | 'connected' | 'wrap_up' | 'account_review';
 
 interface Campaign {
   id: string;
@@ -128,6 +128,13 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   const [currentLead, setCurrentLead] = useState<QueueLead | null>(null);
   const [callLogId, setCallLogId] = useState<string | null>(null);
   const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
+
+  // ── Account completion gate ─────────────────────────────────────────
+  // An account is only finished once EVERY number on it has been worked.
+  // The work panel reports its own canonical progress here.
+  const [numbersProgress, setNumbersProgress] = useState<NumbersProgress | null>(null);
+  const [pendingAccount, setPendingAccount] = useState<{ lead: QueueLead; disposition: string | null } | null>(null);
+  const [confirmingDone, setConfirmingDone] = useState(false);
 
   // ── Wrap-up form ────────────────────────────────────────────────────
   const [dispositionCode, setDispositionCode] = useState<string>('');
@@ -488,29 +495,13 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   // Fired after the unified VACallWrapUpModal saves successfully (or is
   // skipped). Handles queue close, DNC stamping, and advancing the loop.
   // The modal already wrote disposition + summary + follow-up to va_call_logs.
-  const finishWrapUp = useCallback(async (resolvedDisposition: string | null) => {
-    if (!user) return;
-    // Idempotency: ignore subsequent calls until the next wrap-up begins.
-    if (wrapUpInFlightRef.current) return;
-    wrapUpInFlightRef.current = true;
-    const lead = summaryLead;
-    const logId = summaryCallLogId;
+  /**
+   * Closes the account out and advances the loop. Called only once the caller
+   * has confirmed the account is done (or when there is no store account to
+   * work, e.g. a manual number).
+   */
+  const settleAccount = useCallback(async (lead: QueueLead | null, resolvedDisposition: string | null) => {
     try {
-      // Fallback insert: if no call_log existed yet, persist a minimal row
-      // so the disposition the VA picked is never lost.
-      if (!logId && lead && resolvedDisposition) {
-        await (supabase as any).from('va_call_logs').insert({
-          va_id: user.id,
-          lead_id: lead.store_id || null,
-          twilio_number: selectedNumber || 'unknown',
-          disposition: resolvedDisposition,
-          call_status: 'completed',
-          duration_seconds: summaryDuration,
-          direction: 'outbound',
-          wrap_up_completed_at: new Date().toISOString(),
-        });
-      }
-
       // Close the queue item (auto-loop only)
       if (lead?.queue_id) {
         await markQueueItem(lead.queue_id, 'completed');
@@ -530,6 +521,8 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       setCallStartedAt(null);
       setSummaryLead(null);
       setSummaryCallLogId(null);
+      setPendingAccount(null);
+      setNumbersProgress(null);
 
       if (listMode) setLeadIndex((i) => i + 1);
       if (sessionRunning && !stopFlagRef.current) {
@@ -538,7 +531,66 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
         setPhase('idle');
       }
     }
-  }, [user, summaryLead, summaryCallLogId, summaryDuration, selectedNumber, sessionRunning, runCycle, listMode]);
+  }, [markQueueItem, sessionRunning, runCycle, listMode]);
+
+  const finishWrapUp = useCallback(async (resolvedDisposition: string | null) => {
+    if (!user) return;
+    // Idempotency: ignore subsequent calls until the next wrap-up begins.
+    if (wrapUpInFlightRef.current) return;
+    wrapUpInFlightRef.current = true;
+    const lead = summaryLead;
+    const logId = summaryCallLogId;
+
+    // Fallback insert: if no call_log existed yet, persist a minimal row
+    // so the disposition the VA picked is never lost.
+    try {
+      if (!logId && lead && resolvedDisposition) {
+        await (supabase as any).from('va_call_logs').insert({
+          va_id: user.id,
+          lead_id: lead.store_id || null,
+          twilio_number: selectedNumber || 'unknown',
+          disposition: resolvedDisposition,
+          call_status: 'completed',
+          duration_seconds: summaryDuration,
+          direction: 'outbound',
+          wrap_up_completed_at: new Date().toISOString(),
+        });
+      }
+    } catch (err: any) {
+      toast.error('Could not save the disposition: ' + (err.message || 'unknown'));
+    }
+
+    // Account completion gate: a store account stays open until the caller
+    // has worked every number on it and confirmed it done.
+    if (lead?.store_id) {
+      setPendingAccount({ lead, disposition: resolvedDisposition });
+      setCurrentLead(lead);
+      setPhase('account_review');
+      wrapUpInFlightRef.current = false;
+      return;
+    }
+
+    await settleAccount(lead, resolvedDisposition);
+  }, [user, summaryLead, summaryCallLogId, summaryDuration, selectedNumber, settleAccount]);
+
+  /** Caller presses "Confirm account done" — only enabled when 0 numbers remain. */
+  const confirmAccountDone = useCallback(async () => {
+    if (!pendingAccount) return;
+    setConfirmingDone(true);
+    const { lead, disposition } = pendingAccount;
+    try {
+      if (lead.store_id) {
+        await (supabase as any).from('store_master')
+          .update({
+            last_contacted_at: new Date().toISOString(),
+          })
+          .eq('id', lead.store_id);
+      }
+    } catch (_) { /* stamping is best-effort; never block the queue */ }
+    setConfirmingDone(false);
+    await settleAccount(lead, disposition);
+  }, [pendingAccount, settleAccount, user]);
+
 
   const skipCurrent = async () => {
     if (!currentLead) return;
@@ -714,7 +766,69 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     );
   }
 
+  // ── Account completion gate ─────────────────────────────────────────
+  // After the disposition is saved the account stays on screen until every
+  // number on it has been worked and the caller confirms it done.
+  if (phase === 'account_review' && pendingAccount) {
+    const open = numbersProgress?.open ?? 0;
+    const total = numbersProgress?.total ?? 0;
+    const ready = numbersProgress !== null && open === 0;
+    return (
+      <Card className="bg-slate-900/60 border-slate-700">
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle className="text-white text-base flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+            Finish this account
+          </CardTitle>
+          <Badge className={ready
+            ? 'bg-emerald-500/20 text-emerald-300 text-[10px]'
+            : 'bg-amber-500/20 text-amber-300 text-[10px]'}>
+            {ready ? `ALL ${total} NUMBERS WORKED` : `${open} NUMBER${open === 1 ? '' : 'S'} LEFT`}
+          </Badge>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-sm text-white font-semibold">{pendingAccount.lead.business_name}</div>
+          {!ready && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200 space-y-1">
+              <p className="font-semibold">Still to work on this account:</p>
+              <ul className="font-mono space-y-0.5">
+                {(numbersProgress?.openNumbers || []).map((n) => <li key={n}>{n}</li>)}
+              </ul>
+              <p className="text-amber-300/80">
+                Call or mark each number below (Good / No answer / Wrong # / Dead line) before finishing.
+              </p>
+            </div>
+          )}
+
+          <GasMaskStoreWorkPanel
+            storeId={pendingAccount.lead.store_id}
+            onNumbersProgress={setNumbersProgress}
+          />
+
+          <div className="flex gap-2">
+            <Button
+              className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-500"
+              disabled={!ready || confirmingDone}
+              onClick={confirmAccountDone}
+            >
+              {confirmingDone ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Confirm account done · next account
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-slate-400"
+              onClick={() => settleAccount(pendingAccount.lead, pendingAccount.disposition)}
+            >
+              Leave open, next account
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // ── Active call view ────────────────────────────────────────────────
+
   if (phase === 'fetching_lead' || phase === 'dialing' || phase === 'connected') {
     return (
       <Card className="bg-slate-900/60 border-slate-700">
@@ -784,7 +898,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
               No second phone-verification system, no Store Profile clone. */}
           {currentLead?.store_id && (
             <div className="pt-1">
-              <GasMaskStoreWorkPanel storeId={currentLead.store_id} />
+              <GasMaskStoreWorkPanel storeId={currentLead.store_id} onNumbersProgress={setNumbersProgress} />
             </div>
           )}
 
