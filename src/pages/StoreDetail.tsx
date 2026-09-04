@@ -616,6 +616,23 @@ const StoreDetail = () => {
           </StoreProfileSection>
 
           <StoreProfileSection
+            id="samples"
+            title="Samples"
+            description="Available promotional samples, what to bring on the next visit, and the full history of samples already given."
+          >
+            <StoreSamplesHub storeId={storeId} />
+          </StoreProfileSection>
+
+          <StoreProfileSection
+            id="messages-calls"
+            title="Messages & Calls"
+            description="The same canonical communication records shown in the main messaging area — inbound and outbound texts and calls for this store."
+          >
+            <CommunicationTimeline entityType="store" entityId={storeId} />
+          </StoreProfileSection>
+
+
+          <StoreProfileSection
             id="tasks-follow-ups"
             title="Tasks & Follow-ups"
             description="Open follow-ups and route-backed field requirements stay in their original workflows."
