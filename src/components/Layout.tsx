@@ -1505,6 +1505,21 @@ const Layout = ({ children }: LayoutProps) => {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🛣️ HIGHWAY */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-emerald-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-emerald-400/80 tracking-wider">
+          🛣️ Highway
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.highway.id,
+          DYNASTY_NAVIGATION.highway.name,
+          DYNASTY_NAVIGATION.highway.items
+        )}
+      </div>
+
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 🛍️ MARKETPLACES & E-COMMERCE */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="pt-2 border-t border-border/50">
