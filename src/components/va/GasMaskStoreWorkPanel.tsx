@@ -466,37 +466,35 @@ export function GasMaskStoreWorkPanel({ storeId, onNumbersProgress }: Props) {
 
       {/* Numbers */}
       <div className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-3 space-y-3">
-        <div className="text-[11px] uppercase font-bold text-slate-400 flex items-center gap-1">
-          <PhoneCall className="h-3 w-3" /> Numbers on file
+        <div className="text-[11px] uppercase font-bold text-slate-400 flex items-center justify-between gap-1">
+          <span className="flex items-center gap-1"><PhoneCall className="h-3 w-3" /> Numbers on file</span>
+          <Badge className={openNumbers.length === 0
+            ? 'bg-emerald-500/20 text-emerald-300 text-[9px]'
+            : 'bg-amber-500/20 text-amber-300 text-[9px]'}>
+            {openNumbers.length === 0
+              ? `All ${numberRows.length} worked`
+              : `${openNumbers.length} of ${numberRows.length} still to work`}
+          </Badge>
         </div>
         {contactsQ.isLoading ? <Skeleton className="h-10 w-full bg-slate-700/40" /> : (
           <div className="space-y-1.5">
-            {(contactsQ.data || []).length === 0 && (
-              <p className="text-[11px] text-slate-500">No alternate numbers recorded.</p>
+            {numberRows.length === 0 && (
+              <p className="text-[11px] text-slate-500">No numbers on file for this account.</p>
             )}
-            {(contactsQ.data || []).map((c: any) => (
-              <div key={c.id} className="flex items-center justify-between gap-2 text-xs bg-slate-800/60 rounded px-2 py-1.5">
-                <div className="min-w-0">
-                  <span className="text-slate-200 font-mono">{c.phone || '—'}</span>
-                  <span className="text-slate-500"> · {c.name || 'unnamed'}{c.role ? ` (${c.role})` : ''}</span>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {c.number_verification_status && (
-                    <Badge className="bg-slate-700 text-slate-300 text-[9px]">{c.number_verification_status}</Badge>
-                  )}
-                  <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-emerald-300"
-                    onClick={() => setVerification(c.id, 'verified')}>
-                    <ShieldCheck className="h-3 w-3" /> Good
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-rose-300"
-                    onClick={() => setVerification(c.id, 'failed')}>
-                    Dead
-                  </Button>
-                </div>
-              </div>
+            {numberRows.map((c: any) => (
+              <NumberRow
+                key={c.id || c.phone}
+                row={c}
+                worked={isNumberWorked(c)}
+                busy={markingId === (c.id ?? c.phone)}
+                outcomes={NUMBER_OUTCOMES as any}
+                onMark={(o) => markNumber(c, o)}
+                onSave={(patch) => saveContact(c.id, patch)}
+              />
             ))}
           </div>
         )}
+
         <div className="flex gap-2">
           <Input value={altPhone} onChange={(e) => setAltPhone(e.target.value)} placeholder="Alternate phone"
             className="h-8 bg-slate-800 border-slate-700 text-white text-xs font-mono" />
