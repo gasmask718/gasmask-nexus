@@ -20,7 +20,9 @@ import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIn
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreTaskRouteButtons } from "@/components/store/StoreTaskRouteButtons";
-import { SamplesGivenSection } from "@/components/store/SamplesGivenSection";
+import { StoreSamplesHub } from "@/components/store/StoreSamplesHub";
+import { StoreProfileJumpNav } from "@/components/store/StoreProfileJumpNav";
+import { CommunicationTimeline } from "@/components/CommunicationTimeline";
 import { StoreReviewControls } from "@/components/store/StoreReviewControls";
 import { StoreContactInfoCard } from "@/components/store/StoreContactInfoCard";
 import { StoreStreetView } from "@/components/store/StoreStreetView";
