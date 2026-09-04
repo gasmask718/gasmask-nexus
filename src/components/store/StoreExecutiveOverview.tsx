@@ -12,11 +12,13 @@ interface Props {
   phone?: string | null;
   lastOrderAt?: string | null;
   paymentTerms?: string | null;
+  /** Caller/VA mode: hide finance facts (balance, terms). Operational facts stay. */
+  hideFinancials?: boolean;
 }
 
 const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString() : 'No activity yet';
 
-export function StoreExecutiveOverview({ storeId, name, address, primaryContact, phone, lastOrderAt, paymentTerms }: Props) {
+export function StoreExecutiveOverview({ storeId, name, address, primaryContact, phone, lastOrderAt, paymentTerms, hideFinancials = false }: Props) {
   const { storeMasterId } = useStoreMasterResolver(storeId);
   // Canonical account facts — same row the Account Summary brief is generated from.
   const { data: summary } = useQuery({
@@ -67,8 +69,11 @@ export function StoreExecutiveOverview({ storeId, name, address, primaryContact,
     ['Primary Contact', contactName || 'Not assigned'],
     ['Last Contact', formatDate(lastContact)],
     ['Last Order', formatDate(lastOrderAt ?? summary?.last_order_date ?? null)],
-    ['Outstanding Balance', `$${Number(summary?.owed ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-    ['Payment Terms', terms ? terms.replace(/_/g, ' ') : 'Not set'],
+    // Finance facts are owner/admin-only — the caller workspace passes hideFinancials.
+    ...(hideFinancials ? [] : [
+      ['Outstanding Balance', `$${Number(summary?.owed ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`] as string[],
+      ['Payment Terms', terms ? terms.replace(/_/g, ' ') : 'Not set'] as string[],
+    ]),
   ];
 
 
