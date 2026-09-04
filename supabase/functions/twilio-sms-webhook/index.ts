@@ -204,7 +204,6 @@ Deno.serve(async (req) => {
   //   3. multiple stores on the same number → left unmatched + flagged.
   // A first-match `.limit(1)` lookup here would silently override that and
   // move a reply onto the wrong store.
-  const fromLast10 = (From || "").replace(/\D/g, "").slice(-10);
   const store_id: string | null = null;
   const contact_id: string | null = null;
 
@@ -222,13 +221,12 @@ Deno.serve(async (req) => {
     recipient_phone: To,
     twilio_sid: MessageSid,
     business_id: numberBrand.business_id,
-
     brand: numberBrand.brand,
     source_business: numberBrand.source_business,
     summary,
     delivery_status: "received",
-    follow_up_required: isOrphan,
   });
+
 
   if (insertErr) {
     console.error("[twilio-sms-webhook] insert failed", insertErr.message);
