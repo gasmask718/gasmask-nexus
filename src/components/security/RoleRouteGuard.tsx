@@ -117,14 +117,54 @@ const ROLE_ALLOWED_PATHS: Record<string, string[]> = {
     "/portal/join",
     "/portals/va",
     "/install",
-    // VAs get broader access as operational staff
+    // VAs are operational staff: they get the operational floor/category
+    // pages (Floors 0-9). Everything not listed here stays denied by default —
+    // that is what keeps finance-sensitive surfaces (accounting, payroll,
+    // billing, payouts, funding, analytics/revenue, HR, security, admin,
+    // penthouse) out of reach without touching global role protection.
     "/",
+    "/va",
+    // Floor 0 — Territory intelligence
+    "/territory",
+    // CRM / store master / store intelligence
     "/stores",
+    "/store",
     "/crm",
+    "/accounts",
+    "/opportunities",
+    "/leads",
+    // Communication hub
     "/communication",
+    "/communications",
     "/messages",
-    "/delivery",
+    "/inbox",
+    "/calls",
     "/os/brandaro",
+    // Inventory
+    "/inventory",
+    // Delivery / routing (operational)
+    "/delivery",
+    "/routes",
+    "/route-ops-center",
+    "/live-map",
+    "/grabba",
+    // Operational order views
+    "/orders",
+    // Production
+    "/production",
+    // Wholesale
+    "/wholesale",
+    "/wholesaler",
+    // Ambassadors (operational roster/tasks; payouts stay denied)
+    "/ambassadors",
+    // AI operations
+    "/ai-operations",
+    "/ai",
+    "/tasks",
+    "/reminders",
+    "/notifications",
+    "/search",
+    "/settings/profile",
   ],
   production: [
     "/portal/production",
