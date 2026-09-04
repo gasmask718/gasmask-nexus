@@ -18,7 +18,7 @@ export function VACompanySwitcher() {
 
   return (
     <Select value={activeCompany?.id ?? ''} onValueChange={setActiveCompany}>
-      <SelectTrigger className="h-8 w-[190px] bg-cyan-500/10 border-cyan-500/30 text-cyan-300 text-xs">
+      <SelectTrigger className="h-8 w-[190px] bg-caller/10 border-caller/30 text-caller text-xs">
         <div className="flex items-center gap-1.5 min-w-0">
           <Building2 className="h-3 w-3 shrink-0" />
           <SelectValue placeholder="Calling for…" />
@@ -34,7 +34,7 @@ export function VACompanySwitcher() {
           <SelectItem
             key={c.id}
             value={c.id}
-            className="focus:bg-cyan-500/10 focus:text-cyan-300"
+            className="focus:bg-caller/10 focus:text-caller"
           >
             <div className="flex items-center gap-2">
               <span
