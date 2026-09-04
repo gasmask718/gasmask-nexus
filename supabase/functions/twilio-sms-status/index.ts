@@ -91,6 +91,38 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`🔄 Mapped status: ${messageStatus} → ${dbStatus}`);
 
+    // ── CANONICAL OUTBOUND LEDGER ────────────────────────────────────────
+    // outbound_messages is the row send-sms wrote. Without this update every
+    // outbound text is frozen at "sent" forever. Matched on the provider SID —
+    // never on phone+recency, which would mislabel a different message.
+    {
+      const nowIso = new Date().toISOString();
+      const ledgerStatus =
+        messageStatus.toLowerCase() === "undelivered" ? "undelivered" : dbStatus;
+      const patch: Record<string, any> = {
+        status: ledgerStatus,
+        status_updated_at: nowIso,
+        error_code: errorCode,
+        error_message: errorMessage,
+      };
+      if (ledgerStatus === "delivered") patch.delivered_at = nowIso;
+
+      const { data: ledgerRows, error: ledgerErr } = await supabase
+        .from("outbound_messages")
+        .update(patch)
+        .eq("provider_message_id", messageSid)
+        .select("id");
+
+      if (ledgerErr) {
+        console.error(`❌ outbound_messages update failed for ${messageSid}: ${ledgerErr.message}`);
+      } else if (!ledgerRows || ledgerRows.length === 0) {
+        console.warn(`⚠️ No outbound_messages row for SID ${messageSid} (status ${messageStatus}) — unmatched status callback`);
+      } else {
+        console.log(`✅ outbound_messages ${ledgerRows[0].id} → ${ledgerStatus}`);
+      }
+    }
+
+
     // Prepare the update payload
     const updatePayload: Record<string, any> = {
       status: dbStatus,
