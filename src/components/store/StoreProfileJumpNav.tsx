@@ -14,25 +14,19 @@ function jumpTo(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  // Land on the actual form, not just near it. When the note composer is
-  // collapsed behind its "Add Note" button, open it first — this reuses the
-  // existing form, it never creates a second one.
+  // Land on the section's own controls (e.g. the existing "Add Note" button),
+  // never a new form. The note composer itself stays exactly as it was.
   window.setTimeout(() => {
-    const field = () =>
-      el.querySelector<HTMLElement>('textarea, input:not([type="hidden"])');
-    if (!field()) {
-      const opener = Array.from(el.querySelectorAll('button')).find((b) =>
+    const target =
+      el.querySelector<HTMLElement>('textarea, input:not([type="hidden"])') ??
+      Array.from(el.querySelectorAll('button')).find((b) =>
         /add note/i.test(b.textContent || ''),
-      );
-      opener?.click();
-    }
-    window.setTimeout(() => {
-      const target = field() ?? el.querySelector<HTMLElement>('button');
-      target?.focus({ preventScroll: true });
-      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 250);
+      ) ??
+      el.querySelector<HTMLElement>('button');
+    target?.focus({ preventScroll: true });
   }, 500);
 }
+
 
 
 export function StoreProfileJumpNav() {
