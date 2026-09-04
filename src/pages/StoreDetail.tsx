@@ -757,7 +757,7 @@ const StoreDetail = () => {
                 store={store}
                 onUpdate={handleStoreContactUpdate}
               />
-              <SamplesGivenSection storeId={storeId} variant="full" />
+              {/* Samples moved to the permanent "Samples" section above — one home, no duplicate. */}
               <EngagementBanner storeId={storeId} />
               {storeMasterId && <StoreDangerZone storeId={storeMasterId} storeName={store.name} sourceUi="store_profile_advanced" />}
               <StorePerformanceTab storeId={storeId} storeName={store.name} />
