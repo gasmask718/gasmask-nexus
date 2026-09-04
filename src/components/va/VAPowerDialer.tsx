@@ -583,7 +583,6 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
         await (supabase as any).from('store_master')
           .update({
             last_contacted_at: new Date().toISOString(),
-            last_contacted_by: user?.id ?? null,
           })
           .eq('id', lead.store_id);
       }
@@ -837,7 +836,7 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
               No second phone-verification system, no Store Profile clone. */}
           {currentLead?.store_id && (
             <div className="pt-1">
-              <GasMaskStoreWorkPanel storeId={currentLead.store_id} />
+              <GasMaskStoreWorkPanel storeId={currentLead.store_id} onNumbersProgress={setNumbersProgress} />
             </div>
           )}
 
