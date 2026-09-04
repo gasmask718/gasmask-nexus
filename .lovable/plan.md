@@ -6,7 +6,10 @@ Leads in these hubs are internal intelligence only. No bulk-inserts into any pla
 
 ## Confirmed current state
 
-- `public.leads`: 128,568 rows, 81,518 with coordinates, 262 rows with `lead_type = 'wholesaler'`. It has **no** `business` column yet.
+- `public.leads`: 128,568 rows, 81,518 with coordinates, 262 rows with `lead_type = 'wholesaler'` (the only two lead types are `retail_store` and `wholesaler`). It has **no** `business` column yet.
+- Consumers of `public.leads` verified: one edge function (`twilio-lookup`, filters on `verify_status`/`category`) and one aggregate view (`v_lead_reach`, groups by state/tier/lead_type/category). Neither filters on `business`. `dp_leads` reads a different schema (`partners.leads`); `DPRecruitment.tsx` uses the external DP client, not this table.
+- `uq_leads_addr` on `addr_key` is a **partial** unique index (`WHERE addr_key <> ''`), so it is not a safe PostgREST/`ON CONFLICT` target for address-less rows.
+- None of the 14 phone numbers in the 17 named wholesaler contacts appear in the existing 262 wholesaler rows — they are genuinely new entries, not a subset.
 - No `hw_*` tables exist. The `dd_*` tables that exist are unrelated wholesaler-portal tables; `dd_wholesaler_stages` and `dd_outreach_log` are new.
 - The Highway CSVs (`master_leads_all.csv`, `call_list_export.csv`) are not present in the project or uploads. Per your answer, Highway ships with an empty table and gets loaded later.
 - A shared `GeoMapView` map component already exists (Mapbox based) and is reused.
@@ -14,6 +17,8 @@ Leads in these hubs are internal intelligence only. No bulk-inserts into any pla
 ## Step 1 — Schema
 
 - Add `business text default 'gasmask'` to `public.leads`; tag `lead_type = 'wholesaler'` rows as `dynasty_direct`, everything else `gasmask`.
+  - This is additive tagging on a brand-new column, not a move: no existing query, view, function, or RLS policy filters `leads` on `business`, so no lane loses those 262 rows. `v_lead_reach` and `twilio-lookup` keep seeing every row exactly as today. A separate `dd_wholesalers` table is therefore not needed.
+  - The tagging is re-derivable at any time from `lead_type`, so it is reversible, not a one-way flip.
 - New Highway tables: `hw_leads`, `hw_lead_stages`, `hw_outreach_log`, `hw_team_members`, with the dedupe unique index on `(state, business_name, phone)`.
 - New Dynasty Direct tables: `dd_wholesaler_stages`, `dd_outreach_log` referencing `public.leads(id)`.
 - RLS as specified: authenticated read on `hw_leads` / `hw_team_members`; stage + outreach rows are **strictly own-rows** (`auth.uid() = team_member`) for read and insert. GRANTs to `authenticated` and `service_role` only, no anon.
@@ -21,8 +26,10 @@ Leads in these hubs are internal intelligence only. No bulk-inserts into any pla
 
 ## Step 2 — Data
 
-- Seed the ~17 named wholesalers from the spec into `public.leads` with `lead_type = 'wholesaler'`, `source = 'manual'`, tier 1.
+- Seed the 17 named wholesalers from the spec into `public.leads` with `lead_type = 'wholesaler'`, `source = 'manual'`, tier 1, `business = 'dynasty_direct'`.
+  - Dedupe does **not** use `ON CONFLICT (addr_key)` — that index is partial and most of these rows have no address. The seed matches on last-10-normalized `phone_e164` first, then on `lower(business_name) + state` for the phone-less entries (Billz GA, Kesey NJ), and inserts only what is missing. Re-running the seed inserts zero rows.
 - `hw_leads` stays empty; a documented one-time CSV import path is included so the rows can be loaded later without code changes.
+
 
 ## Step 3 — Maps
 
