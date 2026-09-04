@@ -67,7 +67,7 @@ export function VAOnboardingModal({ isOpen: isOpenProp, onSessionStarted }: VAOn
         .from('v_va_caller_ids')
         .select('company_id')
         .not('phone_number', 'is', null)
-        .eq('number_status', 'active');
+        .eq('status', 'active');
       const ids = new Set(((data || []) as any[]).map((r) => r.company_id));
       return companies.filter((c) => ids.has(c.id));
     },
@@ -203,11 +203,13 @@ export function VAOnboardingModal({ isOpen: isOpenProp, onSessionStarted }: VAOn
                 return (
                   <div
                     key={num.dc_number_id}
-                    onClick={() => setSelectedNumber(num.phone_number)}
-                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-                      isSelected
-                        ? 'bg-primary/10 border-primary'
-                        : 'border-border hover:bg-accent/50'
+                    onClick={() => { if (!num.is_ai_number) setSelectedNumber(num.phone_number); }}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                      num.is_ai_number
+                        ? 'border-border opacity-50 cursor-not-allowed'
+                        : isSelected
+                          ? 'bg-primary/10 border-primary cursor-pointer'
+                          : 'border-border hover:bg-accent/50 cursor-pointer'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -223,7 +225,7 @@ export function VAOnboardingModal({ isOpen: isOpenProp, onSessionStarted }: VAOn
                               variant="outline"
                               className="text-[9px] h-4 px-1.5 border-amber-500/40 text-amber-400 gap-1"
                             >
-                              <Bot className="h-2.5 w-2.5" /> AI line
+                              <Bot className="h-2.5 w-2.5" /> AI line — not selectable
                             </Badge>
                           )}
                         </div>
