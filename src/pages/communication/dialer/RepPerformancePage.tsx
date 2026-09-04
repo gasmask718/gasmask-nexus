@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { useState } from 'react';
+import { RepActivityBoard } from '@/components/communication/RepActivityBoard';
 
 type SortField = 'total_revenue' | 'connect_rate' | 'positive_dispositions' | 'revenue_per_connect';
 
