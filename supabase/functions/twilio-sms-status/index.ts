@@ -1,10 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { readForm, verifyTwilio } from "../_shared/dialer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
 
 // Map Twilio status to our database status values
 const mapTwilioStatus = (twilioStatus: string): string => {
