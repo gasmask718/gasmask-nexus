@@ -68463,6 +68463,157 @@ export type Database = {
         }
         Relationships: []
       }
+      giy_followups: {
+        Row: {
+          assigned_to: string | null
+          channel: string | null
+          created_at: string
+          due_at: string
+          id: string
+          lead_id: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          channel?: string | null
+          created_at?: string
+          due_at?: string
+          id?: string
+          lead_id: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          channel?: string | null
+          created_at?: string
+          due_at?: string
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "giy_followups_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "giy_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      giy_interactions: {
+        Row: {
+          actor: string | null
+          content: string | null
+          created_at: string
+          id: string
+          interaction_type: string
+          lead_id: string
+          occurred_at: string
+        }
+        Insert: {
+          actor?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          interaction_type: string
+          lead_id: string
+          occurred_at?: string
+        }
+        Update: {
+          actor?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          interaction_type?: string
+          lead_id?: string
+          occurred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "giy_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "giy_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      giy_leads: {
+        Row: {
+          assigned_to: string | null
+          city: string | null
+          created_at: string
+          email: string | null
+          first_name: string | null
+          full_name: string | null
+          id: string
+          last_name: string | null
+          lead_score: number
+          lead_source: string | null
+          metadata: Json
+          notes: string | null
+          phone: string | null
+          portfolio_url: string | null
+          roster_profile_url: string | null
+          specialties: string[]
+          state: string | null
+          status: string
+          updated_at: string
+          years_experience: number | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          id?: string
+          last_name?: string | null
+          lead_score?: number
+          lead_source?: string | null
+          metadata?: Json
+          notes?: string | null
+          phone?: string | null
+          portfolio_url?: string | null
+          roster_profile_url?: string | null
+          specialties?: string[]
+          state?: string | null
+          status?: string
+          updated_at?: string
+          years_experience?: number | null
+        }
+        Update: {
+          assigned_to?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          id?: string
+          last_name?: string | null
+          lead_score?: number
+          lead_source?: string | null
+          metadata?: Json
+          notes?: string | null
+          phone?: string | null
+          portfolio_url?: string | null
+          roster_profile_url?: string | null
+          specialties?: string[]
+          state?: string | null
+          status?: string
+          updated_at?: string
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
       global_tags: {
         Row: {
           category: string | null
@@ -122880,6 +123031,157 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      svc_followups: {
+        Row: {
+          assigned_to: string | null
+          channel: string | null
+          created_at: string
+          due_at: string
+          id: string
+          lead_id: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          channel?: string | null
+          created_at?: string
+          due_at?: string
+          id?: string
+          lead_id: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          channel?: string | null
+          created_at?: string
+          due_at?: string
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "svc_followups_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "svc_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      svc_interactions: {
+        Row: {
+          actor: string | null
+          content: string | null
+          created_at: string
+          id: string
+          interaction_type: string
+          lead_id: string
+          occurred_at: string
+        }
+        Insert: {
+          actor?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          interaction_type: string
+          lead_id: string
+          occurred_at?: string
+        }
+        Update: {
+          actor?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          interaction_type?: string
+          lead_id?: string
+          occurred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "svc_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "svc_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      svc_leads: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          email: string | null
+          first_name: string | null
+          full_name: string | null
+          id: string
+          last_name: string | null
+          lead_score: number
+          lead_source: string | null
+          license_status: string | null
+          metadata: Json
+          metro: string | null
+          notes: string | null
+          phone: string | null
+          provider_profile_url: string | null
+          service_categories: string[]
+          state: string | null
+          status: string
+          updated_at: string
+          years_experience: number | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          id?: string
+          last_name?: string | null
+          lead_score?: number
+          lead_source?: string | null
+          license_status?: string | null
+          metadata?: Json
+          metro?: string | null
+          notes?: string | null
+          phone?: string | null
+          provider_profile_url?: string | null
+          service_categories?: string[]
+          state?: string | null
+          status?: string
+          updated_at?: string
+          years_experience?: number | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          id?: string
+          last_name?: string | null
+          lead_score?: number
+          lead_source?: string | null
+          license_status?: string | null
+          metadata?: Json
+          metro?: string | null
+          notes?: string | null
+          phone?: string | null
+          provider_profile_url?: string | null
+          service_categories?: string[]
+          state?: string | null
+          status?: string
+          updated_at?: string
+          years_experience?: number | null
+        }
+        Relationships: []
       }
       sweep_runs: {
         Row: {
