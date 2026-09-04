@@ -164,11 +164,15 @@ export function SamplesGivenSection({ storeId, variant = 'compact' }: Props) {
           {samples.slice(0, variant === 'compact' ? 5 : 50).map((s) => (
             <li key={s.id} className="flex items-start justify-between gap-2 text-xs">
               <div className="min-w-0 flex-1">
-                <span className="font-medium">{displayName(s.product_id)}</span>
+                <span className="font-medium">{displayName(s)}</span>
                 <span className="text-muted-foreground">
                   {' '}· {s.quantity} {unitLabelForProductId(s.product_id)}
                 </span>
-                {s.note && <p className="text-[10px] text-muted-foreground truncate">{s.note}</p>}
+                {s.note && <p className="text-[10px] text-muted-foreground whitespace-pre-wrap">{s.note}</p>}
+                <p className="text-[10px] text-muted-foreground">
+                  {new Date(s.given_at).toLocaleString()}
+                  {s.given_by ? ' · logged by rep' : ''}
+                </p>
               </div>
               <span className="whitespace-nowrap text-[10px] text-muted-foreground">
                 {formatDistanceToNow(new Date(s.given_at), { addSuffix: true })}
