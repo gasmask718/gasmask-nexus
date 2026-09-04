@@ -204,15 +204,85 @@ export function GasMaskStoreWorkPanel({ storeId, onNumbersProgress }: Props) {
     qc.invalidateQueries({ queryKey: ['gm-va-store-contacts', storeId] });
   };
 
-  const setVerification = async (contactId: string, status: string) => {
+  // Canonical number outcomes. Values are the ones the DB actually allows —
+  // 'verified' is NOT a legal number_verification_status and was silently
+  // rejected by the CHECK constraint before this fix.
+  const NUMBER_OUTCOMES = [
+    { key: 'good',        label: 'Good',       vs: 'confirmed', rs: 'responsive',   cls: 'text-emerald-300' },
+    { key: 'no_answer',   label: 'No answer',  vs: null,        rs: 'unresponsive', cls: 'text-amber-300' },
+    { key: 'wrong',       label: 'Wrong #',    vs: 'failed',    rs: 'wrong_number', cls: 'text-rose-300' },
+    { key: 'dead',        label: 'Dead line',  vs: 'failed',    rs: 'not_active',   cls: 'text-rose-300' },
+  ] as const;
+
+  const [markingId, setMarkingId] = useState<string | null>(null);
+
+  /**
+   * Record an outcome on ONE number. If the number lives only on
+   * store_master.phone (no store_contacts row yet) it is first adopted into
+   * the canonical contacts table, so there is still exactly one contact store.
+   */
+  const markNumber = async (
+    row: { id: string | null; phone: string; name?: string | null; role?: string | null },
+    outcome: (typeof NUMBER_OUTCOMES)[number],
+  ) => {
+    if (!valid) return;
+    setMarkingId(row.id ?? row.phone);
+    let contactId = row.id;
+    if (!contactId) {
+      const { data: ins, error: insErr } = await (supabase as any)
+        .from('store_contacts')
+        .insert({
+          store_id: storeId,
+          name: row.name?.trim() || 'Store line',
+          phone: row.phone,
+          role: row.role || 'primary',
+          is_primary: true,
+          source: 'va_call',
+        })
+        .select('id')
+        .maybeSingle();
+      if (insErr || !ins?.id) {
+        setMarkingId(null);
+        toast.error(insErr?.message || 'Could not save this number');
+        return;
+      }
+      contactId = ins.id;
+    }
+    const patch: Record<string, any> = {
+      responsiveness_status: outcome.rs,
+      responsiveness_updated_at: new Date().toISOString(),
+    };
+    if (outcome.vs) {
+      patch.number_verification_status = outcome.vs;
+      patch.verified_at = new Date().toISOString();
+      patch.verified_by = user?.id ?? null;
+    }
     const { error } = await (supabase as any)
       .from('store_contacts')
-      .update({ number_verification_status: status, verified_at: new Date().toISOString() })
+      .update(patch)
       .eq('id', contactId);
+    setMarkingId(null);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Number marked ${status}`);
+    toast.success(`Number marked "${outcome.label}"`);
     qc.invalidateQueries({ queryKey: ['gm-va-store-contacts', storeId] });
   };
+
+  /** Inline correction of an existing contact record (name / role / phone). */
+  const saveContact = async (contactId: string, patch: { name: string; role: string; phone: string }) => {
+    const { error } = await (supabase as any)
+      .from('store_contacts')
+      .update({
+        name: patch.name.trim() || null,
+        role: patch.role.trim() || null,
+        phone: patch.phone.trim() || null,
+      })
+      .eq('id', contactId);
+    if (error) { toast.error(error.message); return false; }
+    toast.success('Contact updated');
+    qc.invalidateQueries({ queryKey: ['gm-va-store-contacts', storeId] });
+    return true;
+  };
+
 
   // --- call observation capture ---
   const [tubes, setTubes] = useState('');
