@@ -36,19 +36,28 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Parse the form-urlencoded body from Twilio
-    const formData = await req.formData();
-    
+    // Parse the form-urlencoded body from Twilio (single read — readForm also
+    // feeds signature verification below).
+    const params = await readForm(req);
+
     // Extract Twilio webhook fields
-    const messageSid = formData.get("MessageSid")?.toString() || "";
-    const messageStatus = formData.get("MessageStatus")?.toString() || "";
-    const to = formData.get("To")?.toString() || "";
-    const from = formData.get("From")?.toString() || "";
-    const errorCode = formData.get("ErrorCode")?.toString() || null;
-    const errorMessage = formData.get("ErrorMessage")?.toString() || null;
-    const accountSid = formData.get("AccountSid")?.toString() || "";
+    const messageSid = params.MessageSid || "";
+    const messageStatus = params.MessageStatus || "";
+    const to = params.To || "";
+    const from = params.From || "";
+    const errorCode = params.ErrorCode || null;
+    const errorMessage = params.ErrorMessage || null;
+    const accountSid = params.AccountSid || "";
 
     console.log(`📨 Twilio Status Callback: SID=${messageSid}, Status=${messageStatus}, To=${to}`);
+
+    // Signature validation — fail closed. Twilio signs every status callback
+    // with the Account Auth Token; anything unsigned is forged.
+    const v = verifyTwilio(req, params);
+    if (!v.ok) {
+      console.error(`[twilio-sms-status] signature invalid: ${v.reason}`);
+      return new Response("Forbidden", { status: 403, headers: corsHeaders });
+    }
 
     // Synthetic health-check probe (comms-health-monitor sends MessageSid=SMhealth*):
     // ack with 200 so the deployment layer reports green without us pretending
@@ -59,6 +68,7 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
 
     if (!messageSid || !messageStatus) {
       console.error("❌ Missing required fields: MessageSid or MessageStatus");
