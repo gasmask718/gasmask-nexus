@@ -31,6 +31,7 @@ export type OSRole =
   | 'user'
   | 'accountant'
   | 'csr'
+  | 'verification_crew'
   | 'pending';
 
 // Brand Configuration
@@ -752,6 +753,7 @@ export const PORTALS: PortalConfig[] = [
   { id: 'production-portal', role: 'production', label: 'Manufacturing OS', path: '/portals/production', icon: Factory, color: 'hsl(45, 100%, 50%)', description: 'Office production, variance, closeouts' },
   { id: 'production-worker', role: 'production', label: 'Worker View (Read-Only)', path: '/portal/production', icon: Factory, color: 'hsl(45, 80%, 45%)', description: 'View batches, progress' },
   { id: 'va-portal', role: 'va', label: 'VA Portal', path: '/va/dashboard', icon: UserCircle, color: 'hsl(200, 100%, 50%)', description: 'CRM, tasks, communications' },
+  { id: 'verification-crew-portal', role: 'verification_crew', label: 'Field Verification Crew', path: '/portal/verification-crew', icon: MapPin, color: 'hsl(0, 100%, 50%)', description: 'Stickers, tube drops, store visits' },
   { id: 'national-wholesale-portal', role: 'wholesaler', label: 'National Wholesale Portal', path: '/portal/national-wholesale', icon: Globe, color: 'hsl(220, 100%, 50%)', description: 'Nationwide distribution' },
   { id: 'marketplace-admin-portal', role: 'admin', label: 'Marketplace Admin Portal', path: '/portal/marketplace-admin', icon: Cog, color: 'hsl(0, 0%, 50%)', description: 'Marketplace management' },
 ];
