@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { useState } from 'react';
 import { RepActivityBoard } from '@/components/communication/RepActivityBoard';
+import { AgentCallActivityPanel } from '@/components/communication/AgentCallActivityPanel';
 
 type SortField = 'total_revenue' | 'connect_rate' | 'positive_dispositions' | 'revenue_per_connect';
 
@@ -194,6 +195,9 @@ export default function RepPerformancePage() {
           )}
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
+
   );
 }
