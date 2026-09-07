@@ -24,8 +24,13 @@ export function useUserRole(currentBusinessId?: string | null) {
 
     async function fetchUserRole() {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
+        // Use the session user already held by AuthContext. Calling
+        // supabase.auth.getUser() here fired a network /auth/v1/user request on
+        // every mount and every realtime role change; a single 401/429 on that
+        // endpoint makes the client drop the session and log the user out
+        // mid-call. The session user is the same identity, with no request.
+        const user = authUser;
+
         if (isDev) {
           console.log('🔐 [RBAC DEBUG] Auth user:', user?.id, user?.email);
           console.log('🔐 [RBAC DEBUG] Current business ID:', currentBusinessId ?? 'not set');
