@@ -43590,6 +43590,160 @@ export type Database = {
         }
         Relationships: []
       }
+      crew_drops: {
+        Row: {
+          accuracy_m: number | null
+          created_at: string
+          crew_id: string
+          drop_type: string
+          earnings: number
+          id: string
+          latitude: number
+          longitude: number
+          notes: string | null
+          photo_path: string | null
+          server_timestamp: string
+          status: string
+          store_id: string | null
+          store_name: string | null
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+          zone_id: string | null
+        }
+        Insert: {
+          accuracy_m?: number | null
+          created_at?: string
+          crew_id: string
+          drop_type: string
+          earnings?: number
+          id?: string
+          latitude: number
+          longitude: number
+          notes?: string | null
+          photo_path?: string | null
+          server_timestamp?: string
+          status?: string
+          store_id?: string | null
+          store_name?: string | null
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          zone_id?: string | null
+        }
+        Update: {
+          accuracy_m?: number | null
+          created_at?: string
+          crew_id?: string
+          drop_type?: string
+          earnings?: number
+          id?: string
+          latitude?: number
+          longitude?: number
+          notes?: string | null
+          photo_path?: string | null
+          server_timestamp?: string
+          status?: string
+          store_id?: string | null
+          store_name?: string | null
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_drops_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "crew_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crew_profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          notes: string | null
+          phone: string | null
+          rate_per_drop: number
+          status: string
+          updated_at: string
+          user_id: string
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          rate_per_drop?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          rate_per_drop?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_profiles_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "crew_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crew_zones: {
+        Row: {
+          boundary: Json | null
+          city: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          state: string | null
+          target_drops: number
+          updated_at: string
+        }
+        Insert: {
+          boundary?: Json | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          state?: string | null
+          target_drops?: number
+          updated_at?: string
+        }
+        Update: {
+          boundary?: Json | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          state?: string | null
+          target_drops?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_backup_settings: {
         Row: {
           auto_export_enabled: boolean | null
