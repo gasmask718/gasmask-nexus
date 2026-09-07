@@ -24,8 +24,13 @@ export function useUserRole(currentBusinessId?: string | null) {
 
     async function fetchUserRole() {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
+        // Use the session user already held by AuthContext. Calling
+        // supabase.auth.getUser() here fired a network /auth/v1/user request on
+        // every mount and every realtime role change; a single 401/429 on that
+        // endpoint makes the client drop the session and log the user out
+        // mid-call. The session user is the same identity, with no request.
+        const user = authUser;
+
         if (isDev) {
           console.log('🔐 [RBAC DEBUG] Auth user:', user?.id, user?.email);
           console.log('🔐 [RBAC DEBUG] Current business ID:', currentBusinessId ?? 'not set');
@@ -231,6 +236,14 @@ export function useUserRole(currentBusinessId?: string | null) {
             });
             console.log('🔐 [RBAC DEBUG] Final roles:', rolesList, 'Primary:', primaryRole);
           }
+        } else if (rolesResult.error || profileResult.error) {
+          // The role lookups failed (transient network / RLS hiccup). Keep the
+          // roles we already resolved rather than reporting "no role", which
+          // would bounce an actively working user out of their screen.
+          console.warn('[RBAC] Role lookup failed; keeping previously resolved roles', {
+            rolesError: rolesResult.error?.message,
+            profileError: profileResult.error?.message,
+          });
         } else {
           setRole(null);
           setRoles([]);
