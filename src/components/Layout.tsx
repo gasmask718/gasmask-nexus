@@ -908,6 +908,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/field-verification/crew', label: '👥 Per-Crew', icon: Users },
       { path: '/field-verification/stores', label: '🏪 Per-Store', icon: Store },
       { path: '/field-verification/coverage', label: '🧭 Coverage', icon: Map },
+      { path: '/field-verification/manage', label: '⚙️ Manage Crew & Zones', icon: Settings },
     ],
   },
   globalDashboard: {

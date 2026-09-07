@@ -520,6 +520,7 @@ const FieldVerificationPhotos = lazy(() => import('@/pages/admin/field-verificat
 const FieldVerificationCrew = lazy(() => import('@/pages/admin/field-verification/FieldVerificationCrew'));
 const FieldVerificationStores = lazy(() => import('@/pages/admin/field-verification/FieldVerificationStores'));
 const FieldVerificationCoverage = lazy(() => import('@/pages/admin/field-verification/FieldVerificationCoverage'));
+const FieldVerificationManage = lazy(() => import('@/pages/admin/field-verification/FieldVerificationManage'));
 const SolarCRM = lazy(() => import('@/pages/solar/SolarCRM'));
 const SolarInstallerMap = lazy(() => import('@/pages/solar/SolarInstallerMap'));
 
