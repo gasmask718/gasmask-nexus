@@ -11,6 +11,7 @@ import { useBusiness } from '@/contexts/BusinessContext';
 import { useState } from 'react';
 import { RepActivityBoard } from '@/components/communication/RepActivityBoard';
 import { AgentCallActivityPanel } from '@/components/communication/AgentCallActivityPanel';
+import { SalesTeamPanel } from '@/components/communication/SalesTeamPanel';
 
 type SortField = 'total_revenue' | 'connect_rate' | 'positive_dispositions' | 'revenue_per_connect';
 
@@ -83,8 +84,11 @@ export default function RepPerformancePage() {
       {/* Real activity from the canonical communication log — shown first. */}
       <RepActivityBoard />
 
-      {/* Real per-agent call records (va_call_logs). */}
+      {/* Real per-agent call records (shared Stage 2 rollup). */}
       <AgentCallActivityPanel />
+
+      {/* Manager → team → agent (Stage 3), same shared rollup. */}
+      <SalesTeamPanel />
 
       {!hasSimulationData ? (
         <Card className="border-dashed">
