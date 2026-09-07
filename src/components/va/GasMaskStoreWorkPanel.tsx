@@ -652,6 +652,16 @@ function NumberRow({
         </div>
       </div>
 
+      {row.id && (
+        <VerificationStamp
+          contactId={row.id}
+          statusKey={row.number_verification_status || ''}
+          className="mt-1 text-slate-400"
+        />
+      )}
+
+
+
       <div className="flex flex-wrap items-center gap-1 mt-1">
         {busy && <Loader2 className="h-3 w-3 animate-spin text-slate-400" />}
         {outcomes.map((o) => (

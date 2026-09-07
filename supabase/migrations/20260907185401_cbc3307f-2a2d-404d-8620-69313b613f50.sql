@@ -1,0 +1,1 @@
+ALTER VIEW public.v_store_contact_verification SET (security_invoker = true);

@@ -162,6 +162,7 @@ export function VerifyNumberButton({
         </Badge>
       </div>
       <p className="text-[10px] text-muted-foreground">{subtle}</p>
+      <VerificationStamp contactId={contactId} statusKey={`${status}|${liveConfirmedAt || liveSentAt || ''}`} />
     </div>
   );
 }
