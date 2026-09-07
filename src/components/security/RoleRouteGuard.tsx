@@ -177,6 +177,15 @@ const ROLE_ALLOWED_PATHS: Record<string, string[]> = {
     "/production",
     "/install",
   ],
+  verification_crew: [
+    "/portal/verification-crew",
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/tasks",
+    "/portal/join",
+    "/install",
+  ],
   influencer: [
     "/portal/influencer",
     "/portal/onboarding",
@@ -221,6 +230,7 @@ const ROLE_HOME: Record<string, string> = {
   va: "/va/dashboard",
   production: "/portal/production",
   influencer: "/portal/influencer",
+  verification_crew: "/portal/verification-crew",
   developer: "/portal/home",
 };
 
