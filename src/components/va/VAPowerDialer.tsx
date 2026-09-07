@@ -674,6 +674,11 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   // ─────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────
+  // Session progress label — completed = confirmed-done accounts only.
+  const progressLabel = sessionQueueTotal
+    ? `ACCOUNTS COMPLETED: ${accountsCompleted} OF ${sessionQueueTotal}`
+    : `ACCOUNTS COMPLETED: ${accountsCompleted}`;
+
   if (initLoading) {
     return (
       <Card className="bg-slate-900/60 border-slate-700">
