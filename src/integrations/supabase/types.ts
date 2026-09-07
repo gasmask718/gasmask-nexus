@@ -138368,6 +138368,7 @@ export type Database = {
           call_summary: string | null
           callback_scheduled_at: string | null
           called_at: string | null
+          contact_id: string | null
           derived_state: string | null
           direction: string
           disposition: string | null
@@ -138382,6 +138383,7 @@ export type Database = {
           next_call_context: string | null
           recording_sid: string | null
           recording_url: string | null
+          store_id: string | null
           to_number: string | null
           to_number_last10: string | null
           to_number_source: string | null
@@ -138400,6 +138402,7 @@ export type Database = {
           call_summary?: string | null
           callback_scheduled_at?: string | null
           called_at?: string | null
+          contact_id?: string | null
           derived_state?: string | null
           direction?: string
           disposition?: string | null
@@ -138414,6 +138417,7 @@ export type Database = {
           next_call_context?: string | null
           recording_sid?: string | null
           recording_url?: string | null
+          store_id?: string | null
           to_number?: string | null
           to_number_last10?: string | null
           to_number_source?: string | null
@@ -138432,6 +138436,7 @@ export type Database = {
           call_summary?: string | null
           callback_scheduled_at?: string | null
           called_at?: string | null
+          contact_id?: string | null
           derived_state?: string | null
           direction?: string
           disposition?: string | null
@@ -138446,6 +138451,7 @@ export type Database = {
           next_call_context?: string | null
           recording_sid?: string | null
           recording_url?: string | null
+          store_id?: string | null
           to_number?: string | null
           to_number_last10?: string | null
           to_number_source?: string | null
