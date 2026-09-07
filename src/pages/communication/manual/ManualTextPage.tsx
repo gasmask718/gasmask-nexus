@@ -385,15 +385,20 @@ const ManualTextPage = () => {
     setSending(true);
 
     try {
+      const storeId = selectedContact.type === 'store' ? selectedContact.id : undefined;
+      const contactId = selectedContact.type === 'person' ? selectedContact.id : undefined;
+
       const { data, error } = await supabase.functions.invoke('send-sms', {
         body: {
           to_number: selectedContact.phone,
           message_body: messageText.trim(),
           idempotency_key: crypto.randomUUID(),
           skip_cooldown: true,
+          store_id: storeId,
           metadata: {
             source_ui: 'manual_text_page',
             contact_name: selectedContact.name,
+            contact_id: contactId,
           },
         },
       });
@@ -401,15 +406,17 @@ const ManualTextPage = () => {
       if (error) throw error;
       if (data && !data.success) throw new Error(data.error || 'Send failed');
 
-      // Log to communication_logs
-      await supabase.from('communication_logs').insert({
+      // Log to communication_logs with the signed-in agent + canonical account.
+      await logAgentOutboundCommunication({
         channel: 'sms',
-        direction: 'outbound',
         summary: 'Manual SMS sent',
         message_content: messageText.trim(),
         recipient_phone: selectedContact.phone,
         delivery_status: 'sent',
-        performed_by: 'va',
+        store_id: storeId,
+        contact_id: contactId,
+        external_sid: (data as any)?.sid,
+        source_ui: 'manual_text_page',
       });
 
       setMessageText('');
