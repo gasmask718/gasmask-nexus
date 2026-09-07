@@ -472,7 +472,26 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     stopFlagRef.current = false;
     setLeadIndex(0);
     setSessionRunning(true);
+    // New session → progress starts from zero.
+    setAccountsCompleted(0);
     setActiveSessionId(`session_${Date.now()}_${user.id.slice(0, 8)}`);
+
+    // Denominator: how many accounts this session has to work through.
+    if (listMode) {
+      setSessionQueueTotal(leadList!.length);
+    } else {
+      try {
+        const { count, error } = await (supabase as any)
+          .from('outbound_call_queue')
+          .select('id', { count: 'exact', head: true })
+          .eq('campaign_id', selectedCampaign)
+          .eq('status', 'queued');
+        setSessionQueueTotal(error ? null : (count ?? null));
+      } catch {
+        setSessionQueueTotal(null);
+      }
+    }
+
     toast.success(listMode ? `Calling list of ${leadList!.length} leads` : 'Auto dialer session started');
     runCycle();
   }, [user, listMode, leadList, selectedCampaign, selectedNumber, runCycle]);
