@@ -899,6 +899,17 @@ const DYNASTY_NAVIGATION = {
       { path: '/services-io/leads', label: '🎯 Leads Queue', icon: Target },
     ],
   },
+  fieldVerification: {
+    id: 'field-verification',
+    name: '🔍 Field Verification',
+    items: [
+      { path: '/field-verification/map', label: '🗺️ Live Map', icon: MapPin },
+      { path: '/field-verification/photos', label: '📸 Photo Feed', icon: Camera },
+      { path: '/field-verification/crew', label: '👥 Per-Crew', icon: Users },
+      { path: '/field-verification/stores', label: '🏪 Per-Store', icon: Store },
+      { path: '/field-verification/coverage', label: '🧭 Coverage', icon: Map },
+    ],
+  },
   globalDashboard: {
     id: 'global-dashboard',
     name: '🌍 Global Dynasty Dashboard',
