@@ -48,14 +48,22 @@ Nothing else is touched. No existing table is dropped or renamed.
 ## 3. Database migration — yes, one, additive
 
 1. Add `playboxxx` to the `business` CHECK list (drop + recreate the same constraint with one extra value).
-2. Add a plain (non-partial) unique index
-   `business_leads_playboxxx_external_unique ON (business, external_source, external_place_id)`
-   so the webhook can upsert safely; it only bites rows that carry both source and external id.
+2. Add a **partial** unique index
+   `business_leads_ext_ref_unique ON (business, external_source, external_place_id)
+   WHERE duplicate_of IS NULL AND external_source IS NOT NULL AND external_place_id IS NOT NULL`.
+   Verified against live data first: a plain unique index would **fail** — of 297,010 rows,
+   110,038 carry both source and external id and 204 of those form duplicate groups. All 204
+   involve rows already marked `duplicate_of`, so once those are excluded the remaining set is
+   unique (0 conflicting groups). The partial form therefore applies cleanly today. Because a
+   partial index cannot be an upsert conflict target (standing project rule), the webhook does
+   **not** upsert — it looks a lead up first and inserts only when there is no match (section 9).
+   The index is a safety net, not the dedupe mechanism.
 3. Add an index on `(business, category, created_at DESC)` so the newly scoped Playboxxx
-   screens stay fast against a 258k-row table.
+   screens stay fast against a ~297k-row table.
 
 No column is added, no data is rewritten, no constraint is loosened. The US-state rule
 stays exactly as it is in Stage 1.
+
 
 ## 4. New secret — yes, one
 
