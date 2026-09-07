@@ -104611,6 +104611,104 @@ export type Database = {
           },
         ]
       }
+      sales_team_members: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          removed_at: string | null
+          team_id: string
+          team_role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          removed_at?: string | null
+          team_id: string
+          team_role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          removed_at?: string | null
+          team_id?: string
+          team_role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "sales_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "v_sales_team_roster"
+            referencedColumns: ["team_id"]
+          },
+        ]
+      }
+      sales_teams: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          manager_user_id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          manager_user_id: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          manager_user_id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_teams_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sbo_accuracy_log: {
         Row: {
           accuracy_pct: number | null
@@ -155438,6 +155536,33 @@ export type Database = {
           },
         ]
       }
+      v_sales_team_roster: {
+        Row: {
+          agent_email: string | null
+          agent_name: string | null
+          agent_user_id: string | null
+          assigned_at: string | null
+          business_id: string | null
+          manager_email: string | null
+          manager_name: string | null
+          manager_user_id: string | null
+          membership_active: boolean | null
+          membership_id: string | null
+          team_active: boolean | null
+          team_id: string | null
+          team_name: string | null
+          team_role: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_teams_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_sbo_automation_daily_check: {
         Row: {
           a_job104_fired: boolean | null
@@ -160409,6 +160534,7 @@ export type Database = {
       is_production_admin: { Args: { _user_id: string }; Returns: boolean }
       is_production_worker: { Args: { _user_id: string }; Returns: boolean }
       is_promo_sample_brand_key: { Args: { _key: string }; Returns: boolean }
+      is_sales_team_manager: { Args: { _team_id: string }; Returns: boolean }
       is_sbo_operator: { Args: { _user_id?: string }; Returns: boolean }
       is_simulation_mode: { Args: never; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
