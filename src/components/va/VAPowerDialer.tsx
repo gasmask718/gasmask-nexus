@@ -895,9 +895,12 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
              phase === 'dialing'       ? 'Dialing…'            :
                                          'Connected'}
           </CardTitle>
-          <Badge className="bg-slate-700 text-slate-300 text-[10px]">
-            {listMode ? `LEAD ${Math.min(leadIndex + 1, leadList!.length)} / ${leadList!.length}` : (sessionRunning ? 'AUTO-LOOP' : 'PAUSED')}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-slate-700 text-slate-300 text-[10px]">{progressLabel}</Badge>
+            <Badge className="bg-slate-700 text-slate-300 text-[10px]">
+              {listMode ? `LEAD ${Math.min(leadIndex + 1, leadList!.length)} / ${leadList!.length}` : (sessionRunning ? 'AUTO-LOOP' : 'PAUSED')}
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {currentLead ? (
