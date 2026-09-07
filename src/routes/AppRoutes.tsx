@@ -515,6 +515,11 @@ const SolarCommandCenter = lazy(() => import('@/pages/solar/SolarCommandCenter')
 const SolarLeadIntelligence = lazy(() => import('@/pages/solar/SolarLeadIntelligence'));
 const GIYLeadsQueue = lazy(() => import('@/pages/giy/GIYLeadsQueue'));
 const ServicesLeadsQueue = lazy(() => import('@/pages/services/ServicesLeadsQueue'));
+const FieldVerificationMap = lazy(() => import('@/pages/admin/field-verification/FieldVerificationMap'));
+const FieldVerificationPhotos = lazy(() => import('@/pages/admin/field-verification/FieldVerificationPhotos'));
+const FieldVerificationCrew = lazy(() => import('@/pages/admin/field-verification/FieldVerificationCrew'));
+const FieldVerificationStores = lazy(() => import('@/pages/admin/field-verification/FieldVerificationStores'));
+const FieldVerificationCoverage = lazy(() => import('@/pages/admin/field-verification/FieldVerificationCoverage'));
 const SolarCRM = lazy(() => import('@/pages/solar/SolarCRM'));
 const SolarInstallerMap = lazy(() => import('@/pages/solar/SolarInstallerMap'));
 
