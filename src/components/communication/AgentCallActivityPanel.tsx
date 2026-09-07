@@ -1,133 +1,71 @@
 /**
- * AgentCallActivityPanel — real per-agent call records.
+ * AgentCallActivityPanel — real per-agent performance from the shared Stage 2
+ * rollup (public.v_sales_activity, via useSalesActivity).
  *
- * Source (existing tables only, no new tables, no invented numbers):
- *   public.va_call_logs   — one row per real call: va_id, disposition, duration, status, lead
- *   public.va_sessions    — real shift windows per agent (last active)
- *   public.profiles       — agent display name
+ * Only rows carrying a real user id appear here. Unattributed inbound calls,
+ * inbound replies, AI/automated messages and historical system-stamped rows are
+ * summarised separately and clearly labelled — never credited to a person.
  *
- * Shows only what is recorded: calls, connected calls, talk time, dispositions,
- * last activity. No revenue, no commission, no team/manager grouping.
+ * No revenue, no commission, no team/manager grouping.
  */
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Link } from "react-router-dom";
 import { Headphones, ChevronDown, ChevronRight } from "lucide-react";
-
-const CONNECTED = new Set(["completed", "answered", "in-progress"]);
-
-function fmtDuration(totalSeconds: number) {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  if (m >= 60) return `${Math.floor(m / 60)}h ${m % 60}m`;
-  return `${m}m ${s}s`;
-}
+import {
+  ATTRIBUTION_LABEL,
+  formatTalkTime,
+  useAgentNames,
+  useSalesActivity,
+  type SalesActivityRow,
+} from "@/hooks/useSalesActivity";
 
 export function AgentCallActivityPanel() {
   const [days, setDays] = useState("30");
   const [openAgent, setOpenAgent] = useState<string | null>(null);
 
-  const { data: calls = [], isLoading, error } = useQuery({
-    queryKey: ["agent-call-activity", days],
-    queryFn: async () => {
-      const since = new Date(Date.now() - Number(days) * 86400000).toISOString();
-      const { data, error } = await (supabase as any)
-        .from("va_call_logs")
-        .select(
-          "id, va_id, called_at, call_status, disposition, direction, duration_seconds, to_number, call_summary, follow_up_at, lead_id",
-        )
-        .gte("called_at", since)
-        .order("called_at", { ascending: false })
-        .limit(2000);
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  const { agents, unattributed, isLoading, error } = useSalesActivity(Number(days));
 
-  const agentIds = useMemo(
-    () => Array.from(new Set(calls.map((c: any) => c.va_id).filter(Boolean))) as string[],
-    [calls],
-  );
+  const { data: names } = useAgentNames(agents.map((a) => a.agentId!).filter(Boolean));
 
-  const { data: names } = useQuery({
-    queryKey: ["agent-call-activity-names", agentIds.sort().join(",")],
-    enabled: agentIds.length > 0,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("id, name, email").in("id", agentIds);
-      if (error) throw error;
-      const map: Record<string, string> = {};
-      (data || []).forEach((p: any) => {
-        map[p.id] = (p.name || "").trim() || p.email || p.id.slice(0, 8);
-      });
-      return map;
-    },
-  });
+  const agentIds = useMemo(() => agents.map((a) => a.agentId!).filter(Boolean), [agents]);
 
   const { data: sessions } = useQuery({
-    queryKey: ["agent-call-activity-sessions", agentIds.sort().join(",")],
+    queryKey: ["agent-shift-sessions", agentIds.sort().join(",")],
     enabled: agentIds.length > 0,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("va_sessions")
-        .select("va_id, started_at, ended_at, is_active, last_seen_at")
+        .select("va_id, started_at, is_active, last_seen_at")
         .in("va_id", agentIds)
         .order("started_at", { ascending: false })
         .limit(500);
       if (error) throw error;
-      const map: Record<string, { lastSeen: string | null; active: boolean }> = {};
+      const map: Record<string, boolean> = {};
       (data || []).forEach((s: any) => {
-        if (!map[s.va_id]) map[s.va_id] = { lastSeen: s.last_seen_at || s.started_at, active: !!s.is_active };
+        if (map[s.va_id] === undefined) map[s.va_id] = !!s.is_active;
       });
       return map;
     },
   });
-
-  const byAgent = useMemo(() => {
-    const m = new Map<string, any[]>();
-    calls.forEach((c: any) => {
-      const k = c.va_id || "unattributed";
-      if (!m.has(k)) m.set(k, []);
-      m.get(k)!.push(c);
-    });
-    return Array.from(m.entries())
-      .map(([key, list]) => {
-        const connected = list.filter((c) => CONNECTED.has((c.call_status || "").toLowerCase()));
-        const talk = list.reduce((s, c) => s + (Number(c.duration_seconds) || 0), 0);
-        const dispositions = list.reduce((acc: Record<string, number>, c) => {
-          if (c.disposition) acc[c.disposition] = (acc[c.disposition] || 0) + 1;
-          return acc;
-        }, {});
-        return {
-          key,
-          list,
-          calls: list.length,
-          connected: connected.length,
-          talk,
-          dispositions,
-          followUps: list.filter((c) => c.follow_up_at).length,
-          last: list[0]?.called_at || null,
-        };
-      })
-      .sort((a, b) => b.calls - a.calls);
-  }, [calls]);
-
-  const label = (key: string) =>
-    key === "unattributed" ? "Unattributed / automated" : names?.[key] || key.slice(0, 8);
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Headphones className="h-5 w-5" /> Agent call records (real)
+            <Headphones className="h-5 w-5" /> Agent performance (shared rollup)
           </CardTitle>
           <p className="mt-1 text-xs text-muted-foreground">
-            Recorded calls per agent — calls, connected, talk time, dispositions. No revenue or
-            commission is recorded against calls anywhere, so none is shown.
+            Calls, connects, talk time, texts, accounts touched and completed, outcomes and
+            follow-ups — all from the same rollup as Caller Activity. No revenue or commission is
+            recorded against calls anywhere, so none is shown.
           </p>
         </div>
         <Select value={days} onValueChange={setDays}>
@@ -141,30 +79,33 @@ export function AgentCallActivityPanel() {
           </SelectContent>
         </Select>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading agent calls…</p>
+          <p className="text-sm text-muted-foreground">Loading agent activity…</p>
         ) : error ? (
           <p className="text-sm text-destructive">{(error as Error).message}</p>
-        ) : byAgent.length === 0 ? (
+        ) : agents.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No recorded agent calls in this window.
+            No activity attributed to an agent in this window.
           </p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Agent</TableHead>
-                <TableHead className="text-right">Calls</TableHead>
+                <TableHead className="text-right">Calls placed</TableHead>
                 <TableHead className="text-right">Connected</TableHead>
                 <TableHead className="text-right">Talk time</TableHead>
-                <TableHead className="text-right">Follow-ups set</TableHead>
+                <TableHead className="text-right">Texts sent</TableHead>
+                <TableHead className="text-right">Accounts</TableHead>
+                <TableHead className="text-right">Completed</TableHead>
+                <TableHead className="text-right">Follow-ups</TableHead>
                 <TableHead>Top outcomes</TableHead>
-                <TableHead>Last call</TableHead>
+                <TableHead>Latest activity</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {byAgent.map((a) => (
+              {agents.map((a) => (
                 <>
                   <TableRow
                     key={a.key}
@@ -174,24 +115,25 @@ export function AgentCallActivityPanel() {
                     <TableCell className="font-medium">
                       <span className="inline-flex items-center gap-1">
                         {openAgent === a.key ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                        {label(a.key)}
-                        {sessions?.[a.key]?.active && (
-                          <Badge className="ml-1 text-[10px]">on shift</Badge>
-                        )}
+                        {names?.[a.agentId!] || a.agentId!.slice(0, 8)}
+                        {sessions?.[a.agentId!] && <Badge className="ml-1 text-[10px]">on shift</Badge>}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">{a.calls}</TableCell>
-                    <TableCell className="text-right text-emerald-600">{a.connected}</TableCell>
-                    <TableCell className="text-right">{fmtDuration(a.talk)}</TableCell>
-                    <TableCell className="text-right">{a.followUps}</TableCell>
+                    <TableCell className="text-right">{a.callsPlaced}</TableCell>
+                    <TableCell className="text-right text-emerald-600">{a.callsConnected}</TableCell>
+                    <TableCell className="text-right">{formatTalkTime(a.talkTimeSeconds)}</TableCell>
+                    <TableCell className="text-right">{a.textsSent}</TableCell>
+                    <TableCell className="text-right">{a.accountsTouched}</TableCell>
+                    <TableCell className="text-right">{a.accountsCompleted}</TableCell>
+                    <TableCell className="text-right">{a.followUpsCreated}</TableCell>
                     <TableCell>
                       <span className="flex flex-wrap gap-1">
                         {Object.entries(a.dispositions)
-                          .sort((x, y) => (y[1] as number) - (x[1] as number))
+                          .sort((x, y) => y[1] - x[1])
                           .slice(0, 3)
                           .map(([d, n]) => (
                             <Badge key={d} variant="outline" className="text-[10px] capitalize">
-                              {d.replace(/_/g, " ")} {n as number}
+                              {d.replace(/_/g, " ")} {n}
                             </Badge>
                           ))}
                         {Object.keys(a.dispositions).length === 0 && (
@@ -200,35 +142,39 @@ export function AgentCallActivityPanel() {
                       </span>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {a.last ? new Date(a.last).toLocaleString() : "—"}
+                      {a.latestActivityAt ? new Date(a.latestActivityAt).toLocaleString() : "—"}
                     </TableCell>
                   </TableRow>
                   {openAgent === a.key && (
                     <TableRow key={`${a.key}-detail`}>
-                      <TableCell colSpan={7} className="bg-muted/30">
+                      <TableCell colSpan={10} className="bg-muted/30">
                         <ul className="max-h-80 space-y-1 overflow-y-auto text-xs">
-                          {a.list.slice(0, 100).map((c: any) => (
-                            <li key={c.id} className="flex flex-wrap items-center gap-2 border-b border-border/40 py-1">
-                              <span className="text-muted-foreground">
-                                {new Date(c.called_at).toLocaleString()}
-                              </span>
-                              <Badge variant="secondary" className="text-[10px] capitalize">
-                                {c.direction || "outbound"}
+                          {a.rows.slice(0, 100).map((c: SalesActivityRow) => (
+                            <li key={c.activity_id} className="flex flex-wrap items-center gap-2 border-b border-border/40 py-1">
+                              <span className="text-muted-foreground">{new Date(c.occurred_at).toLocaleString()}</span>
+                              <Badge variant="outline" className="text-[10px] capitalize">{c.channel}</Badge>
+                              <Badge variant="secondary" className="text-[10px] capitalize">{c.direction || "outbound"}</Badge>
+                              <Badge variant={c.is_connected ? "outline" : "destructive"} className="text-[10px]">
+                                {c.status || (c.is_connected ? "connected" : "unknown")}
                               </Badge>
-                              <Badge
-                                variant={CONNECTED.has((c.call_status || "").toLowerCase()) ? "outline" : "destructive"}
-                                className="text-[10px]"
-                              >
-                                {c.call_status || "unknown"}
-                              </Badge>
-                              {c.disposition && (
+                              {c.outcome && (
                                 <Badge variant="outline" className="text-[10px] capitalize">
-                                  {String(c.disposition).replace(/_/g, " ")}
+                                  {String(c.outcome).replace(/_/g, " ")}
                                 </Badge>
                               )}
-                              <span>{fmtDuration(Number(c.duration_seconds) || 0)}</span>
-                              <span className="text-muted-foreground">{c.to_number || "—"}</span>
-                              <span className="max-w-[280px] truncate">{c.call_summary || ""}</span>
+                              {c.channel === "call" && <span>{formatTalkTime(Number(c.duration_seconds) || 0)}</span>}
+                              <span className="text-muted-foreground">{c.phone || "—"}</span>
+                              <span className="max-w-[240px] truncate">{c.summary || ""}</span>
+                              {c.store_id ? (
+                                <Button asChild size="sm" variant="link" className="h-5 px-1 text-[11px]">
+                                  <Link to={`/stores/${c.store_id}`}>Open account</Link>
+                                </Button>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px]">no account linked</Badge>
+                              )}
+                              {c.completed_at && (
+                                <Badge className="text-[10px]">completed</Badge>
+                              )}
                             </li>
                           ))}
                         </ul>
@@ -239,6 +185,20 @@ export function AgentCallActivityPanel() {
               ))}
             </TableBody>
           </Table>
+        )}
+
+        {unattributed.length > 0 && (
+          <div className="rounded-lg border border-dashed p-3">
+            <p className="text-xs font-semibold">Not attributable to a person (kept separate)</p>
+            <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+              {unattributed.map((u) => (
+                <li key={u.key}>
+                  {ATTRIBUTION_LABEL[u.attribution]} — {u.callsTotal} calls, {u.textsSent} texts sent,{" "}
+                  {u.textsReceived} replies, {u.accountsTouched} accounts
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </CardContent>
     </Card>
