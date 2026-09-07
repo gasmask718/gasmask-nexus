@@ -86,6 +86,9 @@ export function StoreContactActions({
       entityType: 'customer',
       entityId: contact.id,
       entityName: contact.name,
+      // Canonical account + contact so the call is logged against this store.
+      storeId,
+      contactId: contact.id,
     });
   };
 

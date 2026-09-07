@@ -74,6 +74,10 @@ serve(async (req) => {
     // --- JSON body actions (dial, disposition) ---
     const body = await req.json();
     const { vaId, twilioNumber, leadId, leadPhone, leadName, action, callLogId, disposition, excitementLevel, notes, callbackAt } = body;
+    // STAGE 1 ATTRIBUTION — canonical account/contact the agent was working.
+    // Optional: recorded only when the caller UI actually knows them.
+    const storeId: string | null = body.storeId || null;
+    const contactId: string | null = body.contactId || null;
 
     if (!vaId || !action) {
       return new Response(JSON.stringify({ error: "vaId and action required" }), {
@@ -183,6 +187,8 @@ serve(async (req) => {
       if (suppression.blocked) {
         await supabaseAdmin.from("va_call_logs").insert({
           lead_id: leadId || null,
+          store_id: storeId,
+          contact_id: contactId,
           va_id: vaId,
           twilio_number: twilioNumber,
           call_status: "dnc_skipped",
@@ -209,6 +215,8 @@ serve(async (req) => {
         .from("va_call_logs")
         .insert({
           lead_id: leadId || null,
+          store_id: storeId,
+          contact_id: contactId,
           va_id: vaId,
           twilio_number: twilioNumber,
           call_status: "initiated",

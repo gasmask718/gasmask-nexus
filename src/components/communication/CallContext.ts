@@ -29,6 +29,10 @@ export interface CallParams {
   notes?: string;
   agentId?: string;
   isTestCall?: boolean;
+  /** Canonical account (store_master/stores) this call belongs to, when known. */
+  storeId?: string;
+  /** Canonical store_contacts row being dialled, when known. */
+  contactId?: string;
 }
 
 export interface CallContextValue {

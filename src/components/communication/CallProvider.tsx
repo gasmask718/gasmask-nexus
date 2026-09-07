@@ -152,6 +152,30 @@ export function CallProvider({ children }: { children: ReactNode }) {
       if (params.isTestCall) connectParams.test_call = "true";
       connectParams.Record = "true";
 
+      // STAGE 1 ATTRIBUTION — carry the signed-in agent and the canonical
+      // account/contact into the TwiML app, which forwards them to the status
+      // callback so the created communication_logs row is credited correctly.
+      // Nothing is guessed: absent values are simply not sent.
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          connectParams.agent_user_id = user.id;
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("name, email")
+            .eq("id", user.id)
+            .maybeSingle();
+          const agentName = (profile as any)?.name || (profile as any)?.email || user.email;
+          if (agentName) connectParams.agent_name = String(agentName);
+        }
+      } catch (e) {
+        console.warn("[CallProvider] could not resolve agent for attribution", e);
+      }
+      const storeId = params.storeId || (params.entityType === "store" ? params.entityId : undefined);
+      if (storeId) connectParams.store_id = storeId;
+      if (params.contactId) connectParams.contact_id = params.contactId;
+      if (params.entityName) connectParams.entity_name = params.entityName;
+
       const call = await twilioDevice.makeCall(formattedPhone, Object.keys(connectParams).length > 0 ? connectParams : undefined);
       if (call) {
         const newCallInfo: ActiveCallInfo = {

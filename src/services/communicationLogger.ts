@@ -60,6 +60,73 @@ export const logCommunication = async (data: CommunicationLogData) => {
   }
 };
 
+export interface AgentOutboundLogData
+  extends Omit<CommunicationLogData, 'direction' | 'performed_by'> {
+  /** Twilio message/call SID when known. */
+  external_sid?: string;
+  /** Which screen produced the message — recorded in metadata only. */
+  source_ui?: string;
+}
+
+/**
+ * STAGE 1 ATTRIBUTION — the single way a caller-generated OUTBOUND message or
+ * call gets written to communication_logs from the client.
+ *
+ * Reuses the existing log table and existing columns only:
+ *   created_by   → auth user id of the signed-in agent (canonical attribution)
+ *   performed_by → 'va' (a human agent, as opposed to 'ai' / 'system')
+ *   store_id / contact_id → canonical account + contact when the caller knows them
+ *   metadata.agent_name / agent_email → display name for the performance boards
+ *
+ * Never guesses: if there is no authenticated user, nothing is stamped and the
+ * row is written unattributed rather than credited to somebody.
+ */
+export const logAgentOutboundCommunication = async (data: AgentOutboundLogData) => {
+  const { external_sid, source_ui, ...rest } = data;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    let agentName: string | null = null;
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('id', user.id)
+        .maybeSingle();
+      agentName = (profile as any)?.name || (profile as any)?.email || user.email || null;
+    }
+
+    const nowIso = new Date().toISOString();
+    const { data: inserted, error } = await supabase
+      .from('communication_logs')
+      .insert({
+        ...rest,
+        direction: 'outbound',
+        performed_by: user ? 'va' : 'system',
+        created_by: user?.id ?? null,
+        twilio_call_sid: rest.channel === 'call' ? external_sid ?? null : undefined,
+        started_at: nowIso,
+        created_at: nowIso,
+        metadata: {
+          agent_user_id: user?.id ?? null,
+          agent_name: agentName,
+          agent_email: user?.email ?? null,
+          source_ui: source_ui ?? null,
+          external_sid: external_sid ?? null,
+        },
+      } as any)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw error;
+    return inserted;
+  } catch (error) {
+    // Logging must never break the send itself.
+    console.error('❌ Failed to log attributed outbound communication:', error);
+    return null;
+  }
+};
+
 /**
  * Match incoming message to existing contact by phone or email
  */

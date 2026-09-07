@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logAgentOutboundCommunication } from "@/services/communicationLogger";
 import type { Json } from "@/integrations/supabase/types";
 
 export type DraftStatus = "draft" | "pending_approval" | "approved" | "sent" | "cancelled";
@@ -285,6 +286,24 @@ export function useCommunicationDrafts(options?: {
           .single();
 
         if (updateError) throw updateError;
+
+        // Attributed entry in the shared communication log so the message shows
+        // on Caller Activity / Rep Performance against the agent who sent it.
+        await logAgentOutboundCommunication({
+          channel: "sms",
+          summary: "SMS sent from draft approval",
+          message_content: draft.body,
+          recipient_phone: draft.recipient_phone,
+          sender_phone: draft.from_number ?? undefined,
+          store_id: draft.store_id ?? undefined,
+          contact_id: draft.entity_type === "contact" || draft.entity_type === "customer"
+            ? draft.entity_id ?? undefined
+            : undefined,
+          business_id: draft.business_id ?? undefined,
+          delivery_status: sendResult?.status ?? "sent",
+          external_sid: sendResult?.sid,
+          source_ui: "draft_approval",
+        });
 
         // Log to immutable sent log
         await supabase.from("communication_sent_log").insert({
