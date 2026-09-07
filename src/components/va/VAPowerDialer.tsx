@@ -816,11 +816,14 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
             <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
             Finish this account
           </CardTitle>
-          <Badge className={ready
-            ? 'bg-emerald-500/20 text-emerald-300 text-[10px]'
-            : 'bg-amber-500/20 text-amber-300 text-[10px]'}>
-            {ready ? `ALL ${total} NUMBERS WORKED` : `${open} NUMBER${open === 1 ? '' : 'S'} LEFT`}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-slate-700 text-slate-300 text-[10px]">{progressLabel}</Badge>
+            <Badge className={ready
+              ? 'bg-emerald-500/20 text-emerald-300 text-[10px]'
+              : 'bg-amber-500/20 text-amber-300 text-[10px]'}>
+              {ready ? `ALL ${total} NUMBERS WORKED` : `${open} NUMBER${open === 1 ? '' : 'S'} LEFT`}
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-sm text-white font-semibold">{pendingAccount.lead.business_name}</div>
