@@ -42435,6 +42435,13 @@ export type Database = {
             foreignKeyName: "contact_interactions_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "v_store_contact_verification"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "v_store_who_to_contact"
             referencedColumns: ["contact_id"]
           },
@@ -88900,6 +88907,13 @@ export type Database = {
             foreignKeyName: "outreach_plan_items_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "v_store_contact_verification"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "outreach_plan_items_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "v_store_who_to_contact"
             referencedColumns: ["contact_id"]
           },
@@ -92214,6 +92228,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "v_contacts_needing_new_number"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "pinned_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_contact_verification"
             referencedColumns: ["contact_id"]
           },
           {
@@ -114227,6 +114248,13 @@ export type Database = {
             foreignKeyName: "store_additional_stores_log_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "v_store_contact_verification"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "store_additional_stores_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "v_store_who_to_contact"
             referencedColumns: ["contact_id"]
           },
@@ -115831,6 +115859,98 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "v_store_tube_summary"
             referencedColumns: ["store_id"]
+          },
+        ]
+      }
+      store_contact_verification_events: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          method: string
+          phone: string | null
+          previous_status: string | null
+          status: string
+          store_id: string | null
+          verified_at: string
+          verified_by: string | null
+          verified_by_label: string | null
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          method?: string
+          phone?: string | null
+          previous_status?: string | null
+          status: string
+          store_id?: string | null
+          verified_at?: string
+          verified_by?: string | null
+          verified_by_label?: string | null
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          method?: string
+          phone?: string | null
+          previous_status?: string | null
+          status?: string
+          store_id?: string | null
+          verified_at?: string
+          verified_by?: string | null
+          verified_by_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_contact_verification_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "store_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_contact_verification_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_cadence_intelligence"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "store_contact_verification_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_line_intel"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "store_contact_verification_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_responsiveness_summary"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "store_contact_verification_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contacts_needing_new_number"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "store_contact_verification_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_contact_verification"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "store_contact_verification_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_who_to_contact"
+            referencedColumns: ["contact_id"]
           },
         ]
       }
@@ -155676,6 +155796,55 @@ export type Database = {
           transcript: string | null
         }
         Relationships: []
+      }
+      v_store_contact_verification: {
+        Row: {
+          contact_id: string | null
+          phone: string | null
+          status: string | null
+          store_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          verified_by_label: string | null
+          verified_method: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_gm_cadence_due"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_merge_orphan_candidates"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_reactivation_targets"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_tube_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
       }
       v_store_intelligence: {
         Row: {
