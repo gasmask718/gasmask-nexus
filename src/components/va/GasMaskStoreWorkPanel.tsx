@@ -28,6 +28,7 @@ import {
   Loader2, MapPin, Package, PhoneCall, Save, History, StickyNote, Plus, ShieldCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { VerificationStamp } from '@/components/store/VerificationStamp';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
