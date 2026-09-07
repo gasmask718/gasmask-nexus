@@ -316,9 +316,11 @@ Deno.serve(async (req) => {
     // ── Base data (shared by every action) ──
     const [summaries, alerts, waves, contacts, dncRows, optOutRows, queuedRows] =
       await Promise.all([
+        // Ordered paging: without a stable sort, PostgREST range paging can
+        // skip rows (a freshly promoted store went missing this way).
         fetchAll(() => supabase.from("v_store_summary").select(
           "store_id,store_name,phone,contact_name,owed,open_invoices,oldest_unpaid,last_order_date,days_since_last_order,lifetime_value,neighborhood,borough,corridor",
-        )),
+        ).order("store_id", { ascending: true })),
         fetchAll(() => supabase.from("v_restock_alerts").select(
           "store_id,store_name,phone,contact_name,product,alert_level,on_hand,reorder_at,suggested_order,owed,neighborhood,borough,corridor",
         )),
@@ -327,7 +329,8 @@ Deno.serve(async (req) => {
         )),
         fetchAll(() => supabase.from("v_store_who_to_contact").select(
           "store_id,store_name,contact_id,name,phone,line_type,is_primary,responsive_by_call,total_calls_answered,try_this_first",
-        )),
+        ).order("contact_id", { ascending: true })),
+
         fetchAll(() => supabase.from("dnc_list").select("phone_last10")),
         fetchAll(() => supabase.from("opt_out_events").select("phone_last10")),
         fetchAll(() => supabase.from("outbound_call_queue").select("phone_number")
