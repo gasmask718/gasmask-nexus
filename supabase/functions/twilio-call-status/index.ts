@@ -93,8 +93,24 @@ Deno.serve(async (req) => {
     // ── No row yet: this is a browser/Voice-SDK call that was never pre-logged.
     //    Create it now so the store profile gets a call history entry. ──
     if (!logId && callSid) {
-      const counterparty = direction === 'inbound' ? fromNumber : toNumber;
-      const { store_id, contact_id, ambiguous } = await resolveStore(admin, counterparty);
+      // STAGE 1 ATTRIBUTION — the TwiML app forwards the signed-in agent and the
+      // canonical account/contact the caller was working. Trust those over a
+      // phone-number guess; fall back to the resolver only when absent.
+      const agentUserId = url.searchParams.get('agent_user_id');
+      const agentName = url.searchParams.get('agent_name');
+      const paramStoreId = url.searchParams.get('store_id');
+      const paramContactId = url.searchParams.get('contact_id');
+
+      let store_id: string | null = paramStoreId;
+      let contact_id: string | null = paramContactId;
+      let ambiguous = false;
+      if (!store_id) {
+        const counterparty = direction === 'inbound' ? fromNumber : toNumber;
+        const resolved = await resolveStore(admin, counterparty);
+        store_id = resolved.store_id;
+        contact_id = contact_id || resolved.contact_id;
+        ambiguous = resolved.ambiguous;
+      }
 
       const { data: created, error: createErr } = await admin
         .from('communication_logs')
@@ -106,13 +122,24 @@ Deno.serve(async (req) => {
           twilio_call_sid: callSid,
           sender_phone: fromNumber || null,
           recipient_phone: toNumber || null,
+          // Inbound calls are never credited to an agent here — we cannot
+          // truthfully say who picked up at this point in the flow.
+          created_by: direction === 'outbound' ? agentUserId : null,
+          performed_by: direction === 'outbound' && agentUserId ? 'va' : 'system',
           summary:
             direction === 'inbound'
               ? `Inbound call from ${fromNumber || 'unknown number'}`
-              : 'Call placed from browser',
+              : agentName
+                ? `Call placed by ${agentName}`
+                : 'Call placed from browser',
           event_type: direction === 'inbound' ? 'inbound_call' : 'outbound_call',
           follow_up_required: ambiguous ? true : undefined,
-          metadata: { phone_ambiguous: ambiguous },
+          metadata: {
+            phone_ambiguous: ambiguous,
+            agent_user_id: direction === 'outbound' ? agentUserId : null,
+            agent_name: direction === 'outbound' ? agentName : null,
+            account_source: paramStoreId ? 'caller_context' : 'phone_match',
+          },
           status: 'initiated',
           delivery_status: 'initiated',
           started_at: new Date().toISOString(),
