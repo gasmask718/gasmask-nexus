@@ -12,12 +12,16 @@ import {
 } from './shared';
 
 async function countLeads(categories?: readonly string[]) {
-  let q = supabase.from('business_leads').select('id', { count: 'exact', head: true });
+  let q = supabase
+    .from('business_leads')
+    .select('id', { count: 'exact', head: true })
+    .eq('business', 'playboxxx');
   if (categories) q = q.in('category', categories as string[]);
   const { count, error } = await q;
   if (error) throw error;
   return count ?? 0;
 }
+
 
 export default function RecruitingDashboard() {
   const totals = useQuery({

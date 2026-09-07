@@ -41,9 +41,11 @@ export default function Candidates() {
           'id,business_name,contact_name,category,city,state,phone,email,website,full_address,source,external_source,status,created_at,updated_at',
           { count: 'exact' },
         )
+        .eq('business', 'playboxxx')
         .in('category', role === 'all' ? laneCategories : [role])
         .order(sort, { ascending: sort === 'business_name' })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+
 
       if (search.trim()) q = q.ilike('business_name', `%${search.trim()}%`);
       if (source !== 'all') q = q.eq('source', source);
