@@ -3929,6 +3929,7 @@ export default function AppRoutes() {
         <Route path="/field-verification/crew" element={<RequireRole allowedRoles={['owner','admin','staff']} showLocked><FieldVerificationCrew /></RequireRole>} />
         <Route path="/field-verification/stores" element={<RequireRole allowedRoles={['owner','admin','staff']} showLocked><FieldVerificationStores /></RequireRole>} />
         <Route path="/field-verification/coverage" element={<RequireRole allowedRoles={['owner','admin','staff']} showLocked><FieldVerificationCoverage /></RequireRole>} />
+        <Route path="/field-verification/manage" element={<RequireRole allowedRoles={['owner','admin','staff']} showLocked><FieldVerificationManage /></RequireRole>} />
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
