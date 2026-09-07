@@ -8,63 +8,28 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { Activity, ChevronDown, ChevronRight } from "lucide-react";
-import { CALL_CHANNELS, isMissedCall, isUnreadMessage } from "@/hooks/useCommsAwareness";
+import {
+  ATTRIBUTION_LABEL,
+  useAgentNames,
+  useSalesActivity,
+  type SalesActivityRow,
+} from "@/hooks/useSalesActivity";
 
 /**
- * RepActivityBoard — real caller activity from the canonical communication log.
- * No new tables, no invented revenue. Drill-down: rep → activity → exact store.
+ * RepActivityBoard — caller activity from the shared Stage 2 rollup
+ * (public.v_sales_activity). No second source, no invented revenue.
+ * Drill-down: caller → activity → exact canonical account.
  */
 export function RepActivityBoard() {
   const [days, setDays] = useState("7");
   const [openRep, setOpenRep] = useState<string | null>(null);
 
-  const { data: rows = [], isLoading, error } = useQuery({
-    queryKey: ["rep-activity-canonical", days],
-    queryFn: async () => {
-      const since = new Date(Date.now() - Number(days) * 86400000).toISOString();
-      const { data, error } = await (supabase as any)
-        .from("communication_logs")
-        .select(
-          "id, created_at, channel, direction, status, outcome, summary, message_content, store_id, contact_id, performed_by, created_by, answered_at, duration_seconds, call_duration, read_at, handled_at, brand",
-        )
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .limit(2000);
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  const { rollup, rows, isLoading, error } = useSalesActivity(Number(days));
 
-  // Only a real uuid identifies a person. `performed_by` is free text and is the literal
-  // string 'system' on automated sends — that must never be rendered as if it were an agent.
-  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const actorId = (r: any): string | null => {
-    for (const v of [r.created_by, r.performed_by]) {
-      if (typeof v === "string" && UUID_RE.test(v.trim())) return v.trim();
-    }
-    return null;
-  };
-
-  const actorIds = useMemo(
-    () => Array.from(new Set(rows.map(actorId).filter(Boolean))) as string[],
-    [rows],
-  );
-
-  const { data: names } = useQuery({
-    queryKey: ["rep-activity-names", actorIds.sort().join(",")],
-    enabled: actorIds.length > 0,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("id, name, email").in("id", actorIds);
-      if (error) throw error;
-      const map: Record<string, string> = {};
-      (data || []).forEach((p: any) => { map[p.id] = (p.name || "").trim() || p.email || p.id.slice(0, 8); });
-      return map;
-    },
-  });
-
+  const { data: names } = useAgentNames(rollup.map((r) => r.agentId).filter(Boolean) as string[]);
 
   const storeIds = useMemo(
-    () => Array.from(new Set(rows.map((r: any) => r.store_id).filter(Boolean))) as string[],
+    () => Array.from(new Set(rows.map((r) => r.store_id).filter(Boolean))) as string[],
     [rows],
   );
 
@@ -75,52 +40,31 @@ export function RepActivityBoard() {
       const { data, error } = await (supabase as any)
         .from("store_master")
         .select("id, store_name")
-        .in("id", storeIds);
+        .in("id", storeIds.slice(0, 500));
       if (error) throw error;
       const map: Record<string, string> = {};
-      (data || []).forEach((s: any) => { map[s.id] = s.store_name; });
+      (data || []).forEach((s: any) => {
+        map[s.id] = s.store_name;
+      });
       return map;
     },
   });
 
-  const repKey = (r: any) => actorId(r) || "unattributed";
-  const repLabel = (key: string) =>
-    key === "unattributed" ? "Unattributed / automated (no agent recorded)" : names?.[key] || key.slice(0, 8);
-
-
-  const byRep = useMemo(() => {
-    const m = new Map<string, any[]>();
-    rows.forEach((r: any) => {
-      const k = repKey(r);
-      if (!m.has(k)) m.set(k, []);
-      m.get(k)!.push(r);
-    });
-    return Array.from(m.entries())
-      .map(([key, list]) => {
-        const calls = list.filter((r) => CALL_CHANNELS.includes(r.channel));
-        const texts = list.filter((r) => r.channel === "sms");
-        return {
-          key,
-          list,
-          calls: calls.length,
-          answered: calls.filter((r) => !isMissedCall(r)).length,
-          missed: calls.filter((r) => isMissedCall(r)).length,
-          textsSent: texts.filter((r) => r.direction === "outbound").length,
-          replies: texts.filter((r) => r.direction === "inbound").length,
-          unread: list.filter(isUnreadMessage).length,
-          stores: new Set(list.map((r) => r.store_id).filter(Boolean)).size,
-          dispositions: new Set(list.map((r) => r.outcome).filter(Boolean)).size,
-        };
-      })
-      .sort((a, b) => b.list.length - a.list.length);
-  }, [rows, names]);
+  const repLabel = (r: (typeof rollup)[number]) =>
+    r.agentId ? names?.[r.agentId] || r.agentId.slice(0, 8) : ATTRIBUTION_LABEL[r.attribution];
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Activity className="h-5 w-5" /> Caller Activity (live canonical data)
-        </CardTitle>
+        <div>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Activity className="h-5 w-5" /> Caller Activity (shared sales rollup)
+          </CardTitle>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Calls and texts from one shared read-only rollup. Traffic with no recorded person stays
+            in its own row and is never credited to an agent.
+          </p>
+        </div>
         <Select value={days} onValueChange={setDays}>
           <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -136,7 +80,7 @@ export function RepActivityBoard() {
           <p className="text-sm text-muted-foreground">Loading activity…</p>
         ) : error ? (
           <p className="text-sm text-destructive">{(error as Error).message}</p>
-        ) : byRep.length === 0 ? (
+        ) : rollup.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">No logged activity in this window.</p>
         ) : (
           <Table>
@@ -144,50 +88,53 @@ export function RepActivityBoard() {
               <TableRow>
                 <TableHead>Caller</TableHead>
                 <TableHead className="text-right">Calls</TableHead>
-                <TableHead className="text-right">Answered</TableHead>
+                <TableHead className="text-right">Connected</TableHead>
                 <TableHead className="text-right">Missed</TableHead>
                 <TableHead className="text-right">Texts sent</TableHead>
                 <TableHead className="text-right">Replies</TableHead>
-                <TableHead className="text-right">Unread</TableHead>
                 <TableHead className="text-right">Accounts</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {byRep.map((r) => (
+              {rollup.map((r) => (
                 <>
-                  <TableRow key={r.key} className="cursor-pointer" onClick={() => setOpenRep(openRep === r.key ? null : r.key)}>
+                  <TableRow
+                    key={r.key}
+                    className="cursor-pointer"
+                    onClick={() => setOpenRep(openRep === r.key ? null : r.key)}
+                  >
                     <TableCell className="font-medium">
                       <span className="inline-flex items-center gap-1">
                         {openRep === r.key ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                        {repLabel(r.key)}
+                        {repLabel(r)}
+                        {!r.agentId && (
+                          <Badge variant="outline" className="ml-1 text-[10px]">unattributed</Badge>
+                        )}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">{r.calls}</TableCell>
-                    <TableCell className="text-right text-emerald-600">{r.answered}</TableCell>
-                    <TableCell className="text-right text-destructive">{r.missed}</TableCell>
+                    <TableCell className="text-right">{r.callsTotal}</TableCell>
+                    <TableCell className="text-right text-emerald-600">{r.callsConnected}</TableCell>
+                    <TableCell className="text-right text-destructive">{r.callsMissed}</TableCell>
                     <TableCell className="text-right">{r.textsSent}</TableCell>
-                    <TableCell className="text-right">{r.replies}</TableCell>
-                    <TableCell className="text-right">
-                      {r.unread > 0 ? <Badge>{r.unread}</Badge> : 0}
-                    </TableCell>
-                    <TableCell className="text-right">{r.stores}</TableCell>
+                    <TableCell className="text-right">{r.textsReceived}</TableCell>
+                    <TableCell className="text-right">{r.accountsTouched}</TableCell>
                   </TableRow>
                   {openRep === r.key && (
                     <TableRow key={`${r.key}-detail`}>
-                      <TableCell colSpan={8} className="bg-muted/30">
-                        <ul className="space-y-1 max-h-80 overflow-y-auto text-xs">
-                          {r.list.slice(0, 100).map((e: any) => (
-                            <li key={e.id} className="flex flex-wrap items-center gap-2 border-b border-border/40 py-1">
-                              <span className="text-muted-foreground">{new Date(e.created_at).toLocaleString()}</span>
-                              <Badge variant="outline" className="capitalize text-[10px]">{e.channel}</Badge>
-                              <Badge variant="secondary" className="capitalize text-[10px]">{e.direction}</Badge>
-                              {CALL_CHANNELS.includes(e.channel) && (
-                                <Badge variant={isMissedCall(e) ? "destructive" : "outline"} className="text-[10px]">
-                                  {isMissedCall(e) ? "missed" : "answered"}
+                      <TableCell colSpan={7} className="bg-muted/30">
+                        <ul className="max-h-80 space-y-1 overflow-y-auto text-xs">
+                          {r.rows.slice(0, 100).map((e: SalesActivityRow) => (
+                            <li key={e.activity_id} className="flex flex-wrap items-center gap-2 border-b border-border/40 py-1">
+                              <span className="text-muted-foreground">{new Date(e.occurred_at).toLocaleString()}</span>
+                              <Badge variant="outline" className="text-[10px] capitalize">{e.channel}</Badge>
+                              <Badge variant="secondary" className="text-[10px] capitalize">{e.direction}</Badge>
+                              {e.channel === "call" && (
+                                <Badge variant={e.is_connected ? "outline" : "destructive"} className="text-[10px]">
+                                  {e.is_connected ? "connected" : "no connect"}
                                 </Badge>
                               )}
                               {e.outcome && <Badge variant="outline" className="text-[10px]">{e.outcome}</Badge>}
-                              <span className="truncate max-w-[280px]">{e.message_content || e.summary || "—"}</span>
+                              <span className="max-w-[280px] truncate">{e.summary || "—"}</span>
                               {e.store_id ? (
                                 <Button asChild size="sm" variant="link" className="h-5 px-1 text-[11px]">
                                   <Link to={`/stores/${e.store_id}`}>{stores?.[e.store_id] || "Open account"}</Link>

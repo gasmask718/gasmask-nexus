@@ -147158,14 +147158,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -155354,6 +155354,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_sales_activity: {
+        Row: {
+          activity_id: string | null
+          agent_id: string | null
+          attribution: string | null
+          business_id: string | null
+          channel: string | null
+          completed_at: string | null
+          contact_id: string | null
+          direction: string | null
+          duration_seconds: number | null
+          follow_up_at: string | null
+          is_connected: boolean | null
+          occurred_at: string | null
+          outcome: string | null
+          phone: string | null
+          provider_sid: string | null
+          source_id: string | null
+          source_table: string | null
+          status: string | null
+          store_id: string | null
+          summary: string | null
+        }
+        Relationships: []
+      }
+      v_sales_agent_rollup: {
+        Row: {
+          accounts_completed: number | null
+          accounts_touched: number | null
+          agent_id: string | null
+          attribution: string | null
+          calls_connected: number | null
+          calls_placed: number | null
+          calls_total: number | null
+          contacts_touched: number | null
+          distinct_outcomes: number | null
+          first_activity_at: string | null
+          follow_ups_created: number | null
+          latest_activity_at: string | null
+          talk_time_seconds: number | null
+          texts_received: number | null
+          texts_sent: number | null
+        }
+        Relationships: []
       }
       v_sales_funnel: {
         Row: {
