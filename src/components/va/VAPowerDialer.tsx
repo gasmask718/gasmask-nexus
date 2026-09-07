@@ -617,6 +617,8 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       }
     } catch (_) { /* stamping is best-effort; never block the queue */ }
     setConfirmingDone(false);
+    // Only a confirmed-done account counts as completed.
+    setAccountsCompleted((n) => n + 1);
     await settleAccount(lead, disposition);
   }, [pendingAccount, settleAccount, user]);
 
