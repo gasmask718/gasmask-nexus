@@ -110,10 +110,13 @@ Batch cap: 500 leads per request.
 
 ## 8. Required vs optional fields
 
-**Required:** `name`, `role_type`, and a valid US `state` (2-letter). A lead missing any of
-these is rejected individually as `invalid` — it does not fail the whole batch.
+**Required:** `name`, a `role_type` that maps to a known job category, and a valid US
+`state` (2-letter). A lead missing any of these — or carrying an unknown/ambiguous
+`role_type` — is rejected individually as `invalid` with a clear message. It does not
+fail the whole batch.
 **Strongly recommended:** `external_id` (best dedupe key) and `phone`.
 **Optional:** everything else.
+
 
 ## 9. Deduplication (in order, scoped to `business = 'playboxxx'`)
 
