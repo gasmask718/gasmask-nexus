@@ -43597,6 +43597,7 @@ export type Database = {
           crew_id: string
           drop_type: string
           earnings: number
+          flag_reason: string | null
           id: string
           latitude: number
           longitude: number
@@ -43617,6 +43618,7 @@ export type Database = {
           crew_id: string
           drop_type: string
           earnings?: number
+          flag_reason?: string | null
           id?: string
           latitude: number
           longitude: number
@@ -43637,6 +43639,7 @@ export type Database = {
           crew_id?: string
           drop_type?: string
           earnings?: number
+          flag_reason?: string | null
           id?: string
           latitude?: number
           longitude?: number

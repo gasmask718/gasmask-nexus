@@ -1,0 +1,1 @@
+ALTER TABLE public.crew_drops ADD COLUMN IF NOT EXISTS flag_reason text;
