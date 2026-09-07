@@ -1,6 +1,6 @@
 import {
   Crown, Building2, MessageSquare, Package, Truck, FileText, 
-  Factory, Boxes, Users, Map, DollarSign, BarChart3, Settings,
+  Factory, Boxes, Users, Map, MapPin, DollarSign, BarChart3, Settings,
   LayoutDashboard, Brain, Shield, ShieldCheck, Phone, Mail, Target, Award,
   Home, ShoppingCart, Wallet, UserCircle, ClipboardList, Briefcase,
   Globe, Zap, PieChart, Database, Cog, Bell, Calculator, Store,
