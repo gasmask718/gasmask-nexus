@@ -35,8 +35,18 @@ export function RepActivityBoard() {
     },
   });
 
+  // Only a real uuid identifies a person. `performed_by` is free text and is the literal
+  // string 'system' on automated sends — that must never be rendered as if it were an agent.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const actorId = (r: any): string | null => {
+    for (const v of [r.created_by, r.performed_by]) {
+      if (typeof v === "string" && UUID_RE.test(v.trim())) return v.trim();
+    }
+    return null;
+  };
+
   const actorIds = useMemo(
-    () => Array.from(new Set(rows.map((r: any) => r.created_by).filter(Boolean))) as string[],
+    () => Array.from(new Set(rows.map(actorId).filter(Boolean))) as string[],
     [rows],
   );
 
@@ -47,10 +57,11 @@ export function RepActivityBoard() {
       const { data, error } = await supabase.from("profiles").select("id, name, email").in("id", actorIds);
       if (error) throw error;
       const map: Record<string, string> = {};
-      (data || []).forEach((p: any) => { map[p.id] = p.name || p.email || p.id.slice(0, 8); });
+      (data || []).forEach((p: any) => { map[p.id] = (p.name || "").trim() || p.email || p.id.slice(0, 8); });
       return map;
     },
   });
+
 
   const storeIds = useMemo(
     () => Array.from(new Set(rows.map((r: any) => r.store_id).filter(Boolean))) as string[],
