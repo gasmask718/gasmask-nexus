@@ -5,11 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Search, ChevronLeft, ChevronRight, Phone, ExternalLink } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Phone, ExternalLink, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+
 
 type UnifiedLead = {
   lead_id: string;
@@ -79,6 +82,47 @@ export default function DCLeadInbox() {
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<UnifiedLead | null>(null);
+  const [picked, setPicked] = useState<Record<string, UnifiedLead>>({});
+  const [bridgeBusy, setBridgeBusy] = useState<null | 'preview' | 'send'>(null);
+  const [bridgeResult, setBridgeResult] = useState<any>(null);
+
+  const pickedList = Object.values(picked);
+  const rowKey = (r: UnifiedLead) => `${r.source_table}|${r.lead_id}`;
+  const togglePick = (r: UnifiedLead) =>
+    setPicked((prev) => {
+      const next = { ...prev };
+      const k = rowKey(r);
+      if (next[k]) delete next[k]; else next[k] = r;
+      return next;
+    });
+
+  const runBridge = async (action: 'preview' | 'promote') => {
+    if (pickedList.length === 0) return;
+    setBridgeBusy(action === 'preview' ? 'preview' : 'send');
+    setBridgeResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('dc-lead-promote-and-queue', {
+        body: {
+          action,
+          leads: pickedList.map((l) => ({ lead_id: l.lead_id, source_table: l.source_table })),
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setBridgeResult(data);
+      const c = (data as any).counts;
+      toast.success(
+        action === 'preview'
+          ? `Preview: ${c.linked} match existing accounts, ${c.created} would be created, ${c.rejected} rejected`
+          : `${c.linked} linked · ${c.created} created · ${c.already_linked} already linked · ${c.rejected} rejected · ${(data as any).queue?.queued ?? 0} queued`,
+      );
+    } catch (e: any) {
+      toast.error(e?.message || 'Bridge failed');
+    } finally {
+      setBridgeBusy(null);
+    }
+  };
+
 
   // 🔍 TEMP DEBUG: log auth state + backend-visible role/uid/jwt
   useEffect(() => {
@@ -211,6 +255,47 @@ export default function DCLeadInbox() {
         </CardContent>
       </Card>
 
+      {/* Send selected leads to the dialer (explicit operator action) */}
+      {pickedList.length > 0 && (
+        <Card className="border-primary/40">
+          <CardContent className="pt-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-medium">{pickedList.length} lead(s) selected</span>
+              <Button size="sm" variant="outline" disabled={!!bridgeBusy} onClick={() => runBridge('preview')}>
+                {bridgeBusy === 'preview' && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                Preview match
+              </Button>
+              <Button size="sm" disabled={!!bridgeBusy} onClick={() => runBridge('promote')}>
+                {bridgeBusy === 'send' && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                Send to Power Dialer
+              </Button>
+              <Button size="sm" variant="ghost" disabled={!!bridgeBusy} onClick={() => { setPicked({}); setBridgeResult(null); }}>
+                Clear
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Leads are matched to an existing account first; a new account is only created when nothing matches.
+                Compliance holds, invalid numbers and do-not-call numbers are never queued.
+              </span>
+            </div>
+            {bridgeResult && (
+              <div className="text-xs bg-muted/50 rounded p-2 space-y-1 max-h-60 overflow-y-auto">
+                <div className="font-medium">
+                  {bridgeResult.counts.linked} linked · {bridgeResult.counts.created} created ·{' '}
+                  {bridgeResult.counts.already_linked} already linked · {bridgeResult.counts.rejected} rejected
+                  {bridgeResult.queue?.queued != null && ` · ${bridgeResult.queue.queued} queued`}
+                  {bridgeResult.queue?.name && ` → ${bridgeResult.queue.name}`}
+                </div>
+                {bridgeResult.outcomes?.map((o: any, i: number) => (
+                  <div key={i} className="font-mono">
+                    {o.status.toUpperCase()} · {o.lead_name || o.lead_id} · {o.matched_by || o.reason || ''}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Table */}
       <Card>
         <CardContent className="p-0">
@@ -218,6 +303,7 @@ export default function DCLeadInbox() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="p-3 w-8"></th>
                   <th className="p-3 w-4"></th>
                   <th className="p-3">Lead</th>
                   <th className="p-3">Unit</th>
@@ -231,16 +317,16 @@ export default function DCLeadInbox() {
               </thead>
               <tbody>
                 {(authLoading || isLoading) && (
-                  <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Loading leads…</td></tr>
+                  <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">Loading leads…</td></tr>
                 )}
                 {!authLoading && (!user || !session) && !isLoading && (
-                  <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Sign in to view leads.</td></tr>
+                  <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">Sign in to view leads.</td></tr>
                 )}
                 {error && !authLoading && !isLoading && (
-                  <tr><td colSpan={9} className="p-8 text-center text-red-500">Error: {(error as Error).message}</td></tr>
+                  <tr><td colSpan={10} className="p-8 text-center text-red-500">Error: {(error as Error).message}</td></tr>
                 )}
                 {!authLoading && !isLoading && !error && user && session && rows.length === 0 && (
-                  <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No leads match these filters</td></tr>
+                  <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">No leads match these filters</td></tr>
                 )}
                 {rows.map((r) => (
                   <tr
@@ -248,7 +334,15 @@ export default function DCLeadInbox() {
                     className="border-b border-border/50 hover:bg-accent/50 cursor-pointer"
                     onClick={() => setSelected(r)}
                   >
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={!!picked[rowKey(r)]}
+                        onCheckedChange={() => togglePick(r)}
+                        aria-label="Select lead"
+                      />
+                    </td>
                     <td className="p-3">
+
                       {r.compliance_hold && (
                         <span
                           title="Compliance hold"

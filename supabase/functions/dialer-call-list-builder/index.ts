@@ -133,11 +133,22 @@ function buildEntries(
   preset: string,
   base: { summaries: any[]; alerts: any[]; waves: any[]; contacts: any[] },
   contactsByStore: Map<string, any>,
-  opts: { segment?: string; area_field?: string; area_value?: string },
+  opts: { segment?: string; area_field?: string; area_value?: string; store_ids?: string[] },
 ): ListEntry[] {
   const { summaries, alerts, waves, contacts } = base;
 
   switch (preset) {
+    // Explicit set of canonical accounts (used by the Dynasty Connect lead
+    // bridge after leads are matched/promoted into the store book).
+    case "store_ids": {
+      const wanted = new Set(opts.store_ids || []);
+      if (wanted.size === 0) throw new Error("store_ids required");
+      return summaries
+        .filter((s) => wanted.has(s.store_id))
+        .map((s) => storeEntry(s, contactsByStore, 65, "dc_lead", `Dynasty Connect lead · ${s.neighborhood || s.borough || s.address || ""}`));
+    }
+
+
     case "owes_money":
       return summaries
         .filter((s) => (s.owed || 0) > 0)
@@ -305,9 +316,11 @@ Deno.serve(async (req) => {
     // ── Base data (shared by every action) ──
     const [summaries, alerts, waves, contacts, dncRows, optOutRows, queuedRows] =
       await Promise.all([
+        // Ordered paging: without a stable sort, PostgREST range paging can
+        // skip rows (a freshly promoted store went missing this way).
         fetchAll(() => supabase.from("v_store_summary").select(
           "store_id,store_name,phone,contact_name,owed,open_invoices,oldest_unpaid,last_order_date,days_since_last_order,lifetime_value,neighborhood,borough,corridor",
-        )),
+        ).order("store_id", { ascending: true })),
         fetchAll(() => supabase.from("v_restock_alerts").select(
           "store_id,store_name,phone,contact_name,product,alert_level,on_hand,reorder_at,suggested_order,owed,neighborhood,borough,corridor",
         )),
@@ -316,7 +329,8 @@ Deno.serve(async (req) => {
         )),
         fetchAll(() => supabase.from("v_store_who_to_contact").select(
           "store_id,store_name,contact_id,name,phone,line_type,is_primary,responsive_by_call,total_calls_answered,try_this_first",
-        )),
+        ).order("contact_id", { ascending: true })),
+
         fetchAll(() => supabase.from("dnc_list").select("phone_last10")),
         fetchAll(() => supabase.from("opt_out_events").select("phone_last10")),
         fetchAll(() => supabase.from("outbound_call_queue").select("phone_number")
@@ -378,6 +392,8 @@ Deno.serve(async (req) => {
     if (!preset) return json({ error: "preset_required" }, 400);
     const opts = {
       segment: body.segment, area_field: body.area_field, area_value: body.area_value,
+      store_ids: Array.isArray(body.store_ids) ? body.store_ids : undefined,
+
     };
     const entries = buildEntries(preset, { summaries, alerts, waves, contacts }, contactsByStore, opts);
     const { ok, suppressed: supCount, already_dialing, no_phone } = finalize(entries, suppressed, alreadyQueued);
@@ -460,7 +476,7 @@ Deno.serve(async (req) => {
 
 function defaultCampaignName(
   preset: string,
-  opts: { segment?: string; area_field?: string; area_value?: string },
+  opts: { segment?: string; area_field?: string; area_value?: string; store_ids?: string[] },
 ): string {
   const date = new Date().toISOString().slice(0, 10);
   switch (preset) {
@@ -469,7 +485,9 @@ function defaultCampaignName(
     case "lapsed": return `Lapsed Accounts — ${date}`;
     case "never_ordered": return `Never Ordered — ${date}`;
     case "no_answer": return `No Answer Yet — ${date}`;
+    case "store_ids": return `Dynasty Connect Leads — ${date}`;
     case "wave": return `Wave ${opts.segment || ""} — ${date}`;
+
     case "area": return `${opts.area_value} — ${date}`;
     default: return `Call List — ${date}`;
   }
