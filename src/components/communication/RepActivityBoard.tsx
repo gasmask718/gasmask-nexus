@@ -83,9 +83,10 @@ export function RepActivityBoard() {
     },
   });
 
-  const repKey = (r: any) => r.created_by || r.performed_by || "unattributed";
+  const repKey = (r: any) => actorId(r) || "unattributed";
   const repLabel = (key: string) =>
-    key === "unattributed" ? "Unattributed / system" : names?.[key] || key;
+    key === "unattributed" ? "Unattributed / automated (no agent recorded)" : names?.[key] || key.slice(0, 8);
+
 
   const byRep = useMemo(() => {
     const m = new Map<string, any[]>();
