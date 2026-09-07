@@ -81,7 +81,20 @@ serve(async (req: Request) => {
     // Build status callback URL
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const projectId = supabaseUrl.replace("https://", "").split(".")[0];
-    const statusCallbackUrl = `https://${projectId}.supabase.co/functions/v1/twilio-call-status`;
+    // STAGE 1 ATTRIBUTION — the browser SDK sends the signed-in agent and the
+    // canonical account/contact as custom connect params. Forward them to the
+    // status callback so it can stamp the log row instead of guessing from the
+    // phone number. Only forward values that were actually supplied.
+    const attribution = new URLSearchParams();
+    for (const key of ["agent_user_id", "agent_name", "store_id", "contact_id", "entity_name"]) {
+      const val = formData.get(key)?.toString().trim();
+      if (val) attribution.set(key, val);
+    }
+    const attrQs = attribution.toString();
+    const statusCallbackUrl =
+      `https://${projectId}.supabase.co/functions/v1/twilio-call-status` +
+      // XML attribute: ampersands must be escaped inside the TwiML document.
+      (attrQs ? `?${attrQs.replace(/&/g, "&amp;")}` : "");
 
     // Recording consent gate on the callee. Fails closed.
     const consentClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
