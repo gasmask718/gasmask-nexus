@@ -137,6 +137,13 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   const [pendingAccount, setPendingAccount] = useState<{ lead: QueueLead; disposition: string | null } | null>(null);
   const [confirmingDone, setConfirmingDone] = useState(false);
 
+  // ── Session progress (truthful) ─────────────────────────────────────
+  // Counts ONLY accounts closed via "Confirm account done" in this session.
+  // Skipped / left-open accounts are deliberately excluded. Resets on start.
+  const [accountsCompleted, setAccountsCompleted] = useState(0);
+  // Total accounts in the campaign queue at session start (null = unknown).
+  const [sessionQueueTotal, setSessionQueueTotal] = useState<number | null>(null);
+
   // ── Wrap-up form ────────────────────────────────────────────────────
   const [dispositionCode, setDispositionCode] = useState<string>('');
   const [vaNotes, setVaNotes] = useState<string>('');
