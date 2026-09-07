@@ -684,6 +684,7 @@ const StoreTeam = lazy(() => import('@/pages/portal/store/StoreTeam'));
 const WholesalerTeam = lazy(() => import('@/pages/portal/wholesaler/WholesalerTeam'));
 const JoinOrg = lazy(() => import('@/pages/portal/JoinOrg'));
 const ProductionPortal = lazy(() => import('@/pages/portal/ProductionPortal'));
+const VerificationCrewPortal = lazy(() => import('@/pages/portal/crew/VerificationCrewPortal'));
 const CustomerPortal = lazy(() => import('@/pages/portal/CustomerPortal'));
 const NationalWholesale = lazy(() => import('@/pages/portal/NationalWholesale'));
 const MarketplaceAdmin = lazy(() => import('@/pages/portal/MarketplaceAdmin'));
@@ -2901,6 +2902,7 @@ export default function AppRoutes() {
         <Route path="/portal/wholesaler/order-grabba" element={<WholesalerOrderGrabba />} />
         <Route path="/portal/wholesaler/catalog/onboard" element={<WholesalerCatalogOnboard />} />
         <Route path="/portal/production/*" element={<ProductionPortal />} />
+        <Route path="/portal/verification-crew" element={<VerificationCrewPortal />} />
         {/* Retired hardcoded VA shell — canonical portal is /va/dashboard */}
         <Route path="/portal/va" element={<Navigate to="/va/dashboard" replace />} />
         <Route path="/portal/customer/*" element={<CustomerPortal />} />

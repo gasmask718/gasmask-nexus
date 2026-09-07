@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 const INVITE_ROLES = [
   'driver', 'biker', 'ambassador', 'influencer',
   'store', 'store_owner', 'wholesaler', 'customer', 'production',
+  'verification_crew',
 ] as const;
 
 /**
