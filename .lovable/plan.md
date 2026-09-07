@@ -48,14 +48,22 @@ Nothing else is touched. No existing table is dropped or renamed.
 ## 3. Database migration — yes, one, additive
 
 1. Add `playboxxx` to the `business` CHECK list (drop + recreate the same constraint with one extra value).
-2. Add a plain (non-partial) unique index
-   `business_leads_playboxxx_external_unique ON (business, external_source, external_place_id)`
-   so the webhook can upsert safely; it only bites rows that carry both source and external id.
+2. Add a **partial** unique index
+   `business_leads_ext_ref_unique ON (business, external_source, external_place_id)
+   WHERE duplicate_of IS NULL AND external_source IS NOT NULL AND external_place_id IS NOT NULL`.
+   Verified against live data first: a plain unique index would **fail** — of 297,010 rows,
+   110,038 carry both source and external id and 204 of those form duplicate groups. All 204
+   involve rows already marked `duplicate_of`, so once those are excluded the remaining set is
+   unique (0 conflicting groups). The partial form therefore applies cleanly today. Because a
+   partial index cannot be an upsert conflict target (standing project rule), the webhook does
+   **not** upsert — it looks a lead up first and inserts only when there is no match (section 9).
+   The index is a safety net, not the dedupe mechanism.
 3. Add an index on `(business, category, created_at DESC)` so the newly scoped Playboxxx
-   screens stay fast against a 258k-row table.
+   screens stay fast against a ~297k-row table.
 
 No column is added, no data is rewritten, no constraint is loosened. The US-state rule
 stays exactly as it is in Stage 1.
+
 
 ## 4. New secret — yes, one
 
@@ -102,10 +110,13 @@ Batch cap: 500 leads per request.
 
 ## 8. Required vs optional fields
 
-**Required:** `name`, `role_type`, and a valid US `state` (2-letter). A lead missing any of
-these is rejected individually as `invalid` — it does not fail the whole batch.
+**Required:** `name`, a `role_type` that maps to a known job category, and a valid US
+`state` (2-letter). A lead missing any of these — or carrying an unknown/ambiguous
+`role_type` — is rejected individually as `invalid` with a clear message. It does not
+fail the whole batch.
 **Strongly recommended:** `external_id` (best dedupe key) and `phone`.
 **Optional:** everything else.
+
 
 ## 9. Deduplication (in order, scoped to `business = 'playboxxx'`)
 
@@ -123,7 +134,7 @@ earlier in the same request, so one payload cannot create its own duplicates.
 |---|---|---|
 | — | `business` | always `'playboxxx'` |
 | `name` | `business_name` | trimmed, required |
-| `role_type` | `category` | mapped to an allowed value; unknown → `other` |
+| `role_type` | `category` | mapped to an allowed value; unmapped role → lead **rejected**, never stored |
 | `role_type` | `category_original` | raw value kept |
 | `phone` | `phone` | normalised to E.164 where possible |
 | `email` / `website` | `email` / `website` | |
@@ -136,10 +147,19 @@ earlier in the same request, so one payload cannot create its own duplicates.
 | — | `source` | `'playboxxx_make_ingest'` |
 | — | `status` | table default `new` |
 
-Role mapping (agreed: reuse existing values): hair/makeup/salon/barber/nails/spa → `beauty`;
-chef/cook/catering → `private_chef`; cleaner/housekeeping → `cleaner`;
-seamstress/tailor/decorator → `decorator`; florist → `florist`; general staff → `staff`;
-anything else → `other`.
+Role mapping is an explicit allow-list of semantically valid pairings only (agreed: reuse
+existing values): hair / makeup / salon / barber / nails / spa → `beauty`;
+chef / cook / catering → `private_chef`; cleaner / housekeeping → `cleaner`;
+seamstress / tailor / decorator → `decorator`; florist → `florist`;
+general event staff / server / usher → `staff`.
+
+**Anything not on that list is rejected**, not filed under `other`:
+`{ "index": 4, "status": "invalid", "error": "unrecognised role_type 'welder' — no valid
+category mapping" }`. Nothing is silently misclassified, and the shared category
+constraint is not touched. Rejected roles show up in the response counts, so an unmapped
+role that starts appearing in volume is visible in Make.com immediately and can be added
+to the allow-list deliberately.
+
 
 ## 11. Responses
 
