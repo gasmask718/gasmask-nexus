@@ -899,6 +899,17 @@ const DYNASTY_NAVIGATION = {
       { path: '/services-io/leads', label: '🎯 Leads Queue', icon: Target },
     ],
   },
+  fieldVerification: {
+    id: 'field-verification',
+    name: '🔍 Field Verification',
+    items: [
+      { path: '/field-verification/map', label: '🗺️ Live Map', icon: MapPin },
+      { path: '/field-verification/photos', label: '📸 Photo Feed', icon: Camera },
+      { path: '/field-verification/crew', label: '👥 Per-Crew', icon: Users },
+      { path: '/field-verification/stores', label: '🏪 Per-Store', icon: Store },
+      { path: '/field-verification/coverage', label: '🧭 Coverage', icon: Map },
+    ],
+  },
   globalDashboard: {
     id: 'global-dashboard',
     name: '🌍 Global Dynasty Dashboard',
@@ -1413,6 +1424,18 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.servicesIo.id,
           DYNASTY_NAVIGATION.servicesIo.name,
           DYNASTY_NAVIGATION.servicesIo.items
+        )}
+      </div>
+
+      {/* 🔍 FIELD VERIFICATION — ADMIN OVERSIGHT */}
+      <div className="pt-2 border-t border-red-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-red-400/80 tracking-wider">
+          🔍 Field Verification
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.fieldVerification.id,
+          DYNASTY_NAVIGATION.fieldVerification.name,
+          DYNASTY_NAVIGATION.fieldVerification.items
         )}
       </div>
 
