@@ -137,6 +137,13 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   const [pendingAccount, setPendingAccount] = useState<{ lead: QueueLead; disposition: string | null } | null>(null);
   const [confirmingDone, setConfirmingDone] = useState(false);
 
+  // ── Session progress (truthful) ─────────────────────────────────────
+  // Counts ONLY accounts closed via "Confirm account done" in this session.
+  // Skipped / left-open accounts are deliberately excluded. Resets on start.
+  const [accountsCompleted, setAccountsCompleted] = useState(0);
+  // Total accounts in the campaign queue at session start (null = unknown).
+  const [sessionQueueTotal, setSessionQueueTotal] = useState<number | null>(null);
+
   // ── Wrap-up form ────────────────────────────────────────────────────
   const [dispositionCode, setDispositionCode] = useState<string>('');
   const [vaNotes, setVaNotes] = useState<string>('');
@@ -465,7 +472,26 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
     stopFlagRef.current = false;
     setLeadIndex(0);
     setSessionRunning(true);
+    // New session → progress starts from zero.
+    setAccountsCompleted(0);
     setActiveSessionId(`session_${Date.now()}_${user.id.slice(0, 8)}`);
+
+    // Denominator: how many accounts this session has to work through.
+    if (listMode) {
+      setSessionQueueTotal(leadList!.length);
+    } else {
+      try {
+        const { count, error } = await (supabase as any)
+          .from('outbound_call_queue')
+          .select('id', { count: 'exact', head: true })
+          .eq('campaign_id', selectedCampaign)
+          .eq('status', 'queued');
+        setSessionQueueTotal(error ? null : (count ?? null));
+      } catch {
+        setSessionQueueTotal(null);
+      }
+    }
+
     toast.success(listMode ? `Calling list of ${leadList!.length} leads` : 'Auto dialer session started');
     runCycle();
   }, [user, listMode, leadList, selectedCampaign, selectedNumber, runCycle]);
@@ -591,6 +617,8 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
       }
     } catch (_) { /* stamping is best-effort; never block the queue */ }
     setConfirmingDone(false);
+    // Only a confirmed-done account counts as completed.
+    setAccountsCompleted((n) => n + 1);
     await settleAccount(lead, disposition);
   }, [pendingAccount, settleAccount, user]);
 
@@ -646,6 +674,11 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
   // ─────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────
+  // Session progress label — completed = confirmed-done accounts only.
+  const progressLabel = sessionQueueTotal
+    ? `ACCOUNTS COMPLETED: ${accountsCompleted} OF ${sessionQueueTotal}`
+    : `ACCOUNTS COMPLETED: ${accountsCompleted}`;
+
   if (initLoading) {
     return (
       <Card className="bg-slate-900/60 border-slate-700">
@@ -783,11 +816,14 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
             <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
             Finish this account
           </CardTitle>
-          <Badge className={ready
-            ? 'bg-emerald-500/20 text-emerald-300 text-[10px]'
-            : 'bg-amber-500/20 text-amber-300 text-[10px]'}>
-            {ready ? `ALL ${total} NUMBERS WORKED` : `${open} NUMBER${open === 1 ? '' : 'S'} LEFT`}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-slate-700 text-slate-300 text-[10px]">{progressLabel}</Badge>
+            <Badge className={ready
+              ? 'bg-emerald-500/20 text-emerald-300 text-[10px]'
+              : 'bg-amber-500/20 text-amber-300 text-[10px]'}>
+              {ready ? `ALL ${total} NUMBERS WORKED` : `${open} NUMBER${open === 1 ? '' : 'S'} LEFT`}
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-sm text-white font-semibold">{pendingAccount.lead.business_name}</div>
@@ -859,9 +895,12 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
              phase === 'dialing'       ? 'Dialing…'            :
                                          'Connected'}
           </CardTitle>
-          <Badge className="bg-slate-700 text-slate-300 text-[10px]">
-            {listMode ? `LEAD ${Math.min(leadIndex + 1, leadList!.length)} / ${leadList!.length}` : (sessionRunning ? 'AUTO-LOOP' : 'PAUSED')}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-slate-700 text-slate-300 text-[10px]">{progressLabel}</Badge>
+            <Badge className="bg-slate-700 text-slate-300 text-[10px]">
+              {listMode ? `LEAD ${Math.min(leadIndex + 1, leadList!.length)} / ${leadList!.length}` : (sessionRunning ? 'AUTO-LOOP' : 'PAUSED')}
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {currentLead ? (
