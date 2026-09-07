@@ -46267,6 +46267,202 @@ export type Database = {
           },
         ]
       }
+      dc_lead_store_links: {
+        Row: {
+          business_id: string | null
+          business_unit_key: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          lead_id: string
+          match_notes: string | null
+          match_status: string
+          matched_by: string
+          source_table: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          business_unit_key?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id: string
+          match_notes?: string | null
+          match_status: string
+          matched_by: string
+          source_table: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          business_unit_key?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string
+          match_notes?: string | null
+          match_status?: string
+          matched_by?: string
+          source_table?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dc_lead_store_links_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "store_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_cadence_intelligence"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_line_intel"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_responsiveness_summary"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contacts_needing_new_number"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_contact_verification"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_who_to_contact"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_orphan_watch"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_addressless_call_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_prior_customer_segments"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_profile_completeness"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_public_store_locator"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_restock_alerts"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_product_mix"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_products_carried"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "dc_lead_store_links_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       dc_lead_sync_log: {
         Row: {
           business_unit_key: string
