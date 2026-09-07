@@ -73,11 +73,34 @@ export default function RepPerformancePage() {
     { icon: TrendingUp, label: 'Pending Follow-ups', value: followupStats?.pending || 0, color: 'text-amber-500' },
   ];
 
+  // The dialer-simulation pipeline (rep_performance_metrics + call_revenue_events) has no
+  // real backing data. Only surface it when rows actually exist; never present it as real.
+  const hasSimulationData = metrics.length > 0 || (revenueStats?.totalEvents || 0) > 0;
+
   return (
     <div className="w-full min-h-full space-y-6">
       {/* Real activity from the canonical communication log — shown first. */}
       <RepActivityBoard />
 
+      {/* Real per-agent call records (va_call_logs). */}
+      <AgentCallActivityPanel />
+
+      {!hasSimulationData ? (
+        <Card className="border-dashed">
+          <CardContent className="flex items-start gap-3 py-6">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-semibold">Revenue &amp; rep breakdown unavailable</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                This section was fed by the dialer simulation pipeline, which currently holds no
+                records. Revenue and commission are not modelled against calls anywhere in the
+                system, so nothing is shown here rather than showing figures that would not be real.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
       <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center gap-3">
         <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
         <p className="text-sm font-semibold text-amber-700">SIMULATION DATA — the cards and table below reflect simulated call outcomes, not live revenue</p>
@@ -87,9 +110,9 @@ export default function RepPerformancePage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <BarChart3 className="h-6 w-6" /> Rep Performance Intelligence
+            <BarChart3 className="h-6 w-6" /> Rep Performance Intelligence (simulated)
           </h2>
-          <p className="text-muted-foreground">Revenue, connect rates, and close rates per rep</p>
+          <p className="text-muted-foreground">Simulated revenue, connect rates, and close rates per rep</p>
         </div>
         <Select value={sortBy} onValueChange={v => setSortBy(v as SortField)}>
           <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
@@ -101,6 +124,7 @@ export default function RepPerformancePage() {
           </SelectContent>
         </Select>
       </div>
+
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
