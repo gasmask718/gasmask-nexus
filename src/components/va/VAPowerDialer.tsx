@@ -418,8 +418,6 @@ export function VAPowerDialer({ onEndSession, leadList, initialCallerId }: VAPow
         setVACallMetadata({
           isVACall: true,
           leadId: lead.store_id || null,
-          // Canonical account so the call record links to the real store.
-          storeId: lead.store_id || null,
           leadName: lead.business_name,
           twilioNumber: selectedNumber,
           callLogId: data?.callLogId || null,
