@@ -236,6 +236,14 @@ export function useUserRole(currentBusinessId?: string | null) {
             });
             console.log('🔐 [RBAC DEBUG] Final roles:', rolesList, 'Primary:', primaryRole);
           }
+        } else if (rolesResult.error || profileResult.error) {
+          // The role lookups failed (transient network / RLS hiccup). Keep the
+          // roles we already resolved rather than reporting "no role", which
+          // would bounce an actively working user out of their screen.
+          console.warn('[RBAC] Role lookup failed; keeping previously resolved roles', {
+            rolesError: rolesResult.error?.message,
+            profileError: profileResult.error?.message,
+          });
         } else {
           setRole(null);
           setRoles([]);
