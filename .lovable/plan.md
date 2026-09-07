@@ -147,10 +147,19 @@ earlier in the same request, so one payload cannot create its own duplicates.
 | — | `source` | `'playboxxx_make_ingest'` |
 | — | `status` | table default `new` |
 
-Role mapping (agreed: reuse existing values): hair/makeup/salon/barber/nails/spa → `beauty`;
-chef/cook/catering → `private_chef`; cleaner/housekeeping → `cleaner`;
-seamstress/tailor/decorator → `decorator`; florist → `florist`; general staff → `staff`;
-anything else → `other`.
+Role mapping is an explicit allow-list of semantically valid pairings only (agreed: reuse
+existing values): hair / makeup / salon / barber / nails / spa → `beauty`;
+chef / cook / catering → `private_chef`; cleaner / housekeeping → `cleaner`;
+seamstress / tailor / decorator → `decorator`; florist → `florist`;
+general event staff / server / usher → `staff`.
+
+**Anything not on that list is rejected**, not filed under `other`:
+`{ "index": 4, "status": "invalid", "error": "unrecognised role_type 'welder' — no valid
+category mapping" }`. Nothing is silently misclassified, and the shared category
+constraint is not touched. Rejected roles show up in the response counts, so an unmapped
+role that starts appearing in volume is visible in Make.com immediately and can be added
+to the allow-list deliberately.
+
 
 ## 11. Responses
 
