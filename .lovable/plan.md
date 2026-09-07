@@ -134,7 +134,7 @@ earlier in the same request, so one payload cannot create its own duplicates.
 |---|---|---|
 | — | `business` | always `'playboxxx'` |
 | `name` | `business_name` | trimmed, required |
-| `role_type` | `category` | mapped to an allowed value; unknown → `other` |
+| `role_type` | `category` | mapped to an allowed value; unmapped role → lead **rejected**, never stored |
 | `role_type` | `category_original` | raw value kept |
 | `phone` | `phone` | normalised to E.164 where possible |
 | `email` / `website` | `email` / `website` | |
