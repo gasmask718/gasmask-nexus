@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ShieldCheck, ShieldAlert, ShieldQuestion, Send, Loader2, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { VerificationStamp } from "@/components/store/VerificationStamp";
 
 interface Props {
   contactId: string;
