@@ -1427,6 +1427,18 @@ const Layout = ({ children }: LayoutProps) => {
         )}
       </div>
 
+      {/* 🔍 FIELD VERIFICATION — ADMIN OVERSIGHT */}
+      <div className="pt-2 border-t border-red-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-red-400/80 tracking-wider">
+          🔍 Field Verification
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.fieldVerification.id,
+          DYNASTY_NAVIGATION.fieldVerification.name,
+          DYNASTY_NAVIGATION.fieldVerification.items
+        )}
+      </div>
+
       {/* 🧠 SBO AI ENGINE — OWN HUB (UNDER BRIGHTSUN SOLAR HUB) */}
       <div className="pt-2 border-t border-lime-500/30">
         <div className="px-3 py-1 text-[10px] font-semibold uppercase text-lime-400/80 tracking-wider">
