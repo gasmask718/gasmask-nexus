@@ -264,18 +264,30 @@ export default function DynastyDirectCatalogReview() {
     if (!d.measurements_verified_at) { toast.error('Confirm or enter measurements first'); return; }
     const ov = overrides[d.id] || {};
     const storeP = Number(ov.store) || 0;
-    const retailP = Number(ov.retail) || 0;
+    const dtcP = Number(ov.retail) || 0;
     const costP = Number(ov.cost) || Number(d.cost) || 0;
-    if (!(retailP > 0) || !(storeP > 0)) { toast.error('Store and retail prices must be greater than 0'); return; }
+    if (!(dtcP > 0) || !(storeP > 0)) { toast.error('Store price and DTC price must both be greater than 0'); return; }
+    if (storeP >= dtcP) { toast.error('Store (reseller) price must be below the DTC price'); return; }
     setAction(d.id, 'approve');
     try {
-      const suggested = d.price_research?.suggested_retail_price;
+      const pr = d.price_research;
+      const caseBasis = pr?.pricing_model === 'case_basis';
+      const sameAs = (a: number | undefined, b: number) => a != null && Math.abs(a - b) <= 0.005;
       const newPricing = {
         ...(d.pricing || {}),
+        // canonical case-basis outputs (carried to products_all.store_price_a / dtc_price_b)
+        store_price_a: storeP,
+        store_price_a_basis: caseBasis && sameAs(pr!.store_price_a, storeP) ? pr!.store_price_a_basis : 'admin_override',
+        dtc_price_b: dtcP,
+        dtc_price_b_basis: caseBasis && sameAs(pr!.dtc_price_b, dtcP) ? pr!.dtc_price_b_basis : 'admin_override',
+        store_ai_suggested: caseBasis ? pr!.store_price_a ?? null : null,
+        dtc_ai_suggested: caseBasis ? pr!.dtc_price_b ?? null : null,
+        pricing_model: 'case_basis',
+        // legacy mirrors read by older code paths
         suggested_store: storeP,
-        suggested_retail: retailP,
-        retail_basis: suggested != null && Math.abs(suggested - retailP) > 0.005 ? 'admin_override' : (d.price_research?.basis ?? d.pricing?.retail_basis ?? null),
-        retail_ai_suggested: suggested ?? null,
+        suggested_retail: dtcP,
+        retail_basis: caseBasis && sameAs(pr!.dtc_price_b, dtcP) ? pr!.dtc_price_b_basis : 'admin_override',
+        retail_ai_suggested: caseBasis ? pr!.dtc_price_b ?? null : null,
       };
       const patch: Record<string, unknown> = { pricing: newPricing };
       if (costP > 0) patch.cost = costP;
@@ -345,7 +357,9 @@ export default function DynastyDirectCatalogReview() {
           const verified = !!d.measurements_verified_at;
           const action = busy[d.id];
           const canPublish = !!d.supplier_id && verified && !isBusy(d.id);
-          const isOverride = pr?.suggested_retail_price != null && Math.abs(Number(ov.retail) - pr.suggested_retail_price) > 0.005;
+          const caseBasis = pr?.pricing_model === 'case_basis';
+          const isStoreOverride = caseBasis && pr?.store_price_a != null && Math.abs(Number(ov.store) - pr.store_price_a) > 0.005;
+          const isDtcOverride = caseBasis && pr?.dtc_price_b != null && Math.abs(Number(ov.retail) - pr.dtc_price_b) > 0.005;
 
           return (
             <Card key={d.id}>
