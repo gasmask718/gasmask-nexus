@@ -36,19 +36,14 @@ function ok(body: unknown = { received: true }) {
 Deno.serve(async (req) => {
   // ---------- 1. Signature verification (the ONLY hard failure) ----------
   // Dedicated signing secret for the demo endpoint; falls back to the shared one.
-  // A separate TEST-mode endpoint in Stripe signs with its own secret, so we try
-  // both and accept whichever verifies.
   const liveSecret =
     Deno.env.get("DEMO_STRIPE_WEBHOOK_SECRET") || Deno.env.get("STRIPE_WEBHOOK_SECRET");
-  const testSecret = Deno.env.get("DEMO_STRIPE_WEBHOOK_SECRET_TEST");
   const liveKey = Deno.env.get("STRIPE_SECRET_KEY");
-  const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
   const sig = req.headers.get("stripe-signature");
   const raw = await req.text();
 
   const candidates = [
     { mode: "live", secret: liveSecret, key: liveKey },
-    { mode: "test", secret: testSecret, key: testKey },
   ].filter((c) => c.secret && c.key) as { mode: string; secret: string; key: string }[];
 
   if (candidates.length === 0) {
