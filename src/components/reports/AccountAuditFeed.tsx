@@ -419,7 +419,6 @@ export default function AccountAuditFeed() {
                     <td className="py-2 pr-3">
                       <ActionBadge action={r.action || r.row_kind} />
                     </td>
-
                     <td className="py-2 pr-3 text-xs">
                       {r.route_id ? (
                         <Badge variant="outline">
@@ -431,7 +430,12 @@ export default function AccountAuditFeed() {
                         <span className="text-muted-foreground">Not on a route</span>
                       )}
                     </td>
-                    <td className="max-w-sm truncate py-2 pr-3 text-xs text-muted-foreground">{r.note_text || ''}</td>
+                    <td className="max-w-md py-2 pr-3 text-xs">
+                      {r.detail_text && <div className="text-foreground">{r.detail_text}</div>}
+                      {r.note_text && <div className="text-muted-foreground">{r.note_text}</div>}
+                      {!r.detail_text && !r.note_text && <span className="text-muted-foreground">—</span>}
+                    </td>
+
                     <td className="py-2 pr-2 text-muted-foreground">
                       {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </td>
