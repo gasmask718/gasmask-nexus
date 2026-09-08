@@ -17,21 +17,44 @@ import {
   resolveSerpApiKey,
   titleRelevance,
   RELEVANCE_THRESHOLD,
+  parseExplicitUnitCount,
+  packSizesComparable,
+  buildCaseQueries,
 } from './marketPrice.ts';
 
 export type SpecStatus = 'sourced' | 'needs_measurement' | 'unavailable';
+
+/**
+ * What quantity does the SOURCE LISTING describe, relative to what we're selling?
+ *  pack_match     — source states a count comparable to targetUnits
+ *  single_unit    — source states/implies one retail unit
+ *  count_mismatch — source states a different explicit count
+ *  count_unknown  — source states no count at all
+ */
+export type QuantityClass = 'pack_match' | 'single_unit' | 'count_mismatch' | 'count_unknown';
+
+/** How a value was arrived at. Never let an estimate look like a same-quantity source. */
+export type WeightBasis = 'same_quantity_sourced' | 'estimated_from_single_unit_weight' | 'unverified_quantity';
+export type DimensionBasis = 'same_quantity_sourced' | 'unverified_quantity';
 
 export interface SpecEvidence {
   verbatim: string;
   source_url: string | null;
   source_title: string | null;
   via: 'google_product' | 'web_search';
+  /** Unit count parsed from the source listing TITLE (null = not stated). */
+  source_units?: number | null;
+  quantity_class?: QuantityClass;
 }
 
 export interface SourcedWeight extends SpecEvidence {
   weight_oz: number;
   raw_value: number;
   raw_unit: string;
+  /** Present when weight_oz was scaled up from a single-unit reading. */
+  basis?: WeightBasis;
+  unit_weight_oz?: number;
+  multiplied_by?: number;
 }
 
 export interface SourcedDims extends SpecEvidence {
@@ -39,6 +62,7 @@ export interface SourcedDims extends SpecEvidence {
   width_in: number;
   height_in: number;
   raw_unit: string;
+  basis?: DimensionBasis;
 }
 
 export interface SuggestedBox {
@@ -55,8 +79,14 @@ export interface SourcedSpecs {
   status: SpecStatus;
   reason?: string;
   query: string;
+  /** Pack/case quantity we are pricing & shipping (null = unknown). */
+  target_units: number | null;
   weight: SourcedWeight | null;
   dimensions: SourcedDims | null;
+  weight_basis: WeightBasis | null;
+  dimension_basis: DimensionBasis | null;
+  /** Dimensions are gated harder than weight, so they carry their own status. */
+  dimensions_status: 'sourced' | 'needs_measurement';
   /** All candidate readings (agreeing + disagreeing) for audit. */
   weight_candidates: SourcedWeight[];
   dimension_candidates: SourcedDims[];
@@ -68,6 +98,7 @@ export interface SourcedSpecs {
   sources_consulted: { via: 'google_product' | 'web_search'; url: string | null; title: string | null }[];
   checked_at: string;
 }
+
 
 const OZ_PER: Record<string, number> = {
   oz: 1, ounce: 1, ounces: 1,
