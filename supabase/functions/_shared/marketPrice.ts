@@ -283,3 +283,140 @@ export async function lookupMarket(
     checked_at: new Date().toISOString(),
   };
 }
+
+// ---------------------------------------------------------------------------
+// CASE / TRAY level comparables.
+//
+// Dynasty Direct sells whole cases/trays, never single units. A case price is
+// only ever "market-sourced" when a REAL listing selling the same quantity is
+// found — never derived by multiplying a single-unit retail price by the count.
+// ---------------------------------------------------------------------------
+
+export interface CaseListing { title: string; price: number; source: string; link: string | null; units: number }
+
+export interface CaseMarketLookup {
+  available: boolean;
+  reason?: string;
+  queries: string[];
+  target_units: number;
+  count: number;
+  samples_raw: number;
+  excluded: { low_relevance: number; count_mismatch: number; no_count: number; outliers: number };
+  /** true only when >= MIN_COMPARABLE_LISTINGS real same-quantity listings survived. */
+  comparable: boolean;
+  low: number | null;
+  median: number | null;
+  high: number | null;
+  listings: CaseListing[];
+  checked_at: string;
+}
+
+/**
+ * Explicit unit count stated in a listing title ("50 count", "50ct", "pack of 50",
+ * "50-pack", "50 pcs", "case of 50", "50/tray"). Returns null when the title does
+ * not state a number — a bare "case"/"tray"/"display" word is NOT a count.
+ */
+export function parseExplicitUnitCount(title: string): number | null {
+  const t = title.toLowerCase();
+  const patterns: RegExp[] = [
+    /(?:pack|packs|packets|lot|set|case|tray|box|carton|display|sleeve)\s*of\s*(\d{1,4})\b/,
+    /\b(\d{1,4})\s*[-\s]?(?:pack|packs|packets|units|pcs|pieces|ct|count|per\s+(?:case|tray|box|display))\b/,
+    /\b(\d{1,4})\s*\/\s*(?:case|tray|box|display|carton)\b/,
+    /\b(\d{1,4})\s*\+\s*(\d{1,3})\s*(?:bonus|free)\b/, // "50 + 3 bonus"
+  ];
+  for (const re of patterns) {
+    const m = t.match(re);
+    if (m) {
+      const n = Number(m[1]) + (m[2] ? Number(m[2]) : 0);
+      if (Number.isFinite(n) && n >= 2 && n <= 5000) return n;
+    }
+  }
+  return null;
+}
+
+/** Query variants aimed at bulk / wholesale listings for the exact case quantity. */
+export function buildCaseQueries(productName: string, brandHint: string | null | undefined, units: number): string[] {
+  const base = buildMarketQuery(productName, brandHint);
+  if (!base) return [];
+  const variants = [
+    `${base} ${units} count`,
+    `${base} ${units} pack tray`,
+    `${base} case of ${units}`,
+    `${base} wholesale bulk ${units}`,
+  ];
+  return Array.from(new Set(variants.map((q) => q.replace(/\s+/g, ' ').trim())));
+}
+
+/**
+ * Find REAL case-level listings for `units` per sale. Never returns a derived price.
+ * A listing counts only when its title states a unit count within 1.5x of `units`
+ * and the title is relevant to the product.
+ */
+export async function lookupCaseMarket(
+  supabase: any,
+  productName: string,
+  brandHint: string | null | undefined,
+  units: number,
+): Promise<CaseMarketLookup> {
+  const base: CaseMarketLookup = {
+    available: false, queries: [], target_units: units, count: 0, samples_raw: 0,
+    excluded: { low_relevance: 0, count_mismatch: 0, no_count: 0, outliers: 0 },
+    comparable: false, low: null, median: null, high: null, listings: [],
+    checked_at: new Date().toISOString(),
+  };
+  if (!(units > 1)) return { ...base, reason: 'no case quantity known' };
+  const key = await resolveSerpApiKey(supabase);
+  if (!key) return { ...base, reason: 'SerpAPI key not configured' };
+  const queries = buildCaseQueries(productName, brandHint, units);
+  if (!queries.length) return { ...base, reason: 'no product name' };
+
+  const seen = new Set<string>();
+  const raw: SerpResult[] = [];
+  const errors: string[] = [];
+  for (const q of queries) {
+    try {
+      const rows = await serpApiShoppingSearch(key, q);
+      for (const r of rows) {
+        const k = `${r.source}|${r.title}|${r.price}`;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        raw.push(r);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      errors.push(msg);
+      if (msg.includes('429')) break; // quota — stop hammering
+    }
+  }
+  if (raw.length === 0 && errors.length) {
+    return { ...base, queries, reason: errors.some((m) => m.includes('429')) ? 'SerpAPI quota exhausted' : errors[0] };
+  }
+
+  let lowRelevance = 0, countMismatch = 0, noCount = 0;
+  const listings: CaseListing[] = [];
+  for (const r of raw) {
+    if (titleRelevance(productName, r.title) < RELEVANCE_THRESHOLD) { lowRelevance++; continue; }
+    const n = parseExplicitUnitCount(r.title);
+    if (n == null) { noCount++; continue; }
+    if (!packSizesComparable(n, units)) { countMismatch++; continue; }
+    listings.push({ title: r.title, price: r.price, source: r.source, link: r.url, units: n });
+  }
+  const rawPrices = listings.map((l) => l.price);
+  const prices = trimOutliers(rawPrices);
+  const kept = listings.filter((l) => prices.includes(l.price));
+  const excluded = { low_relevance: lowRelevance, count_mismatch: countMismatch, no_count: noCount, outliers: rawPrices.length - prices.length };
+  if (prices.length === 0) {
+    return { ...base, available: true, queries, samples_raw: raw.length, excluded, reason: 'no real case-level listings found for this quantity' };
+  }
+  const sorted = prices.slice().sort((a, b) => a - b);
+  const r2 = (n: number) => Number(n.toFixed(2));
+  const comparable = sorted.length >= MIN_COMPARABLE_LISTINGS;
+  return {
+    available: true,
+    reason: comparable ? undefined : `only ${sorted.length} real case-level listing(s) — below the ${MIN_COMPARABLE_LISTINGS} needed`,
+    queries, target_units: units, count: sorted.length, samples_raw: raw.length, excluded, comparable,
+    low: r2(sorted[0]), median: r2(sorted[Math.floor(sorted.length / 2)]), high: r2(sorted[sorted.length - 1]),
+    listings: kept.slice(0, 10),
+    checked_at: new Date().toISOString(),
+  };
+}

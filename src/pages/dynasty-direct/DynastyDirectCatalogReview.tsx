@@ -23,16 +23,28 @@ interface PriceResearch {
   retail_margin_pct?: number;
   pricing_notes?: string;
   cost_basis?: number;
-  basis?: 'market_median' | 'margin_floor_market_below' | 'formula_only' | 'pack_normalized';
+  basis?: string;
   effective_margin_pct?: number;
   retail_floor?: number;
   pack?: { pack_count: number | null; source: string | null; matched_text: string | null; reason: string };
-  raw?: { cost_basis: number; market_median: number | null; market_pack_size: number; retail_floor: number; suggested_retail: number; basis: string };
-  normalized?: {
-    pack_count: number; pack_count_source: string | null; cost_per_unit: number; market_pack_size: number;
-    market_per_unit_median: number | null; retail_floor_per_unit: number; suggested_per_unit: number;
-    suggested_retail_pack: number; basis_detail: string;
+  // case-basis outputs
+  pricing_model?: 'case_basis' | string;
+  store_price_a?: number;
+  store_price_a_basis?: string;
+  dtc_price_b?: number;
+  dtc_price_b_basis?: string;
+  margins?: { min_store_margin_pct: number; target_store_margin_pct: number; min_dtc_margin_pct: number; target_dtc_margin_pct: number; source: string };
+  floors?: { platform_margin_pct: number; platform_floor: number; store_floor: number; dtc_floor: number; store_cost_plus_target: number; dtc_cost_plus_target: number };
+  case_market?: {
+    available: boolean; comparable: boolean; reason: string | null; target_units: number; count: number; samples_raw: number;
+    excluded: { low_relevance: number; count_mismatch: number; no_count: number; outliers: number };
+    low: number | null; median: number | null; high: number | null; queries: string[];
+    listings: { title: string; price: number; source: string; link: string | null; units: number }[];
   } | null;
+  unit_reference?: { note: string; per_unit_median: number | null; per_unit_low: number | null; per_unit_high: number | null; listing_pack_size: number; listing_count: number; cost_per_unit: number | null };
+  // legacy (pre case-basis) — may still be present on old research rows
+  raw?: any;
+  normalized?: any;
   sources?: { market?: { count: number; pack_size: number; samples?: { title: string; price: number; source: string; link: string | null }[] } | null };
   researched_at?: string;
 }
@@ -86,10 +98,19 @@ function pct(cost: number, price: number): number {
 const money = (n: number | null | undefined) => (n == null ? '—' : `$${Number(n).toFixed(2)}`);
 
 const BASIS_LABEL: Record<string, string> = {
-  market_median: 'market median',
-  margin_floor_market_below: 'margin floor (market below floor)',
-  formula_only: 'formula only (no market data)',
-  pack_normalized: 'pack-normalized',
+  case_market_median: 'real case-level market median',
+  case_market_below_floor: 'margin floor (case market below floor)',
+  cost_plus_target_reseller: 'cost-plus target (reseller, below DTC market)',
+  cost_plus_capped_below_dtc: 'cost-plus, capped under DTC',
+  cost_plus_no_case_market_data: 'cost-plus (no case-level market data)',
+  cost_plus_no_case_quantity: 'cost-plus (case quantity unknown)',
+  no_cost: 'no cost — cannot price',
+  admin_override: 'admin override',
+  // legacy labels
+  market_median: 'market median (legacy)',
+  margin_floor_market_below: 'margin floor (legacy)',
+  formula_only: 'formula only (legacy)',
+  pack_normalized: 'pack-normalized (legacy — retired)',
 };
 
 const SELECT_COLS =
@@ -131,9 +152,11 @@ export default function DynastyDirectCatalogReview() {
     rows.forEach((r) => {
       const pr = r.price_research || {};
       const px = r.pricing || {};
+      // Only case-basis research seeds prices; legacy (unit × count) research is never reused.
+      const caseBasis = pr.pricing_model === 'case_basis';
       seed[r.id] = {
-        store: String(pr.suggested_store_price ?? px.suggested_store ?? ''),
-        retail: String(px.suggested_retail_override ?? pr.suggested_retail_price ?? px.suggested_retail ?? ''),
+        store: String(px.store_price_a ?? (caseBasis ? pr.store_price_a : undefined) ?? ''),
+        retail: String(px.dtc_price_b ?? (caseBasis ? pr.dtc_price_b : undefined) ?? ''),
         cost: String(r.cost ?? pr.cost_basis ?? ''),
         pack: r.pack_count != null ? String(r.pack_count) : '',
         mw: '', ml: '', mwd: '', mh: '',
@@ -243,18 +266,30 @@ export default function DynastyDirectCatalogReview() {
     if (!d.measurements_verified_at) { toast.error('Confirm or enter measurements first'); return; }
     const ov = overrides[d.id] || {};
     const storeP = Number(ov.store) || 0;
-    const retailP = Number(ov.retail) || 0;
+    const dtcP = Number(ov.retail) || 0;
     const costP = Number(ov.cost) || Number(d.cost) || 0;
-    if (!(retailP > 0) || !(storeP > 0)) { toast.error('Store and retail prices must be greater than 0'); return; }
+    if (!(dtcP > 0) || !(storeP > 0)) { toast.error('Store price and DTC price must both be greater than 0'); return; }
+    if (storeP >= dtcP) { toast.error('Store (reseller) price must be below the DTC price'); return; }
     setAction(d.id, 'approve');
     try {
-      const suggested = d.price_research?.suggested_retail_price;
+      const pr = d.price_research;
+      const caseBasis = pr?.pricing_model === 'case_basis';
+      const sameAs = (a: number | undefined, b: number) => a != null && Math.abs(a - b) <= 0.005;
       const newPricing = {
         ...(d.pricing || {}),
+        // canonical case-basis outputs (carried to products_all.store_price_a / dtc_price_b)
+        store_price_a: storeP,
+        store_price_a_basis: caseBasis && sameAs(pr!.store_price_a, storeP) ? pr!.store_price_a_basis : 'admin_override',
+        dtc_price_b: dtcP,
+        dtc_price_b_basis: caseBasis && sameAs(pr!.dtc_price_b, dtcP) ? pr!.dtc_price_b_basis : 'admin_override',
+        store_ai_suggested: caseBasis ? pr!.store_price_a ?? null : null,
+        dtc_ai_suggested: caseBasis ? pr!.dtc_price_b ?? null : null,
+        pricing_model: 'case_basis',
+        // legacy mirrors read by older code paths
         suggested_store: storeP,
-        suggested_retail: retailP,
-        retail_basis: suggested != null && Math.abs(suggested - retailP) > 0.005 ? 'admin_override' : (d.price_research?.basis ?? d.pricing?.retail_basis ?? null),
-        retail_ai_suggested: suggested ?? null,
+        suggested_retail: dtcP,
+        retail_basis: caseBasis && sameAs(pr!.dtc_price_b, dtcP) ? pr!.dtc_price_b_basis : 'admin_override',
+        retail_ai_suggested: caseBasis ? pr!.dtc_price_b ?? null : null,
       };
       const patch: Record<string, unknown> = { pricing: newPricing };
       if (costP > 0) patch.cost = costP;
@@ -324,7 +359,9 @@ export default function DynastyDirectCatalogReview() {
           const verified = !!d.measurements_verified_at;
           const action = busy[d.id];
           const canPublish = !!d.supplier_id && verified && !isBusy(d.id);
-          const isOverride = pr?.suggested_retail_price != null && Math.abs(Number(ov.retail) - pr.suggested_retail_price) > 0.005;
+          const caseBasis = pr?.pricing_model === 'case_basis';
+          const isStoreOverride = caseBasis && pr?.store_price_a != null && Math.abs(Number(ov.store) - pr.store_price_a) > 0.005;
+          const isDtcOverride = caseBasis && pr?.dtc_price_b != null && Math.abs(Number(ov.retail) - pr.dtc_price_b) > 0.005;
 
           return (
             <Card key={d.id}>
@@ -499,59 +536,93 @@ export default function DynastyDirectCatalogReview() {
                     </Button>
                   </div>
 
-                  {pr ? (
+                  {pr && !caseBasis && (
+                    <div className="rounded border border-dashed border-destructive/50 bg-destructive/10 p-3 text-xs">
+                      <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Legacy research (unit × count) — retired</div>
+                      <div className="text-muted-foreground">This research predates case-basis pricing and its numbers are not used. Re-run sourced research to get store / DTC case prices.</div>
+                    </div>
+                  )}
+
+                  {pr && caseBasis ? (
                     <div className="space-y-3 text-xs">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {/* RAW */}
-                        <div className={`rounded border p-3 space-y-1 ${pr.normalized ? 'opacity-70' : ''}`}>
-                          <div className="font-semibold">Raw comparison (unnormalized)</div>
-                          <div>Cost basis: <span className="font-mono">{money(pr.raw?.cost_basis ?? pr.cost_basis)}</span></div>
-                          <div>Market median (listing pack {pr.raw?.market_pack_size ?? pr.sources?.market?.pack_size ?? '—'}): <span className="font-mono">{money(pr.raw?.market_median)}</span></div>
-                          <div>Margin floor ({pr.effective_margin_pct}%): <span className="font-mono">{money(pr.raw?.retail_floor ?? pr.retail_floor)}</span></div>
-                          <div>Suggested: <span className="font-mono">{money(pr.raw?.suggested_retail)}</span> <Badge variant="outline" className="text-[10px]">{BASIS_LABEL[pr.raw?.basis ?? ''] || pr.raw?.basis || '—'}</Badge></div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {/* CASE-LEVEL MARKET */}
+                        <div className={`rounded border p-3 space-y-1 ${pr.case_market?.comparable ? 'border-primary/50 bg-primary/5' : 'border-dashed'}`}>
+                          <div className="font-semibold">Case-level comparables ({pr.pack?.pack_count ?? '?'} per case)</div>
+                          {pr.case_market ? (
+                            pr.case_market.comparable ? (
+                              <>
+                                <div>{pr.case_market.count} real listings selling ~{pr.case_market.target_units} units</div>
+                                <div>Low / median / high: <span className="font-mono">{money(pr.case_market.low)} / {money(pr.case_market.median)} / {money(pr.case_market.high)}</span></div>
+                                <ul className="space-y-0.5 mt-1">
+                                  {pr.case_market.listings.slice(0, 4).map((l, i) => (
+                                    <li key={i} className="truncate">
+                                      <span className="font-mono">{money(l.price)}</span> · {l.units} ct · {l.source}
+                                      {l.link && <a href={l.link} target="_blank" rel="noreferrer" className="ml-1 inline-flex align-middle"><ExternalLink className="h-3 w-3" /></a>}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </>
+                            ) : (
+                              <div className="text-muted-foreground">
+                                <span className="text-destructive">None found.</span> {pr.case_market.reason} ({pr.case_market.samples_raw} raw listings: {pr.case_market.excluded.no_count} no stated count, {pr.case_market.excluded.count_mismatch} different quantity, {pr.case_market.excluded.low_relevance} off-product). Prices below are cost-plus.
+                              </div>
+                            )
+                          ) : (
+                            <div className="text-muted-foreground">Not searched — case quantity unknown. Enter the pack count above and re-run.</div>
+                          )}
                         </div>
-                        {/* NORMALIZED */}
-                        {pr.normalized ? (
-                          <div className="rounded border border-primary/50 bg-primary/5 p-3 space-y-1">
-                            <div className="font-semibold">Pack-normalized ({pr.normalized.pack_count} units)</div>
-                            <div>Cost / unit: <span className="font-mono">{money(pr.normalized.cost_per_unit)}</span></div>
-                            <div>Market / unit (median): <span className="font-mono">{money(pr.normalized.market_per_unit_median)}</span></div>
-                            <div>Floor / unit: <span className="font-mono">{money(pr.normalized.retail_floor_per_unit)}</span></div>
-                            <div>Suggested / unit: <span className="font-mono">{money(pr.normalized.suggested_per_unit)}</span> <Badge variant="outline" className="text-[10px]">{BASIS_LABEL[pr.normalized.basis_detail] || pr.normalized.basis_detail}</Badge></div>
-                            <div className="font-semibold">Per pack: <span className="font-mono">{money(pr.normalized.suggested_retail_pack)}</span></div>
-                          </div>
-                        ) : (
-                          <div className="rounded border border-dashed border-destructive/50 bg-destructive/10 p-3">
-                            <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Not pack-normalized</div>
-                            <div className="text-muted-foreground">{pr.pack?.reason || 'No pack count.'} Enter the pack count above and re-run research.</div>
-                          </div>
-                        )}
+                        {/* COST-PLUS */}
+                        <div className="rounded border p-3 space-y-1">
+                          <div className="font-semibold">Cost-plus (products_all margin columns)</div>
+                          <div>Cost basis (case): <span className="font-mono">{money(pr.cost_basis)}</span></div>
+                          <div>Store: min {pr.margins?.min_store_margin_pct}% → <span className="font-mono">{money(pr.floors?.store_floor)}</span>, target {pr.margins?.target_store_margin_pct}% → <span className="font-mono">{money(pr.floors?.store_cost_plus_target)}</span></div>
+                          <div>DTC: min {pr.margins?.min_dtc_margin_pct}% → <span className="font-mono">{money(pr.floors?.dtc_floor)}</span>, target {pr.margins?.target_dtc_margin_pct}% → <span className="font-mono">{money(pr.floors?.dtc_cost_plus_target)}</span></div>
+                          <div className="text-muted-foreground">Platform floor {pr.floors?.platform_margin_pct}%: <span className="font-mono">{money(pr.floors?.platform_floor)}</span></div>
+                        </div>
+                        {/* UNIT REFERENCE */}
+                        <div className="rounded border p-3 space-y-1 opacity-80">
+                          <div className="font-semibold">Single-unit retail — reference only</div>
+                          {pr.unit_reference?.per_unit_median != null ? (
+                            <>
+                              <div>A customer could buy ONE elsewhere for ~<span className="font-mono">{money(pr.unit_reference.per_unit_median)}</span> ({pr.unit_reference.listing_count} listings)</div>
+                              <div>Range: <span className="font-mono">{money(pr.unit_reference.per_unit_low)} – {money(pr.unit_reference.per_unit_high)}</span></div>
+                              {pr.unit_reference.cost_per_unit != null && <div>Your cost / unit: <span className="font-mono">{money(pr.unit_reference.cost_per_unit)}</span></div>}
+                              <div className="text-muted-foreground">Never multiplied into the case price.</div>
+                            </>
+                          ) : (
+                            <div className="text-muted-foreground">{pr.unit_reference?.note || 'No unit market data.'}</div>
+                          )}
+                        </div>
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-1">
-                        <span>AI suggested retail: <span className="font-mono">{money(pr.suggested_retail_price)}</span> <Badge className="text-[10px]">{BASIS_LABEL[pr.basis ?? ''] || pr.basis}</Badge></span>
-                        <span>Store (formula): <span className="font-mono">{money(pr.suggested_store_price)}</span></span>
-                        <span>Walmart: <span className="font-mono">{money(pr.walmart_price)}</span></span>
-                        <span>Amazon: <span className="font-mono">{money(pr.amazon_price)}</span></span>
-                        <span>Comparables: {pr.sources?.market?.count ?? 0}</span>
+                        <span>Suggested store (case): <span className="font-mono">{money(pr.store_price_a)}</span> <Badge className="text-[10px]">{BASIS_LABEL[pr.store_price_a_basis ?? ''] || pr.store_price_a_basis}</Badge></span>
+                        <span>Suggested DTC (case): <span className="font-mono">{money(pr.dtc_price_b)}</span> <Badge className="text-[10px]">{BASIS_LABEL[pr.dtc_price_b_basis ?? ''] || pr.dtc_price_b_basis}</Badge></span>
                       </div>
                       {pr.pricing_notes && <div className="text-muted-foreground italic">“{pr.pricing_notes}”</div>}
                     </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">No research yet — run sourced research to fetch market comparables.</p>
-                  )}
+                  ) : !pr ? (
+                    <p className="text-xs text-muted-foreground">No research yet — run sourced research to fetch case-level comparables.</p>
+                  ) : null}
 
                   <Separator />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-xs">Store price ($)</Label>
+                      <Label className="text-xs">Store price — per case, to stores/resellers ($) {isStoreOverride && <Badge variant="outline" className="ml-1 text-[10px]">admin override</Badge>}</Label>
                       <Input type="number" step="0.01" value={ov.store ?? ''} onChange={(e) => updateOverride(d.id, { store: e.target.value })} />
-                      <div className="text-[11px] text-muted-foreground mt-1">Margin: <span className="font-mono">{pct(liveCost, liveStore)}%</span></div>
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        Margin: <span className="font-mono">{pct(liveCost, liveStore)}%</span>
+                        {pr?.margins && pct(liveCost, liveStore) < pr.margins.min_store_margin_pct && liveStore > 0 && <span className="text-destructive ml-2">below min {pr.margins.min_store_margin_pct}% — publish will be blocked</span>}
+                      </div>
                     </div>
                     <div>
-                      <Label className="text-xs">Retail price to publish ($) {isOverride && <Badge variant="outline" className="ml-1 text-[10px]">admin override</Badge>}</Label>
+                      <Label className="text-xs">DTC price — per case, direct to consumer ($) {isDtcOverride && <Badge variant="outline" className="ml-1 text-[10px]">admin override</Badge>}</Label>
                       <Input type="number" step="0.01" value={ov.retail ?? ''} onChange={(e) => updateOverride(d.id, { retail: e.target.value })} />
-                      <div className="text-[11px] text-muted-foreground mt-1">Margin: <span className="font-mono">{pct(liveCost, liveRetail)}%</span></div>
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        Margin: <span className="font-mono">{pct(liveCost, liveRetail)}%</span>
+                        {pr?.margins && pct(liveCost, liveRetail) < pr.margins.min_dtc_margin_pct && liveRetail > 0 && <span className="text-destructive ml-2">below min {pr.margins.min_dtc_margin_pct}% — publish will be blocked</span>}
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -11,7 +11,7 @@
 
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { lookupMarket, type MarketLookup } from '../_shared/marketPrice.ts';
+import { lookupMarket, lookupCaseMarket, type MarketLookup, type CaseMarketLookup } from '../_shared/marketPrice.ts';
 import { resolvePackCount } from '../_shared/packCount.ts';
 import { lookupSourcedSpecs } from '../_shared/sourcedSpecs.ts';
 import { DD_CATEGORIES, mapDdCategory } from '../_shared/ddCategory.ts';
@@ -713,9 +713,15 @@ async function runPublish(body: any) {
     description: copy.long_description || copy.short_description || null,
     images,
     category,
-    retail_price: pricing.suggested_retail || 0,
-    store_price: pricing.suggested_store || 0,
+    // CASE-BASIS PRICING: store_price_a (reseller) / dtc_price_b (consumer) are the canonical
+    // outputs set in admin review. Legacy store_price/retail_price mirror them.
+    store_price_a: Number(pricing.store_price_a) > 0 ? Number(pricing.store_price_a) : (Number(pricing.suggested_store) > 0 ? Number(pricing.suggested_store) : null),
+    dtc_price_b: Number(pricing.dtc_price_b) > 0 ? Number(pricing.dtc_price_b) : (Number(pricing.suggested_retail) > 0 ? Number(pricing.suggested_retail) : null),
+    retail_price: Number(pricing.dtc_price_b) > 0 ? Number(pricing.dtc_price_b) : (pricing.suggested_retail || 0),
+    store_price: Number(pricing.store_price_a) > 0 ? Number(pricing.store_price_a) : (pricing.suggested_store || 0),
     wholesale_price: pricing.suggested_wholesale || 0,
+    units_per_case: Number(draft.pack_count) > 1 ? Number(draft.pack_count) : 1,
+    case_qty: Number(draft.pack_count) > 1 ? Number(draft.pack_count) : 1,
     // MARGIN GUARD FEED: without supplier cost the dd_margin_guard trigger short-circuits (v_cost <= 0)
     // and every wizard-published product bypasses the margin floor. Always pass the draft's real cost.
     supplier_cost: draft.cost ?? null,
@@ -878,21 +884,41 @@ Generate a content brief as JSON:
 
 // ---------- new modes: price research, vision recognize, image standardize ----------
 
-// SOURCED price research. No LLM-invented competitor prices: every number comes
-// from lookupMarket (SerpAPI Google Shopping, relevance/bundle/outlier filtered)
-// or from the margin formula, and the response says which.
+// CASE-BASIS price research.
+//
+// Dynasty Direct sells whole cases/trays only — to stores (store_price_a) and
+// direct-to-consumer (dtc_price_b). Rules:
+//   1. A market-sourced case price exists ONLY when a REAL listing selling the same
+//      quantity is found (lookupCaseMarket). Real case price vs real case price.
+//   2. Otherwise both prices are cost-plus from the margin columns that already
+//      exist on products_all (min/target store + dtc), basis 'cost_plus_no_case_market_data'.
+//   3. The single-unit retail median is kept ONLY as a labelled reference. It is never
+//      an input to the case price — no "× pack_count" multiplication anywhere.
+//
+// Margin math matches dd_enforce_price_floor / dd_margin_guard: margin = (price - cost) / price.
+
+// Mirror of the products_all column DEFAULTS (min_store_margin_pct 25, target_store_margin_pct 40,
+// min_dtc_margin_pct 50, target_dtc_margin_pct 65). Drafts have no product row yet, so the
+// defaults are the only per-product margin values that exist at research time.
+const PRODUCTS_ALL_MARGIN_DEFAULTS = {
+  min_store_margin_pct: 25,
+  target_store_margin_pct: 40,
+  min_dtc_margin_pct: 50,
+  target_dtc_margin_pct: 65,
+  source: 'products_all column defaults',
+} as const;
+
 async function runPriceResearch(body: any) {
   const { draft_id, category, supplier_cost, brand_hint } = body;
   let product_name = body.product_name ? String(body.product_name) : '';
   const sb = sbAdmin();
 
-  // Effective margin: same source copy_pricing uses.
   let supplierId: string | null = null;
   let brand: string | null = brand_hint ? String(brand_hint) : null;
   let draft: any = null;
   if (draft_id) {
     const { data: d } = await sb.from('dd_catalog_drafts')
-      .select('supplier_id, cost, recognition, label_extraction, pack_count, pack_count_source')
+      .select('supplier_id, cost, recognition, label_extraction, pack_count, pack_count_source, pricing')
       .eq('id', draft_id).maybeSingle();
     draft = d;
     supplierId = d?.supplier_id ?? null;
@@ -902,11 +928,14 @@ async function runPriceResearch(body: any) {
   }
   if (!product_name) throw new Error('product_name required');
 
-  // Cost basis: caller-supplied, else the draft's own cost. This is the cost of the
-  // unit AS SOLD (a whole tray/case when the wholesaler sells trays).
+  // Cost basis = cost of the unit AS SOLD (the whole case/tray).
   const cost = Number(supplier_cost) > 0 ? Number(supplier_cost) : Number(draft?.cost) || 0;
   const hasCost = cost > 0;
+  const r2 = (n: number) => Number(n.toFixed(2));
+  const priceFromMargin = (c: number, pct: number) => (c > 0 && pct > 0 && pct < 100 ? r2(c / (1 - pct / 100)) : 0);
+  const marginPct = (p: number) => (hasCost && p > 0 ? Number((((p - cost) / p) * 100).toFixed(1)) : 0);
 
+  // Platform (effective) margin floor — the same one dd_margin_guard enforces at publish.
   let effectiveMarginPct = 15;
   try {
     if (supplierId) {
@@ -917,12 +946,24 @@ async function runPriceResearch(body: any) {
       if (cfg?.default_margin_pct) effectiveMarginPct = Number(cfg.default_margin_pct);
     }
   } catch (_) { /* keep default */ }
-  const marginFraction = Math.min(0.9, Math.max(0, effectiveMarginPct / 100));
-  const r2 = (n: number) => Number(n.toFixed(2));
-  const floorFor = (c: number) => (c > 0 && marginFraction > 0 ? r2(c / (1 - marginFraction)) : 0);
-  const retailFloor = hasCost ? floorFor(cost) : 0;
+  const platformFloor = hasCost ? priceFromMargin(cost, effectiveMarginPct) : 0;
 
-  // ---- PACK COUNT: deterministic read of recognition / label text, or a human entry. Never guessed. ----
+  // Margin columns: products_all defaults (a draft has no product row yet). A prior admin
+  // pricing patch may carry explicit overrides of the same four names.
+  const px = (draft?.pricing || {}) as any;
+  const margins = {
+    min_store_margin_pct: Number(px.min_store_margin_pct) > 0 ? Number(px.min_store_margin_pct) : PRODUCTS_ALL_MARGIN_DEFAULTS.min_store_margin_pct,
+    target_store_margin_pct: Number(px.target_store_margin_pct) > 0 ? Number(px.target_store_margin_pct) : PRODUCTS_ALL_MARGIN_DEFAULTS.target_store_margin_pct,
+    min_dtc_margin_pct: Number(px.min_dtc_margin_pct) > 0 ? Number(px.min_dtc_margin_pct) : PRODUCTS_ALL_MARGIN_DEFAULTS.min_dtc_margin_pct,
+    target_dtc_margin_pct: Number(px.target_dtc_margin_pct) > 0 ? Number(px.target_dtc_margin_pct) : PRODUCTS_ALL_MARGIN_DEFAULTS.target_dtc_margin_pct,
+    source: PRODUCTS_ALL_MARGIN_DEFAULTS.source,
+  };
+  const storeFloor = hasCost ? Math.max(platformFloor, priceFromMargin(cost, margins.min_store_margin_pct)) : 0;
+  const dtcFloor = hasCost ? Math.max(platformFloor, priceFromMargin(cost, margins.min_dtc_margin_pct)) : 0;
+  const storeCostPlus = hasCost ? Math.max(storeFloor, priceFromMargin(cost, margins.target_store_margin_pct)) : 0;
+  const dtcCostPlus = hasCost ? Math.max(dtcFloor, priceFromMargin(cost, margins.target_dtc_margin_pct)) : 0;
+
+  // ---- CASE QUANTITY: deterministic read of recognition / label text, or a human entry. Never guessed. ----
   const pack = resolvePackCount({
     human_pack_count: draft?.pack_count_source === 'human' ? draft?.pack_count : null,
     label_units_per_case: (draft?.label_extraction as any)?.units_per_case ?? null,
@@ -932,13 +973,12 @@ async function runPriceResearch(body: any) {
   const packCount = pack.pack_count;
   const packKnown = packCount != null && packCount > 1;
 
+  // ---- SINGLE-UNIT market (REFERENCE ONLY) ----
   let market: MarketLookup | null = null;
   try { market = await lookupMarket(sb, product_name, brand); }
-  catch (e) { console.error('[price_research] market lookup failed', e); }
-  const marketUsable = !!(market && market.available && market.comparable && market.count > 0 && market.median);
-  const marketPackSize = market?.pack_size && market.pack_size > 0 ? market.pack_size : 1;
-
-  // Named-retailer prices only when a real listing from that retailer survived filtering.
+  catch (e) { console.error('[price_research] unit market lookup failed', e); }
+  const unitUsable = !!(market && market.available && market.comparable && market.count > 0 && market.median);
+  const unitPackSize = market?.pack_size && market.pack_size > 0 ? market.pack_size : 1;
   const fromSource = (re: RegExp) => {
     const s = (market?.samples || []).find((x) => re.test(x.source || ''));
     return s ? { price: s.price, url: s.link, title: s.title } : null;
@@ -946,98 +986,94 @@ async function runPriceResearch(body: any) {
   const amazon = fromSource(/amazon/i);
   const walmart = fromSource(/walmart/i);
 
-  // ---- RAW comparison (kept for the reviewer): tray/unit cost vs. market listing price as-is. ----
-  type RawBasis = 'market_median' | 'margin_floor_market_below' | 'formula_only';
-  let rawRetail = retailFloor;
-  let rawBasis: RawBasis = 'formula_only';
-  if (marketUsable) {
-    if (market!.median! >= retailFloor) { rawRetail = market!.median!; rawBasis = 'market_median'; }
-    else { rawRetail = retailFloor; rawBasis = 'margin_floor_market_below'; }
+  // ---- CASE-LEVEL market (the only thing allowed to set a market-sourced case price) ----
+  let caseMarket: CaseMarketLookup | null = null;
+  if (packKnown) {
+    try { caseMarket = await lookupCaseMarket(sb, product_name, brand, packCount!); }
+    catch (e) { console.error('[price_research] case market lookup failed', e); }
   }
-  const raw = {
-    cost_basis: cost,
-    market_median: marketUsable ? market!.median : null,
-    market_pack_size: marketPackSize,
-    retail_floor: retailFloor,
-    suggested_retail: rawRetail,
-    basis: rawBasis,
-    note: 'Unnormalized: cost of the unit as sold compared directly to the market listing price.',
-  };
+  const caseUsable = !!(caseMarket && caseMarket.available && caseMarket.comparable && caseMarket.median);
 
-  // ---- PACK-NORMALIZED comparison: everything on a per-retail-unit basis, then scaled back to the sold pack. ----
-  let normalized: Record<string, unknown> | null = null;
-  let suggestedRetail = rawRetail;
-  let basis: RawBasis | 'pack_normalized' = rawBasis;
-  let normalizedDetail: RawBasis | null = null;
-  if (packKnown && hasCost) {
-    const costPerUnit = r2(cost / packCount!);
-    const floorPerUnit = floorFor(costPerUnit);
-    const marketPerUnit = marketUsable ? r2(market!.median! / marketPackSize) : null;
-    let perUnit = floorPerUnit;
-    normalizedDetail = 'formula_only';
-    if (marketPerUnit != null) {
-      if (marketPerUnit >= floorPerUnit) { perUnit = marketPerUnit; normalizedDetail = 'market_median'; }
-      else { perUnit = floorPerUnit; normalizedDetail = 'margin_floor_market_below'; }
+  // ---- OUTPUTS: two separate prices, each with its own basis ----
+  // Real case-level listings (Walmart/eBay/etc.) are what an END CONSUMER pays for the
+  // case online → they anchor DTC (price B). A store/reseller must be able to buy below
+  // that to resell, so store (price A) is cost-plus target margin, capped under DTC.
+  type Basis = 'case_market_median' | 'case_market_below_floor' | 'cost_plus_target_reseller' | 'cost_plus_capped_below_dtc' | 'cost_plus_no_case_market_data' | 'cost_plus_no_case_quantity' | 'no_cost';
+  let storePrice = storeCostPlus, dtcPrice = dtcCostPlus;
+  let storeBasis: Basis, dtcBasis: Basis;
+  if (!hasCost) {
+    storeBasis = dtcBasis = 'no_cost';
+  } else if (caseUsable) {
+    const cm = caseMarket!.median!;
+    if (cm >= dtcFloor) { dtcPrice = r2(cm); dtcBasis = 'case_market_median'; }
+    else { dtcPrice = dtcFloor; dtcBasis = 'case_market_below_floor'; }
+    storePrice = storeCostPlus; storeBasis = 'cost_plus_target_reseller';
+    if (storePrice >= dtcPrice) {
+      // market case price is too close to cost for a target-margin reseller price; hold the store floor, cap under DTC
+      storePrice = r2(Math.max(storeFloor, Math.min(storeCostPlus, dtcPrice * 0.9)));
+      storeBasis = 'cost_plus_capped_below_dtc';
     }
-    const packRetail = r2(perUnit * packCount!);
-    normalized = {
-      pack_count: packCount,
-      pack_count_source: pack.source,
-      pack_count_matched_text: pack.matched_text,
-      cost_per_unit: costPerUnit,
-      market_pack_size: marketPackSize,
-      market_per_unit_median: marketPerUnit,
-      market_per_unit_low: marketUsable ? r2(market!.low! / marketPackSize) : null,
-      market_per_unit_high: marketUsable ? r2(market!.high! / marketPackSize) : null,
-      retail_floor_per_unit: floorPerUnit,
-      suggested_per_unit: perUnit,
-      suggested_retail_pack: packRetail,
-      basis_detail: normalizedDetail,
-      note: `Sold as a ${packCount}-unit pack: per-unit ${normalizedDetail === 'market_median' ? 'market median' : 'margin floor'} × ${packCount}.`,
-    };
-    suggestedRetail = packRetail;
-    basis = 'pack_normalized';
+  } else {
+    storeBasis = dtcBasis = packKnown ? 'cost_plus_no_case_market_data' : 'cost_plus_no_case_quantity';
   }
 
-  const suggestedStore = hasCost ? r2(Math.max(retailFloor, cost * 1.5)) : 0;
-  const pct = (p: number) => (hasCost && p > 0 ? Number((((p - cost) / p) * 100).toFixed(1)) : 0);
+  const unitReference = unitUsable ? {
+    note: `Reference only: a customer could buy ONE unit elsewhere for ~$${r2(market!.median! / unitPackSize)}. Not an input to the case price.`,
+    per_unit_median: r2(market!.median! / unitPackSize),
+    per_unit_low: r2(market!.low! / unitPackSize),
+    per_unit_high: r2(market!.high! / unitPackSize),
+    listing_pack_size: unitPackSize,
+    listing_count: market!.count,
+    cost_per_unit: packKnown && hasCost ? r2(cost / packCount!) : null,
+  } : { note: `No usable single-unit market data (${market?.reason || 'lookup failed'}).`, per_unit_median: null, per_unit_low: null, per_unit_high: null, listing_pack_size: unitPackSize, listing_count: 0, cost_per_unit: packKnown && hasCost ? r2(cost / packCount!) : null };
 
   const notes = [
-    marketUsable
-      ? `Market: ${market!.count} comparable Google Shopping listings (listing pack size ${marketPackSize}); low $${market!.low} / median $${market!.median} / high $${market!.high}.`
-      : `No usable market data (${market?.reason || (market && !market.comparable ? 'listings not comparable' : 'lookup failed')}); retail = margin floor only.`,
-    packKnown && normalized
-      ? `Pack-normalized: ${packCount} units per sold pack (${pack.reason}). Cost/unit $${normalized.cost_per_unit}` +
-        (normalized.market_per_unit_median != null ? ` vs market/unit $${normalized.market_per_unit_median}` : '') +
-        `; suggested $${normalized.suggested_per_unit}/unit → $${normalized.suggested_retail_pack} per pack (${normalizedDetail}).`
-      : `NOT pack-normalized: ${pack.reason}. Raw comparison only — if this is sold as a multi-unit pack, enter the pack count in review and re-run.`,
-    !packKnown && rawBasis === 'margin_floor_market_below'
-      ? `Market median is BELOW the ${effectiveMarginPct}% margin floor ($${retailFloor}); floor kept — review needed.` : null,
-    packKnown && normalizedDetail === 'margin_floor_market_below'
-      ? `Per-unit market median is BELOW the ${effectiveMarginPct}% per-unit margin floor; floor kept — review needed.` : null,
-    `Store price is formula-only (max(margin floor, cost×1.5)).`,
-    hasCost ? null : 'No supplier cost provided — margins cannot be computed.',
+    `Priced per case/tray (cost basis $${cost} for the unit as sold).`,
+    packKnown ? `Case quantity ${packCount} (${pack.reason}).` : `Case quantity unknown: ${pack.reason}. Enter it in review and re-run to search case-level listings.`,
+    caseMarket
+      ? (caseUsable
+        ? `REAL case-level comparables: ${caseMarket.count} listings selling ~${packCount} units; low $${caseMarket.low} / median $${caseMarket.median} / high $${caseMarket.high}.`
+        : `No real case-level comparable (${caseMarket.reason || 'none found'}; ${caseMarket.samples_raw} raw listings checked, ${caseMarket.excluded.no_count} had no stated count, ${caseMarket.excluded.count_mismatch} sold a different quantity). Falling back to cost-plus — nothing was multiplied up from single-unit retail.`)
+      : null,
+    `Store price $${storePrice} (${storeBasis}; margin ${marginPct(storePrice)}%, min ${margins.min_store_margin_pct}% / target ${margins.target_store_margin_pct}%).`,
+    `DTC price $${dtcPrice} (${dtcBasis}; margin ${marginPct(dtcPrice)}%, min ${margins.min_dtc_margin_pct}% / target ${margins.target_dtc_margin_pct}%).`,
+    unitReference.note,
+    hasCost ? null : 'No supplier cost provided — prices cannot be computed.',
   ].filter(Boolean).join(' ');
 
   const payload = {
-    // legacy keys the review screen reads — null (not 0) when no sourced listing exists
+    // legacy keys older readers use — mapped to the new outputs, null (not 0) when unsourced
     amazon_price: amazon?.price ?? null,
     walmart_price: walmart?.price ?? null,
-    competitor_avg: marketUsable ? market!.avg : null,
-    suggested_store_price: suggestedStore,
-    suggested_retail_price: suggestedRetail,
-    store_margin_pct: pct(suggestedStore),
-    retail_margin_pct: pct(suggestedRetail),
+    competitor_avg: unitUsable ? market!.avg : null,
+    suggested_store_price: storePrice,
+    suggested_retail_price: dtcPrice,
+    store_margin_pct: marginPct(storePrice),
+    retail_margin_pct: marginPct(dtcPrice),
     pricing_notes: notes,
     cost_basis: cost,
     category: category || null,
-    // provenance
-    basis,
+    // NEW canonical outputs
+    pricing_model: 'case_basis',
+    store_price_a: storePrice,
+    store_price_a_basis: storeBasis,
+    dtc_price_b: dtcPrice,
+    dtc_price_b_basis: dtcBasis,
+    basis: storeBasis,
+    margins,
+    floors: { platform_margin_pct: effectiveMarginPct, platform_floor: platformFloor, store_floor: storeFloor, dtc_floor: dtcFloor, store_cost_plus_target: storeCostPlus, dtc_cost_plus_target: dtcCostPlus },
     effective_margin_pct: effectiveMarginPct,
-    retail_floor: retailFloor,
+    retail_floor: dtcFloor,
     pack: { pack_count: packCount, source: pack.source, matched_text: pack.matched_text, reason: pack.reason, candidates: pack.candidates },
-    raw,
-    normalized,
+    case_market: caseMarket ? {
+      available: caseMarket.available, comparable: caseMarket.comparable, reason: caseMarket.reason ?? null,
+      target_units: caseMarket.target_units, count: caseMarket.count, samples_raw: caseMarket.samples_raw, excluded: caseMarket.excluded,
+      low: caseMarket.low, median: caseMarket.median, high: caseMarket.high, queries: caseMarket.queries, listings: caseMarket.listings,
+    } : null,
+    unit_reference: unitReference,
+    // explicitly retired: never derive a case price from unit retail × count
+    normalized: null,
+    raw: null,
     sources: {
       amazon: amazon ? { url: amazon.url, title: amazon.title } : null,
       walmart: walmart ? { url: walmart.url, title: walmart.title } : null,
@@ -1051,7 +1087,6 @@ async function runPriceResearch(body: any) {
   };
   if (draft_id) {
     const upd: Record<string, unknown> = { price_research: payload };
-    // Persist the parsed pack count on the draft only when no human value exists.
     if (draft?.pack_count_source !== 'human') {
       upd.pack_count = packCount;
       upd.pack_count_source = packCount != null ? pack.source : null;
