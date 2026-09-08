@@ -854,59 +854,101 @@ Generate a content brief as JSON:
 
 // ---------- new modes: price research, vision recognize, image standardize ----------
 
+// SOURCED price research. No LLM-invented competitor prices: every number comes
+// from lookupMarket (SerpAPI Google Shopping, relevance/bundle/outlier filtered)
+// or from the margin formula, and the response says which.
 async function runPriceResearch(body: any) {
-  const { draft_id, product_name, category, supplier_cost } = body;
+  const { draft_id, product_name, category, supplier_cost, brand_hint } = body;
   if (!product_name) throw new Error('product_name required');
+  const sb = sbAdmin();
   const cost = Number(supplier_cost) || 0;
   const hasCost = cost > 0;
 
-  const system = 'You are a pricing analyst for a wholesale-to-retail business. Output STRICT JSON only.';
-  const user = `Product: ${product_name}
-Category: ${category || 'unknown'}
-Supplier cost: ${hasCost ? '$' + cost.toFixed(2) : 'NOT PROVIDED'}
+  // Effective margin: same source copy_pricing uses.
+  let supplierId: string | null = null;
+  let brand: string | null = brand_hint ? String(brand_hint) : null;
+  if (draft_id) {
+    const { data: d } = await sb.from('dd_catalog_drafts').select('supplier_id, recognition').eq('id', draft_id).maybeSingle();
+    supplierId = d?.supplier_id ?? null;
+    if (!brand && (d?.recognition as any)?.brand_visible) brand = String((d!.recognition as any).brand_visible);
+  }
+  let effectiveMarginPct = 15;
+  try {
+    if (supplierId) {
+      const { data: m } = await sb.rpc('dd_get_effective_margin_pct', { p_product_id: null, p_wholesaler_id: supplierId });
+      if (typeof m === 'number' && m > 0) effectiveMarginPct = m;
+    } else {
+      const { data: cfg } = await sb.from('dd_config').select('default_margin_pct').eq('id', true).maybeSingle();
+      if (cfg?.default_margin_pct) effectiveMarginPct = Number(cfg.default_margin_pct);
+    }
+  } catch (_) { /* keep default */ }
+  const marginFraction = Math.min(0.9, Math.max(0, effectiveMarginPct / 100));
+  const retailFloor = hasCost && marginFraction > 0 ? Number((cost / (1 - marginFraction)).toFixed(2)) : 0;
 
-Research this product and provide a best-effort competitive pricing snapshot for the US market.
+  let market: MarketLookup | null = null;
+  try { market = await lookupMarket(sb, product_name, brand); }
+  catch (e) { console.error('[price_research] market lookup failed', e); }
+  const marketUsable = !!(market && market.available && market.comparable && market.count > 0 && market.median);
 
-Return ONLY this JSON (numbers, no $ signs):
-{
-  "amazon_price": 0.00,
-  "walmart_price": 0.00,
-  "competitor_avg": 0.00,
-  "suggested_store_price": 0.00,
-  "suggested_retail_price": 0.00,
-  "store_margin_pct": 0,
-  "retail_margin_pct": 0,
-  "pricing_notes": "brief explanation${hasCost ? '' : '. No supplier cost provided — margin calculations approximate'}"
-}
+  // Named-retailer prices only when a real listing from that retailer survived filtering.
+  const fromSource = (re: RegExp) => {
+    const s = (market?.samples || []).find((x) => re.test(x.source || ''));
+    return s ? { price: s.price, url: s.link, title: s.title } : null;
+  };
+  const amazon = fromSource(/amazon/i);
+  const walmart = fromSource(/walmart/i);
 
-Pricing rules:
-- store_price = wholesale-to-store price (typically cost × 1.5 to cost × 2.5)
-- retail_price = direct-to-consumer (typically cost × 2.5 to cost × 4)
-- If cost not provided, infer a reasonable cost from competitor data and compute margins from that inference.`;
+  // Suggested retail: market median, never below the margin floor. Store price is
+  // formula-only (there is no sourced wholesale-to-store market) and is labelled so.
+  let suggestedRetail = 0;
+  let basis: 'market_median' | 'margin_floor_market_below' | 'formula_only' = 'formula_only';
+  if (marketUsable) {
+    if (market!.median! >= retailFloor) { suggestedRetail = market!.median!; basis = 'market_median'; }
+    else { suggestedRetail = retailFloor; basis = 'margin_floor_market_below'; }
+  } else {
+    suggestedRetail = retailFloor;
+  }
+  const suggestedStore = hasCost ? Number(Math.max(retailFloor, cost * 1.5).toFixed(2)) : 0;
+  const pct = (p: number) => (hasCost && p > 0 ? Number((((p - cost) / p) * 100).toFixed(1)) : 0);
 
-  const raw = await geminiText(system, user);
-  const parsed = parseJson(raw);
+  const notes = [
+    marketUsable
+      ? `Market: ${market!.count} comparable Google Shopping listings (pack size ${market!.pack_size}); low $${market!.low} / median $${market!.median} / high $${market!.high}.`
+      : `No usable market data (${market?.reason || (market && !market.comparable ? 'listings not comparable' : 'lookup failed')}); retail = margin floor only.`,
+    basis === 'margin_floor_market_below' ? `Market median is BELOW the ${effectiveMarginPct}% margin floor ($${retailFloor}); floor kept — review needed.` : null,
+    `Store price is formula-only (max(margin floor, cost×1.5)).`,
+    hasCost ? null : 'No supplier cost provided — margins cannot be computed.',
+  ].filter(Boolean).join(' ');
 
-  // Normalize the AI category onto the products_all check-constraint values now,
-  // so the wizard shows (and the publish insert receives) a legal slug.
-  const catMap = mapDdCategory(parsed.category_guess, [product_name, brand_hint, (parsed.tags || []).join(' ')].filter(Boolean).join(' '));
-  parsed.category_guess = catMap.category;
-  parsed.category_source = catMap.method;
-  parsed.category_raw = catMap.raw;
   const payload = {
-    amazon_price: Number(parsed.amazon_price) || 0,
-    walmart_price: Number(parsed.walmart_price) || 0,
-    competitor_avg: Number(parsed.competitor_avg) || 0,
-    suggested_store_price: Number(parsed.suggested_store_price) || 0,
-    suggested_retail_price: Number(parsed.suggested_retail_price) || 0,
-    store_margin_pct: Number(parsed.store_margin_pct) || 0,
-    retail_margin_pct: Number(parsed.retail_margin_pct) || 0,
-    pricing_notes: String(parsed.pricing_notes || ''),
+    // legacy keys the review screen reads — null (not 0) when no sourced listing exists
+    amazon_price: amazon?.price ?? null,
+    walmart_price: walmart?.price ?? null,
+    competitor_avg: marketUsable ? market!.avg : null,
+    suggested_store_price: suggestedStore,
+    suggested_retail_price: suggestedRetail,
+    store_margin_pct: pct(suggestedStore),
+    retail_margin_pct: pct(suggestedRetail),
+    pricing_notes: notes,
     cost_basis: cost,
+    category: category || null,
+    // provenance
+    basis,
+    effective_margin_pct: effectiveMarginPct,
+    retail_floor: retailFloor,
+    sources: {
+      amazon: amazon ? { url: amazon.url, title: amazon.title } : null,
+      walmart: walmart ? { url: walmart.url, title: walmart.title } : null,
+      market: market ? {
+        available: market.available, reason: market.reason ?? null, comparable: market.comparable,
+        count: market.count, low: market.low, median: market.median, high: market.high,
+        pack_size: market.pack_size, samples: market.samples.slice(0, 10),
+      } : null,
+    },
     researched_at: new Date().toISOString(),
   };
   if (draft_id) {
-    await sbAdmin().from('dd_catalog_drafts').update({ price_research: payload }).eq('id', draft_id);
+    await sb.from('dd_catalog_drafts').update({ price_research: payload }).eq('id', draft_id);
   }
   return payload;
 }
