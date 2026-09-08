@@ -2,13 +2,14 @@ import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
-import { LogOut, Crown, Download, Boxes } from 'lucide-react';
+import { LogOut, Crown, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import OpsBottomNav from '@/layouts/OpsBottomNav';
 import PwaGate from '@/components/pwa/PwaGate';
 import PwaUpdateToast from '@/components/pwa/PwaUpdateToast';
 import OpsAccessGate from '@/components/security/OpsAccessGate';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
+import { DDMark } from '@/components/dynasty-direct/DDMark';
 
 /**
  * OpsLayout — Mobile-first layout for portal/field workers
@@ -40,21 +41,21 @@ export default function OpsLayout() {
 
   return (
     <OpsAccessGate>
-      <div className="min-h-screen bg-background flex flex-col safe-area-top safe-area-x">
+      <div className={`min-h-screen bg-background flex flex-col safe-area-top safe-area-x${isWholesalerPortal ? ' dd-theme' : ''}`}>
         {/* Sticky Top Header */}
         <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md safe-area-top">
           <div className="flex items-center justify-between px-3 sm:px-4 h-14">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                {isWholesalerPortal ? (
-                  <Boxes className="h-4 w-4 text-primary" />
-                ) : (
-                  <Crown className="h-4 w-4 text-primary" />
-                )}
-              </div>
-              <span className="font-bold text-sm text-foreground">
-                {isWholesalerPortal ? 'Dynasty Direct Wholesaler' : 'GasMask Ops'}
-              </span>
+              {isWholesalerPortal ? (
+                <DDMark size={22} withWordmark />
+              ) : (
+                <>
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Crown className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="font-bold text-sm text-foreground">GasMask Ops</span>
+                </>
+              )}
             </div>
 
 
@@ -89,12 +90,14 @@ export default function OpsLayout() {
         <PwaUpdateToast />
 
         {/* Main Content — padding-bottom for bottom nav */}
-        <main className="flex-1 pb-20 px-3 sm:px-4 md:px-6">
+        <main className={isWholesalerPortal ? 'flex-1 pb-20 lg:pb-0' : 'flex-1 pb-20 px-3 sm:px-4 md:px-6'}>
           <Outlet />
         </main>
 
         {/* Bottom Navigation */}
-        <OpsBottomNav />
+        <div className={isWholesalerPortal ? 'lg:hidden' : undefined}>
+          <OpsBottomNav />
+        </div>
       </div>
     </OpsAccessGate>
   );

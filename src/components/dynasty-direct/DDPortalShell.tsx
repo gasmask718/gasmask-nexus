@@ -26,7 +26,7 @@ export function DDPortalShell({ children }: { children?: ReactNode }) {
   const current = NAV.find((n) => (n.end ? pathname === n.to : pathname.startsWith(n.to)));
 
   return (
-    <div className="dd-theme min-h-screen flex">
+    <div className="dd-theme flex min-h-[calc(100vh-3.5rem)]">
       {/* ── Chrome: navy-deep sidebar ─────────────────────────── */}
       <aside
         className="hidden lg:flex w-60 shrink-0 flex-col border-r"
