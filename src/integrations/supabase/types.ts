@@ -158975,6 +158975,10 @@ export type Database = {
       }
     }
     Functions: {
+      _aa_change_summary: {
+        Args: { p_fields: string[]; p_new: Json; p_old: Json }
+        Returns: string
+      }
       _execute_store_merge_from_plan: {
         Args: {
           p_group_id?: number
@@ -159015,10 +159019,12 @@ export type Database = {
       }
       account_activity_feed: {
         Args: {
+          p_action?: string
           p_actor_kind?: string
           p_from?: string
           p_limit?: number
           p_offset?: number
+          p_route?: string
           p_search?: string
           p_to?: string
         }
@@ -159027,6 +159033,7 @@ export type Database = {
           actor_id: string
           actor_name: string
           actor_role: string
+          detail_text: string
           note_text: string
           occurred_at: string
           route_date: string
