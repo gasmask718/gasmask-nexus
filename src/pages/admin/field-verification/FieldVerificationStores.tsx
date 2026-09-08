@@ -8,7 +8,8 @@ import { Loader2, Store, AlertTriangle } from 'lucide-react';
 import { useCrewDrops, useCrewProfiles, crewNameMap } from '@/hooks/useFieldVerification';
 import {
   useAmbassadorInventory, useProfileNames, stalenessLabel, isStale, daysSince,
-  STALE_DAYS, RECENT_DAYS,
+  STALE_DAYS, RECENT_DAYS, HUMAN_METHOD_LABEL,
+
 } from '@/hooks/useAmbassadorInventory';
 
 const GAP_LIMIT = 100;
@@ -28,17 +29,18 @@ export default function FieldVerificationStores() {
     [visits],
   );
 
-  // Stores an ambassador updated recently but the crew has never visited.
+  // Stores with a real human ambassador check-in recently but no crew visit.
   const gapEntries = useMemo(() => {
     if (!inventory) return [];
     return Array.from(inventory.values())
       .filter((c) => {
         if (visitedStoreIds.has(c.store_id)) return false;
-        const d = daysSince(c.last_updated_at);
+        const d = daysSince(c.last_human_update);
         return d !== null && d <= RECENT_DAYS;
       })
-      .sort((a, b) => (b.last_updated_at ?? '').localeCompare(a.last_updated_at ?? ''));
+      .sort((a, b) => (b.last_human_update ?? '').localeCompare(a.last_human_update ?? ''));
   }, [inventory, visitedStoreIds]);
+
 
   const gapShown = useMemo(() => gapEntries.slice(0, GAP_LIMIT), [gapEntries]);
 
@@ -69,7 +71,7 @@ export default function FieldVerificationStores() {
   const updaterIds = useMemo(() => {
     const ids: string[] = [];
     (inventory ? Array.from(inventory.values()) : []).forEach((c) => {
-      if (c.last_updated_by) ids.push(c.last_updated_by);
+      if (c.last_human_by) ids.push(c.last_human_by);
     });
     return ids;
   }, [inventory]);
@@ -94,14 +96,16 @@ export default function FieldVerificationStores() {
       const last = verified[0];
       const claim = storeId ? inventory?.get(storeId) : undefined;
       const crewDays = daysSince(last?.verified_at ?? null);
-      const ambStale = claim ? isStale(claim.last_updated_at) : false;
-      // Honest timing mismatch: only when both sides have data.
+      const hasHuman = !!claim?.last_human_update;
+      const ambStale = hasHuman ? isStale(claim!.last_human_update) : false;
+      // Honest timing mismatch: only when both sides have a real human record.
       const mismatch =
-        claim && crewDays !== null && crewDays <= STALE_DAYS && ambStale
-          ? 'Crew verified recently, ambassador record stale'
-          : claim && crewDays !== null && crewDays > STALE_DAYS && !ambStale
-            ? 'Ambassador updating, crew has not verified recently'
+        hasHuman && crewDays !== null && crewDays <= STALE_DAYS && ambStale
+          ? 'Crew verified recently, ambassador check-in stale'
+          : hasHuman && crewDays !== null && crewDays > STALE_DAYS && !ambStale
+            ? 'Ambassador checking in, crew has not verified recently'
             : null;
+
       return {
         key,
         name: rec?.store_name || list[0].store_name || 'Unknown store',
@@ -124,7 +128,9 @@ export default function FieldVerificationStores() {
         <h1 className="text-2xl font-bold flex items-center gap-2"><Store className="h-6 w-6 text-primary" /> Per-Store Verification</h1>
         <p className="text-sm text-muted-foreground">
           Crew store visits next to the ambassador inventory record for the same store.
-          Stale means no ambassador update in over {STALE_DAYS} days.
+          Stale means no confirmed human ambassador check-in in over {STALE_DAYS} days — automated
+          data refreshes never count as a check-in.
+
         </p>
       </div>
 
@@ -175,15 +181,27 @@ export default function FieldVerificationStores() {
                     <TableCell>
                       {r.claim ? (
                         <div className="space-y-0.5">
-                          <div className={r.ambStale ? 'text-destructive' : ''}>
-                            {stalenessLabel(r.claim.last_updated_at)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            by {updaterLabel(r.claim.last_updated_by)}
+                          {r.claim.last_human_update ? (
+                            <>
+                              <div className={r.ambStale ? 'text-destructive' : ''}>
+                                {stalenessLabel(r.claim.last_human_update)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                by {updaterLabel(r.claim.last_human_by)} · {r.claim.last_human_method}
+                              </div>
+                            </>
+                          ) : (
+                            <Badge variant="outline" className="border-destructive/50 text-destructive">
+                              No verified ambassador check-in on record
+                            </Badge>
+                          )}
+                          <div className="text-xs text-muted-foreground/70 italic">
+                            System data refreshed {stalenessLabel(r.claim.last_system_update).replace(/^Updated /, '').replace(/^Never updated$/, 'never')}
                           </div>
                         </div>
                       ) : <span className="text-muted-foreground">—</span>}
                     </TableCell>
+
                     <TableCell>
                       {r.mismatch
                         ? <Badge variant="outline" className="border-destructive/50 text-destructive">{r.mismatch}</Badge>
@@ -201,7 +219,7 @@ export default function FieldVerificationStores() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <AlertTriangle className="h-4 w-4 text-primary" />
-            Coverage gaps — ambassador active, crew never visited
+            Coverage gaps — confirmed ambassador check-in, crew never visited
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -209,13 +227,14 @@ export default function FieldVerificationStores() {
           {invError && <div className="p-4 text-sm text-destructive">{(invError as Error).message}</div>}
           {!invLoading && !invError && gapEntries.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
-              No gaps — every store with a recent ambassador update has a crew visit.
+              No gaps — every store with a confirmed ambassador check-in in the last {RECENT_DAYS} days has a crew visit.
             </div>
           )}
+
           {gapShown.length > 0 && (
             <>
               <div className="px-4 pb-2 text-sm text-muted-foreground">
-                {gapEntries.length} stores updated by an ambassador in the last {RECENT_DAYS} days with no crew store visit
+                {gapEntries.length} stores with a confirmed ambassador check-in in the last {RECENT_DAYS} days and no crew store visit
                 {gapEntries.length > GAP_LIMIT && ` — showing the ${GAP_LIMIT} most recent`}.
               </div>
               <div className="overflow-x-auto">
@@ -226,7 +245,7 @@ export default function FieldVerificationStores() {
                       <TableHead>Location</TableHead>
                       <TableHead className="text-right">Stock</TableHead>
                       <TableHead>Needs order</TableHead>
-                      <TableHead>Ambassador update</TableHead>
+                      <TableHead>Ambassador check-in</TableHead>
                       <TableHead>By</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -241,10 +260,15 @@ export default function FieldVerificationStores() {
                           </TableCell>
                           <TableCell className="text-right">{g.tubes_left}</TableCell>
                           <TableCell>{g.needs_order ? <Badge variant="outline">Yes</Badge> : '—'}</TableCell>
-                          <TableCell className={isStale(g.last_updated_at) ? 'text-destructive' : ''}>
-                            {stalenessLabel(g.last_updated_at)}
+                          <TableCell>
+                            <div className={isStale(g.last_human_update) ? 'text-destructive' : ''}>
+                              {stalenessLabel(g.last_human_update)}
+                            </div>
+                            <div className="text-xs text-muted-foreground/70 italic">
+                              System data refreshed {stalenessLabel(g.last_system_update).replace(/^Updated /, '').replace(/^Never updated$/, 'never')}
+                            </div>
                           </TableCell>
-                          <TableCell>{updaterLabel(g.last_updated_by)}</TableCell>
+                          <TableCell>{updaterLabel(g.last_human_by)}</TableCell>
                         </TableRow>
                       );
                     })}
@@ -258,8 +282,14 @@ export default function FieldVerificationStores() {
 
       <p className="text-xs text-muted-foreground">
         Ambassador figures are read-only from the live inventory record, summed across all brands tracked for
-        that store. Timing gaps are shown for judgment only — they do not prove a stock count is wrong.
+        that store. The ambassador check-in date counts <strong>only confirmed human visits</strong> — currently
+        the methods {HUMAN_METHOD_LABEL}. Every other update method (blank, “system”, and any
+        backfill, ledger-window, legacy-merge or tube_inv_v4_* label, including “tube_inv_v4_explicit”, which was
+        written as one bulk batch with no person attached) is an automated data refresh and is shown only on the
+        separate muted “System data refreshed” line. Timing gaps are shown for judgment only — they do not prove a
+        stock count is wrong.
       </p>
+
     </div>
   );
 }

@@ -10,14 +10,35 @@ import { supabase } from '@/integrations/supabase/client';
  * store: tubes = sum of current_tubes_left, needs_order = any brand flagged, and
  * "last updated" = the most recent row for that store across brands.
  */
+/**
+ * Human vs system split (Stage 5).
+ *
+ * Only these methods are a confirmed person standing in a store. Everything else
+ * (null, 'system', tube_inv_v4_*, bag_backfill_*, legacy_table_merge*) is an
+ * automated pipeline touch — verified by data: e.g. 378 of the 379
+ * 'tube_inv_v4_explicit' rows were written in a single minute (2026-08-20 07:52)
+ * with no user and no role, and no code path in this repo writes that label.
+ */
+export const HUMAN_METHODS = ['in_person', 'owner_confirmed_bags_returned'] as const;
+export const HUMAN_METHOD_LABEL = "'in_person' and 'owner_confirmed_bags_returned'";
+
+export function isHumanMethod(m: string | null | undefined): boolean {
+  return !!m && (HUMAN_METHODS as readonly string[]).includes(m);
+}
+
 export interface StoreInventoryClaim {
   store_id: string;
   tubes_left: number;
   needs_order: boolean;
   brands_tracked: number;
-  last_updated_at: string | null;
-  last_updated_by: string | null;
+  /** Most recent confirmed human check-in across brands, or null if there never was one. */
+  last_human_update: string | null;
+  last_human_by: string | null;
+  last_human_method: string | null;
+  /** Most recent row overall regardless of method — secondary context only. */
+  last_system_update: string | null;
 }
+
 
 export const STALE_DAYS = 30;
 export const RECENT_DAYS = 60;
@@ -54,7 +75,7 @@ export function useAmbassadorInventory() {
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await supabase
           .from('store_tube_inventory_status')
-          .select('store_id, current_tubes_left, needs_order, last_updated_at, last_updated_by')
+          .select('store_id, current_tubes_left, needs_order, last_updated_at, last_updated_by, last_updated_method')
           .eq('is_simulation', false)
           .range(from, from + PAGE - 1);
         if (error) throw error;
@@ -65,24 +86,32 @@ export function useAmbassadorInventory() {
       const byStore = new Map<string, StoreInventoryClaim>();
       for (const r of rows) {
         if (!r.store_id) continue;
-        const cur = byStore.get(r.store_id) ?? {
+        const cur: StoreInventoryClaim = byStore.get(r.store_id) ?? {
           store_id: r.store_id,
           tubes_left: 0,
           needs_order: false,
           brands_tracked: 0,
-          last_updated_at: null,
-          last_updated_by: null,
+          last_human_update: null,
+          last_human_by: null,
+          last_human_method: null,
+          last_system_update: null,
         };
         cur.tubes_left += Number(r.current_tubes_left ?? 0);
         cur.needs_order = cur.needs_order || !!r.needs_order;
         cur.brands_tracked += 1;
-        const stamp = r.last_updated_at ?? null;
-        if (stamp && (!cur.last_updated_at || stamp > cur.last_updated_at)) {
-          cur.last_updated_at = stamp;
-          cur.last_updated_by = r.last_updated_by ?? null;
+        const stamp: string | null = r.last_updated_at ?? null;
+        if (stamp && (!cur.last_system_update || stamp > cur.last_system_update)) {
+          cur.last_system_update = stamp;
+        }
+        if (stamp && isHumanMethod(r.last_updated_method)
+          && (!cur.last_human_update || stamp > cur.last_human_update)) {
+          cur.last_human_update = stamp;
+          cur.last_human_by = r.last_updated_by ?? null;
+          cur.last_human_method = r.last_updated_method ?? null;
         }
         byStore.set(r.store_id, cur);
       }
+
       return byStore;
     },
   });
