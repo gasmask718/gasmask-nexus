@@ -10,6 +10,47 @@ import { format } from 'date-fns';
 
 const PAGE = 50;
 
+const ACTION_LABELS: Record<string, string> = {
+  reviewed: 'Reviewed',
+  unreviewed: 'Marked unreviewed',
+  note_added: 'Note added',
+  address_corrected: 'Address corrected',
+  name_changed: 'Store name changed',
+  phone_updated: 'Phone updated',
+  status_changed: 'Status changed',
+  store_removed: 'Store removed',
+  record_updated: 'Record updated',
+  invoice_created: 'Invoice created',
+  payment_recorded: 'Payment recorded',
+  invoice_removed: 'Invoice removed',
+  route_assigned: 'Added to route',
+};
+
+const ACTION_STYLES: Record<string, string> = {
+  reviewed: 'bg-primary/15 text-primary border-primary/30',
+  unreviewed: 'bg-muted text-muted-foreground border-border',
+  note_added: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+  address_corrected: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  name_changed: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  phone_updated: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  status_changed: 'bg-violet-500/15 text-violet-400 border-violet-500/30',
+  store_removed: 'bg-destructive/15 text-destructive border-destructive/30',
+  record_updated: 'bg-muted text-muted-foreground border-border',
+  invoice_created: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  payment_recorded: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+  invoice_removed: 'bg-destructive/15 text-destructive border-destructive/30',
+  route_assigned: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
+};
+
+function ActionBadge({ action }: { action: string }) {
+  return (
+    <Badge variant="outline" className={ACTION_STYLES[action] ?? 'bg-muted text-muted-foreground border-border'}>
+      {ACTION_LABELS[action] ?? action}
+    </Badge>
+  );
+}
+
+
 export interface AuditFeedRow {
   row_id: string;
   row_kind: string;
