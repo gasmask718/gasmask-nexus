@@ -126,7 +126,7 @@ export default function GrabbaFinance() {
   const { data: commissions } = useQuery({
     queryKey: ["grabba-finance-commissions"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("commission_ledger")
         .select(`*, ambassador:ambassadors(user_id)`)
         .neq("status", "reversed")

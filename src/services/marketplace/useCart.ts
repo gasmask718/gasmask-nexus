@@ -117,9 +117,19 @@ export function useCart() {
       const { data: productsAll } = await supabase
         .from("products_public")
         .select(
-          "id, product_name, images, retail_price, store_price, wholesale_price, dtc_price_b, store_price_a, wholesaler_id, inventory_qty, weight_oz",
+          "id, product_name, images, retail_price, dtc_price_b, wholesaler_id, inventory_qty, weight_oz",
         )
         .in("id", productIds);
+
+      // Store/wholesale pricing is not public — signed-in trade accounts only.
+      const tierNow = detectTierForUser();
+      const { data: tierRows } = tierNow === 'retail'
+        ? { data: [] as any[] }
+        : await (supabase as any)
+            .from("products_pricing_tiers")
+            .select("id, store_price, store_price_a, wholesale_price")
+            .in("id", productIds);
+      const tierMap = new Map<string, any>((tierRows || []).map((r: any) => [r.id, r]));
 
       const { data: productsLocal } = await supabase
         .from("products")
@@ -128,14 +138,15 @@ export function useCart() {
 
       const productMap: Record<string, CartItem["product"]> = {};
       (productsAll || []).forEach((p: any) => {
+        const t = tierMap.get(p.id);
         productMap[p.id] = {
           id: p.id,
           product_name: p.product_name || "",
           images: Array.isArray(p.images) ? (p.images as string[]) : [],
           // Prefer authoritative DD pricing columns; fall back to legacy.
           retail_price: p.dtc_price_b ?? p.retail_price,
-          store_price:  p.store_price_a ?? p.store_price,
-          wholesale_price: p.wholesale_price,
+          store_price:  t ? (t.store_price_a ?? t.store_price) : null,
+          wholesale_price: t ? t.wholesale_price : null,
           wholesaler_id: p.wholesaler_id,
           inventory_qty: p.inventory_qty,
           weight_oz: p.weight_oz,
@@ -187,15 +198,22 @@ export function useCart() {
       if (price == null) {
         const { data: productAll } = await supabase
           .from("products_public")
-          .select("retail_price, store_price, wholesale_price, dtc_price_b, store_price_a")
+          .select("retail_price, dtc_price_b")
           .eq("id", productId)
           .single();
+        const { data: tiered } = effectiveTier === 'retail'
+          ? { data: null as any }
+          : await (supabase as any)
+              .from("products_pricing_tiers")
+              .select("store_price, store_price_a, wholesale_price")
+              .eq("id", productId)
+              .maybeSingle();
         if (productAll) {
           price = getProductPriceForDisplay(
             {
               retail_price: (productAll as any).dtc_price_b ?? productAll.retail_price,
-              store_price:  (productAll as any).store_price_a ?? productAll.store_price,
-              wholesale_price: productAll.wholesale_price,
+              store_price:  tiered ? (tiered.store_price_a ?? tiered.store_price) : null,
+              wholesale_price: tiered ? tiered.wholesale_price : null,
             },
             effectiveTier,
           );

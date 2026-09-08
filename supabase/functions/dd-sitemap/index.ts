@@ -12,7 +12,7 @@ Deno.serve(async () => {
   );
 
   const { data: products, error } = await sb
-    .from("products_all_public")
+    .from("products_public")
     .select("id, updated_at, category")
     .order("updated_at", { ascending: false })
     .limit(5000);

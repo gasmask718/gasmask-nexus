@@ -49,23 +49,29 @@ export function usePricing() {
     }
 
     // Fallback to product's direct pricing.
-    // Prefer authoritative DD columns (dtc_price_b / store_price_a) over legacy.
+    // Public catalogue carries the consumer price only. Store/wholesale pricing
+    // lives in products_pricing_tiers, which returns rows to signed-in
+    // store/wholesale/staff accounts only and nothing to anon or retail shoppers.
+    if (tier === 'wholesale' || tier === 'store') {
+      const { data: tiered } = await (supabase as any)
+        .from('products_pricing_tiers')
+        .select('store_price, store_price_a, wholesale_price')
+        .eq('id', productId)
+        .maybeSingle();
+      if (!tiered) return 0;
+      return tier === 'wholesale'
+        ? Number(tiered.wholesale_price) || 0
+        : Number(tiered.store_price_a) || Number(tiered.store_price) || 0;
+    }
+
     const { data: product } = await supabase
       .from('products_public')
-      .select('retail_price, store_price, wholesale_price, dtc_price_b, store_price_a')
+      .select('retail_price, dtc_price_b')
       .eq('id', productId)
       .single();
 
     if (!product) return 0;
-
-    switch (tier) {
-      case 'wholesale':
-        return Number(product.wholesale_price) || 0;
-      case 'store':
-        return Number(product.store_price_a) || Number(product.store_price) || 0;
-      default:
-        return Number(product.dtc_price_b) || Number(product.retail_price) || 0;
-    }
+    return Number(product.dtc_price_b) || Number(product.retail_price) || 0;
   };
 
   const getProductPriceForDisplay = (
