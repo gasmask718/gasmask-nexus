@@ -74,13 +74,24 @@ Deno.serve(async (req) => {
       const { data, error } = await supabase
         .from("products_all")
         .select(
-          "id, supplier_cost, category, map_price, market_avg_retail, min_store_margin_pct, min_dtc_margin_pct",
+          "id, supplier_cost, category, map_price, market_avg_retail, min_store_margin_pct, min_dtc_margin_pct, store_price_a, dtc_price_b, source_draft_id",
         )
         .eq("id", body.product_id)
         .maybeSingle();
       if (error) throw error;
       if (!data) throw new Error(`product ${body.product_id} not found`);
       row = { ...data, persist: body.persist ?? true };
+      // REVIEWED PRICES WIN: a product published from admin review already carries
+      // case-basis store_price_a / dtc_price_b. The insert trigger fires this function
+      // async; without this guard it would silently overwrite the reviewed prices with
+      // category-rule targets. Explicit { force: true } still recomputes.
+      const reviewed = Number((data as any).store_price_a) > 0 && Number((data as any).dtc_price_b) > 0 && !!(data as any).source_draft_id;
+      if (reviewed && body.force !== true) {
+        return new Response(JSON.stringify({
+          ok: true, skipped: true, reason: "reviewed prices present (source_draft_id set); pass force:true to recompute",
+          store_price_a: (data as any).store_price_a, dtc_price_b: (data as any).dtc_price_b,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+      }
     }
 
     const cost = Number(row.supplier_cost);
