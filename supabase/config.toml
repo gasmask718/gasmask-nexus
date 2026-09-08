@@ -620,3 +620,9 @@ verify_jwt = false
 
 [functions.playboxxx-recruiting-ingest]
 verify_jwt = false
+
+[functions.icw-intake]
+verify_jwt = false
+
+[functions.icw-status-sync]
+verify_jwt = false
