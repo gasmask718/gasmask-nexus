@@ -58,7 +58,9 @@ function PortfolioStoreMap({ title, height }: { title?: string; height?: number 
     enabled: ids.length > 0,
   });
 
-  const coordMap = new Map((coords || []).map((c: any) => [c.id, c]));
+  const coordMap = new Map<string, { lat: number | null; lng: number | null }>(
+    ((coords || []) as any[]).map((c) => [c.id as string, { lat: c.lat, lng: c.lng }]),
+  );
   const mapped: MapStore[] = (portfolio || []).map((s) => ({
     id: s.store_id,
     name: s.store_name,
