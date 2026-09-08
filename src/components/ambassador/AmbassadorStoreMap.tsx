@@ -1,187 +1,163 @@
 /**
- * AmbassadorStoreMap — Mapbox canvas showing the ambassador's portfolio stores.
- * RLS-scoped: only stores returned by useAmbassadorPortfolio are plotted.
- * Coordinates come from the `stores` table (legacy lat/lng store), joined by id.
+ * AmbassadorStoreMap — renders assigned stores / route stops as real map pins.
+ * Coordinates are read from the canonical `stores` record only. Stores without
+ * lat/lng are NEVER given invented coordinates — they are listed as needing geocoding.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, AlertTriangle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useAmbassadorPortfolio } from '@/hooks/useAmbassadorPortfolio';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { AlertTriangle, MapPin } from 'lucide-react';
+import { GeoMapView, type GeoPoint } from '@/components/map/GeoMapView';
 
-interface StoreCoord {
+export interface MapStore {
   id: string;
-  lat: number;
-  lng: number;
+  name: string;
+  address?: string;
+  lat?: number | null;
+  lng?: number | null;
+  /** e.g. stop status: planned | complete | skipped */
+  statusKey?: string;
+  order?: number;
 }
 
-export function AmbassadorStoreMap() {
-  const navigate = useNavigate();
-  const { stores, isLoading } = useAmbassadorPortfolio();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const [mapReady, setMapReady] = useState(false);
+const STATUS_COLORS: Record<string, string> = {
+  planned: '#3b82f6',
+  pending: '#3b82f6',
+  complete: '#22c55e',
+  completed: '#22c55e',
+  skipped: '#f97316',
+  assigned: '#8b5cf6',
+};
 
-  const storeIds = useMemo(() => stores.map((s) => s.store_id), [stores]);
+interface Props {
+  /** When omitted, the map self-loads the signed-in ambassador's assigned stores. */
+  stores?: MapStore[];
+  title?: string;
+  height?: number;
+}
 
-  // Fetch coords for the ambassador's stores from the `stores` legacy table
+/** Self-loading variant: the signed-in ambassador's own assigned stores. */
+function PortfolioStoreMap({ title, height }: { title?: string; height?: number }) {
+  const { stores: portfolio } = useAmbassadorPortfolio();
+  const ids = (portfolio || []).map((s) => s.store_id).filter(Boolean);
+
   const { data: coords } = useQuery({
-    queryKey: ['ambassador-store-coords', storeIds],
-    enabled: storeIds.length > 0,
-    queryFn: async (): Promise<StoreCoord[]> => {
+    queryKey: ['ambassador-map-coords', ids.sort().join(',')],
+    queryFn: async () => {
+      if (!ids.length) return [] as any[];
       const { data, error } = await supabase
         .from('stores')
         .select('id, lat, lng')
-        .in('id', storeIds)
-        .not('lat', 'is', null)
-        .not('lng', 'is', null);
+        .in('id', ids);
       if (error) throw error;
-      return ((data ?? []) as any[]).map((r) => ({
-        id: r.id as string,
-        lat: Number(r.lat),
-        lng: Number(r.lng),
-      }));
+      return data || [];
     },
+    enabled: ids.length > 0,
   });
 
-  // Initialize map once
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
-    const token = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
-    if (!token) return;
-    mapboxgl.accessToken = token;
-    mapRef.current = new mapboxgl.Map({
-      container: containerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [-73.95, 40.72], // NYC default
-      zoom: 10,
-    });
-    mapRef.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
-    mapRef.current.on('load', () => setMapReady(true));
-    return () => {
-      mapRef.current?.remove();
-      mapRef.current = null;
-    };
-  }, []);
+  const coordMap = new Map<string, { lat: number | null; lng: number | null }>(
+    ((coords || []) as any[]).map((c) => [c.id as string, { lat: c.lat, lng: c.lng }]),
+  );
+  const mapped: MapStore[] = (portfolio || []).map((s) => ({
+    id: s.store_id,
+    name: s.store_name,
+    address: [s.store_address, s.store_city, s.store_state].filter(Boolean).join(', '),
+    lat: coordMap.get(s.store_id)?.lat ?? null,
+    lng: coordMap.get(s.store_id)?.lng ?? null,
+    statusKey: 'assigned',
+  }));
 
-  // Render markers when data + map ready
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady || !coords) return;
+  return <MapBody stores={mapped} title={title || 'My Stores'} height={height ?? 420} />;
+}
 
-    // Clear old markers
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
+export function AmbassadorStoreMap({ stores, title, height }: Props) {
+  if (!stores) return <PortfolioStoreMap title={title} height={height} />;
+  return <MapBody stores={stores} title={title || 'Store Map'} height={height ?? 420} />;
+}
 
-    const coordById = new Map(coords.map((c) => [c.id, c]));
-    const bounds = new mapboxgl.LngLatBounds();
-    let plotted = 0;
+function MapBody({ stores, title, height }: { stores: MapStore[]; title: string; height: number }) {
+  const withCoords = useMemo(
+    () => stores.filter((s) => typeof s.lat === 'number' && typeof s.lng === 'number'),
+    [stores],
+  );
+  const missing = useMemo(
+    () => stores.filter((s) => typeof s.lat !== 'number' || typeof s.lng !== 'number'),
+    [stores],
+  );
 
-    stores.forEach((store) => {
-      const c = coordById.get(store.store_id);
-      if (!c) return;
+  const points: GeoPoint[] = useMemo(
+    () =>
+      withCoords.map((s) => ({
+        id: s.id,
+        lat: s.lat as number,
+        lng: s.lng as number,
+        title: s.order ? `${s.order}. ${s.name}` : s.name,
+        subtitle: s.address,
+        statusKey: s.statusKey || 'assigned',
+      })),
+    [withCoords],
+  );
 
-      const el = document.createElement('div');
-      el.className = 'cursor-pointer';
-      const isSourced = store.assignment_type === 'sourced';
-      el.style.cssText = `
-        width: 22px; height: 22px; border-radius: 50%;
-        background: ${isSourced ? 'hsl(142 76% 45%)' : 'hsl(217 91% 60%)'};
-        border: 2px solid white;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.35);
-      `;
-
-      const popupHtml = `
-        <div style="font-family: ui-sans-serif, system-ui; padding: 2px 4px; max-width: 220px;">
-          <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">
-            ${escapeHtml(store.store_name || 'Unnamed store')}
-          </div>
-          <div style="font-size: 12px; color: #555; margin-bottom: 4px;">
-            ${escapeHtml([store.store_address, store.store_city, store.store_state].filter(Boolean).join(', '))}
-          </div>
-          <div style="display:flex; gap:6px; align-items:center; font-size: 11px; margin-bottom: 6px;">
-            <span style="padding:2px 6px; border-radius: 4px; background:${isSourced ? '#dcfce7' : '#dbeafe'}; color:${isSourced ? '#166534' : '#1e40af'};">
-              ${store.assignment_type}
-            </span>
-            ${store.is_primary ? '<span style="padding:2px 6px; border-radius:4px; background:#fef3c7; color:#92400e;">primary</span>' : ''}
-            <span style="color:#666;">Comm ${store.commission_rate}%</span>
-          </div>
-          <button id="ambassador-store-open-${store.store_id}"
-            style="display:block;width:100%;padding:6px 8px;font-size:12px;font-weight:500;background:#111;color:#fff;border:0;border-radius:6px;cursor:pointer;">
-            Open store →
-          </button>
-        </div>
-      `;
-
-      const popup = new mapboxgl.Popup({ offset: 16, closeButton: true }).setHTML(popupHtml);
-      popup.on('open', () => {
-        const btn = document.getElementById(`ambassador-store-open-${store.store_id}`);
-        btn?.addEventListener('click', () => navigate(`/ambassador/stores/${store.store_id}`));
-      });
-
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([c.lng, c.lat])
-        .setPopup(popup)
-        .addTo(map);
-
-      markersRef.current.push(marker);
-      bounds.extend([c.lng, c.lat]);
-      plotted++;
-    });
-
-    if (plotted > 0) {
-      map.fitBounds(bounds, { padding: 50, maxZoom: 14, duration: 400 });
-    }
-  }, [stores, coords, mapReady, navigate]);
-
-  const tokenMissing = !import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
-  const plottedCount = coords?.length ?? 0;
-  const missingCoords = stores.length - plottedCount;
+  const center = useMemo<[number, number]>(() => {
+    if (!points.length) return [-73.94, 40.65];
+    const lng = points.reduce((a, p) => a + p.lng, 0) / points.length;
+    const lat = points.reduce((a, p) => a + p.lat, 0) / points.length;
+    return [lng, lat];
+  }, [points]);
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <MapPin className="h-4 w-4" />
-          My Stores Map
-          <span className="ml-auto text-xs font-normal text-muted-foreground">
-            {plottedCount} on map{missingCoords > 0 ? ` · ${missingCoords} missing location` : ''}
-          </span>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <MapPin className="h-4 w-4" /> {title}
         </CardTitle>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">{withCoords.length} mapped</Badge>
+          {missing.length > 0 && (
+            <Badge variant="outline" className="text-amber-500 border-amber-500/40">
+              {missing.length} need geocoding
+            </Badge>
+          )}
+        </div>
       </CardHeader>
-      <CardContent className="p-0">
-        {tokenMissing ? (
-          <div className="p-6 text-sm text-muted-foreground flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-500" />
-            Map unavailable: VITE_MAPBOX_PUBLIC_TOKEN is not configured.
+      <CardContent className="space-y-3">
+        {points.length > 0 ? (
+          <div style={{ height }} className="rounded-lg overflow-hidden border">
+            <GeoMapView
+              points={points}
+              statusColors={STATUS_COLORS}
+              initialCenter={center}
+              initialZoom={points.length === 1 ? 13 : 10}
+              clustering={false}
+              className="h-full"
+            />
           </div>
         ) : (
-          <div
-            ref={containerRef}
-            className="w-full h-[320px] sm:h-[420px] rounded-b-lg overflow-hidden"
-            aria-label="Map of your stores"
-          />
-        )}
-        {!tokenMissing && !isLoading && stores.length === 0 && (
-          <p className="px-4 py-3 text-sm text-muted-foreground">
-            No stores in your portfolio yet.
+          <p className="text-sm text-muted-foreground py-6 text-center">
+            No mapped locations yet — none of these stores have coordinates on file.
           </p>
+        )}
+
+        {missing.length > 0 && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-amber-500 mb-2">
+              <AlertTriangle className="h-4 w-4" />
+              Missing coordinates — needs geocoding
+            </div>
+            <ul className="space-y-1 text-sm text-muted-foreground">
+              {missing.map((s) => (
+                <li key={s.id}>
+                  <span className="text-foreground">{s.name}</span>
+                  {s.address ? ` — ${s.address}` : ' — no address on file'}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </CardContent>
     </Card>
   );
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }

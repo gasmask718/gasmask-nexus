@@ -95,6 +95,9 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
             <p className="text-sm text-muted-foreground truncate mb-2">
               {store.store_owner}
             </p>
+            {store.store_address && (
+              <p className="text-sm text-muted-foreground mb-1">{store.store_address}</p>
+            )}
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />

@@ -4,6 +4,7 @@
  */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AmbassadorStoreMap } from '@/components/ambassador/AmbassadorStoreMap';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -380,6 +381,25 @@ export default function AmbassadorRoutes() {
             </Card>
           </div>
         </div>
+
+        {/* Route stops on the map — real coordinates only */}
+        {todaysRoute?.stops?.length ? (
+          <AmbassadorStoreMap
+            title={`${todaysRoute.title} — stop map`}
+            height={380}
+            stores={[...todaysRoute.stops]
+              .sort((a, b) => a.planned_order - b.planned_order)
+              .map((s) => ({
+                id: s.id,
+                name: s.store_name || `Stop #${s.planned_order}`,
+                address: s.store_address,
+                lat: s.store_lat ?? null,
+                lng: s.store_lng ?? null,
+                statusKey: s.status,
+                order: s.planned_order,
+              }))}
+          />
+        ) : null}
 
         {/* Route History */}
         <Card>
