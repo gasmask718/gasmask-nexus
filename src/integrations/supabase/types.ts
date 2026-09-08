@@ -72590,6 +72590,9 @@ export type Database = {
           assigned_worker_id: string | null
           category: string
           created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
           external_booking_id: string | null
           id: string
           price: number | null
@@ -72604,6 +72607,9 @@ export type Database = {
           assigned_worker_id?: string | null
           category: string
           created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           external_booking_id?: string | null
           id?: string
           price?: number | null
@@ -72618,6 +72624,9 @@ export type Database = {
           assigned_worker_id?: string | null
           category?: string
           created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           external_booking_id?: string | null
           id?: string
           price?: number | null
@@ -72817,6 +72826,24 @@ export type Database = {
           tier?: string | null
           updated_at?: string
           verified?: boolean
+        }
+        Relationships: []
+      }
+      icw_webhook_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string | null
         }
         Relationships: []
       }
