@@ -28,17 +28,18 @@ export default function FieldVerificationStores() {
     [visits],
   );
 
-  // Stores an ambassador updated recently but the crew has never visited.
+  // Stores with a real human ambassador check-in recently but no crew visit.
   const gapEntries = useMemo(() => {
     if (!inventory) return [];
     return Array.from(inventory.values())
       .filter((c) => {
         if (visitedStoreIds.has(c.store_id)) return false;
-        const d = daysSince(c.last_updated_at);
+        const d = daysSince(c.last_human_update);
         return d !== null && d <= RECENT_DAYS;
       })
-      .sort((a, b) => (b.last_updated_at ?? '').localeCompare(a.last_updated_at ?? ''));
+      .sort((a, b) => (b.last_human_update ?? '').localeCompare(a.last_human_update ?? ''));
   }, [inventory, visitedStoreIds]);
+
 
   const gapShown = useMemo(() => gapEntries.slice(0, GAP_LIMIT), [gapEntries]);
 
