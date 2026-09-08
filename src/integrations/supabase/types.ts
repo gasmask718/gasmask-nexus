@@ -160944,6 +160944,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      icw_category_gate: { Args: { _category: string }; Returns: string }
+      icw_dispatch_job: { Args: { _job_id: string }; Returns: Json }
+      icw_worker_is_available: {
+        Args: { _availability: string }
+        Returns: boolean
+      }
       increment_call_count: {
         Args: { row_id: string; target_table?: string }
         Returns: number
@@ -162537,6 +162543,8 @@ export type Database = {
         | "in_progress"
         | "complete"
         | "cancelled"
+        | "blocked_licensing"
+        | "unmatched"
       idea_status:
         | "new"
         | "triaged"
@@ -163205,6 +163213,8 @@ export const Constants = {
         "in_progress",
         "complete",
         "cancelled",
+        "blocked_licensing",
+        "unmatched",
       ],
       idea_status: [
         "new",
