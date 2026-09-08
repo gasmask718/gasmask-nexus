@@ -1,10 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Activity, CalendarRange, DollarSign, Sparkles } from 'lucide-react';
+import { verifiedUpdate, mutationErrorMessage } from '@/lib/verifiedMutation';
+import { toast } from 'sonner';
+import { Users, Activity, CalendarRange, DollarSign, Sparkles, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
+
+type AttentionJob = {
+  id: string;
+  category: string;
+  sub_service: string | null;
+  state: string | null;
+  address: string | null;
+  status: string;
+  scheduled_at: string | null;
+  created_at: string;
+  latest_note: string | null;
+};
 
 function startOfWeek(): Date {
   const d = new Date();
@@ -17,11 +32,13 @@ function startOfWeek(): Date {
 
 export default function ICWCommandDashboard() {
   const weekStart = startOfWeek().toISOString();
+  const qc = useQueryClient();
+  const [retrying, setRetrying] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['icw-command-metrics', weekStart],
     queryFn: async () => {
-      const [workers, activeJobs, weekJobs] = await Promise.all([
+      const [workers, activeJobs, weekJobs, blocked, unmatched] = await Promise.all([
         supabase.from('icw_workers').select('id', { count: 'exact', head: true }),
         supabase
           .from('icw_jobs')
@@ -31,11 +48,15 @@ export default function ICWCommandDashboard() {
           .from('icw_jobs')
           .select('id, price, status')
           .gte('scheduled_at', weekStart),
+        supabase.from('icw_jobs').select('id', { count: 'exact', head: true }).eq('status', 'blocked_licensing'),
+        supabase.from('icw_jobs').select('id', { count: 'exact', head: true }).eq('status', 'unmatched'),
       ]);
 
       if (workers.error) throw workers.error;
       if (activeJobs.error) throw activeJobs.error;
       if (weekJobs.error) throw weekJobs.error;
+      if (blocked.error) throw blocked.error;
+      if (unmatched.error) throw unmatched.error;
 
       const rows = weekJobs.data ?? [];
       const revenue = rows
@@ -47,9 +68,58 @@ export default function ICWCommandDashboard() {
         activeJobs: activeJobs.count ?? 0,
         jobsThisWeek: rows.length,
         revenueThisWeek: revenue,
+        blockedLicensing: blocked.count ?? 0,
+        unmatched: unmatched.count ?? 0,
       };
     },
   });
+
+  const attentionCount = (data?.blockedLicensing ?? 0) + (data?.unmatched ?? 0);
+
+  const attention = useQuery({
+    queryKey: ['icw-attention-jobs'],
+    queryFn: async (): Promise<AttentionJob[]> => {
+      const { data: jobs, error: jErr } = await supabase
+        .from('icw_jobs')
+        .select('id, category, sub_service, state, address, status, scheduled_at, created_at')
+        .in('status', ['blocked_licensing', 'unmatched'])
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (jErr) throw jErr;
+      const ids = (jobs ?? []).map((j) => j.id);
+      if (ids.length === 0) return [];
+      const { data: logs, error: lErr } = await supabase
+        .from('icw_dispatch_log')
+        .select('job_id, note, created_at')
+        .in('job_id', ids)
+        .order('created_at', { ascending: false });
+      if (lErr) throw lErr;
+      const latest = new Map<string, string>();
+      for (const l of logs ?? []) {
+        if (l.job_id && !latest.has(l.job_id)) latest.set(l.job_id, l.note ?? '');
+      }
+      return (jobs ?? []).map((j) => ({ ...j, latest_note: latest.get(j.id) ?? null }));
+    },
+  });
+
+  // Resetting to 'pending' re-fires the DB dispatch trigger (gate → match).
+  const retryDispatch = async (jobId: string) => {
+    setRetrying(jobId);
+    try {
+      await verifiedUpdate('re-run ICW dispatch', () =>
+        supabase.from('icw_jobs').update({ status: 'pending' }).eq('id', jobId),
+      );
+      toast.success('Dispatch re-run — see updated status below');
+    } catch (e) {
+      toast.error(mutationErrorMessage(e));
+    } finally {
+      setRetrying(null);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['icw-command-metrics'] }),
+        qc.invalidateQueries({ queryKey: ['icw-attention-jobs'] }),
+      ]);
+    }
+  };
 
   // ICW brand accent: blue (#1B4F72 / #4FC3E8) → green (#3C9F40 / #B4D334)
   const stats = [
