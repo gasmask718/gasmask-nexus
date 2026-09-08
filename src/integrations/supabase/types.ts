@@ -48024,6 +48024,13 @@ export type Database = {
             foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
             columns: ["published_product_id"]
             isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -48294,6 +48301,13 @@ export type Database = {
             foreignKeyName: "dd_content_assets_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_content_assets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -48403,6 +48417,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_content_briefs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
             referencedColumns: ["id"]
           },
           {
@@ -48603,6 +48624,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_custom_pricing_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
             referencedColumns: ["id"]
           },
           {
@@ -49302,6 +49330,13 @@ export type Database = {
             foreignKeyName: "dd_inventory_adjustments_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_inventory_adjustments_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -49492,6 +49527,13 @@ export type Database = {
             foreignKeyName: "dd_margin_alerts_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_margin_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -49565,6 +49607,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_market_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
             referencedColumns: ["id"]
           },
           {
@@ -50215,6 +50264,13 @@ export type Database = {
             foreignKeyName: "dd_price_alerts_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_price_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -50332,6 +50388,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: true
             referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_product_margin_overrides_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_pricing_tiers"
             referencedColumns: ["id"]
           },
           {
@@ -50479,6 +50542,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
             referencedColumns: ["id"]
           },
           {
@@ -51033,6 +51103,13 @@ export type Database = {
             foreignKeyName: "dd_routing_pins_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_routing_pins_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -51506,6 +51583,13 @@ export type Database = {
             foreignKeyName: "dd_store_inventory_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_store_inventory_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -51646,6 +51730,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_store_sales_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
             referencedColumns: ["id"]
           },
           {
@@ -81894,6 +81985,13 @@ export type Database = {
             foreignKeyName: "marketplace_inventory_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_inventory_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -95421,6 +95519,13 @@ export type Database = {
             foreignKeyName: "pricing_tiers_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -96135,6 +96240,13 @@ export type Database = {
             foreignKeyName: "product_variant_options_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variant_options_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -96223,6 +96335,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
             referencedColumns: ["id"]
           },
           {
@@ -96322,6 +96441,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_views_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
             referencedColumns: ["id"]
           },
           {
@@ -103363,6 +103489,13 @@ export type Database = {
             foreignKeyName: "review_summaries_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: true
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_summaries_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -103415,6 +103548,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: true
             referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_summary_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_pricing_tiers"
             referencedColumns: ["id"]
           },
           {
@@ -120341,6 +120481,13 @@ export type Database = {
             foreignKeyName: "store_saved_products_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_saved_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -122936,6 +123083,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_cost_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
             referencedColumns: ["id"]
           },
           {
@@ -148395,6 +148549,13 @@ export type Database = {
             foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
             columns: ["published_product_id"]
             isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
@@ -148625,6 +148786,13 @@ export type Database = {
             columns: ["published_product_id"]
             isOneToOne: false
             referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_catalog_drafts_published_product_id_fkey"
+            columns: ["published_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
             referencedColumns: ["id"]
           },
           {
@@ -150707,6 +150875,36 @@ export type Database = {
           },
         ]
       }
+      products_pricing_tiers: {
+        Row: {
+          case_price_store: number | null
+          dtc_price_b: number | null
+          id: string | null
+          retail_price: number | null
+          store_price: number | null
+          store_price_a: number | null
+          wholesale_price: number | null
+        }
+        Insert: {
+          case_price_store?: number | null
+          dtc_price_b?: number | null
+          id?: string | null
+          retail_price?: number | null
+          store_price?: number | null
+          store_price_a?: number | null
+          wholesale_price?: number | null
+        }
+        Update: {
+          case_price_store?: number | null
+          dtc_price_b?: number | null
+          id?: string | null
+          retail_price?: number | null
+          store_price?: number | null
+          store_price_a?: number | null
+          wholesale_price?: number | null
+        }
+        Relationships: []
+      }
       products_public: {
         Row: {
           ai_description: string | null
@@ -150715,7 +150913,6 @@ export type Database = {
           brand: string | null
           brand_id: string | null
           brand_visible: string | null
-          case_price_store: number | null
           case_qty: number | null
           category: string | null
           created_at: string | null
@@ -150735,13 +150932,11 @@ export type Database = {
           key_features: string[] | null
           length_in: number | null
           low_stock_threshold: number | null
-          map_price: number | null
           min_order_qty: number | null
           package_text: string | null
           primary_image_url: string | null
           processing_time: string | null
           product_name: string | null
-          recognition: Json | null
           requires_pact_act: boolean | null
           retail_price: number | null
           retail_price_cents: number | null
@@ -150753,10 +150948,6 @@ export type Database = {
           size_or_count: string | null
           stackable: boolean | null
           status: string | null
-          store_price: number | null
-          store_price_a: number | null
-          store_price_cents: number | null
-          street_price: number | null
           supplier_ships: boolean | null
           track_inventory: boolean | null
           unit_type: string | null
@@ -150764,7 +150955,6 @@ export type Database = {
           updated_at: string | null
           variant_types: string[] | null
           weight_oz: number | null
-          wholesale_price: number | null
           wholesaler_id: string | null
           width_in: number | null
         }
@@ -150775,7 +150965,6 @@ export type Database = {
           brand?: string | null
           brand_id?: string | null
           brand_visible?: string | null
-          case_price_store?: number | null
           case_qty?: number | null
           category?: string | null
           created_at?: string | null
@@ -150795,13 +150984,11 @@ export type Database = {
           key_features?: string[] | null
           length_in?: number | null
           low_stock_threshold?: number | null
-          map_price?: number | null
           min_order_qty?: number | null
           package_text?: string | null
           primary_image_url?: string | null
           processing_time?: string | null
           product_name?: string | null
-          recognition?: Json | null
           requires_pact_act?: boolean | null
           retail_price?: number | null
           retail_price_cents?: number | null
@@ -150813,10 +151000,6 @@ export type Database = {
           size_or_count?: string | null
           stackable?: boolean | null
           status?: string | null
-          store_price?: number | null
-          store_price_a?: number | null
-          store_price_cents?: number | null
-          street_price?: number | null
           supplier_ships?: boolean | null
           track_inventory?: boolean | null
           unit_type?: string | null
@@ -150824,7 +151007,6 @@ export type Database = {
           updated_at?: string | null
           variant_types?: string[] | null
           weight_oz?: number | null
-          wholesale_price?: number | null
           wholesaler_id?: string | null
           width_in?: number | null
         }
@@ -150835,7 +151017,6 @@ export type Database = {
           brand?: string | null
           brand_id?: string | null
           brand_visible?: string | null
-          case_price_store?: number | null
           case_qty?: number | null
           category?: string | null
           created_at?: string | null
@@ -150855,13 +151036,11 @@ export type Database = {
           key_features?: string[] | null
           length_in?: number | null
           low_stock_threshold?: number | null
-          map_price?: number | null
           min_order_qty?: number | null
           package_text?: string | null
           primary_image_url?: string | null
           processing_time?: string | null
           product_name?: string | null
-          recognition?: Json | null
           requires_pact_act?: boolean | null
           retail_price?: number | null
           retail_price_cents?: number | null
@@ -150873,10 +151052,6 @@ export type Database = {
           size_or_count?: string | null
           stackable?: boolean | null
           status?: string | null
-          store_price?: number | null
-          store_price_a?: number | null
-          store_price_cents?: number | null
-          street_price?: number | null
           supplier_ships?: boolean | null
           track_inventory?: boolean | null
           unit_type?: string | null
@@ -150884,7 +151059,6 @@ export type Database = {
           updated_at?: string | null
           variant_types?: string[] | null
           weight_oz?: number | null
-          wholesale_price?: number | null
           wholesaler_id?: string | null
           width_in?: number | null
         }
