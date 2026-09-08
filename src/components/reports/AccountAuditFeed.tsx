@@ -21,6 +21,8 @@ export interface AuditFeedRow {
   actor_role: string;
   action: string | null;
   note_text: string | null;
+  detail_text: string | null;
+
   route_id: string | null;
   route_name: string | null;
   route_date: string | null;
@@ -238,6 +240,8 @@ export default function AccountAuditFeed() {
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
   const [actorKind, setActorKind] = useState('all');
+  const [action, setAction] = useState('all');
+  const [routeFilter, setRouteFilter] = useState('all');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -250,7 +254,7 @@ export default function AccountAuditFeed() {
   }, [search]);
 
   const query = useInfiniteQuery({
-    queryKey: ['account-audit-feed', debounced, actorKind, from, to],
+    queryKey: ['account-audit-feed', debounced, actorKind, action, routeFilter, from, to],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const { data, error } = await (supabase as any).rpc('account_activity_feed', {
@@ -260,12 +264,15 @@ export default function AccountAuditFeed() {
         p_to: to ? `${to}T23:59:59Z` : null,
         p_limit: PAGE,
         p_offset: pageParam as number,
+        p_action: action,
+        p_route: routeFilter,
       });
       if (error) throw error;
       return { rows: (data ?? []) as AuditFeedRow[], offset: pageParam as number };
     },
     getNextPageParam: (last) => (last.rows.length < PAGE ? undefined : last.offset + PAGE),
   });
+
 
   const rows = useMemo(() => query.data?.pages.flatMap((p) => p.rows) ?? [], [query.data]);
   const total = rows[0]?.total_count ?? 0;
