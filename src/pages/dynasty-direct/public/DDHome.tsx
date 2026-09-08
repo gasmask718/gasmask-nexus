@@ -107,7 +107,15 @@ export default function DDHome() {
       {/* ── Catalog ───────────────────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 py-16">
         <div className="flex items-end justify-between gap-4 border-b border-[hsl(var(--dd-line))] pb-4">
-          <h2 className="font-display text-2xl">In the catalog now</h2>
+          <h2 className="font-display text-2xl">
+            In the catalog now
+            {typeof data?.liveCount === 'number' && (
+              <span className="dd-num ml-3 text-base text-[hsl(var(--dd-ink))]/50">
+                {data.liveCount} live
+              </span>
+            )}
+          </h2>
+
           <Link to="/shop" className="text-sm text-[hsl(var(--dd-navy))] underline underline-offset-4">
             See everything
           </Link>
