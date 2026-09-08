@@ -160025,6 +160025,12 @@ export type Database = {
         }
         Returns: string
       }
+      dd_creator_update_draft: {
+        Args: { p_draft_id: string; p_patch: Json }
+        Returns: {
+          id: string
+        }[]
+      }
       dd_decrement_inventory: {
         Args: {
           p_order_id: string
