@@ -553,30 +553,49 @@ async function runEstimateMeasurements(body: any) {
   // Prefer the recognised name/brand off the draft when the caller passed a placeholder.
   let name = String(product_name);
   let brand = brand_hint ? String(brand_hint) : null;
+  let packCount: number | null = null;
   if (draft_id) {
-    const { data: d } = await sb.from('dd_catalog_drafts').select('recognition').eq('id', draft_id).maybeSingle();
+    const { data: d } = await sb
+      .from('dd_catalog_drafts')
+      .select('recognition, label_extraction, pack_count, pack_count_source')
+      .eq('id', draft_id)
+      .maybeSingle();
     const rec = (d?.recognition || {}) as any;
     if (/pending photo read/i.test(name) && rec.product_name) name = String(rec.product_name);
     if (!brand && rec.brand_visible) brand = String(rec.brand_visible);
+    // Same deterministic pack-count read used by price research.
+    const pack = resolvePackCount({
+      human_pack_count: (d as any)?.pack_count_source === 'human' ? (d as any)?.pack_count : null,
+      label_units_per_case: ((d as any)?.label_extraction as any)?.units_per_case ?? null,
+      recognition: (d as any)?.recognition ?? null,
+      label_extraction: (d as any)?.label_extraction ?? null,
+    });
+    packCount = pack.pack_count;
   }
+  if (body.pack_count != null && Number(body.pack_count) > 0) packCount = Number(body.pack_count);
 
-  const specs = await lookupSourcedSpecs(sb, name, brand);
-  const sourced = specs.status === 'sourced' && specs.weight && specs.dimensions;
+  const specs = await lookupSourcedSpecs(sb, name, brand, packCount);
+  const haveWeight = !!specs.weight;
+  const haveDims = !!specs.dimensions;
 
   // Backward-compatible shape for the wizard (weight_oz / dimensions / confidence)
   // plus the new provenance fields. Values are only filled when sourced.
   const payload = {
     status: specs.status,
     source: 'sourced_web' as const,
-    weight_oz: sourced ? specs.weight!.weight_oz : null,
-    dimensions: sourced
+    target_units: specs.target_units,
+    weight_basis: specs.weight_basis,
+    dimension_basis: specs.dimension_basis,
+    dimensions_status: specs.dimensions_status,
+    weight_oz: haveWeight ? specs.weight!.weight_oz : null,
+    dimensions: haveDims
       ? { length_in: specs.dimensions!.length_in, width_in: specs.dimensions!.width_in, height_in: specs.dimensions!.height_in }
       : null,
     confidence: specs.confidence,
     reasoning: specs.reason ?? '',
     sources: [
-      ...(specs.weight ? [{ field: 'weight', verbatim: specs.weight.verbatim, url: specs.weight.source_url, via: specs.weight.via }] : []),
-      ...(specs.dimensions ? [{ field: 'dimensions', verbatim: specs.dimensions.verbatim, url: specs.dimensions.source_url, via: specs.dimensions.via }] : []),
+      ...(specs.weight ? [{ field: 'weight', verbatim: specs.weight.verbatim, url: specs.weight.source_url, via: specs.weight.via, basis: specs.weight.basis ?? null, source_units: specs.weight.source_units ?? null }] : []),
+      ...(specs.dimensions ? [{ field: 'dimensions', verbatim: specs.dimensions.verbatim, url: specs.dimensions.source_url, via: specs.dimensions.via, basis: specs.dimensions.basis ?? null, source_units: specs.dimensions.source_units ?? null }] : []),
     ],
     suggested_box: specs.suggested_box,
     query: specs.query,
@@ -585,16 +604,16 @@ async function runEstimateMeasurements(body: any) {
 
   if (draft_id) {
     const update: Record<string, unknown> = { sourced_specs: specs, measurements_estimate: payload };
-    if (sourced) {
-      // Prefill the editable fields from SOURCED values only. Never marks verified —
-      // measurements_verified_at stays a human action.
-      update.weight_oz = payload.weight_oz;
-      update.dimensions = payload.dimensions;
-    }
+    // Prefill the editable fields from SOURCED values only. Never marks verified —
+    // measurements_verified_at stays a human action. Weight and dimensions are
+    // prefilled independently because dimensions are gated harder than weight.
+    if (haveWeight) update.weight_oz = payload.weight_oz;
+    if (haveDims) update.dimensions = payload.dimensions;
     await sb.from('dd_catalog_drafts').update(update).eq('id', draft_id);
   }
   return payload;
 }
+
 
 async function runPublish(body: any) {
   const { draft_id, confirmed_by } = body;
