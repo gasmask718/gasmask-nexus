@@ -36,13 +36,16 @@ export default function DDHome() {
         .limit(8);
       if (error) throw error;
 
-      const { count: supplierCount } = await supabase
-        .from('wholesalers')
-        .select('id', { count: 'exact', head: true });
+      // Live catalog size — the only supply-side number a public visitor can read.
+      const { count: liveCount } = await supabase
+        .from('products_public')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active');
 
-      return { products: products ?? [], supplierCount: supplierCount ?? 0 };
+      return { products: products ?? [], liveCount: liveCount ?? 0 };
     },
   });
+
 
   const products = data?.products ?? [];
 
