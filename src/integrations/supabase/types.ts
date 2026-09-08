@@ -72588,11 +72588,13 @@ export type Database = {
         Row: {
           address: string | null
           assigned_worker_id: string | null
+          awaiting_response_since: string | null
           category: string
           created_at: string
           customer_email: string | null
           customer_name: string | null
           customer_phone: string | null
+          declined_worker_ids: string[]
           external_booking_id: string | null
           id: string
           price: number | null
@@ -72605,11 +72607,13 @@ export type Database = {
         Insert: {
           address?: string | null
           assigned_worker_id?: string | null
+          awaiting_response_since?: string | null
           category: string
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          declined_worker_ids?: string[]
           external_booking_id?: string | null
           id?: string
           price?: number | null
@@ -72622,11 +72626,13 @@ export type Database = {
         Update: {
           address?: string | null
           assigned_worker_id?: string | null
+          awaiting_response_since?: string | null
           category?: string
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          declined_worker_ids?: string[]
           external_booking_id?: string | null
           id?: string
           price?: number | null
@@ -72861,6 +72867,7 @@ export type Database = {
           phone: string | null
           state: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           approved?: boolean
@@ -72875,6 +72882,7 @@ export type Database = {
           phone?: string | null
           state?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           approved?: boolean
@@ -72889,6 +72897,7 @@ export type Database = {
           phone?: string | null
           state?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -160979,9 +160988,17 @@ export type Database = {
       }
       icw_category_gate: { Args: { _category: string }; Returns: string }
       icw_dispatch_job: { Args: { _job_id: string }; Returns: Json }
+      icw_expire_worker_responses: {
+        Args: { _minutes?: number }
+        Returns: Json
+      }
       icw_worker_is_available: {
         Args: { _availability: string }
         Returns: boolean
+      }
+      icw_worker_respond: {
+        Args: { _accept: boolean; _job_id: string }
+        Returns: Json
       }
       increment_call_count: {
         Args: { row_id: string; target_table?: string }
@@ -162572,6 +162589,7 @@ export type Database = {
         | "digital"
       icw_job_status:
         | "pending"
+        | "awaiting_worker_response"
         | "matched"
         | "in_progress"
         | "complete"
@@ -163242,6 +163260,7 @@ export const Constants = {
       ],
       icw_job_status: [
         "pending",
+        "awaiting_worker_response",
         "matched",
         "in_progress",
         "complete",

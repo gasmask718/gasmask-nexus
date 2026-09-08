@@ -38,18 +38,19 @@ export default function ICWCommandDashboard() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['icw-command-metrics', weekStart],
     queryFn: async () => {
-      const [workers, activeJobs, weekJobs, blocked, unmatched] = await Promise.all([
+      const [workers, activeJobs, weekJobs, blocked, unmatched, awaiting] = await Promise.all([
         supabase.from('icw_workers').select('id', { count: 'exact', head: true }),
         supabase
           .from('icw_jobs')
           .select('id', { count: 'exact', head: true })
-          .in('status', ['pending', 'matched', 'in_progress']),
+          .in('status', ['pending', 'awaiting_worker_response', 'matched', 'in_progress']),
         supabase
           .from('icw_jobs')
           .select('id, price, status')
           .gte('scheduled_at', weekStart),
         supabase.from('icw_jobs').select('id', { count: 'exact', head: true }).eq('status', 'blocked_licensing'),
         supabase.from('icw_jobs').select('id', { count: 'exact', head: true }).eq('status', 'unmatched'),
+        supabase.from('icw_jobs').select('id', { count: 'exact', head: true }).eq('status', 'awaiting_worker_response'),
       ]);
 
       if (workers.error) throw workers.error;
@@ -57,6 +58,7 @@ export default function ICWCommandDashboard() {
       if (weekJobs.error) throw weekJobs.error;
       if (blocked.error) throw blocked.error;
       if (unmatched.error) throw unmatched.error;
+      if (awaiting.error) throw awaiting.error;
 
       const rows = weekJobs.data ?? [];
       const revenue = rows
@@ -70,6 +72,7 @@ export default function ICWCommandDashboard() {
         revenueThisWeek: revenue,
         blockedLicensing: blocked.count ?? 0,
         unmatched: unmatched.count ?? 0,
+        awaitingWorkerResponse: awaiting.count ?? 0,
       };
     },
   });
@@ -196,6 +199,9 @@ export default function ICWCommandDashboard() {
                 </Badge>
                 <Badge variant="outline" className="border-amber-500/40 text-amber-500">
                   {data?.unmatched ?? 0} unmatched
+                </Badge>
+                <Badge variant="outline" className="border-[#4FC3E8]/40 text-[#4FC3E8]">
+                  {data?.awaitingWorkerResponse ?? 0} awaiting worker response
                 </Badge>
               </span>
             )}
