@@ -128,7 +128,9 @@ export default function FieldVerificationStores() {
         <h1 className="text-2xl font-bold flex items-center gap-2"><Store className="h-6 w-6 text-primary" /> Per-Store Verification</h1>
         <p className="text-sm text-muted-foreground">
           Crew store visits next to the ambassador inventory record for the same store.
-          Stale means no ambassador update in over {STALE_DAYS} days.
+          Stale means no confirmed human ambassador check-in in over {STALE_DAYS} days — automated
+          data refreshes never count as a check-in.
+
         </p>
       </div>
 
@@ -217,7 +219,7 @@ export default function FieldVerificationStores() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <AlertTriangle className="h-4 w-4 text-primary" />
-            Coverage gaps — ambassador active, crew never visited
+            Coverage gaps — confirmed ambassador check-in, crew never visited
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -225,9 +227,10 @@ export default function FieldVerificationStores() {
           {invError && <div className="p-4 text-sm text-destructive">{(invError as Error).message}</div>}
           {!invLoading && !invError && gapEntries.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
-              No gaps — every store with a recent ambassador update has a crew visit.
+              No gaps — every store with a confirmed ambassador check-in in the last {RECENT_DAYS} days has a crew visit.
             </div>
           )}
+
           {gapShown.length > 0 && (
             <>
               <div className="px-4 pb-2 text-sm text-muted-foreground">
