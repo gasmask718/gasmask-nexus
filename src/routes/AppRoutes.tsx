@@ -225,6 +225,7 @@ const InfluencerProfilePage = lazy(() => import('@/pages/profile').then(m => ({ 
 const AmbassadorCommandDashboard = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AmbassadorCommandDashboard })));
 const AllAmbassadorsTable = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AllAmbassadorsTable })));
 const AmbassadorAssignmentsPage = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AmbassadorAssignmentsPage })));
+const RoutePlanningPage = lazy(() => import('@/pages/floor8').then(m => ({ default: m.RoutePlanningPage })));
 const Floor8AmbassadorProfile = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AmbassadorProfilePage })));
 const Floor8PayoutsPage = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AmbassadorPayoutsPage })));
 const AmbassadorRegionsPage = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AmbassadorRegionsPage })));
@@ -1860,6 +1861,7 @@ export default function AppRoutes() {
         <Route path="/training" element={<Training />} />
         <Route path="/ambassadors" element={<AllAmbassadorsTable />} />
         <Route path="/ambassadors/assignments" element={<AmbassadorAssignmentsPage />} />
+        <Route path="/ambassadors/route-planning" element={<RoutePlanningPage />} />
         <Route path="/ambassadors/command" element={<AmbassadorCommandDashboard />} />
         <Route path="/ambassadors/tasks" element={<AmbassadorTasksAdmin />} />
         <Route path="/ambassadors/box-requests" element={<AmbassadorBoxRequests />} />
