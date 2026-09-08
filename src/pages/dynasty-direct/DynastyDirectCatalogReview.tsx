@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,20 +7,46 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
+import { verifiedUpdate, mutationErrorMessage } from '@/lib/verifiedMutation';
 import { toast } from 'sonner';
-import { ArrowLeft, CheckCircle2, Loader2, ShieldAlert, Sparkles, XCircle } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, ExternalLink, Loader2, Ruler, ShieldAlert, Sparkles, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+// ---------- types (mirror of jsonb written by dd-catalog-pipeline) ----------
 interface PriceResearch {
-  amazon_price?: number;
-  walmart_price?: number;
-  competitor_avg?: number;
+  amazon_price?: number | null;
+  walmart_price?: number | null;
+  competitor_avg?: number | null;
   suggested_store_price?: number;
   suggested_retail_price?: number;
   store_margin_pct?: number;
   retail_margin_pct?: number;
   pricing_notes?: string;
   cost_basis?: number;
+  basis?: 'market_median' | 'margin_floor_market_below' | 'formula_only' | 'pack_normalized';
+  effective_margin_pct?: number;
+  retail_floor?: number;
+  pack?: { pack_count: number | null; source: string | null; matched_text: string | null; reason: string };
+  raw?: { cost_basis: number; market_median: number | null; market_pack_size: number; retail_floor: number; suggested_retail: number; basis: string };
+  normalized?: {
+    pack_count: number; pack_count_source: string | null; cost_per_unit: number; market_pack_size: number;
+    market_per_unit_median: number | null; retail_floor_per_unit: number; suggested_per_unit: number;
+    suggested_retail_pack: number; basis_detail: string;
+  } | null;
+  sources?: { market?: { count: number; pack_size: number; samples?: { title: string; price: number; source: string; link: string | null }[] } | null };
+  researched_at?: string;
+}
+
+interface SourcedSpecs {
+  status: 'sourced' | 'needs_measurement' | 'unavailable' | string;
+  reason?: string;
+  weight: { weight_oz: number; verbatim: string; source_url: string | null; source_title?: string | null } | null;
+  dimensions: { length_in: number; width_in: number; height_in: number; verbatim: string; source_url: string | null; source_title?: string | null } | null;
+  weight_agreement?: number;
+  dimension_agreement?: number;
+  confidence?: string;
+  suggested_box: { box_id: string; box_name: string; length_in: number; width_in: number; height_in: number; max_weight_oz: number | null; reason: string } | null;
+  checked_at?: string;
 }
 
 interface PendingDraft {
@@ -30,70 +56,87 @@ interface PendingDraft {
   created_by: string | null;
   created_at: string;
   cost: number | null;
+  input_photos: any;
   selected: any;
   copy: any;
   pricing: any;
+  recognition: any;
+  label_extraction: any;
   price_research: PriceResearch | null;
+  sourced_specs: SourcedSpecs | null;
   weight_oz: number | null;
   dimensions: any;
   measurements_verified_at: string | null;
+  measurements_verified_by: string | null;
+  pack_count: number | null;
+  pack_count_source: string | null;
+  rejection_reason: string | null;
   label_photo_url?: string | null;
   image_variants?: any;
   no_printed_label?: boolean | null;
   supplier_name?: string;
 }
 
-interface PriceOverrides {
-  store?: string;
-  retail?: string;
-  cost?: string;
-}
+interface Overrides { store?: string; retail?: string; cost?: string; pack?: string; mw?: string; ml?: string; mwd?: string; mh?: string }
 
 function pct(cost: number, price: number): number {
   if (!price || price <= 0) return 0;
   return Math.round(((price - cost) / price) * 1000) / 10;
 }
+const money = (n: number | null | undefined) => (n == null ? '—' : `$${Number(n).toFixed(2)}`);
+
+const BASIS_LABEL: Record<string, string> = {
+  market_median: 'market median',
+  margin_floor_market_below: 'margin floor (market below floor)',
+  formula_only: 'formula only (no market data)',
+  pack_normalized: 'pack-normalized',
+};
+
+const SELECT_COLS =
+  'id, product_name, supplier_id, created_by, created_at, cost, input_photos, selected, copy, pricing, recognition, label_extraction, price_research, sourced_specs, weight_oz, dimensions, measurements_verified_at, measurements_verified_by, pack_count, pack_count_source, rejection_reason, label_photo_url, image_variants, no_printed_label';
 
 export default function DynastyDirectCatalogReview() {
   const navigate = useNavigate();
   const [drafts, setDrafts] = useState<PendingDraft[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<Record<string, string | null>>({}); // draftId -> action
   const [rejectNotes, setRejectNotes] = useState<Record<string, string>>({});
-  const [overrides, setOverrides] = useState<Record<string, PriceOverrides>>({});
-  const [researchingId, setResearchingId] = useState<string | null>(null);
+  const [overrides, setOverrides] = useState<Record<string, Overrides>>({});
+
+  const isBusy = (id: string) => !!busy[id];
+  const setAction = (id: string, a: string | null) => setBusy((s) => ({ ...s, [id]: a }));
 
   async function load() {
     setLoading(true);
+    setLoadError(null);
     // ADMIN READ PATH: raw dd_catalog_drafts SELECT is revoked from authenticated.
     // Admin/owner reads go through the role-gated dd_admin_catalog_drafts view.
     const { data, error } = await (supabase as any)
       .from('dd_admin_catalog_drafts')
-      .select('id, product_name, supplier_id, created_by, created_at, cost, selected, copy, pricing, price_research, weight_oz, dimensions, measurements_verified_at, label_photo_url, image_variants, no_printed_label')
+      .select(SELECT_COLS)
       .eq('status', 'pending_admin_review')
       .order('created_at', { ascending: false });
-    if (error) { toast.error(error.message); setLoading(false); return; }
+    if (error) { setLoadError(error.message); toast.error(error.message); setLoading(false); return; }
     const rows = (data || []) as unknown as PendingDraft[];
 
     const ids = Array.from(new Set(rows.map((r) => r.supplier_id).filter(Boolean) as string[]));
     if (ids.length) {
-      const { data: ws } = await supabase
-        .from('wholesaler_profiles')
-        .select('id, company_name')
-        .in('id', ids);
+      const { data: ws } = await supabase.from('wholesaler_profiles').select('id, company_name').in('id', ids);
       const map = new Map((ws || []).map((w: any) => [w.id, w.company_name]));
       rows.forEach((r) => { r.supplier_name = r.supplier_id ? map.get(r.supplier_id) || '(unknown)' : '(none)'; });
     }
 
-    // Seed editable price overrides from price_research → pricing → cost
-    const seed: Record<string, PriceOverrides> = {};
+    const seed: Record<string, Overrides> = {};
     rows.forEach((r) => {
       const pr = r.price_research || {};
       const px = r.pricing || {};
       seed[r.id] = {
         store: String(pr.suggested_store_price ?? px.suggested_store ?? ''),
-        retail: String(pr.suggested_retail_price ?? px.suggested_retail ?? ''),
+        retail: String(px.suggested_retail_override ?? pr.suggested_retail_price ?? px.suggested_retail ?? ''),
         cost: String(r.cost ?? pr.cost_basis ?? ''),
+        pack: r.pack_count != null ? String(r.pack_count) : '',
+        mw: '', ml: '', mwd: '', mh: '',
       };
     });
     setOverrides(seed);
@@ -103,80 +146,138 @@ export default function DynastyDirectCatalogReview() {
 
   useEffect(() => { load(); }, []);
 
-  async function runResearch(draft: PendingDraft) {
-    setResearchingId(draft.id);
-    try {
-      const { data, error } = await supabase.functions.invoke('dd-catalog-pipeline', {
-        body: {
-          mode: 'price_research',
-          draft_id: draft.id,
-          product_name: draft.copy?.title || draft.product_name,
-          category: draft.copy?.category_guess || null,
-          supplier_cost: draft.cost ?? 0,
-        },
-      });
-      if (error) throw error;
-      if (!(data as any)?.ok) throw new Error((data as any)?.error || 'price research failed');
-      toast.success('Pricing intelligence refreshed');
-      await load();
-    } catch (e: any) {
-      toast.error(`Research failed: ${e.message}`);
-    } finally {
-      setResearchingId(null);
-    }
+  function updateOverride(id: string, patch: Partial<Overrides>) {
+    setOverrides((s) => ({ ...s, [id]: { ...s[id], ...patch } }));
   }
 
-  async function approve(draft: PendingDraft) {
-    if (!draft.supplier_id) { toast.error('Cannot approve: no wholesaler attached'); return; }
-    const ov = overrides[draft.id] || {};
-    const storeP = Number(ov.store) || Number(draft.pricing?.suggested_store) || 0;
-    const retailP = Number(ov.retail) || Number(draft.pricing?.suggested_retail) || 0;
-    const costP = Number(ov.cost) || Number(draft.cost) || 0;
-    setBusyId(draft.id);
+  // All draft writes go through the admin-only RPC (role-checked server side) wrapped in
+  // verifiedUpdate so a silent zero-row write can never report success.
+  async function patchDraft(operation: string, draftId: string, patch: Record<string, unknown>) {
+    await verifiedUpdate(operation, () => (supabase as any).rpc('dd_admin_update_draft', { p_draft_id: draftId, p_patch: patch }));
+  }
+
+  async function invokePipeline(body: Record<string, unknown>) {
+    const { data, error } = await supabase.functions.invoke('dd-catalog-pipeline', { body });
+    if (error) throw error;
+    if (!(data as any)?.ok) throw new Error((data as any)?.error || 'pipeline call failed');
+    return data as any;
+  }
+
+  async function runResearch(d: PendingDraft) {
+    setAction(d.id, 'research');
     try {
-      // Persist edited prices back to the draft so publish picks them up.
+      const cost = Number(overrides[d.id]?.cost) || Number(d.cost) || 0;
+      await invokePipeline({
+        mode: 'price_research', draft_id: d.id,
+        product_name: d.recognition?.product_name || d.copy?.title || d.product_name,
+        brand_hint: d.recognition?.brand_visible || null,
+        category: d.copy?.category_guess || null,
+        supplier_cost: cost,
+      });
+      toast.success('Pricing research refreshed');
+      await load();
+    } catch (e) { toast.error(`Research failed: ${mutationErrorMessage(e)}`); }
+    finally { setAction(d.id, null); }
+  }
+
+  async function runSizing(d: PendingDraft) {
+    setAction(d.id, 'sizing');
+    try {
+      await invokePipeline({
+        mode: 'estimate_measurements', draft_id: d.id,
+        product_name: d.recognition?.product_name || d.copy?.title || d.product_name,
+        brand_hint: d.recognition?.brand_visible || null,
+      });
+      toast.success('Sourced sizing lookup complete');
+      await load();
+    } catch (e) { toast.error(`Sizing lookup failed: ${mutationErrorMessage(e)}`); }
+    finally { setAction(d.id, null); }
+  }
+
+  async function savePackCount(d: PendingDraft) {
+    const raw = (overrides[d.id]?.pack || '').trim();
+    const n = raw === '' ? null : Number(raw);
+    if (n != null && (!Number.isInteger(n) || n < 1)) { toast.error('Pack count must be a whole number ≥ 1 (or blank to clear)'); return; }
+    setAction(d.id, 'pack');
+    try {
+      await patchDraft('save pack count', d.id, { pack_count: n });
+      toast.success(n == null ? 'Pack count cleared' : `Pack count set to ${n} (human) — re-run research to normalize pricing`);
+      await load();
+    } catch (e) { toast.error(mutationErrorMessage(e)); }
+    finally { setAction(d.id, null); }
+  }
+
+  async function confirmSourced(d: PendingDraft) {
+    const s = d.sourced_specs;
+    if (!s || s.status !== 'sourced' || !s.weight || !s.dimensions) return;
+    setAction(d.id, 'confirm');
+    try {
+      await patchDraft('confirm sourced measurements', d.id, {
+        weight_oz: s.weight.weight_oz,
+        dimensions: { length_in: s.dimensions.length_in, width_in: s.dimensions.width_in, height_in: s.dimensions.height_in },
+        confirm_measurements: true,
+      });
+      toast.success('Measurements confirmed by you');
+      await load();
+    } catch (e) { toast.error(mutationErrorMessage(e)); }
+    finally { setAction(d.id, null); }
+  }
+
+  async function saveManualMeasurement(d: PendingDraft) {
+    const o = overrides[d.id] || {};
+    const w = Number(o.mw), l = Number(o.ml), wd = Number(o.mwd), h = Number(o.mh);
+    if (!(w > 0 && l > 0 && wd > 0 && h > 0)) { toast.error('Enter weight (oz) and length, width, height (in) — all greater than 0'); return; }
+    setAction(d.id, 'manual');
+    try {
+      await patchDraft('save manual measurement', d.id, {
+        weight_oz: w, dimensions: { length_in: l, width_in: wd, height_in: h }, confirm_measurements: true,
+      });
+      toast.success('Manual measurement saved and marked verified');
+      await load();
+    } catch (e) { toast.error(mutationErrorMessage(e)); }
+    finally { setAction(d.id, null); }
+  }
+
+  async function approve(d: PendingDraft) {
+    if (!d.supplier_id) { toast.error('Cannot approve: no wholesaler attached'); return; }
+    if (!d.measurements_verified_at) { toast.error('Confirm or enter measurements first'); return; }
+    const ov = overrides[d.id] || {};
+    const storeP = Number(ov.store) || 0;
+    const retailP = Number(ov.retail) || 0;
+    const costP = Number(ov.cost) || Number(d.cost) || 0;
+    if (!(retailP > 0) || !(storeP > 0)) { toast.error('Store and retail prices must be greater than 0'); return; }
+    setAction(d.id, 'approve');
+    try {
+      const suggested = d.price_research?.suggested_retail_price;
       const newPricing = {
-        ...(draft.pricing || {}),
+        ...(d.pricing || {}),
         suggested_store: storeP,
         suggested_retail: retailP,
+        retail_basis: suggested != null && Math.abs(suggested - retailP) > 0.005 ? 'admin_override' : (d.price_research?.basis ?? d.pricing?.retail_basis ?? null),
+        retail_ai_suggested: suggested ?? null,
       };
-      const upd: any = { pricing: newPricing };
-      if (costP > 0) upd.cost = costP;
-      const { error: uErr } = await supabase.from('dd_catalog_drafts').update(upd).eq('id', draft.id);
-      if (uErr) throw uErr;
+      const patch: Record<string, unknown> = { pricing: newPricing };
+      if (costP > 0) patch.cost = costP;
+      await patchDraft('save review prices', d.id, patch);
 
       const { data: userRes } = await supabase.auth.getUser();
-      const { data, error } = await supabase.functions.invoke('dd-catalog-pipeline', {
-        body: { mode: 'publish', draft_id: draft.id, confirmed_by: userRes.user?.id ?? null },
-      });
-      if (error) throw error;
-      if (!(data as any)?.ok) throw new Error((data as any)?.error || 'publish failed');
-      toast.success(`Approved → live · product ${(data as any).product_id?.slice(0, 8)}`);
+      const data = await invokePipeline({ mode: 'publish', draft_id: d.id, confirmed_by: userRes.user?.id ?? null });
+      toast.success(`Approved → live · product ${String(data.product_id || '').slice(0, 8)}`);
       await load();
-    } catch (e: any) {
-      toast.error(`Approve failed: ${e.message}`);
-    } finally { setBusyId(null); }
+    } catch (e) { toast.error(`Approve failed: ${mutationErrorMessage(e)}`); }
+    finally { setAction(d.id, null); }
   }
 
-  async function reject(draft: PendingDraft) {
-    const reason = (rejectNotes[draft.id] || '').trim();
+  async function reject(d: PendingDraft) {
+    const reason = (rejectNotes[d.id] || '').trim();
     if (!reason) { toast.error('Add a reason before rejecting'); return; }
-    setBusyId(draft.id);
+    setAction(d.id, 'reject');
     try {
-      const { error } = await supabase
-        .from('dd_catalog_drafts')
-        .update({ status: 'rejected', notes: reason })
-        .eq('id', draft.id);
-      if (error) throw error;
+      await patchDraft('reject draft', d.id, { status: 'rejected', rejection_reason: reason, notes: reason });
       toast.success('Returned to wholesaler with reason');
       await load();
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally { setBusyId(null); }
-  }
-
-  function updateOverride(id: string, patch: Partial<PriceOverrides>) {
-    setOverrides((s) => ({ ...s, [id]: { ...s[id], ...patch } }));
+    } catch (e) { toast.error(mutationErrorMessage(e)); }
+    finally { setAction(d.id, null); }
   }
 
   return (
@@ -190,153 +291,272 @@ export default function DynastyDirectCatalogReview() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <ShieldAlert className="h-6 w-6 text-primary" /> Catalog Review Queue
           </h1>
-          <p className="text-sm text-muted-foreground">Wholesaler self-serve submissions waiting on David's exactness gate.</p>
+          <p className="text-sm text-muted-foreground">Sourced sizing + pack-normalized pricing. Nothing publishes without a human-confirmed measurement.</p>
         </div>
       </div>
 
       {loading && (
         <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading queue…</div>
       )}
-
-      {!loading && drafts.length === 0 && (
+      {!loading && loadError && (
+        <Card><CardContent className="p-6 text-sm text-destructive flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> {loadError} <Button size="sm" variant="outline" onClick={load}>Retry</Button></CardContent></Card>
+      )}
+      {!loading && !loadError && drafts.length === 0 && (
         <Card><CardContent className="p-8 text-center text-muted-foreground">Queue is empty.</CardContent></Card>
       )}
 
       <div className="space-y-4">
         {drafts.map((d) => {
-          const hero = Array.isArray(d.selected) && d.selected[0]
-            ? (typeof d.selected[0] === 'string' ? d.selected[0] : d.selected[0]?.url)
-            : null;
+          const sel = Array.isArray(d.selected) ? d.selected : [];
+          const norm = sel.map((s: any) => (typeof s === 'string' ? { url: s } : s)).filter((s: any) => s?.url);
+          const gallery = norm.filter((s: any) => s.role !== 'label' && s.url !== d.label_photo_url);
+          const inputs: string[] = Array.isArray(d.input_photos)
+            ? d.input_photos.map((p: any) => (typeof p === 'string' ? p : p?.url)).filter(Boolean)
+            : [];
+          const hero = gallery[0]?.url || inputs[0] || null;
           const ov = overrides[d.id] || {};
           const liveCost = Number(ov.cost) || 0;
           const liveStore = Number(ov.store) || 0;
           const liveRetail = Number(ov.retail) || 0;
-          const liveStoreMargin = pct(liveCost, liveStore);
-          const liveRetailMargin = pct(liveCost, liveRetail);
           const pr = d.price_research;
+          const rec = d.recognition || {};
+          const sp = d.sourced_specs;
+          const verified = !!d.measurements_verified_at;
+          const action = busy[d.id];
+          const canPublish = !!d.supplier_id && verified && !isBusy(d.id);
+          const isOverride = pr?.suggested_retail_price != null && Math.abs(Number(ov.retail) - pr.suggested_retail_price) > 0.005;
+
           return (
             <Card key={d.id}>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between gap-3 flex-wrap">
                   <span className="flex items-center gap-2">
-                    {d.product_name}
-                    <Badge variant={d.supplier_id ? 'default' : 'destructive'} className="text-xs">
-                      {d.supplier_name || '(no wholesaler)'}
-                    </Badge>
+                    {rec.product_name || d.copy?.title || d.product_name}
+                    <Badge variant={d.supplier_id ? 'default' : 'destructive'} className="text-xs">{d.supplier_name || '(no wholesaler)'}</Badge>
                   </span>
-                  <span className="text-xs text-muted-foreground font-normal">
-                    submitted {new Date(d.created_at).toLocaleString()}
-                  </span>
+                  <span className="text-xs text-muted-foreground font-normal">submitted {new Date(d.created_at).toLocaleString()}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* IDENTITY */}
                 <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-4">
                   {hero ? (
                     <img src={hero} alt="" className="w-40 h-40 object-contain bg-muted rounded border" referrerPolicy="no-referrer" />
                   ) : (
-                    <div className="w-40 h-40 bg-muted rounded border flex items-center justify-center text-xs text-muted-foreground">no hero</div>
+                    <div className="w-40 h-40 bg-muted rounded border flex items-center justify-center text-xs text-muted-foreground">no photo</div>
                   )}
                   <div className="space-y-2 text-sm">
-                    <div className="font-medium">{d.copy?.title || d.product_name}</div>
-                    <div className="text-muted-foreground">{d.copy?.short_description}</div>
+                    <div className="font-medium">{d.copy?.title || rec.product_name || d.product_name}</div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                      <div><span className="text-muted-foreground">Brand (read): </span>{rec.brand_visible || '—'}</div>
+                      <div><span className="text-muted-foreground">Size / count (read): </span>{rec.size_or_count || '—'}</div>
+                      <div><span className="text-muted-foreground">Variant: </span>{rec.flavor_or_variant || '—'}</div>
+                      <div><span className="text-muted-foreground">Recognition confidence: </span>{rec.confidence || '—'}</div>
+                    </div>
                     <div className="flex flex-wrap gap-2 text-xs">
-                      <Badge variant={d.measurements_verified_at ? 'default' : 'destructive'}>
-                        {d.measurements_verified_at ? 'measurements ✓' : 'measurements unverified'}
-                      </Badge>
-                      {d.weight_oz != null && <Badge variant="outline">{d.weight_oz} oz</Badge>}
+                      <Badge variant={verified ? 'default' : 'destructive'}>{verified ? 'measurements confirmed by human' : 'measurements NOT verified'}</Badge>
+                      {d.pack_count != null && <Badge variant="outline">pack of {d.pack_count} · {d.pack_count_source === 'human' ? 'human' : 'parsed'}</Badge>}
                     </div>
                     <code className="text-[10px] text-muted-foreground">draft {d.id.slice(0, 8)} · wholesaler {d.supplier_id?.slice(0, 8) || '—'}</code>
                   </div>
                 </div>
 
-                {/* ORGANISED PHOTOS — storefront gallery order, label kept separate */}
-                {(() => {
-                  const sel = Array.isArray(d.selected) ? d.selected : [];
-                  const norm = sel.map((s: any) => (typeof s === 'string' ? { url: s } : s)).filter((s: any) => s?.url);
-                  const gallery = norm.filter((s: any) => s.role !== 'label' && s.url !== d.label_photo_url);
-                  const retry = Array.isArray(d.image_variants)
-                    ? (d.image_variants as any[]).some((v: any) => v?.retry)
-                    : false;
-                  if (!gallery.length && !d.label_photo_url) return null;
-                  return (
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="text-xs font-semibold flex items-center gap-2">
-                        Storefront gallery ({gallery.length})
-                        {retry && <Badge variant="destructive" className="text-[10px]">image cleanup needs retry</Badge>}
-                        {d.no_printed_label && <Badge variant="outline" className="text-[10px]">no printed label</Badge>}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {gallery.map((s: any, i: number) => (
-                          <div key={s.url} className="relative">
-                            <img src={s.url} alt="" className="h-20 w-20 object-contain bg-muted rounded border" referrerPolicy="no-referrer" />
-                            <span className="absolute bottom-0 left-0 rounded-tr bg-background/90 px-1 text-[9px]">
-                              {i === 0 ? 'primary' : (s.role || 'angle')}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {d.label_photo_url && (
-                        <div className="pt-1">
-                          <div className="text-[10px] text-muted-foreground mb-1">Label — reference only, never shown on the storefront</div>
-                          <img src={d.label_photo_url} alt="" className="h-20 w-20 object-contain bg-muted rounded border opacity-80" referrerPolicy="no-referrer" />
+                {/* PHOTOS */}
+                {(gallery.length > 0 || inputs.length > 0 || d.label_photo_url) && (
+                  <div className="border rounded-lg p-3 space-y-2">
+                    <div className="text-xs font-semibold flex items-center gap-2">
+                      Photos — storefront gallery ({gallery.length}) · raw uploads ({inputs.length})
+                      {d.no_printed_label && <Badge variant="outline" className="text-[10px]">no printed label</Badge>}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {gallery.map((s: any, i: number) => (
+                        <div key={`g-${s.url}`} className="relative">
+                          <img src={s.url} alt="" className="h-20 w-20 object-contain bg-muted rounded border" referrerPolicy="no-referrer" />
+                          <span className="absolute bottom-0 left-0 rounded-tr bg-background/90 px-1 text-[9px]">{i === 0 ? 'primary' : (s.role || 'angle')}</span>
                         </div>
+                      ))}
+                      {inputs.map((u) => (
+                        <div key={`i-${u}`} className="relative">
+                          <img src={u} alt="" className="h-20 w-20 object-contain bg-muted rounded border opacity-80" referrerPolicy="no-referrer" />
+                          <span className="absolute bottom-0 left-0 rounded-tr bg-background/90 px-1 text-[9px]">raw</span>
+                        </div>
+                      ))}
+                    </div>
+                    {d.label_photo_url && (
+                      <div className="pt-1">
+                        <div className="text-[10px] text-muted-foreground mb-1">Label — reference only, never shown on the storefront</div>
+                        <img src={d.label_photo_url} alt="" className="h-20 w-20 object-contain bg-muted rounded border opacity-80" referrerPolicy="no-referrer" />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* SIZING */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="font-semibold flex items-center gap-2"><Ruler className="h-4 w-4" /> Shipping size &amp; weight</div>
+                    <Button size="sm" variant="outline" disabled={isBusy(d.id)} onClick={() => runSizing(d)}>
+                      {action === 'sizing' ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                      {sp ? 'Re-run sourced lookup' : 'Run sourced lookup'}
+                    </Button>
+                  </div>
+
+                  {verified && (
+                    <div className="rounded border border-primary/40 bg-primary/10 p-3 text-xs">
+                      <div className="font-semibold text-primary flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Confirmed by human · {new Date(d.measurements_verified_at!).toLocaleString()}</div>
+                      <div className="font-mono mt-1">{d.weight_oz ?? '—'} oz · {d.dimensions?.length_in ?? '—'} × {d.dimensions?.width_in ?? '—'} × {d.dimensions?.height_in ?? '—'} in</div>
+                    </div>
+                  )}
+
+                  {!sp && <p className="text-xs text-muted-foreground">No sourced lookup yet.</p>}
+
+                  {sp?.status === 'sourced' && sp.weight && sp.dimensions && (
+                    <div className={`rounded border p-3 text-xs space-y-2 ${verified ? 'opacity-70' : 'border-dashed border-amber-500/60 bg-amber-500/10'}`}>
+                      <div className="flex items-center gap-2 font-semibold">
+                        SOURCED (web) — {verified ? 'confirmed' : 'not yet human-verified'}
+                        <Badge variant="outline" className="text-[10px]">confidence {sp.confidence}</Badge>
+                        <Badge variant="outline" className="text-[10px]">{sp.weight_agreement ?? 0} weight src · {sp.dimension_agreement ?? 0} dims src</Badge>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div>
+                          <div className="font-mono">{sp.weight.weight_oz} oz</div>
+                          <div className="text-muted-foreground">“{sp.weight.verbatim}”</div>
+                          {sp.weight.source_url && <a href={sp.weight.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary underline"><ExternalLink className="h-3 w-3" />{sp.weight.source_title || 'source'}</a>}
+                        </div>
+                        <div>
+                          <div className="font-mono">{sp.dimensions.length_in} × {sp.dimensions.width_in} × {sp.dimensions.height_in} in</div>
+                          <div className="text-muted-foreground">“{sp.dimensions.verbatim}”</div>
+                          {sp.dimensions.source_url && <a href={sp.dimensions.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary underline"><ExternalLink className="h-3 w-3" />{sp.dimensions.source_title || 'source'}</a>}
+                        </div>
+                      </div>
+                      {!verified && (
+                        <Button size="sm" disabled={isBusy(d.id)} onClick={() => confirmSourced(d)}>
+                          {action === 'confirm' ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+                          Confirm measurements (as me)
+                        </Button>
                       )}
                     </div>
-                  );
-                })()}
+                  )}
 
-                {/* PRICING INTELLIGENCE */}
+                  {sp && sp.status !== 'sourced' && (
+                    <div className="rounded border border-dashed border-destructive/50 bg-destructive/10 p-3 text-xs space-y-1">
+                      <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {sp.status === 'needs_measurement' ? 'NEEDS MEASUREMENT' : sp.status.toUpperCase()} — no sourced match</div>
+                      {sp.reason && <div className="text-muted-foreground">{sp.reason}</div>}
+                      {sp.suggested_box ? (
+                        <div>
+                          <span className="font-semibold">Suggested box (suggestion only, not a measurement): </span>
+                          {sp.suggested_box.box_name} · {sp.suggested_box.length_in} × {sp.suggested_box.width_in} × {sp.suggested_box.height_in} in
+                          {sp.suggested_box.max_weight_oz != null && ` · up to ${sp.suggested_box.max_weight_oz} oz`}
+                          <div className="text-muted-foreground">{sp.suggested_box.reason}</div>
+                        </div>
+                      ) : <div className="text-muted-foreground">No box suggestion logged.</div>}
+                    </div>
+                  )}
+
+                  {!verified && (
+                    <div className="space-y-1">
+                      <div className="text-xs font-semibold">Manual measurement (counts as verified once you save it)</div>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
+                        <div><Label className="text-[11px]">Weight (oz)</Label><Input type="number" step="0.01" value={ov.mw ?? ''} onChange={(e) => updateOverride(d.id, { mw: e.target.value })} /></div>
+                        <div><Label className="text-[11px]">Length (in)</Label><Input type="number" step="0.01" value={ov.ml ?? ''} onChange={(e) => updateOverride(d.id, { ml: e.target.value })} /></div>
+                        <div><Label className="text-[11px]">Width (in)</Label><Input type="number" step="0.01" value={ov.mwd ?? ''} onChange={(e) => updateOverride(d.id, { mwd: e.target.value })} /></div>
+                        <div><Label className="text-[11px]">Height (in)</Label><Input type="number" step="0.01" value={ov.mh ?? ''} onChange={(e) => updateOverride(d.id, { mh: e.target.value })} /></div>
+                        <Button size="sm" variant="secondary" disabled={isBusy(d.id)} onClick={() => saveManualMeasurement(d)}>
+                          {action === 'manual' ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null} Save measured
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* PRICING */}
                 <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="font-semibold flex items-center gap-2">💰 Pricing Intelligence</div>
-                    <Button size="sm" variant="outline" disabled={researchingId === d.id} onClick={() => runResearch(d)}>
-                      {researchingId === d.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
-                      {pr ? 'Re-research' : 'Run AI research'}
+                    <div className="font-semibold flex items-center gap-2">💰 Pricing</div>
+                    <Button size="sm" variant="outline" disabled={isBusy(d.id)} onClick={() => runResearch(d)}>
+                      {action === 'research' ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                      {pr ? 'Re-run research' : 'Run sourced research'}
+                    </Button>
+                  </div>
+
+                  {/* cost + pack count */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                    <div>
+                      <Label className="text-xs">Cost basis ($ per unit as sold)</Label>
+                      <Input type="number" step="0.01" value={ov.cost ?? ''} onChange={(e) => updateOverride(d.id, { cost: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Pack count (units per sold pack)</Label>
+                      <Input type="number" step="1" min="1" placeholder="unknown" value={ov.pack ?? ''} onChange={(e) => updateOverride(d.id, { pack: e.target.value })} />
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        {pr?.pack?.pack_count != null
+                          ? <>read: “{pr.pack.matched_text}” from {pr.pack.source}</>
+                          : pr?.pack ? <span className="text-destructive">{pr.pack.reason}</span> : 'not researched yet'}
+                      </div>
+                    </div>
+                    <Button size="sm" variant="secondary" disabled={isBusy(d.id) || (ov.pack ?? '') === String(d.pack_count ?? '')} onClick={() => savePackCount(d)}>
+                      {action === 'pack' ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null} Save pack count
                     </Button>
                   </div>
 
                   {pr ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                      <div>
-                        <div className="text-muted-foreground mb-1">Competitor Prices</div>
-                        <div>Amazon avg: <span className="font-mono">${(pr.amazon_price ?? 0).toFixed(2)}</span></div>
-                        <div>Walmart avg: <span className="font-mono">${(pr.walmart_price ?? 0).toFixed(2)}</span></div>
-                        <div>Market avg: <span className="font-mono">${(pr.competitor_avg ?? 0).toFixed(2)}</span></div>
+                    <div className="space-y-3 text-xs">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* RAW */}
+                        <div className={`rounded border p-3 space-y-1 ${pr.normalized ? 'opacity-70' : ''}`}>
+                          <div className="font-semibold">Raw comparison (unnormalized)</div>
+                          <div>Cost basis: <span className="font-mono">{money(pr.raw?.cost_basis ?? pr.cost_basis)}</span></div>
+                          <div>Market median (listing pack {pr.raw?.market_pack_size ?? pr.sources?.market?.pack_size ?? '—'}): <span className="font-mono">{money(pr.raw?.market_median)}</span></div>
+                          <div>Margin floor ({pr.effective_margin_pct}%): <span className="font-mono">{money(pr.raw?.retail_floor ?? pr.retail_floor)}</span></div>
+                          <div>Suggested: <span className="font-mono">{money(pr.raw?.suggested_retail)}</span> <Badge variant="outline" className="text-[10px]">{BASIS_LABEL[pr.raw?.basis ?? ''] || pr.raw?.basis || '—'}</Badge></div>
+                        </div>
+                        {/* NORMALIZED */}
+                        {pr.normalized ? (
+                          <div className="rounded border border-primary/50 bg-primary/5 p-3 space-y-1">
+                            <div className="font-semibold">Pack-normalized ({pr.normalized.pack_count} units)</div>
+                            <div>Cost / unit: <span className="font-mono">{money(pr.normalized.cost_per_unit)}</span></div>
+                            <div>Market / unit (median): <span className="font-mono">{money(pr.normalized.market_per_unit_median)}</span></div>
+                            <div>Floor / unit: <span className="font-mono">{money(pr.normalized.retail_floor_per_unit)}</span></div>
+                            <div>Suggested / unit: <span className="font-mono">{money(pr.normalized.suggested_per_unit)}</span> <Badge variant="outline" className="text-[10px]">{BASIS_LABEL[pr.normalized.basis_detail] || pr.normalized.basis_detail}</Badge></div>
+                            <div className="font-semibold">Per pack: <span className="font-mono">{money(pr.normalized.suggested_retail_pack)}</span></div>
+                          </div>
+                        ) : (
+                          <div className="rounded border border-dashed border-destructive/50 bg-destructive/10 p-3">
+                            <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Not pack-normalized</div>
+                            <div className="text-muted-foreground">{pr.pack?.reason || 'No pack count.'} Enter the pack count above and re-run research.</div>
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <div className="text-muted-foreground mb-1">AI Suggested Prices</div>
-                        <div>Store: <span className="font-mono">${(pr.suggested_store_price ?? 0).toFixed(2)}</span> <span className="text-muted-foreground">({pr.store_margin_pct ?? 0}% margin)</span></div>
-                        <div>Retail: <span className="font-mono">${(pr.suggested_retail_price ?? 0).toFixed(2)}</span> <span className="text-muted-foreground">({pr.retail_margin_pct ?? 0}% margin)</span></div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        <span>AI suggested retail: <span className="font-mono">{money(pr.suggested_retail_price)}</span> <Badge className="text-[10px]">{BASIS_LABEL[pr.basis ?? ''] || pr.basis}</Badge></span>
+                        <span>Store (formula): <span className="font-mono">{money(pr.suggested_store_price)}</span></span>
+                        <span>Walmart: <span className="font-mono">{money(pr.walmart_price)}</span></span>
+                        <span>Amazon: <span className="font-mono">{money(pr.amazon_price)}</span></span>
+                        <span>Comparables: {pr.sources?.market?.count ?? 0}</span>
                       </div>
-                      {pr.pricing_notes && (
-                        <div className="md:col-span-2 text-muted-foreground italic">"{pr.pricing_notes}"</div>
-                      )}
+                      {pr.pricing_notes && <div className="text-muted-foreground italic">“{pr.pricing_notes}”</div>}
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground">No research yet — click <em>Run AI research</em> to fetch competitive pricing.</p>
+                    <p className="text-xs text-muted-foreground">No research yet — run sourced research to fetch market comparables.</p>
                   )}
 
                   <Separator />
 
-                  {/* Editable price overrides */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-xs">Supplier Cost ($)</Label>
-                      <Input type="number" step="0.01" value={ov.cost ?? ''} onChange={(e) => updateOverride(d.id, { cost: e.target.value })} />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Store Price ($)</Label>
+                      <Label className="text-xs">Store price ($)</Label>
                       <Input type="number" step="0.01" value={ov.store ?? ''} onChange={(e) => updateOverride(d.id, { store: e.target.value })} />
-                      <div className="text-[11px] text-muted-foreground mt-1">Margin: <span className="font-mono">{liveStoreMargin}%</span></div>
+                      <div className="text-[11px] text-muted-foreground mt-1">Margin: <span className="font-mono">{pct(liveCost, liveStore)}%</span></div>
                     </div>
                     <div>
-                      <Label className="text-xs">Retail Price ($)</Label>
+                      <Label className="text-xs">Retail price to publish ($) {isOverride && <Badge variant="outline" className="ml-1 text-[10px]">admin override</Badge>}</Label>
                       <Input type="number" step="0.01" value={ov.retail ?? ''} onChange={(e) => updateOverride(d.id, { retail: e.target.value })} />
-                      <div className="text-[11px] text-muted-foreground mt-1">Margin: <span className="font-mono">{liveRetailMargin}%</span></div>
+                      <div className="text-[11px] text-muted-foreground mt-1">Margin: <span className="font-mono">{pct(liveCost, liveRetail)}%</span></div>
                     </div>
                   </div>
                 </div>
 
+                {/* ACTIONS */}
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 border-t pt-3">
                   <Textarea
                     placeholder="Rejection reason (sent back to wholesaler)…"
@@ -344,14 +564,18 @@ export default function DynastyDirectCatalogReview() {
                     onChange={(e) => setRejectNotes((s) => ({ ...s, [d.id]: e.target.value }))}
                     rows={2}
                   />
-                  <div className="flex gap-2 items-end">
-                    <Button variant="destructive" onClick={() => reject(d)} disabled={busyId === d.id}>
-                      <XCircle className="h-4 w-4 mr-1" /> Reject
-                    </Button>
-                    <Button onClick={() => approve(d)} disabled={busyId === d.id || !d.supplier_id || !d.measurements_verified_at}>
-                      {busyId === d.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
-                      Approve → Live
-                    </Button>
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex gap-2">
+                      <Button variant="destructive" onClick={() => reject(d)} disabled={isBusy(d.id)}>
+                        {action === 'reject' ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />} Reject
+                      </Button>
+                      <Button onClick={() => approve(d)} disabled={!canPublish}>
+                        {action === 'approve' ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1" />} Publish → Live
+                      </Button>
+                    </div>
+                    {!canPublish && !isBusy(d.id) && (
+                      <div className="text-[11px] text-muted-foreground">{!d.supplier_id ? 'No wholesaler attached.' : 'Confirm or enter measurements to enable publish.'}</div>
+                    )}
                   </div>
                 </div>
               </CardContent>
