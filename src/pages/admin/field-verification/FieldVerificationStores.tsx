@@ -230,7 +230,7 @@ export default function FieldVerificationStores() {
           {gapShown.length > 0 && (
             <>
               <div className="px-4 pb-2 text-sm text-muted-foreground">
-                {gapEntries.length} stores updated by an ambassador in the last {RECENT_DAYS} days with no crew store visit
+                {gapEntries.length} stores with a confirmed ambassador check-in in the last {RECENT_DAYS} days and no crew store visit
                 {gapEntries.length > GAP_LIMIT && ` — showing the ${GAP_LIMIT} most recent`}.
               </div>
               <div className="overflow-x-auto">
@@ -241,7 +241,7 @@ export default function FieldVerificationStores() {
                       <TableHead>Location</TableHead>
                       <TableHead className="text-right">Stock</TableHead>
                       <TableHead>Needs order</TableHead>
-                      <TableHead>Ambassador update</TableHead>
+                      <TableHead>Ambassador check-in</TableHead>
                       <TableHead>By</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -256,10 +256,15 @@ export default function FieldVerificationStores() {
                           </TableCell>
                           <TableCell className="text-right">{g.tubes_left}</TableCell>
                           <TableCell>{g.needs_order ? <Badge variant="outline">Yes</Badge> : '—'}</TableCell>
-                          <TableCell className={isStale(g.last_updated_at) ? 'text-destructive' : ''}>
-                            {stalenessLabel(g.last_updated_at)}
+                          <TableCell>
+                            <div className={isStale(g.last_human_update) ? 'text-destructive' : ''}>
+                              {stalenessLabel(g.last_human_update)}
+                            </div>
+                            <div className="text-xs text-muted-foreground/70 italic">
+                              System data refreshed {stalenessLabel(g.last_system_update).replace(/^Updated /, '').replace(/^Never updated$/, 'never')}
+                            </div>
                           </TableCell>
-                          <TableCell>{updaterLabel(g.last_updated_by)}</TableCell>
+                          <TableCell>{updaterLabel(g.last_human_by)}</TableCell>
                         </TableRow>
                       );
                     })}
@@ -273,8 +278,14 @@ export default function FieldVerificationStores() {
 
       <p className="text-xs text-muted-foreground">
         Ambassador figures are read-only from the live inventory record, summed across all brands tracked for
-        that store. Timing gaps are shown for judgment only — they do not prove a stock count is wrong.
+        that store. The ambassador check-in date counts <strong>only confirmed human visits</strong> — currently
+        the methods {HUMAN_METHOD_LABEL}. Every other update method (blank, “system”, and any
+        backfill, ledger-window, legacy-merge or tube_inv_v4_* label, including “tube_inv_v4_explicit”, which was
+        written as one bulk batch with no person attached) is an automated data refresh and is shown only on the
+        separate muted “System data refreshed” line. Timing gaps are shown for judgment only — they do not prove a
+        stock count is wrong.
       </p>
+
     </div>
   );
 }
