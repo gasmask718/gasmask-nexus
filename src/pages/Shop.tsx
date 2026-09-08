@@ -56,19 +56,20 @@ export default function Shop() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-10 space-y-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold">Dynasty Direct</h1>
-        <p className="text-muted-foreground">
-          Shipped direct from our supplier network. Live carrier rates calculated at checkout.
+    <div className="max-w-6xl mx-auto px-4 py-12 space-y-8">
+      <header className="border-b border-[hsl(var(--dd-line))] pb-6">
+        <h1 className="font-display text-3xl">The catalog</h1>
+        <p className="mt-2 text-[hsl(var(--dd-ink))]/70 max-w-xl">
+          Sourced from vetted suppliers and shipped direct. Shipping is quoted live by the carrier
+          at checkout from the real measured box.
         </p>
       </header>
 
       <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--dd-ink))]/45" />
           <Input
-            className="pl-9"
+            className="pl-9 bg-white border-[hsl(var(--dd-line))] rounded-none"
             placeholder="Search products"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -76,7 +77,12 @@ export default function Shop() {
           />
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant={category === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setCategory('all')}>
+          <Button
+            variant={category === 'all' ? 'default' : 'outline'}
+            size="sm"
+            className="rounded-none"
+            onClick={() => setCategory('all')}
+          >
             All
           </Button>
           {categoriesPresent.map((c) => (
@@ -84,6 +90,7 @@ export default function Shop() {
               key={c.value}
               variant={category === c.value ? 'default' : 'outline'}
               size="sm"
+              className="rounded-none"
               onClick={() => setCategory(c.value)}
             >
               {c.label}
@@ -94,29 +101,28 @@ export default function Shop() {
 
       {isLoading ? (
         <div className="flex justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 className="h-8 w-8 animate-spin text-[hsl(var(--dd-navy))]" />
         </div>
       ) : error ? (
         <p className="text-destructive text-sm">{(error as Error).message}</p>
       ) : visible.length === 0 ? (
-        <Card>
-          <CardContent className="p-10 text-center space-y-2">
-            <Package className="h-10 w-10 mx-auto text-muted-foreground" />
-            <p className="font-medium">Nothing live in this catalogue yet</p>
-            <p className="text-sm text-muted-foreground">
-              Products appear here once they pass the admin review gate.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="dd-panel p-12 text-center space-y-2">
+          <Package className="h-10 w-10 mx-auto text-[hsl(var(--dd-ink))]/30" />
+          <p className="font-medium">Nothing live in this catalog yet</p>
+          <p className="text-sm text-[hsl(var(--dd-ink))]/60">
+            Products appear here once they pass verification.
+          </p>
+        </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visible.map((p: any) => {
             const img = p.primary_image_url ?? (Array.isArray(p.images) ? p.images[0] : null);
+            {/* retail_price is remapped to dtc_price_b by useDynastyDirectProducts */}
             const price = p.retail_price ?? null;
             const inStock = p.inventory_qty === null || (p.inventory_qty ?? 0) > 0;
             return (
-              <Card key={p.id} className="overflow-hidden flex flex-col">
-                <Link to={`/shop/product/${p.id}`} className="block aspect-square bg-muted">
+              <div key={p.id} className="bg-white border border-[hsl(var(--dd-line))] flex flex-col">
+                <Link to={`/shop/product/${p.id}`} className="block aspect-square bg-[hsl(var(--dd-paper))]">
                   {img ? (
                     <img
                       src={img}
@@ -126,19 +132,25 @@ export default function Shop() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Package className="h-10 w-10 text-muted-foreground" />
+                      <Package className="h-10 w-10 text-[hsl(var(--dd-ink))]/25" />
                     </div>
                   )}
                 </Link>
-                <CardContent className="p-4 space-y-2 flex-1 flex flex-col">
-                  <Link to={`/shop/product/${p.id}`} className="font-medium hover:underline line-clamp-2">
+                <div className="p-4 space-y-2 flex-1 flex flex-col">
+                  <Link to={`/shop/product/${p.id}`} className="font-medium hover:text-[hsl(var(--dd-navy))] line-clamp-2">
                     {p.product_name}
                   </Link>
-                  {p.brand?.name && <Badge variant="outline" className="w-fit">{p.brand.name}</Badge>}
-                  <div className="mt-auto space-y-2 pt-2">
-                    {price != null && <p className="text-lg font-semibold">{formatCurrency(price)}</p>}
+                  {p.brand?.name && (
+                    <Badge variant="outline" className="w-fit rounded-none">{p.brand.name}</Badge>
+                  )}
+                  <div className="mt-auto space-y-3 pt-2">
+                    {price != null && (
+                      <p className="dd-num text-lg font-semibold text-[hsl(var(--dd-gold))]">
+                        {formatCurrency(price)}
+                      </p>
+                    )}
                     <Button
-                      className="w-full"
+                      className="w-full rounded-none"
                       size="sm"
                       disabled={!inStock || isAddingToCart}
                       onClick={() => handleAdd(p.id, p.product_name)}
@@ -147,8 +159,8 @@ export default function Shop() {
                       {inStock ? 'Add to cart' : 'Out of stock'}
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             );
           })}
         </div>
@@ -156,3 +168,4 @@ export default function Shop() {
     </div>
   );
 }
+

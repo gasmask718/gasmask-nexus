@@ -117,40 +117,43 @@ export default function PublicProductPage() {
         url={`${SITE}/shop/product/${product.id}`}
       />
 
-      <div className="grid gap-8 md:grid-cols-2">
-        <Card>
-          <CardContent className="p-0 aspect-square flex items-center justify-center bg-muted rounded-lg overflow-hidden">
-            {images[0] ? (
-              <img
-                src={images[0]}
-                alt={product.product_name}
-                loading="lazy"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <Package className="h-16 w-16 text-muted-foreground" />
-            )}
-          </CardContent>
-        </Card>
+      <div className="grid gap-10 md:grid-cols-2">
+        <div className="aspect-square bg-white border border-[hsl(var(--dd-line))] flex items-center justify-center overflow-hidden">
+          {images[0] ? (
+            <img
+              src={images[0]}
+              alt={product.product_name}
+              loading="lazy"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Package className="h-16 w-16 text-[hsl(var(--dd-ink))]/25" />
+          )}
+        </div>
 
         <div className="space-y-4">
-          <h1 className="text-3xl font-bold">{product.product_name}</h1>
+          <h1 className="font-display text-3xl">{product.product_name}</h1>
           <div className="flex flex-wrap gap-2">
-            {product.brandName && <Badge variant="outline">{product.brandName}</Badge>}
+            {product.brandName && <Badge variant="outline" className="rounded-none">{product.brandName}</Badge>}
             {categoryLabel(product.category) && (
-              <Badge variant="secondary">{categoryLabel(product.category)}</Badge>
+              <Badge variant="secondary" className="rounded-none">{categoryLabel(product.category)}</Badge>
             )}
-            <Badge variant={inStock ? 'default' : 'destructive'}>
+            <Badge variant={inStock ? 'default' : 'destructive'} className="rounded-none">
               {inStock ? 'In stock' : 'Out of stock'}
             </Badge>
           </div>
-          {price != null && <p className="text-2xl font-semibold">{formatCurrency(price)}</p>}
+          {price != null && (
+            <p className="dd-num text-3xl font-semibold text-[hsl(var(--dd-gold))]">
+              {formatCurrency(price)}
+            </p>
+          )}
           {productDescription && (
-            <p className="text-muted-foreground whitespace-pre-line">{productDescription}</p>
+            <p className="text-[hsl(var(--dd-ink))]/75 whitespace-pre-line">{productDescription}</p>
           )}
           {product.unit_type && (
-            <p className="text-sm text-muted-foreground">Sold per {product.unit_type}</p>
+            <p className="text-sm text-[hsl(var(--dd-ink))]/60">Sold per {product.unit_type}</p>
           )}
+
           <div className="flex flex-wrap gap-2">
             <Button
               disabled={!inStock || isAddingToCart}
