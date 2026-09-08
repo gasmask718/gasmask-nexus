@@ -318,6 +318,40 @@ export default function AccountAuditFeed() {
   const rows = useMemo(() => query.data?.pages.flatMap((p) => p.rows) ?? [], [query.data]);
   const total = rows[0]?.total_count ?? 0;
 
+  /**
+   * One store + one calendar day = ONE top-level row. Every individual action that
+   * day stays visible as a sub-action underneath, so nothing is hidden by grouping.
+   * Grouping runs over every loaded page, so a store's day never splits across pages.
+   */
+  const groups = useMemo(() => {
+    const map = new Map<string, { key: string; store_id: string | null; store_name: string | null; day: string; latest_at: string | null; items: AuditFeedRow[] }>();
+    for (const r of rows) {
+      const day = r.occurred_at ? r.occurred_at.slice(0, 10) : 'unknown';
+      const key = `${r.store_id ?? r.store_name ?? 'unknown'}|${day}`;
+      const existing = map.get(key);
+      if (existing) {
+        existing.items.push(r);
+        if (r.occurred_at && (!existing.latest_at || r.occurred_at > existing.latest_at)) {
+          existing.latest_at = r.occurred_at;
+        }
+      } else {
+        map.set(key, {
+          key,
+          store_id: r.store_id,
+          store_name: r.store_name,
+          day,
+          latest_at: r.occurred_at,
+          items: [r],
+        });
+      }
+    }
+    return Array.from(map.values()).map((g) => ({
+      ...g,
+      items: [...g.items].sort((a, b) => (b.occurred_at ?? '').localeCompare(a.occurred_at ?? '')),
+    }));
+  }, [rows]);
+
+
   const loadMore = useCallback(() => {
     if (query.hasNextPage && !query.isFetchingNextPage) query.fetchNextPage();
   }, [query]);
@@ -376,7 +410,9 @@ export default function AccountAuditFeed() {
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>
-          {query.isLoading ? 'Loading…' : `Showing ${rows.length} of ${total.toLocaleString()} activities`}
+          {query.isLoading
+            ? 'Loading…'
+            : `Showing ${groups.length} store-days (${rows.length} of ${total.toLocaleString()} activities)`}
         </span>
         <Button variant="outline" size="sm" onClick={() => { setExpandAll((v) => !v); setExpanded({}); }}>
           {expandAll ? 'Collapse all' : 'Expand all'}
@@ -392,58 +428,94 @@ export default function AccountAuditFeed() {
           <thead>
             <tr className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground">
               <th className="w-12 py-2 pl-3">#</th>
-              <th className="py-2 pr-3">When</th>
+              <th className="py-2 pr-3">Day</th>
               <th className="py-2 pr-3">Store</th>
               <th className="py-2 pr-3">Who</th>
-              <th className="py-2 pr-3">Action</th>
+              <th className="py-2 pr-3">Actions taken</th>
               <th className="py-2 pr-3">Route</th>
               <th className="py-2 pr-3">Detail</th>
               <th className="w-10" />
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, i) => {
-              const open = isOpen(r.row_id);
+            {groups.map((g, i) => {
+              const open = isOpen(g.key);
+              const routeItem = g.items.find((it) => it.route_id);
+              const actors = Array.from(
+                new Map(g.items.map((it) => [`${it.actor_role}|${it.actor_name ?? ''}`, it])).values(),
+              );
               return (
-                <Fragment key={r.row_id}>
+                <Fragment key={g.key}>
                   <tr
                     className="cursor-pointer border-b align-top hover:bg-muted/40"
-                    onClick={() => setExpanded((s) => ({ ...s, [r.row_id]: !isOpen(r.row_id) }))}
+                    onClick={() => setExpanded((s) => ({ ...s, [g.key]: !isOpen(g.key) }))}
                   >
                     <td className="py-2 pl-3 text-xs font-mono text-muted-foreground">{i + 1}</td>
                     <td className="whitespace-nowrap py-2 pr-3 text-xs text-muted-foreground">
-                      {r.occurred_at ? format(new Date(r.occurred_at), 'MMM d, yyyy HH:mm') : '—'}
+                      {g.day === 'unknown' ? '—' : format(new Date(`${g.day}T00:00:00`), 'MMM d, yyyy')}
+                      <div className="text-[10px]">{g.items.length} action{g.items.length === 1 ? '' : 's'}</div>
                     </td>
-                    <td className="py-2 pr-3">{r.store_name || (r.store_id ? r.store_id.slice(0, 8) : '—')}</td>
-                    <td className="py-2 pr-3"><ActorBadge role={r.actor_role} name={r.actor_name} /></td>
+                    <td className="py-2 pr-3 font-medium">
+                      {g.store_name || (g.store_id ? g.store_id.slice(0, 8) : '—')}
+                    </td>
                     <td className="py-2 pr-3">
-                      <ActionBadge action={r.action || r.row_kind} />
+                      <div className="flex flex-col gap-1">
+                        {actors.map((a, k) => (
+                          <ActorBadge key={k} role={a.actor_role} name={a.actor_name} />
+                        ))}
+                      </div>
+                    </td>
+                    <td className="py-2 pr-3">
+                      <div className="flex flex-wrap gap-1">
+                        {g.items.map((it) => (
+                          <ActionBadge key={it.row_id} action={it.action || it.row_kind} />
+                        ))}
+                      </div>
                     </td>
                     <td className="py-2 pr-3 text-xs">
-                      {r.route_id ? (
+                      {routeItem ? (
                         <Badge variant="outline">
-                          {(r.route_name || 'Route')}{r.route_type ? ` · ${r.route_type}` : ''}
-                          {r.route_date ? ` · ${format(new Date(r.route_date), 'MMM d')}` : ''}
-                          {r.stop_status ? ` · ${r.stop_status}` : ''}
+                          {(routeItem.route_name || 'Route')}{routeItem.route_type ? ` · ${routeItem.route_type}` : ''}
+                          {routeItem.route_date ? ` · ${format(new Date(routeItem.route_date), 'MMM d')}` : ''}
+                          {routeItem.stop_status ? ` · ${routeItem.stop_status}` : ''}
                         </Badge>
                       ) : (
                         <span className="text-muted-foreground">Not on a route</span>
                       )}
                     </td>
                     <td className="max-w-md py-2 pr-3 text-xs">
-                      {r.detail_text && <div className="text-foreground">{r.detail_text}</div>}
-                      {r.note_text && <div className="text-muted-foreground">{r.note_text}</div>}
-                      {!r.detail_text && !r.note_text && <span className="text-muted-foreground">—</span>}
+                      <ul className="space-y-1">
+                        {g.items.map((it) => (
+                          <li key={it.row_id} className="flex gap-2">
+                            <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                              {it.occurred_at ? format(new Date(it.occurred_at), 'HH:mm') : '—'}
+                            </span>
+                            <span>
+                              {it.detail_text && <span className="text-foreground">{it.detail_text}</span>}
+                              {it.detail_text && it.note_text ? ' — ' : ''}
+                              {it.note_text && <span className="text-muted-foreground">{it.note_text}</span>}
+                              {!it.detail_text && !it.note_text && (
+                                <span className="text-muted-foreground">
+                                  {ACTION_LABELS[it.action || it.row_kind] ?? it.action ?? it.row_kind}
+                                </span>
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
                     </td>
 
                     <td className="py-2 pr-2 text-muted-foreground">
                       {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </td>
                   </tr>
-                  {open && r.store_id && (
+                  {open && g.store_id && (
                     <tr className="border-b">
                       <td colSpan={8} className="p-0">
-                        <ExpandedDetail storeId={r.store_id} at={r.occurred_at ?? new Date().toISOString()} />
+                        <ExpandedDetail
+                          storeId={g.store_id}
+                          at={g.latest_at ?? new Date().toISOString()}
+                        />
                       </td>
                     </tr>
                   )}
@@ -451,6 +523,7 @@ export default function AccountAuditFeed() {
               );
             })}
           </tbody>
+
         </table>
       </div>
 
