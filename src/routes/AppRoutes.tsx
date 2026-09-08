@@ -1861,6 +1861,7 @@ export default function AppRoutes() {
         <Route path="/training" element={<Training />} />
         <Route path="/ambassadors" element={<AllAmbassadorsTable />} />
         <Route path="/ambassadors/assignments" element={<AmbassadorAssignmentsPage />} />
+        <Route path="/ambassadors/route-planning" element={<RoutePlanningPage />} />
         <Route path="/ambassadors/command" element={<AmbassadorCommandDashboard />} />
         <Route path="/ambassadors/tasks" element={<AmbassadorTasksAdmin />} />
         <Route path="/ambassadors/box-requests" element={<AmbassadorBoxRequests />} />
