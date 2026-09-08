@@ -4,6 +4,7 @@
  */
 export { default as AmbassadorCommandDashboard } from './AmbassadorCommandDashboard';
 export { default as AllAmbassadorsTable } from './AllAmbassadorsTable';
+export { default as AmbassadorAssignmentsPage } from './AmbassadorAssignmentsPage';
 export { default as AmbassadorProfilePage } from './AmbassadorProfilePage';
 export { default as AmbassadorPayoutsPage } from './AmbassadorPayoutsPage';
 export { default as AmbassadorRegionsPage } from './AmbassadorRegionsPage';
