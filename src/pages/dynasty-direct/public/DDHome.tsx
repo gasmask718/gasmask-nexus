@@ -70,7 +70,7 @@ export default function DDHome() {
             <FlowStage
               step="01"
               title="Supplier"
-              body={`${data?.supplierCount ?? '—'} suppliers registered on the network. Each one prices to us directly — no broker markup on the way in.`}
+              body="Vetted suppliers price to us directly — no broker markup on the way in, and no mystery about where the product came from."
             />
             <FlowJoin />
             <FlowStage
