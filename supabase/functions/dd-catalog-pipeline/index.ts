@@ -12,6 +12,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { lookupMarket, type MarketLookup } from '../_shared/marketPrice.ts';
+import { lookupSourcedSpecs } from '../_shared/sourcedSpecs.ts';
 import { DD_CATEGORIES, mapDdCategory } from '../_shared/ddCategory.ts';
 
 const LOVABLE_KEY = Deno.env.get('LOVABLE_API_KEY')!;
@@ -730,8 +731,17 @@ async function runPublish(body: any) {
     gtin,
     supplier_sku: supplierSku,
     spec_source: specSource,
+    shipping_data_source: shippingDataSource,
+    shipping_verified: shippingVerified,
+    source_draft_id: draft_id,
     spec_source_ref: {
       draft_id,
+      sourced_specs: sourced ? {
+        status: sourced.status,
+        weight_source: sourced.weight?.source_url ?? null,
+        dimensions_source: sourced.dimensions?.source_url ?? null,
+        checked_at: sourced.checked_at ?? null,
+      } : null,
       label_photo_url: labelUrl,
       label_confidence: label.confidence ?? null,
       label_complete: label.complete ?? null,
