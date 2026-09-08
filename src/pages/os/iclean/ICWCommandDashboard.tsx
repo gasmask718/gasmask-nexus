@@ -184,6 +184,64 @@ export default function ICWCommandDashboard() {
         ))}
       </div>
 
+      <Card className={attentionCount > 0 ? 'border-destructive/50 bg-destructive/10' : 'border-border/50'}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className={`h-5 w-5 ${attentionCount > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
+            Needs Human Attention
+            {!isLoading && (
+              <span className="ml-2 flex items-center gap-2 text-sm font-normal">
+                <Badge variant="outline" className="border-destructive/40 text-destructive">
+                  {data?.blockedLicensing ?? 0} blocked (licensing)
+                </Badge>
+                <Badge variant="outline" className="border-amber-500/40 text-amber-500">
+                  {data?.unmatched ?? 0} unmatched
+                </Badge>
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm">
+          {attention.isLoading && <p className="text-muted-foreground">Loading…</p>}
+          {attention.error && <p className="text-destructive">{(attention.error as Error).message}</p>}
+          {!attention.isLoading && !attention.error && (attention.data?.length ?? 0) === 0 && (
+            <p className="text-muted-foreground">No jobs blocked by licensing or waiting on a worker.</p>
+          )}
+          {(attention.data?.length ?? 0) > 0 && (
+            <div className="space-y-2">
+              {attention.data!.map((j) => (
+                <div key={j.id} className="rounded-lg border border-border/50 bg-background/60 p-3 flex flex-col md:flex-row md:items-start gap-3">
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge
+                        variant="outline"
+                        className={j.status === 'blocked_licensing'
+                          ? 'border-destructive/40 text-destructive'
+                          : 'border-amber-500/40 text-amber-500'}
+                      >
+                        {j.status === 'blocked_licensing' ? 'Blocked — licensing' : 'Unmatched'}
+                      </Badge>
+                      <span className="font-medium">{j.category}{j.sub_service ? ` · ${j.sub_service}` : ''}</span>
+                      <span className="text-muted-foreground">{j.state ?? 'no state'}{j.address ? ` · ${j.address}` : ''}</span>
+                    </div>
+                    {j.latest_note && <p className="text-xs text-muted-foreground break-words">{j.latest_note}</p>}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={retrying === j.id}
+                    onClick={() => retryDispatch(j.id)}
+                  >
+                    {retrying === j.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                    Re-run dispatch
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -193,8 +251,8 @@ export default function ICWCommandDashboard() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p>Foundation pass: schema, command dashboard, worker roster, stubbed intake/status-sync functions.</p>
-          <p>Not built yet: matching/dispatch algorithm, licensing gate enforcement, public-site webhook sync.</p>
-          <p>State configuration seeded with 51 placeholder rows pending verified data.</p>
+          <p>Live: licensing gate + load-balanced matching run automatically when a job is created or reset to pending. Every decision is written to the dispatch log.</p>
+          <p>Not built yet: worker notification / accept-decline flow, public-site webhook sync.</p>
         </CardContent>
       </Card>
     </div>
