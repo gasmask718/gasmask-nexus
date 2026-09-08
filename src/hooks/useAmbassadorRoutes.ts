@@ -122,6 +122,11 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
             id: s.id,
             route_id: route.id,
             store_id: s.store_id,
+            store_name: s.store?.store_name || undefined,
+            store_address: [s.store?.address, s.store?.city, s.store?.state]
+              .filter(Boolean).join(', ') || undefined,
+            store_lat: s.store?.lat ?? null,
+            store_lng: s.store?.lng ?? null,
             planned_order: s.planned_order,
             status: s.status || 'planned',
             outcome_notes: s.notes_to_worker,
