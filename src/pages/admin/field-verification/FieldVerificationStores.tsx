@@ -8,7 +8,8 @@ import { Loader2, Store, AlertTriangle } from 'lucide-react';
 import { useCrewDrops, useCrewProfiles, crewNameMap } from '@/hooks/useFieldVerification';
 import {
   useAmbassadorInventory, useProfileNames, stalenessLabel, isStale, daysSince,
-  STALE_DAYS, RECENT_DAYS,
+  STALE_DAYS, RECENT_DAYS, HUMAN_METHOD_LABEL,
+
 } from '@/hooks/useAmbassadorInventory';
 
 const GAP_LIMIT = 100;
