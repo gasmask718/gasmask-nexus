@@ -172,11 +172,11 @@ export default function WholesalerProductForm() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Your Cost</CardTitle>
+              <CardTitle>Your price to Dynasty Direct</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="max-w-xs">
-                <Label>Supplier Cost ($)</Label>
+                <Label>Your price to Dynasty Direct ($ per unit)</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -294,7 +294,7 @@ export default function WholesalerProductForm() {
               </div>
               <h3 className="font-semibold">{formData.product_name || 'Product Name'}</h3>
               <p className="text-sm text-muted-foreground mt-2">
-                Your cost: ${(formData.supplier_cost || 0).toFixed(2)} · retail set by Dynasty on review
+                Your price to Dynasty Direct: ${(formData.supplier_cost || 0).toFixed(2)}
               </p>
             </CardContent>
           </Card>

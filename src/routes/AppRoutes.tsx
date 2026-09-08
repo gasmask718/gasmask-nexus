@@ -666,6 +666,7 @@ const PortalInfluencer = lazy(() => import('@/pages/portal/PortalInfluencer'));
 const OpsInboxPage = lazy(() => import('@/pages/portal/OpsInboxPage'));
 const OpsInboxThreadPage = lazy(() => import('@/pages/portal/OpsInboxThreadPage'));
 const OpsTaskListPage = lazy(() => import('@/pages/portal/OpsTaskListPage'));
+const DDPortalShell = lazy(() => import('@/components/dynasty-direct/DDPortalShell'));
 const WholesalerDashboard = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerDashboard })));
 const WholesalerProducts = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerProducts })));
 const WholesalerProductForm = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerProductForm })));
@@ -2893,24 +2894,26 @@ export default function AppRoutes() {
         <Route path="/portal/store/messages/:threadId" element={<StoreMessages />} />
         <Route path="/portal/store/team" element={<StoreTeam />} />
         <Route path="/portal/join" element={<JoinOrg />} />
-        <Route path="/portal/wholesaler" element={<WholesalerDashboard />} />
-        <Route path="/portal/wholesaler/products" element={<WholesalerProducts />} />
+        <Route path="/portal/wholesaler" element={<DDPortalShell />}>
+          <Route index element={<WholesalerDashboard />} />
+          <Route path="products" element={<WholesalerProducts />} />
         {/* ONE supplier-facing path to add products: the camera-first onboard flow. */}
-        <Route path="/portal/wholesaler/products/new" element={<Navigate to="/portal/wholesaler/catalog/onboard" replace />} />
-        <Route path="/portal/wholesaler/products/:productId" element={<WholesalerProductForm />} />
-        <Route path="/portal/wholesaler/products/:productId/edit" element={<WholesalerProductForm />} />
-        <Route path="/portal/wholesaler/orders" element={<WholesalerOrders />} />
-        <Route path="/portal/wholesaler/fulfillment" element={<WholesalerFulfillmentPage />} />
-        <Route path="/portal/wholesaler/finance" element={<WholesalerFinance />} />
-        <Route path="/portal/wholesaler/settings" element={<WholesalerSettings />} />
-        <Route path="/portal/wholesaler/messages" element={<WholesalerMessages />} />
-        <Route path="/portal/wholesaler/messages/:threadId" element={<WholesalerMessages />} />
-        <Route path="/portal/wholesaler/team" element={<WholesalerTeam />} />
-        <Route path="/portal/wholesaler/transactions" element={<WholesalerTransactionHistory />} />
-        <Route path="/portal/wholesaler/inventory" element={<WholesalerInventoryWorkflow />} />
-        <Route path="/portal/wholesaler/marketplace-inventory" element={<Navigate to="/portal/wholesaler/catalog/onboard" replace />} />
-        <Route path="/portal/wholesaler/order-grabba" element={<WholesalerOrderGrabba />} />
-        <Route path="/portal/wholesaler/catalog/onboard" element={<WholesalerCatalogOnboard />} />
+          <Route path="products/new" element={<Navigate to="/portal/wholesaler/catalog/onboard" replace />} />
+          <Route path="products/:productId" element={<WholesalerProductForm />} />
+          <Route path="products/:productId/edit" element={<WholesalerProductForm />} />
+          <Route path="orders" element={<WholesalerOrders />} />
+          <Route path="fulfillment" element={<WholesalerFulfillmentPage />} />
+          <Route path="finance" element={<WholesalerFinance />} />
+          <Route path="settings" element={<WholesalerSettings />} />
+          <Route path="messages" element={<WholesalerMessages />} />
+          <Route path="messages/:threadId" element={<WholesalerMessages />} />
+          <Route path="team" element={<WholesalerTeam />} />
+          <Route path="transactions" element={<WholesalerTransactionHistory />} />
+          <Route path="inventory" element={<WholesalerInventoryWorkflow />} />
+          <Route path="marketplace-inventory" element={<Navigate to="/portal/wholesaler/catalog/onboard" replace />} />
+          <Route path="order-grabba" element={<WholesalerOrderGrabba />} />
+          <Route path="catalog/onboard" element={<WholesalerCatalogOnboard />} />
+        </Route>
         <Route path="/portal/production/*" element={<ProductionPortal />} />
         <Route path="/portal/verification-crew" element={<VerificationCrewPortal />} />
         {/* Retired hardcoded VA shell — canonical portal is /va/dashboard */}

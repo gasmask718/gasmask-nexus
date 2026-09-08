@@ -13,7 +13,21 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        display: ["Archivo", "system-ui", "sans-serif"],
+        plex: ["'IBM Plex Sans'", "system-ui", "sans-serif"],
+        "plex-mono": ["'IBM Plex Mono'", "ui-monospace", "monospace"],
+      },
       colors: {
+        dd: {
+          navy: "hsl(var(--dd-navy))",
+          "navy-deep": "hsl(var(--dd-navy-deep))",
+          gold: "hsl(var(--dd-gold))",
+          "gold-soft": "hsl(var(--dd-gold-soft))",
+          paper: "hsl(var(--dd-paper))",
+          ink: "hsl(var(--dd-ink))",
+          line: "hsl(var(--dd-line))",
+        },
         gold: {
           DEFAULT: "hsl(var(--gold))",
           foreground: "hsl(var(--gold-foreground))",

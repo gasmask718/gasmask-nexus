@@ -206,3 +206,83 @@ All colors MUST be HSL.
     display: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   DYNASTY DIRECT BRAND SYSTEM — scoped to .dd-theme only.
+   Nothing here leaks into GasMask / Solar / GIY / Services.io:
+   every token is declared on the .dd-theme scope, never on :root.
+   ═══════════════════════════════════════════════════════════════ */
+.dd-theme {
+  /* Brand primitives (sampled from the logo) */
+  --dd-navy: 213 96% 19%;        /* #022C5E */
+  --dd-navy-deep: 214 97% 12%;   /* #011B3D */
+  --dd-gold: 41 79% 51%;         /* #E4A41E */
+  --dd-gold-soft: 40 95% 67%;    /* #FBC55C */
+  --dd-paper: 220 23% 97%;       /* #F7F8FA */
+  --dd-ink: 220 49% 8%;          /* #0B1220 */
+  --dd-line: 213 30% 84%;
+  --dd-line-strong: 213 40% 70%;
+
+  /* Re-point the shadcn semantic layer inside the portal only */
+  --background: var(--dd-paper);
+  --foreground: var(--dd-ink);
+  --card: 0 0% 100%;
+  --card-foreground: var(--dd-ink);
+  --popover: 0 0% 100%;
+  --popover-foreground: var(--dd-ink);
+  --primary: var(--dd-navy);
+  --primary-foreground: 0 0% 100%;
+  --primary-hover: var(--dd-navy-deep);
+  --primary-glow: var(--dd-gold);
+  --secondary: 214 30% 93%;
+  --secondary-foreground: var(--dd-navy);
+  --muted: 214 28% 95%;
+  --muted-foreground: 214 16% 42%;
+  --accent: 214 30% 93%;
+  --accent-foreground: var(--dd-navy);
+  --destructive: 0 72% 45%;
+  --destructive-foreground: 0 0% 100%;
+  --border: var(--dd-line);
+  --input: var(--dd-line);
+  --ring: var(--dd-gold);
+  --success: 158 68% 30%;
+  --warning: var(--dd-gold);
+  --radius: 0.25rem;
+
+  background-color: hsl(var(--dd-paper));
+  color: hsl(var(--dd-ink));
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  font-feature-settings: "cv05" 1;
+}
+
+.dd-theme h1,
+.dd-theme h2,
+.dd-theme h3,
+.dd-theme .font-display {
+  font-family: 'Archivo', 'Archivo Black', system-ui, sans-serif;
+  font-weight: 800;
+  font-stretch: 112%;
+  letter-spacing: -0.015em;
+}
+
+/* Tabular data only: SKUs, prices, quantities. Never labels or buttons. */
+.dd-theme .dd-num {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+/* Flat navy-bordered panel with a single accent rule — not a soft SaaS card. */
+.dd-theme .dd-panel {
+  background: #fff;
+  border: 1px solid hsl(var(--dd-line));
+  border-top: 2px solid hsl(var(--dd-navy));
+  box-shadow: none;
+}
+.dd-theme .dd-panel-accent {
+  border-top-color: hsl(var(--dd-gold));
+}
+.dd-theme .dd-rule {
+  height: 2px;
+  background: hsl(var(--dd-navy));
+}

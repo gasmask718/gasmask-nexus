@@ -94,6 +94,9 @@ export function useWholesalerProducts() {
         .from('products_all')
         .insert([{
           ...data,
+          ...(data.supplier_cost != null
+            ? { supplier_cost_cents: Math.round(Number(data.supplier_cost) * 100) }
+            : {}),
           ...(touchesSpecs ? { spec_source: 'manual', specs_verified_at: new Date().toISOString() } : {}),
           wholesaler_id: profile.id,
           status: 'active',
@@ -120,9 +123,17 @@ export function useWholesalerProducts() {
 
   const updateProduct = useMutation({
     mutationFn: async ({ id, ...data }: { id: string } & Partial<CreateProductData>) => {
+      // supplier_cost_cents is the column the cost-history trigger and the
+      // margin/ledger math key on. Writing dollars alone silently drifts them,
+      // so any price write sets both in the same statement.
+      const payload: Record<string, any> = { ...data };
+      if (data.supplier_cost != null) {
+        payload.supplier_cost_cents = Math.round(Number(data.supplier_cost) * 100);
+      }
+
       const { error } = await supabase
         .from('products_all')
-        .update(data)
+        .update(payload)
         .eq('id', id);
 
       if (error) throw error;
