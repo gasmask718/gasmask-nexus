@@ -539,49 +539,57 @@ If the photo shows no printed specification panel, set label_detected=false and 
   return payload;
 }
 
+// SOURCED sizing. No LLM guesses: every weight/dimension carries a verbatim
+// snippet + source URL (SerpAPI product spec panels / web snippets). When no
+// sourced match exists we return status='needs_measurement' with a suggested
+// box from dd_box_sizes, and we DO NOT write weight_oz/dimensions on the draft.
 async function runEstimateMeasurements(body: any) {
-  const { product_name, photo_url, draft_id } = body;
-  if (!product_name || !photo_url) throw new Error('product_name + photo_url required');
-  const dataUrl = await fetchAsDataUrl(photo_url);
-  const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${LOVABLE_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-pro',
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'text', text: `Estimate the SHIPPING weight (oz) and physical dimensions (inches) of "${product_name}" in this photo. Use any visible reference objects (hand, coin, ruler, common packaging) or known product specs. Return STRICT JSON only:
-{
-  "weight_oz": <number>,
-  "dimensions": { "length_in": <number>, "width_in": <number>, "height_in": <number> },
-  "confidence": "low|medium|high",
-  "reasoning": "<one short sentence: what reference / known specs you used>"
-}
-If you cannot estimate any field, set it to null. NEVER guess wildly — shipping bills on actuals.` },
-          { type: 'image_url', image_url: { url: dataUrl } },
-        ],
-      }],
-    }),
-  });
-  if (!r.ok) throw new Error(`gemini estimate ${r.status}`);
-  const j = await r.json();
-  const txt = j.choices?.[0]?.message?.content ?? '';
-  const parsed = parseJson(typeof txt === 'string' ? txt : '');
-  const payload = {
-    weight_oz: parsed.weight_oz ?? null,
-    dimensions: parsed.dimensions ?? null,
-    confidence: parsed.confidence ?? 'low',
-    reasoning: parsed.reasoning ?? '',
-    estimated_at: new Date().toISOString(),
-  };
+  const { product_name, brand_hint, draft_id } = body;
+  if (!product_name) throw new Error('product_name required');
+  const sb = sbAdmin();
+
+  // Prefer the recognised name/brand off the draft when the caller passed a placeholder.
+  let name = String(product_name);
+  let brand = brand_hint ? String(brand_hint) : null;
   if (draft_id) {
-    // Prefill the editable fields, but DO NOT mark verified — David must tap the checkbox.
-    await sbAdmin().from('dd_catalog_drafts').update({
-      measurements_estimate: payload,
-      weight_oz: payload.weight_oz,
-      dimensions: payload.dimensions,
-    }).eq('id', draft_id);
+    const { data: d } = await sb.from('dd_catalog_drafts').select('recognition').eq('id', draft_id).maybeSingle();
+    const rec = (d?.recognition || {}) as any;
+    if (/pending photo read/i.test(name) && rec.product_name) name = String(rec.product_name);
+    if (!brand && rec.brand_visible) brand = String(rec.brand_visible);
+  }
+
+  const specs = await lookupSourcedSpecs(sb, name, brand);
+  const sourced = specs.status === 'sourced' && specs.weight && specs.dimensions;
+
+  // Backward-compatible shape for the wizard (weight_oz / dimensions / confidence)
+  // plus the new provenance fields. Values are only filled when sourced.
+  const payload = {
+    status: specs.status,
+    source: 'sourced_web' as const,
+    weight_oz: sourced ? specs.weight!.weight_oz : null,
+    dimensions: sourced
+      ? { length_in: specs.dimensions!.length_in, width_in: specs.dimensions!.width_in, height_in: specs.dimensions!.height_in }
+      : null,
+    confidence: specs.confidence,
+    reasoning: specs.reason ?? '',
+    sources: [
+      ...(specs.weight ? [{ field: 'weight', verbatim: specs.weight.verbatim, url: specs.weight.source_url, via: specs.weight.via }] : []),
+      ...(specs.dimensions ? [{ field: 'dimensions', verbatim: specs.dimensions.verbatim, url: specs.dimensions.source_url, via: specs.dimensions.via }] : []),
+    ],
+    suggested_box: specs.suggested_box,
+    query: specs.query,
+    estimated_at: specs.checked_at,
+  };
+
+  if (draft_id) {
+    const update: Record<string, unknown> = { sourced_specs: specs, measurements_estimate: payload };
+    if (sourced) {
+      // Prefill the editable fields from SOURCED values only. Never marks verified —
+      // measurements_verified_at stays a human action.
+      update.weight_oz = payload.weight_oz;
+      update.dimensions = payload.dimensions;
+    }
+    await sb.from('dd_catalog_drafts').update(update).eq('id', draft_id);
   }
   return payload;
 }
