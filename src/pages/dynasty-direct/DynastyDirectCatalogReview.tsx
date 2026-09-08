@@ -100,6 +100,8 @@ const money = (n: number | null | undefined) => (n == null ? '—' : `$${Number(
 const BASIS_LABEL: Record<string, string> = {
   case_market_median: 'real case-level market median',
   case_market_below_floor: 'margin floor (case market below floor)',
+  cost_plus_target_reseller: 'cost-plus target (reseller, below DTC market)',
+  cost_plus_capped_below_dtc: 'cost-plus, capped under DTC',
   cost_plus_no_case_market_data: 'cost-plus (no case-level market data)',
   cost_plus_no_case_quantity: 'cost-plus (case quantity unknown)',
   no_cost: 'no cost — cannot price',

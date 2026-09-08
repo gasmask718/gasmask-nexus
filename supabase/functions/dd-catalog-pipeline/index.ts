@@ -995,21 +995,24 @@ async function runPriceResearch(body: any) {
   const caseUsable = !!(caseMarket && caseMarket.available && caseMarket.comparable && caseMarket.median);
 
   // ---- OUTPUTS: two separate prices, each with its own basis ----
-  type Basis = 'case_market_median' | 'case_market_below_floor' | 'cost_plus_no_case_market_data' | 'cost_plus_no_case_quantity' | 'no_cost';
+  // Real case-level listings (Walmart/eBay/etc.) are what an END CONSUMER pays for the
+  // case online → they anchor DTC (price B). A store/reseller must be able to buy below
+  // that to resell, so store (price A) is cost-plus target margin, capped under DTC.
+  type Basis = 'case_market_median' | 'case_market_below_floor' | 'cost_plus_target_reseller' | 'cost_plus_capped_below_dtc' | 'cost_plus_no_case_market_data' | 'cost_plus_no_case_quantity' | 'no_cost';
   let storePrice = storeCostPlus, dtcPrice = dtcCostPlus;
   let storeBasis: Basis, dtcBasis: Basis;
   if (!hasCost) {
     storeBasis = dtcBasis = 'no_cost';
   } else if (caseUsable) {
     const cm = caseMarket!.median!;
-    // Store (reseller) price: the real case market median, never below the store floor.
-    if (cm >= storeFloor) { storePrice = r2(cm); storeBasis = 'case_market_median'; }
-    else { storePrice = storeFloor; storeBasis = 'case_market_below_floor'; }
-    // DTC price: real case market median is the anchor too, but must clear the (higher) dtc floor.
     if (cm >= dtcFloor) { dtcPrice = r2(cm); dtcBasis = 'case_market_median'; }
     else { dtcPrice = dtcFloor; dtcBasis = 'case_market_below_floor'; }
-    // Store must stay below DTC (dd-auto-price rule); if the market collapses them, DTC falls back to cost-plus target.
-    if (storePrice >= dtcPrice) { dtcPrice = Math.max(dtcCostPlus, r2(storePrice * 1.01)); dtcBasis = 'cost_plus_no_case_market_data'; }
+    storePrice = storeCostPlus; storeBasis = 'cost_plus_target_reseller';
+    if (storePrice >= dtcPrice) {
+      // market case price is too close to cost for a target-margin reseller price; hold the store floor, cap under DTC
+      storePrice = r2(Math.max(storeFloor, Math.min(storeCostPlus, dtcPrice * 0.9)));
+      storeBasis = 'cost_plus_capped_below_dtc';
+    }
   } else {
     storeBasis = dtcBasis = packKnown ? 'cost_plus_no_case_market_data' : 'cost_plus_no_case_quantity';
   }
