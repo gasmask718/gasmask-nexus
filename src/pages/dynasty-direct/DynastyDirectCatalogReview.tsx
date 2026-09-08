@@ -23,16 +23,28 @@ interface PriceResearch {
   retail_margin_pct?: number;
   pricing_notes?: string;
   cost_basis?: number;
-  basis?: 'market_median' | 'margin_floor_market_below' | 'formula_only' | 'pack_normalized';
+  basis?: string;
   effective_margin_pct?: number;
   retail_floor?: number;
   pack?: { pack_count: number | null; source: string | null; matched_text: string | null; reason: string };
-  raw?: { cost_basis: number; market_median: number | null; market_pack_size: number; retail_floor: number; suggested_retail: number; basis: string };
-  normalized?: {
-    pack_count: number; pack_count_source: string | null; cost_per_unit: number; market_pack_size: number;
-    market_per_unit_median: number | null; retail_floor_per_unit: number; suggested_per_unit: number;
-    suggested_retail_pack: number; basis_detail: string;
+  // case-basis outputs
+  pricing_model?: 'case_basis' | string;
+  store_price_a?: number;
+  store_price_a_basis?: string;
+  dtc_price_b?: number;
+  dtc_price_b_basis?: string;
+  margins?: { min_store_margin_pct: number; target_store_margin_pct: number; min_dtc_margin_pct: number; target_dtc_margin_pct: number; source: string };
+  floors?: { platform_margin_pct: number; platform_floor: number; store_floor: number; dtc_floor: number; store_cost_plus_target: number; dtc_cost_plus_target: number };
+  case_market?: {
+    available: boolean; comparable: boolean; reason: string | null; target_units: number; count: number; samples_raw: number;
+    excluded: { low_relevance: number; count_mismatch: number; no_count: number; outliers: number };
+    low: number | null; median: number | null; high: number | null; queries: string[];
+    listings: { title: string; price: number; source: string; link: string | null; units: number }[];
   } | null;
+  unit_reference?: { note: string; per_unit_median: number | null; per_unit_low: number | null; per_unit_high: number | null; listing_pack_size: number; listing_count: number; cost_per_unit: number | null };
+  // legacy (pre case-basis) — may still be present on old research rows
+  raw?: any;
+  normalized?: any;
   sources?: { market?: { count: number; pack_size: number; samples?: { title: string; price: number; source: string; link: string | null }[] } | null };
   researched_at?: string;
 }
@@ -86,10 +98,17 @@ function pct(cost: number, price: number): number {
 const money = (n: number | null | undefined) => (n == null ? '—' : `$${Number(n).toFixed(2)}`);
 
 const BASIS_LABEL: Record<string, string> = {
-  market_median: 'market median',
-  margin_floor_market_below: 'margin floor (market below floor)',
-  formula_only: 'formula only (no market data)',
-  pack_normalized: 'pack-normalized',
+  case_market_median: 'real case-level market median',
+  case_market_below_floor: 'margin floor (case market below floor)',
+  cost_plus_no_case_market_data: 'cost-plus (no case-level market data)',
+  cost_plus_no_case_quantity: 'cost-plus (case quantity unknown)',
+  no_cost: 'no cost — cannot price',
+  admin_override: 'admin override',
+  // legacy labels
+  market_median: 'market median (legacy)',
+  margin_floor_market_below: 'margin floor (legacy)',
+  formula_only: 'formula only (legacy)',
+  pack_normalized: 'pack-normalized (legacy — retired)',
 };
 
 const SELECT_COLS =
@@ -131,9 +150,11 @@ export default function DynastyDirectCatalogReview() {
     rows.forEach((r) => {
       const pr = r.price_research || {};
       const px = r.pricing || {};
+      // Only case-basis research seeds prices; legacy (unit × count) research is never reused.
+      const caseBasis = pr.pricing_model === 'case_basis';
       seed[r.id] = {
-        store: String(pr.suggested_store_price ?? px.suggested_store ?? ''),
-        retail: String(px.suggested_retail_override ?? pr.suggested_retail_price ?? px.suggested_retail ?? ''),
+        store: String(px.store_price_a ?? (caseBasis ? pr.store_price_a : undefined) ?? ''),
+        retail: String(px.dtc_price_b ?? (caseBasis ? pr.dtc_price_b : undefined) ?? ''),
         cost: String(r.cost ?? pr.cost_basis ?? ''),
         pack: r.pack_count != null ? String(r.pack_count) : '',
         mw: '', ml: '', mwd: '', mh: '',
