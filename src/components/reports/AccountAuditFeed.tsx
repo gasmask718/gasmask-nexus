@@ -397,7 +397,7 @@ export default function AccountAuditFeed() {
               <th className="py-2 pr-3">Who</th>
               <th className="py-2 pr-3">Action</th>
               <th className="py-2 pr-3">Route</th>
-              <th className="py-2 pr-3">Note</th>
+              <th className="py-2 pr-3">Detail</th>
               <th className="w-10" />
             </tr>
           </thead>
@@ -417,8 +417,9 @@ export default function AccountAuditFeed() {
                     <td className="py-2 pr-3">{r.store_name || (r.store_id ? r.store_id.slice(0, 8) : '—')}</td>
                     <td className="py-2 pr-3"><ActorBadge role={r.actor_role} name={r.actor_name} /></td>
                     <td className="py-2 pr-3">
-                      <Badge variant="secondary">{r.action || r.row_kind}</Badge>
+                      <ActionBadge action={r.action || r.row_kind} />
                     </td>
+
                     <td className="py-2 pr-3 text-xs">
                       {r.route_id ? (
                         <Badge variant="outline">
