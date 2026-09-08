@@ -90,7 +90,7 @@ export default function OpsLayout() {
         <PwaUpdateToast />
 
         {/* Main Content — padding-bottom for bottom nav */}
-        <main className={isWholesalerPortal ? 'flex-1 pb-20 lg:pb-0' : 'flex-1 pb-20 px-3 sm:px-4 md:px-6'}>
+        <main className={isWholesalerPortal ? 'flex-1 pb-20 lg:pb-0 bg-background' : 'flex-1 pb-20 px-3 sm:px-4 md:px-6'}>
           <Outlet />
         </main>
 
