@@ -4648,6 +4648,13 @@ export type Database = {
             foreignKeyName: "admin_impersonation_log_impersonated_ambassador_id_fkey"
             columns: ["impersonated_ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "admin_impersonation_log_impersonated_ambassador_id_fkey"
+            columns: ["impersonated_ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -4992,6 +4999,13 @@ export type Database = {
             foreignKeyName: "affiliate_clicks_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "affiliate_clicks_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -5058,6 +5072,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "affiliate_conversions_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -10256,6 +10277,13 @@ export type Database = {
             foreignKeyName: "ambassador_activity_log_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_activity_log_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -10352,6 +10380,13 @@ export type Database = {
             foreignKeyName: "ambassador_applications_created_ambassador_id_fkey"
             columns: ["created_ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_applications_created_ambassador_id_fkey"
+            columns: ["created_ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -10381,6 +10416,13 @@ export type Database = {
             columns: ["referred_by_ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_applications_referred_by_ambassador_id_fkey"
+            columns: ["referred_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -10486,6 +10528,13 @@ export type Database = {
             foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -10522,6 +10571,13 @@ export type Database = {
             columns: ["unassigned_by"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_unassigned_by_fkey"
+            columns: ["unassigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -10778,6 +10834,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_bulk_jobs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -11068,6 +11131,13 @@ export type Database = {
             foreignKeyName: "ambassador_invites_invited_by_ambassador_id_fkey"
             columns: ["invited_by_ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_invites_invited_by_ambassador_id_fkey"
+            columns: ["invited_by_ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -11097,6 +11167,13 @@ export type Database = {
             columns: ["target_ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_invites_target_ambassador_id_fkey"
+            columns: ["target_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -11184,6 +11261,13 @@ export type Database = {
             foreignKeyName: "ambassador_leads_created_by_ambassador_id_fkey"
             columns: ["created_by_ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_leads_created_by_ambassador_id_fkey"
+            columns: ["created_by_ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -11245,6 +11329,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_links_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -11335,6 +11426,13 @@ export type Database = {
             foreignKeyName: "ambassador_message_templates_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_message_templates_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -11416,6 +11514,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_notes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -11513,6 +11618,13 @@ export type Database = {
             foreignKeyName: "ambassador_online_sales_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_online_sales_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -11594,6 +11706,13 @@ export type Database = {
             foreignKeyName: "ambassador_payout_accounts_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_payout_accounts_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -11660,6 +11779,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_payout_methods_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -11872,6 +11998,13 @@ export type Database = {
             foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -11932,6 +12065,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_region_history_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -12153,6 +12293,13 @@ export type Database = {
             foreignKeyName: "ambassador_territory_coverage_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_territory_coverage_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -12177,12 +12324,15 @@ export type Database = {
           id: string
           is_active: boolean
           is_simulation: boolean | null
+          login_unlink_reason: string | null
+          login_unlinked_at: string | null
           name: string | null
           neighborhood: string | null
           personal_phone: string | null
           phone_primary: string | null
           phone_secondary: string | null
           phone_whatsapp: string | null
+          previous_user_id: string | null
           recruited_by_ambassador_id: string | null
           referral_code: string | null
           social_media: string | null
@@ -12213,12 +12363,15 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_simulation?: boolean | null
+          login_unlink_reason?: string | null
+          login_unlinked_at?: string | null
           name?: string | null
           neighborhood?: string | null
           personal_phone?: string | null
           phone_primary?: string | null
           phone_secondary?: string | null
           phone_whatsapp?: string | null
+          previous_user_id?: string | null
           recruited_by_ambassador_id?: string | null
           referral_code?: string | null
           social_media?: string | null
@@ -12249,12 +12402,15 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_simulation?: boolean | null
+          login_unlink_reason?: string | null
+          login_unlinked_at?: string | null
           name?: string | null
           neighborhood?: string | null
           personal_phone?: string | null
           phone_primary?: string | null
           phone_secondary?: string | null
           phone_whatsapp?: string | null
+          previous_user_id?: string | null
           recruited_by_ambassador_id?: string | null
           referral_code?: string | null
           social_media?: string | null
@@ -12301,6 +12457,13 @@ export type Database = {
             columns: ["recruited_by_ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassadors_recruited_by_ambassador_id_fkey"
+            columns: ["recruited_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -38337,6 +38500,13 @@ export type Database = {
             foreignKeyName: "commission_dispute_evidence_uploaded_by_ambassador_id_fkey"
             columns: ["uploaded_by_ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_dispute_evidence_uploaded_by_ambassador_id_fkey"
+            columns: ["uploaded_by_ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -38397,6 +38567,13 @@ export type Database = {
             columns: ["author_ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_dispute_messages_author_ambassador_id_fkey"
+            columns: ["author_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -38561,6 +38738,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -38818,6 +39002,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -39165,6 +39356,13 @@ export type Database = {
             foreignKeyName: "commission_override_assignments_beneficiary_ambassador_id_fkey"
             columns: ["beneficiary_ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_override_assignments_beneficiary_ambassador_id_fkey"
+            columns: ["beneficiary_ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -39208,6 +39406,13 @@ export type Database = {
             columns: ["source_ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_override_assignments_source_ambassador_id_fkey"
+            columns: ["source_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -39417,6 +39622,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -40659,6 +40871,13 @@ export type Database = {
             foreignKeyName: "communication_logs_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -40908,6 +41127,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "communication_messages_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -47199,6 +47425,13 @@ export type Database = {
             foreignKeyName: "dd_affiliates_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_affiliates_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -47550,6 +47783,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_campaigns_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -49482,6 +49722,13 @@ export type Database = {
             foreignKeyName: "dd_partner_earnings_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_earnings_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -49794,6 +50041,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "dd_partner_wholesaler_links_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -66601,6 +66855,13 @@ export type Database = {
             foreignKeyName: "funding_clients_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "funding_clients_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -73873,6 +74134,13 @@ export type Database = {
             foreignKeyName: "influencer_assignments_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "influencer_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -74666,6 +74934,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "influencers_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -81892,6 +82167,13 @@ export type Database = {
             foreignKeyName: "marketplace_orders_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -87287,6 +87569,13 @@ export type Database = {
             foreignKeyName: "orders_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "orders_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -90431,6 +90720,13 @@ export type Database = {
             foreignKeyName: "payout_batch_items_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batch_items_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -90571,6 +90867,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -104816,6 +105119,13 @@ export type Database = {
             foreignKeyName: "sales_prospects_archived_by_fkey"
             columns: ["archived_by"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "sales_prospects_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -117698,6 +118008,13 @@ export type Database = {
             foreignKeyName: "store_master_assigned_ambassador_id_fkey"
             columns: ["assigned_ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_master_assigned_ambassador_id_fkey"
+            columns: ["assigned_ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -117755,6 +118072,13 @@ export type Database = {
             columns: ["sourced_by_ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_master_sourced_by_ambassador_id_fkey"
+            columns: ["sourced_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -117890,6 +118214,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_notes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -143332,6 +143663,13 @@ export type Database = {
             foreignKeyName: "wholesaler_assignments_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -143361,6 +143699,13 @@ export type Database = {
             columns: ["unassigned_by"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_unassigned_by_fkey"
+            columns: ["unassigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -146972,6 +147317,13 @@ export type Database = {
             foreignKeyName: "commission_disputes_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -147066,6 +147418,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -147283,6 +147642,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -147333,6 +147699,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -147374,6 +147747,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -147481,6 +147861,13 @@ export type Database = {
             foreignKeyName: "payout_batches_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -147534,6 +147921,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -147683,6 +148077,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -148570,6 +148971,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_disputes_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -149835,6 +150243,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -150094,6 +150509,13 @@ export type Database = {
             foreignKeyName: "payout_batches_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -150144,6 +150566,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -150684,6 +151113,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -151841,6 +152277,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -151870,6 +152313,33 @@ export type Database = {
           override_total: number | null
           paid_amount: number | null
           pending_amount: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassadors_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_ambassador_login_readiness: {
+        Row: {
+          active_assignments: number | null
+          ambassador_id: string | null
+          city: string | null
+          email: string | null
+          login_unlink_reason: string | null
+          login_unlinked_at: string | null
+          logins_shared_with: number | null
+          name: string | null
+          phone_primary: string | null
+          previous_user_id: string | null
+          readiness: string | null
+          routes_visible: number | null
+          state: string | null
           user_id: string | null
         }
         Relationships: [
@@ -151919,6 +152389,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -151981,6 +152458,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -152106,6 +152590,13 @@ export type Database = {
             foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_assignments_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -152176,6 +152667,13 @@ export type Database = {
             foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -152219,6 +152717,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_purchases_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -152279,6 +152784,13 @@ export type Database = {
             columns: ["recruited_by_ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassadors_recruited_by_ambassador_id_fkey"
+            columns: ["recruited_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -152862,6 +153374,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -153847,6 +154366,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "communication_logs_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -155275,6 +155801,13 @@ export type Database = {
             foreignKeyName: "payout_batch_items_ambassador_id_fkey"
             columns: ["ambassador_id"]
             isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batch_items_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
             referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
@@ -155322,6 +155855,13 @@ export type Database = {
             columns: ["ambassador_id"]
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
             referencedColumns: ["ambassador_id"]
           },
           {
@@ -159146,6 +159686,10 @@ export type Database = {
       ai_worker_performance_tick: { Args: never; Returns: Json }
       ambassador_has_active_assignment: {
         Args: { _store_id: string; _user_id: string }
+        Returns: boolean
+      }
+      ambassador_login_is_shared: {
+        Args: { _user_id: string }
         Returns: boolean
       }
       analyze_store_duplicate_groups: {
