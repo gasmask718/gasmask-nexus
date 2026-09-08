@@ -30,12 +30,50 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 interface Props {
-  stores: MapStore[];
+  /** When omitted, the map self-loads the signed-in ambassador's assigned stores. */
+  stores?: MapStore[];
   title?: string;
   height?: number;
 }
 
-export function AmbassadorStoreMap({ stores, title = 'Store Map', height = 420 }: Props) {
+/** Self-loading variant: the signed-in ambassador's own assigned stores. */
+function PortfolioStoreMap({ title, height }: { title?: string; height?: number }) {
+  const { stores: portfolio } = useAmbassadorPortfolio();
+  const ids = (portfolio || []).map((s) => s.store_id).filter(Boolean);
+
+  const { data: coords } = useQuery({
+    queryKey: ['ambassador-map-coords', ids.sort().join(',')],
+    queryFn: async () => {
+      if (!ids.length) return [] as any[];
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id, lat, lng')
+        .in('id', ids);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: ids.length > 0,
+  });
+
+  const coordMap = new Map((coords || []).map((c: any) => [c.id, c]));
+  const mapped: MapStore[] = (portfolio || []).map((s) => ({
+    id: s.store_id,
+    name: s.store_name,
+    address: [s.store_address, s.store_city, s.store_state].filter(Boolean).join(', '),
+    lat: coordMap.get(s.store_id)?.lat ?? null,
+    lng: coordMap.get(s.store_id)?.lng ?? null,
+    statusKey: 'assigned',
+  }));
+
+  return <MapBody stores={mapped} title={title || 'My Stores'} height={height ?? 420} />;
+}
+
+export function AmbassadorStoreMap({ stores, title, height }: Props) {
+  if (!stores) return <PortfolioStoreMap title={title} height={height} />;
+  return <MapBody stores={stores} title={title || 'Store Map'} height={height ?? 420} />;
+}
+
+function MapBody({ stores, title, height }: { stores: MapStore[]; title: string; height: number }) {
   const withCoords = useMemo(
     () => stores.filter((s) => typeof s.lat === 'number' && typeof s.lng === 'number'),
     [stores],
