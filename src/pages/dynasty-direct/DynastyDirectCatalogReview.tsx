@@ -534,59 +534,93 @@ export default function DynastyDirectCatalogReview() {
                     </Button>
                   </div>
 
-                  {pr ? (
+                  {pr && !caseBasis && (
+                    <div className="rounded border border-dashed border-destructive/50 bg-destructive/10 p-3 text-xs">
+                      <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Legacy research (unit × count) — retired</div>
+                      <div className="text-muted-foreground">This research predates case-basis pricing and its numbers are not used. Re-run sourced research to get store / DTC case prices.</div>
+                    </div>
+                  )}
+
+                  {pr && caseBasis ? (
                     <div className="space-y-3 text-xs">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {/* RAW */}
-                        <div className={`rounded border p-3 space-y-1 ${pr.normalized ? 'opacity-70' : ''}`}>
-                          <div className="font-semibold">Raw comparison (unnormalized)</div>
-                          <div>Cost basis: <span className="font-mono">{money(pr.raw?.cost_basis ?? pr.cost_basis)}</span></div>
-                          <div>Market median (listing pack {pr.raw?.market_pack_size ?? pr.sources?.market?.pack_size ?? '—'}): <span className="font-mono">{money(pr.raw?.market_median)}</span></div>
-                          <div>Margin floor ({pr.effective_margin_pct}%): <span className="font-mono">{money(pr.raw?.retail_floor ?? pr.retail_floor)}</span></div>
-                          <div>Suggested: <span className="font-mono">{money(pr.raw?.suggested_retail)}</span> <Badge variant="outline" className="text-[10px]">{BASIS_LABEL[pr.raw?.basis ?? ''] || pr.raw?.basis || '—'}</Badge></div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {/* CASE-LEVEL MARKET */}
+                        <div className={`rounded border p-3 space-y-1 ${pr.case_market?.comparable ? 'border-primary/50 bg-primary/5' : 'border-dashed'}`}>
+                          <div className="font-semibold">Case-level comparables ({pr.pack?.pack_count ?? '?'} per case)</div>
+                          {pr.case_market ? (
+                            pr.case_market.comparable ? (
+                              <>
+                                <div>{pr.case_market.count} real listings selling ~{pr.case_market.target_units} units</div>
+                                <div>Low / median / high: <span className="font-mono">{money(pr.case_market.low)} / {money(pr.case_market.median)} / {money(pr.case_market.high)}</span></div>
+                                <ul className="space-y-0.5 mt-1">
+                                  {pr.case_market.listings.slice(0, 4).map((l, i) => (
+                                    <li key={i} className="truncate">
+                                      <span className="font-mono">{money(l.price)}</span> · {l.units} ct · {l.source}
+                                      {l.link && <a href={l.link} target="_blank" rel="noreferrer" className="ml-1 inline-flex align-middle"><ExternalLink className="h-3 w-3" /></a>}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </>
+                            ) : (
+                              <div className="text-muted-foreground">
+                                <span className="text-destructive">None found.</span> {pr.case_market.reason} ({pr.case_market.samples_raw} raw listings: {pr.case_market.excluded.no_count} no stated count, {pr.case_market.excluded.count_mismatch} different quantity, {pr.case_market.excluded.low_relevance} off-product). Prices below are cost-plus.
+                              </div>
+                            )
+                          ) : (
+                            <div className="text-muted-foreground">Not searched — case quantity unknown. Enter the pack count above and re-run.</div>
+                          )}
                         </div>
-                        {/* NORMALIZED */}
-                        {pr.normalized ? (
-                          <div className="rounded border border-primary/50 bg-primary/5 p-3 space-y-1">
-                            <div className="font-semibold">Pack-normalized ({pr.normalized.pack_count} units)</div>
-                            <div>Cost / unit: <span className="font-mono">{money(pr.normalized.cost_per_unit)}</span></div>
-                            <div>Market / unit (median): <span className="font-mono">{money(pr.normalized.market_per_unit_median)}</span></div>
-                            <div>Floor / unit: <span className="font-mono">{money(pr.normalized.retail_floor_per_unit)}</span></div>
-                            <div>Suggested / unit: <span className="font-mono">{money(pr.normalized.suggested_per_unit)}</span> <Badge variant="outline" className="text-[10px]">{BASIS_LABEL[pr.normalized.basis_detail] || pr.normalized.basis_detail}</Badge></div>
-                            <div className="font-semibold">Per pack: <span className="font-mono">{money(pr.normalized.suggested_retail_pack)}</span></div>
-                          </div>
-                        ) : (
-                          <div className="rounded border border-dashed border-destructive/50 bg-destructive/10 p-3">
-                            <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Not pack-normalized</div>
-                            <div className="text-muted-foreground">{pr.pack?.reason || 'No pack count.'} Enter the pack count above and re-run research.</div>
-                          </div>
-                        )}
+                        {/* COST-PLUS */}
+                        <div className="rounded border p-3 space-y-1">
+                          <div className="font-semibold">Cost-plus (products_all margin columns)</div>
+                          <div>Cost basis (case): <span className="font-mono">{money(pr.cost_basis)}</span></div>
+                          <div>Store: min {pr.margins?.min_store_margin_pct}% → <span className="font-mono">{money(pr.floors?.store_floor)}</span>, target {pr.margins?.target_store_margin_pct}% → <span className="font-mono">{money(pr.floors?.store_cost_plus_target)}</span></div>
+                          <div>DTC: min {pr.margins?.min_dtc_margin_pct}% → <span className="font-mono">{money(pr.floors?.dtc_floor)}</span>, target {pr.margins?.target_dtc_margin_pct}% → <span className="font-mono">{money(pr.floors?.dtc_cost_plus_target)}</span></div>
+                          <div className="text-muted-foreground">Platform floor {pr.floors?.platform_margin_pct}%: <span className="font-mono">{money(pr.floors?.platform_floor)}</span></div>
+                        </div>
+                        {/* UNIT REFERENCE */}
+                        <div className="rounded border p-3 space-y-1 opacity-80">
+                          <div className="font-semibold">Single-unit retail — reference only</div>
+                          {pr.unit_reference?.per_unit_median != null ? (
+                            <>
+                              <div>A customer could buy ONE elsewhere for ~<span className="font-mono">{money(pr.unit_reference.per_unit_median)}</span> ({pr.unit_reference.listing_count} listings)</div>
+                              <div>Range: <span className="font-mono">{money(pr.unit_reference.per_unit_low)} – {money(pr.unit_reference.per_unit_high)}</span></div>
+                              {pr.unit_reference.cost_per_unit != null && <div>Your cost / unit: <span className="font-mono">{money(pr.unit_reference.cost_per_unit)}</span></div>}
+                              <div className="text-muted-foreground">Never multiplied into the case price.</div>
+                            </>
+                          ) : (
+                            <div className="text-muted-foreground">{pr.unit_reference?.note || 'No unit market data.'}</div>
+                          )}
+                        </div>
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-1">
-                        <span>AI suggested retail: <span className="font-mono">{money(pr.suggested_retail_price)}</span> <Badge className="text-[10px]">{BASIS_LABEL[pr.basis ?? ''] || pr.basis}</Badge></span>
-                        <span>Store (formula): <span className="font-mono">{money(pr.suggested_store_price)}</span></span>
-                        <span>Walmart: <span className="font-mono">{money(pr.walmart_price)}</span></span>
-                        <span>Amazon: <span className="font-mono">{money(pr.amazon_price)}</span></span>
-                        <span>Comparables: {pr.sources?.market?.count ?? 0}</span>
+                        <span>Suggested store (case): <span className="font-mono">{money(pr.store_price_a)}</span> <Badge className="text-[10px]">{BASIS_LABEL[pr.store_price_a_basis ?? ''] || pr.store_price_a_basis}</Badge></span>
+                        <span>Suggested DTC (case): <span className="font-mono">{money(pr.dtc_price_b)}</span> <Badge className="text-[10px]">{BASIS_LABEL[pr.dtc_price_b_basis ?? ''] || pr.dtc_price_b_basis}</Badge></span>
                       </div>
                       {pr.pricing_notes && <div className="text-muted-foreground italic">“{pr.pricing_notes}”</div>}
                     </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">No research yet — run sourced research to fetch market comparables.</p>
-                  )}
+                  ) : !pr ? (
+                    <p className="text-xs text-muted-foreground">No research yet — run sourced research to fetch case-level comparables.</p>
+                  ) : null}
 
                   <Separator />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-xs">Store price ($)</Label>
+                      <Label className="text-xs">Store price — per case, to stores/resellers ($) {isStoreOverride && <Badge variant="outline" className="ml-1 text-[10px]">admin override</Badge>}</Label>
                       <Input type="number" step="0.01" value={ov.store ?? ''} onChange={(e) => updateOverride(d.id, { store: e.target.value })} />
-                      <div className="text-[11px] text-muted-foreground mt-1">Margin: <span className="font-mono">{pct(liveCost, liveStore)}%</span></div>
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        Margin: <span className="font-mono">{pct(liveCost, liveStore)}%</span>
+                        {pr?.margins && pct(liveCost, liveStore) < pr.margins.min_store_margin_pct && liveStore > 0 && <span className="text-destructive ml-2">below min {pr.margins.min_store_margin_pct}% — publish will be blocked</span>}
+                      </div>
                     </div>
                     <div>
-                      <Label className="text-xs">Retail price to publish ($) {isOverride && <Badge variant="outline" className="ml-1 text-[10px]">admin override</Badge>}</Label>
+                      <Label className="text-xs">DTC price — per case, direct to consumer ($) {isDtcOverride && <Badge variant="outline" className="ml-1 text-[10px]">admin override</Badge>}</Label>
                       <Input type="number" step="0.01" value={ov.retail ?? ''} onChange={(e) => updateOverride(d.id, { retail: e.target.value })} />
-                      <div className="text-[11px] text-muted-foreground mt-1">Margin: <span className="font-mono">{pct(liveCost, liveRetail)}%</span></div>
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        Margin: <span className="font-mono">{pct(liveCost, liveRetail)}%</span>
+                        {pr?.margins && pct(liveCost, liveRetail) < pr.margins.min_dtc_margin_pct && liveRetail > 0 && <span className="text-destructive ml-2">below min {pr.margins.min_dtc_margin_pct}% — publish will be blocked</span>}
+                      </div>
                     </div>
                   </div>
                 </div>
