@@ -481,6 +481,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/iclean', label: '🧹 iClean WeClean OS', icon: Home },
       { path: '/os/icw', label: '🧼 ICW Command', icon: Home },
       { path: '/os/icw/workers', label: '👷 ICW Worker Roster', icon: Users },
+      { path: '/os/icw/my-jobs', label: '📋 My ICW Jobs', icon: Home },
       { path: '/os/icw/map', label: '🗺️ IClean Hub Map', icon: Home },
       { path: '/os/icw/crm', label: '📇 ICW CRM', icon: Users },
       { path: '/os/playboxxx', label: '🎮 PlayBoxxx OS', icon: Sparkles },
