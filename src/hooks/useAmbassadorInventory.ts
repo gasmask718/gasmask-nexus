@@ -10,14 +10,35 @@ import { supabase } from '@/integrations/supabase/client';
  * store: tubes = sum of current_tubes_left, needs_order = any brand flagged, and
  * "last updated" = the most recent row for that store across brands.
  */
+/**
+ * Human vs system split (Stage 5).
+ *
+ * Only these methods are a confirmed person standing in a store. Everything else
+ * (null, 'system', tube_inv_v4_*, bag_backfill_*, legacy_table_merge*) is an
+ * automated pipeline touch — verified by data: e.g. 378 of the 379
+ * 'tube_inv_v4_explicit' rows were written in a single minute (2026-08-20 07:52)
+ * with no user and no role, and no code path in this repo writes that label.
+ */
+export const HUMAN_METHODS = ['in_person', 'owner_confirmed_bags_returned'] as const;
+export const HUMAN_METHOD_LABEL = "'in_person' and 'owner_confirmed_bags_returned'";
+
+export function isHumanMethod(m: string | null | undefined): boolean {
+  return !!m && (HUMAN_METHODS as readonly string[]).includes(m);
+}
+
 export interface StoreInventoryClaim {
   store_id: string;
   tubes_left: number;
   needs_order: boolean;
   brands_tracked: number;
-  last_updated_at: string | null;
-  last_updated_by: string | null;
+  /** Most recent confirmed human check-in across brands, or null if there never was one. */
+  last_human_update: string | null;
+  last_human_by: string | null;
+  last_human_method: string | null;
+  /** Most recent row overall regardless of method — secondary context only. */
+  last_system_update: string | null;
 }
+
 
 export const STALE_DAYS = 30;
 export const RECENT_DAYS = 60;
