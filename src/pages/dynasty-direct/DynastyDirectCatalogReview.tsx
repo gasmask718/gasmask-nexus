@@ -52,14 +52,25 @@ interface PriceResearch {
 interface SourcedSpecs {
   status: 'sourced' | 'needs_measurement' | 'unavailable' | string;
   reason?: string;
-  weight: { weight_oz: number; verbatim: string; source_url: string | null; source_title?: string | null } | null;
-  dimensions: { length_in: number; width_in: number; height_in: number; verbatim: string; source_url: string | null; source_title?: string | null } | null;
+  target_units?: number | null;
+  weight_basis?: 'same_quantity_sourced' | 'estimated_from_single_unit_weight' | 'unverified_quantity' | null;
+  dimension_basis?: 'same_quantity_sourced' | 'unverified_quantity' | null;
+  dimensions_status?: 'sourced' | 'needs_measurement';
+  weight: { weight_oz: number; verbatim: string; source_url: string | null; source_title?: string | null; source_units?: number | null } | null;
+  dimensions: { length_in: number; width_in: number; height_in: number; verbatim: string; source_url: string | null; source_title?: string | null; source_units?: number | null } | null;
   weight_agreement?: number;
   dimension_agreement?: number;
   confidence?: string;
   suggested_box: { box_id: string; box_name: string; length_in: number; width_in: number; height_in: number; max_weight_oz: number | null; reason: string } | null;
   checked_at?: string;
 }
+
+function weightBasisLabel(b: SourcedSpecs['weight_basis'], units?: number | null): string {
+  if (b === 'same_quantity_sourced') return `same-quantity sourced${units ? ` (${units} ct)` : ''}`;
+  if (b === 'estimated_from_single_unit_weight') return `estimated from single-unit weight ×${units ?? '?'} — verify`;
+  return 'quantity unverified — verify';
+}
+
 
 interface PendingDraft {
   id: string;
