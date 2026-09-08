@@ -11,7 +11,7 @@
 
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { lookupMarket, type MarketLookup } from '../_shared/marketPrice.ts';
+import { lookupMarket, lookupCaseMarket, type MarketLookup, type CaseMarketLookup } from '../_shared/marketPrice.ts';
 import { resolvePackCount } from '../_shared/packCount.ts';
 import { lookupSourcedSpecs } from '../_shared/sourcedSpecs.ts';
 import { DD_CATEGORIES, mapDdCategory } from '../_shared/ddCategory.ts';
@@ -713,9 +713,15 @@ async function runPublish(body: any) {
     description: copy.long_description || copy.short_description || null,
     images,
     category,
-    retail_price: pricing.suggested_retail || 0,
-    store_price: pricing.suggested_store || 0,
+    // CASE-BASIS PRICING: store_price_a (reseller) / dtc_price_b (consumer) are the canonical
+    // outputs set in admin review. Legacy store_price/retail_price mirror them.
+    store_price_a: Number(pricing.store_price_a) > 0 ? Number(pricing.store_price_a) : (Number(pricing.suggested_store) > 0 ? Number(pricing.suggested_store) : null),
+    dtc_price_b: Number(pricing.dtc_price_b) > 0 ? Number(pricing.dtc_price_b) : (Number(pricing.suggested_retail) > 0 ? Number(pricing.suggested_retail) : null),
+    retail_price: Number(pricing.dtc_price_b) > 0 ? Number(pricing.dtc_price_b) : (pricing.suggested_retail || 0),
+    store_price: Number(pricing.store_price_a) > 0 ? Number(pricing.store_price_a) : (pricing.suggested_store || 0),
     wholesale_price: pricing.suggested_wholesale || 0,
+    units_per_case: Number(draft.pack_count) > 1 ? Number(draft.pack_count) : 1,
+    case_qty: Number(draft.pack_count) > 1 ? Number(draft.pack_count) : 1,
     // MARGIN GUARD FEED: without supplier cost the dd_margin_guard trigger short-circuits (v_cost <= 0)
     // and every wizard-published product bypasses the margin floor. Always pass the draft's real cost.
     supplier_cost: draft.cost ?? null,
