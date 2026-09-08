@@ -47627,6 +47627,10 @@ export type Database = {
           measurements_verified_by: string | null
           no_printed_label: boolean
           notes: string | null
+          pack_count: number | null
+          pack_count_set_at: string | null
+          pack_count_set_by: string | null
+          pack_count_source: string | null
           price_research: Json | null
           pricing: Json
           product_name: string
@@ -47672,6 +47676,10 @@ export type Database = {
           measurements_verified_by?: string | null
           no_printed_label?: boolean
           notes?: string | null
+          pack_count?: number | null
+          pack_count_set_at?: string | null
+          pack_count_set_by?: string | null
+          pack_count_source?: string | null
           price_research?: Json | null
           pricing?: Json
           product_name: string
@@ -47717,6 +47725,10 @@ export type Database = {
           measurements_verified_by?: string | null
           no_printed_label?: boolean
           notes?: string | null
+          pack_count?: number | null
+          pack_count_set_at?: string | null
+          pack_count_set_by?: string | null
+          pack_count_source?: string | null
           price_research?: Json | null
           pricing?: Json
           product_name?: string
@@ -147789,6 +147801,10 @@ export type Database = {
           measurements_verified_by: string | null
           no_printed_label: boolean | null
           notes: string | null
+          pack_count: number | null
+          pack_count_set_at: string | null
+          pack_count_set_by: string | null
+          pack_count_source: string | null
           price_research: Json | null
           pricing: Json | null
           product_name: string | null
@@ -147801,6 +147817,7 @@ export type Database = {
           selected_candidate_urls: string[] | null
           sku: string | null
           source: string | null
+          sourced_specs: Json | null
           staged: Json | null
           status: string | null
           submitted_at: string | null
@@ -147833,6 +147850,10 @@ export type Database = {
           measurements_verified_by?: string | null
           no_printed_label?: boolean | null
           notes?: string | null
+          pack_count?: number | null
+          pack_count_set_at?: string | null
+          pack_count_set_by?: string | null
+          pack_count_source?: string | null
           price_research?: Json | null
           pricing?: Json | null
           product_name?: string | null
@@ -147845,6 +147866,7 @@ export type Database = {
           selected_candidate_urls?: string[] | null
           sku?: string | null
           source?: string | null
+          sourced_specs?: Json | null
           staged?: Json | null
           status?: string | null
           submitted_at?: string | null
@@ -147877,6 +147899,10 @@ export type Database = {
           measurements_verified_by?: string | null
           no_printed_label?: boolean | null
           notes?: string | null
+          pack_count?: number | null
+          pack_count_set_at?: string | null
+          pack_count_set_by?: string | null
+          pack_count_source?: string | null
           price_research?: Json | null
           pricing?: Json | null
           product_name?: string | null
@@ -147889,6 +147915,7 @@ export type Database = {
           selected_candidate_urls?: string[] | null
           sku?: string | null
           source?: string | null
+          sourced_specs?: Json | null
           staged?: Json | null
           status?: string | null
           submitted_at?: string | null
@@ -159837,6 +159864,64 @@ export type Database = {
           id: string
           name: string
         }[]
+      }
+      dd_admin_update_draft: {
+        Args: { p_draft_id: string; p_patch: Json }
+        Returns: {
+          candidates: Json
+          category: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
+          copy: Json
+          cost: number | null
+          created_at: string
+          created_by: string | null
+          dimensions: Json | null
+          enhanced: Json
+          id: string
+          image_variants: Json | null
+          input_photos: Json
+          inventory_qty: number | null
+          label_extraction: Json | null
+          label_photo_url: string | null
+          market_check: Json | null
+          measurements_estimate: Json | null
+          measurements_verified_at: string | null
+          measurements_verified_by: string | null
+          no_printed_label: boolean
+          notes: string | null
+          pack_count: number | null
+          pack_count_set_at: string | null
+          pack_count_set_by: string | null
+          pack_count_source: string | null
+          price_research: Json | null
+          pricing: Json
+          product_name: string
+          published_product_id: string | null
+          recognition: Json | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selected: Json
+          selected_candidate_urls: string[]
+          sku: string | null
+          source: string
+          sourced_specs: Json | null
+          staged: Json
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          submitted_by_wholesaler_id: string | null
+          supplier_id: string | null
+          updated_at: string
+          weight_oz: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "dd_catalog_drafts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       dd_affiliate_mark_paid: {
         Args: { p_event_ids: string[]; p_payout_batch_id?: string }
