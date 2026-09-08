@@ -72590,6 +72590,9 @@ export type Database = {
           assigned_worker_id: string | null
           category: string
           created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
           external_booking_id: string | null
           id: string
           price: number | null
@@ -72604,6 +72607,9 @@ export type Database = {
           assigned_worker_id?: string | null
           category: string
           created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           external_booking_id?: string | null
           id?: string
           price?: number | null
@@ -72618,6 +72624,9 @@ export type Database = {
           assigned_worker_id?: string | null
           category?: string
           created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           external_booking_id?: string | null
           id?: string
           price?: number | null
