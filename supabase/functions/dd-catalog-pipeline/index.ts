@@ -12,6 +12,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { lookupMarket, type MarketLookup } from '../_shared/marketPrice.ts';
+import { resolvePackCount } from '../_shared/packCount.ts';
 import { lookupSourcedSpecs } from '../_shared/sourcedSpecs.ts';
 import { DD_CATEGORIES, mapDdCategory } from '../_shared/ddCategory.ts';
 
