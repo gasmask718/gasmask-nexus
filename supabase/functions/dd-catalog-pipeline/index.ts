@@ -881,20 +881,31 @@ Generate a content brief as JSON:
 // from lookupMarket (SerpAPI Google Shopping, relevance/bundle/outlier filtered)
 // or from the margin formula, and the response says which.
 async function runPriceResearch(body: any) {
-  const { draft_id, product_name, category, supplier_cost, brand_hint } = body;
-  if (!product_name) throw new Error('product_name required');
+  const { draft_id, category, supplier_cost, brand_hint } = body;
+  let product_name = body.product_name ? String(body.product_name) : '';
   const sb = sbAdmin();
-  const cost = Number(supplier_cost) || 0;
-  const hasCost = cost > 0;
 
   // Effective margin: same source copy_pricing uses.
   let supplierId: string | null = null;
   let brand: string | null = brand_hint ? String(brand_hint) : null;
+  let draft: any = null;
   if (draft_id) {
-    const { data: d } = await sb.from('dd_catalog_drafts').select('supplier_id, recognition').eq('id', draft_id).maybeSingle();
+    const { data: d } = await sb.from('dd_catalog_drafts')
+      .select('supplier_id, cost, recognition, label_extraction, pack_count, pack_count_source')
+      .eq('id', draft_id).maybeSingle();
+    draft = d;
     supplierId = d?.supplier_id ?? null;
-    if (!brand && (d?.recognition as any)?.brand_visible) brand = String((d!.recognition as any).brand_visible);
+    const rec = (d?.recognition || {}) as any;
+    if (!brand && rec.brand_visible) brand = String(rec.brand_visible);
+    if ((!product_name || /pending photo read/i.test(product_name)) && rec.product_name) product_name = String(rec.product_name);
   }
+  if (!product_name) throw new Error('product_name required');
+
+  // Cost basis: caller-supplied, else the draft's own cost. This is the cost of the
+  // unit AS SOLD (a whole tray/case when the wholesaler sells trays).
+  const cost = Number(supplier_cost) > 0 ? Number(supplier_cost) : Number(draft?.cost) || 0;
+  const hasCost = cost > 0;
+
   let effectiveMarginPct = 15;
   try {
     if (supplierId) {
@@ -906,12 +917,25 @@ async function runPriceResearch(body: any) {
     }
   } catch (_) { /* keep default */ }
   const marginFraction = Math.min(0.9, Math.max(0, effectiveMarginPct / 100));
-  const retailFloor = hasCost && marginFraction > 0 ? Number((cost / (1 - marginFraction)).toFixed(2)) : 0;
+  const r2 = (n: number) => Number(n.toFixed(2));
+  const floorFor = (c: number) => (c > 0 && marginFraction > 0 ? r2(c / (1 - marginFraction)) : 0);
+  const retailFloor = hasCost ? floorFor(cost) : 0;
+
+  // ---- PACK COUNT: deterministic read of recognition / label text, or a human entry. Never guessed. ----
+  const pack = resolvePackCount({
+    human_pack_count: draft?.pack_count_source === 'human' ? draft?.pack_count : null,
+    label_units_per_case: (draft?.label_extraction as any)?.units_per_case ?? null,
+    recognition: draft?.recognition ?? null,
+    label_extraction: draft?.label_extraction ?? null,
+  });
+  const packCount = pack.pack_count;
+  const packKnown = packCount != null && packCount > 1;
 
   let market: MarketLookup | null = null;
   try { market = await lookupMarket(sb, product_name, brand); }
   catch (e) { console.error('[price_research] market lookup failed', e); }
   const marketUsable = !!(market && market.available && market.comparable && market.count > 0 && market.median);
+  const marketPackSize = market?.pack_size && market.pack_size > 0 ? market.pack_size : 1;
 
   // Named-retailer prices only when a real listing from that retailer survived filtering.
   const fromSource = (re: RegExp) => {
@@ -921,24 +945,75 @@ async function runPriceResearch(body: any) {
   const amazon = fromSource(/amazon/i);
   const walmart = fromSource(/walmart/i);
 
-  // Suggested retail: market median, never below the margin floor. Store price is
-  // formula-only (there is no sourced wholesale-to-store market) and is labelled so.
-  let suggestedRetail = 0;
-  let basis: 'market_median' | 'margin_floor_market_below' | 'formula_only' = 'formula_only';
+  // ---- RAW comparison (kept for the reviewer): tray/unit cost vs. market listing price as-is. ----
+  type RawBasis = 'market_median' | 'margin_floor_market_below' | 'formula_only';
+  let rawRetail = retailFloor;
+  let rawBasis: RawBasis = 'formula_only';
   if (marketUsable) {
-    if (market!.median! >= retailFloor) { suggestedRetail = market!.median!; basis = 'market_median'; }
-    else { suggestedRetail = retailFloor; basis = 'margin_floor_market_below'; }
-  } else {
-    suggestedRetail = retailFloor;
+    if (market!.median! >= retailFloor) { rawRetail = market!.median!; rawBasis = 'market_median'; }
+    else { rawRetail = retailFloor; rawBasis = 'margin_floor_market_below'; }
   }
-  const suggestedStore = hasCost ? Number(Math.max(retailFloor, cost * 1.5).toFixed(2)) : 0;
+  const raw = {
+    cost_basis: cost,
+    market_median: marketUsable ? market!.median : null,
+    market_pack_size: marketPackSize,
+    retail_floor: retailFloor,
+    suggested_retail: rawRetail,
+    basis: rawBasis,
+    note: 'Unnormalized: cost of the unit as sold compared directly to the market listing price.',
+  };
+
+  // ---- PACK-NORMALIZED comparison: everything on a per-retail-unit basis, then scaled back to the sold pack. ----
+  let normalized: Record<string, unknown> | null = null;
+  let suggestedRetail = rawRetail;
+  let basis: RawBasis | 'pack_normalized' = rawBasis;
+  let normalizedDetail: RawBasis | null = null;
+  if (packKnown && hasCost) {
+    const costPerUnit = r2(cost / packCount!);
+    const floorPerUnit = floorFor(costPerUnit);
+    const marketPerUnit = marketUsable ? r2(market!.median! / marketPackSize) : null;
+    let perUnit = floorPerUnit;
+    normalizedDetail = 'formula_only';
+    if (marketPerUnit != null) {
+      if (marketPerUnit >= floorPerUnit) { perUnit = marketPerUnit; normalizedDetail = 'market_median'; }
+      else { perUnit = floorPerUnit; normalizedDetail = 'margin_floor_market_below'; }
+    }
+    const packRetail = r2(perUnit * packCount!);
+    normalized = {
+      pack_count: packCount,
+      pack_count_source: pack.source,
+      pack_count_matched_text: pack.matched_text,
+      cost_per_unit: costPerUnit,
+      market_pack_size: marketPackSize,
+      market_per_unit_median: marketPerUnit,
+      market_per_unit_low: marketUsable ? r2(market!.low! / marketPackSize) : null,
+      market_per_unit_high: marketUsable ? r2(market!.high! / marketPackSize) : null,
+      retail_floor_per_unit: floorPerUnit,
+      suggested_per_unit: perUnit,
+      suggested_retail_pack: packRetail,
+      basis_detail: normalizedDetail,
+      note: `Sold as a ${packCount}-unit pack: per-unit ${normalizedDetail === 'market_median' ? 'market median' : 'margin floor'} × ${packCount}.`,
+    };
+    suggestedRetail = packRetail;
+    basis = 'pack_normalized';
+  }
+
+  const suggestedStore = hasCost ? r2(Math.max(retailFloor, cost * 1.5)) : 0;
   const pct = (p: number) => (hasCost && p > 0 ? Number((((p - cost) / p) * 100).toFixed(1)) : 0);
 
   const notes = [
     marketUsable
-      ? `Market: ${market!.count} comparable Google Shopping listings (pack size ${market!.pack_size}); low $${market!.low} / median $${market!.median} / high $${market!.high}.`
+      ? `Market: ${market!.count} comparable Google Shopping listings (listing pack size ${marketPackSize}); low $${market!.low} / median $${market!.median} / high $${market!.high}.`
       : `No usable market data (${market?.reason || (market && !market.comparable ? 'listings not comparable' : 'lookup failed')}); retail = margin floor only.`,
-    basis === 'margin_floor_market_below' ? `Market median is BELOW the ${effectiveMarginPct}% margin floor ($${retailFloor}); floor kept — review needed.` : null,
+    packKnown && normalized
+      ? `Pack-normalized: ${packCount} units per sold pack (${pack.reason}). Cost/unit $${normalized.cost_per_unit}` +
+        (normalized.market_per_unit_median != null ? ` vs market/unit $${normalized.market_per_unit_median}` : '') +
+        `; suggested $${normalized.suggested_per_unit}/unit → $${normalized.suggested_retail_pack} per pack (${normalizedDetail}).`
+      : `NOT pack-normalized: ${pack.reason}. Raw comparison only — if this is sold as a multi-unit pack, enter the pack count in review and re-run.`,
+    !packKnown && rawBasis === 'margin_floor_market_below'
+      ? `Market median is BELOW the ${effectiveMarginPct}% margin floor ($${retailFloor}); floor kept — review needed.` : null,
+    packKnown && normalizedDetail === 'margin_floor_market_below'
+      ? `Per-unit market median is BELOW the ${effectiveMarginPct}% per-unit margin floor; floor kept — review needed.` : null,
     `Store price is formula-only (max(margin floor, cost×1.5)).`,
     hasCost ? null : 'No supplier cost provided — margins cannot be computed.',
   ].filter(Boolean).join(' ');
@@ -959,6 +1034,9 @@ async function runPriceResearch(body: any) {
     basis,
     effective_margin_pct: effectiveMarginPct,
     retail_floor: retailFloor,
+    pack: { pack_count: packCount, source: pack.source, matched_text: pack.matched_text, reason: pack.reason, candidates: pack.candidates },
+    raw,
+    normalized,
     sources: {
       amazon: amazon ? { url: amazon.url, title: amazon.title } : null,
       walmart: walmart ? { url: walmart.url, title: walmart.title } : null,
@@ -971,7 +1049,13 @@ async function runPriceResearch(body: any) {
     researched_at: new Date().toISOString(),
   };
   if (draft_id) {
-    await sb.from('dd_catalog_drafts').update({ price_research: payload }).eq('id', draft_id);
+    const upd: Record<string, unknown> = { price_research: payload };
+    // Persist the parsed pack count on the draft only when no human value exists.
+    if (draft?.pack_count_source !== 'human') {
+      upd.pack_count = packCount;
+      upd.pack_count_source = packCount != null ? pack.source : null;
+    }
+    await sb.from('dd_catalog_drafts').update(upd).eq('id', draft_id);
   }
   return payload;
 }
