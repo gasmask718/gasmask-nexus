@@ -22,7 +22,7 @@ export default function AmbassadorPayouts() {
   const { data: commissions } = useQuery({
     queryKey: ["ambassador-commissions"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("commission_ledger")
         .select("*, ambassadors(*, profiles(name))")
         .neq("status", "reversed")

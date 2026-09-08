@@ -128,7 +128,7 @@ export function useCommissionLedger(options: UseCommissionLedgerOptions = {}) {
   return useQuery({
     queryKey: ['commission-ledger', ambassadorId, storeId, status, sourceChannel, limit],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from('commission_ledger')
         .select(`
           *,

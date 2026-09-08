@@ -32,6 +32,8 @@ import {
 } from 'lucide-react';
 import { AmbassadorStoreMap, type MapStore } from '@/components/ambassador/AmbassadorStoreMap';
 
+type Readiness = 'ready' | 'login_required' | 'shared_login_conflict';
+
 interface RosterRow {
   id: string;
   name: string;
@@ -43,7 +45,20 @@ interface RosterRow {
   assignedCount: number;
   routeCount: number;
   latestRoute: { date: string; status: string } | null;
+  readiness: Readiness;
+  sharedWith: number;
 }
+
+const READINESS_LABEL: Record<Readiness, string> = {
+  ready: 'Ready',
+  login_required: 'Login Required',
+  shared_login_conflict: 'Shared Login Conflict',
+};
+const READINESS_CLASS: Record<Readiness, string> = {
+  ready: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
+  login_required: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
+  shared_login_conflict: 'bg-destructive/15 text-destructive border-destructive/30',
+};
 
 const today = () => format(new Date(), 'yyyy-MM-dd');
 
@@ -89,6 +104,18 @@ export default function AmbassadorAssignmentsPage() {
         : { data: [], error: null as any };
       if (rErr) throw rErr;
 
+      const { data: readiness, error: readyErr } = await (supabase as any)
+        .from('v_ambassador_login_readiness')
+        .select('ambassador_id, readiness, logins_shared_with');
+      if (readyErr) throw readyErr;
+      const readyMap = new Map<string, { readiness: Readiness; sharedWith: number }>();
+      (readiness || []).forEach((r: any) =>
+        readyMap.set(r.ambassador_id, {
+          readiness: r.readiness as Readiness,
+          sharedWith: Number(r.logins_shared_with || 0),
+        }),
+      );
+
       const assignCount = new Map<string, number>();
       (assigns || []).forEach((a: any) =>
         assignCount.set(a.ambassador_id, (assignCount.get(a.ambassador_id) || 0) + 1),
@@ -96,12 +123,15 @@ export default function AmbassadorAssignmentsPage() {
 
       return (ambs || []).map((a: any) => {
         const mine = (routes || []).filter((r: any) => r.assigned_to === a.user_id);
+        const rd = readyMap.get(a.id);
         return {
           ...a,
           name: a.name || 'Unnamed ambassador',
           assignedCount: assignCount.get(a.id) || 0,
           routeCount: mine.length,
           latestRoute: mine[0] ? { date: mine[0].date, status: mine[0].status } : null,
+          readiness: rd?.readiness ?? (a.user_id ? 'ready' : 'login_required'),
+          sharedWith: rd?.sharedWith ?? 0,
         } as RosterRow;
       });
     },
@@ -111,7 +141,8 @@ export default function AmbassadorAssignmentsPage() {
   const filteredRoster = roster.filter((r) =>
     r.name.toLowerCase().includes(rosterSearch.toLowerCase()),
   );
-  const missingLogin = roster.filter((r) => !r.user_id);
+  const missingLogin = roster.filter((r) => r.readiness === 'login_required');
+  const sharedConflicts = roster.filter((r) => r.readiness === 'shared_login_conflict');
   const selected = roster.find((r) => r.id === selectedId) || null;
 
   /* ---------------- selected ambassador's active assignments ---------------- */
@@ -246,7 +277,10 @@ export default function AmbassadorAssignmentsPage() {
   const routeMutation = useMutation({
     mutationFn: async () => {
       if (!selected) throw new Error('No ambassador selected');
-      if (!selected.user_id) throw new Error('This ambassador has no login yet — a route cannot be delivered to them');
+      if (selected.readiness === 'login_required' || !selected.user_id)
+        throw new Error('Login Required — this ambassador has no login yet, so a route cannot be delivered to them');
+      if (selected.readiness === 'shared_login_conflict')
+        throw new Error('Shared Login Conflict — this login is used by more than one ambassador record. Give them their own login first');
       if (!routeStores.length) throw new Error('Pick at least one assigned store');
 
       const { data: route, error } = await supabase
@@ -355,13 +389,11 @@ export default function AmbassadorAssignmentsPage() {
                         <Badge variant="secondary">{r.assignedCount} stores</Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
-                        {r.user_id ? (
-                          <Badge variant="outline" className="text-xs">login ✓</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/40">
-                            <UserX className="h-3 w-3 mr-1" /> no login
-                          </Badge>
-                        )}
+                        <Badge variant="outline" className={`text-xs ${READINESS_CLASS[r.readiness]}`}>
+                          {r.readiness !== 'ready' && <UserX className="h-3 w-3 mr-1" />}
+                          {READINESS_LABEL[r.readiness]}
+                          {r.readiness === 'shared_login_conflict' && ` (${r.sharedWith})`}
+                        </Badge>
                         {r.latestRoute ? (
                           <span>route {r.latestRoute.status} · {r.latestRoute.date}</span>
                         ) : (
