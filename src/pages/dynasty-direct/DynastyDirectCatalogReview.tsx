@@ -52,14 +52,25 @@ interface PriceResearch {
 interface SourcedSpecs {
   status: 'sourced' | 'needs_measurement' | 'unavailable' | string;
   reason?: string;
-  weight: { weight_oz: number; verbatim: string; source_url: string | null; source_title?: string | null } | null;
-  dimensions: { length_in: number; width_in: number; height_in: number; verbatim: string; source_url: string | null; source_title?: string | null } | null;
+  target_units?: number | null;
+  weight_basis?: 'same_quantity_sourced' | 'estimated_from_single_unit_weight' | 'unverified_quantity' | null;
+  dimension_basis?: 'same_quantity_sourced' | 'unverified_quantity' | null;
+  dimensions_status?: 'sourced' | 'needs_measurement';
+  weight: { weight_oz: number; verbatim: string; source_url: string | null; source_title?: string | null; source_units?: number | null } | null;
+  dimensions: { length_in: number; width_in: number; height_in: number; verbatim: string; source_url: string | null; source_title?: string | null; source_units?: number | null } | null;
   weight_agreement?: number;
   dimension_agreement?: number;
   confidence?: string;
   suggested_box: { box_id: string; box_name: string; length_in: number; width_in: number; height_in: number; max_weight_oz: number | null; reason: string } | null;
   checked_at?: string;
 }
+
+function weightBasisLabel(b: SourcedSpecs['weight_basis'], units?: number | null): string {
+  if (b === 'same_quantity_sourced') return `same-quantity sourced${units ? ` (${units} ct)` : ''}`;
+  if (b === 'estimated_from_single_unit_weight') return `estimated from single-unit weight ×${units ?? '?'} — verify`;
+  return 'quantity unverified — verify';
+}
+
 
 interface PendingDraft {
   id: string;
@@ -447,26 +458,52 @@ export default function DynastyDirectCatalogReview() {
 
                   {!sp && <p className="text-xs text-muted-foreground">No sourced lookup yet.</p>}
 
-                  {sp?.status === 'sourced' && sp.weight && sp.dimensions && (
+                  {sp && (sp.weight || sp.dimensions) && (
                     <div className={`rounded border p-3 text-xs space-y-2 ${verified ? 'opacity-70' : 'border-dashed border-amber-500/60 bg-amber-500/10'}`}>
-                      <div className="flex items-center gap-2 font-semibold">
+                      <div className="flex items-center gap-2 flex-wrap font-semibold">
                         SOURCED (web) — {verified ? 'confirmed' : 'not yet human-verified'}
                         <Badge variant="outline" className="text-[10px]">confidence {sp.confidence}</Badge>
                         <Badge variant="outline" className="text-[10px]">{sp.weight_agreement ?? 0} weight src · {sp.dimension_agreement ?? 0} dims src</Badge>
+                        {sp.target_units ? <Badge variant="outline" className="text-[10px]">pack of {sp.target_units}</Badge> : <Badge variant="outline" className="text-[10px]">pack size unknown</Badge>}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <div>
-                          <div className="font-mono">{sp.weight.weight_oz} oz</div>
-                          <div className="text-muted-foreground">“{sp.weight.verbatim}”</div>
-                          {sp.weight.source_url && <a href={sp.weight.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary underline"><ExternalLink className="h-3 w-3" />{sp.weight.source_title || 'source'}</a>}
+                        <div className="space-y-1">
+                          {sp.weight ? (
+                            <>
+                              <div className="font-mono">{sp.weight.weight_oz} oz</div>
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] ${sp.weight_basis === 'same_quantity_sourced' ? 'border-primary/50 text-primary' : 'border-amber-500/60 text-amber-600'}`}
+                              >
+                                {weightBasisLabel(sp.weight_basis, sp.target_units)}
+                              </Badge>
+                              <div className="text-muted-foreground">“{sp.weight.verbatim}”</div>
+                              {sp.weight.source_url && <a href={sp.weight.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary underline"><ExternalLink className="h-3 w-3" />{sp.weight.source_title || 'source'}</a>}
+                            </>
+                          ) : <div className="text-muted-foreground">Weight: needs measurement.</div>}
                         </div>
-                        <div>
-                          <div className="font-mono">{sp.dimensions.length_in} × {sp.dimensions.width_in} × {sp.dimensions.height_in} in</div>
-                          <div className="text-muted-foreground">“{sp.dimensions.verbatim}”</div>
-                          {sp.dimensions.source_url && <a href={sp.dimensions.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary underline"><ExternalLink className="h-3 w-3" />{sp.dimensions.source_title || 'source'}</a>}
+                        <div className="space-y-1">
+                          {sp.dimensions ? (
+                            <>
+                              <div className="font-mono">{sp.dimensions.length_in} × {sp.dimensions.width_in} × {sp.dimensions.height_in} in</div>
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] ${sp.dimension_basis === 'same_quantity_sourced' ? 'border-primary/50 text-primary' : 'border-amber-500/60 text-amber-600'}`}
+                              >
+                                {sp.dimension_basis === 'same_quantity_sourced' ? `same-quantity sourced${sp.dimensions.source_units ? ` (${sp.dimensions.source_units} ct)` : ''}` : 'quantity unverified — verify'}
+                              </Badge>
+                              <div className="text-muted-foreground">“{sp.dimensions.verbatim}”</div>
+                              {sp.dimensions.source_url && <a href={sp.dimensions.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary underline"><ExternalLink className="h-3 w-3" />{sp.dimensions.source_title || 'source'}</a>}
+                            </>
+                          ) : (
+                            <div className="text-amber-600 font-semibold">
+                              Dimensions: NEEDS MEASUREMENT — no source describing this pack size. Case dimensions are never multiplied up from a single unit.
+                            </div>
+                          )}
                         </div>
                       </div>
-                      {!verified && (
+                      {sp.reason && <div className="text-muted-foreground">{sp.reason}</div>}
+                      {!verified && sp.weight && sp.dimensions && (
                         <Button size="sm" disabled={isBusy(d.id)} onClick={() => confirmSourced(d)}>
                           {action === 'confirm' ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
                           Confirm measurements (as me)
@@ -477,7 +514,7 @@ export default function DynastyDirectCatalogReview() {
 
                   {sp && sp.status !== 'sourced' && (
                     <div className="rounded border border-dashed border-destructive/50 bg-destructive/10 p-3 text-xs space-y-1">
-                      <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {sp.status === 'needs_measurement' ? 'NEEDS MEASUREMENT' : sp.status.toUpperCase()} — no sourced match</div>
+                      <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {sp.status === 'needs_measurement' ? 'NEEDS MEASUREMENT' : sp.status.toUpperCase()} — no complete same-quantity match</div>
                       {sp.reason && <div className="text-muted-foreground">{sp.reason}</div>}
                       {sp.suggested_box ? (
                         <div>
@@ -489,6 +526,7 @@ export default function DynastyDirectCatalogReview() {
                       ) : <div className="text-muted-foreground">No box suggestion logged.</div>}
                     </div>
                   )}
+
 
                   {!verified && (
                     <div className="space-y-1">

@@ -17,21 +17,44 @@ import {
   resolveSerpApiKey,
   titleRelevance,
   RELEVANCE_THRESHOLD,
+  parseExplicitUnitCount,
+  packSizesComparable,
+  buildCaseQueries,
 } from './marketPrice.ts';
 
 export type SpecStatus = 'sourced' | 'needs_measurement' | 'unavailable';
+
+/**
+ * What quantity does the SOURCE LISTING describe, relative to what we're selling?
+ *  pack_match     — source states a count comparable to targetUnits
+ *  single_unit    — source states/implies one retail unit
+ *  count_mismatch — source states a different explicit count
+ *  count_unknown  — source states no count at all
+ */
+export type QuantityClass = 'pack_match' | 'single_unit' | 'count_mismatch' | 'count_unknown';
+
+/** How a value was arrived at. Never let an estimate look like a same-quantity source. */
+export type WeightBasis = 'same_quantity_sourced' | 'estimated_from_single_unit_weight' | 'unverified_quantity';
+export type DimensionBasis = 'same_quantity_sourced' | 'unverified_quantity';
 
 export interface SpecEvidence {
   verbatim: string;
   source_url: string | null;
   source_title: string | null;
   via: 'google_product' | 'web_search';
+  /** Unit count parsed from the source listing TITLE (null = not stated). */
+  source_units?: number | null;
+  quantity_class?: QuantityClass;
 }
 
 export interface SourcedWeight extends SpecEvidence {
   weight_oz: number;
   raw_value: number;
   raw_unit: string;
+  /** Present when weight_oz was scaled up from a single-unit reading. */
+  basis?: WeightBasis;
+  unit_weight_oz?: number;
+  multiplied_by?: number;
 }
 
 export interface SourcedDims extends SpecEvidence {
@@ -39,6 +62,7 @@ export interface SourcedDims extends SpecEvidence {
   width_in: number;
   height_in: number;
   raw_unit: string;
+  basis?: DimensionBasis;
 }
 
 export interface SuggestedBox {
@@ -55,8 +79,14 @@ export interface SourcedSpecs {
   status: SpecStatus;
   reason?: string;
   query: string;
+  /** Pack/case quantity we are pricing & shipping (null = unknown). */
+  target_units: number | null;
   weight: SourcedWeight | null;
   dimensions: SourcedDims | null;
+  weight_basis: WeightBasis | null;
+  dimension_basis: DimensionBasis | null;
+  /** Dimensions are gated harder than weight, so they carry their own status. */
+  dimensions_status: 'sourced' | 'needs_measurement';
   /** All candidate readings (agreeing + disagreeing) for audit. */
   weight_candidates: SourcedWeight[];
   dimension_candidates: SourcedDims[];
@@ -68,6 +98,7 @@ export interface SourcedSpecs {
   sources_consulted: { via: 'google_product' | 'web_search'; url: string | null; title: string | null }[];
   checked_at: string;
 }
+
 
 const OZ_PER: Record<string, number> = {
   oz: 1, ounce: 1, ounces: 1,
@@ -185,19 +216,56 @@ export async function suggestBox(supabase: any, weightOz: number | null, reason:
   };
 }
 
+/** Titles that plainly describe one retail item rather than a pack/case. */
+const SINGLE_UNIT_RE = /\b(single|each|1\s*(?:ct|count|pc|piece|pack)|one\s+(?:pack|piece|unit))\b/i;
+
+/**
+ * What quantity does this source listing describe? Read from the listing TITLE,
+ * never from the matched spec snippet.
+ */
+function classifyQuantity(title: string | null, targetUnits: number | null): { units: number | null; klass: QuantityClass } {
+  const t = (title || '').trim();
+  const n = t ? parseExplicitUnitCount(t) : null;
+  if (n != null) {
+    if (targetUnits != null && targetUnits > 1 && packSizesComparable(n, targetUnits)) return { units: n, klass: 'pack_match' };
+    return { units: n, klass: 'count_mismatch' };
+  }
+  if (t && SINGLE_UNIT_RE.test(t)) return { units: 1, klass: 'single_unit' };
+  return { units: null, klass: 'count_unknown' };
+}
+
+function tag<T extends SpecEvidence>(items: T[], targetUnits: number | null): T[] {
+  for (const it of items) {
+    const c = classifyQuantity(it.source_title, targetUnits);
+    it.source_units = c.units;
+    it.quantity_class = c.klass;
+  }
+  return items;
+}
+
 /**
  * Look up sourced shipping specs. Never throws for expected conditions.
+ *
+ * QUANTITY RULE (the whole point of this function):
+ *  - WEIGHT scales linearly, so a single-unit weight × targetUnits is an allowed
+ *    ESTIMATE — labelled as such, capped at medium confidence, and explicitly
+ *    excluding packaging/tray weight.
+ *  - DIMENSIONS do NOT scale. Only a source that describes the same quantity may
+ *    ever set dimensions. Nothing is ever multiplied.
  */
 export async function lookupSourcedSpecs(
   supabase: any,
   productName: string,
   brandHint?: string | null,
+  targetUnits: number | null = null,
 ): Promise<SourcedSpecs> {
   const name = (productName || '').trim();
   const brand = (brandHint || '').trim();
   const query = brand && !name.toLowerCase().includes(brand.toLowerCase()) ? `${brand} ${name}` : name;
+  const units = targetUnits != null && Number.isFinite(targetUnits) && targetUnits > 1 ? Math.round(targetUnits) : null;
   const base: SourcedSpecs = {
-    status: 'unavailable', query, weight: null, dimensions: null,
+    status: 'unavailable', query, target_units: units, weight: null, dimensions: null,
+    weight_basis: null, dimension_basis: null, dimensions_status: 'needs_measurement',
     weight_candidates: [], dimension_candidates: [], weight_agreement: 0, dimension_agreement: 0,
     confidence: 'low', suggested_box: null, sources_consulted: [], checked_at: new Date().toISOString(),
   };
@@ -211,40 +279,41 @@ export async function lookupSourcedSpecs(
   const consulted: SourcedSpecs['sources_consulted'] = [];
   let quotaHit = false;
 
-  // ── 1. Google Shopping → product spec panels ─────────────────────────────
-  try {
-    const shop = await serp({ engine: 'google_shopping', q: query }, key);
-    const results: any[] = Array.isArray(shop?.shopping_results) ? shop.shopping_results : [];
-    const relevant = results
-      .filter((r) => r?.product_id && titleRelevance(query, String(r?.title || '')) >= RELEVANCE_THRESHOLD)
-      .slice(0, 2);
-    for (const r of relevant) {
-      try {
-        const prod = await serp({ engine: 'google_product', product_id: String(r.product_id) }, key);
-        const pr = prod?.product_results ?? {};
-        const link = pr?.link || r?.product_link || r?.link || null;
-        const title = pr?.title || r?.title || null;
-        consulted.push({ via: 'google_product', url: link, title });
-        // Spec panels appear under several keys depending on the product page.
-        const text = flattenStrings({
-          specs: prod?.specs_results, product_specs: pr?.specs, about: pr?.about_this_item,
-          description: pr?.description, highlights: pr?.highlights, extensions: pr?.extensions,
-        }).join('\n');
-        const ev = { source_url: link, source_title: title, via: 'google_product' as const };
-        weights.push(...extractWeights(text, ev));
-        dims.push(...extractDims(text, ev));
-      } catch (e) {
-        if (String(e).includes('429')) quotaHit = true;
+  // ── Google Shopping → product spec panels ────────────────────────────────
+  async function harvestShopping(q: string, take: number) {
+    try {
+      const shop = await serp({ engine: 'google_shopping', q }, key!);
+      const results: any[] = Array.isArray(shop?.shopping_results) ? shop.shopping_results : [];
+      const relevant = results
+        .filter((r) => r?.product_id && titleRelevance(query, String(r?.title || '')) >= RELEVANCE_THRESHOLD)
+        .slice(0, take);
+      for (const r of relevant) {
+        try {
+          const prod = await serp({ engine: 'google_product', product_id: String(r.product_id) }, key!);
+          const pr = prod?.product_results ?? {};
+          const link = pr?.link || r?.product_link || r?.link || null;
+          const title = pr?.title || r?.title || null;
+          if (consulted.some((c) => c.url && c.url === link)) continue;
+          consulted.push({ via: 'google_product', url: link, title });
+          const text = flattenStrings({
+            specs: prod?.specs_results, product_specs: pr?.specs, about: pr?.about_this_item,
+            description: pr?.description, highlights: pr?.highlights, extensions: pr?.extensions,
+          }).join('\n');
+          const ev = { source_url: link, source_title: title, via: 'google_product' as const };
+          weights.push(...tag(extractWeights(text, ev), units));
+          dims.push(...tag(extractDims(text, ev), units));
+        } catch (e) {
+          if (String(e).includes('429')) quotaHit = true;
+        }
       }
+    } catch (e) {
+      if (String(e).includes('429')) quotaHit = true;
     }
-  } catch (e) {
-    if (String(e).includes('429')) quotaHit = true;
   }
 
-  // ── 2. Web search snippets (only if the panels didn't already give both) ─
-  if (!quotaHit && (weights.length === 0 || dims.length === 0)) {
+  async function harvestWeb(q: string) {
     try {
-      const web = await serp({ engine: 'google', q: `${query} item weight dimensions`, num: '10' }, key);
+      const web = await serp({ engine: 'google', q, num: '10' }, key!);
       const blocks: { text: string; url: string | null; title: string | null }[] = [];
       if (web?.answer_box) blocks.push({ text: flattenStrings(web.answer_box).join('\n'), url: web.answer_box?.link ?? null, title: web.answer_box?.title ?? 'answer box' });
       if (web?.knowledge_graph) blocks.push({ text: flattenStrings(web.knowledge_graph).join('\n'), url: web.knowledge_graph?.source?.link ?? null, title: web.knowledge_graph?.title ?? 'knowledge graph' });
@@ -254,44 +323,130 @@ export async function lookupSourcedSpecs(
         blocks.push({ text: flattenStrings({ title: t, snippet: o?.snippet, rich: o?.rich_snippet }).join('\n'), url: o?.link ?? null, title: t });
       }
       for (const b of blocks) {
+        if (b.url && consulted.some((c) => c.url === b.url)) continue;
         consulted.push({ via: 'web_search', url: b.url, title: b.title });
         const ev = { source_url: b.url, source_title: b.title, via: 'web_search' as const };
-        weights.push(...extractWeights(b.text, ev));
-        dims.push(...extractDims(b.text, ev));
+        weights.push(...tag(extractWeights(b.text, ev), units));
+        dims.push(...tag(extractDims(b.text, ev), units));
       }
     } catch (e) {
       if (String(e).includes('429')) quotaHit = true;
     }
   }
 
-  const [weight, wN] = consensus(weights, (w) => w.weight_oz);
-  const [dimensions, dN] = consensus(dims, (d) => d.length_in * d.width_in * d.height_in);
+  await harvestShopping(query, 2);
+
+  // Actively hunt for a SAME-QUANTITY source instead of hoping one turns up.
+  if (units && !quotaHit) {
+    for (const cq of buildCaseQueries(name, brand || null, units).slice(0, 2)) {
+      if (quotaHit) break;
+      await harvestShopping(cq, 2);
+    }
+  }
+
+  const hasPackDims = () => dims.some((d) => d.quantity_class === 'pack_match');
+  if (!quotaHit && (weights.length === 0 || dims.length === 0 || (units && !hasPackDims()))) {
+    await harvestWeb(`${query} item weight dimensions`);
+  }
+  if (units && !quotaHit && !hasPackDims()) {
+    await harvestWeb(`${query} ${units} count case weight dimensions`);
+  }
+
+  // ── Selection ────────────────────────────────────────────────────────────
+  let weight: SourcedWeight | null = null;
+  let wN = 0;
+  let weightBasis: WeightBasis | null = null;
+  let dimensions: SourcedDims | null = null;
+  let dN = 0;
+  let dimBasis: DimensionBasis | null = null;
+  const notes: string[] = [];
+
+  if (units) {
+    // WEIGHT — same-quantity source first, linear estimate second, nothing else.
+    const packW = weights.filter((w) => w.quantity_class === 'pack_match');
+    const singleW = weights.filter((w) => w.quantity_class === 'single_unit');
+    if (packW.length) {
+      [weight, wN] = consensus(packW, (w) => w.weight_oz);
+      if (weight) {
+        weight = { ...weight, basis: 'same_quantity_sourced' };
+        weightBasis = 'same_quantity_sourced';
+        notes.push(`weight from ${wN} source(s) describing ${weight.source_units} count (matches pack of ${units})`);
+      }
+    } else if (singleW.length) {
+      const [unitW, uN] = consensus(singleW, (w) => w.weight_oz);
+      if (unitW) {
+        const est = r2(unitW.weight_oz * units);
+        weight = {
+          ...unitW,
+          weight_oz: est,
+          basis: 'estimated_from_single_unit_weight',
+          unit_weight_oz: unitW.weight_oz,
+          multiplied_by: units,
+          verbatim: `ESTIMATE — ${unitW.weight_oz} oz single unit × ${units} = ${est} oz. Linear estimate from a SINGLE-UNIT weight; does NOT include packaging/tray weight, so real shipped weight will be higher. Source verbatim: "${unitW.verbatim}"`,
+        };
+        wN = uN;
+        weightBasis = 'estimated_from_single_unit_weight';
+        notes.push(`weight ESTIMATED as ${unitW.weight_oz} oz single unit × ${units} (packaging/tray weight NOT included)`);
+      }
+    } else {
+      notes.push(`no same-quantity or single-unit weight source found (${weights.length} candidate(s) of unverifiable quantity were rejected)`);
+    }
+
+    // DIMENSIONS — pack_match only. Never derived, never multiplied.
+    const packD = dims.filter((d) => d.quantity_class === 'pack_match');
+    if (packD.length) {
+      [dimensions, dN] = consensus(packD, (d) => d.length_in * d.width_in * d.height_in);
+      if (dimensions) {
+        dimensions = { ...dimensions, basis: 'same_quantity_sourced' };
+        dimBasis = 'same_quantity_sourced';
+        notes.push(`dimensions from ${dN} source(s) describing ${dimensions.source_units} count`);
+      }
+    } else {
+      notes.push(`dimensions need a real measurement: no source describing a pack of ${units} was found, and case dimensions can never be derived from a single unit`);
+    }
+  } else {
+    // Pack size unknown — keep prior behaviour, but say the quantity is unverified.
+    [weight, wN] = consensus(weights, (w) => w.weight_oz);
+    [dimensions, dN] = consensus(dims, (d) => d.length_in * d.width_in * d.height_in);
+    if (weight) { weight = { ...weight, basis: 'unverified_quantity' }; weightBasis = 'unverified_quantity'; }
+    if (dimensions) { dimensions = { ...dimensions, basis: 'unverified_quantity' }; dimBasis = 'unverified_quantity'; }
+    notes.push('pack size is UNKNOWN for this draft, so the quantity these sources describe could not be verified against what we ship');
+  }
+
+  const dimsStatus: 'sourced' | 'needs_measurement' = dimensions ? 'sourced' : 'needs_measurement';
 
   if (weight && dimensions) {
-    const confidence = wN >= 2 && dN >= 2 ? 'high' : 'medium';
+    const strong = wN >= 2 && dN >= 2 && weightBasis === 'same_quantity_sourced';
+    const confidence: SourcedSpecs['confidence'] =
+      weightBasis === 'estimated_from_single_unit_weight' ? 'medium' : strong ? 'high' : 'medium';
     return {
       ...base, status: 'sourced', weight, dimensions,
+      weight_basis: weightBasis, dimension_basis: dimBasis, dimensions_status: dimsStatus,
       weight_candidates: weights, dimension_candidates: dims,
       weight_agreement: wN, dimension_agreement: dN, confidence,
       sources_consulted: consulted,
-      reason: `weight from ${wN} source(s), dimensions from ${dN} source(s)`,
+      reason: notes.join('; '),
     };
   }
 
   // Partial or nothing → needs a real measurement. Suggest a box, log why.
   const missing = [!weight && 'weight', !dimensions && 'dimensions'].filter(Boolean).join(' + ');
-  const reason = quotaHit
+  const why = quotaHit
     ? 'SerpAPI quota exhausted — no sourced specs could be fetched'
     : consulted.length === 0
       ? 'no relevant listings or pages found for this product'
-      : `no sourced ${missing} found across ${consulted.length} page(s)`;
-  const box = await suggestBox(supabase, weight?.weight_oz ?? null, `fallback: ${reason}`);
+      : `no usable ${missing} found across ${consulted.length} page(s)`;
+  const reason = [why, ...notes].join('; ');
+  const box = await suggestBox(supabase, weight?.weight_oz ?? null, `fallback: ${why}`);
   return {
     ...base,
     status: quotaHit && consulted.length === 0 ? 'unavailable' : 'needs_measurement',
     reason, weight, dimensions,
+    weight_basis: weightBasis, dimension_basis: dimBasis, dimensions_status: dimsStatus,
     weight_candidates: weights, dimension_candidates: dims,
-    weight_agreement: wN, dimension_agreement: dN, confidence: 'low',
+    weight_agreement: wN, dimension_agreement: dN,
+    confidence: weight && weightBasis === 'same_quantity_sourced' ? 'medium' : 'low',
     suggested_box: box, sources_consulted: consulted,
   };
 }
+
