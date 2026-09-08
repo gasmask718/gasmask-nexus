@@ -161,6 +161,7 @@ Deno.serve(async (req) => {
     .from('icw_dispatch_log')
     .select('event, note, created_at')
     .eq('job_id', created.id)
+    .not('event', 'in', '(status_sync_sent,status_sync_failed)')
     .order('created_at', { ascending: false })
     .limit(1);
 
