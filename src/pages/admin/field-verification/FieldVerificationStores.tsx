@@ -178,15 +178,27 @@ export default function FieldVerificationStores() {
                     <TableCell>
                       {r.claim ? (
                         <div className="space-y-0.5">
-                          <div className={r.ambStale ? 'text-destructive' : ''}>
-                            {stalenessLabel(r.claim.last_updated_at)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            by {updaterLabel(r.claim.last_updated_by)}
+                          {r.claim.last_human_update ? (
+                            <>
+                              <div className={r.ambStale ? 'text-destructive' : ''}>
+                                {stalenessLabel(r.claim.last_human_update)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                by {updaterLabel(r.claim.last_human_by)} · {r.claim.last_human_method}
+                              </div>
+                            </>
+                          ) : (
+                            <Badge variant="outline" className="border-destructive/50 text-destructive">
+                              No verified ambassador check-in on record
+                            </Badge>
+                          )}
+                          <div className="text-xs text-muted-foreground/70 italic">
+                            System data refreshed {stalenessLabel(r.claim.last_system_update).replace(/^Updated /, '').replace(/^Never updated$/, 'never')}
                           </div>
                         </div>
                       ) : <span className="text-muted-foreground">—</span>}
                     </TableCell>
+
                     <TableCell>
                       {r.mismatch
                         ? <Badge variant="outline" className="border-destructive/50 text-destructive">{r.mismatch}</Badge>
