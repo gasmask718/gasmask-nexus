@@ -70,7 +70,7 @@ export default function FieldVerificationStores() {
   const updaterIds = useMemo(() => {
     const ids: string[] = [];
     (inventory ? Array.from(inventory.values()) : []).forEach((c) => {
-      if (c.last_updated_by) ids.push(c.last_updated_by);
+      if (c.last_human_by) ids.push(c.last_human_by);
     });
     return ids;
   }, [inventory]);
@@ -95,14 +95,16 @@ export default function FieldVerificationStores() {
       const last = verified[0];
       const claim = storeId ? inventory?.get(storeId) : undefined;
       const crewDays = daysSince(last?.verified_at ?? null);
-      const ambStale = claim ? isStale(claim.last_updated_at) : false;
-      // Honest timing mismatch: only when both sides have data.
+      const hasHuman = !!claim?.last_human_update;
+      const ambStale = hasHuman ? isStale(claim!.last_human_update) : false;
+      // Honest timing mismatch: only when both sides have a real human record.
       const mismatch =
-        claim && crewDays !== null && crewDays <= STALE_DAYS && ambStale
-          ? 'Crew verified recently, ambassador record stale'
-          : claim && crewDays !== null && crewDays > STALE_DAYS && !ambStale
-            ? 'Ambassador updating, crew has not verified recently'
+        hasHuman && crewDays !== null && crewDays <= STALE_DAYS && ambStale
+          ? 'Crew verified recently, ambassador check-in stale'
+          : hasHuman && crewDays !== null && crewDays > STALE_DAYS && !ambStale
+            ? 'Ambassador checking in, crew has not verified recently'
             : null;
+
       return {
         key,
         name: rec?.store_name || list[0].store_name || 'Unknown store',
