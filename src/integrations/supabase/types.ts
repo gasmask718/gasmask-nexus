@@ -72161,6 +72161,30 @@ export type Database = {
           },
         ]
       }
+      hw_geocode_staging: {
+        Row: {
+          created_at: string
+          lat: number
+          lead_id: string
+          long: number
+          matched_address: string | null
+        }
+        Insert: {
+          created_at?: string
+          lat: number
+          lead_id: string
+          long: number
+          matched_address?: string | null
+        }
+        Update: {
+          created_at?: string
+          lat?: number
+          lead_id?: string
+          long?: number
+          matched_address?: string | null
+        }
+        Relationships: []
+      }
       hw_lead_stages: {
         Row: {
           contact_method: string | null
