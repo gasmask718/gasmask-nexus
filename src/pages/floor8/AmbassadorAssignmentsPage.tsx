@@ -335,24 +335,29 @@ export default function AmbassadorAssignmentsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card><CardContent className="pt-6">
           <p className="text-xs text-muted-foreground">Active ambassadors</p>
           <p className="text-2xl font-bold">{roster.length}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-6">
-          <p className="text-xs text-muted-foreground">Missing a login</p>
+          <p className="text-xs text-muted-foreground">Ready</p>
+          <p className="text-2xl font-bold text-emerald-500">{roster.filter((r) => r.readiness === 'ready').length}</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-6">
+          <p className="text-xs text-muted-foreground">Login required</p>
           <p className="text-2xl font-bold text-amber-500">{missingLogin.length}</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-6">
+          <p className="text-xs text-muted-foreground">Shared login conflicts</p>
+          <p className="text-2xl font-bold text-destructive">{sharedConflicts.length}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-6">
           <p className="text-xs text-muted-foreground">Active store assignments</p>
           <p className="text-2xl font-bold">{roster.reduce((a, r) => a + r.assignedCount, 0)}</p>
         </CardContent></Card>
-        <Card><CardContent className="pt-6">
-          <p className="text-xs text-muted-foreground">With a route</p>
-          <p className="text-2xl font-bold">{roster.filter((r) => r.routeCount > 0).length}</p>
-        </CardContent></Card>
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Roster */}
