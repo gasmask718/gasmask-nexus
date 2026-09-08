@@ -318,6 +318,40 @@ export default function AccountAuditFeed() {
   const rows = useMemo(() => query.data?.pages.flatMap((p) => p.rows) ?? [], [query.data]);
   const total = rows[0]?.total_count ?? 0;
 
+  /**
+   * One store + one calendar day = ONE top-level row. Every individual action that
+   * day stays visible as a sub-action underneath, so nothing is hidden by grouping.
+   * Grouping runs over every loaded page, so a store's day never splits across pages.
+   */
+  const groups = useMemo(() => {
+    const map = new Map<string, { key: string; store_id: string | null; store_name: string | null; day: string; latest_at: string | null; items: AuditFeedRow[] }>();
+    for (const r of rows) {
+      const day = r.occurred_at ? r.occurred_at.slice(0, 10) : 'unknown';
+      const key = `${r.store_id ?? r.store_name ?? 'unknown'}|${day}`;
+      const existing = map.get(key);
+      if (existing) {
+        existing.items.push(r);
+        if (r.occurred_at && (!existing.latest_at || r.occurred_at > existing.latest_at)) {
+          existing.latest_at = r.occurred_at;
+        }
+      } else {
+        map.set(key, {
+          key,
+          store_id: r.store_id,
+          store_name: r.store_name,
+          day,
+          latest_at: r.occurred_at,
+          items: [r],
+        });
+      }
+    }
+    return Array.from(map.values()).map((g) => ({
+      ...g,
+      items: [...g.items].sort((a, b) => (b.occurred_at ?? '').localeCompare(a.occurred_at ?? '')),
+    }));
+  }, [rows]);
+
+
   const loadMore = useCallback(() => {
     if (query.hasNextPage && !query.isFetchingNextPage) query.fetchNextPage();
   }, [query]);
