@@ -14,6 +14,8 @@ export interface RouteStop {
   store_id: string | null;
   store_name?: string;
   store_address?: string;
+  store_lat?: number | null;
+  store_lng?: number | null;
   custom_address?: string;
   planned_time?: string;
   planned_order: number;
@@ -82,7 +84,10 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
             planned_order,
             status,
             notes_to_worker,
-            planned_arrival_time
+            planned_arrival_time,
+            store:stores!route_stops_store_id_fkey(
+              id, store_name, address, city, state, lat, lng
+            )
           )
         `)
         .eq('assigned_to', user?.id)
