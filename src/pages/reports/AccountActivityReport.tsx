@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Activity, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import AccountAuditFeed from '@/components/reports/AccountAuditFeed';
+
 
 export interface ActivityRow {
   kind: 'review' | 'call' | 'text' | 'visit';
@@ -394,9 +396,20 @@ export default function AccountActivityReport() {
       </Card>
 
       <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Account audit log</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Every account review, numbered. Click a row for the note text, invoice balance, route, contact history and corrections.
+          </p>
+        </CardHeader>
+        <CardContent><AccountAuditFeed /></CardContent>
+      </Card>
+
+      <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Detailed activity feed</CardTitle></CardHeader>
         <CardContent><AccountActivityTable dateFrom={from} dateTo={to} /></CardContent>
       </Card>
+
     </div>
   );
 }
