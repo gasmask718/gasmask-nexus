@@ -52,6 +52,9 @@ const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const PendingApproval = lazy(() => import('@/pages/PendingApproval'));
 const Shop = lazy(() => import('@/pages/Shop'));
 const PublicProductPage = lazy(() => import('@/pages/shop/PublicProductPage'));
+const DDHome = lazy(() => import('@/pages/dynasty-direct/public/DDHome'));
+const DDWholesalePublic = lazy(() => import('@/pages/dynasty-direct/public/DDWholesalePublic'));
+
 const CheckoutSuccess = lazy(() => import('@/pages/shop/CheckoutSuccess'));
 const TrackOrder = lazy(() => import('@/pages/shop/TrackOrder'));
 // Dynasty Direct customer account area (D2C, /account/*)
