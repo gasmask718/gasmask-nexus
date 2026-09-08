@@ -1144,7 +1144,16 @@ Return ONLY this JSON:
     recognized_at: new Date().toISOString(),
   };
   if (draft_id) {
-    await sbAdmin().from('dd_catalog_drafts').update({ recognition: payload }).eq('id', draft_id);
+    const recognizedName = payload.product_name.trim();
+    const update: Record<string, unknown> = { recognition: payload };
+    if (recognizedName) update.product_name = recognizedName;
+    const { data: saved, error } = await sbAdmin()
+      .from('dd_catalog_drafts')
+      .update(update)
+      .eq('id', draft_id)
+      .select('id');
+    if (error) throw new Error(`save recognition failed: ${error.message}`);
+    if (!saved?.length) throw new Error('save recognition failed: draft not found');
   }
   return payload;
 }
