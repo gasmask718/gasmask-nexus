@@ -10,6 +10,47 @@ import { format } from 'date-fns';
 
 const PAGE = 50;
 
+const ACTION_LABELS: Record<string, string> = {
+  reviewed: 'Reviewed',
+  unreviewed: 'Marked unreviewed',
+  note_added: 'Note added',
+  address_corrected: 'Address corrected',
+  name_changed: 'Store name changed',
+  phone_updated: 'Phone updated',
+  status_changed: 'Status changed',
+  store_removed: 'Store removed',
+  record_updated: 'Record updated',
+  invoice_created: 'Invoice created',
+  payment_recorded: 'Payment recorded',
+  invoice_removed: 'Invoice removed',
+  route_assigned: 'Added to route',
+};
+
+const ACTION_STYLES: Record<string, string> = {
+  reviewed: 'bg-primary/15 text-primary border-primary/30',
+  unreviewed: 'bg-muted text-muted-foreground border-border',
+  note_added: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+  address_corrected: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  name_changed: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  phone_updated: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  status_changed: 'bg-violet-500/15 text-violet-400 border-violet-500/30',
+  store_removed: 'bg-destructive/15 text-destructive border-destructive/30',
+  record_updated: 'bg-muted text-muted-foreground border-border',
+  invoice_created: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  payment_recorded: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+  invoice_removed: 'bg-destructive/15 text-destructive border-destructive/30',
+  route_assigned: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
+};
+
+function ActionBadge({ action }: { action: string }) {
+  return (
+    <Badge variant="outline" className={ACTION_STYLES[action] ?? 'bg-muted text-muted-foreground border-border'}>
+      {ACTION_LABELS[action] ?? action}
+    </Badge>
+  );
+}
+
+
 export interface AuditFeedRow {
   row_id: string;
   row_kind: string;
@@ -21,6 +62,8 @@ export interface AuditFeedRow {
   actor_role: string;
   action: string | null;
   note_text: string | null;
+  detail_text: string | null;
+
   route_id: string | null;
   route_name: string | null;
   route_date: string | null;
@@ -238,6 +281,8 @@ export default function AccountAuditFeed() {
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
   const [actorKind, setActorKind] = useState('all');
+  const [action, setAction] = useState('all');
+  const [routeFilter, setRouteFilter] = useState('all');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -250,7 +295,7 @@ export default function AccountAuditFeed() {
   }, [search]);
 
   const query = useInfiniteQuery({
-    queryKey: ['account-audit-feed', debounced, actorKind, from, to],
+    queryKey: ['account-audit-feed', debounced, actorKind, action, routeFilter, from, to],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const { data, error } = await (supabase as any).rpc('account_activity_feed', {
@@ -260,12 +305,15 @@ export default function AccountAuditFeed() {
         p_to: to ? `${to}T23:59:59Z` : null,
         p_limit: PAGE,
         p_offset: pageParam as number,
+        p_action: action,
+        p_route: routeFilter,
       });
       if (error) throw error;
       return { rows: (data ?? []) as AuditFeedRow[], offset: pageParam as number };
     },
     getNextPageParam: (last) => (last.rows.length < PAGE ? undefined : last.offset + PAGE),
   });
+
 
   const rows = useMemo(() => query.data?.pages.flatMap((p) => p.rows) ?? [], [query.data]);
   const total = rows[0]?.total_count ?? 0;
@@ -304,9 +352,27 @@ export default function AccountAuditFeed() {
             <SelectItem value="unattributed">Unattributed</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={action} onValueChange={setAction}>
+          <SelectTrigger><SelectValue placeholder="Action" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All actions</SelectItem>
+            {Object.entries(ACTION_LABELS).map(([k, v]) => (
+              <SelectItem key={k} value={k}>{v}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={routeFilter} onValueChange={setRouteFilter}>
+          <SelectTrigger><SelectValue placeholder="Route" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Route: any</SelectItem>
+            <SelectItem value="on_route">On a route</SelectItem>
+            <SelectItem value="off_route">Not on a route</SelectItem>
+          </SelectContent>
+        </Select>
         <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
       </div>
+
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>
@@ -331,7 +397,7 @@ export default function AccountAuditFeed() {
               <th className="py-2 pr-3">Who</th>
               <th className="py-2 pr-3">Action</th>
               <th className="py-2 pr-3">Route</th>
-              <th className="py-2 pr-3">Note</th>
+              <th className="py-2 pr-3">Detail</th>
               <th className="w-10" />
             </tr>
           </thead>
@@ -351,7 +417,7 @@ export default function AccountAuditFeed() {
                     <td className="py-2 pr-3">{r.store_name || (r.store_id ? r.store_id.slice(0, 8) : '—')}</td>
                     <td className="py-2 pr-3"><ActorBadge role={r.actor_role} name={r.actor_name} /></td>
                     <td className="py-2 pr-3">
-                      <Badge variant="secondary">{r.action || r.row_kind}</Badge>
+                      <ActionBadge action={r.action || r.row_kind} />
                     </td>
                     <td className="py-2 pr-3 text-xs">
                       {r.route_id ? (
@@ -364,7 +430,12 @@ export default function AccountAuditFeed() {
                         <span className="text-muted-foreground">Not on a route</span>
                       )}
                     </td>
-                    <td className="max-w-sm truncate py-2 pr-3 text-xs text-muted-foreground">{r.note_text || ''}</td>
+                    <td className="max-w-md py-2 pr-3 text-xs">
+                      {r.detail_text && <div className="text-foreground">{r.detail_text}</div>}
+                      {r.note_text && <div className="text-muted-foreground">{r.note_text}</div>}
+                      {!r.detail_text && !r.note_text && <span className="text-muted-foreground">—</span>}
+                    </td>
+
                     <td className="py-2 pr-2 text-muted-foreground">
                       {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </td>
