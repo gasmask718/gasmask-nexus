@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import { verifiedUpdate } from '@/lib/verifiedMutation';
 import { toast } from 'sonner';
 import {
   Camera, Loader2, Check, SkipForward, RotateCcw, ArrowLeft, AlertTriangle, CheckCircle2, DollarSign, Tag,
@@ -315,22 +316,27 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       const dims = (measurements.length_in && measurements.width_in && measurements.height_in)
         ? { length_in: measurements.length_in, width_in: measurements.width_in, height_in: measurements.height_in }
         : null;
-      const { error } = await supabase.from('dd_catalog_drafts').update({
-        product_name: productName.trim() || recognition?.product_name || 'Untitled item',
-        cost: Number(cost) || null,
-        recognition: recognition ?? null,
-        copy,
-        category: copy?.category_guess || null,
-        selected: organisedPhotos.length
-          ? organisedPhotos
-          : (shots.filter(Boolean) as string[]).map((url) => ({ url })),
-        image_variants: imageVariants,
-        no_printed_label: noLabel,
-        weight_oz: measurements.weight_oz,
-        dimensions: dims,
-        status: 'pending_admin_review',
-      }).eq('id', draftId);
-      if (error) throw error;
+      await verifiedUpdate('submit Dynasty Direct camera draft', () => (supabase as any).rpc(
+        'dd_creator_update_draft',
+        {
+          p_draft_id: draftId,
+          p_patch: {
+            product_name: productName.trim() || recognition?.product_name || 'Untitled item',
+            cost: Number(cost) || null,
+            recognition: recognition ?? null,
+            copy,
+            category: copy?.category_guess || null,
+            selected: organisedPhotos.length
+              ? organisedPhotos
+              : (shots.filter(Boolean) as string[]).map((url) => ({ url })),
+            image_variants: imageVariants,
+            no_printed_label: noLabel,
+            weight_oz: measurements.weight_oz,
+            dimensions: dims,
+            status: 'pending_admin_review',
+          },
+        },
+      ));
 
       clearPersisted();
       setLastAdded(productName.trim() || recognition?.product_name || 'Item');
