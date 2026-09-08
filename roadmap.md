@@ -9,3 +9,7 @@
 - [x] Central /ambassadors/route-planning page on existing ambassadors/assignments/routes/route_stops
 - [ ] BLOCKER: 52 active ambassadors share one login user_id (12 share another) — routes are keyed to login, so they see each other's routes
 - [ ] 10 active ambassadors have no login; 291 active stores lack coordinates (geocoding backlog)
+
+## Account Activity Report (2026-09-08)
+- [x] Numbered, expandable, paginated audit log at /reports/account-activity
+- [ ] 1,032 account_review notes have no author recorded; no live code writes that source today, so authorship can only be captured once a review-saving screen is (re)built

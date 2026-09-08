@@ -159013,6 +159013,38 @@ export type Database = {
         }
         Returns: Json
       }
+      account_activity_feed: {
+        Args: {
+          p_actor_kind?: string
+          p_from?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_to?: string
+        }
+        Returns: {
+          action: string
+          actor_id: string
+          actor_name: string
+          actor_role: string
+          note_text: string
+          occurred_at: string
+          route_date: string
+          route_id: string
+          route_name: string
+          route_type: string
+          row_id: string
+          row_kind: string
+          stop_status: string
+          store_id: string
+          store_name: string
+          total_count: number
+        }[]
+      }
+      account_activity_row_detail: {
+        Args: { p_at: string; p_store_id: string }
+        Returns: Json
+      }
       ack_ops_thread: { Args: { p_thread_id: string }; Returns: undefined }
       acknowledge_drift_alert: {
         Args: { p_alert_id: string; p_user_id?: string }
