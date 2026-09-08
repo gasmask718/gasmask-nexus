@@ -311,9 +311,27 @@ export default function AccountAuditFeed() {
             <SelectItem value="unattributed">Unattributed</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={action} onValueChange={setAction}>
+          <SelectTrigger><SelectValue placeholder="Action" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All actions</SelectItem>
+            {Object.entries(ACTION_LABELS).map(([k, v]) => (
+              <SelectItem key={k} value={k}>{v}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={routeFilter} onValueChange={setRouteFilter}>
+          <SelectTrigger><SelectValue placeholder="Route" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Route: any</SelectItem>
+            <SelectItem value="on_route">On a route</SelectItem>
+            <SelectItem value="off_route">Not on a route</SelectItem>
+          </SelectContent>
+        </Select>
         <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
       </div>
+
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>
