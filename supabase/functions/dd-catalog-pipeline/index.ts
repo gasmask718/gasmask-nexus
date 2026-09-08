@@ -12,6 +12,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { lookupMarket, type MarketLookup } from '../_shared/marketPrice.ts';
+import { lookupSourcedSpecs } from '../_shared/sourcedSpecs.ts';
 import { DD_CATEGORIES, mapDdCategory } from '../_shared/ddCategory.ts';
 
 const LOVABLE_KEY = Deno.env.get('LOVABLE_API_KEY')!;
@@ -539,49 +540,57 @@ If the photo shows no printed specification panel, set label_detected=false and 
   return payload;
 }
 
+// SOURCED sizing. No LLM guesses: every weight/dimension carries a verbatim
+// snippet + source URL (SerpAPI product spec panels / web snippets). When no
+// sourced match exists we return status='needs_measurement' with a suggested
+// box from dd_box_sizes, and we DO NOT write weight_oz/dimensions on the draft.
 async function runEstimateMeasurements(body: any) {
-  const { product_name, photo_url, draft_id } = body;
-  if (!product_name || !photo_url) throw new Error('product_name + photo_url required');
-  const dataUrl = await fetchAsDataUrl(photo_url);
-  const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${LOVABLE_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-pro',
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'text', text: `Estimate the SHIPPING weight (oz) and physical dimensions (inches) of "${product_name}" in this photo. Use any visible reference objects (hand, coin, ruler, common packaging) or known product specs. Return STRICT JSON only:
-{
-  "weight_oz": <number>,
-  "dimensions": { "length_in": <number>, "width_in": <number>, "height_in": <number> },
-  "confidence": "low|medium|high",
-  "reasoning": "<one short sentence: what reference / known specs you used>"
-}
-If you cannot estimate any field, set it to null. NEVER guess wildly — shipping bills on actuals.` },
-          { type: 'image_url', image_url: { url: dataUrl } },
-        ],
-      }],
-    }),
-  });
-  if (!r.ok) throw new Error(`gemini estimate ${r.status}`);
-  const j = await r.json();
-  const txt = j.choices?.[0]?.message?.content ?? '';
-  const parsed = parseJson(typeof txt === 'string' ? txt : '');
-  const payload = {
-    weight_oz: parsed.weight_oz ?? null,
-    dimensions: parsed.dimensions ?? null,
-    confidence: parsed.confidence ?? 'low',
-    reasoning: parsed.reasoning ?? '',
-    estimated_at: new Date().toISOString(),
-  };
+  const { product_name, brand_hint, draft_id } = body;
+  if (!product_name) throw new Error('product_name required');
+  const sb = sbAdmin();
+
+  // Prefer the recognised name/brand off the draft when the caller passed a placeholder.
+  let name = String(product_name);
+  let brand = brand_hint ? String(brand_hint) : null;
   if (draft_id) {
-    // Prefill the editable fields, but DO NOT mark verified — David must tap the checkbox.
-    await sbAdmin().from('dd_catalog_drafts').update({
-      measurements_estimate: payload,
-      weight_oz: payload.weight_oz,
-      dimensions: payload.dimensions,
-    }).eq('id', draft_id);
+    const { data: d } = await sb.from('dd_catalog_drafts').select('recognition').eq('id', draft_id).maybeSingle();
+    const rec = (d?.recognition || {}) as any;
+    if (/pending photo read/i.test(name) && rec.product_name) name = String(rec.product_name);
+    if (!brand && rec.brand_visible) brand = String(rec.brand_visible);
+  }
+
+  const specs = await lookupSourcedSpecs(sb, name, brand);
+  const sourced = specs.status === 'sourced' && specs.weight && specs.dimensions;
+
+  // Backward-compatible shape for the wizard (weight_oz / dimensions / confidence)
+  // plus the new provenance fields. Values are only filled when sourced.
+  const payload = {
+    status: specs.status,
+    source: 'sourced_web' as const,
+    weight_oz: sourced ? specs.weight!.weight_oz : null,
+    dimensions: sourced
+      ? { length_in: specs.dimensions!.length_in, width_in: specs.dimensions!.width_in, height_in: specs.dimensions!.height_in }
+      : null,
+    confidence: specs.confidence,
+    reasoning: specs.reason ?? '',
+    sources: [
+      ...(specs.weight ? [{ field: 'weight', verbatim: specs.weight.verbatim, url: specs.weight.source_url, via: specs.weight.via }] : []),
+      ...(specs.dimensions ? [{ field: 'dimensions', verbatim: specs.dimensions.verbatim, url: specs.dimensions.source_url, via: specs.dimensions.via }] : []),
+    ],
+    suggested_box: specs.suggested_box,
+    query: specs.query,
+    estimated_at: specs.checked_at,
+  };
+
+  if (draft_id) {
+    const update: Record<string, unknown> = { sourced_specs: specs, measurements_estimate: payload };
+    if (sourced) {
+      // Prefill the editable fields from SOURCED values only. Never marks verified —
+      // measurements_verified_at stays a human action.
+      update.weight_oz = payload.weight_oz;
+      update.dimensions = payload.dimensions;
+    }
+    await sb.from('dd_catalog_drafts').update(update).eq('id', draft_id);
   }
   return payload;
 }
@@ -682,7 +691,20 @@ async function runPublish(body: any) {
     !!label.label_detected &&
     num(ocrNormalized.weight_oz) != null &&
     num(ocrNormalized.weight_oz) === weight_oz;
-  const specSource = ocrMatchesDraft ? 'label_ocr' : draft.measurements_estimate ? 'estimate' : 'manual';
+  // Provenance ranking: printed label read > web-sourced spec > human-typed value.
+  // 'estimate' only survives for legacy drafts whose numbers came from the old
+  // vision-guess path (measurements_estimate without a source list).
+  const sourced = (draft as any).sourced_specs as any | null;
+  const sourcedMatches =
+    sourced?.status === 'sourced' &&
+    num(sourced?.weight?.weight_oz) === weight_oz &&
+    num(sourced?.dimensions?.length_in) === length_in &&
+    num(sourced?.dimensions?.width_in) === width_in &&
+    num(sourced?.dimensions?.height_in) === height_in;
+  const legacyEstimate = !!draft.measurements_estimate && !Array.isArray((draft.measurements_estimate as any)?.sources);
+  const specSource = ocrMatchesDraft ? 'label_ocr' : sourcedMatches ? 'sourced_web' : legacyEstimate ? 'estimate' : 'manual';
+  const shippingDataSource = specSource === 'manual' ? 'human_measured' : specSource;
+  const shippingVerified = !!draft.measurements_verified_at; // human action only
 
   const { data: prod, error: insErr } = await sb.from('products_all').insert({
     wholesaler_id: wholesalerProfileId,
@@ -709,8 +731,17 @@ async function runPublish(body: any) {
     gtin,
     supplier_sku: supplierSku,
     spec_source: specSource,
+    shipping_data_source: shippingDataSource,
+    shipping_verified: shippingVerified,
+    source_draft_id: draft_id,
     spec_source_ref: {
       draft_id,
+      sourced_specs: sourced ? {
+        status: sourced.status,
+        weight_source: sourced.weight?.source_url ?? null,
+        dimensions_source: sourced.dimensions?.source_url ?? null,
+        checked_at: sourced.checked_at ?? null,
+      } : null,
       label_photo_url: labelUrl,
       label_confidence: label.confidence ?? null,
       label_complete: label.complete ?? null,
@@ -846,59 +877,101 @@ Generate a content brief as JSON:
 
 // ---------- new modes: price research, vision recognize, image standardize ----------
 
+// SOURCED price research. No LLM-invented competitor prices: every number comes
+// from lookupMarket (SerpAPI Google Shopping, relevance/bundle/outlier filtered)
+// or from the margin formula, and the response says which.
 async function runPriceResearch(body: any) {
-  const { draft_id, product_name, category, supplier_cost } = body;
+  const { draft_id, product_name, category, supplier_cost, brand_hint } = body;
   if (!product_name) throw new Error('product_name required');
+  const sb = sbAdmin();
   const cost = Number(supplier_cost) || 0;
   const hasCost = cost > 0;
 
-  const system = 'You are a pricing analyst for a wholesale-to-retail business. Output STRICT JSON only.';
-  const user = `Product: ${product_name}
-Category: ${category || 'unknown'}
-Supplier cost: ${hasCost ? '$' + cost.toFixed(2) : 'NOT PROVIDED'}
+  // Effective margin: same source copy_pricing uses.
+  let supplierId: string | null = null;
+  let brand: string | null = brand_hint ? String(brand_hint) : null;
+  if (draft_id) {
+    const { data: d } = await sb.from('dd_catalog_drafts').select('supplier_id, recognition').eq('id', draft_id).maybeSingle();
+    supplierId = d?.supplier_id ?? null;
+    if (!brand && (d?.recognition as any)?.brand_visible) brand = String((d!.recognition as any).brand_visible);
+  }
+  let effectiveMarginPct = 15;
+  try {
+    if (supplierId) {
+      const { data: m } = await sb.rpc('dd_get_effective_margin_pct', { p_product_id: null, p_wholesaler_id: supplierId });
+      if (typeof m === 'number' && m > 0) effectiveMarginPct = m;
+    } else {
+      const { data: cfg } = await sb.from('dd_config').select('default_margin_pct').eq('id', true).maybeSingle();
+      if (cfg?.default_margin_pct) effectiveMarginPct = Number(cfg.default_margin_pct);
+    }
+  } catch (_) { /* keep default */ }
+  const marginFraction = Math.min(0.9, Math.max(0, effectiveMarginPct / 100));
+  const retailFloor = hasCost && marginFraction > 0 ? Number((cost / (1 - marginFraction)).toFixed(2)) : 0;
 
-Research this product and provide a best-effort competitive pricing snapshot for the US market.
+  let market: MarketLookup | null = null;
+  try { market = await lookupMarket(sb, product_name, brand); }
+  catch (e) { console.error('[price_research] market lookup failed', e); }
+  const marketUsable = !!(market && market.available && market.comparable && market.count > 0 && market.median);
 
-Return ONLY this JSON (numbers, no $ signs):
-{
-  "amazon_price": 0.00,
-  "walmart_price": 0.00,
-  "competitor_avg": 0.00,
-  "suggested_store_price": 0.00,
-  "suggested_retail_price": 0.00,
-  "store_margin_pct": 0,
-  "retail_margin_pct": 0,
-  "pricing_notes": "brief explanation${hasCost ? '' : '. No supplier cost provided — margin calculations approximate'}"
-}
+  // Named-retailer prices only when a real listing from that retailer survived filtering.
+  const fromSource = (re: RegExp) => {
+    const s = (market?.samples || []).find((x) => re.test(x.source || ''));
+    return s ? { price: s.price, url: s.link, title: s.title } : null;
+  };
+  const amazon = fromSource(/amazon/i);
+  const walmart = fromSource(/walmart/i);
 
-Pricing rules:
-- store_price = wholesale-to-store price (typically cost × 1.5 to cost × 2.5)
-- retail_price = direct-to-consumer (typically cost × 2.5 to cost × 4)
-- If cost not provided, infer a reasonable cost from competitor data and compute margins from that inference.`;
+  // Suggested retail: market median, never below the margin floor. Store price is
+  // formula-only (there is no sourced wholesale-to-store market) and is labelled so.
+  let suggestedRetail = 0;
+  let basis: 'market_median' | 'margin_floor_market_below' | 'formula_only' = 'formula_only';
+  if (marketUsable) {
+    if (market!.median! >= retailFloor) { suggestedRetail = market!.median!; basis = 'market_median'; }
+    else { suggestedRetail = retailFloor; basis = 'margin_floor_market_below'; }
+  } else {
+    suggestedRetail = retailFloor;
+  }
+  const suggestedStore = hasCost ? Number(Math.max(retailFloor, cost * 1.5).toFixed(2)) : 0;
+  const pct = (p: number) => (hasCost && p > 0 ? Number((((p - cost) / p) * 100).toFixed(1)) : 0);
 
-  const raw = await geminiText(system, user);
-  const parsed = parseJson(raw);
+  const notes = [
+    marketUsable
+      ? `Market: ${market!.count} comparable Google Shopping listings (pack size ${market!.pack_size}); low $${market!.low} / median $${market!.median} / high $${market!.high}.`
+      : `No usable market data (${market?.reason || (market && !market.comparable ? 'listings not comparable' : 'lookup failed')}); retail = margin floor only.`,
+    basis === 'margin_floor_market_below' ? `Market median is BELOW the ${effectiveMarginPct}% margin floor ($${retailFloor}); floor kept — review needed.` : null,
+    `Store price is formula-only (max(margin floor, cost×1.5)).`,
+    hasCost ? null : 'No supplier cost provided — margins cannot be computed.',
+  ].filter(Boolean).join(' ');
 
-  // Normalize the AI category onto the products_all check-constraint values now,
-  // so the wizard shows (and the publish insert receives) a legal slug.
-  const catMap = mapDdCategory(parsed.category_guess, [product_name, brand_hint, (parsed.tags || []).join(' ')].filter(Boolean).join(' '));
-  parsed.category_guess = catMap.category;
-  parsed.category_source = catMap.method;
-  parsed.category_raw = catMap.raw;
   const payload = {
-    amazon_price: Number(parsed.amazon_price) || 0,
-    walmart_price: Number(parsed.walmart_price) || 0,
-    competitor_avg: Number(parsed.competitor_avg) || 0,
-    suggested_store_price: Number(parsed.suggested_store_price) || 0,
-    suggested_retail_price: Number(parsed.suggested_retail_price) || 0,
-    store_margin_pct: Number(parsed.store_margin_pct) || 0,
-    retail_margin_pct: Number(parsed.retail_margin_pct) || 0,
-    pricing_notes: String(parsed.pricing_notes || ''),
+    // legacy keys the review screen reads — null (not 0) when no sourced listing exists
+    amazon_price: amazon?.price ?? null,
+    walmart_price: walmart?.price ?? null,
+    competitor_avg: marketUsable ? market!.avg : null,
+    suggested_store_price: suggestedStore,
+    suggested_retail_price: suggestedRetail,
+    store_margin_pct: pct(suggestedStore),
+    retail_margin_pct: pct(suggestedRetail),
+    pricing_notes: notes,
     cost_basis: cost,
+    category: category || null,
+    // provenance
+    basis,
+    effective_margin_pct: effectiveMarginPct,
+    retail_floor: retailFloor,
+    sources: {
+      amazon: amazon ? { url: amazon.url, title: amazon.title } : null,
+      walmart: walmart ? { url: walmart.url, title: walmart.title } : null,
+      market: market ? {
+        available: market.available, reason: market.reason ?? null, comparable: market.comparable,
+        count: market.count, low: market.low, median: market.median, high: market.high,
+        pack_size: market.pack_size, samples: market.samples.slice(0, 10),
+      } : null,
+    },
     researched_at: new Date().toISOString(),
   };
   if (draft_id) {
-    await sbAdmin().from('dd_catalog_drafts').update({ price_research: payload }).eq('id', draft_id);
+    await sb.from('dd_catalog_drafts').update({ price_research: payload }).eq('id', draft_id);
   }
   return payload;
 }

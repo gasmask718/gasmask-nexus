@@ -47639,6 +47639,7 @@ export type Database = {
           selected_candidate_urls: string[]
           sku: string | null
           source: string
+          sourced_specs: Json | null
           staged: Json
           status: string
           submitted_at: string | null
@@ -47683,6 +47684,7 @@ export type Database = {
           selected_candidate_urls?: string[]
           sku?: string | null
           source?: string
+          sourced_specs?: Json | null
           staged?: Json
           status?: string
           submitted_at?: string | null
@@ -47727,6 +47729,7 @@ export type Database = {
           selected_candidate_urls?: string[]
           sku?: string | null
           source?: string
+          sourced_specs?: Json | null
           staged?: Json
           status?: string
           submitted_at?: string | null
@@ -98996,9 +98999,12 @@ export type Database = {
           review_count: number | null
           seo_keywords: string[] | null
           seo_title: string | null
+          shipping_data_source: string | null
           shipping_from_city: string | null
           shipping_from_state: string | null
+          shipping_verified: boolean
           size_or_count: string | null
+          source_draft_id: string | null
           spec_source: string | null
           spec_source_ref: Json | null
           specs_verified_at: string | null
@@ -99084,9 +99090,12 @@ export type Database = {
           review_count?: number | null
           seo_keywords?: string[] | null
           seo_title?: string | null
+          shipping_data_source?: string | null
           shipping_from_city?: string | null
           shipping_from_state?: string | null
+          shipping_verified?: boolean
           size_or_count?: string | null
+          source_draft_id?: string | null
           spec_source?: string | null
           spec_source_ref?: Json | null
           specs_verified_at?: string | null
@@ -99172,9 +99181,12 @@ export type Database = {
           review_count?: number | null
           seo_keywords?: string[] | null
           seo_title?: string | null
+          shipping_data_source?: string | null
           shipping_from_city?: string | null
           shipping_from_state?: string | null
+          shipping_verified?: boolean
           size_or_count?: string | null
+          source_draft_id?: string | null
           spec_source?: string | null
           spec_source_ref?: Json | null
           specs_verified_at?: string | null
@@ -99210,6 +99222,27 @@ export type Database = {
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_all_source_draft_id_fkey"
+            columns: ["source_draft_id"]
+            isOneToOne: false
+            referencedRelation: "dd_admin_catalog_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_all_source_draft_id_fkey"
+            columns: ["source_draft_id"]
+            isOneToOne: false
+            referencedRelation: "dd_catalog_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_all_source_draft_id_fkey"
+            columns: ["source_draft_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_drafts_safe"
             referencedColumns: ["id"]
           },
           {
@@ -160034,9 +160067,12 @@ export type Database = {
           review_count: number | null
           seo_keywords: string[] | null
           seo_title: string | null
+          shipping_data_source: string | null
           shipping_from_city: string | null
           shipping_from_state: string | null
+          shipping_verified: boolean
           size_or_count: string | null
+          source_draft_id: string | null
           spec_source: string | null
           spec_source_ref: Json | null
           specs_verified_at: string | null
@@ -160205,9 +160241,12 @@ export type Database = {
           review_count: number | null
           seo_keywords: string[] | null
           seo_title: string | null
+          shipping_data_source: string | null
           shipping_from_city: string | null
           shipping_from_state: string | null
+          shipping_verified: boolean
           size_or_count: string | null
+          source_draft_id: string | null
           spec_source: string | null
           spec_source_ref: Json | null
           specs_verified_at: string | null
