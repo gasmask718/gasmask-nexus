@@ -690,7 +690,20 @@ async function runPublish(body: any) {
     !!label.label_detected &&
     num(ocrNormalized.weight_oz) != null &&
     num(ocrNormalized.weight_oz) === weight_oz;
-  const specSource = ocrMatchesDraft ? 'label_ocr' : draft.measurements_estimate ? 'estimate' : 'manual';
+  // Provenance ranking: printed label read > web-sourced spec > human-typed value.
+  // 'estimate' only survives for legacy drafts whose numbers came from the old
+  // vision-guess path (measurements_estimate without a source list).
+  const sourced = (draft as any).sourced_specs as any | null;
+  const sourcedMatches =
+    sourced?.status === 'sourced' &&
+    num(sourced?.weight?.weight_oz) === weight_oz &&
+    num(sourced?.dimensions?.length_in) === length_in &&
+    num(sourced?.dimensions?.width_in) === width_in &&
+    num(sourced?.dimensions?.height_in) === height_in;
+  const legacyEstimate = !!draft.measurements_estimate && !Array.isArray((draft.measurements_estimate as any)?.sources);
+  const specSource = ocrMatchesDraft ? 'label_ocr' : sourcedMatches ? 'sourced_web' : legacyEstimate ? 'estimate' : 'manual';
+  const shippingDataSource = specSource === 'manual' ? 'human_measured' : specSource;
+  const shippingVerified = !!draft.measurements_verified_at; // human action only
 
   const { data: prod, error: insErr } = await sb.from('products_all').insert({
     wholesaler_id: wholesalerProfileId,
