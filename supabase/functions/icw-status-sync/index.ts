@@ -3,6 +3,7 @@
 // status to the public site's webhook and logs the outcome to icw_dispatch_log.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { getIcwConfig } from '../_shared/icwWebhookConfig.ts';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -23,7 +24,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ success: false, error: 'Method not allowed' }, 405);
 
-  const sharedSecret = Deno.env.get('ICW_STATUS_SYNC_SECRET');
+  const sharedSecret = await getIcwConfig('ICW_STATUS_SYNC_SECRET');
   if (!sharedSecret) {
     console.error('[icw-status-sync] ICW_STATUS_SYNC_SECRET is not configured');
     return json({ success: false, error: 'Status sync is not configured' }, 500);
@@ -67,7 +68,7 @@ Deno.serve(async (req) => {
     if (error) console.error('[icw-status-sync] log write failed', error.message);
   };
 
-  const target = Deno.env.get('PUBLIC_SITE_STATUS_WEBHOOK_URL');
+  const target = await getIcwConfig('PUBLIC_SITE_STATUS_WEBHOOK_URL');
   if (!target || !/^https:\/\//.test(target)) {
     await log(
       'status_sync_failed',

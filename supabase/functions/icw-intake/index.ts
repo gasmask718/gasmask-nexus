@@ -4,6 +4,7 @@
 // auto-dispatch trigger) and returns the resulting dispatch outcome.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { getIcwConfig } from '../_shared/icwWebhookConfig.ts';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -30,7 +31,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ success: false, error: 'Method not allowed' }, 405);
 
-  const expected = Deno.env.get('ICW_INTAKE_SECRET');
+  const expected = await getIcwConfig('ICW_INTAKE_SECRET');
   if (!expected) {
     console.error('[icw-intake] ICW_INTAKE_SECRET is not configured');
     return json({ success: false, error: 'Intake is not configured' }, 500);
