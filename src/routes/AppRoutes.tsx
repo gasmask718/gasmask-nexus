@@ -21,6 +21,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Layouts — kept static (used as wrappers, always needed)
 import PublicLayout from '@/layouts/PublicLayout';
+import DDPublicLayout from '@/layouts/DDPublicLayout';
+
 const GasMaskStoreLocator = lazy(() => import('@/pages/public/GasMaskStoreLocator'));
 import OpsLayout from '@/layouts/OpsLayout';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
@@ -50,6 +52,9 @@ const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const PendingApproval = lazy(() => import('@/pages/PendingApproval'));
 const Shop = lazy(() => import('@/pages/Shop'));
 const PublicProductPage = lazy(() => import('@/pages/shop/PublicProductPage'));
+const DDHome = lazy(() => import('@/pages/dynasty-direct/public/DDHome'));
+const DDWholesalePublic = lazy(() => import('@/pages/dynasty-direct/public/DDWholesalePublic'));
+
 const CheckoutSuccess = lazy(() => import('@/pages/shop/CheckoutSuccess'));
 const TrackOrder = lazy(() => import('@/pages/shop/TrackOrder'));
 // Dynasty Direct customer account area (D2C, /account/*)
@@ -1381,16 +1386,24 @@ export default function AppRoutes() {
       {/* PUBLIC ROUTES (No authentication required)                                   */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       
-      {/* Public routes wrapped in PublicLayout (marketing nav + footer) */}
-      <Route element={<PublicLayout />}>
-        <Route path="/public" element={<LandingRedirect />} />
+      {/* Dynasty Direct public storefront + marketing — own DD-branded chrome */}
+      <Route element={<DDPublicLayout />}>
+        <Route path="/direct" element={<DDHome />} />
+        <Route path="/direct/wholesale" element={<DDWholesalePublic />} />
         {/* /shop IS the public D2C storefront grid (no auth, crawlable). */}
         <Route path="/shop" element={<Shop />} />
         {/* Public, crawlable product detail page (schema.org Product JSON-LD) */}
         <Route path="/shop/product/:productId" element={<PublicProductPage />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
         {/* Stripe redirect target + guest order tracking */}
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
         <Route path="/track" element={<TrackOrder />} />
+      </Route>
+
+      {/* Public routes wrapped in PublicLayout (marketing nav + footer) */}
+      <Route element={<PublicLayout />}>
+        <Route path="/public" element={<LandingRedirect />} />
 
         {/* Customer account area — optional, guest checkout still works without it */}
         <Route path="/account" element={<AccountLayout />}>
@@ -1402,8 +1415,6 @@ export default function AppRoutes() {
           <Route path="profile" element={<AccountProfile />} />
         </Route>
 
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
@@ -1414,6 +1425,7 @@ export default function AppRoutes() {
         <Route path="/gasmask/locations" element={<Navigate to="/locations" replace />} />
         <Route path="/locations" element={<GasMaskStoreLocator />} />
       </Route>
+
 
       {/* T1 M2: /store = UT Shopify — standalone, has its own UT chrome (no GasMask wrap) */}
       <Route path="/store" element={<ShopifyStore />} />
