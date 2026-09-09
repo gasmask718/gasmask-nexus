@@ -156,6 +156,10 @@ export type NormalizedLead = {
   external_place_id: string | null;
   external_source: string | null;
   source: string;
+  instagram_username: string | null;
+  instagram_url: string | null;
+  instagram_bio: string | null;
+  instagram_followers: number | null;
 };
 
 export type NormalizeResult =
