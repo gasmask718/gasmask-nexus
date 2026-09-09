@@ -29509,6 +29509,10 @@ export type Database = {
           google_rating: number | null
           google_types: string[] | null
           id: string
+          instagram_bio: string | null
+          instagram_followers: number | null
+          instagram_url: string | null
+          instagram_username: string | null
           last_contacted_at: string | null
           last_outcome: string | null
           last_sms_template: string | null
@@ -29572,6 +29576,10 @@ export type Database = {
           google_rating?: number | null
           google_types?: string[] | null
           id?: string
+          instagram_bio?: string | null
+          instagram_followers?: number | null
+          instagram_url?: string | null
+          instagram_username?: string | null
           last_contacted_at?: string | null
           last_outcome?: string | null
           last_sms_template?: string | null
@@ -29635,6 +29643,10 @@ export type Database = {
           google_rating?: number | null
           google_types?: string[] | null
           id?: string
+          instagram_bio?: string | null
+          instagram_followers?: number | null
+          instagram_url?: string | null
+          instagram_username?: string | null
           last_contacted_at?: string | null
           last_outcome?: string | null
           last_sms_template?: string | null
