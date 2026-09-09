@@ -69,6 +69,12 @@ const ROLE_CATEGORY_MAP: Record<string, string> = {
   waiter: 'staff',
   waitress: 'staff',
   usher: 'staff',
+  // social / creator lane (Playboxxx recruiting)
+  model: 'model',
+  creator: 'creator',
+  photographer: 'photographer',
+  cameraman: 'cameraman',
+  videographer: 'videographer',
 };
 
 export function roleKey(raw: string | null | undefined): string {
