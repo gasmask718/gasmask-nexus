@@ -222,6 +222,9 @@ export function normalizeLead(raw: RawLead, defaultSource: string | null): Norma
   const externalSource =
     cleanText(raw.source ?? raw.external_source, 60) ?? (defaultSource ? defaultSource : null);
 
+  const instagramUsername = cleanInstagramUsername(raw.instagram_username ?? raw.instagram_handle ?? raw.ig_username);
+  const instagramUrl = cleanInstagramUrl(raw.instagram_url ?? raw.instagram ?? raw.ig_url);
+
   return {
     ok: true,
     phoneLast10,
@@ -242,6 +245,10 @@ export function normalizeLead(raw: RawLead, defaultSource: string | null): Norma
       external_place_id: cleanText(raw.external_id ?? raw.external_place_id ?? raw.osm_id, 200),
       external_source: externalSource ? externalSource.toLowerCase() : null,
       source: 'playboxxx_make_ingest',
+      instagram_username: instagramUsername,
+      instagram_url: instagramUrl ?? (instagramUsername ? `https://instagram.com/${instagramUsername}` : null),
+      instagram_bio: cleanText(raw.instagram_bio ?? raw.bio, 1000),
+      instagram_followers: toNumberOrNull(raw.instagram_followers ?? raw.followers),
     },
   };
 }
