@@ -69,6 +69,12 @@ const ROLE_CATEGORY_MAP: Record<string, string> = {
   waiter: 'staff',
   waitress: 'staff',
   usher: 'staff',
+  // social / creator lane (Playboxxx recruiting)
+  model: 'model',
+  creator: 'creator',
+  photographer: 'photographer',
+  cameraman: 'cameraman',
+  videographer: 'videographer',
 };
 
 export function roleKey(raw: string | null | undefined): string {
@@ -126,6 +132,28 @@ export function cleanText(raw: unknown, max = 500): string | null {
   return t.slice(0, max);
 }
 
+/** Instagram handle: strip leading @, keep only alphanumerics/underscores/periods, max 30. */
+export function cleanInstagramUsername(raw: unknown): string | null {
+  const t = cleanText(raw, 32);
+  if (!t) return null;
+  return t.replace(/^@+/, '').replace(/[^a-zA-Z0-9_.]/g, '').slice(0, 30) || null;
+}
+
+/** Instagram profile URL: accept only instagram.com or null. */
+export function cleanInstagramUrl(raw: unknown): string | null {
+  const t = cleanText(raw, 300);
+  if (!t) return null;
+  const lower = t.toLowerCase();
+  if (!lower.includes('instagram.com')) return null;
+  try {
+    const url = new URL(lower.startsWith('http') ? lower : `https://${lower}`);
+    if (url.hostname !== 'instagram.com' && !url.hostname.endsWith('.instagram.com')) return null;
+    return url.toString().toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 export function toNumberOrNull(raw: unknown): number | null {
   if (raw === null || raw === undefined || raw === '') return null;
   const n = Number(raw);
@@ -150,6 +178,10 @@ export type NormalizedLead = {
   external_place_id: string | null;
   external_source: string | null;
   source: string;
+  instagram_username: string | null;
+  instagram_url: string | null;
+  instagram_bio: string | null;
+  instagram_followers: number | null;
 };
 
 export type NormalizeResult =
@@ -190,6 +222,9 @@ export function normalizeLead(raw: RawLead, defaultSource: string | null): Norma
   const externalSource =
     cleanText(raw.source ?? raw.external_source, 60) ?? (defaultSource ? defaultSource : null);
 
+  const instagramUsername = cleanInstagramUsername(raw.instagram_username ?? raw.instagram_handle ?? raw.ig_username);
+  const instagramUrl = cleanInstagramUrl(raw.instagram_url ?? raw.instagram ?? raw.ig_url);
+
   return {
     ok: true,
     phoneLast10,
@@ -210,6 +245,10 @@ export function normalizeLead(raw: RawLead, defaultSource: string | null): Norma
       external_place_id: cleanText(raw.external_id ?? raw.external_place_id ?? raw.osm_id, 200),
       external_source: externalSource ? externalSource.toLowerCase() : null,
       source: 'playboxxx_make_ingest',
+      instagram_username: instagramUsername,
+      instagram_url: instagramUrl ?? (instagramUsername ? `https://instagram.com/${instagramUsername}` : null),
+      instagram_bio: cleanText(raw.instagram_bio ?? raw.bio, 1000),
+      instagram_followers: toNumberOrNull(raw.instagram_followers ?? raw.followers),
     },
   };
 }
