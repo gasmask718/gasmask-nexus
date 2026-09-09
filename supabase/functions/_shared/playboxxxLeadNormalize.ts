@@ -132,6 +132,28 @@ export function cleanText(raw: unknown, max = 500): string | null {
   return t.slice(0, max);
 }
 
+/** Instagram handle: strip leading @, keep only alphanumerics/underscores/periods, max 30. */
+export function cleanInstagramUsername(raw: unknown): string | null {
+  const t = cleanText(raw, 32);
+  if (!t) return null;
+  return t.replace(/^@+/, '').replace(/[^a-zA-Z0-9_.]/g, '').slice(0, 30) || null;
+}
+
+/** Instagram profile URL: accept only instagram.com or null. */
+export function cleanInstagramUrl(raw: unknown): string | null {
+  const t = cleanText(raw, 300);
+  if (!t) return null;
+  const lower = t.toLowerCase();
+  if (!lower.includes('instagram.com')) return null;
+  try {
+    const url = new URL(lower.startsWith('http') ? lower : `https://${lower}`);
+    if (url.hostname !== 'instagram.com' && !url.hostname.endsWith('.instagram.com')) return null;
+    return url.toString().toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 export function toNumberOrNull(raw: unknown): number | null {
   if (raw === null || raw === undefined || raw === '') return null;
   const n = Number(raw);
