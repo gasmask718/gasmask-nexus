@@ -66,6 +66,10 @@ they are the strongest dedupe keys.
 | seamstress, tailor, dressmaker, decorator | `decorator` |
 | florist, flowers | `florist` |
 | staff, event_staff, server, waiter, waitress, usher | `staff` |
+| model | `model` |
+| creator | `creator` |
+| photographer | `photographer` |
+| cameraman | `cameraman` |
 
 **Anything else is rejected** as `invalid` with
 `unrecognised role_type '<x>' — no valid category mapping`. Unknown roles are never filed
