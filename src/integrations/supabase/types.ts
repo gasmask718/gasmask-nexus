@@ -49263,6 +49263,30 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_integration_secrets: {
+        Row: {
+          active: boolean
+          created_at: string
+          name: string
+          secret_hash: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          name: string
+          secret_hash: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          name?: string
+          secret_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dd_inventory_adjustments: {
         Row: {
           actor_id: string | null
@@ -126000,6 +126024,24 @@ export type Database = {
           },
         ]
       }
+      tracefy_request_reps_temp: {
+        Row: {
+          request_lead_id: string
+          trace_mode: string
+          trace_request_key: string
+        }
+        Insert: {
+          request_lead_id: string
+          trace_mode: string
+          trace_request_key: string
+        }
+        Update: {
+          request_lead_id?: string
+          trace_mode?: string
+          trace_request_key?: string
+        }
+        Relationships: []
+      }
       training_badges: {
         Row: {
           created_at: string | null
@@ -160910,6 +160952,7 @@ export type Database = {
         Returns: number
       }
       dd_margin_warn: { Args: never; Returns: number }
+      dd_n8n_catalog_ingest: { Args: { p_payload: Json }; Returns: Json }
       dd_pending_clawback_cents: {
         Args: { p_wholesaler_id: string }
         Returns: number
