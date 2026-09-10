@@ -22,16 +22,18 @@ This generalises the Playboxxx work already shipped without discarding it and wi
 
 ## 2. Source of Truth
 
-### 2.1 Business list — OPEN ITEM
+### 2.1 Business list — RECONCILED 2026-09-10
 
-The **"Dynasty OS — State of the Empire"** document was referenced as the canonical business list but **was not received** with this task: it is not in the repo, not in `docs/`, and not in the uploads mount (checked 2026-09-10). Nothing in this document should be read as quoting it.
+The **"Dynasty OS — State of the Empire"** document (*snapshot compiled September 8, 2026*) was received on 2026-09-10 and is now the **canonical business list**. §4 has been reconciled against it line-for-line.
 
-The business list in §4 is therefore built from two grounded sources:
+Reconciliation rules applied:
 
-1. the ventures Ching named explicitly in the task brief (Step 3), and
-2. the hubs actually registered in the running OS (`src/components/Layout.tsx` hub groups, `src/config/dynastyBrands.ts`, `src/config/brands.ts`).
+- Every venture named in State of the Empire (SOE) appears in §4, including the ones with no recruiting lane — those are listed as `NOT APPLICABLE` rather than omitted.
+- Where SOE and an in-repo audit disagree on *status*, **SOE sets the venture's headline status** and the audit keeps the operational detail. Both are shown.
+- Recruiting-lane judgements were **not** changed by SOE unless SOE states a fact that contradicts them (noted in the Notes column).
+- Ventures in §4 that SOE does **not** list are retained and flagged `NOT IN SOE` — they are open questions for Ching (§16), not deletions.
 
-**Action required from Ching:** paste or attach the State of the Empire document so §4 can be reconciled line-for-line. Any venture present there and absent from §4 is a gap, not a decision. See §16.
+The secondary sources (hubs registered in the running OS — `src/components/Layout.tsx`, `src/config/dynastyBrands.ts`, `src/config/brands.ts`) remain in use for anything SOE does not describe.
 
 ### 2.2 Status/evidence sources (all in-repo, all read-only)
 
