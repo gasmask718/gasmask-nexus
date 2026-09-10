@@ -53,6 +53,13 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   const [uploading, setUploading] = useState(false);
   const [activeShot, setActiveShot] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Live rear-camera viewfinder. The file input is only a fallback for devices
+  // that genuinely have no camera (or where permission was refused) — it must
+  // never be the first thing a supplier sees.
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [liveCamera, setLiveCamera] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   const [progress, setProgress] = useState<string[]>([]);
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -157,6 +164,60 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast.error('That is not a photo'); return; }
     uploadShot(file, activeShot);
+  }
+
+  // ---- live viewfinder -----------------------------------------------------
+  function stopCamera() {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setLiveCamera(false);
+  }
+
+  useEffect(() => () => stopCamera(), []);
+
+  async function openCamera() {
+    setCameraError(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('This device has no camera we can open in the browser.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setLiveCamera(true);
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          void videoRef.current.play();
+        }
+      });
+    } catch (e: any) {
+      // Permission denied / camera busy. We say so out loud instead of silently
+      // dropping the supplier into a file picker.
+      setCameraError(
+        e?.name === 'NotAllowedError'
+          ? 'Camera access is blocked for this site. Allow the camera in your browser settings, then tap again.'
+          : e?.message || 'The camera could not be opened.',
+      );
+    }
+  }
+
+  function shoot() {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0);
+    const index = activeShot;
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      stopCamera();
+      uploadShot(new File([blob], `shot-${index}.jpg`, { type: 'image/jpeg' }), index);
+    }, 'image/jpeg', 0.9);
   }
 
   function declareNoLabel() {
@@ -411,24 +472,54 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
             <p className="text-sm text-muted-foreground">{shotSpec[activeShot].hint}</p>
           </div>
 
-          <button
-            type="button"
-            disabled={uploading}
-            onClick={() => fileRef.current?.click()}
-            className="w-full aspect-[4/5] rounded-2xl border-2 border-dashed border-primary/40 bg-muted/40 flex flex-col items-center justify-center gap-3 active:scale-[0.99] transition"
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="h-14 w-14 animate-spin text-primary" />
-                <span className="text-base font-medium">Saving the shot…</span>
-              </>
-            ) : (
-              <>
-                <Camera className="h-16 w-16 text-primary" />
-                <span className="text-lg font-semibold">Tap to shoot</span>
-              </>
-            )}
-          </button>
+          {liveCamera ? (
+            <div className="space-y-2">
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                className="w-full aspect-[4/5] object-cover rounded-2xl border-2 border-primary bg-black"
+              />
+              <div className="flex gap-2">
+                <Button size="lg" className="flex-1 h-14 text-base" onClick={shoot} disabled={uploading}>
+                  <Camera className="h-5 w-5 mr-2" /> Take the photo
+                </Button>
+                <Button variant="outline" size="lg" className="h-14" onClick={stopCamera}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={openCamera}
+              className="w-full aspect-[4/5] rounded-2xl border-2 border-dashed border-primary/40 bg-muted/40 flex flex-col items-center justify-center gap-3 active:scale-[0.99] transition"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="h-14 w-14 animate-spin text-primary" />
+                  <span className="text-base font-medium">Saving the shot…</span>
+                </>
+              ) : (
+                <>
+                  <Camera className="h-16 w-16 text-primary" />
+                  <span className="text-lg font-semibold">Tap to shoot</span>
+                  <span className="text-xs text-muted-foreground">Opens your camera</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {cameraError && (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/15 p-3 space-y-2">
+              <p className="text-sm text-destructive">{cameraError}</p>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => fileRef.current?.click()}>
+                Choose a photo from this device instead
+              </Button>
+            </div>
+          )}
+
 
           <div className="grid grid-cols-3 gap-2">
             {shotSpec.map((s, i) => (
@@ -488,7 +579,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
               size="lg"
               className="h-12 text-sm"
               disabled={!shots[activeShot] || uploading}
-              onClick={() => fileRef.current?.click()}
+              onClick={openCamera}
             >
               <RotateCcw className="h-4 w-4 mr-2" /> Retake
             </Button>
