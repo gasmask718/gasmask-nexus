@@ -511,15 +511,23 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
 
           {liveCamera ? (
             <div className="space-y-2">
-              <video
-                ref={videoRef}
-                playsInline
-                muted
-                className="w-full aspect-[4/5] object-cover rounded-2xl border-2 border-primary bg-black"
-              />
+              <div className="relative">
+                <video
+                  ref={videoRef}
+                  playsInline
+                  muted
+                  className="w-full aspect-[4/5] object-cover rounded-2xl border-2 border-primary bg-black"
+                />
+                {!cameraReady && (
+                  <div className="absolute inset-0 rounded-2xl bg-black/70 flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary-foreground" />
+                    <span className="text-sm text-primary-foreground">Starting the camera…</span>
+                  </div>
+                )}
+              </div>
               <div className="flex gap-2">
-                <Button size="lg" className="flex-1 h-14 text-base" onClick={shoot} disabled={uploading}>
-                  <Camera className="h-5 w-5 mr-2" /> Take the photo
+                <Button size="lg" className="flex-1 h-14 text-base" onClick={shoot} disabled={uploading || !cameraReady}>
+                  <Camera className="h-5 w-5 mr-2" /> {cameraReady ? 'Take the photo' : 'Camera warming up…'}
                 </Button>
                 <Button variant="outline" size="lg" className="h-14" onClick={stopCamera}>
                   Cancel
