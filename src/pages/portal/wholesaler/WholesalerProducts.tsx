@@ -115,12 +115,11 @@ export default function WholesalerProducts() {
             <span className="dd-num">{products.length}</span> listed with Dynasty Direct
           </p>
         </div>
+        {/* PRIMARY add-product action is camera-first. The typed form stays reachable
+            from inside the camera screen as a secondary path, never as the default. */}
         <div className="flex gap-2">
           <Button asChild style={{ background: "hsl(var(--dd-gold))", color: "hsl(var(--dd-navy-deep))" }}>
-            <Link to="/portal/wholesaler/catalog/onboard"><Camera className="h-4 w-4 mr-2" />Quick Add by Photo</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to="/portal/wholesaler/catalog/onboard?mode=form"><Plus className="h-4 w-4 mr-2" />Add product</Link>
+            <Link to="/portal/wholesaler/catalog/onboard"><Camera className="h-4 w-4 mr-2" />Add product</Link>
           </Button>
         </div>
       </div>

@@ -179,7 +179,7 @@ export default function WholesalerDashboard() {
             </header>
             <div className="py-1">
               {[
-                { to: "/portal/wholesaler/catalog/onboard?mode=form", label: "Add a product by form", icon: Plus },
+                { to: "/portal/wholesaler/catalog/onboard", label: "Add a product", icon: Plus },
                 { to: "/portal/wholesaler/orders?status=pending", label: "Process pending orders", icon: Clock },
                 { to: "/portal/wholesaler/fulfillment", label: "Print shipping labels", icon: Truck },
                 { to: "/portal/wholesaler/inventory", label: "Inventory workflow", icon: Warehouse },
