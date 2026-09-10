@@ -130,7 +130,14 @@ It exists as a safety net only.
 | `latitude`, `longitude` | `latitude`, `longitude` |
 | `external_id` | `external_place_id` |
 | `source` | `external_source` |
+| `instagram_username` / `instagram_handle` / `ig_username` | `instagram_username` (leading `@` stripped, alnum/underscore/period only) |
+| `instagram_url` / `instagram` / `ig_url` | `instagram_url` (instagram.com hosts only; derived from the username when absent) |
+| `instagram_bio` / `bio` | `instagram_bio` (max 1000 chars) |
+| `instagram_followers` / `followers` | `instagram_followers` (integer, null when non-numeric) |
 | — | `source` = `'playboxxx_make_ingest'`, `status` = table default `new` |
+
+All four Instagram columns are nullable, so Overpass staff payloads that omit them are
+unaffected. A non-Instagram URL is stored as null rather than saved to another field.
 
 ## Responses
 
