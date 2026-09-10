@@ -472,24 +472,54 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
             <p className="text-sm text-muted-foreground">{shotSpec[activeShot].hint}</p>
           </div>
 
-          <button
-            type="button"
-            disabled={uploading}
-            onClick={() => fileRef.current?.click()}
-            className="w-full aspect-[4/5] rounded-2xl border-2 border-dashed border-primary/40 bg-muted/40 flex flex-col items-center justify-center gap-3 active:scale-[0.99] transition"
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="h-14 w-14 animate-spin text-primary" />
-                <span className="text-base font-medium">Saving the shot…</span>
-              </>
-            ) : (
-              <>
-                <Camera className="h-16 w-16 text-primary" />
-                <span className="text-lg font-semibold">Tap to shoot</span>
-              </>
-            )}
-          </button>
+          {liveCamera ? (
+            <div className="space-y-2">
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                className="w-full aspect-[4/5] object-cover rounded-2xl border-2 border-primary bg-black"
+              />
+              <div className="flex gap-2">
+                <Button size="lg" className="flex-1 h-14 text-base" onClick={shoot} disabled={uploading}>
+                  <Camera className="h-5 w-5 mr-2" /> Take the photo
+                </Button>
+                <Button variant="outline" size="lg" className="h-14" onClick={stopCamera}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={openCamera}
+              className="w-full aspect-[4/5] rounded-2xl border-2 border-dashed border-primary/40 bg-muted/40 flex flex-col items-center justify-center gap-3 active:scale-[0.99] transition"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="h-14 w-14 animate-spin text-primary" />
+                  <span className="text-base font-medium">Saving the shot…</span>
+                </>
+              ) : (
+                <>
+                  <Camera className="h-16 w-16 text-primary" />
+                  <span className="text-lg font-semibold">Tap to shoot</span>
+                  <span className="text-xs text-muted-foreground">Opens your camera</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {cameraError && (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/15 p-3 space-y-2">
+              <p className="text-sm text-destructive">{cameraError}</p>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => fileRef.current?.click()}>
+                Choose a photo from this device instead
+              </Button>
+            </div>
+          )}
+
 
           <div className="grid grid-cols-3 gap-2">
             {shotSpec.map((s, i) => (
