@@ -22,16 +22,18 @@ This generalises the Playboxxx work already shipped without discarding it and wi
 
 ## 2. Source of Truth
 
-### 2.1 Business list — OPEN ITEM
+### 2.1 Business list — RECONCILED 2026-09-10
 
-The **"Dynasty OS — State of the Empire"** document was referenced as the canonical business list but **was not received** with this task: it is not in the repo, not in `docs/`, and not in the uploads mount (checked 2026-09-10). Nothing in this document should be read as quoting it.
+The **"Dynasty OS — State of the Empire"** document (*snapshot compiled September 8, 2026*) was received on 2026-09-10 and is now the **canonical business list**. §4 has been reconciled against it line-for-line.
 
-The business list in §4 is therefore built from two grounded sources:
+Reconciliation rules applied:
 
-1. the ventures Ching named explicitly in the task brief (Step 3), and
-2. the hubs actually registered in the running OS (`src/components/Layout.tsx` hub groups, `src/config/dynastyBrands.ts`, `src/config/brands.ts`).
+- Every venture named in State of the Empire (SOE) appears in §4, including the ones with no recruiting lane — those are listed as `NOT APPLICABLE` rather than omitted.
+- Where SOE and an in-repo audit disagree on *status*, **SOE sets the venture's headline status** and the audit keeps the operational detail. Both are shown.
+- Recruiting-lane judgements were **not** changed by SOE unless SOE states a fact that contradicts them (noted in the Notes column).
+- Ventures in §4 that SOE does **not** list are retained and flagged `NOT IN SOE` — they are open questions for Ching (§16), not deletions.
 
-**Action required from Ching:** paste or attach the State of the Empire document so §4 can be reconciled line-for-line. Any venture present there and absent from §4 is a gap, not a decision. See §16.
+The secondary sources (hubs registered in the running OS — `src/components/Layout.tsx`, `src/config/dynastyBrands.ts`, `src/config/brands.ts`) remain in use for anything SOE does not describe.
 
 ### 2.2 Status/evidence sources (all in-repo, all read-only)
 
@@ -73,32 +75,76 @@ Outreach is **OFF** everywhere unless a row says otherwise — `outreach_switche
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | **GasMask / Grabba R Us / Hot Mama / Hotscolatti** (ONE operating company, 4 brands) | Operating; 2,145-store prospect universe, 438 active | Field Ambassador · Ambassador (store acquisition) | NYC-metro field reps, bikers | Store visits, orders, verification | Manual/roster; store book, not social scraping | ACTIVE (roster) / PREP ONLY (sourcing) | OFF | 79 ambassadors, 78 active, but **0 route stops ever completed**, 76 records login-required after shared-login unlink. Fix logins before adding people. |
 | 2 | **GasMask / Grabba — local brand content** | No program defined in any doc | Creator (local/lifestyle) | Brooklyn/NYC lifestyle + smoke-culture creators | Brand content, UGC | Apify IG/TikTok by geo + hashtag | PREP ONLY | OFF | Category/compliance review needed (tobacco-adjacent brands, platform ad rules). No campaign, no budget, no rate documented. |
-| 3 | **GasMask Clothing** (separate apparel lane) | Product lane; no recruiting doc found | Creator (streetwear/UGC) · Affiliate | Streetwear/fashion creators, micro-UGC | Launch content, affiliate sales | Apify IG/TikTok fashion + geo | PREP ONLY | OFF | Affiliate infrastructure exists but is unwired (0 clicks, 0 conversions, 0 tracking links). Sourcing a pool is safe; paying anyone is not yet possible. |
+| 3 | **GasMask Clothing** (separate apparel lane) | SOE: 🟢 LIVE / EARNING — launched, fulfilling orders, small real customer base; no recruiting doc found | Creator (streetwear/UGC) · Affiliate | Streetwear/fashion creators, micro-UGC | Launch content, affiliate sales | Apify IG/TikTok fashion + geo | PREP ONLY | OFF | Affiliate infrastructure exists but is unwired (0 clicks, 0 conversions, 0 tracking links). Sourcing a pool is safe; paying anyone is not yet possible. |
 | 4 | **GasMask Field Verification Crew** | `field-verification` hub live | Field Ambassador | Local verifiers/bikers | Photo-proof store checks | Local/manual, referrals | ACTIVE | OFF | Operational field role. **Never merge into the online Creator Army lists.** |
-| 5 | **Playboxxx / NightWorld** | Ingest webhook live and proven | Creator (adult) · Staff/Operator | Adult & nightlife creators; event staff (beauty, chef, cleaner, decorator, florist, staff) | Platform supply | **Apify → Make → `playboxxx-recruiting-ingest`** (Instagram + Overpass) | READY TO SOURCE | OFF | The one working pipeline. Roles accepted: model, creator, photographer, cameraman, videographer + staff lanes. IG fields + `search_term` provenance supported. **Adult sourcing stays segmented — never merged into general-market campaigns.** Carrier/platform restrictions apply to any future SMS/DM. |
-| 6 | **Unforgettable Times (UT)** | Operating; 5 `ut_campaigns` marked active with **0 leads behind them** | Ambassador · Creator (events) · Partner (suppliers) | Party/event creators, venue partners, event staff | Bookings, supply | `business_leads` (297k UT rows), `ut-lead-scraper`, Apify events/venues | READY TO SOURCE (pool only) | OFF | **Known defect: ambassador commission/accumulated-totals is wrong** (`docs/architecture/known-issues-accumulated-ambassador-totals.md`). Do not represent payment as operational. |
-| 7 | **TopTier Experience** | Hubs live; dispatch path has known operational blockers | Partner / Operator | Limo, exotic car, yacht, heli, photographer partners | Fulfilment capacity | `v_toptier_prospects` (per-business view of `business_leads`) | PREP ONLY | OFF | Do not mass-recruit into a dispatch path with unresolved blockers. Supply pool building is acceptable; onboarding promises are not. |
+| 5 | **Playboxxx / NightWorld** | SOE: ⚪ EARLY / CONCEPT (adult creator marketplace, Mux streaming built, A2P deferred — carrier restrictions on adult content). Recruiting ingest webhook live and proven | Creator (adult) · Staff/Operator | Adult & nightlife creators; event staff (beauty, chef, cleaner, decorator, florist, staff) | Platform supply | **Apify → Make → `playboxxx-recruiting-ingest`** (Instagram + Overpass) | READY TO SOURCE | OFF | The one working pipeline. Roles accepted: model, creator, photographer, cameraman, videographer + staff lanes. IG fields + `search_term` provenance supported. **Adult sourcing stays segmented — never merged into general-market campaigns.** Carrier/platform restrictions apply to any future SMS/DM. |
+| 6 | **Unforgettable Times (UT)** | SOE: 🟡 BUILT, NOT WORKING — **0 of 5 core journeys work end-to-end, 0 bookings, 0 payouts ever**; no vendor has completed onboarding. 5 `ut_campaigns` marked active with **0 leads behind them** | Ambassador · Creator (events) · Partner (suppliers) | Party/event creators, venue partners, event staff | Bookings, supply | `business_leads` (297k UT rows), `ut-lead-scraper`, Apify events/venues | READY TO SOURCE (pool only) | OFF | **Known defect: ambassador commission/accumulated-totals is wrong** (`docs/architecture/known-issues-accumulated-ambassador-totals.md`). Do not represent payment as operational. |
+| 7 | **TopTier Experience** | SOE: 🟡 BUILT, NOT WORKING — public site live but dispatch cascade **hard-fails** (queries `partners`, `tt_service_partners`, `vehicles`, none resolve) | Partner / Operator | Limo, exotic car, yacht, heli, photographer partners | Fulfilment capacity | `v_toptier_prospects` (per-business view of `business_leads`) | PREP ONLY | OFF | Do not mass-recruit into a dispatch path with unresolved blockers. Supply pool building is acceptable; onboarding promises are not. |
 | 8 | **Dynasty Direct** | Storefront + wholesaler portal live; **checkout/money-path defects documented** (`docs/dynasty-direct/…`, DD audit 2026-08-24) | Affiliate · Creator (product UGC) · Reseller | Product reviewers, resellers | Sales | Apify IG/TikTok product niches | PREP ONLY | OFF | Conversion is blocked — sourcing a pool is fine, recruiting sellers into a broken checkout is not. |
 | 9 | **Dynasty Funding Hub** | Hub live; documented as ready to route ambassadors in | **Ambassador (referral)** | Referral partners, credit/biz-finance educators | Funded applications | Manual + targeted creator search | READY TO SOURCE | OFF until owner approves | Highest-priority ambassador lane **if** Ching confirms the referral terms. **No commission rate is modelled anywhere** — none is invented here. |
-| 10 | **Dynasty Credit Shield** | No referral/affiliate program found in docs | None yet (evaluate) | — | — | — | PREP ONLY | OFF | Do **not** auto-activate influencer outreach. Requires an owner decision that a referral lane exists at all. |
+| 10 | **Dynasty Credit Shield** | SOE: 🟢 LIVE / EARNING — active client casework, disputes in motion. No referral/affiliate program found in docs | None yet (evaluate) | — | — | — | PREP ONLY | OFF | Do **not** auto-activate influencer outreach. Requires an owner decision that a referral lane exists at all. |
 | 11 | **Dynasty Recovery Group / Surplus Funds** | 50-state scope + completion map exist; licensing-gated | Affiliate / lead referral (separate from casework) | Lead referrers only | Case leads | Manual, state-by-state | BLOCKED (regulated) | OFF | Referral lane must be evaluated **separately** from regulated casework. No outreach in licensing-gated states. |
-| 12 | **Highway** | Hub + hub map built; operator/legal ingestion incomplete | Partner / Operator (later) | Carriers/operators | Supply | — | BLOCKED | OFF | No uncontrolled creator/ambassador outreach while legal + operator ingestion is incomplete. |
+| 12 | **Highway** (standalone cannabis delivery app) | SOE: 🟠 MID-BUILD — brand + architecture locked, ingestion of licensed operators underway, stalled on credits. Hub + hub map built | Partner / Operator (later) | Carriers/operators | Supply | — | BLOCKED | OFF | No uncontrolled creator/ambassador outreach while legal + operator ingestion is incomplete. |
 | 13 | **I Clean We Clean (ICW)** | ~45% complete; 0 workers, 0 jobs, licensing gate inert, intake is a stub | Partner / Operator (cleaners) · Local Creator (later) | Local cleaners/handymen; service-provider businesses | Worker supply | `icw_sourced_leads` (47), `icw_candidate_leads` (7), `/apply/cleaner`, care.com/craigslist | READY TO SOURCE (workers only) | OFF | 7 applicants are stranded with no review UI. Licensing gate columns are NULL — nothing can be blocked today. Attorney review outstanding. |
-| 14 | **Brandaro Digital** | VA/receptionist + site-builder operations live | Affiliate / referral partner (only lane with any doc support) | Referral partners, B2B setters | Client acquisition | Manual/B2B, not creator scraping | PREP ONLY | OFF | B2B creators and appointment setters are **not** documented — listed as candidates for an owner decision, not as an active lane. |
+| 14 | **Brandaro Digital (AI Receptionist SaaS)** | SOE: 🔵 BUILT, AWAITING LAUNCH — product ($497 setup + $197/mo) built on Retell + Twilio, **zero customers, zero calls**; blocked on A2P 10DLC + first customer. Named the near-term cash engine (Track A). VA/receptionist + site-builder operations live | Affiliate / referral partner (only lane with any doc support) | Referral partners, B2B setters | Client acquisition | Manual/B2B, not creator scraping | PREP ONLY | OFF | B2B creators and appointment setters are **not** documented — listed as candidates for an owner decision, not as an active lane. |
 | 15 | **Dynasty Clipper Nation** | Operator console ~75% built; 2–4 clippers, 8 campaigns, 0 submissions, 0 payouts | **Clipper** | Short-form editors/reposters | Volume views for Dynasty brands | Apify TikTok/IG/YT clip accounts | READY TO SOURCE | OFF | Payouts: Wise/PayPal still on **sandbox** URLs; no application-intake table; routes not admin-gated. Build the pool, do not promise payment. |
-| 16 | **UBEN (non-profit)** | Hub + ambassador/affiliate tier docs exist (Bronze→Platinum, override commissions) | Ambassador · Affiliate | Community ambassadors | Impact + fundraising | Manual/community | PREP ONLY | OFF | Retain existing tier documentation as-is; it is the only tiered commission structure already written down. |
-| 17 | **Dynasty Earn** | Hub exists (`dynasty-earn`) | Affiliate (UNVERIFIED) | — | — | — | PREP ONLY | OFF | Program definition not evidenced in docs. Owner decision. |
-| 18 | **Goddess In You** | Hub exists; business terms with Sara not confirmed finalised | None yet | — | — | — | BLOCKED | OFF | Do not activate recruiting that assumes finalised terms. |
-| 19 | **Services.io** | Hub exists | Partner / Operator (service providers) | Local service providers | Marketplace supply | Directory/Apify local business | PREP ONLY | OFF | **Marketplace provider recruiting is not creator marketing** — keep the lists and templates separate. |
+| 16 | **UBEN (non-profit)** | SOE: ⚪ EARLY / CONCEPT — nonprofit shell with ambassador tracking built, grant-strategy stage. Hub + ambassador/affiliate tier docs exist (Bronze→Platinum, override commissions) | Ambassador · Affiliate | Community ambassadors | Impact + fundraising | Manual/community | PREP ONLY | OFF | Retain existing tier documentation as-is; it is the only tiered commission structure already written down. |
+| 17 | **Dynasty Earn** | **NOT IN SOE** — hub exists in the OS (`dynasty-earn`) but the canonical list does not name it | Affiliate (UNVERIFIED) | — | — | — | PREP ONLY | OFF | Program definition not evidenced in docs and not confirmed by SOE. Owner decision — is this a live venture or a dead hub? |
+| 18 | **Goddess In You** | SOE: 🟠 MID-BUILD — luxury mobile beauty JV with Sara, forked from TopTier codebase; 60/40 split, vesting and non-compete **scoped but not yet discussed with her** | None yet | — | — | — | BLOCKED | OFF | SOE confirms terms are not agreed. Do not activate recruiting that assumes finalised terms. |
+| 19 | **Services.io** | SOE: 🟠 MID-BUILD — universal photo-gated escrow marketplace; schema/Stripe Connect/photo capture in build before a single-metro soft launch | Partner / Operator (service providers) | Local service providers | Marketplace supply | Directory/Apify local business | PREP ONLY | OFF | **Marketplace provider recruiting is not creator marketing** — keep the lists and templates separate. |
 | 20 | **Solar OS** | Hub + partner routing docs exist | Partner / Operator (installers) | Installers, closers | Fulfilment | Partner network | PREP ONLY | OFF | Partner routing documented; no creator lane defined. |
-| 21 | **Real Estate OS / Real Estate HQ** | Hubs exist | None yet | — | — | — | PREP ONLY | OFF | No recruiting program documented. |
-| 22 | **Grant OS / UBEN Grant System** | Hubs exist, QA docs present | None yet | — | — | — | NOT APPLICABLE (for now) | OFF | Casework, not recruiting. |
-| 23 | **SBO AI Engine** | Hub exists | None | — | — | — | NOT APPLICABLE | OFF | Internal product. |
+| 21 | **Real Estate OS / Real Estate HQ** (SOE: *Real Estate Acquisition*) | SOE: ⚪ EARLY / CONCEPT — ingestion spec delivered, **all 51 jurisdictions default to BLOCKED pending verification** | None yet | — | — | — | PREP ONLY | OFF | No recruiting program documented. Jurisdiction block is a hard gate on any lead work. |
+| 22 | **Grant OS / UBEN Grant System** | **NOT IN SOE** as its own venture (SOE folds grants into UBEN's grant-strategy stage). Hubs exist, QA docs present | None yet | — | — | — | NOT APPLICABLE (for now) | OFF | Casework, not recruiting. |
+| 23 | **SBO AI Engine** (SOE: *Sports Betting AI OS / ChingWorld*) | SOE: ⚪ EARLY / CONCEPT — three-brain model backtested on 600+ picks, Twilio SMS delivery built, not revisited recently | None | — | — | — | NOT APPLICABLE | OFF | Internal product. |
 | 24 | **Dynasty Connect (AI calling / comms)** | Shared infrastructure | None | — | — | — | NOT APPLICABLE | n/a | Infrastructure that recruiting *uses*; it is not a recruiting vertical. Any dialing of recruits still passes DNC/opt-out + calling-window gates. |
 | 25 | **Dynasty OS / Empire HUD / Stripe Setup / Product Sourcing & Automation** | Infrastructure / internal automation | None | — | — | — | NOT APPLICABLE | n/a | Product sourcing automation is an internal function, not a creator vertical. |
-| 26 | **Dynasty Media Network (videographers)** | Tables only (`media_creators` 0, applications 0), no intake, no UI | Creator (videographer) | Videographers | Content production | — | PREP ONLY | OFF | Model exists, nothing else. |
+| 26 | **Dynasty Media Network (videographers)** | Tables only (`media_creators` 0, applications 0), no intake, no UI. SOE names the adjacent concept **ChingWorld Music / Clipper Nation / CrowdSignal** (music label/distro) as ⚪ paper-only | Creator (videographer) | Videographers | Content production | — | PREP ONLY | OFF | Model exists, nothing else. |
+| 27 | **Dynasty Partners** (business licensing program) | SOE: 🔵 BUILT, AWAITING LAUNCH — three tiers locked (Foundation/Equity/Sovereign), 16-table schema deployed; blocked on PostgREST schema exposure | **Ambassador / licensee referral (UNVERIFIED)** | Prospective licensees, referrers | Licensing sales | Manual / B2B | PREP ONLY | OFF | **Added by SOE reconciliation** — was missing from the pre-reconciliation list. Tiers are a *licensing* structure, not a recruiting commission structure. Owner decision needed on whether a referral lane exists. |
+| 28 | **Dynasty Trader** | SOE: ⚪ EARLY / CONCEPT — 5-strategy pack designed, forex + Polymarket copying wanted under a 90-day paper-trading gate; audit not run | None | — | — | — | NOT APPLICABLE | OFF | **Added by SOE.** No recruiting lane. Do not source "trading creators" — regulated-claims risk with no product live. |
+| 29 | **Music Label / Distro — ChingWorld Music · CrowdSignal** | SOE: ⚪ EARLY / CONCEPT — two-sided model (rails vs ownership) on paper, **no build** | Creator (artists) — future | Artists, distro clients | — | — | BLOCKED (no build) | OFF | **Added by SOE.** Distinct from Dynasty Clipper Nation (row 15), which is a real operator console. Do not merge the two lists. |
+| 30 | **GasMask Munchies Box** | SOE: ⚪ EARLY / CONCEPT — corner-store food collab, menu ideas locked, deal structure open | None yet | — | — | — | NOT APPLICABLE | OFF | **Added by SOE.** Would sit under the GasMask family if it becomes a content lane. |
+| 31 | **Packaging Machinery Sourcing** | SOE: ⚪ EARLY / CONCEPT — sourcing a China-made tube-fill/shrink/case line; no supplier locked | None (procurement) | — | — | — | NOT APPLICABLE | n/a | **Added by SOE.** Procurement, not recruiting. |
+| 32 | **Partner Kit Fulfillment** | SOE: ⚪ EARLY / CONCEPT — cross-business onboarding-kit tiering and fees decided, no pipeline built | None (fulfilment for other lanes) | — | — | — | NOT APPLICABLE | n/a | **Added by SOE.** Relevant *later*: this is how an approved ambassador/creator would receive a kit. No pipeline today. |
+| 33 | **Lead Automation Engine** | SOE: 🟠 MID-BUILD — cross-company lead ingestion brief at 50-state scope, consolidated dev doc + compliance spine delivered | None (infrastructure) | — | — | — | NOT APPLICABLE | n/a | **Added by SOE.** This is the programme Gerson's work feeds; treat §7–§10 of this document as its recruiting-side spec. |
+| 34 | **GasMask invoice/AR integrity · GasMask Field Verification** | SOE: 🟠 MID-BUILD — AR reconstruction ($26K+ phantom AR corrected); Verification Crew role built but **not yet verified working live** | Field Ambassador (row 4) | — | — | — | see row 4 | OFF | **Added by SOE.** SOE corrects row 4: the verification crew is built but unconfirmed in the live system — do not treat it as proven. |
 
-**Counted:** 26 rows covering the ventures named in the brief plus every recruiting-relevant hub registered in the OS.
+**Counted:** 34 rows. Rows 1–26 are the pre-reconciliation list (statuses corrected against SOE); rows 27–34 were added by the SOE reconciliation.
+
+### 4.1 SOE reconciliation ledger
+
+| SOE venture | Result |
+|---|---|
+| Grabba Route (GasMask/Grabba R Us/Hot Mama/Hotscolatti) | rows 1, 2 — matched, one company / four brands confirmed |
+| GasMask Clothing | row 3 — status corrected to LIVE / EARNING |
+| Dynasty Credit Shield | row 10 — status corrected to LIVE / EARNING (lane still undefined) |
+| Dynasty Direct | row 8 — matched, checkout defect confirmed (`store_order_items` empty) |
+| Dynasty Connect AI Calling | row 24 — matched, infrastructure |
+| Unforgettable Times | row 6 — status corrected to BUILT/NOT WORKING |
+| TopTier Experience | row 7 — status corrected, hard-fail confirmed |
+| Brandaro Digital | row 14 — status corrected to BUILT/AWAITING LAUNCH |
+| Dynasty Partners | **row 27 — ADDED** |
+| Dynasty Funding Hub | row 9 — matched ("ready to route ambassadors in" confirmed by SOE) |
+| Dynasty Recovery Group | row 11 — matched, PI-licensing blocker confirmed |
+| Highway | row 12 — status corrected to MID-BUILD |
+| I Clean We Clean | row 13 — matched |
+| Goddess In You | row 18 — status corrected to MID-BUILD; terms confirmed *not* discussed with Sara |
+| Services.io | row 19 — status corrected to MID-BUILD |
+| GasMask invoice/AR · Field Verification | **row 34 — ADDED** (qualifies row 4) |
+| Lead Automation Engine | **row 33 — ADDED** |
+| Product Sourcing / Automation Engine | row 25 — matched, internal |
+| Dynasty Trader | **row 28 — ADDED** |
+| Sports Betting AI OS (ChingWorld) | row 23 — matched to SBO AI Engine |
+| Music Label / Distro | **row 29 — ADDED** (Clipper Nation kept separate as row 15) |
+| GasMask Munchies Box | **row 30 — ADDED** |
+| Packaging Machinery Sourcing | **row 31 — ADDED** |
+| Real Estate Acquisition | row 21 — status corrected; 51 jurisdictions BLOCKED |
+| Playboxxx / NightWorld | row 5 — status corrected to EARLY/CONCEPT at venture level; ingest pipeline still the one working lane |
+| UBEN | row 16 — status corrected to EARLY/CONCEPT |
+| Partner Kit Fulfillment | **row 32 — ADDED** |
+| Dynasty OS core · Empire HUD · Stripe Setup | row 25 — matched, infrastructure |
+| **In §4 but NOT in SOE** | row 17 Dynasty Earn · row 22 Grant OS — retained and flagged; see §16 |
+
+Solar OS (row 20) and Dynasty Media Network (row 26) are also absent from SOE as named ventures; both are retained because they exist as hubs in the running OS. Flagged in §16.
 
 ---
 
@@ -122,7 +168,8 @@ Outreach is **OFF** everywhere unless a row says otherwise — `outreach_switche
 
 ### PRIORITY 3 — HOLD
 
-11. Dynasty Credit Shield (no defined lane) · Dynasty Recovery Group / Surplus (licensing-gated) · Highway (legal + operator ingestion incomplete) · Goddess In You (terms unconfirmed) · Real Estate · Grant OS · Dynasty Earn (undefined) · Brandaro creator lanes (undocumented) · Dynasty Media Network (no intake).
+11. Dynasty Credit Shield (no defined lane) · Dynasty Recovery Group / Surplus (licensing-gated) · Highway (legal + operator ingestion incomplete) · Goddess In You (terms not yet discussed with Sara) · Real Estate (all 51 jurisdictions BLOCKED) · Grant OS · Dynasty Earn (undefined) · Brandaro creator lanes (undocumented) · Dynasty Media Network (no intake).
+12. Added by SOE reconciliation, all HOLD: Dynasty Partners (lane unconfirmed) · Dynasty Trader (no product, regulated claims) · Music Label / CrowdSignal (no build) · GasMask Munchies Box · Packaging Machinery Sourcing · Partner Kit Fulfillment (no pipeline). None of these are sourcing targets today.
 
 ---
 
@@ -288,7 +335,7 @@ Gerson's current mandate is **SEARCH → INGEST → QUALIFY** only. Flipping any
 
 ## 15. Gerson Execution Checklist
 
-- [ ] Use the State of the Empire document as the business list — **request it from Ching first** (§2.1); this document's §4 is provisional until reconciled.
+- [ ] Use §4 as the business list — it is now reconciled line-for-line against the State of the Empire snapshot of 2026-09-08 (§2.1, ledger in §4.1). Work only rows marked `READY TO SOURCE`.
 - [ ] Preserve the working Playboxxx pipeline exactly as-is; extend, never replace.
 - [ ] Generalise the reusable parts of Apify → Make (search params, normaliser, batch/response contract) instead of cloning Playboxxx per business.
 - [ ] Set `intended_business` and `intended_role` on every candidate — no defaults, no blanks.
@@ -303,7 +350,8 @@ Gerson's current mandate is **SEARCH → INGEST → QUALIFY** only. Flipping any
 
 ## 16. Open Decisions / Blockers — for Ching
 
-1. **State of the Empire document not received.** Required to finalise the business list. Everything in §4 is provisional.
+1. ~~State of the Empire document not received.~~ **CLOSED 2026-09-10** — received and reconciled (§2.1, §4.1). Replacement open item: **four hubs exist in the OS but are not named in SOE** — Dynasty Earn (row 17), Grant OS (row 22), Solar OS (row 20), Dynasty Media Network (row 26). Are these live ventures, sub-parts of something else, or dead hubs? Nothing was deleted pending Ching's answer.
+1a. **Dynasty Partners referral lane** (row 27, added by reconciliation) — the three licensing tiers are a customer-pricing structure, not a recruiter commission structure. Does a referral/ambassador lane exist for it?
 2. **Dynasty Funding Hub referral lane** — is it approved, and on what terms? No commission rate exists anywhere in the system; none was invented.
 3. **Dynasty Credit Shield** — does a referral/affiliate lane exist at all? Default answer used here: no.
 4. **Dynasty Earn** — program definition unverified.
