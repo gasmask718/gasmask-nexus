@@ -579,7 +579,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
               size="lg"
               className="h-12 text-sm"
               disabled={!shots[activeShot] || uploading}
-              onClick={() => fileRef.current?.click()}
+              onClick={openCamera}
             >
               <RotateCcw className="h-4 w-4 mr-2" /> Retake
             </Button>
