@@ -182,6 +182,7 @@ export type NormalizedLead = {
   instagram_url: string | null;
   instagram_bio: string | null;
   instagram_followers: number | null;
+  search_term: string | null;
 };
 
 export type NormalizeResult =
@@ -249,6 +250,7 @@ export function normalizeLead(raw: RawLead, defaultSource: string | null): Norma
       instagram_url: instagramUrl ?? (instagramUsername ? `https://instagram.com/${instagramUsername}` : null),
       instagram_bio: cleanText(raw.instagram_bio ?? raw.bio, 1000),
       instagram_followers: toNumberOrNull(raw.instagram_followers ?? raw.followers),
+      search_term: cleanText(raw.search_term ?? raw.search ?? raw.query, 200),
     },
   };
 }
