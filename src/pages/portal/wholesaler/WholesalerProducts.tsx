@@ -7,7 +7,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Package, Plus, Search, MoreVertical, Edit, Trash2,
+  Package, Search, MoreVertical, Edit, Trash2,
   AlertTriangle, Eye, Camera, Check, X, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
