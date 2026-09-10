@@ -45,6 +45,28 @@ No Supabase JWT, anon key or service-role key is given to Make.com.
 }
 ```
 
+Social/creator lead (Instagram lane):
+
+```json
+{
+  "source": "instagram",
+  "run_id": "make-2026-09-10-01",
+  "leads": [
+    {
+      "external_id": "ig/1789456123",
+      "name": "Jasmine Rivera",
+      "role_type": "creator",
+      "city": "Miami",
+      "state": "FL",
+      "instagram_username": "@jasmine.rivera",
+      "instagram_url": "https://instagram.com/jasmine.rivera",
+      "instagram_bio": "Miami based content creator | bookings via DM",
+      "instagram_followers": 48200
+    }
+  ]
+}
+```
+
 A single lead object, or `{ "lead": {...} }`, is also accepted. Max 500 leads per request.
 
 ### Required fields
@@ -70,6 +92,7 @@ they are the strongest dedupe keys.
 | creator | `creator` |
 | photographer | `photographer` |
 | cameraman | `cameraman` |
+| videographer | `videographer` |
 
 **Anything else is rejected** as `invalid` with
 `unrecognised role_type '<x>' — no valid category mapping`. Unknown roles are never filed
@@ -107,7 +130,14 @@ It exists as a safety net only.
 | `latitude`, `longitude` | `latitude`, `longitude` |
 | `external_id` | `external_place_id` |
 | `source` | `external_source` |
+| `instagram_username` / `instagram_handle` / `ig_username` | `instagram_username` (leading `@` stripped, alnum/underscore/period only) |
+| `instagram_url` / `instagram` / `ig_url` | `instagram_url` (instagram.com hosts only; derived from the username when absent) |
+| `instagram_bio` / `bio` | `instagram_bio` (max 1000 chars) |
+| `instagram_followers` / `followers` | `instagram_followers` (integer, null when non-numeric) |
 | — | `source` = `'playboxxx_make_ingest'`, `status` = table default `new` |
+
+All four Instagram columns are nullable, so Overpass staff payloads that omit them are
+unaffected. A non-Instagram URL is stored as null rather than saved to another field.
 
 ## Responses
 
