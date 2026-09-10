@@ -45,6 +45,28 @@ No Supabase JWT, anon key or service-role key is given to Make.com.
 }
 ```
 
+Social/creator lead (Instagram lane):
+
+```json
+{
+  "source": "instagram",
+  "run_id": "make-2026-09-10-01",
+  "leads": [
+    {
+      "external_id": "ig/1789456123",
+      "name": "Jasmine Rivera",
+      "role_type": "creator",
+      "city": "Miami",
+      "state": "FL",
+      "instagram_username": "@jasmine.rivera",
+      "instagram_url": "https://instagram.com/jasmine.rivera",
+      "instagram_bio": "Miami based content creator | bookings via DM",
+      "instagram_followers": 48200
+    }
+  ]
+}
+```
+
 A single lead object, or `{ "lead": {...} }`, is also accepted. Max 500 leads per request.
 
 ### Required fields
@@ -70,6 +92,7 @@ they are the strongest dedupe keys.
 | creator | `creator` |
 | photographer | `photographer` |
 | cameraman | `cameraman` |
+| videographer | `videographer` |
 
 **Anything else is rejected** as `invalid` with
 `unrecognised role_type '<x>' — no valid category mapping`. Unknown roles are never filed
