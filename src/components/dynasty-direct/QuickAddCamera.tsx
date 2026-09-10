@@ -59,6 +59,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [liveCamera, setLiveCamera] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   const [progress, setProgress] = useState<string[]>([]);
