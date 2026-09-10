@@ -168,7 +168,8 @@ Solar OS (row 20) and Dynasty Media Network (row 26) are also absent from SOE as
 
 ### PRIORITY 3 — HOLD
 
-11. Dynasty Credit Shield (no defined lane) · Dynasty Recovery Group / Surplus (licensing-gated) · Highway (legal + operator ingestion incomplete) · Goddess In You (terms unconfirmed) · Real Estate · Grant OS · Dynasty Earn (undefined) · Brandaro creator lanes (undocumented) · Dynasty Media Network (no intake).
+11. Dynasty Credit Shield (no defined lane) · Dynasty Recovery Group / Surplus (licensing-gated) · Highway (legal + operator ingestion incomplete) · Goddess In You (terms not yet discussed with Sara) · Real Estate (all 51 jurisdictions BLOCKED) · Grant OS · Dynasty Earn (undefined) · Brandaro creator lanes (undocumented) · Dynasty Media Network (no intake).
+12. Added by SOE reconciliation, all HOLD: Dynasty Partners (lane unconfirmed) · Dynasty Trader (no product, regulated claims) · Music Label / CrowdSignal (no build) · GasMask Munchies Box · Packaging Machinery Sourcing · Partner Kit Fulfillment (no pipeline). None of these are sourcing targets today.
 
 ---
 
