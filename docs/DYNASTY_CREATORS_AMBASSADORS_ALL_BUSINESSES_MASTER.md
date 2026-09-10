@@ -334,7 +334,7 @@ Gerson's current mandate is **SEARCH → INGEST → QUALIFY** only. Flipping any
 
 ## 15. Gerson Execution Checklist
 
-- [ ] Use the State of the Empire document as the business list — **request it from Ching first** (§2.1); this document's §4 is provisional until reconciled.
+- [ ] Use §4 as the business list — it is now reconciled line-for-line against the State of the Empire snapshot of 2026-09-08 (§2.1, ledger in §4.1). Work only rows marked `READY TO SOURCE`.
 - [ ] Preserve the working Playboxxx pipeline exactly as-is; extend, never replace.
 - [ ] Generalise the reusable parts of Apify → Make (search params, normaliser, batch/response contract) instead of cloning Playboxxx per business.
 - [ ] Set `intended_business` and `intended_role` on every candidate — no defaults, no blanks.
@@ -349,7 +349,8 @@ Gerson's current mandate is **SEARCH → INGEST → QUALIFY** only. Flipping any
 
 ## 16. Open Decisions / Blockers — for Ching
 
-1. **State of the Empire document not received.** Required to finalise the business list. Everything in §4 is provisional.
+1. ~~State of the Empire document not received.~~ **CLOSED 2026-09-10** — received and reconciled (§2.1, §4.1). Replacement open item: **four hubs exist in the OS but are not named in SOE** — Dynasty Earn (row 17), Grant OS (row 22), Solar OS (row 20), Dynasty Media Network (row 26). Are these live ventures, sub-parts of something else, or dead hubs? Nothing was deleted pending Ching's answer.
+1a. **Dynasty Partners referral lane** (row 27, added by reconciliation) — the three licensing tiers are a customer-pricing structure, not a recruiter commission structure. Does a referral/ambassador lane exist for it?
 2. **Dynasty Funding Hub referral lane** — is it approved, and on what terms? No commission rate exists anywhere in the system; none was invented.
 3. **Dynasty Credit Shield** — does a referral/affiliate lane exist at all? Default answer used here: no.
 4. **Dynasty Earn** — program definition unverified.
