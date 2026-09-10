@@ -29533,6 +29533,7 @@ export type Database = {
           priority_score: number | null
           recommended_ai_agent: string | null
           review_count: number | null
+          search_term: string | null
           sms_count: number | null
           source: string | null
           state: string | null
@@ -29600,6 +29601,7 @@ export type Database = {
           priority_score?: number | null
           recommended_ai_agent?: string | null
           review_count?: number | null
+          search_term?: string | null
           sms_count?: number | null
           source?: string | null
           state?: string | null
@@ -29667,6 +29669,7 @@ export type Database = {
           priority_score?: number | null
           recommended_ai_agent?: string | null
           review_count?: number | null
+          search_term?: string | null
           sms_count?: number | null
           source?: string | null
           state?: string | null
