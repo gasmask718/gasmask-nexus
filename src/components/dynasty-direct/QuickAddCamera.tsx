@@ -53,6 +53,13 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   const [uploading, setUploading] = useState(false);
   const [activeShot, setActiveShot] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Live rear-camera viewfinder. The file input is only a fallback for devices
+  // that genuinely have no camera (or where permission was refused) — it must
+  // never be the first thing a supplier sees.
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [liveCamera, setLiveCamera] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   const [progress, setProgress] = useState<string[]>([]);
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -157,6 +164,60 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast.error('That is not a photo'); return; }
     uploadShot(file, activeShot);
+  }
+
+  // ---- live viewfinder -----------------------------------------------------
+  function stopCamera() {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setLiveCamera(false);
+  }
+
+  useEffect(() => () => stopCamera(), []);
+
+  async function openCamera() {
+    setCameraError(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('This device has no camera we can open in the browser.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setLiveCamera(true);
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          void videoRef.current.play();
+        }
+      });
+    } catch (e: any) {
+      // Permission denied / camera busy. We say so out loud instead of silently
+      // dropping the supplier into a file picker.
+      setCameraError(
+        e?.name === 'NotAllowedError'
+          ? 'Camera access is blocked for this site. Allow the camera in your browser settings, then tap again.'
+          : e?.message || 'The camera could not be opened.',
+      );
+    }
+  }
+
+  function shoot() {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0);
+    const index = activeShot;
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      stopCamera();
+      uploadShot(new File([blob], `shot-${index}.jpg`, { type: 'image/jpeg' }), index);
+    }, 'image/jpeg', 0.9);
   }
 
   function declareNoLabel() {
