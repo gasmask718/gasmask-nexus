@@ -61,11 +61,16 @@ Social/creator lead (Instagram lane):
       "instagram_username": "@jasmine.rivera",
       "instagram_url": "https://instagram.com/jasmine.rivera",
       "instagram_bio": "Miami based content creator | bookings via DM",
-      "instagram_followers": 48200
+      "instagram_followers": 48200,
+      "search_term": "Miami Model"
     }
   ]
 }
 ```
+
+`search_term` (optional, max 200 chars) records which search produced the candidate — e.g.
+`"Miami Model"`. Accepted aliases: `search`, `query`. Stored verbatim (trimmed); existing
+Overpass payloads that omit it simply store NULL.
 
 A single lead object, or `{ "lead": {...} }`, is also accepted. Max 500 leads per request.
 
@@ -134,6 +139,7 @@ It exists as a safety net only.
 | `instagram_url` / `instagram` / `ig_url` | `instagram_url` (instagram.com hosts only; derived from the username when absent) |
 | `instagram_bio` / `bio` | `instagram_bio` (max 1000 chars) |
 | `instagram_followers` / `followers` | `instagram_followers` (integer, null when non-numeric) |
+| `search_term` / `search` / `query` | `search_term` (max 200 chars, provenance of the search that found the lead) |
 | — | `source` = `'playboxxx_make_ingest'`, `status` = table default `new` |
 
 All four Instagram columns are nullable, so Overpass staff payloads that omit them are
