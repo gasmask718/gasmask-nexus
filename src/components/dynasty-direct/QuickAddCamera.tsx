@@ -597,27 +597,42 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
           </div>
 
           {frozenFrame ? (
-            <div className="relative" data-testid="shot-freeze">
-              <img
-                src={frozenFrame}
-                alt="The photo you just took"
-                className="w-full aspect-[4/5] object-cover rounded-2xl border-2 border-primary"
-              />
-              <div className="absolute inset-0 rounded-2xl bg-black/45 flex flex-col items-center justify-center gap-3">
+            <div className="space-y-3" data-testid="shot-freeze">
+              <div className="relative">
+                <img
+                  src={frozenFrame}
+                  alt="The photo you just took"
+                  className="w-full aspect-[4/5] object-cover rounded-2xl border-2 border-primary"
+                />
                 {freezeSaved ? (
-                  <>
-                    <span className="rounded-full bg-primary p-4">
-                      <Check className="h-10 w-10 text-primary-foreground" />
-                    </span>
-                    <span className="text-lg font-semibold text-white">Shot saved</span>
-                  </>
+                  // The photo stays FULLY visible. Just a badge on top of it.
+                  <span className="absolute top-3 left-3 flex items-center gap-2 rounded-full bg-primary px-3 py-1.5 shadow-lg">
+                    <Check className="h-4 w-4 text-primary-foreground" />
+                    <span className="text-sm font-semibold text-primary-foreground">Photo saved</span>
+                  </span>
                 ) : (
-                  <>
+                  <div className="absolute inset-0 rounded-2xl bg-black/45 flex flex-col items-center justify-center gap-3">
                     <Loader2 className="h-12 w-12 animate-spin text-white" />
                     <span className="text-base font-medium text-white">Saving the shot…</span>
-                  </>
+                  </div>
                 )}
               </div>
+
+              {freezeSaved && confirmIndex !== null && (
+                <div className="space-y-2" data-testid="shot-confirm">
+                  <p className="text-center text-sm text-muted-foreground">
+                    Take a good look. Nothing moves on until you say so.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" size="lg" className="h-14 text-base" onClick={retakeShot}>
+                      <RotateCcw className="h-5 w-5 mr-2" /> Retake
+                    </Button>
+                    <Button size="lg" className="h-14 text-base" onClick={confirmShot}>
+                      <Check className="h-5 w-5 mr-2" /> Use this photo
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : liveCamera ? (
             <div className="space-y-2">
