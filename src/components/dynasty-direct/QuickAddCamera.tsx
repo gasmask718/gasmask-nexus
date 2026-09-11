@@ -127,6 +127,8 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   // ---- capture -------------------------------------------------------------
   async function uploadShot(file: File, index: number) {
     setUploading(true);
+    setFreezeSaved(false);
+    const startedAt = Date.now();
     try {
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const path = `dd-quickadd/${supplierId}/${Date.now()}-${index}.${ext}`;
@@ -141,10 +143,20 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       }
       if (lastErr) throw lastErr;
       const { data } = supabase.storage.from('product-images').getPublicUrl(path);
-      const next = [...shots];
+      // Read from the ref, never the render-time closure: a shot must never be
+      // computed from a stale copy of the array.
+      const next = [...shotsRef.current];
       next[index] = data.publicUrl;
+      shotsRef.current = next;
       setShots(next);
       persist(next);
+
+      // CONFIRMATION MOMENT. The frozen frame stays on screen with a "Saved"
+      // tick for at least 700ms so a successful capture can never read as
+      // "nothing happened". Everything downstream waits for it.
+      setFreezeSaved(true);
+      const held = Date.now() - startedAt;
+      if (held < 700) await new Promise((r) => setTimeout(r, 700 - held));
 
       // AUTO-ADVANCE through the 3-shot sequence. Processing only starts once
       // every required shot is in — with no printed label that's front + angle
@@ -159,6 +171,8 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       toast.error('That shot did not upload', { description: e.message ?? 'Tap the button and try again — nothing else was lost.' });
     } finally {
       setUploading(false);
+      setFreezeSaved(false);
+      setFrozenFrame((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
     }
   }
 
