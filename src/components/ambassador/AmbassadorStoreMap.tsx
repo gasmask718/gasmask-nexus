@@ -4,8 +4,6 @@
  * lat/lng are NEVER given invented coordinates — they are listed as needing geocoding.
  */
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAmbassadorPortfolio } from '@/hooks/useAmbassadorPortfolio';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +33,15 @@ const STATUS_COLORS: Record<string, string> = {
   territory: '#0ea5e9',
   secured: '#16a34a',
 };
+
+function escapePopupText(value: unknown): string {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
 
 interface Props {
   /** When omitted, the map self-loads the signed-in ambassador's assigned stores. */
@@ -126,7 +133,7 @@ function MapBody({ stores, title, height }: { stores: MapStore[]; title: string;
               renderPopupHTML={(point) => {
                 const securedBy = point.meta?.securedAmbassadorName;
                 const status = securedBy ? `Secured by ${String(securedBy)}` : 'Available';
-                return `<strong>${point.title}</strong><br>${point.subtitle || ''}<br>${status}`;
+                return `<strong>${escapePopupText(point.title)}</strong><br>${escapePopupText(point.subtitle)}</br>${escapePopupText(status)}`;
               }}
               className="h-full"
             />
