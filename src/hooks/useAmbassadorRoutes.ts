@@ -86,7 +86,7 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
             notes_to_worker,
             planned_arrival_time,
             store:stores!route_stops_store_id_fkey(
-              id, store_name, address, city, state, lat, lng
+              id, name, address_street, address_city, address_state, lat, lng
             )
           )
         `)
@@ -108,7 +108,9 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
       }
 
       return (data || []).map((route: any): AmbassadorRoute => {
-        const stops = route.stops || [];
+        const stops = [...(route.stops || [])].sort(
+          (a: any, b: any) => (a.planned_order ?? 0) - (b.planned_order ?? 0),
+        );
         const completedStops = stops.filter((s: any) => s.status === 'complete' || s.status === 'completed').length;
         
         return {
@@ -122,8 +124,8 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
             id: s.id,
             route_id: route.id,
             store_id: s.store_id,
-            store_name: s.store?.store_name || undefined,
-            store_address: [s.store?.address, s.store?.city, s.store?.state]
+            store_name: s.store?.name || undefined,
+            store_address: [s.store?.address_street, s.store?.address_city, s.store?.address_state]
               .filter(Boolean).join(', ') || undefined,
             store_lat: s.store?.lat ?? null,
             store_lng: s.store?.lng ?? null,
