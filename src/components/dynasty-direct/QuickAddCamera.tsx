@@ -53,6 +53,8 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   // The just-captured frame, held on screen until the upload is acknowledged.
   const [frozenFrame, setFrozenFrame] = useState<string | null>(null);
   const [freezeSaved, setFreezeSaved] = useState(false);
+  // Which slot is waiting on his own "Use this photo" / "Retake" decision.
+  const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
   const [noLabel, setNoLabel] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [activeShot, setActiveShot] = useState(0);
@@ -133,7 +135,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   async function uploadShot(file: File, index: number) {
     setUploading(true);
     setFreezeSaved(false);
-    const startedAt = Date.now();
+    let held = false;
     try {
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const path = `dd-quickadd/${supplierId}/${Date.now()}-${index}.${ext}`;
@@ -156,29 +158,53 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       setShots(next);
       persist(next);
 
-      // CONFIRMATION MOMENT. The frozen frame stays on screen with a "Saved"
-      // tick for at least 700ms so a successful capture can never read as
-      // "nothing happened". Everything downstream waits for it.
+      // CONFIRMATION MOMENT — NOT a timer. The photo he just took stays full
+      // size on screen with "Use this photo" / "Retake" until HE decides.
+      // Nothing advances on its own.
       setFreezeSaved(true);
-      const held = Date.now() - startedAt;
-      if (held < 700) await new Promise((r) => setTimeout(r, 700 - held));
-
-      // AUTO-ADVANCE through the 3-shot sequence. Processing only starts once
-      // every required shot is in — with no printed label that's front + angle
-      // (the label slot never fills), otherwise all three.
-      if (index < 2) setActiveShot(index + 1);
-      const allIn = noLabel
-        ? Boolean(next[FRONT] && next[ANGLE])
-        : Boolean(next[FRONT] && next[LABEL] && next[ANGLE]);
-      if (allIn) setTimeout(() => runProcessing(next, noLabel), 350);
+      setConfirmIndex(index);
+      held = true;
 
     } catch (e: any) {
       toast.error('That shot did not upload', { description: e.message ?? 'Tap the button and try again — nothing else was lost.' });
     } finally {
       setUploading(false);
-      setFreezeSaved(false);
-      setFrozenFrame((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+      if (!held) {
+        setFreezeSaved(false);
+        setFrozenFrame((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+      }
     }
+  }
+
+  // He looked at it and it is right: only now do we move on.
+  function confirmShot() {
+    const index = confirmIndex;
+    setConfirmIndex(null);
+    setFreezeSaved(false);
+    setFrozenFrame((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+    if (index === null) return;
+    const current = shotsRef.current;
+    if (index < 2) setActiveShot(index + 1);
+    const allIn = noLabel
+      ? Boolean(current[FRONT] && current[ANGLE])
+      : Boolean(current[FRONT] && current[LABEL] && current[ANGLE]);
+    if (allIn) setTimeout(() => runProcessing(current, noLabel), 250);
+  }
+
+  // He looked at it and it is wrong: drop that slot and reopen the camera.
+  function retakeShot() {
+    const index = confirmIndex;
+    setConfirmIndex(null);
+    setFreezeSaved(false);
+    setFrozenFrame((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+    if (index === null) return;
+    const next = [...shotsRef.current];
+    next[index] = null;
+    shotsRef.current = next;
+    setShots(next);
+    persist(next);
+    setActiveShot(index);
+    void openCamera();
   }
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -186,6 +212,9 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     e.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast.error('That is not a photo'); return; }
+    // Same held preview as the live camera: he sees the picked photo full size
+    // and confirms it himself.
+    setFrozenFrame(URL.createObjectURL(file));
     uploadShot(file, activeShot);
   }
 
@@ -571,27 +600,42 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
           </div>
 
           {frozenFrame ? (
-            <div className="relative" data-testid="shot-freeze">
-              <img
-                src={frozenFrame}
-                alt="The photo you just took"
-                className="w-full aspect-[4/5] object-cover rounded-2xl border-2 border-primary"
-              />
-              <div className="absolute inset-0 rounded-2xl bg-black/45 flex flex-col items-center justify-center gap-3">
+            <div className="space-y-3" data-testid="shot-freeze">
+              <div className="relative">
+                <img
+                  src={frozenFrame}
+                  alt="The photo you just took"
+                  className="w-full aspect-[4/5] object-cover rounded-2xl border-2 border-primary"
+                />
                 {freezeSaved ? (
-                  <>
-                    <span className="rounded-full bg-primary p-4">
-                      <Check className="h-10 w-10 text-primary-foreground" />
-                    </span>
-                    <span className="text-lg font-semibold text-white">Shot saved</span>
-                  </>
+                  // The photo stays FULLY visible. Just a badge on top of it.
+                  <span className="absolute top-3 left-3 flex items-center gap-2 rounded-full bg-primary px-3 py-1.5 shadow-lg">
+                    <Check className="h-4 w-4 text-primary-foreground" />
+                    <span className="text-sm font-semibold text-primary-foreground">Photo saved</span>
+                  </span>
                 ) : (
-                  <>
+                  <div className="absolute inset-0 rounded-2xl bg-black/45 flex flex-col items-center justify-center gap-3">
                     <Loader2 className="h-12 w-12 animate-spin text-white" />
                     <span className="text-base font-medium text-white">Saving the shot…</span>
-                  </>
+                  </div>
                 )}
               </div>
+
+              {freezeSaved && confirmIndex !== null && (
+                <div className="space-y-2" data-testid="shot-confirm">
+                  <p className="text-center text-sm text-muted-foreground">
+                    Take a good look. Nothing moves on until you say so.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" size="lg" className="h-14 text-base" onClick={retakeShot}>
+                      <RotateCcw className="h-5 w-5 mr-2" /> Retake
+                    </Button>
+                    <Button size="lg" className="h-14 text-base" onClick={confirmShot}>
+                      <Check className="h-5 w-5 mr-2" /> Use this photo
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : liveCamera ? (
             <div className="space-y-2">
@@ -650,30 +694,36 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
           )}
 
 
-          <div className="grid grid-cols-3 gap-2">
-            {shotSpec.map((s, i) => (
-              <button
-                key={s.key}
-                type="button"
-                onClick={() => setActiveShot(i)}
-                className={`relative aspect-square rounded-xl overflow-hidden border-2 ${
-                  i === activeShot ? 'border-primary' : 'border-border'
-                }`}
-              >
-                {shots[i] ? (
-                  <>
-                    <img src={shots[i] as string} alt={s.label} className="h-full w-full object-cover" />
-                    <span className="absolute bottom-1 right-1 rounded-full bg-primary p-1">
-                      <Check className="h-3 w-3 text-primary-foreground" />
+          {/* THE PHOTOS HE ALREADY TOOK — big, permanent, always on screen. */}
+          <div className="space-y-2" data-testid="shot-strip">
+            <p className="text-sm font-semibold">
+              Your photos ({shots.filter(Boolean).length} of 3)
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {shotSpec.map((s, i) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => setActiveShot(i)}
+                  className={`relative aspect-[3/4] rounded-xl overflow-hidden border-2 bg-muted/40 ${
+                    i === activeShot ? 'border-primary ring-2 ring-primary/30' : 'border-border'
+                  }`}
+                >
+                  {shots[i] ? (
+                    <>
+                      <img src={shots[i] as string} alt={s.label} className="h-full w-full object-cover" />
+                      <span className="absolute bottom-1.5 right-1.5 rounded-full bg-primary p-1.5 shadow">
+                        <Check className="h-4 w-4 text-primary-foreground" />
+                      </span>
+                    </>
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-[11px] text-muted-foreground px-1 text-center">
+                      {s.label}
                     </span>
-                  </>
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground px-1 text-center">
-                    {s.label}
-                  </span>
-                )}
-              </button>
-            ))}
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* LOOSE GOODS — no printed label anywhere on the item */}
