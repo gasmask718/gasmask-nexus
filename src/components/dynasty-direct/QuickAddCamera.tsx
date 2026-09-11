@@ -570,7 +570,30 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
             <p className="text-sm text-muted-foreground">{shotSpec[activeShot].hint}</p>
           </div>
 
-          {liveCamera ? (
+          {frozenFrame ? (
+            <div className="relative" data-testid="shot-freeze">
+              <img
+                src={frozenFrame}
+                alt="The photo you just took"
+                className="w-full aspect-[4/5] object-cover rounded-2xl border-2 border-primary"
+              />
+              <div className="absolute inset-0 rounded-2xl bg-black/45 flex flex-col items-center justify-center gap-3">
+                {freezeSaved ? (
+                  <>
+                    <span className="rounded-full bg-primary p-4">
+                      <Check className="h-10 w-10 text-primary-foreground" />
+                    </span>
+                    <span className="text-lg font-semibold text-white">Shot saved</span>
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="h-12 w-12 animate-spin text-white" />
+                    <span className="text-base font-medium text-white">Saving the shot…</span>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : liveCamera ? (
             <div className="space-y-2">
               <div className="relative">
                 <video
