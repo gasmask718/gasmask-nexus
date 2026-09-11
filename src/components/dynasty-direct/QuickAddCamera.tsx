@@ -133,7 +133,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   async function uploadShot(file: File, index: number) {
     setUploading(true);
     setFreezeSaved(false);
-    const startedAt = Date.now();
+    let held = false;
     try {
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const path = `dd-quickadd/${supplierId}/${Date.now()}-${index}.${ext}`;
@@ -156,29 +156,53 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       setShots(next);
       persist(next);
 
-      // CONFIRMATION MOMENT. The frozen frame stays on screen with a "Saved"
-      // tick for at least 700ms so a successful capture can never read as
-      // "nothing happened". Everything downstream waits for it.
+      // CONFIRMATION MOMENT — NOT a timer. The photo he just took stays full
+      // size on screen with "Use this photo" / "Retake" until HE decides.
+      // Nothing advances on its own.
       setFreezeSaved(true);
-      const held = Date.now() - startedAt;
-      if (held < 700) await new Promise((r) => setTimeout(r, 700 - held));
-
-      // AUTO-ADVANCE through the 3-shot sequence. Processing only starts once
-      // every required shot is in — with no printed label that's front + angle
-      // (the label slot never fills), otherwise all three.
-      if (index < 2) setActiveShot(index + 1);
-      const allIn = noLabel
-        ? Boolean(next[FRONT] && next[ANGLE])
-        : Boolean(next[FRONT] && next[LABEL] && next[ANGLE]);
-      if (allIn) setTimeout(() => runProcessing(next, noLabel), 350);
+      setConfirmIndex(index);
+      held = true;
 
     } catch (e: any) {
       toast.error('That shot did not upload', { description: e.message ?? 'Tap the button and try again — nothing else was lost.' });
     } finally {
       setUploading(false);
-      setFreezeSaved(false);
-      setFrozenFrame((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+      if (!held) {
+        setFreezeSaved(false);
+        setFrozenFrame((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+      }
     }
+  }
+
+  // He looked at it and it is right: only now do we move on.
+  function confirmShot() {
+    const index = confirmIndex;
+    setConfirmIndex(null);
+    setFreezeSaved(false);
+    setFrozenFrame((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+    if (index === null) return;
+    const current = shotsRef.current;
+    if (index < 2) setActiveShot(index + 1);
+    const allIn = noLabel
+      ? Boolean(current[FRONT] && current[ANGLE])
+      : Boolean(current[FRONT] && current[LABEL] && current[ANGLE]);
+    if (allIn) setTimeout(() => runProcessing(current, noLabel), 250);
+  }
+
+  // He looked at it and it is wrong: drop that slot and reopen the camera.
+  function retakeShot() {
+    const index = confirmIndex;
+    setConfirmIndex(null);
+    setFreezeSaved(false);
+    setFrozenFrame((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+    if (index === null) return;
+    const next = [...shotsRef.current];
+    next[index] = null;
+    shotsRef.current = next;
+    setShots(next);
+    persist(next);
+    setActiveShot(index);
+    void openCamera();
   }
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
