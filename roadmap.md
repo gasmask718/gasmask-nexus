@@ -26,3 +26,11 @@
 - [x] Map scope verified by assignment query (Ching 977 mapped, Javier 38, Rufino 96); no duplicate active store assignments
 - [ ] OWNER: Oliver's territory after Brooklyn → Ching; SL identity + Manhattan scope; Billz/Mooks contacts; Chico "other connections"; 4 BARRY KALI ENY Brooklyn stores
 - [ ] BLOCKER: invite emails still rejected by mail provider (HTTP 403) — end-user login verification pending
+
+## GasMask Shared Territory + Store Locking (2026-09-12)
+- [ ] Make territory coverage the ambassador store/map visibility source without treating assignments or routes as ownership
+- [ ] Add one atomic secured-store claim per store with claimant and secured timestamp; preserve shared visibility
+- [ ] Apply only approved territories and create/link Bosket and Billz with exact owner-provided emails; send no invitations
+- [ ] Show Available/Secured status on ambassador store cards, map details, and store profile; add confirmed Secure store action
+- [ ] Verify Georgia shared access and double-claim rejection with temporary data, then clean it up
+- [ ] Recheck Ching Brooklyn visibility/route flow and Oliver Queens-only visibility; document held owner decisions
