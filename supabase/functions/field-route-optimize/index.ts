@@ -168,6 +168,77 @@ Deno.serve(async (req) => {
           (s.status ?? '').toLowerCase(),
         ),
     );
+    // Optional auto-fill: when the route is empty, pull the N assigned stores
+    // closest to the start address. Only the assignee's own active assignments.
+    const autoFill = Number(body?.autoFill ?? 0);
+    let autoFilled = 0;
+    if (!openStops.length && autoFill > 0) {
+      const { data: amb } = await admin
+        .from('ambassadors')
+        .select('id')
+        .eq('user_id', route.assigned_to)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const ambassadorId = amb?.[0]?.id;
+      if (!ambassadorId) {
+        return json({ error: 'No active field profile found for this route owner' }, 422);
+      }
+
+      const assignedIds: string[] = [];
+      for (let page = 0; page < 20; page++) {
+        const { data, error } = await admin
+          .from('ambassador_assignments')
+          .select('store_id')
+          .eq('ambassador_id', ambassadorId)
+          .eq('active', true)
+          .not('store_id', 'is', null)
+          .range(page * 1000, page * 1000 + 999);
+        if (error) throw error;
+        if (!data?.length) break;
+        assignedIds.push(...data.map((a: { store_id: string }) => a.store_id));
+        if (data.length < 1000) break;
+      }
+
+      const candidates: { id: string; lat: number; lng: number; d: number }[] = [];
+      for (let i = 0; i < assignedIds.length; i += 200) {
+        const { data, error } = await admin
+          .from('stores')
+          .select('id, lat, lng')
+          .in('id', assignedIds.slice(i, i + 200))
+          .not('lat', 'is', null)
+          .not('lng', 'is', null);
+        if (error) throw error;
+        for (const s of data ?? []) {
+          candidates.push({
+            id: s.id,
+            lat: Number(s.lat),
+            lng: Number(s.lng),
+            d: haversine([startLng, startLat], [Number(s.lng), Number(s.lat)]),
+          });
+        }
+      }
+      candidates.sort((a, b) => a.d - b.d);
+      const picked = candidates.slice(0, Math.min(autoFill, 40));
+      if (picked.length) {
+        const { data: inserted, error: insErr } = await admin
+          .from('route_stops')
+          .insert(
+            picked.map((p, i) => ({
+              route_id: routeId,
+              store_id: p.id,
+              planned_order: i + 1,
+              status: 'pending',
+            })),
+          )
+          .select('id, store_id, status');
+        if (insErr) throw insErr;
+        openStops.push(...(inserted ?? []));
+        stopRows?.push(...(inserted ?? []));
+        autoFilled = inserted?.length ?? 0;
+      }
+    }
+
     const storeIds = openStops.map((s) => s.store_id).filter(Boolean) as string[];
 
     const coords = new Map<string, { lat: number; lng: number; name: string }>();
