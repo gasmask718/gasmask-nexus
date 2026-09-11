@@ -34,6 +34,7 @@ import { useAmbassadorStoreProfile } from '@/hooks/useAmbassadorPortfolio';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useCall } from '@/components/communication/CallProvider';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
+import { StoreClaimStatus } from '@/components/ambassador/StoreClaimStatus';
 
 function StoreProfileContent() {
   const { storeId } = useParams<{ storeId: string }>();
@@ -47,10 +48,13 @@ function StoreProfileContent() {
     orders, 
     notes, 
     contacts,
+    claim,
     isLoading, 
     isError,
     addNote,
-    isAddingNote
+    isAddingNote,
+    secureStore,
+    isSecuringStore
   } = useAmbassadorStoreProfile(storeId || null);
 
   const handleAddNote = async () => {
@@ -139,6 +143,16 @@ function StoreProfileContent() {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span>Since {format(new Date(store.created_at), 'MMM yyyy')}</span>
                 </div>
+              </div>
+              <div className="mt-4">
+                <StoreClaimStatus
+                  storeName={store.store_name}
+                  securedByMe={claim?.secured_by_me || false}
+                  securedAmbassadorName={claim?.secured_ambassador_name || null}
+                  securedAt={claim?.secured_at || null}
+                  onSecure={claim?.can_secure ? secureStore : undefined}
+                  isSecuring={isSecuringStore}
+                />
               </div>
             </div>
 

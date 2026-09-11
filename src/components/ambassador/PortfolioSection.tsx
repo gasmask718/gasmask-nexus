@@ -36,22 +36,22 @@ function StoreCard({ store, onRemove }: { store: PortfolioStore; onRemove: () =>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h4 className="font-medium truncate text-sm">{store.store_name}</h4>
-            <Badge variant={store.assignment_type === 'sourced' ? 'default' : 'secondary'} className="text-xs shrink-0">
-              {store.assignment_type}
+            <Badge variant={store.access_source === 'territory' ? 'outline' : 'secondary'} className="text-xs shrink-0">
+              {store.access_source === 'territory' ? 'Shared area' : store.assignment_type}
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1 truncate">
             {store.store_city}, {store.store_state}
           </p>
         </div>
-        <Button
+        {store.assignment_id && <Button
           variant="ghost"
           size="icon"
           className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
         >
           <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        </Button>}
       </div>
     </div>
   );
@@ -276,7 +276,7 @@ export function PortfolioSection() {
                 <div className="space-y-2">
                   {stores.map(store => (
                     <StoreCard 
-                      key={store.assignment_id} 
+                      key={store.store_id}
                       store={store}
                       onRemove={() => setRemoveModal({
                         open: true,

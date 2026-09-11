@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface PortfolioStore {
-  assignment_id: string;
+  assignment_id: string | null;
   store_id: string;
   store_name: string;
   store_address: string;
@@ -16,13 +16,20 @@ export interface PortfolioStore {
   store_state: string;
   store_phone: string;
   store_owner: string;
-  assignment_type: 'assigned' | 'sourced';
+  assignment_type: 'assigned' | 'sourced' | 'area_access' | string;
+  access_source: 'direct_assignment' | 'legacy_assignment' | 'route' | 'territory' | string;
   active: boolean;
   start_date: string;
   end_date: string | null;
   is_primary: boolean;
   commission_rate: number;
   assigned_at: string;
+  latitude: number | null;
+  longitude: number | null;
+  secured_ambassador_id: string | null;
+  secured_ambassador_name: string | null;
+  secured_at: string | null;
+  secured_by_me: boolean;
   // Aggregated metrics (populated separately)
   last_order_date?: string;
   last_order_amount?: number;
@@ -96,58 +103,40 @@ export function useAmbassadorPortfolio() {
 
   const ambassadorId = ambassadorQuery.data?.id;
 
-  // Fetch assigned stores from ambassador_assignments (RLS enforced)
+  // Shared visibility comes from the authoritative territory-aware RPC.
   const storesQuery = useQuery({
     queryKey: ['ambassador-portfolio-stores', ambassadorId],
     queryFn: async () => {
       if (!ambassadorId) return [];
 
-      const { data, error } = await supabase
-        .from('ambassador_assignments')
-        .select(`
-          id,
-          store_id,
-          assignment_type,
-          active,
-          start_date,
-          end_date,
-          is_primary,
-          commission_rate,
-          created_at,
-          store:store_master!store_id (
-            id,
-            store_name,
-            address,
-            city,
-            state,
-            phone,
-            owner_name
-          )
-        `)
-        .eq('ambassador_id', ambassadorId)
-        .eq('active', true)
-        .not('store_id', 'is', null)
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('ambassador_visible_stores');
 
       if (error) throw error;
 
       // Transform to PortfolioStore format
-      return (data || []).map((a: any): PortfolioStore => ({
-        assignment_id: a.id,
-        store_id: a.store_id,
-        store_name: a.store?.store_name || 'Unknown Store',
-        store_address: a.store?.address || '',
-        store_city: a.store?.city || '',
-        store_state: a.store?.state || '',
-        store_phone: a.store?.phone || '',
-        store_owner: a.store?.owner_name || '',
-        assignment_type: a.assignment_type || 'assigned',
-        active: a.active,
-        start_date: a.start_date,
-        end_date: a.end_date,
-        is_primary: a.is_primary,
-        commission_rate: a.commission_rate || 0,
-        assigned_at: a.created_at,
+      return (data || []).map((row): PortfolioStore => ({
+        assignment_id: row.assignment_id,
+        store_id: row.store_id,
+        store_name: row.store_name || 'Unknown Store',
+        store_address: row.store_address || '',
+        store_city: row.store_city || '',
+        store_state: row.store_state || '',
+        store_phone: row.store_phone || '',
+        store_owner: row.store_owner || '',
+        assignment_type: row.assignment_type || 'area_access',
+        access_source: row.access_source || 'territory',
+        active: true,
+        start_date: row.assigned_at,
+        end_date: null,
+        is_primary: row.is_primary || false,
+        commission_rate: Number(row.commission_rate || 0),
+        assigned_at: row.assigned_at,
+        latitude: row.latitude === null ? null : Number(row.latitude),
+        longitude: row.longitude === null ? null : Number(row.longitude),
+        secured_ambassador_id: row.secured_ambassador_id,
+        secured_ambassador_name: row.secured_ambassador_name,
+        secured_at: row.secured_at,
+        secured_by_me: row.secured_by_me || false,
       }));
     },
     enabled: !!ambassadorId,
@@ -196,7 +185,7 @@ export function useAmbassadorPortfolio() {
     const commissions = commissionsQuery.data || [];
     const onlineSales = onlineSalesQuery.data || [];
 
-    const assignedStores = stores.filter(s => s.assignment_type === 'assigned');
+    const assignedStores = stores.filter(s => s.access_source !== 'territory');
     const sourcedStores = stores.filter(s => s.assignment_type === 'sourced');
 
     const pendingCommissions = commissions.filter((c: any) => c.status === 'pending');
@@ -249,6 +238,26 @@ export function useAmbassadorPortfolio() {
     },
   });
 
+  const secureStoreMutation = useMutation({
+    mutationFn: async (storeId: string) => {
+      const { data, error } = await supabase.rpc('secure_store_for_ambassador', { _store_id: storeId });
+      if (error) throw error;
+      const result = data as { success?: boolean; code?: string; secured_ambassador_name?: string } | null;
+      if (!result?.success) {
+        throw new Error(result?.code === 'ALREADY_SECURED'
+          ? `Already secured by ${result.secured_ambassador_name || 'another ambassador'}`
+          : 'Store could not be secured');
+      }
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ambassador-portfolio-stores', ambassadorId] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-store-claim'] });
+      toast.success('Store secured');
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   return {
     ambassador: ambassadorQuery.data,
     stores: storesQuery.data || [],
@@ -260,6 +269,8 @@ export function useAmbassadorPortfolio() {
     // Mutations
     unassignStore: unassignStoreMutation.mutateAsync,
     isUnassigningStore: unassignStoreMutation.isPending,
+    secureStore: secureStoreMutation.mutateAsync,
+    isSecuringStore: secureStoreMutation.isPending,
     refetch: () => {
       queryClient.invalidateQueries({ queryKey: ['ambassador-portfolio-stores', ambassadorId] });
       queryClient.invalidateQueries({ queryKey: ['ambassador-portfolio-commissions', ambassadorId] });
@@ -350,6 +361,37 @@ export function useAmbassadorStoreProfile(storeId: string | null) {
     enabled: !!storeId,
   });
 
+  const claimQuery = useQuery({
+    queryKey: ['ambassador-store-claim', storeId],
+    queryFn: async () => {
+      if (!storeId) return null;
+      const { data, error } = await supabase.rpc('ambassador_store_claim_status', { _store_id: storeId });
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+    enabled: !!storeId,
+  });
+
+  const secureStoreMutation = useMutation({
+    mutationFn: async () => {
+      if (!storeId) throw new Error('Missing store');
+      const { data, error } = await supabase.rpc('secure_store_for_ambassador', { _store_id: storeId });
+      if (error) throw error;
+      const result = data as { success?: boolean; code?: string; secured_ambassador_name?: string } | null;
+      if (!result?.success) {
+        throw new Error(result?.code === 'ALREADY_SECURED'
+          ? `Already secured by ${result.secured_ambassador_name || 'another ambassador'}`
+          : 'Store could not be secured');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ambassador-store-claim', storeId] });
+      queryClient.invalidateQueries({ queryKey: ['ambassador-portfolio-stores'] });
+      toast.success('Store secured');
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   // Add note mutation
   const addNoteMutation = useMutation({
     mutationFn: async (noteText: string) => {
@@ -380,10 +422,13 @@ export function useAmbassadorStoreProfile(storeId: string | null) {
     orders: ordersQuery.data || [],
     notes: notesQuery.data || [],
     contacts: contactsQuery.data || [],
+    claim: claimQuery.data,
     isLoading: storeQuery.isLoading,
     isError: storeQuery.isError,
     addNote: addNoteMutation.mutateAsync,
     isAddingNote: addNoteMutation.isPending,
+    secureStore: secureStoreMutation.mutateAsync,
+    isSecuringStore: secureStoreMutation.isPending,
     refetch: () => {
       queryClient.invalidateQueries({ queryKey: ['ambassador-store-profile', storeId] });
       queryClient.invalidateQueries({ queryKey: ['ambassador-store-orders', storeId] });
