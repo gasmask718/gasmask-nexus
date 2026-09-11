@@ -12,6 +12,14 @@ import { LogIn, Loader2, Mail } from 'lucide-react';
 
 export default function AmbassadorLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, session, loading: authLoading } = useAuth();
+
+  // Entry destination: only same-origin relative paths are honored.
+  const stateReturnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+  const nextParam = new URLSearchParams(location.search).get('next');
+  const requested = [stateReturnTo, nextParam].find(isSafeNextPath) ?? null;
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
