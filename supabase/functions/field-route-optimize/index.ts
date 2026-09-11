@@ -382,6 +382,7 @@ Deno.serve(async (req) => {
       startLat,
       startLng,
       optimizedStops: finalOrder.length,
+      autoFilled,
       appendedBeyondMatrixLimit: overflow.length,
       unmappedStops: unmapped.length,
       estimatedMinutes: Math.round(durationS / 60),
