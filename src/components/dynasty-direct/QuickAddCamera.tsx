@@ -53,6 +53,8 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   // The just-captured frame, held on screen until the upload is acknowledged.
   const [frozenFrame, setFrozenFrame] = useState<string | null>(null);
   const [freezeSaved, setFreezeSaved] = useState(false);
+  // Which slot is waiting on his own "Use this photo" / "Retake" decision.
+  const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
   const [noLabel, setNoLabel] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [activeShot, setActiveShot] = useState(0);
