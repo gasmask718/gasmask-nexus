@@ -428,12 +428,10 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       // WHAT ACTUALLY BLOCKS US — nothing else gets asked.
       const missing: string[] = [];
       if (!rec.product_name || rec.confidence === 'low') missing.push('name');
-      if (skipLabel || (label && label.label_detected === false)) {
-        missing.push('weight', 'dims');
-      } else {
-        if (!(Number(m.weight_oz) > 0)) missing.push('weight');
-        if (!(Number(m.length_in) > 0 && Number(m.width_in) > 0 && Number(m.height_in) > 0)) missing.push('dims');
-      }
+      // Ask for manual entry ONLY when both the label read AND the sourced
+      // lookup came back empty for that field.
+      if (!(Number(m.weight_oz) > 0)) missing.push('weight');
+      if (!(Number(m.length_in) > 0 && Number(m.width_in) > 0 && Number(m.height_in) > 0)) missing.push('dims');
       setGaps(missing);
       setGapIndex(0);
       setPhase(missing.length ? 'gaps' : 'price');
