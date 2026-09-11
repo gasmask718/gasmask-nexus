@@ -117819,6 +117819,7 @@ export type Database = {
           email: string | null
           expansion_notes: string | null
           expected_open_dates: string[] | null
+          field_assignment_status: string | null
           formality_level: string | null
           frustration_triggers: string[] | null
           gasmask_call_status: string | null
@@ -117941,6 +117942,7 @@ export type Database = {
           email?: string | null
           expansion_notes?: string | null
           expected_open_dates?: string[] | null
+          field_assignment_status?: string | null
           formality_level?: string | null
           frustration_triggers?: string[] | null
           gasmask_call_status?: string | null
@@ -118063,6 +118065,7 @@ export type Database = {
           email?: string | null
           expansion_notes?: string | null
           expected_open_dates?: string[] | null
+          field_assignment_status?: string | null
           formality_level?: string | null
           frustration_triggers?: string[] | null
           gasmask_call_status?: string | null
@@ -162495,6 +162498,7 @@ export type Database = {
           email: string | null
           expansion_notes: string | null
           expected_open_dates: string[] | null
+          field_assignment_status: string | null
           formality_level: string | null
           frustration_triggers: string[] | null
           gasmask_call_status: string | null
