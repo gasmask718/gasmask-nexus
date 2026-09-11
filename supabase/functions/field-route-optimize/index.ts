@@ -245,12 +245,12 @@ Deno.serve(async (req) => {
     for (let i = 0; i < storeIds.length; i += 200) {
       const { data, error } = await admin
         .from('stores')
-        .select('id, store_name, lat, lng')
+        .select('id, name, lat, lng')
         .in('id', storeIds.slice(i, i + 200));
       if (error) throw error;
       for (const s of data ?? []) {
         if (s.lat != null && s.lng != null) {
-          coords.set(s.id, { lat: Number(s.lat), lng: Number(s.lng), name: s.store_name ?? 'Store' });
+          coords.set(s.id, { lat: Number(s.lat), lng: Number(s.lng), name: s.name ?? 'Store' });
         }
       }
     }
