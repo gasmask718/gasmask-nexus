@@ -340,7 +340,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       // Never fatal: any failure here just falls through to manual gap entry.
       const labelHasWeight = Number(m.weight_oz) > 0;
       const labelHasDims = Number(m.length_in) > 0 && Number(m.width_in) > 0 && Number(m.height_in) > 0;
-      if (!labelHasWeight || !labelHasDims) {
+      if ((!labelHasWeight || !labelHasDims) && rec.product_name) {
         setProgress((p) => [...p, 'Checking sourced product data…']);
         try {
           // pack_count resolves itself from the draft (label read saved it) — don't pass it.
