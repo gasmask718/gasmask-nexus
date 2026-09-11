@@ -59,6 +59,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [liveCamera, setLiveCamera] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   const [progress, setProgress] = useState<string[]>([]);
@@ -171,12 +172,36 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     setLiveCamera(false);
+    setCameraReady(false);
   }
 
   useEffect(() => () => stopCamera(), []);
 
+  // Watch the feed while it is open: mark it ready only once real frames exist
+  // (videoWidth > 0), and say something out loud if the stream dies mid-session.
+  // The shutter must NEVER silently no-op.
+  useEffect(() => {
+    if (!liveCamera) return;
+    const iv = window.setInterval(() => {
+      const video = videoRef.current;
+      const stream = streamRef.current;
+      const tracks = stream ? stream.getVideoTracks() : [];
+      // Only "dead" when we actually had a video track and it ended. An empty
+      // list just means the tracks haven't arrived yet — that is warmup, not death.
+      const trackDead = tracks.length > 0 && tracks.every((t) => t.readyState === 'ended');
+      if (trackDead || (!stream && liveCamera)) {
+        stopCamera();
+        setCameraError('The camera feed stopped. Tap to open it again.');
+        return;
+      }
+      if (video && video.videoWidth > 0 && !video.paused) setCameraReady(true);
+    }, 250);
+    return () => window.clearInterval(iv);
+  }, [liveCamera]);
+
   async function openCamera() {
     setCameraError(null);
+    setCameraReady(false);
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError('This device has no camera we can open in the browser.');
       return;
@@ -189,9 +214,12 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       streamRef.current = stream;
       setLiveCamera(true);
       requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          void videoRef.current.play();
+        const video = videoRef.current;
+        if (video) {
+          video.srcObject = stream;
+          void video.play().then(() => {
+            if (video.videoWidth > 0) setCameraReady(true);
+          }).catch(() => { /* readiness poll below covers it */ });
         }
       });
     } catch (e: any) {
@@ -207,14 +235,26 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
 
   function shoot() {
     const video = videoRef.current;
-    if (!video || !video.videoWidth) return;
+    if (!video || !video.videoWidth) {
+      // Frame not ready yet — never a silent no-op. Wait briefly and retry once.
+      toast.message('Camera is still warming up…', { description: 'Taking the photo as soon as the feed is live.' });
+      window.setTimeout(() => {
+        const v = videoRef.current;
+        if (!v || !v.videoWidth) {
+          toast.error('No picture came from the camera', { description: 'Close the camera and open it again.' });
+          return;
+        }
+        shoot();
+      }, 400);
+      return;
+    }
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d')?.drawImage(video, 0, 0);
     const index = activeShot;
     canvas.toBlob((blob) => {
-      if (!blob) return;
+      if (!blob) { toast.error('The photo could not be saved. Try again.'); return; }
       stopCamera();
       uploadShot(new File([blob], `shot-${index}.jpg`, { type: 'image/jpeg' }), index);
     }, 'image/jpeg', 0.9);
@@ -474,15 +514,23 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
 
           {liveCamera ? (
             <div className="space-y-2">
-              <video
-                ref={videoRef}
-                playsInline
-                muted
-                className="w-full aspect-[4/5] object-cover rounded-2xl border-2 border-primary bg-black"
-              />
+              <div className="relative">
+                <video
+                  ref={videoRef}
+                  playsInline
+                  muted
+                  className="w-full aspect-[4/5] object-cover rounded-2xl border-2 border-primary bg-black"
+                />
+                {!cameraReady && (
+                  <div className="absolute inset-0 rounded-2xl bg-black/70 flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary-foreground" />
+                    <span className="text-sm text-primary-foreground">Starting the camera…</span>
+                  </div>
+                )}
+              </div>
               <div className="flex gap-2">
-                <Button size="lg" className="flex-1 h-14 text-base" onClick={shoot} disabled={uploading}>
-                  <Camera className="h-5 w-5 mr-2" /> Take the photo
+                <Button size="lg" className="flex-1 h-14 text-base" onClick={shoot} disabled={uploading || !cameraReady}>
+                  <Camera className="h-5 w-5 mr-2" /> {cameraReady ? 'Take the photo' : 'Camera warming up…'}
                 </Button>
                 <Button variant="outline" size="lg" className="h-14" onClick={stopCamera}>
                   Cancel
