@@ -10,6 +10,12 @@
 - [ ] BLOCKER: 52 active ambassadors share one login user_id (12 share another) — routes are keyed to login, so they see each other's routes
 - [ ] 10 active ambassadors have no login; 291 active stores lack coordinates (geocoding backlog)
 
+## Ching's GasMask Ambassador Roster (2026-09-11)
+- [ ] Create six dedicated invite-ready ambassador identities without touching SL, Billz, Mooks, or unrelated ambassadors
+- [ ] Assign live Staten Island/New Jersey stores to Javier and Bronx/Mt. Vernon stores to Rufino without duplicates
+- [ ] Send and record six email invites through the existing ambassador invitation flow
+- [ ] Validate assignment isolation and document blockers for portal checks pending invite acceptance
+
 ## Account Activity Report (2026-09-08)
 - [x] Numbered, expandable, paginated audit log at /reports/account-activity
 - [ ] 1,032 account_review notes have no author recorded; no live code writes that source today, so authorship can only be captured once a review-saving screen is (re)built
