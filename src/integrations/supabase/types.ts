@@ -163255,6 +163255,7 @@ export type Database = {
           _store_city: string
           _store_neighborhood: string
           _store_state: string
+          _store_zip?: string
         }
         Returns: boolean
       }
@@ -163887,7 +163888,7 @@ export type Database = {
         | "observe"
         | "freeze"
         | "exit"
-      territory_region_type: "state" | "county" | "city" | "custom_zone"
+      territory_region_type: "state" | "county" | "city" | "custom_zone" | "zip"
       ut_employment_type:
         | "full_time"
         | "part_time"
@@ -164580,7 +164581,7 @@ export const Constants = {
         "freeze",
         "exit",
       ],
-      territory_region_type: ["state", "county", "city", "custom_zone"],
+      territory_region_type: ["state", "county", "city", "custom_zone", "zip"],
       ut_employment_type: [
         "full_time",
         "part_time",
