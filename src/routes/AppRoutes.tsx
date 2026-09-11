@@ -1488,6 +1488,10 @@ export default function AppRoutes() {
       {/* Brandaro paid-client intake (public, no login) */}
       <Route path="/intake" element={<BrandaroIntakePage />} />
       <Route path="/ambassador/login" element={<AmbassadorLogin />} />
+      {/* Dedicated Ambassador Portal entry — signed in goes straight to field mode */}
+      <Route path="/ambassador" element={<AmbassadorPortalEntry />} />
+      <Route path="/ambassador/portal" element={<AmbassadorPortalEntry />} />
+      <Route path="/portal/gasmask-ambassador" element={<Navigate to="/ambassador/portal" replace />} />
       <Route path="/ambassador/set-password" element={<AmbassadorSetPassword />} />
       <Route path="/ut/ambassador/dashboard" element={<UTAmbassadorDashboard />} />
       {/* Public Invite Signup - Primary and fallback routes */}
