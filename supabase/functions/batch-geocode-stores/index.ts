@@ -17,11 +17,64 @@ const INVALID_ADDRESS_PATTERNS = [
   /^.$/,
 ];
 
+const MIN_RELEVANCE = 0.8;
+
+type StoreRow = {
+  id: string;
+  name: string;
+  address_street: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  address_zip: string | null;
+  address_country: string | null;
+};
+
 function isInvalidAddress(street: string | null): boolean {
   if (!street) return true;
   const trimmed = street.trim();
   if (trimmed.length <= 1) return true;
   return INVALID_ADDRESS_PATTERNS.some(p => p.test(trimmed));
+}
+
+function normalize(value: string | null | undefined): string {
+  return (value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function isEligibleStore(store: StoreRow): boolean {
+  return !isInvalidAddress(store.address_street)
+    && normalize(store.address_state).length > 0
+    && (normalize(store.address_city).length > 0 || normalize(store.address_zip).length > 0);
+}
+
+function getContextText(feature: any, prefix: string): string {
+  if (feature?.id?.startsWith(prefix)) return feature.text || '';
+  const match = feature?.context?.find((entry: any) => entry?.id?.startsWith(prefix));
+  return match?.text || '';
+}
+
+function getContext(feature: any, prefix: string): any {
+  if (feature?.id?.startsWith(prefix)) return feature;
+  return feature?.context?.find((entry: any) => entry?.id?.startsWith(prefix));
+}
+
+function isConfidentMatch(feature: any, store: StoreRow): boolean {
+  if (!feature || !Array.isArray(feature.center) || feature.center.length !== 2) return false;
+  if (!feature.place_type?.includes('address') || !feature.address) return false;
+  if (typeof feature.relevance !== 'number' || feature.relevance < MIN_RELEVANCE) return false;
+
+  const region = getContext(feature, 'region');
+  const resultState = normalize(region?.text);
+  const resultStateCode = normalize(region?.short_code?.split('-').pop());
+  const resultCity = normalize(getContextText(feature, 'place'));
+  const resultZip = normalize(getContextText(feature, 'postcode'));
+  const expectedState = normalize(store.address_state);
+  const expectedCity = normalize(store.address_city);
+  const expectedZip = normalize(store.address_zip);
+
+  if (expectedState && resultState && expectedState !== resultState && expectedState !== resultStateCode) return false;
+  if (expectedZip && resultZip && expectedZip !== resultZip) return false;
+  if (!expectedZip && expectedCity && resultCity && expectedCity !== resultCity) return false;
+  return true;
 }
 
 serve(async (req) => {
@@ -40,11 +93,42 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ success: false, error: 'Authentication required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const token = authHeader.slice('Bearer '.length);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid session' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { data: roleRows, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .in('role', ['admin', 'owner']);
+    if (roleError || !roleRows?.length) {
+      return new Response(JSON.stringify({ success: false, error: 'Admin access required' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Parse optional body
     let revalidate = false;
+    let dryRun = false;
     try {
       const body = await req.json();
       revalidate = body?.revalidate === true;
+      dryRun = body?.dry_run === true;
     } catch {
       // No body or invalid JSON — default revalidate=false
     }
@@ -53,6 +137,9 @@ serve(async (req) => {
     let query = supabase
       .from('stores')
       .select('id, name, address_street, address_city, address_state, address_zip, address_country')
+      .is('deleted_at', null)
+      .or('is_simulation.is.null,is_simulation.eq.false')
+      .or('is_test_data.is.null,is_test_data.eq.false')
       .not('address_street', 'is', null)
       .neq('address_street', '')
       .limit(1000);
@@ -61,13 +148,15 @@ serve(async (req) => {
       query = query.or('lat.is.null,lng.is.null');
     }
 
-    const { data: stores, error: fetchError } = await query;
+    const { data: fetchedStores, error: fetchError } = await query;
 
     if (fetchError) {
       throw new Error(`Failed to fetch stores: ${fetchError.message}`);
     }
 
-    if (!stores || stores.length === 0) {
+    const stores = ((fetchedStores || []) as StoreRow[]).filter(isEligibleStore);
+
+    if (stores.length === 0) {
       return new Response(
         JSON.stringify({ success: true, geocoded: 0, failed: 0, skipped: 0, total: 0, message: 'No stores to process' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -76,8 +165,16 @@ serve(async (req) => {
 
     let geocoded = 0;
     let failed = 0;
+    let ambiguous = 0;
     let skipped = 0;
     const batchSize = 50;
+
+    if (dryRun) {
+      return new Response(
+        JSON.stringify({ success: true, dry_run: true, eligible: stores.length, total: stores.length }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     for (let i = 0; i < stores.length; i += batchSize) {
       const batch = stores.slice(i, i + batchSize);
@@ -106,7 +203,7 @@ serve(async (req) => {
 
           const addressString = addressParts.join(', ');
           const encodedAddress = encodeURIComponent(addressString);
-          const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${mapboxToken}&limit=1&country=us`;
+          const url = `https://api.mapbox.com/geocoding/v5/mapbox.places-permanent/${encodedAddress}.json?access_token=${mapboxToken}&limit=1&country=us`;
 
           const response = await fetch(url);
           if (!response.ok) {
@@ -120,48 +217,28 @@ serve(async (req) => {
 
           if (!data.features || data.features.length === 0) {
             console.warn(`No geocode result for store ${store.id}: ${addressString}`);
-            // Flag as unverified
-            await supabase
-              .from('stores')
-              .update({ address_country: 'UNVERIFIED' })
-              .eq('id', store.id);
             failed++;
             continue;
           }
 
           const feature = data.features[0];
+          if (!isConfidentMatch(feature, store)) {
+            console.warn(`Ambiguous geocode result for store ${store.id}: ${addressString}`);
+            ambiguous++;
+            continue;
+          }
           const [lng, lat] = feature.center;
-
-          // Parse normalized address from Mapbox response
-          const normalizedStreet = feature.address
-            ? `${feature.address} ${feature.text}`
-            : feature.text || store.address_street;
-
-          let normalizedCity = store.address_city || null;
-          let normalizedState = store.address_state || null;
-          let normalizedZip = store.address_zip || null;
-
-          if (feature.context) {
-            for (const ctx of feature.context) {
-              if (ctx.id?.startsWith('place')) normalizedCity = normalizedCity || ctx.text;
-              if (ctx.id?.startsWith('region')) normalizedState = normalizedState || ctx.text;
-              if (ctx.id?.startsWith('postcode')) normalizedZip = normalizedZip || ctx.text;
-            }
+          if (typeof lat !== 'number' || typeof lng !== 'number' || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            ambiguous++;
+            continue;
           }
 
-          // Update store with normalized address + coordinates
+          // Coordinates only. Preserve the canonical address and every identity/assignment field.
           const { error: updateError } = await supabase
             .from('stores')
-            .update({
-              lat,
-              lng,
-              address_street: normalizedStreet,
-              address_city: normalizedCity,
-              address_state: normalizedState,
-              address_zip: normalizedZip,
-              address_country: 'USA',
-            })
-            .eq('id', store.id);
+            .update({ lat, lng })
+            .eq('id', store.id)
+            .or('lat.is.null,lng.is.null');
 
           if (updateError) {
             console.error(`Failed to update store ${store.id}:`, updateError);
@@ -186,9 +263,10 @@ serve(async (req) => {
         success: true,
         geocoded,
         failed,
+        ambiguous,
         skipped,
         total: stores.length,
-        message: `Validated ${geocoded} stores, ${failed} failed, ${skipped} skipped (invalid address), out of ${stores.length} total`,
+        message: `Geocoded ${geocoded} stores, ${ambiguous} ambiguous, ${failed} failed, ${skipped} skipped, out of ${stores.length} eligible`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
