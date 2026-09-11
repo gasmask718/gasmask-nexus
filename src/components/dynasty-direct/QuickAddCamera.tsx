@@ -147,10 +147,13 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       persist(next);
 
       // AUTO-ADVANCE through the 3-shot sequence. Processing only starts once
-      // ALL THREE shots are in — the extra angle is never silently skipped.
+      // every required shot is in — with no printed label that's front + angle
+      // (the label slot never fills), otherwise all three.
       if (index < 2) setActiveShot(index + 1);
-      const allThree = Boolean(next[FRONT] && next[LABEL] && next[ANGLE]);
-      if (allThree) setTimeout(() => runProcessing(next, noLabel), 350);
+      const allIn = noLabel
+        ? Boolean(next[FRONT] && next[ANGLE])
+        : Boolean(next[FRONT] && next[LABEL] && next[ANGLE]);
+      if (allIn) setTimeout(() => runProcessing(next, noLabel), 350);
 
     } catch (e: any) {
       toast.error('That shot did not upload', { description: e.message ?? 'Tap the button and try again — nothing else was lost.' });
@@ -329,6 +332,40 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
         width_in: n.dimensions?.width_in ?? null,
         height_in: n.dimensions?.height_in ?? null,
       };
+
+      // ---- SOURCED WEB LOOKUP ----------------------------------------------
+      // Before we ask the wholesaler to type anything, check the sourced-specs
+      // system (pack-aware web lookup). It fills only what the label did NOT
+      // already give us — label OCR always wins over sourced web data.
+      // Never fatal: any failure here just falls through to manual gap entry.
+      const labelHasWeight = Number(m.weight_oz) > 0;
+      const labelHasDims = Number(m.length_in) > 0 && Number(m.width_in) > 0 && Number(m.height_in) > 0;
+      if ((!labelHasWeight || !labelHasDims) && rec.product_name) {
+        setProgress((p) => [...p, 'Checking sourced product data…']);
+        try {
+          // pack_count resolves itself from the draft (label read saved it) — don't pass it.
+          const est = await pipeline({
+            mode: 'estimate_measurements', draft_id: draft.id,
+            product_name: rec.product_name, brand_hint: rec.brand_visible || '',
+          });
+          if (!labelHasWeight && Number(est?.weight_oz) > 0) {
+            m.weight_oz = Number(est.weight_oz);
+          }
+          if (!labelHasDims && est?.dimensions
+            && Number(est.dimensions.length_in) > 0
+            && Number(est.dimensions.width_in) > 0
+            && Number(est.dimensions.height_in) > 0) {
+            m.length_in = Number(est.dimensions.length_in);
+            m.width_in = Number(est.dimensions.width_in);
+            m.height_in = Number(est.dimensions.height_in);
+          }
+          if ((m.weight_oz && !labelHasWeight) || (m.length_in && !labelHasDims)) {
+            setProgress((p) => [...p, 'Found published specs for this product']);
+          }
+        } catch (e: any) {
+          setProgress((p) => [...p, `Sourced lookup skipped — ${e?.message || 'no data found'}`]);
+        }
+      }
       setMeasurements(m);
 
       // ---- ORGANISE + NORMALISE THE PHOTOS ---------------------------------
@@ -394,12 +431,10 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       // WHAT ACTUALLY BLOCKS US — nothing else gets asked.
       const missing: string[] = [];
       if (!rec.product_name || rec.confidence === 'low') missing.push('name');
-      if (skipLabel || (label && label.label_detected === false)) {
-        missing.push('weight', 'dims');
-      } else {
-        if (!(Number(m.weight_oz) > 0)) missing.push('weight');
-        if (!(Number(m.length_in) > 0 && Number(m.width_in) > 0 && Number(m.height_in) > 0)) missing.push('dims');
-      }
+      // Ask for manual entry ONLY when both the label read AND the sourced
+      // lookup came back empty for that field.
+      if (!(Number(m.weight_oz) > 0)) missing.push('weight');
+      if (!(Number(m.length_in) > 0 && Number(m.width_in) > 0 && Number(m.height_in) > 0)) missing.push('dims');
       setGaps(missing);
       setGapIndex(0);
       setPhase(missing.length ? 'gaps' : 'price');
