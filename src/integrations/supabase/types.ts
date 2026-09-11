@@ -12169,6 +12169,186 @@ export type Database = {
           },
         ]
       }
+      ambassador_store_claims: {
+        Row: {
+          ambassador_id: string
+          created_at: string
+          id: string
+          release_reason: string | null
+          released_at: string | null
+          released_by_user_id: string | null
+          secured_at: string
+          secured_by_user_id: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          ambassador_id: string
+          created_at?: string
+          id?: string
+          release_reason?: string | null
+          released_at?: string | null
+          released_by_user_id?: string | null
+          secured_at?: string
+          secured_by_user_id: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          ambassador_id?: string
+          created_at?: string
+          id?: string
+          release_reason?: string | null
+          released_at?: string | null
+          released_by_user_id?: string | null
+          secured_at?: string
+          secured_by_user_id?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_store_claims_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_referral_tree"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_orphan_watch"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_addressless_call_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_flower_demand_list"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_prior_customer_segments"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_profile_completeness"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_public_store_locator"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_restock_alerts"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_action_panel"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_briefing_input"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_product_mix"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_products_carried"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "ambassador_store_claims_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_summary"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       ambassador_tasks: {
         Row: {
           ambassador_id: string | null
@@ -159937,9 +160117,54 @@ export type Database = {
         Args: { _store_id: string; _user_id: string }
         Returns: boolean
       }
+      ambassador_has_store_access: {
+        Args: { _store_id: string; _user_id: string }
+        Returns: boolean
+      }
       ambassador_login_is_shared: {
         Args: { _user_id: string }
         Returns: boolean
+      }
+      ambassador_store_claim_status: {
+        Args: { _store_id: string }
+        Returns: {
+          can_secure: boolean
+          secured_ambassador_id: string
+          secured_ambassador_name: string
+          secured_at: string
+          secured_by_me: boolean
+          store_id: string
+        }[]
+      }
+      ambassador_visible_store_ids_for_user: {
+        Args: { _user_id: string }
+        Returns: {
+          store_id: string
+        }[]
+      }
+      ambassador_visible_stores: {
+        Args: never
+        Returns: {
+          access_source: string
+          assigned_at: string
+          assignment_id: string
+          assignment_type: string
+          commission_rate: number
+          is_primary: boolean
+          latitude: number
+          longitude: number
+          secured_ambassador_id: string
+          secured_ambassador_name: string
+          secured_at: string
+          secured_by_me: boolean
+          store_address: string
+          store_city: string
+          store_id: string
+          store_name: string
+          store_owner: string
+          store_phone: string
+          store_state: string
+        }[]
       }
       analyze_store_duplicate_groups: {
         Args: never
@@ -162184,6 +162409,7 @@ export type Database = {
         }
         Returns: string
       }
+      normalize_us_state: { Args: { _value: string }; Returns: string }
       not_developer: { Args: { _user_id: string }; Returns: boolean }
       notify_owners: {
         Args: {
@@ -162837,6 +163063,10 @@ export type Database = {
           year: number
         }[]
       }
+      secure_store_for_ambassador: {
+        Args: { _store_id: string }
+        Returns: Json
+      }
       seed_outbound_queue_from_inventory: {
         Args: { p_business_id: string; p_mode?: string }
         Returns: Json
@@ -163016,6 +163246,17 @@ export type Database = {
           _token: string
         }
         Returns: string
+      }
+      territory_matches_store: {
+        Args: {
+          _region_type: string
+          _region_value: string
+          _store_borough: string
+          _store_city: string
+          _store_neighborhood: string
+          _store_state: string
+        }
+        Returns: boolean
       }
       transfer_wholesaler_account: {
         Args: {
