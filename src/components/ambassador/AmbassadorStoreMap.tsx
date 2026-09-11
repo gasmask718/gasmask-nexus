@@ -36,11 +36,11 @@ const STATUS_COLORS: Record<string, string> = {
 
 function escapePopupText(value: unknown): string {
   return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 interface Props {
@@ -133,7 +133,7 @@ function MapBody({ stores, title, height }: { stores: MapStore[]; title: string;
               renderPopupHTML={(point) => {
                 const securedBy = point.meta?.securedAmbassadorName;
                 const status = securedBy ? `Secured by ${String(securedBy)}` : 'Available';
-                return `<strong>${escapePopupText(point.title)}</strong><br>${escapePopupText(point.subtitle)}</br>${escapePopupText(status)}`;
+                return `<strong>${escapePopupText(point.title)}</strong><br>${escapePopupText(point.subtitle)}<br>${escapePopupText(status)}`;
               }}
               className="h-full"
             />
