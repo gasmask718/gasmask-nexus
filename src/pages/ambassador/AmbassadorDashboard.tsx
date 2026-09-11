@@ -94,8 +94,8 @@ function StoreCard({ store, onClick }: { store: PortfolioStore; onClick: () => v
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-semibold truncate">{store.store_name}</h3>
-              <Badge variant={store.assignment_type === 'sourced' ? 'default' : 'secondary'} className="text-xs">
-                {store.assignment_type}
+               <Badge variant={store.access_source === 'territory' ? 'outline' : 'secondary'} className="text-xs">
+                 {store.access_source === 'territory' ? 'Shared area' : store.assignment_type}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground truncate">
@@ -109,8 +109,8 @@ function StoreCard({ store, onClick }: { store: PortfolioStore; onClick: () => v
                 </span>
               )}
               <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                Assigned {formatDistanceToNow(new Date(store.assigned_at), { addSuffix: true })}
+                 <Calendar className="h-3 w-3" />
+                 {store.access_source === 'territory' ? 'Area access' : `Assigned ${formatDistanceToNow(new Date(store.assigned_at), { addSuffix: true })}`}
               </span>
             </div>
           </div>
@@ -289,7 +289,7 @@ function DashboardContent() {
   }
 
   // Separate stores by type
-  const assignedStores = stores.filter(s => s.assignment_type === 'assigned');
+  const assignedStores = stores.filter(s => s.access_source !== 'territory');
   const sourcedStores = stores.filter(s => s.assignment_type === 'sourced');
 
   // Real commission totals from SQL view

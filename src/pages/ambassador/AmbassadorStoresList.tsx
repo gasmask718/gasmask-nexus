@@ -30,6 +30,7 @@ import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDial
 import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassadorPortfolio';
 import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from '@/hooks/useTranslation';
+import { StoreClaimStatus } from '@/components/ambassador/StoreClaimStatus';
 
 
 interface StoreCardProps {
@@ -40,11 +41,13 @@ interface StoreCardProps {
   onDispatch: () => void;
   onCall: () => void;
   onMessage: () => void;
+  onSecure: () => Promise<unknown>;
+  isSecuring: boolean;
   selected: boolean;
   losSnapshots?: import('@/hooks/useLastOrderSnapshot').LastOrderSnapshot[];
 }
 
-function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onMessage, selected, losSnapshots }: StoreCardProps) {
+function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onMessage, onSecure, isSecuring, selected, losSnapshots }: StoreCardProps) {
   const { t } = useTranslation();
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -85,8 +88,8 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
               <h3 className="font-semibold truncate group-hover:text-primary transition-colors">
                 {store.store_name}
               </h3>
-              <Badge variant={store.assignment_type === 'sourced' ? 'default' : 'secondary'} className="text-xs shrink-0">
-                {store.assignment_type}
+              <Badge variant={store.access_source === 'territory' ? 'outline' : 'secondary'} className="text-xs shrink-0">
+                {store.access_source === 'territory' ? 'Shared area' : store.assignment_type}
               </Badge>
               {store.is_primary && (
                 <Badge variant="outline" className="text-xs shrink-0">{t('amb.stores.primary')}</Badge>
@@ -114,6 +117,16 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
                 {formatDistanceToNow(new Date(store.assigned_at), { addSuffix: true })}
               </span>
               <LastOrderKPIBadge snapshots={losSnapshots} compact />
+            </div>
+            <div className="mt-3" onClick={(event) => event.stopPropagation()}>
+              <StoreClaimStatus
+                storeName={store.store_name}
+                securedByMe={store.secured_by_me}
+                securedAmbassadorName={store.secured_ambassador_name}
+                securedAt={store.secured_at}
+                onSecure={onSecure}
+                isSecuring={isSecuring}
+              />
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
@@ -148,15 +161,17 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
               >
                 <RouteIcon className="h-3.5 w-3.5" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                onClick={handleRemoveClick}
-                title={t('amb.stores.remove_from')}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              {store.assignment_id && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                  onClick={handleRemoveClick}
+                  title={t('amb.stores.remove_from')}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
               <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
           </div>
@@ -171,7 +186,7 @@ function StoresListContent() {
   const navigate = useNavigate();
   const { initiateCall } = useCall();
   const { t } = useTranslation();
-  const { stores, metrics, isLoading, unassignStore, isUnassigningStore, ambassador } = useAmbassadorPortfolio();
+  const { stores, metrics, isLoading, unassignStore, isUnassigningStore, secureStore, isSecuringStore, ambassador } = useAmbassadorPortfolio();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
@@ -197,7 +212,7 @@ function StoresListContent() {
 
     // Filter by tab
     if (activeTab === 'assigned') {
-      result = result.filter(s => s.assignment_type === 'assigned');
+      result = result.filter(s => s.access_source !== 'territory');
     } else if (activeTab === 'sourced') {
       result = result.filter(s => s.assignment_type === 'sourced');
     }
@@ -328,7 +343,7 @@ function StoresListContent() {
             <div className="grid gap-3">
               {filteredStores.map((store) => (
                 <StoreCard 
-                  key={store.assignment_id} 
+                  key={store.store_id}
                   store={store}
                   onClick={() => handleStoreClick(store.store_id)}
                   onRemove={() => handleRemoveClick(store)}
@@ -344,6 +359,8 @@ function StoresListContent() {
                     });
                   }}
                   onMessage={() => navigate(`/ambassador/communications?store=${store.store_id}`)}
+                   onSecure={() => secureStore(store.store_id)}
+                   isSecuring={isSecuringStore}
                   selected={selectedIds.includes(store.store_id)}
                   losSnapshots={losMap?.get(store.store_id)}
                 />

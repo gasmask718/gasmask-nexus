@@ -21,6 +21,8 @@ export interface MapStore {
   /** e.g. stop status: planned | complete | skipped */
   statusKey?: string;
   order?: number;
+  securedAmbassadorName?: string | null;
+  securedAt?: string | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -30,6 +32,8 @@ const STATUS_COLORS: Record<string, string> = {
   completed: '#22c55e',
   skipped: '#f97316',
   assigned: '#8b5cf6',
+  territory: '#0ea5e9',
+  secured: '#16a34a',
 };
 
 interface Props {
@@ -42,38 +46,15 @@ interface Props {
 /** Self-loading variant: the signed-in ambassador's own assigned stores. */
 function PortfolioStoreMap({ title, height }: { title?: string; height?: number }) {
   const { stores: portfolio } = useAmbassadorPortfolio();
-  const ids = (portfolio || []).map((s) => s.store_id).filter(Boolean);
-
-  const { data: coords } = useQuery({
-    queryKey: ['ambassador-map-coords', ids.length, ids.slice().sort()[0]],
-    queryFn: async () => {
-      if (!ids.length) return [] as any[];
-      // Chunked: a single .in() with hundreds of ids overflows the request URL
-      // and silently returns nothing, leaving the map empty.
-      const out: any[] = [];
-      for (let i = 0; i < ids.length; i += 150) {
-        const { data, error } = await supabase
-          .from('stores')
-          .select('id, lat, lng')
-          .in('id', ids.slice(i, i + 150));
-        if (error) throw error;
-        out.push(...(data || []));
-      }
-      return out;
-    },
-    enabled: ids.length > 0,
-  });
-
-  const coordMap = new Map<string, { lat: number | null; lng: number | null }>(
-    ((coords || []) as any[]).map((c) => [c.id as string, { lat: c.lat, lng: c.lng }]),
-  );
   const mapped: MapStore[] = (portfolio || []).map((s) => ({
     id: s.store_id,
     name: s.store_name,
     address: [s.store_address, s.store_city, s.store_state].filter(Boolean).join(', '),
-    lat: coordMap.get(s.store_id)?.lat ?? null,
-    lng: coordMap.get(s.store_id)?.lng ?? null,
-    statusKey: 'assigned',
+    lat: s.latitude,
+    lng: s.longitude,
+    statusKey: s.secured_ambassador_name ? 'secured' : s.access_source === 'territory' ? 'territory' : 'assigned',
+    securedAmbassadorName: s.secured_ambassador_name,
+    securedAt: s.secured_at,
   }));
 
   return <MapBody stores={mapped} title={title || 'My Stores'} height={height ?? 420} />;
@@ -103,6 +84,10 @@ function MapBody({ stores, title, height }: { stores: MapStore[]; title: string;
         title: s.order ? `${s.order}. ${s.name}` : s.name,
         subtitle: s.address,
         statusKey: s.statusKey || 'assigned',
+        meta: {
+          securedAmbassadorName: s.securedAmbassadorName,
+          securedAt: s.securedAt,
+        },
       })),
     [withCoords],
   );
@@ -138,6 +123,11 @@ function MapBody({ stores, title, height }: { stores: MapStore[]; title: string;
               initialCenter={center}
               initialZoom={points.length === 1 ? 13 : 10}
               clustering={points.length > 150}
+              renderPopupHTML={(point) => {
+                const securedBy = point.meta?.securedAmbassadorName;
+                const status = securedBy ? `Secured by ${String(securedBy)}` : 'Available';
+                return `<strong>${point.title}</strong><br>${point.subtitle || ''}<br>${status}`;
+              }}
               className="h-full"
             />
           </div>
