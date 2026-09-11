@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { isSafeNextPath } from '@/lib/authNext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,11 +12,26 @@ import { LogIn, Loader2, Mail } from 'lucide-react';
 
 export default function AmbassadorLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, session, loading: authLoading } = useAuth();
+
+  // Entry destination: only same-origin relative paths are honored.
+  const stateReturnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+  const nextParam = new URLSearchParams(location.search).get('next');
+  const requested = [stateReturnTo, nextParam].find(isSafeNextPath) ?? null;
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+
+  // Already signed in (e.g. an admin who is also a field ambassador opening the
+  // portal link): go straight into field mode, no second login, no new account.
+  if (!authLoading && user && session) {
+    return <Navigate to={requested ?? '/ambassador/dashboard'} replace />;
+  }
+
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -58,7 +75,10 @@ export default function AmbassadorLogin() {
       toast.success('Welcome back!');
       // Nexus ambassadors (user_roles) land on the real ambassador portal;
       // legacy UT-only accounts (unforgettable_ambassadors match) keep the UT dashboard.
-      navigate(hasAmbassadorRole || isElevated ? '/ambassador/dashboard' : '/ut/ambassador/dashboard');
+      const portalHome = hasAmbassadorRole || isElevated
+        ? (requested ?? '/ambassador/dashboard')
+        : '/ut/ambassador/dashboard';
+      navigate(portalHome, { replace: true });
     } catch (err: any) {
       if (err.message?.includes('Invalid login')) {
         toast.error('Invalid email or password');
