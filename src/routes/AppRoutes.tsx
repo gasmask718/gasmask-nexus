@@ -281,6 +281,7 @@ const AdminVAMonitorPage = lazy(() => import('@/pages/admin/AdminVAMonitor'));
 const AdminDNCManagerPage = lazy(() => import('@/pages/admin/AdminDNCManager'));
 const BrandaroScriptsAdminPage = lazy(() => import('@/pages/admin/BrandaroScriptsAdminPage'));
 const AmbassadorLogin = lazy(() => import('@/pages/ambassador/AmbassadorLogin'));
+const AmbassadorPortalEntry = lazy(() => import('@/pages/ambassador/AmbassadorPortalEntry'));
 const AmbassadorSetPassword = lazy(() => import('@/pages/ambassador/AmbassadorSetPassword'));
 const UTAmbassadorDashboard = lazy(() => import('@/pages/ut-ambassador/UTAmbassadorDashboard'));
 const AmbassadorEarningsPage = lazy(() => import('@/pages/ambassador/reports').then(m => ({ default: m.AmbassadorEarningsPage })));
