@@ -691,30 +691,36 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
           )}
 
 
-          <div className="grid grid-cols-3 gap-2">
-            {shotSpec.map((s, i) => (
-              <button
-                key={s.key}
-                type="button"
-                onClick={() => setActiveShot(i)}
-                className={`relative aspect-square rounded-xl overflow-hidden border-2 ${
-                  i === activeShot ? 'border-primary' : 'border-border'
-                }`}
-              >
-                {shots[i] ? (
-                  <>
-                    <img src={shots[i] as string} alt={s.label} className="h-full w-full object-cover" />
-                    <span className="absolute bottom-1 right-1 rounded-full bg-primary p-1">
-                      <Check className="h-3 w-3 text-primary-foreground" />
+          {/* THE PHOTOS HE ALREADY TOOK — big, permanent, always on screen. */}
+          <div className="space-y-2" data-testid="shot-strip">
+            <p className="text-sm font-semibold">
+              Your photos ({shots.filter(Boolean).length} of 3)
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {shotSpec.map((s, i) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => setActiveShot(i)}
+                  className={`relative aspect-[3/4] rounded-xl overflow-hidden border-2 bg-muted/40 ${
+                    i === activeShot ? 'border-primary ring-2 ring-primary/30' : 'border-border'
+                  }`}
+                >
+                  {shots[i] ? (
+                    <>
+                      <img src={shots[i] as string} alt={s.label} className="h-full w-full object-cover" />
+                      <span className="absolute bottom-1.5 right-1.5 rounded-full bg-primary p-1.5 shadow">
+                        <Check className="h-4 w-4 text-primary-foreground" />
+                      </span>
+                    </>
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-[11px] text-muted-foreground px-1 text-center">
+                      {s.label}
                     </span>
-                  </>
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground px-1 text-center">
-                    {s.label}
-                  </span>
-                )}
-              </button>
-            ))}
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* LOOSE GOODS — no printed label anywhere on the item */}
