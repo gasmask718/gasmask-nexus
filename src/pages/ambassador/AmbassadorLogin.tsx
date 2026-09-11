@@ -26,6 +26,13 @@ export default function AmbassadorLogin() {
   const [forgotMode, setForgotMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
+  // Already signed in (e.g. an admin who is also a field ambassador opening the
+  // portal link): go straight into field mode, no second login, no new account.
+  if (!authLoading && user && session) {
+    return <Navigate to={requested ?? '/ambassador/dashboard'} replace />;
+  }
+
+
   const handleLogin = async () => {
     if (!email || !password) {
       toast.error('Please fill in all fields');
@@ -68,7 +75,10 @@ export default function AmbassadorLogin() {
       toast.success('Welcome back!');
       // Nexus ambassadors (user_roles) land on the real ambassador portal;
       // legacy UT-only accounts (unforgettable_ambassadors match) keep the UT dashboard.
-      navigate(hasAmbassadorRole || isElevated ? '/ambassador/dashboard' : '/ut/ambassador/dashboard');
+      const portalHome = hasAmbassadorRole || isElevated
+        ? (requested ?? '/ambassador/dashboard')
+        : '/ut/ambassador/dashboard';
+      navigate(portalHome, { replace: true });
     } catch (err: any) {
       if (err.message?.includes('Invalid login')) {
         toast.error('Invalid email or password');
