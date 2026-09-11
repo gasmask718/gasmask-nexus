@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_KEY}` },
             body: JSON.stringify({
-              from: "GasMask <onboarding@resend.dev>",
+              from: FROM_EMAIL,
               to: [toEmail],
               subject: "GasMask — Ambassador Invite",
               html: `<p>${greeting}you've been invited to join <strong>GasMask</strong> as an Ambassador.</p>
