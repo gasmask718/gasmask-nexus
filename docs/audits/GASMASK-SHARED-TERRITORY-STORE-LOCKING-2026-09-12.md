@@ -56,3 +56,42 @@ Inter, SL, Mooks, Relleo, and Chico's additional areas remain held. No ambiguous
 ## Scope confirmation
 
 No invitations, outreach, mass provisioning, store edits, coordinate changes, route rewrites, check-ins, visits, or completed deliveries were created. No claim was inferred from an assignment, route, check-in, or completion event.
+
+## Owner Territory Clarifications — 2026-09-12
+
+Applied only Ching's newly confirmed territory instructions using the existing shared-area model. No new tables, no claim/route/map rebuilds, no invitations, no outreach, no store mutations.
+
+### ZIP territory support
+
+`ambassador_territory_coverage` previously supported state / county / city / custom_zone only. Added the smallest safe capability to the existing model:
+
+- New `zip` value on the existing `territory_region_type` enum.
+- `territory_matches_store(...)` now takes the canonical `store_master.zip` and performs exact, digit-normalized 5-digit matching (no radius, no prefix inference).
+- `ambassador_has_store_access(...)` passes `sm.zip`; every map / list / route surface reads through this same path.
+
+### Person table
+
+| Person | Confirmed territory | Coverage applied | Shared overlap | Identity status | Blocker |
+|---|---|---|---|---|---|
+| Inter (INTERSTATE) | Far Rockaway, Queens NY + ZIP 10460 Bronx | Yes — city `Far Rockaway, NY`, zip `10460` | Far Rockaway shared with Oliver (Queens); 10460 inside Rufino's Bronx | Matched existing profile by confirmed phone 929-777-1122; email `InnerstateTransportation@gmail.com` recorded; no login | Invite not sent (mail-provider 403 held) |
+| Relleo | ZIP 10460 + "surrounding" | No | — | No safe Relleo profile exists | IDENTITY_CONFIRMATION_REQUIRED; "surrounding" = OWNER_BOUNDARY_CLARIFICATION_REQUIRED |
+| Rufino Vinales | Bronx, Mt. Vernon, Yonkers, New Rochelle, Manhattan | Yes — existing Bronx + Mount Vernon kept; added Yonkers, New Rochelle, Manhattan | Manhattan shared with SL (intended), 10460 shared with Inter | Existing profile; no login | None |
+| SL | Manhattan | No | — | Ambiguous: existing record phone 929-944-3067 vs roster email BELIEVEITORNOTT28@gmail.com, unconfirmed | IDENTITY_CONFIRMATION_REQUIRED — architecture has no identity-free pending coverage |
+| Oliver | Queens | Unchanged (`Queens, NY`) | Far Rockaway also visible to Inter — intentional | Existing profile; no login | None |
+
+Ching (Brooklyn), Javier (Staten Island + New Jersey), Shawn (Connecticut), Bosket/Billz (Georgia), Looney (Delaware) and Chico (Florida) were not modified.
+
+### Verification (live store book, non-deleted, non-simulation)
+
+- Inter — Far Rockaway: 10 stores; ZIP 10460: 8 stores.
+- Oliver — Queens intact: 240 stores, including all 10 Far Rockaway stores (overlap confirmed, not exclusive).
+- Rufino — Bronx 97, Mt. Vernon 1, Yonkers 12, New Rochelle 8, Manhattan 186.
+- ZIP matcher: `10460` vs store zip `10460-1234` = true; vs `10461` = false.
+- Territory access produced zero claims: active secured-store claims remain 0.
+- Ching's effective visible-store count unchanged at 992 — CLAIM SYSTEM REGRESSION: PASS, ROUTE/MAP REGRESSION: PASS (no claim, route, or map code changed).
+
+### Held
+
+- Relleo's "surrounding" boundary and identity.
+- SL identity merge (not performed) — Manhattan stays owner-confirmed but unapplied.
+- Inter, Rufino, Oliver, Relleo and SL have no linked logins; end-to-end portal verification for them is blocked until approved logins exist. None were fabricated.
