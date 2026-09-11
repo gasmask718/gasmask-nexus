@@ -95,3 +95,54 @@ Ching (Brooklyn), Javier (Staten Island + New Jersey), Shawn (Connecticut), Bosk
 - Relleo's "surrounding" boundary and identity.
 - SL identity merge (not performed) — Manhattan stays owner-confirmed but unapplied.
 - Inter, Rufino, Oliver, Relleo and SL have no linked logins; end-to-end portal verification for them is blocked until approved logins exist. None were fabricated.
+
+## Owner Clarifications Round 2 — 2026-09-12 (Ray / Rell / SL)
+
+Applied only the newest owner-confirmed identities and areas using the existing shared-area model. No model, claim, route, or map rebuild. No invitations, no outreach, no store or coordinate changes.
+
+**Supersedes the previous section's blockers:** the Relleo `IDENTITY_CONFIRMATION_REQUIRED` / "surrounding" boundary hold and the SL `IDENTITY_CONFIRMATION_REQUIRED` hold are both resolved by owner confirmation and no longer apply.
+
+### Person table
+
+| Person | Confirmed territory | Profile status | Coverage applied | Visible stores | Blocker |
+|---|---|---|---|---:|---|
+| Ray | New Jersey | Created — `Theonlysunray@aol.com`, +1 929-351-1404, active, no login | `state = New Jersey` | 7 | Invite not sent (mail-provider 403 held) |
+| Rell / Relleo | Bronx, Manhattan, Mt. Vernon, New Rochelle, Yonkers, Harlem | Existing record `109e7f72-…` ("RELL") reused; confirmed email `Jrellmwest@gmail.com` recorded; no duplicate created | cities `Bronx, NY`, `Manhattan, NY`, `Mount Vernon, NY`, `New Rochelle, NY`, `Yonkers, NY` + custom zones for the five literal Harlem neighborhood values in the store book | 97 / 186 / 1 / 8 / 12 / 21 Harlem | Invite not sent; no login |
+| SL | Bed-Stuy (Brooklyn) + Manhattan | Existing record `0ddde0f3-…` (phone 929-944-3067) reused and linked to roster email `BELIEVEITORNOTT28@gmail.com`; history preserved; no duplicate | custom zone `bed-stuy` + city `Manhattan, NY` | 38 / 186 | Invite not sent; no login |
+| Mooks | Pennsylvania | No record | Not applied | — | CONTACT_REQUIRED — no email/phone supplied; nothing invented |
+
+Harlem was applied as the exact neighborhood values present in canonical `store_master` (`harlem` 5, `harlem n` 6, `harlem s` 2, `east harlem` 3, `east harlem n` 5 = 21). No radius, boundary, or coordinate was invented.
+
+Preserved unchanged: Ching (Brooklyn), Oliver (Queens), Inter (Far Rockaway + ZIP 10460), Rufino (Bronx, Mt. Vernon, Yonkers, New Rochelle, Manhattan), Javier (Staten Island + New Jersey), Bosket & Billz (Georgia), Shawn (Connecticut), Looney (Delaware), Chico (Florida).
+
+### Overlap verification
+
+- Ray and Javier both see the same 7 New Jersey stores — shared, neither owns them.
+- Manhattan's 186 stores are visible to Rufino, Rell and SL simultaneously.
+- Bed-Stuy's 38 stores are visible to both SL and Ching (Brooklyn).
+- Territory grants created **zero** claims: `ambassador_store_claims` total rows = 0, active = 0.
+- Atomic protection re-tested live: a second active claim on an already-secured store was rejected by `ambassador_store_claims_one_active_per_store`; the temporary test claim was deleted (0 remaining).
+
+### Ching's visible store count — 992 explained
+
+| Access source | Stores |
+|---|---:|
+| Brooklyn geographic coverage (live, non-simulation, city or borough = Brooklyn) | 990 |
+| Direct assignments (985) — all inside Brooklyn, add nothing new | 0 |
+| Legacy `assigned_ambassador_id` (2) — both inside Brooklyn | 0 |
+| Route-stop access within 30 days, outside Brooklyn | 2 |
+| Other | 0 |
+| **Effective visible total** | **992** |
+
+The two route-sourced stores are `21st ock (32-34 Steinway St)`, Long Island City, Queens and `. RAMMI / Abdul / Frankie (22506 Jamaica Ave)`, Jamaica, Queens — both reached through recent route stops assigned to Ching, which is legitimate under the effective-visible rules. Nothing was removed.
+
+The earlier 985 Brooklyn baseline was the count of Brooklyn stores **assigned** to Ching. The geographic pool is now 990 live Brooklyn stores; the 5-store difference is Brooklyn stores in the live book that carry no active assignment to him and are visible by area only.
+
+Brooklyn live stores: **990** · with usable coordinates: **981** · without usable coordinates: **9**.
+
+### Status
+
+- CLAIM SYSTEM REGRESSION: **PASS**
+- MAP/ROUTE REGRESSION: **PASS** (no claim, route, map or UI code changed this pass)
+- DUPLICATE PROFILE CHECK: **PASS** — one SL, one Rell, one Ray-with-confirmed-contact. A separate legacy record named " RAY GMA " (`0d38db36-…`) exists with no email or phone; it was **not** merged or altered, because nothing links it to the confirmed Ray identity. Owner confirmation required before any merge.
+- Only remaining roster/contact blocker: **Mooks** (Pennsylvania known, contact unresolved). All other confirmed people are recorded and area-visible; logins remain pending the unresolved mail-provider 403.
