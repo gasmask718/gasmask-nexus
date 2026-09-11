@@ -212,6 +212,9 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     e.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast.error('That is not a photo'); return; }
+    // Same held preview as the live camera: he sees the picked photo full size
+    // and confirms it himself.
+    setFrozenFrame(URL.createObjectURL(file));
     uploadShot(file, activeShot);
   }
 
