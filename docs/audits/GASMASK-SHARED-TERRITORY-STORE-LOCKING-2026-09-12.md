@@ -196,3 +196,72 @@ invitations or outreach were sent (mail-provider 403 still unresolved).
 - CLAIM REGRESSION: **PASS** — zero claims; atomic one-active-claim-per-store rule untouched.
 - MAP/VISIBILITY REGRESSION: **PASS**
 - ROUTING REGRESSION: **PASS** — no route or route-stop records touched.
+
+---
+
+## Angel Abdul Cousin — Owner-Assigned Seed Stores (2026-09-11)
+
+Owner direction: *"140 pennsylvania ave and 391 liberty ave - both are his family
+members so ima give him these 2 active stores and let him build on that"*
+
+### Profile
+| Field | Value |
+|---|---|
+| Ambassador id | `1dcb430d-43f4-4a30-a7d6-7e9bf2de5382` |
+| Display label | `Angel Abdul Cousin` (owner-derived, no personal name supplied) |
+| Email | `Edwin.jimenez188@outlook.com` |
+| Phone | `+1 (347) 364-3425` |
+| Login | none — `user_id` NULL |
+| Tags | `NAME_CONFIRMATION_PENDING`, `READY_FOR_INVITE_AFTER_MAIL_FIX`, `OWNER_ASSIGNED_SEED_STORES`, `PHONE_SHARED_WITH_AMB_AMB-C8F8ED` |
+
+**Identity flags**
+- `NAME_CONFIRMATION_PENDING` — no legal/personal name was provided or invented.
+- **Phone collision, held for owner:** existing ambassador `Angel`
+  (`4a4df15e-ef96-4340-98f1-a0cb2ea6125e`, `AMB-C8F8ED`, no email) already carries
+  `3473643425`. Owner described this person as Angel's *cousin*, i.e. a distinct
+  person, so no merge was performed; a separate email-keyed profile was created and
+  the collision flagged. Owner must confirm whether the number belongs to the cousin
+  or to Angel.
+
+### Store 1 — 140 Pennsylvania Ave
+- Canonical match: `5f42f2eb-93e2-4581-9312-67b3a264ce64` — "Abdula two deli Ang grill burgers (140 Pennsylvania Ave)"
+- City/state/ZIP: Brooklyn, NY 11207
+- Live: yes (`deleted_at` NULL, `status=active`, non-simulation)
+- Duplicate candidates: none (normalized-address scan returned exactly one row)
+- Existing assignment: Ching (`15e41227-…`), preserved
+- Existing secured claim: **none**
+- Direct access applied: yes, `ambassador_assignments` active row (access only)
+- Coordinates: 40.67427 / -73.89674 (mappable, routable)
+
+### Store 2 — 391 Liberty Ave
+- Canonical match: `9b7621bb-56aa-4211-80f6-c9f833a56f4f` — "ANDY - Abdul brother (391 Liberty Ave)"
+- City/state/ZIP: Brooklyn, NY 11207
+- Live: yes (`deleted_at` NULL, `status=active`, non-simulation)
+- Duplicate candidates: none
+- Existing assignment: Ching (`ec165afc-…`), preserved
+- Existing secured claim: **none**
+- Direct access applied: yes, `ambassador_assignments` active row (access only)
+- Coordinates: 40.674714 / -73.895403 (mappable, routable)
+
+### Model compliance
+- **Broader territory: NOT ASSIGNED.** `ambassador_territory_coverage` rows for this
+  ambassador: 0. No city/state was inferred from the two addresses.
+- **Claims unchanged.** Active claims for this ambassador: 0. Project-wide active
+  claims still 0. "Active store" in the owner's message was not treated as evidence
+  of a secured claim; no claim row was created.
+- Ching keeps both stores (985 active assignments, unchanged); no other ambassador's
+  geographic visibility was altered.
+- Field access path: both stores satisfy `ambassador_has_store_access` via the
+  assignment branch once a login is linked — store detail, route add, Directions and
+  Check-in all read the same `store_master` + `stores` coordinate records, both of
+  which are populated.
+
+### Result
+- PROFILE: created, `NAME_CONFIRMATION_PENDING`
+- BROADER TERRITORY: NOT ASSIGNED
+- INVITE: **BLOCKED** — `READY_FOR_INVITE_AFTER_MAIL_FIX` (Resend domain verification
+  outstanding; no email sent, no retry attempted)
+- DUPLICATE CHECK: **PASS** — one profile per email, one canonical store per address,
+  no duplicate active assignment
+- CLAIM REGRESSION: **PASS** — 0 active claims before and after
+- ROUTE/MAP ACCESS: **PASS** — both stores geocoded, routes table untouched (50)
