@@ -49,6 +49,10 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
 
   const [phase, setPhase] = useState<Phase>('capture');
   const [shots, setShots] = useState<(string | null)[]>([null, null, null]);
+  const shotsRef = useRef<(string | null)[]>([null, null, null]);
+  // The just-captured frame, held on screen until the upload is acknowledged.
+  const [frozenFrame, setFrozenFrame] = useState<string | null>(null);
+  const [freezeSaved, setFreezeSaved] = useState(false);
   const [noLabel, setNoLabel] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [activeShot, setActiveShot] = useState(0);
