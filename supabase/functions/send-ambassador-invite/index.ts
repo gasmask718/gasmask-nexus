@@ -14,6 +14,12 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const APP_URL = Deno.env.get("APP_PUBLIC_URL") || "https://gasmask-os-nexus.lovable.app";
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
+// onboarding@resend.dev is Resend's sandbox sender: it only delivers to the
+// Resend account owner's own address and returns 403 validation_error for any
+// other recipient. Once a domain is verified at resend.com/domains, set
+// INVITE_FROM_EMAIL (e.g. "GasMask <invites@yourdomain.com>") and invites send
+// with no code change.
+const FROM_EMAIL = Deno.env.get("INVITE_FROM_EMAIL") || "GasMask <onboarding@resend.dev>";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -163,7 +169,7 @@ Deno.serve(async (req) => {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_KEY}` },
             body: JSON.stringify({
-              from: "GasMask <onboarding@resend.dev>",
+              from: FROM_EMAIL,
               to: [toEmail],
               subject: "GasMask — Ambassador Invite",
               html: `<p>${greeting}you've been invited to join <strong>GasMask</strong> as an Ambassador.</p>
