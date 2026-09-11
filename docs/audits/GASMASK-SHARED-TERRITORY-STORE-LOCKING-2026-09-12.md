@@ -146,3 +146,53 @@ Brooklyn live stores: **990** · with usable coordinates: **981** · without usa
 - MAP/ROUTE REGRESSION: **PASS** (no claim, route, map or UI code changed this pass)
 - DUPLICATE PROFILE CHECK: **PASS** — one SL, one Rell, one Ray-with-confirmed-contact. A separate legacy record named " RAY GMA " (`0d38db36-…`) exists with no email or phone; it was **not** merged or altered, because nothing links it to the confirmed Ray identity. Owner confirmation required before any merge.
 - Only remaining roster/contact blocker: **Mooks** (Pennsylvania known, contact unresolved). All other confirmed people are recorded and area-visible; logins remain pending the unresolved mail-provider 403.
+
+## Additional Owner Roster Updates — 2026-09-12
+
+Applied Ching's newest confirmed people/contacts/territories using the existing shared-area
+model. No territory logic, claim logic, routing, map code or store data was changed. No
+invitations or outreach were sent (mail-provider 403 still unresolved).
+
+| Person | Role | Email | Phone | Territory | Profile status | Visible live stores | Login/invite | Blocker |
+|---|---|---|---|---|---:|---|---|
+| Jayo | Ambassador | Saintil.jonathan@yahoo.com | +1 818-675-1358 | Pennsylvania (primary), California | Created (`JAYO-PACA`) | PA 0 · CA 0 | None — invite held | No live stores exist in PA or CA yet |
+| Mooez | Driver | moeeali.act.999@gmail.com | not supplied | None (deliberate) | Driver created under GasMask | n/a | None | TERRITORY_PENDING_OWNER_DIRECTION |
+| Looney | Ambassador | BOOKLOONEYMAC@gmail.com | +1 718-415-2793 (new) | Delaware | Existing profile updated (`587e8817-…`) | 0 | Invite held | No live Delaware stores yet |
+| Kuff | Ambassador | colwinmcgregor4@gmail.com | +1 917-214-3563 | Brooklyn, NY | Created (`KUFF-BK`) | 990 | Invite held | None |
+| Mooks | Ambassador (intended) | — | — | Pennsylvania (intended) | Not created | n/a | n/a | CONTACT_REQUIRED — **not** merged with Jayo |
+
+### Per-person results
+
+- **JAYO** — profile created, shared state coverage for Pennsylvania and California (neither
+  exclusive). Pennsylvania visible: 0 live stores. California visible: 0 live stores. Zero claims.
+- **MOOEZ** — driver record created in the canonical `drivers` table under GasMask, status
+  `active`, no territory, no ambassador profile, no store visibility, no invitation. A legacy
+  driver named `.MOOEZ ` (`f094e5d3-…`, phone 347-544-0515, no email) exists; it was **left
+  untouched** because nothing but the name links it to the confirmed email. Owner should confirm
+  whether the two are the same person before any merge.
+- **LOONEY** — existing profile reused; phone stored as `718-415-2793`. Delaware coverage
+  unchanged (0 live Delaware stores). No second Looney created.
+- **KUFF** — profile created with Brooklyn city coverage. Brooklyn visibility: 990 live stores,
+  the same shared pool Ching sees. Brooklyn was not split, no stores were removed from Ching, no
+  assignments were transferred, and no claims were created.
+
+### Regression checks (live counts, shared pools)
+
+| Overlap | Shared live stores |
+|---|---:|
+| Ching + Kuff → Brooklyn | 990 |
+| Ray + Javier → New Jersey | 7 |
+| Rufino + Rell + SL → Manhattan | 186 |
+| Bosket + Billz → Georgia | 0 (no live GA stores yet) |
+| Oliver (Queens 240) + Inter (Far Rockaway 10) | 10 |
+| Inter (ZIP 10460) + Rufino/Rell (Bronx 97) | ZIP-scoped subset of the Bronx pool |
+
+- Active store claims after all changes: **0** — territory access created no claims.
+- Active assignments 1,127 and routes 50, both unchanged by this pass.
+
+### Status
+
+- DUPLICATE CHECK: **PASS** — one Jayo, one Kuff, one Looney, one email-confirmed Mooez driver.
+- CLAIM REGRESSION: **PASS** — zero claims; atomic one-active-claim-per-store rule untouched.
+- MAP/VISIBILITY REGRESSION: **PASS**
+- ROUTING REGRESSION: **PASS** — no route or route-stop records touched.
