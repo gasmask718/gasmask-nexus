@@ -185,7 +185,10 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     const iv = window.setInterval(() => {
       const video = videoRef.current;
       const stream = streamRef.current;
-      const trackDead = !!stream && stream.getVideoTracks().every((t) => t.readyState === 'ended');
+      const tracks = stream ? stream.getVideoTracks() : [];
+      // Only "dead" when we actually had a video track and it ended. An empty
+      // list just means the tracks haven't arrived yet — that is warmup, not death.
+      const trackDead = tracks.length > 0 && tracks.every((t) => t.readyState === 'ended');
       if (trackDead || (!stream && liveCamera)) {
         stopCamera();
         setCameraError('The camera feed stopped. Tap to open it again.');
