@@ -19,3 +19,10 @@
 ## Account Activity Report (2026-09-08)
 - [x] Numbered, expandable, paginated audit log at /reports/account-activity
 - [ ] 1,032 account_review notes have no author recorded; no live code writes that source today, so authorship can only be captured once a review-saving screen is (re)built
+
+## GasMask Territory Assignment + Map (2026-09-12)
+- [x] Territory rules recorded in ambassador_territory_coverage for Ching (Brooklyn), Javier (SI+NJ), Shawn (CT), Rufino (Bronx+Mt Vernon), Looney (DE), Chico (FL)
+- [x] Brooklyn default ownership: 984 unassigned live Brooklyn stores assigned to Ching's field identity; 5 already-owned Brooklyn stores held, no overwrite
+- [x] Map scope verified by assignment query (Ching 977 mapped, Javier 38, Rufino 96); no duplicate active store assignments
+- [ ] OWNER: Oliver's territory after Brooklyn → Ching; SL identity + Manhattan scope; Billz/Mooks contacts; Chico "other connections"; 4 BARRY KALI ENY Brooklyn stores
+- [ ] BLOCKER: invite emails still rejected by mail provider (HTTP 403) — end-user login verification pending
