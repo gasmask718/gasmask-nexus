@@ -1,9 +1,11 @@
 # GasMask P0-3 live map repair
 
 ## Verified starting point
-- Recount the live, non-deleted store population immediately before execution.
+- Current exact count: 291 live, non-deleted stores lack usable coordinates.
+- 175 meet the structural address rule, but one is the known placeholder `Unknown, Unknown, NY 00000`; therefore 174 are safe automatic candidates.
 - Keep the 113 stores without a street address and 3 incomplete street-only records untouched.
-- Exclude invalid placeholder addresses from automatic geocoding.
+- Provider: the existing `batch-geocode-stores` function uses Mapbox forward geocoding. Its current temporary endpoint has a free allowance but does not permit permanent coordinate storage; the correct permanent path is approximately $0.88 for 174 requests ($5/1,000), below the user’s “significant exposure” stop condition.
+- Existing safeguards are a 1,000-row cap, batches of 50, a one-second inter-batch pause, null-coordinate filtering, and basic placeholder filtering. The current function does not exclude deleted/test rows, can rewrite normalized addresses, accepts low-confidence first results, and has no explicit function configuration entry.
 
 ## Safe execution
 - Reuse `batch-geocode-stores`; do not create another geocoder or map.
