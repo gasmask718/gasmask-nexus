@@ -208,6 +208,11 @@ export default function AmbassadorRoutes() {
           </CardContent>
         </Card>
 
+        {/* Start address + real driving sequence for the selected day's route */}
+        {todaysRoute && (
+          <FieldRouteStartCard routeId={todaysRoute.id} stopCount={todaysRoute.stops_count} />
+        )}
+
         {/* Today's Route Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="md:col-span-2">
