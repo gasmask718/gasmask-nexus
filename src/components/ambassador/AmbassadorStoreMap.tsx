@@ -45,15 +45,21 @@ function PortfolioStoreMap({ title, height }: { title?: string; height?: number 
   const ids = (portfolio || []).map((s) => s.store_id).filter(Boolean);
 
   const { data: coords } = useQuery({
-    queryKey: ['ambassador-map-coords', ids.sort().join(',')],
+    queryKey: ['ambassador-map-coords', ids.length, ids.slice().sort()[0]],
     queryFn: async () => {
       if (!ids.length) return [] as any[];
-      const { data, error } = await supabase
-        .from('stores')
-        .select('id, lat, lng')
-        .in('id', ids);
-      if (error) throw error;
-      return data || [];
+      // Chunked: a single .in() with hundreds of ids overflows the request URL
+      // and silently returns nothing, leaving the map empty.
+      const out: any[] = [];
+      for (let i = 0; i < ids.length; i += 150) {
+        const { data, error } = await supabase
+          .from('stores')
+          .select('id, lat, lng')
+          .in('id', ids.slice(i, i + 150));
+        if (error) throw error;
+        out.push(...(data || []));
+      }
+      return out;
     },
     enabled: ids.length > 0,
   });
@@ -131,7 +137,7 @@ function MapBody({ stores, title, height }: { stores: MapStore[]; title: string;
               statusColors={STATUS_COLORS}
               initialCenter={center}
               initialZoom={points.length === 1 ? 13 : 10}
-              clustering={false}
+              clustering={points.length > 150}
               className="h-full"
             />
           </div>

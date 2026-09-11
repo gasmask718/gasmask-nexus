@@ -27,6 +27,7 @@ import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
 import { BilingualLabel } from '@/components/portal/BilingualLabel';
+import { FieldRouteStartCard } from '@/components/ambassador/FieldRouteStartCard';
 
 export default function AmbassadorRoutes() {
   const { t } = useTranslation();
@@ -207,6 +208,11 @@ export default function AmbassadorRoutes() {
           </CardContent>
         </Card>
 
+        {/* Start address + real driving sequence for the selected day's route */}
+        {todaysRoute && (
+          <FieldRouteStartCard routeId={todaysRoute.id} stopCount={todaysRoute.stops_count} />
+        )}
+
         {/* Today's Route Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="md:col-span-2">
@@ -270,10 +276,35 @@ export default function AmbassadorRoutes() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {stop.status === 'planned' ? (
+                        {stop.status !== 'complete' && stop.status !== 'skipped' ? (
                           <>
-                            <Button variant="ghost" size="icon" onClick={() => navigateToStore(stop.store_id)}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Directions"
+                              disabled={!stop.store_address}
+                              onClick={() =>
+                                window.open(
+                                  `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                                    stop.store_address || '',
+                                  )}`,
+                                  '_blank',
+                                  'noopener,noreferrer',
+                                )
+                              }
+                            >
+                              <Navigation className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" title="Store profile" onClick={() => navigateToStore(stop.store_id)}>
                               <Store className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => stop.store_id && navigate(`/ambassador/visit/${stop.store_id}`)}
+                              disabled={!stop.store_id}
+                            >
+                              Check in
                             </Button>
                             <Button size="sm" onClick={() => openCompleteStop(stop)}>
                               {t('amb.routes.complete')}

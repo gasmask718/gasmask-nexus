@@ -104789,8 +104789,13 @@ export type Database = {
           name: string | null
           notes: string | null
           optimization_score: number | null
+          optimized_at: string | null
           route_state: string | null
+          sequence_stale: boolean
           source: Database["public"]["Enums"]["route_source"]
+          start_address: string | null
+          start_lat: number | null
+          start_lng: number | null
           start_time: string | null
           started_at: string | null
           status: string | null
@@ -104819,8 +104824,13 @@ export type Database = {
           name?: string | null
           notes?: string | null
           optimization_score?: number | null
+          optimized_at?: string | null
           route_state?: string | null
+          sequence_stale?: boolean
           source?: Database["public"]["Enums"]["route_source"]
+          start_address?: string | null
+          start_lat?: number | null
+          start_lng?: number | null
           start_time?: string | null
           started_at?: string | null
           status?: string | null
@@ -104849,8 +104859,13 @@ export type Database = {
           name?: string | null
           notes?: string | null
           optimization_score?: number | null
+          optimized_at?: string | null
           route_state?: string | null
+          sequence_stale?: boolean
           source?: Database["public"]["Enums"]["route_source"]
+          start_address?: string | null
+          start_lat?: number | null
+          start_lng?: number | null
           start_time?: string | null
           started_at?: string | null
           status?: string | null
