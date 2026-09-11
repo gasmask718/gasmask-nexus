@@ -11,10 +11,10 @@
 - [ ] 10 active ambassadors have no login; 291 active stores lack coordinates (geocoding backlog)
 
 ## Ching's GasMask Ambassador Roster (2026-09-11)
-- [ ] Create six dedicated invite-ready ambassador identities without touching SL, Billz, Mooks, or unrelated ambassadors
-- [ ] Assign live Staten Island/New Jersey stores to Javier and Bronx/Mt. Vernon stores to Rufino without duplicates
-- [ ] Send and record six email invites through the existing ambassador invitation flow
-- [ ] Validate assignment isolation and document blockers for portal checks pending invite acceptance
+- [x] Create six dedicated invite-ready ambassador identities without touching SL, Billz, Mooks, or unrelated ambassadors
+- [x] Assign 39 live Staten Island/New Jersey stores to Javier and 97 current canonical Bronx/Mt. Vernon stores to Rufino without duplicates
+- [ ] BLOCKER: Six linked email invites were attempted and recorded, but the mail provider rejected the configured sender with HTTP 403; authorize sender/domain and resend before expiry
+- [x] Validate assignment isolation and document member portal checks as blocked until invite delivery and acceptance
 
 ## Account Activity Report (2026-09-08)
 - [x] Numbered, expandable, paginated audit log at /reports/account-activity
