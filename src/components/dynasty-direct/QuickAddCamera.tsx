@@ -49,6 +49,10 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
 
   const [phase, setPhase] = useState<Phase>('capture');
   const [shots, setShots] = useState<(string | null)[]>([null, null, null]);
+  const shotsRef = useRef<(string | null)[]>([null, null, null]);
+  // The just-captured frame, held on screen until the upload is acknowledged.
+  const [frozenFrame, setFrozenFrame] = useState<string | null>(null);
+  const [freezeSaved, setFreezeSaved] = useState(false);
   const [noLabel, setNoLabel] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [activeShot, setActiveShot] = useState(0);
@@ -109,6 +113,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       if (!raw) return;
       const saved = JSON.parse(raw) as (string | null)[];
       if (Array.isArray(saved) && saved.some(Boolean)) {
+        shotsRef.current = saved;
         setShots(saved);
         setActiveShot(saved.findIndex((s) => !s) === -1 ? 2 : saved.findIndex((s) => !s));
         toast.message('Picked up where you left off', { description: 'Your earlier shots are still here.' });
@@ -127,6 +132,8 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   // ---- capture -------------------------------------------------------------
   async function uploadShot(file: File, index: number) {
     setUploading(true);
+    setFreezeSaved(false);
+    const startedAt = Date.now();
     try {
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const path = `dd-quickadd/${supplierId}/${Date.now()}-${index}.${ext}`;
@@ -141,10 +148,20 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       }
       if (lastErr) throw lastErr;
       const { data } = supabase.storage.from('product-images').getPublicUrl(path);
-      const next = [...shots];
+      // Read from the ref, never the render-time closure: a shot must never be
+      // computed from a stale copy of the array.
+      const next = [...shotsRef.current];
       next[index] = data.publicUrl;
+      shotsRef.current = next;
       setShots(next);
       persist(next);
+
+      // CONFIRMATION MOMENT. The frozen frame stays on screen with a "Saved"
+      // tick for at least 700ms so a successful capture can never read as
+      // "nothing happened". Everything downstream waits for it.
+      setFreezeSaved(true);
+      const held = Date.now() - startedAt;
+      if (held < 700) await new Promise((r) => setTimeout(r, 700 - held));
 
       // AUTO-ADVANCE through the 3-shot sequence. Processing only starts once
       // every required shot is in — with no printed label that's front + angle
@@ -159,6 +176,8 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       toast.error('That shot did not upload', { description: e.message ?? 'Tap the button and try again — nothing else was lost.' });
     } finally {
       setUploading(false);
+      setFreezeSaved(false);
+      setFrozenFrame((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
     }
   }
 
@@ -258,6 +277,9 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     const index = activeShot;
     canvas.toBlob((blob) => {
       if (!blob) { toast.error('The photo could not be saved. Try again.'); return; }
+      // Freeze the frame we just took BEFORE the camera closes, so the supplier
+      // sees the photo they shot instead of the view snapping back to idle.
+      setFrozenFrame(URL.createObjectURL(blob));
       stopCamera();
       uploadShot(new File([blob], `shot-${index}.jpg`, { type: 'image/jpeg' }), index);
     }, 'image/jpeg', 0.9);
@@ -487,6 +509,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   }
 
   function reset() {
+    shotsRef.current = [null, null, null];
     setShots([null, null, null]);
     setNoLabel(false);
     setActiveShot(0);
@@ -547,7 +570,30 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
             <p className="text-sm text-muted-foreground">{shotSpec[activeShot].hint}</p>
           </div>
 
-          {liveCamera ? (
+          {frozenFrame ? (
+            <div className="relative" data-testid="shot-freeze">
+              <img
+                src={frozenFrame}
+                alt="The photo you just took"
+                className="w-full aspect-[4/5] object-cover rounded-2xl border-2 border-primary"
+              />
+              <div className="absolute inset-0 rounded-2xl bg-black/45 flex flex-col items-center justify-center gap-3">
+                {freezeSaved ? (
+                  <>
+                    <span className="rounded-full bg-primary p-4">
+                      <Check className="h-10 w-10 text-primary-foreground" />
+                    </span>
+                    <span className="text-lg font-semibold text-white">Shot saved</span>
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="h-12 w-12 animate-spin text-white" />
+                    <span className="text-base font-medium text-white">Saving the shot…</span>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : liveCamera ? (
             <div className="space-y-2">
               <div className="relative">
                 <video
