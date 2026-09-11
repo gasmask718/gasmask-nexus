@@ -32,5 +32,5 @@
 - [x] Add one atomic secured-store claim per store with claimant and secured timestamp; preserve shared visibility
 - [x] Apply only approved territories and create/link Bosket and Billz with exact owner-provided emails; send no invitations
 - [x] Show Available/Secured status on ambassador store cards, map details, and store profile; add confirmed Secure store action
-- [x] Verify Georgia shared access and double-claim rejection with temporary data, then clean it up
+- [x] Verify Georgia coverage readiness and atomic double-claim rejection with temporary data, then clean it up
 - [x] Recheck Ching Brooklyn visibility/route flow and Oliver Queens-only visibility; document held owner decisions
