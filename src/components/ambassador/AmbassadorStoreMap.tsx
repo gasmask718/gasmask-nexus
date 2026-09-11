@@ -137,7 +137,7 @@ function MapBody({ stores, title, height }: { stores: MapStore[]; title: string;
               statusColors={STATUS_COLORS}
               initialCenter={center}
               initialZoom={points.length === 1 ? 13 : 10}
-              clustering={false}
+              clustering={points.length > 150}
               className="h-full"
             />
           </div>
