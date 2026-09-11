@@ -113,6 +113,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
       if (!raw) return;
       const saved = JSON.parse(raw) as (string | null)[];
       if (Array.isArray(saved) && saved.some(Boolean)) {
+        shotsRef.current = saved;
         setShots(saved);
         setActiveShot(saved.findIndex((s) => !s) === -1 ? 2 : saved.findIndex((s) => !s));
         toast.message('Picked up where you left off', { description: 'Your earlier shots are still here.' });
@@ -276,6 +277,9 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
     const index = activeShot;
     canvas.toBlob((blob) => {
       if (!blob) { toast.error('The photo could not be saved. Try again.'); return; }
+      // Freeze the frame we just took BEFORE the camera closes, so the supplier
+      // sees the photo they shot instead of the view snapping back to idle.
+      setFrozenFrame(URL.createObjectURL(blob));
       stopCamera();
       uploadShot(new File([blob], `shot-${index}.jpg`, { type: 'image/jpeg' }), index);
     }, 'image/jpeg', 0.9);
@@ -505,6 +509,7 @@ export function QuickAddCamera({ supplierId, supplierName }: Props) {
   }
 
   function reset() {
+    shotsRef.current = [null, null, null];
     setShots([null, null, null]);
     setNoLabel(false);
     setActiveShot(0);
