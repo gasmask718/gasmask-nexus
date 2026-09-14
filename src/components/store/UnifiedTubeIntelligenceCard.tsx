@@ -128,8 +128,73 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   // ── Switch Tubes draft state (decoupled from server) ──
   const [switchDrafts, setSwitchDrafts] = useState<Record<string, { quantity: string; notes: string; dirty: boolean; saving: boolean; status: 'idle' | 'dirty' | 'saving' | 'saved' | 'error' }>>({});
 
-  // ── Brand relationship data (is_active source of truth) ──
+  // ── Brand relationship data (brand-level default for activation) ──
   const { relationships, updateRelationship } = useStoreBrandRelationships(storeId);
+
+  // ── Per-SKU activation overrides (canonical: store_tube_inventory_status.is_active) ──
+  const skuActiveQueryKey = ['store-sku-active', storeId, simulationMode] as const;
+  const { data: skuActiveOverrides = {} } = useQuery({
+    queryKey: skuActiveQueryKey,
+    enabled: !!storeId,
+    queryFn: async (): Promise<Record<string, boolean>> => {
+      const { data, error } = await supabase
+        .from('store_tube_inventory_status')
+        .select('brand_id, is_active')
+        .eq('store_id', storeId)
+        .eq('is_simulation', simulationMode);
+      if (error) throw error;
+      const out: Record<string, boolean> = {};
+      for (const r of (data ?? []) as any[]) {
+        if (typeof r.is_active === 'boolean') out[r.brand_id] = r.is_active;
+      }
+      return out;
+    },
+  });
+
+  const toggleSkuActive = useMutation({
+    mutationFn: async ({ brandId, next }: { brandId: string; next: boolean }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const brandName = VALID_TUBE_BRANDS.find(b => b.id === brandId)?.name ?? brandId;
+      // Writes exactly ONE canonical row: (store_id, brand_id, is_simulation).
+      const { error } = await supabase
+        .from('store_tube_inventory_status')
+        .upsert(
+          {
+            store_id: storeId,
+            brand_id: brandId,
+            brand_name: brandName,
+            is_active: next,
+            is_simulation: simulationMode,
+            last_updated_at: new Date().toISOString(),
+            last_updated_by: user?.id ?? null,
+          } as any,
+          { onConflict: 'store_id,brand_id,is_simulation' },
+        );
+      if (error) throw error;
+      return { brandId, next };
+    },
+    onMutate: async ({ brandId, next }) => {
+      await queryClient.cancelQueries({ queryKey: skuActiveQueryKey });
+      const prev = queryClient.getQueryData<Record<string, boolean>>(skuActiveQueryKey as any);
+      queryClient.setQueryData<Record<string, boolean>>(skuActiveQueryKey as any, {
+        ...(prev ?? {}),
+        [brandId]: next,
+      });
+      return { prev };
+    },
+    onError: (err: any, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(skuActiveQueryKey as any, ctx.prev);
+      toast.error(`Could not change this product: ${err.message}`);
+    },
+    onSuccess: ({ brandId, next }) => {
+      const name = VALID_TUBE_BRANDS.find(b => b.id === brandId)?.name ?? brandId;
+      toast.success(`${name} ${next ? 'activated' : 'paused'} for this store`);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['store-sku-active', storeId] });
+    },
+  });
+
 
   // ══════════════════════════════════════════════════════════════════
   // PER-PRODUCT ACTIVATION (power switch)
@@ -180,11 +245,10 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     return relationships.find(r => r.brand_id === canonicalId);
   };
 
+  // Toggles ONLY the product lane that was clicked. Never touches sibling
+  // SKUs and never rewrites the shared brand relationship row.
   const handleActiveToggle = (brandId: string) => {
-    const rel = getRelationshipForBrand(brandId);
-    if (!rel) return;
-    const newHealth = rel.is_active ? 'paused' : 'healthy';
-    updateRelationship({ id: rel.id, updates: { relationship_health: newHealth as any } });
+    toggleSkuActive.mutate({ brandId, next: !getBrandIsActive(brandId) });
   };
 
   // ── Filtered brands based on active filter ──
