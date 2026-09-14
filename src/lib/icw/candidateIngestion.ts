@@ -26,6 +26,7 @@ import {
   createIngestRunContext,
   type IngestRunContext,
 } from './leadIngestion';
+import { startIngestionRun, completeIngestionRun, type StartRunInput } from './ingestionRuns';
 
 export interface ICWCandidateLead {
   id: string;
@@ -227,6 +228,8 @@ export interface CandidateIngestBatchSummary {
   /** newCandidateCount + sameRunSelfMatchCount — rows this run actually added. */
   netNewRowCount: number;
   rawResultCount: number;
+  /** icw_ingestion_runs.id for this batch — provenance for every row it wrote. */
+  ingestionRunId?: string;
 }
 
 /**
