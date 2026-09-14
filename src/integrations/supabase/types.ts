@@ -120738,6 +120738,7 @@ export type Database = {
         Row: {
           action: string
           created_at: string
+          handled_on: string | null
           id: string
           note: string | null
           review_type: string
@@ -120748,6 +120749,7 @@ export type Database = {
         Insert: {
           action: string
           created_at?: string
+          handled_on?: string | null
           id?: string
           note?: string | null
           review_type: string
@@ -120758,6 +120760,7 @@ export type Database = {
         Update: {
           action?: string
           created_at?: string
+          handled_on?: string | null
           id?: string
           note?: string | null
           review_type?: string
@@ -162624,6 +162627,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_store_handled_today: {
+        Args: { _note?: string; _store_id: string }
+        Returns: Json
+      }
       match_beauty_provider_media: {
         Args: {
           p_category?: string
@@ -163506,6 +163513,10 @@ export type Database = {
       set_statement_url: {
         Args: { p_batch_id: string; p_url: string }
         Returns: undefined
+      }
+      set_store_primary_contact: {
+        Args: { _name: string; _phone?: string; _store_id: string }
+        Returns: Json
       }
       sf_lead_summary: {
         Args: {
