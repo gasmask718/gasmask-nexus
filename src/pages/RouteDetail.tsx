@@ -323,7 +323,7 @@ const RouteDetail = () => {
                   className={`glass-card border-border/50 hover-lift cursor-pointer ${
                     stop.status === 'completed' ? 'opacity-60' : ''
                   }`}
-                  onClick={() => navigate(`/stores/${stop.store.id}`)}
+                  onClick={() => navigate(`/stores/${stop.store.id}`, { state: { from: window.location.pathname + window.location.search } })}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">

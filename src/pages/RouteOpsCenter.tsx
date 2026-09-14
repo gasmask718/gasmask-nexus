@@ -242,7 +242,7 @@ const RouteOpsCenter = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => navigate(`/stores/${store.id}`)}
+                        onClick={() => navigate(`/stores/${store.id}`, { state: { from: window.location.pathname + window.location.search } })}
                       >
                         View
                       </Button>
@@ -280,7 +280,7 @@ const RouteOpsCenter = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => navigate(`/stores/${store.id}`)}
+                        onClick={() => navigate(`/stores/${store.id}`, { state: { from: window.location.pathname + window.location.search } })}
                       >
                         View
                       </Button>

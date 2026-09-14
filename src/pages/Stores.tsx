@@ -838,7 +838,7 @@ const Stores = () => {
                   payBorder,
                 )}
                 style={{ animationDelay: `${index * 50}ms` }}
-                onClick={() => navigate(`/stores/${store.id}`)}
+                onClick={() => navigate(`/stores/${store.id}`, { state: { from: window.location.pathname + window.location.search } })}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">

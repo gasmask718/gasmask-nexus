@@ -108,7 +108,7 @@ export const StoreCard = ({ store, onClose }: StoreCardProps) => {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => navigate(`/stores/${store.id}`)}
+              onClick={() => navigate(`/stores/${store.id}`, { state: { from: window.location.pathname + window.location.search } })}
               className="w-full"
             >
               <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
