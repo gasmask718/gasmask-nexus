@@ -548,17 +548,29 @@ const Stores = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <PagePurpose 
-        pageKey="page.stores" 
-        config={pageConfig}
-        variant="default"
-      />
-      
+    <div className="space-y-4">
+      {showPurpose && (
+        <PagePurpose
+          pageKey="page.stores"
+          config={pageConfig}
+          variant="default"
+        />
+      )}
+
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-bold tracking-tight">{t('nav.stores') || 'Stores'}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold tracking-tight">{t('nav.stores') || 'Stores'}</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground"
+              onClick={() => setShowPurpose(v => !v)}
+              aria-label={showPurpose ? 'Hide page help' : 'Show page help'}
+              title={showPurpose ? 'Hide page help' : 'Show page help'}
+            >
+              <Info className="h-4 w-4" />
+            </Button>
             {simulationMode && <SimulationBadge />}
           </div>
           <p className="text-muted-foreground">
