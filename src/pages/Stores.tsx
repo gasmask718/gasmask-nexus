@@ -841,75 +841,82 @@ const Stores = () => {
                 onClick={() => navigate(`/stores/${store.id}`, { state: { from: window.location.pathname + window.location.search } })}
               >
                 <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <CardTitle className="truncate text-lg">{store.owner_name || store.name}</CardTitle>
-                      {store.owner_name && store.name !== store.owner_name && (
-                        <p className="text-xs text-muted-foreground">{store.name}</p>
-                      )}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="text-xs">
-                          {store.type.replace('_', ' ')}
-                        </Badge>
-                        <StoreContactGlanceIcons glance={contactGlance?.[store.id]} />
-                        {payStatus && payStatus.level !== 'paid' && (
-                          <StorePaymentBadge status={payStatus} />
-                        )}
+                  <div className="space-y-2">
+                    {/* Row 1 — identity plus the two per-card actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex min-w-0 flex-1 items-start gap-2">
+                        <Checkbox
+                          checked={selectedStoreIds.includes(store.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedStoreIds((prev) =>
+                              checked
+                                ? Array.from(new Set([...prev, store.id]))
+                                : prev.filter((id) => id !== store.id)
+                            );
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Select ${store.name}`}
+                          className="mt-1.5"
+                        />
+                        <div className="min-w-0">
+                          <CardTitle className="truncate text-lg">{store.owner_name || store.name}</CardTitle>
+                          {store.owner_name && store.name !== store.owner_name && (
+                            <p className="truncate text-xs text-muted-foreground">{store.name}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-start gap-0.5">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setDispatchStores([store.id]);
+                          }}
+                          aria-label={`Add ${store.name} to a route`}
+                          title="Add to Route"
+                        >
+                          <RouteIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEditStoreName(store);
+                          }}
+                          aria-label={`Edit ${store.name} name`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                  <div className="flex shrink-0 flex-wrap items-start justify-end gap-1">
-                    <Checkbox
-                      checked={selectedStoreIds.includes(store.id)}
-                      onCheckedChange={(checked) => {
-                        setSelectedStoreIds((prev) =>
-                          checked
-                            ? Array.from(new Set([...prev, store.id]))
-                            : prev.filter((id) => id !== store.id)
-                        );
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={`Select ${store.name}`}
-                      className="mt-1"
-                    />
-                    <Badge className={getStatusColor(store.status)}>
-                      {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
-                    </Badge>
-                    <StoreReviewBadge
-                      reviewedByAdmin={(store as any).reviewed_by_admin}
-                      reviewedByVa={(store as any).reviewed_by_va}
-                      reviewedByAdminAt={(store as any).reviewed_by_admin_at}
-                      reviewedByAdminBy={(store as any).reviewed_by_admin_by}
-                      reviewedByVaAt={(store as any).reviewed_by_va_at}
-                      reviewedByVaBy={(store as any).reviewed_by_va_by}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setDispatchStores([store.id]);
-                      }}
-                      aria-label={`Add ${store.name} to a route`}
-                      title="Add to Route"
-                    >
-                      <RouteIcon className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openEditStoreName(store);
-                      }}
-                      aria-label={`Edit ${store.name} name`}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
+
+                    {/* Row 2 — status line (same badges, no longer competing with the name) */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge className={getStatusColor(store.status)}>
+                        {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {store.type.replace('_', ' ')}
+                      </Badge>
+                      <StoreReviewBadge
+                        reviewedByAdmin={(store as any).reviewed_by_admin}
+                        reviewedByVa={(store as any).reviewed_by_va}
+                        reviewedByAdminAt={(store as any).reviewed_by_admin_at}
+                        reviewedByAdminBy={(store as any).reviewed_by_admin_by}
+                        reviewedByVaAt={(store as any).reviewed_by_va_at}
+                        reviewedByVaBy={(store as any).reviewed_by_va_by}
+                      />
+                      <StoreContactGlanceIcons glance={contactGlance?.[store.id]} />
+                      {payStatus && payStatus.level !== 'paid' && (
+                        <StorePaymentBadge status={payStatus} />
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
