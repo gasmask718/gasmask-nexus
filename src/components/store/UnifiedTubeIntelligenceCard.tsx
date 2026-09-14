@@ -131,8 +131,23 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   // ── Brand relationship data (is_active source of truth) ──
   const { relationships, updateRelationship } = useStoreBrandRelationships(storeId);
 
+  // ══════════════════════════════════════════════════════════════════
+  // PER-PRODUCT ACTIVATION (power switch)
+  //
+  // Each lane below is its own SKU. Activation is stored PER SKU on the
+  // canonical store_tube_inventory_status row (store_id, brand_id,
+  // is_simulation).is_active. NULL on that row means "inherit the
+  // brand-level store_brand_relationships flag", which preserves every
+  // pre-existing store's behaviour until a lane is toggled explicitly.
+  //
+  // Previously this toggle wrote the 4-brand relationship row, so flipping
+  // GasMask Tubes also flipped GasMask Bags + Redtops (and one Hotscolatti
+  // lane flipped all four) — the "it powers all brands" bug.
+  // ══════════════════════════════════════════════════════════════════
   const getBrandIsActive = (brandId: string): boolean => {
-    // Map tube brand IDs to canonical relationship brand IDs
+    const skuOverride = skuActiveOverrides[brandId];
+    if (typeof skuOverride === 'boolean') return skuOverride;
+    // Map tube brand IDs to canonical relationship brand IDs (inherited default)
     const mappings: Record<string, string> = {
       gasmask: 'gasmask',
       gasmasktubes: 'gasmask',
