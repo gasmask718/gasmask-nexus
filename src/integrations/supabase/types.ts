@@ -102844,6 +102844,30 @@ export type Database = {
         }
         Relationships: []
       }
+      recruiting_intake_events: {
+        Row: {
+          created_at: string
+          email_norm: string | null
+          id: string
+          ip_hash: string
+          outcome: string
+        }
+        Insert: {
+          created_at?: string
+          email_norm?: string | null
+          id?: string
+          ip_hash: string
+          outcome?: string
+        }
+        Update: {
+          created_at?: string
+          email_norm?: string | null
+          id?: string
+          ip_hash?: string
+          outcome?: string
+        }
+        Relationships: []
+      }
       recruiting_roles: {
         Row: {
           category_id: string
