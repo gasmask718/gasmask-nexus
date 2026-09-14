@@ -841,75 +841,82 @@ const Stores = () => {
                 onClick={() => navigate(`/stores/${store.id}`, { state: { from: window.location.pathname + window.location.search } })}
               >
                 <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg">{store.owner_name || store.name}</CardTitle>
-                      {store.owner_name && store.name !== store.owner_name && (
-                        <p className="text-xs text-muted-foreground">{store.name}</p>
-                      )}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="text-xs">
-                          {store.type.replace('_', ' ')}
-                        </Badge>
-                        <StoreContactGlanceIcons glance={contactGlance?.[store.id]} />
-                        {payStatus && payStatus.level !== 'paid' && (
-                          <StorePaymentBadge status={payStatus} />
-                        )}
+                  <div className="space-y-2">
+                    {/* Row 1 — identity plus the two per-card actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex min-w-0 flex-1 items-start gap-2">
+                        <Checkbox
+                          checked={selectedStoreIds.includes(store.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedStoreIds((prev) =>
+                              checked
+                                ? Array.from(new Set([...prev, store.id]))
+                                : prev.filter((id) => id !== store.id)
+                            );
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Select ${store.name}`}
+                          className="mt-1.5"
+                        />
+                        <div className="min-w-0">
+                          <CardTitle className="truncate text-lg">{store.owner_name || store.name}</CardTitle>
+                          {store.owner_name && store.name !== store.owner_name && (
+                            <p className="truncate text-xs text-muted-foreground">{store.name}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-start gap-0.5">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setDispatchStores([store.id]);
+                          }}
+                          aria-label={`Add ${store.name} to a route`}
+                          title="Add to Route"
+                        >
+                          <RouteIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEditStoreName(store);
+                          }}
+                          aria-label={`Edit ${store.name} name`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      checked={selectedStoreIds.includes(store.id)}
-                      onCheckedChange={(checked) => {
-                        setSelectedStoreIds((prev) =>
-                          checked
-                            ? Array.from(new Set([...prev, store.id]))
-                            : prev.filter((id) => id !== store.id)
-                        );
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={`Select ${store.name}`}
-                      className="mt-1"
-                    />
-                    <Badge className={getStatusColor(store.status)}>
-                      {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
-                    </Badge>
-                    <StoreReviewBadge
-                      reviewedByAdmin={(store as any).reviewed_by_admin}
-                      reviewedByVa={(store as any).reviewed_by_va}
-                      reviewedByAdminAt={(store as any).reviewed_by_admin_at}
-                      reviewedByAdminBy={(store as any).reviewed_by_admin_by}
-                      reviewedByVaAt={(store as any).reviewed_by_va_at}
-                      reviewedByVaBy={(store as any).reviewed_by_va_by}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setDispatchStores([store.id]);
-                      }}
-                      aria-label={`Add ${store.name} to a route`}
-                      title="Add to Route"
-                    >
-                      <RouteIcon className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openEditStoreName(store);
-                      }}
-                      aria-label={`Edit ${store.name} name`}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
+
+                    {/* Row 2 — status line (same badges, no longer competing with the name) */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge className={getStatusColor(store.status)}>
+                        {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {store.type.replace('_', ' ')}
+                      </Badge>
+                      <StoreReviewBadge
+                        reviewedByAdmin={(store as any).reviewed_by_admin}
+                        reviewedByVa={(store as any).reviewed_by_va}
+                        reviewedByAdminAt={(store as any).reviewed_by_admin_at}
+                        reviewedByAdminBy={(store as any).reviewed_by_admin_by}
+                        reviewedByVaAt={(store as any).reviewed_by_va_at}
+                        reviewedByVaBy={(store as any).reviewed_by_va_by}
+                      />
+                      <StoreContactGlanceIcons glance={contactGlance?.[store.id]} />
+                      {payStatus && payStatus.level !== 'paid' && (
+                        <StorePaymentBadge status={payStatus} />
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -956,6 +963,12 @@ const Stores = () => {
                     </div>
                   </div>
 
+                  {/* Secondary metadata — collapsed by default, nothing removed */}
+                  <details className="group rounded-md border border-border/40" onClick={(e) => e.stopPropagation()}>
+                    <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
+                      More details
+                    </summary>
+                    <div className="space-y-3 px-3 pb-3">
                   {/* All Contacts */}
                   <div className="flex items-start gap-2 text-sm">
                     <Users className="h-4 w-4 mt-0.5 text-primary shrink-0" />
@@ -1178,8 +1191,21 @@ const Stores = () => {
                           )}
                         </div>
                       </div>
-                    )}
-                    <StoreCardQuickView storeId={store.id} storeName={store.owner_name || store.name} />
+                     )}
+                     <StoreCardQuickView storeId={store.id} storeName={store.owner_name || store.name} />
+                    </div>
+                  </details>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/stores/${store.id}`, { state: { from: window.location.pathname + window.location.search } });
+                    }}
+                  >
+                    Open account
+                  </Button>
                  </CardContent>
               </Card>
             );

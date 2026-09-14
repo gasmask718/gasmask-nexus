@@ -50,6 +50,7 @@ import { useStoreMasterResolver } from "@/hooks/useStoreMasterResolver";
 import { useReturnNavigation } from "@/hooks/useReturnNavigation";
 import { PrimaryContactInline } from "@/components/store/PrimaryContactInline";
 import { MarkHandledTodayButton } from "@/components/store/MarkHandledTodayButton";
+import { ClickablePhone } from "@/components/communication/ClickablePhone";
 // ═══════════════════════════════════════════════════════════════════════════════
 // CANONICAL SHARED SECTIONS — Drift prevention layer
 // Adding a section to these components propagates to ALL store profile pages.
@@ -247,6 +248,7 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
   const { roles } = useUserRole();
   const isAmbassador = roles?.includes('ambassador' as any);
   const [store, setStore] = useState<Store | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
   const [visits, setVisits] = useState<VisitLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
@@ -533,82 +535,375 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
     .filter(Boolean)
     .join(', ');
 
+  const contactEmail = store.email;
+  const contactPhone = store.phone || store.alt_phone;
+
   return (
     <CanonicalStoreDataProvider storeId={id}>
       <CanonicalStoreProfileProvider storeId={storeId}>
-        <div className={isCaller ? "space-y-5" : "mx-auto max-w-[1500px] space-y-5 animate-fade-in"}>
+        <div className={isCaller ? "space-y-4" : "mx-auto max-w-[1700px] space-y-4 animate-fade-in"}>
           {!isCaller && <PagePurpose pageKey="page.store_profile" config={storeProfileConfig} variant="default" />}
 
-          <div className="flex items-start gap-3">
-            {!isCaller && (
-              <Button variant="ghost" size="icon" onClick={goBack} aria-label="Back">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            )}
-            <div className="min-w-0 flex-1 space-y-3">
+          {/* ── Operational header: who, how to reach them, handled state, actions ── */}
+          <header className="rounded-xl border border-border/60 bg-card/60 p-4 sm:p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0 space-y-2">
+                <div className="flex items-center gap-2">
+                  {!isCaller && (
+                    <Button variant="ghost" size="icon" onClick={goBack} aria-label="Back" className="-ml-2 shrink-0">
+                      <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                  )}
+                  <h1 className="truncate text-2xl font-bold sm:text-3xl">{store.name}</h1>
+                </div>
+                <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{address || 'Address not available'}</span>
+                </p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                  {contactPhone && (
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <Phone className="h-4 w-4" />
+                      <ClickablePhone
+                        phone={contactPhone}
+                        entityType="store"
+                        entityId={storeId}
+                        entityName={store.name}
+                      />
+                    </span>
+                  )}
+                  {contactEmail && (
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <Mail className="h-4 w-4" />
+                      <a className="hover:underline" href={`mailto:${contactEmail}`}>{contactEmail}</a>
+                    </span>
+                  )}
+                </div>
+                <PrimaryContactInline
+                  storeId={storeId}
+                  fallbackName={store.primary_contact_name || store.owner_name}
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                <MarkHandledTodayButton storeId={storeId} />
+                <Button variant="outline" size="sm" onClick={() => setActiveTab('contacts')}>
+                  <Edit2 className="mr-2 h-4 w-4" />
+                  Edit store
+                </Button>
+              </div>
+            </div>
+
+            {/* Quiet status row — operational facts only */}
+            <div className="mt-4 border-t border-border/50 pt-3">
               <StoreExecutiveOverview
                 storeId={storeId}
                 name={store.name}
                 address={address}
                 primaryContact={store.primary_contact_name || store.owner_name}
-                phone={store.phone || store.alt_phone}
+                phone={contactPhone}
                 lastOrderAt={store.last_order_at}
                 paymentTerms={store.payment_type}
                 hideFinancials={isCaller}
+                hideIdentity
               />
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card/60 px-3 py-2">
-                <PrimaryContactInline
-                  storeId={storeId}
-                  fallbackName={store.primary_contact_name || store.owner_name}
-                />
-                <MarkHandledTodayButton storeId={storeId} />
-              </div>
             </div>
-          </div>
+          </header>
 
-          {/* Map first — sharp, interactive, right at the top of the profile. */}
-          <StoreProfileSection
-            id="location"
-            title="Location"
-            description="Interactive map for this store. Street view stays in Field Ops below."
-          >
-            <StoreLocationMap
-              lat={store.lat}
-              lng={store.lng}
-              storeName={store.name}
-              address={address}
-            />
-          </StoreProfileSection>
+          <EscalationFlagsPanel storeId={storeId} />
 
-          <StoreProfileSection
-            id="connected-stores"
-            title="Connected Stores"
-            description="Same-owner locations linked to this store."
-          >
-            <ConnectedStoresCard
-              storeId={storeId}
-              currentStoreName={store.name}
-              currentStoreGroupId={store.connected_group_id}
-            />
-          </StoreProfileSection>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="flex w-full flex-wrap justify-start gap-1 h-auto">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="contacts">Contacts</TabsTrigger>
+              <TabsTrigger value="field">Field &amp; Route</TabsTrigger>
+              <TabsTrigger value="tube">Tube Intelligence</TabsTrigger>
+              {!isCaller && <TabsTrigger value="commercial">Commercial</TabsTrigger>}
+              <TabsTrigger value="activity">Activity</TabsTrigger>
+              {!isCaller && <TabsTrigger value="admin">Admin</TabsTrigger>}
+            </TabsList>
 
-          <StoreProfileJumpNav />
+            {/* ───────────── OVERVIEW ───────────── */}
+            <TabsContent value="overview" className="mt-4 space-y-5">
+              <StoreQuickActions
+                storeId={storeId}
+                storeName={store.name}
+                storePhone={store.phone}
+                compact
+                hideFinance={isCaller}
+                onCreateInvoice={isCaller ? undefined : () => setCreateInvoiceModalOpen(true)}
+                onAddFollowUp={() => {
+                  setUnifiedInteractionModalType('followUp');
+                  setUnifiedInteractionModalOpen(true);
+                }}
+                onLogInteraction={() => setUnifiedInteractionModalOpen(true)}
+                onInventoryUpdated={fetchInventoryAndVisits}
+              />
 
-          <StoreQuickActions
-            storeId={storeId}
-            storeName={store.name}
-            storePhone={store.phone}
-            compact
-            hideFinance={isCaller}
-            onCreateInvoice={isCaller ? undefined : () => setCreateInvoiceModalOpen(true)}
-            onAddFollowUp={() => {
-              setUnifiedInteractionModalType('followUp');
-              setUnifiedInteractionModalOpen(true);
-            }}
-            onLogInteraction={() => setUnifiedInteractionModalOpen(true)}
-            onInventoryUpdated={fetchInventoryAndVisits}
-          />
+              <StoreProfileSection
+                id="relationship-overview"
+                title="Account status"
+                description="Overall store health and brand relationships are intentionally distinct measures."
+              >
+                <StoreRelationshipOverview storeId={storeId} />
+              </StoreProfileSection>
 
+              <StoreProfileSection
+                id="location"
+                title="Location"
+                description="Interactive map for this store. Street view stays in Field & Route."
+              >
+                <StoreLocationMap
+                  lat={store.lat}
+                  lng={store.lng}
+                  storeName={store.name}
+                  address={address}
+                />
+              </StoreProfileSection>
+
+              <StoreProfileSection
+                id="connected-stores"
+                title="Connected Stores"
+                description="Same-owner locations linked to this store."
+              >
+                <ConnectedStoresCard
+                  storeId={storeId}
+                  currentStoreName={store.name}
+                  currentStoreGroupId={store.connected_group_id}
+                />
+              </StoreProfileSection>
+
+              <StoreProfileSection
+                id="tasks-follow-ups"
+                title="Tasks & Follow-ups"
+                description="Open follow-ups and route-backed field requirements stay in their original workflows."
+              >
+                <div className="space-y-4">
+                  <StoreTaskRouteButtons storeId={storeId} storeName={store.name} />
+                  <StoreProfileTasksGroup storeId={storeId} storeName={store.name} />
+                </div>
+              </StoreProfileSection>
+            </TabsContent>
+
+            {/* ───────────── CONTACTS ───────────── */}
+            <TabsContent value="contacts" className="mt-4 space-y-5">
+              <StoreProfileSection
+                id="contacts"
+                title="Contacts"
+                description="People, roles, verified numbers, responsiveness, and contact actions."
+              >
+                <StoreContactsSection storeId={storeId} storeName={store.name} />
+              </StoreProfileSection>
+
+              {!isCaller && (
+                <StoreProfileSection
+                  id="store-details"
+                  title="Store details"
+                  description="Name, address, phones, email, and responsiveness for this account."
+                >
+                  <StoreContactInfoCard store={store} onUpdate={handleStoreContactUpdate} />
+                </StoreProfileSection>
+              )}
+
+              <StoreProfileSection
+                id="communication-preferences"
+                title="Preferences & Cadence"
+                description="How and how often this account should be contacted."
+              >
+                <div className="space-y-4">
+                  <StoreRelationshipCadence storeId={storeId} storeName={store.name} />
+                  <StoreCommunicationPreferences storeId={storeId} />
+                  {storeMasterId && (
+                    <StoreCadenceOverrideCard
+                      storeId={storeMasterId}
+                      relationshipStatus={(store as any).relationship_status ?? null}
+                    />
+                  )}
+                </div>
+              </StoreProfileSection>
+            </TabsContent>
+
+            {/* ───────────── FIELD & ROUTE ───────────── */}
+            <TabsContent value="field" className="mt-4 space-y-5">
+              <StoreProfileSection
+                id="field-ops"
+                title="Field Ops & Compliance"
+                description="Visit execution, field evidence, route intelligence, and compliance controls."
+              >
+                <div className="space-y-4">
+                  <StoreProfileFieldOpsGroup
+                    storeId={storeId}
+                    role="admin"
+                    sellsFlowers={store.sells_flowers}
+                    onSellsFlowersUpdate={() => undefined}
+                  />
+                  <Tabs defaultValue="visits" className="w-full">
+                    <TabsList className="w-full justify-start overflow-x-auto">
+                      <TabsTrigger value="visits">Visit History</TabsTrigger>
+                      <TabsTrigger value="review">Review & Sign-off</TabsTrigger>
+                      <TabsTrigger value="recon">Recon</TabsTrigger>
+                      <TabsTrigger value="location">Street View</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="visits" className="mt-4 space-y-3">
+                      {visits.length ? visits.map((visit) => (
+                        <div key={visit.id} className="rounded-md border border-border/50 p-3 text-sm">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-medium">{formatVisitType(visit.visit_type)}</span>
+                            <span className="text-muted-foreground">{new Date(visit.visit_datetime).toLocaleString()}</span>
+                          </div>
+                          <p className="mt-1 text-muted-foreground">{visit.user.name} · {getSourceFromRole(visit.user.role)}</p>
+                        </div>
+                      )) : <p className="py-6 text-center text-sm text-muted-foreground">No visit history available</p>}
+                    </TabsContent>
+                    <TabsContent value="review" className="mt-4"><StoreReviewControls storeId={storeId} /></TabsContent>
+                    <TabsContent value="recon" className="mt-4"><StoreReconCard storeId={storeId} /></TabsContent>
+                    <TabsContent value="location" className="mt-4 space-y-4">
+                      <StoreStreetView lat={store.lat} lng={store.lng} storeName={store.name} address={address} />
+                      <Button variant="outline" onClick={handleGeocodeAddress} disabled={geocoding || !store.address_street}>
+                        <Navigation className="mr-2 h-4 w-4" />{geocoding ? 'Geocoding…' : 'Geocode Address'}
+                      </Button>
+                    </TabsContent>
+                  </Tabs>
+                  {isFeatureEnabled('routeCheckinsPanel') && <RouteIntelligence storeId={storeId} storeName={store.name} />}
+                </div>
+              </StoreProfileSection>
+            </TabsContent>
+
+            {/* ───────────── TUBE INTELLIGENCE ───────────── */}
+            <TabsContent value="tube" className="mt-4 space-y-5">
+              <StoreProfileSection
+                id="inventory-sales"
+                title="Inventory & Sales"
+                description="Current inventory is canonical; sales and field-delivery history remain separately labeled."
+              >
+                <div className="space-y-4">
+                  <TubesSoldHeroStrip storeId={storeId} />
+                  <StoreProfileInventoryGroup storeId={storeId} role="admin" />
+                  <ReplenishmentAI storeId={storeId} />
+                  <details className="rounded-md border border-border/50 p-4">
+                    <summary className="cursor-pointer text-sm font-medium">Bag history & velocity</summary>
+                    <div className="mt-4"><BagsSection storeId={storeId} /></div>
+                  </details>
+                </div>
+              </StoreProfileSection>
+
+              <StoreProfileSection
+                id="samples"
+                title="Samples"
+                description="Available promotional samples, what to bring on the next visit, and the full history of samples already given."
+              >
+                <StoreSamplesHub storeId={storeId} />
+              </StoreProfileSection>
+            </TabsContent>
+
+            {/* ───────────── COMMERCIAL ───────────── */}
+            {!isCaller && (
+              <TabsContent value="commercial" className="mt-4 space-y-5">
+                <StoreProfileSection
+                  id="orders-finance"
+                  title="Orders & Finance"
+                  description="Balance, invoices, last order, line items, and sell-through in one place."
+                  action={<Button size="sm" onClick={() => setCreateInvoiceModalOpen(true)}><FileText className="mr-2 h-4 w-4" />Create Invoice</Button>}
+                >
+                  <div className="space-y-4">
+                    <StoreBalanceBanner storeId={storeId} storeName={store.name} />
+                    <StoreProfileFinanceGroup storeId={storeId} onCreateInvoice={() => setCreateInvoiceModalOpen(true)} />
+                    <details className="rounded-md border border-border/50 p-4">
+                      <summary className="cursor-pointer text-sm font-medium">Per-product order history</summary>
+                      <div className="mt-4"><SkuOrderHistoryPanel storeId={storeId} /></div>
+                    </details>
+                  </div>
+                </StoreProfileSection>
+              </TabsContent>
+            )}
+
+            {/* ───────────── ACTIVITY ───────────── */}
+            <TabsContent value="activity" className="mt-4 space-y-5">
+              <StoreProfileSection
+                id="account-activity"
+                title="Account activity"
+                description="Handled history, edits, and the audit trail for this account."
+              >
+                <AccountActivityTable
+                  storeId={storeMasterId ?? storeId}
+                  title="Account activity"
+                  showStoreColumn={false}
+                  defaultPageSize={25}
+                />
+              </StoreProfileSection>
+
+              <StoreProfileSection
+                id="notes-activity"
+                title="Notes"
+                description="One primary area for authored notes, interactions, field activity, and legacy context."
+              >
+                <div className="space-y-4">
+                  <StoreProfileNotesGroup
+                    storeId={storeId}
+                    storeName={store.name}
+                    onLogInteraction={() => setUnifiedInteractionModalOpen(true)}
+                  />
+                  {(store.notes || store.notes_overview || store.notes_old || store.special_information) && (
+                    <details className="rounded-md border border-border/50 p-4">
+                      <summary className="cursor-pointer text-sm font-medium">Legacy & system context</summary>
+                      <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+                        {store.notes && <p className="whitespace-pre-wrap">{store.notes}</p>}
+                        {store.notes_overview && <p className="whitespace-pre-wrap">{store.notes_overview}</p>}
+                        {store.special_information && <p className="whitespace-pre-wrap">{store.special_information}</p>}
+                        {store.notes_old && <p className="whitespace-pre-wrap">{store.notes_old}</p>}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              </StoreProfileSection>
+
+              <StoreProfileSection
+                id="messages-calls"
+                title="Messages & Calls"
+                description="The same canonical communication records shown in the main messaging area — inbound and outbound texts and calls for this store."
+              >
+                <div className="space-y-4">
+                  <CommunicationTimeline entityType="store" entityId={storeId} />
+                  <StoreRelationshipCommunication storeId={storeId} storeName={store.name} />
+                  <CommunicationStats entityType="store" entityId={storeId} />
+                </div>
+              </StoreProfileSection>
+
+              <StoreProfileSection
+                id="ai-insights"
+                title="AI Insights"
+                description="Generated briefings and relationship signals."
+              >
+                <div className="space-y-4">
+                  <StoreRelationshipBriefing storeId={storeId} />
+                  <FollowUpAIRecommendation storeId={storeId} />
+                  <AIRelationshipHealth entityType="store" entityId={storeId} />
+                </div>
+              </StoreProfileSection>
+            </TabsContent>
+
+            {/* ───────────── ADMIN / ADVANCED ───────────── */}
+            {!isCaller && (
+              <TabsContent value="admin" className="mt-4 space-y-5">
+                <StoreProfileSection
+                  id="advanced"
+                  title="Advanced & legacy information"
+                  description="Low-frequency technical, performance, and governance surfaces."
+                >
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <EngagementBanner storeId={storeId} />
+                    <StorePerformanceTab storeId={storeId} storeName={store.name} />
+                    <StoreCallIntelligenceTab storeId={storeId} />
+                    <StorePhoneLogSection storeId={storeId} />
+                    <StoreRevenueIntelligenceTab storeId={storeId} />
+                    {storeMasterId && <StoreDangerZone storeId={storeMasterId} storeName={store.name} sourceUi="store_profile_advanced" />}
+                  </div>
+                </StoreProfileSection>
+              </TabsContent>
+            )}
+          </Tabs>
+
+          {/* Modals — unchanged behaviour */}
           <CommunicationLogModal
             open={communicationModalOpen}
             onOpenChange={setCommunicationModalOpen}
@@ -644,195 +939,6 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
             onOpenChange={setBulkCommModalOpen}
             onSuccess={() => setTimelineRefresh((prev) => prev + 1)}
           />
-
-          <EscalationFlagsPanel storeId={storeId} />
-
-          <StoreProfileSection
-            id="inventory-sales"
-            title="Inventory & Sales"
-            description="Current inventory is canonical; sales and field-delivery history remain separately labeled."
-          >
-            <div className="space-y-4">
-              <TubesSoldHeroStrip storeId={storeId} />
-              <StoreProfileInventoryGroup storeId={storeId} role="admin" />
-              <ReplenishmentAI storeId={storeId} />
-              <details className="rounded-md border border-border/50 p-4">
-                <summary className="cursor-pointer text-sm font-medium">Bag history & velocity</summary>
-
-                <div className="mt-4"><BagsSection storeId={storeId} /></div>
-              </details>
-            </div>
-          </StoreProfileSection>
-
-          <StoreProfileSection
-            id="contacts"
-            title="Contacts"
-            description="People, roles, verified numbers, responsiveness, and contact actions."
-          >
-            <StoreContactsSection storeId={storeId} storeName={store.name} />
-          </StoreProfileSection>
-
-          <StoreProfileSection
-            id="samples"
-            title="Samples"
-            description="Available promotional samples, what to bring on the next visit, and the full history of samples already given."
-          >
-            <StoreSamplesHub storeId={storeId} />
-          </StoreProfileSection>
-
-          <StoreProfileSection
-            id="messages-calls"
-            title="Messages & Calls"
-            description="The same canonical communication records shown in the main messaging area — inbound and outbound texts and calls for this store."
-          >
-            <CommunicationTimeline entityType="store" entityId={storeId} />
-          </StoreProfileSection>
-
-
-          <StoreProfileSection
-            id="tasks-follow-ups"
-            title="Tasks & Follow-ups"
-            description="Open follow-ups and route-backed field requirements stay in their original workflows."
-          >
-            <div className="space-y-4">
-              <StoreTaskRouteButtons storeId={storeId} storeName={store.name} />
-              <StoreProfileTasksGroup storeId={storeId} storeName={store.name} />
-            </div>
-          </StoreProfileSection>
-
-          {!isCaller && <StoreProfileSection
-            id="orders-finance"
-            title="Orders & Finance"
-            description="Balance, invoices, last order, line items, and sell-through in one place."
-            action={<Button size="sm" onClick={() => setCreateInvoiceModalOpen(true)}><FileText className="mr-2 h-4 w-4" />Create Invoice</Button>}
-          >
-            <div className="space-y-4">
-              <StoreBalanceBanner storeId={storeId} storeName={store.name} />
-              <StoreProfileFinanceGroup storeId={storeId} onCreateInvoice={() => setCreateInvoiceModalOpen(true)} />
-              <details className="rounded-md border border-border/50 p-4">
-                <summary className="cursor-pointer text-sm font-medium">Per-product order history</summary>
-                <div className="mt-4"><SkuOrderHistoryPanel storeId={storeId} /></div>
-              </details>
-            </div>
-          </StoreProfileSection>}
-
-          <StoreProfileSection
-            id="relationship-communication"
-            title="Relationship & Communication"
-            description="Overall store health and brand relationships are intentionally distinct measures."
-          >
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="w-full justify-start overflow-x-auto">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="communication">Communication</TabsTrigger>
-                <TabsTrigger value="ai">AI Insights</TabsTrigger>
-                <TabsTrigger value="preferences">Preferences & Cadence</TabsTrigger>
-              </TabsList>
-              <TabsContent value="overview" className="mt-4"><StoreRelationshipOverview storeId={storeId} /></TabsContent>
-              <TabsContent value="communication" className="mt-4 space-y-4"><StoreRelationshipCommunication storeId={storeId} storeName={store.name} /><CommunicationStats entityType="store" entityId={storeId} /></TabsContent>
-              <TabsContent value="ai" className="mt-4 space-y-4"><StoreRelationshipBriefing storeId={storeId} /><FollowUpAIRecommendation storeId={storeId} /><AIRelationshipHealth entityType="store" entityId={storeId} /></TabsContent>
-              <TabsContent value="preferences" className="mt-4 space-y-4"><StoreRelationshipCadence storeId={storeId} storeName={store.name} /><StoreCommunicationPreferences storeId={storeId} />{storeMasterId && <StoreCadenceOverrideCard storeId={storeMasterId} relationshipStatus={(store as any).relationship_status ?? null} />}</TabsContent>
-            </Tabs>
-
-          </StoreProfileSection>
-
-          <StoreProfileSection
-            id="field-ops"
-            title="Field Ops & Compliance"
-            description="Visit execution, field evidence, route intelligence, and compliance controls."
-          >
-            <div className="space-y-4">
-              <StoreProfileFieldOpsGroup
-                storeId={storeId}
-                role="admin"
-                sellsFlowers={store.sells_flowers}
-                onSellsFlowersUpdate={() => undefined}
-              />
-              <Tabs defaultValue="activity" className="w-full">
-                <TabsList className="w-full justify-start overflow-x-auto">
-                  <TabsTrigger value="activity">Activity</TabsTrigger>
-                  <TabsTrigger value="visits">Visit History</TabsTrigger>
-                  <TabsTrigger value="review">Review & Sign-off</TabsTrigger>
-                  <TabsTrigger value="recon">Recon</TabsTrigger>
-                  <TabsTrigger value="location">Location</TabsTrigger>
-                </TabsList>
-                <TabsContent value="activity" className="mt-4">
-                  <AccountActivityTable
-                    storeId={storeMasterId ?? storeId}
-                    title="Account activity"
-                    showStoreColumn={false}
-                    defaultPageSize={25}
-                  />
-                </TabsContent>
-
-                <TabsContent value="visits" className="mt-4 space-y-3">
-                  {visits.length ? visits.map((visit) => (
-                    <div key={visit.id} className="rounded-md border border-border/50 p-3 text-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-medium">{formatVisitType(visit.visit_type)}</span>
-                        <span className="text-muted-foreground">{new Date(visit.visit_datetime).toLocaleString()}</span>
-                      </div>
-                      <p className="mt-1 text-muted-foreground">{visit.user.name} · {getSourceFromRole(visit.user.role)}</p>
-                    </div>
-                  )) : <p className="py-6 text-center text-sm text-muted-foreground">No visit history available</p>}
-                </TabsContent>
-                <TabsContent value="review" className="mt-4"><StoreReviewControls storeId={storeId} /></TabsContent>
-                <TabsContent value="recon" className="mt-4"><StoreReconCard storeId={storeId} /></TabsContent>
-                <TabsContent value="location" className="mt-4 space-y-4">
-                  <StoreStreetView lat={store.lat} lng={store.lng} storeName={store.name} address={address} />
-                  <Button variant="outline" onClick={handleGeocodeAddress} disabled={geocoding || !store.address_street}>
-                    <Navigation className="mr-2 h-4 w-4" />{geocoding ? 'Geocoding…' : 'Geocode Address'}
-                  </Button>
-                </TabsContent>
-              </Tabs>
-              {isFeatureEnabled('routeCheckinsPanel') && <RouteIntelligence storeId={storeId} storeName={store.name} />}
-              
-            </div>
-          </StoreProfileSection>
-
-          <StoreProfileSection
-            id="notes-activity"
-            title="Notes & Activity"
-            description="One primary area for authored notes, interactions, field activity, and legacy context."
-          >
-            <div className="space-y-4">
-              <StoreProfileNotesGroup
-                storeId={storeId}
-                storeName={store.name}
-                onLogInteraction={() => {
-                  setUnifiedInteractionModalOpen(true);
-                }}
-              />
-              {(store.notes || store.notes_overview || store.notes_old || store.special_information) && (
-                <details className="rounded-md border border-border/50 p-4">
-                  <summary className="cursor-pointer text-sm font-medium">Legacy & system context</summary>
-                  <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-                    {store.notes && <p className="whitespace-pre-wrap">{store.notes}</p>}
-                    {store.notes_overview && <p className="whitespace-pre-wrap">{store.notes_overview}</p>}
-                    {store.special_information && <p className="whitespace-pre-wrap">{store.special_information}</p>}
-                    {store.notes_old && <p className="whitespace-pre-wrap">{store.notes_old}</p>}
-                  </div>
-                </details>
-              )}
-            </div>
-          </StoreProfileSection>
-
-          {!isCaller && <details className="border-t border-border/60 pt-5">
-            <summary className="cursor-pointer text-lg font-semibold">Advanced & legacy information</summary>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <StoreContactInfoCard
-                store={store}
-                onUpdate={handleStoreContactUpdate}
-              />
-              {/* Samples moved to the permanent "Samples" section above — one home, no duplicate. */}
-              <EngagementBanner storeId={storeId} />
-              {storeMasterId && <StoreDangerZone storeId={storeMasterId} storeName={store.name} sourceUi="store_profile_advanced" />}
-              <StorePerformanceTab storeId={storeId} storeName={store.name} />
-              <StoreCallIntelligenceTab storeId={storeId} />
-              <StorePhoneLogSection storeId={storeId} />
-              <StoreRevenueIntelligenceTab storeId={storeId} />
-            </div>
-          </details>}
         </div>
       </CanonicalStoreProfileProvider>
     </CanonicalStoreDataProvider>
