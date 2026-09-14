@@ -270,6 +270,27 @@ export default function ICWCrm() {
                           {l.status}
                         </Badge>
                       </td>
+                      <td className="p-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={
+                            promote.isPending ||
+                            Boolean(l.promoted_worker_id) ||
+                            l.status !== 'qualified'
+                          }
+                          onClick={() => promote.mutate(l.id)}
+                          title={
+                            l.promoted_worker_id
+                              ? 'Already a worker'
+                              : l.status !== 'qualified'
+                                ? 'Mark qualified first'
+                                : 'Create the worker record'
+                          }
+                        >
+                          <UserPlus className="h-4 w-4 mr-1" /> Worker
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
