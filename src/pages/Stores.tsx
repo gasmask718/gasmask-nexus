@@ -915,70 +915,53 @@ const Stores = () => {
                       </div>
                     </div>
 
-                    {/* Row 2 — status line (same badges, no longer competing with the name) */}
+                    {/* Row 2 — the two states an operator acts on: account status + handled today */}
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge className={getStatusColor(store.status)}>
                         {store.status === 'needsFollowUp' ? 'Follow-up' : store.status}
                       </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {store.type.replace('_', ' ')}
-                      </Badge>
-                      <StoreReviewBadge
-                        reviewedByAdmin={(store as any).reviewed_by_admin}
-                        reviewedByVa={(store as any).reviewed_by_va}
-                        reviewedByAdminAt={(store as any).reviewed_by_admin_at}
-                        reviewedByAdminBy={(store as any).reviewed_by_admin_by}
-                        reviewedByVaAt={(store as any).reviewed_by_va_at}
-                        reviewedByVaBy={(store as any).reviewed_by_va_by}
-                      />
-                      <StoreContactGlanceIcons glance={contactGlance?.[store.id]} />
-                      {payStatus && payStatus.level !== 'paid' && (
-                        <StorePaymentBadge status={payStatus} />
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {/* Full Address */}
-                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
-                    <div className="space-y-0.5">
-                      {store.address_street ? (
-                        <span className="block text-foreground">{store.address_street}</span>
+                      {handledTodayIds.has(store.id) ? (
+                        <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Handled today
+                        </span>
                       ) : (
-                        <span>No street address on file</span>
-                      )}
-                      {(store.address_city || store.address_state || store.address_zip) && (
-                        <span className="block">
-                          {[store.address_city, store.address_state].filter(Boolean).join(', ')}
-                          {store.address_zip ? ` ${store.address_zip}` : ''}
+                        <span className="inline-flex items-center gap-1 rounded-md border border-border/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+                          Not handled today
                         </span>
                       )}
                     </div>
                   </div>
-                  
-                  {/* Phone Numbers - matching StoreContactInfoCard display */}
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {/* Location */}
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span className="min-w-0">
+                      {[store.address_street, store.address_city, store.address_state]
+                        .filter(Boolean)
+                        .join(', ') || 'No address on file'}
+                    </span>
+                  </div>
+
+                  {/* Primary contact + phone */}
                   <div className="flex items-start gap-2 text-sm">
                     <Phone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                    <div className="flex-1">
-                      {store.phone || store.alt_phone ? (
-                        <div className="space-y-1">
-                          {store.phone && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-foreground">{store.phone}</span>
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">Store</Badge>
-                            </div>
-                          )}
-                          {store.alt_phone && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-foreground">{store.alt_phone}</span>
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-green-600 border-green-500/30">Cell</Badge>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">No phone on file</span>
-                      )}
+                    <div className="min-w-0">
+                      {(() => {
+                        const primary =
+                          store.contacts?.find((c: any) => c.is_primary) || store.contacts?.[0];
+                        const name = primary?.name || (store as any).primary_contact_name;
+                        const phone = primary?.phone || store.phone || store.alt_phone;
+                        return (
+                          <>
+                            {name && <span className="block text-foreground truncate">{name}</span>}
+                            <span className={cn('block', name ? 'text-muted-foreground' : 'text-foreground')}>
+                              {phone || 'No phone on file'}
+                            </span>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -988,6 +971,31 @@ const Stores = () => {
                       More details
                     </summary>
                     <div className="space-y-3 px-3 pb-3">
+                  {/* Classification & review badges (moved out of the main card face) */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge variant="outline" className="text-xs">
+                      {store.type.replace('_', ' ')}
+                    </Badge>
+                    <StoreReviewBadge
+                      reviewedByAdmin={(store as any).reviewed_by_admin}
+                      reviewedByVa={(store as any).reviewed_by_va}
+                      reviewedByAdminAt={(store as any).reviewed_by_admin_at}
+                      reviewedByAdminBy={(store as any).reviewed_by_admin_by}
+                      reviewedByVaAt={(store as any).reviewed_by_va_at}
+                      reviewedByVaBy={(store as any).reviewed_by_va_by}
+                    />
+                    <StoreContactGlanceIcons glance={contactGlance?.[store.id]} />
+                    {payStatus && payStatus.level !== 'paid' && (
+                      <StorePaymentBadge status={payStatus} />
+                    )}
+                  </div>
+                  {(store.address_zip || store.alt_phone) && (
+                    <div className="text-xs text-muted-foreground space-y-0.5">
+                      {store.address_zip && <div>ZIP {store.address_zip}</div>}
+                      {store.phone && <div>Store phone: {store.phone}</div>}
+                      {store.alt_phone && <div>Cell: {store.alt_phone}</div>}
+                    </div>
+                  )}
                   {/* All Contacts */}
                   <div className="flex items-start gap-2 text-sm">
                     <Users className="h-4 w-4 mt-0.5 text-primary shrink-0" />
