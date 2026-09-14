@@ -261,6 +261,7 @@ const AmbassadorInviteGovernance = lazy(() => import('@/pages/admin/AmbassadorIn
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
 const ClipperApplication = lazy(() => import('@/pages/apply/ClipperApplication'));
 const ICWCleanerApplication = lazy(() => import('@/pages/apply/ICWCleanerApplication'));
+const StaffApplication = lazy(() => import('@/pages/apply/StaffApplication'));
 const ClipperLogin = lazy(() => import('@/pages/clipper/ClipperLogin'));
 const ClipperPortal = lazy(() => import('@/pages/clipper/ClipperPortal'));
 
@@ -1487,6 +1488,8 @@ export default function AppRoutes() {
       <Route path="/apply/beauty-specialist" element={<BeautyProviderSignup />} />
       {/* ICW independent cleaner application (public, no login) */}
       <Route path="/apply/cleaner" element={<ICWCleanerApplication />} />
+      {/* Dynasty-wide staff / specialty application (public, no login) */}
+      <Route path="/apply/staff" element={<StaffApplication />} />
       {/* Brandaro paid-client intake (public, no login) */}
       <Route path="/intake" element={<BrandaroIntakePage />} />
       <Route path="/ambassador/login" element={<AmbassadorLogin />} />
