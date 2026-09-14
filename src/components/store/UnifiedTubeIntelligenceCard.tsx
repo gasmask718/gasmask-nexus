@@ -673,6 +673,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                                 <Power className={cn('h-3 w-3', brandIsActive ? 'text-green-500' : 'text-muted-foreground')} />
                                 <Switch
                                   checked={brandIsActive}
+                                  aria-label={`Power ${brand.name}`}
                                   onCheckedChange={() => handleActiveToggle(brand.id)}
                                   disabled={!canToggleActive}
                                   className="scale-90"
@@ -680,7 +681,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                               </div>
                             </TooltipTrigger>
                             <TooltipContent side="left">
-                              <p className="text-xs">{brandIsActive ? 'Brand is active — toggle to pause' : 'Brand is inactive — toggle to activate'}</p>
+                              <p className="text-xs">{brandIsActive ? `${brand.name} is active at this store — toggle to pause just this product` : `${brand.name} is paused at this store — toggle to activate just this product`}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
