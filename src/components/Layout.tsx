@@ -948,6 +948,165 @@ const DYNASTY_NAVIGATION = {
   ],
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOP-LEVEL NAVIGATION CONSOLIDATION
+// Nine work-type groups. Every existing section is nested inside one of them —
+// nothing is deleted, no route is removed.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+type NavSection = { id: string; name: string; items: any[]; adminOnly?: boolean };
+
+const floorOf = (id: string): NavSection =>
+  (DYNASTY_NAVIGATION.grabbaSkyscraper as NavSection[]).find(f => f.id === id) as NavSection;
+
+const TERRITORY_SECTION: NavSection = {
+  id: 'territory-intelligence',
+  name: '🌍 Territory Intelligence',
+  items: [
+    { path: '/territory', label: 'Territory Control', icon: Map },
+    { path: '/territory/coverage', label: 'Neighborhood Coverage', icon: MapPin },
+    { path: '/territory/tube-intelligence', label: 'Tube Territory', icon: MapPin },
+    { path: '/territory/gap-intelligence', label: 'Gap Intelligence', icon: Search },
+    { path: '/territory/ingestion', label: 'Ingestion Wizard', icon: Upload },
+    { path: '/territory/planning', label: 'Strategic Planning', icon: Target },
+    { path: '/territory/planning/history', label: 'Commitment History', icon: Clock },
+    { path: '/territory/ai-permissions', label: 'AI Permissions', icon: Shield },
+    { path: '/territory/ai-permissions/neighborhoods', label: 'AI × Neighborhoods', icon: MapPin },
+    { path: '/territory/ai-permissions/actions', label: 'AI × Actions', icon: Zap },
+    { path: '/territory/ai-violations', label: 'AI Violations', icon: AlertTriangle },
+    { path: '/territory/ai-review-queue', label: 'AI Review Queue', icon: ClipboardList },
+    { path: '/territory/playbooks', label: 'Playbooks', icon: FileText },
+  ],
+};
+
+const RECRUITING_SECTION: NavSection = {
+  id: 'recruiting-intake',
+  name: '🧑‍💼 Recruiting Intake',
+  items: [
+    { path: '/os/recruiting/applicants', label: 'Recruiting Applicants', icon: ClipboardList },
+    { path: '/admin/recruitment', label: 'Recruitment Campaigns', icon: Megaphone, adminOnly: true },
+    { path: '/security/ambassador-requests', label: 'Ambassador Requests', icon: UserPlus },
+  ],
+};
+
+const PORTALS_SECTION: NavSection = {
+  id: 'role-portals',
+  name: '🚪 Role Portals',
+  items: DYNASTY_NAVIGATION.portals,
+};
+
+const NAV_GROUPS: Array<{ id: string; name: string; icon: any; adminOnly?: boolean; sections: NavSection[] }> = [
+  {
+    id: 'g-command',
+    name: 'Command',
+    icon: Crown,
+    sections: [
+      DYNASTY_NAVIGATION.globalDashboard as NavSection,
+      DYNASTY_NAVIGATION.penthouse as NavSection,
+      floorOf('grabba-command'),
+      DYNASTY_NAVIGATION.exportsFloor as NavSection,
+    ],
+  },
+  {
+    id: 'g-operations',
+    name: 'Operations',
+    icon: Store,
+    sections: [
+      floorOf('floor-1'),
+      TERRITORY_SECTION,
+      floorOf('floor-3'),
+      floorOf('floor-4'),
+      floorOf('floor-6'),
+      DYNASTY_NAVIGATION.logistics as NavSection,
+      DYNASTY_NAVIGATION.highway as NavSection,
+      DYNASTY_NAVIGATION.fieldVerification as NavSection,
+    ],
+  },
+  {
+    id: 'g-leads-sales',
+    name: 'Leads & Sales',
+    icon: TrendingUp,
+    sections: [
+      floorOf('floor-2'),
+      DYNASTY_NAVIGATION.communicationSystems as NavSection,
+      DYNASTY_NAVIGATION.dynastyConnect as NavSection,
+      DYNASTY_NAVIGATION.voiceOps as NavSection,
+      DYNASTY_NAVIGATION.brandaroHub as NavSection,
+      DYNASTY_NAVIGATION.crmCustomerService as NavSection,
+    ],
+  },
+  {
+    id: 'g-people',
+    name: 'Recruiting & People',
+    icon: Users,
+    sections: [
+      RECRUITING_SECTION,
+      floorOf('floor-8'),
+      DYNASTY_NAVIGATION.systemsHR as NavSection,
+      PORTALS_SECTION,
+    ],
+  },
+  {
+    id: 'g-businesses',
+    name: 'Businesses',
+    icon: Building2,
+    sections: [
+      DYNASTY_NAVIGATION.grabbaBrands as NavSection,
+      DYNASTY_NAVIGATION.dynastyDirect as NavSection,
+      DYNASTY_NAVIGATION.unforgettableHub as NavSection,
+      DYNASTY_NAVIGATION.uftPlatform as NavSection,
+      DYNASTY_NAVIGATION.dynastyBusiness as NavSection,
+      DYNASTY_NAVIGATION.playboxxHub as NavSection,
+      DYNASTY_NAVIGATION.topTierExperience as NavSection,
+      DYNASTY_NAVIGATION.topTierCRM as NavSection,
+      DYNASTY_NAVIGATION.topTierPenthouse as NavSection,
+      DYNASTY_NAVIGATION.ubenHq as NavSection,
+      DYNASTY_NAVIGATION.dynastyEarn as NavSection,
+      DYNASTY_NAVIGATION.clipperNation as NavSection,
+      DYNASTY_NAVIGATION.realEstateOs as NavSection,
+      DYNASTY_NAVIGATION.realEstateHq as NavSection,
+      DYNASTY_NAVIGATION.solarOs as NavSection,
+      DYNASTY_NAVIGATION.goddessInYou as NavSection,
+      DYNASTY_NAVIGATION.servicesIo as NavSection,
+    ],
+  },
+  {
+    id: 'g-intelligence',
+    name: 'Intelligence & Automation',
+    icon: Brain,
+    sections: [
+      floorOf('floor-9'),
+      DYNASTY_NAVIGATION.aiSystems as NavSection,
+      DYNASTY_NAVIGATION.sboAiEngine as NavSection,
+    ],
+  },
+  {
+    id: 'g-finance',
+    name: 'Finance & Commerce',
+    icon: DollarSign,
+    sections: [
+      floorOf('floor-5'),
+      floorOf('floor-7'),
+      DYNASTY_NAVIGATION.marketplaces as NavSection,
+      DYNASTY_NAVIGATION.financeAcquisition as NavSection,
+      DYNASTY_NAVIGATION.dynastyFundingHub as NavSection,
+      DYNASTY_NAVIGATION.surplusFundsOs as NavSection,
+      DYNASTY_NAVIGATION.grantOS as NavSection,
+    ],
+  },
+  {
+    id: 'g-admin',
+    name: 'Admin & System',
+    icon: Shield,
+    adminOnly: true,
+    sections: [
+      DYNASTY_NAVIGATION.securityGovernance as NavSection,
+      DYNASTY_NAVIGATION.dynastyPartners as NavSection,
+    ],
+  },
+];
+
+
 const Layout = ({ children }: LayoutProps) => {
   const { signOut } = useAuth();
   const { role, isAdmin } = useUserRole();
@@ -997,6 +1156,44 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   const openSections = Object.keys(sectionOverrides).filter(id => sectionOverrides[id]);
+
+  // ── Top-level group accordion: one open at a time, current route's group wins
+  const GROUP_STATE_KEY = 'nexus.sidebar.group';
+  const RAIL_STATE_KEY = 'nexus.sidebar.rail';
+  const activeGroupId =
+    NAV_GROUPS.find(g =>
+      g.sections.some(s =>
+        s.items.some((i: any) =>
+          i.path === '/' ? currentPath === '/' : currentPath === i.path || currentPath.startsWith(i.path + '/'),
+        ),
+      ),
+    )?.id ?? null;
+
+  const [openGroup, setOpenGroup] = useState<string | null>(() => {
+    try { return localStorage.getItem(GROUP_STATE_KEY); } catch { return null; }
+  });
+  const [railMode, setRailMode] = useState<boolean>(() => {
+    try { return localStorage.getItem(RAIL_STATE_KEY) === '1'; } catch { return false; }
+  });
+
+  useEffect(() => {
+    if (activeGroupId) setOpenGroup(activeGroupId);
+  }, [activeGroupId]);
+
+  const selectGroup = (id: string) => {
+    setOpenGroup(prev => {
+      const next = prev === id ? null : id;
+      try { next ? localStorage.setItem(GROUP_STATE_KEY, next) : localStorage.removeItem(GROUP_STATE_KEY); } catch { /* storage disabled */ }
+      return next;
+    });
+  };
+
+  const toggleRail = () => {
+    setRailMode(prev => {
+      try { localStorage.setItem(RAIL_STATE_KEY, prev ? '0' : '1'); } catch { /* storage disabled */ }
+      return !prev;
+    });
+  };
 
   useEffect(() => {
     if (!isFloor9Route) return;
@@ -1136,556 +1333,61 @@ const Layout = ({ children }: LayoutProps) => {
     );
   };
 
-  const NavigationContent = () => (
-    <div className="space-y-2">
-      {/* 🔴 PINNED — People & Access (owner/admin) */}
-      {['owner', 'admin', 'ceo'].includes(role || '') && (
-        <Link
-          to="/admin/field-assignments"
-          data-testid="pinned-people-access"
-          className="flex items-center gap-2 px-2 py-2 text-xs rounded-md font-semibold bg-destructive/20 text-destructive ring-1 ring-destructive/60 hover:bg-destructive/30 transition-colors"
-        >
-          <Users className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate flex-1">🔴 People &amp; Access</span>
-        </Link>
-      )}
+  const NavigationContent = () => {
+    const isPrivileged = ['owner', 'admin', 'ceo'].includes(role || '');
+    const withBadges = (section: NavSection) =>
+      section.id === 'brandaro-hub'
+        ? { ...section, items: section.items.map((i: any) => (i.path === '/brandaro/inbox' ? { ...i, badge: brandaroPendingCount } : i)) }
+        : section;
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 👑 PENTHOUSE — COMMAND CENTER */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {renderSection(
-        DYNASTY_NAVIGATION.penthouse.id,
-        DYNASTY_NAVIGATION.penthouse.name,
-        DYNASTY_NAVIGATION.penthouse.items
-      )}
+    return (
+      <div className="space-y-1">
+        {/* 🔴 PINNED — People & Access (owner/admin) */}
+        {isPrivileged && (
+          <Link
+            to="/admin/field-assignments"
+            data-testid="pinned-people-access"
+            className="flex items-center gap-2 px-2 py-2 text-xs rounded-md font-semibold bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors"
+          >
+            <Users className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate flex-1">People &amp; Access</span>
+          </Link>
+        )}
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🛡️ SECURITY & GOVERNANCE — Constitutional Layer (Owner/Admin/CEO Only) */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {['owner', 'admin', 'ceo'].includes(role || '') && (
-        <div className="pt-2 border-t border-emerald-500/30">
-          <div className="px-3 py-1 text-[10px] font-semibold uppercase text-emerald-400/80 tracking-wider">
-            🛡️ Security & Governance
-          </div>
-          {renderSection(
-            DYNASTY_NAVIGATION.securityGovernance.id,
-            DYNASTY_NAVIGATION.securityGovernance.name,
-            DYNASTY_NAVIGATION.securityGovernance.items
-          )}
-        </div>
-      )}
+        <div id="__FLOOR_0_ASSERT__" data-floor="0" data-section="territory-intelligence" className="hidden" />
 
-      {/* 🤝 DYNASTY PARTNERS HUB — Admin operator console */}
-      {['owner', 'admin', 'ceo'].includes(role || '') && (
-        <div className="pt-2 border-t border-rose-500/30">
-          <div className="px-3 py-1 text-[10px] font-semibold uppercase text-rose-400/80 tracking-wider">
-            🤝 Dynasty Partners
-          </div>
-          {renderSection(
-            DYNASTY_NAVIGATION.dynastyPartners.id,
-            DYNASTY_NAVIGATION.dynastyPartners.name,
-            DYNASTY_NAVIGATION.dynastyPartners.items
-          )}
-        </div>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🌍 TERRITORY INTELLIGENCE — FLOOR 0 (Constitutional — All Roles) */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-amber-500/30">
-        <div id="__FLOOR_0_ASSERT__" data-floor="0" data-section="territory-intelligence" />
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-amber-400/80 tracking-wider">
-          🌍 Territory Intelligence (Floor 0)
-        </div>
-        <div className="ml-4 mt-0.5 space-y-0.5">
-          {[
-            { path: '/territory', label: 'Territory Control', icon: Map },
-            { path: '/territory/coverage', label: '📍 Neighborhood Coverage', icon: MapPin },
-            { path: '/territory/tube-intelligence', label: '🗺️ Tube Territory', icon: MapPin },
-            { path: '/territory/gap-intelligence', label: 'Gap Intelligence', icon: Search },
-            { path: '/territory/ingestion', label: 'Ingestion Wizard', icon: Upload },
-            { path: '/territory/planning', label: 'Strategic Planning', icon: Target },
-            { path: '/territory/planning/history', label: 'Commitment History', icon: Clock },
-            { path: '/territory/ai-permissions', label: 'AI Permissions', icon: Shield },
-            { path: '/territory/ai-permissions/neighborhoods', label: 'AI × Neighborhoods', icon: MapPin },
-            { path: '/territory/ai-permissions/actions', label: 'AI × Actions', icon: Zap },
-            { path: '/territory/ai-violations', label: 'AI Violations', icon: AlertTriangle },
-            { path: '/territory/ai-review-queue', label: 'AI Review Queue', icon: ClipboardList },
-            { path: '/territory/playbooks', label: 'Playbooks', icon: FileText },
-          ].map(item => {
-            const wired = isDispatchWired(item.path);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
+        {NAV_GROUPS.filter(g => !g.adminOnly || isPrivileged).map(group => {
+          const isOpen = openGroup === group.id;
+          const GroupIcon = group.icon;
+          return (
+            <div key={group.id}>
+              <button
+                onClick={() => selectGroup(group.id)}
+                data-testid={`nav-group-${group.id}`}
                 className={cn(
-                  "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
-                  isPathActive(item.path)
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  'w-full flex items-center gap-2 px-2 py-2 rounded-md text-xs font-semibold uppercase tracking-wide transition-colors',
+                  isOpen ? 'bg-muted/60 text-foreground' : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
                 )}
               >
-                <item.icon className="h-3 w-3 shrink-0" />
-                <span className="truncate flex-1">{item.label}</span>
-                {wired && (
-                  <span
-                    title={DISPATCH_TOOLTIP}
-                    aria-label={DISPATCH_TOOLTIP}
-                    className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.7)] shrink-0"
-                  />
-                )}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+                <GroupIcon className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left truncate">{group.name}</span>
+                {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              </button>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🏢 GRABBA SKYSCRAPER — FLOORS 1-9 */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-muted-foreground/60 tracking-wider">
-          🏢 Grabba Skyscraper (Floors 1-9)
-        </div>
-        {DYNASTY_NAVIGATION.grabbaSkyscraper.map(floor => 
-          renderSection(floor.id, floor.name, floor.items)
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 📊 EXPORTS FLOOR — REPORTS & BACKUP */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.exportsFloor.id,
-          DYNASTY_NAVIGATION.exportsFloor.name,
-          DYNASTY_NAVIGATION.exportsFloor.items
-        )}
-      </div>
-
-
-      {/* ⚔️ BRANDARO DIGITAL HUB — SALES WAR ROOM */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-orange-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-orange-400/80 tracking-wider">
-          ⚔️ Brandaro Digital Hub
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.brandaroHub.id,
-          DYNASTY_NAVIGATION.brandaroHub.name,
-          DYNASTY_NAVIGATION.brandaroHub.items.map(item =>
-            item.path === '/brandaro/inbox' ? { ...item, badge: brandaroPendingCount } : item
-          )
-        )}
-      </div>
-
-      {/* 📞 DYNASTY CONNECT — AI CALL CENTER HUB */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-teal-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-teal-400/80 tracking-wider">
-          📞 Dynasty Connect
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.dynastyConnect.id,
-          DYNASTY_NAVIGATION.dynastyConnect.name,
-          DYNASTY_NAVIGATION.dynastyConnect.items
-        )}
-      </div>
-
-      {/* 🎙️ VOICE OPS — STANDALONE HUB */}
-      <div className="pt-2 border-t border-purple-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-purple-400/80 tracking-wider">
-          🎙️ Voice Ops
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.voiceOps.id,
-          DYNASTY_NAVIGATION.voiceOps.name,
-          DYNASTY_NAVIGATION.voiceOps.items
-        )}
-      </div>
-
-      {/* 💰 SURPLUS FUNDS OS — STANDALONE HUB */}
-      <div className="pt-2 border-t border-amber-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-amber-500/80 tracking-wider">
-          💰 Surplus Funds OS
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.surplusFundsOs.id,
-          DYNASTY_NAVIGATION.surplusFundsOs.name,
-          DYNASTY_NAVIGATION.surplusFundsOs.items
-        )}
-      </div>
-
-      {/* 🏦 DYNASTY FUNDING HUB — STANDALONE HUB */}
-      <div className="pt-2 border-t border-blue-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-blue-400/80 tracking-wider">
-          🏦 Dynasty Funding Hub
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.dynastyFundingHub.id,
-          DYNASTY_NAVIGATION.dynastyFundingHub.name,
-          DYNASTY_NAVIGATION.dynastyFundingHub.items
-        )}
-      </div>
-
-      {/* 💛 UBEN HQ — NON-PROFIT OPS */}
-      <div className="pt-2 border-t border-yellow-600/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-yellow-500/80 tracking-wider">
-          💛 UBEN HQ
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.ubenHq.id,
-          DYNASTY_NAVIGATION.ubenHq.name,
-          DYNASTY_NAVIGATION.ubenHq.items
-        )}
-      </div>
-
-      {/* 🏆 GRANT OS */}
-      <div className="pt-2 border-t border-[#C9A84C]/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-[#C9A84C]/80 tracking-wider">
-          🏆 Grant OS
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.grantOS.id,
-          DYNASTY_NAVIGATION.grantOS.name,
-          DYNASTY_NAVIGATION.grantOS.items
-        )}
-      </div>
-
-
-      {/* 💰 DYNASTY EARN — MONETIZATION ENGINE */}
-      <div className="pt-2 border-t border-emerald-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-emerald-400/80 tracking-wider">
-          💰 Dynasty Earn
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.dynastyEarn.id,
-          DYNASTY_NAVIGATION.dynastyEarn.name,
-          DYNASTY_NAVIGATION.dynastyEarn.items
-        )}
-      </div>
-
-      {/* 🎬 CLIPPER NATION */}
-      <div className="pt-2 border-t border-pink-600/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-pink-400/80 tracking-wider">
-          🎬 Clipper Nation
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.clipperNation.id,
-          DYNASTY_NAVIGATION.clipperNation.name,
-          DYNASTY_NAVIGATION.clipperNation.items
-        )}
-      </div>
-
-
-      {/* 🏠 REAL ESTATE OS — STANDALONE HUB */}
-      <div className="pt-2 border-t border-green-600/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-green-600/80 tracking-wider">
-          🏠 Real Estate OS
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.realEstateOs.id,
-          DYNASTY_NAVIGATION.realEstateOs.name,
-          DYNASTY_NAVIGATION.realEstateOs.items
-        )}
-      </div>
-
-      {/* 🏠 REAL ESTATE HQ — LEGACY DEPARTMENT PAGES (/realestate/*) */}
-      <div className="pt-2 border-t border-green-600/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-green-600/80 tracking-wider">
-          🏠 Real Estate HQ
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.realEstateHq.id,
-          DYNASTY_NAVIGATION.realEstateHq.name,
-          DYNASTY_NAVIGATION.realEstateHq.items
-        )}
-      </div>
-
-      {/* ☀️ BRIGHTSUN SOLAR HUB — INDEPENDENT HUB */}
-      <div className="pt-2 border-t border-amber-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-amber-400/80 tracking-wider">
-          ☀️ BrightSun Solar Hub
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.solarOs.id,
-          DYNASTY_NAVIGATION.solarOs.name,
-          DYNASTY_NAVIGATION.solarOs.items
-        )}
-      </div>
-
-      {/* 💜 GODDESS IN YOU HUB — INDEPENDENT HUB */}
-      <div className="pt-2 border-t border-purple-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-purple-400/80 tracking-wider">
-          💜 Goddess In You Hub
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.goddessInYou.id,
-          DYNASTY_NAVIGATION.goddessInYou.name,
-          DYNASTY_NAVIGATION.goddessInYou.items
-        )}
-      </div>
-
-      {/* 🛠️ SERVICES.IO HUB — INDEPENDENT HUB */}
-      <div className="pt-2 border-t border-sky-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-sky-400/80 tracking-wider">
-          🛠️ Services.io Hub
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.servicesIo.id,
-          DYNASTY_NAVIGATION.servicesIo.name,
-          DYNASTY_NAVIGATION.servicesIo.items
-        )}
-      </div>
-
-      {/* 🔍 FIELD VERIFICATION — ADMIN OVERSIGHT */}
-      <div className="pt-2 border-t border-red-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-red-400/80 tracking-wider">
-          🔍 Field Verification
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.fieldVerification.id,
-          DYNASTY_NAVIGATION.fieldVerification.name,
-          DYNASTY_NAVIGATION.fieldVerification.items
-        )}
-      </div>
-
-      {/* 🧠 SBO AI ENGINE — OWN HUB (UNDER BRIGHTSUN SOLAR HUB) */}
-      <div className="pt-2 border-t border-lime-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-lime-400/80 tracking-wider">
-          🧠 SBO AI Engine
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.sboAiEngine.id,
-          DYNASTY_NAVIGATION.sboAiEngine.name,
-          DYNASTY_NAVIGATION.sboAiEngine.items
-        )}
-      </div>
-
-      {/* 🔴 GRABBA PRODUCT BRANDS */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.grabbaBrands.id,
-          DYNASTY_NAVIGATION.grabbaBrands.name,
-          DYNASTY_NAVIGATION.grabbaBrands.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🌐 DYNASTY BUSINESS UNITS */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🎉 UNFORGETTABLE TIMES HUB */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.unforgettableHub.id,
-          DYNASTY_NAVIGATION.unforgettableHub.name,
-          DYNASTY_NAVIGATION.unforgettableHub.items
-        )}
-      </div>
-
-      {/* 🎊 UFT PLATFORM COMMAND */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.uftPlatform.id,
-          DYNASTY_NAVIGATION.uftPlatform.name,
-          DYNASTY_NAVIGATION.uftPlatform.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🌐 DYNASTY BUSINESS UNITS */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.dynastyBusiness.id,
-          DYNASTY_NAVIGATION.dynastyBusiness.name,
-          DYNASTY_NAVIGATION.dynastyBusiness.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🎭 PLAYBOXX OS HUB */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.playboxxHub.id,
-          DYNASTY_NAVIGATION.playboxxHub.name,
-          DYNASTY_NAVIGATION.playboxxHub.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🚗 TOPTIER EXPERIENCE — dedicated hub */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t" style={{ borderTopColor: '#C9A84C' }}>
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#C9A84C' }}>
-          🚗 TopTier Experience
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.topTierExperience.id,
-          DYNASTY_NAVIGATION.topTierExperience.name,
-          DYNASTY_NAVIGATION.topTierExperience.items
-        )}
-        {renderSection(
-          DYNASTY_NAVIGATION.topTierCRM.id,
-          DYNASTY_NAVIGATION.topTierCRM.name,
-          DYNASTY_NAVIGATION.topTierCRM.items
-        )}
-        {renderSection(
-          DYNASTY_NAVIGATION.topTierPenthouse.id,
-          DYNASTY_NAVIGATION.topTierPenthouse.name,
-          DYNASTY_NAVIGATION.topTierPenthouse.items
-        )}
-      </div>
-
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 💰 FINANCE & ACQUISITION */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.financeAcquisition.id,
-          DYNASTY_NAVIGATION.financeAcquisition.name,
-          DYNASTY_NAVIGATION.financeAcquisition.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 📡 COMMUNICATION SYSTEMS */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.communicationSystems.id,
-          DYNASTY_NAVIGATION.communicationSystems.name,
-          DYNASTY_NAVIGATION.communicationSystems.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🚀 DYNASTY DIRECT HUB — unified DD shell */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-blue-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-blue-400/80 tracking-wider">
-          🚀 Dynasty Direct
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.dynastyDirect.id,
-          DYNASTY_NAVIGATION.dynastyDirect.name,
-          DYNASTY_NAVIGATION.dynastyDirect.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🛣️ HIGHWAY */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-emerald-500/30">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-emerald-400/80 tracking-wider">
-          🛣️ Highway
-        </div>
-        {renderSection(
-          DYNASTY_NAVIGATION.highway.id,
-          DYNASTY_NAVIGATION.highway.name,
-          DYNASTY_NAVIGATION.highway.items
-        )}
-      </div>
-
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🛍️ MARKETPLACES & E-COMMERCE */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.marketplaces.id,
-          DYNASTY_NAVIGATION.marketplaces.name,
-          DYNASTY_NAVIGATION.marketplaces.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🚛 DELIVERY & LOGISTICS */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.logistics.id,
-          DYNASTY_NAVIGATION.logistics.name,
-          DYNASTY_NAVIGATION.logistics.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 👥 CRM & CUSTOMER SERVICE */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.crmCustomerService.id,
-          DYNASTY_NAVIGATION.crmCustomerService.name,
-          DYNASTY_NAVIGATION.crmCustomerService.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🧠 AI & AUTOMATION */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.aiSystems.id,
-          DYNASTY_NAVIGATION.aiSystems.name,
-          DYNASTY_NAVIGATION.aiSystems.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* ⚙️ SYSTEMS & HR */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.systemsHR.id,
-          DYNASTY_NAVIGATION.systemsHR.name,
-          DYNASTY_NAVIGATION.systemsHR.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🌍 GLOBAL DYNASTY DASHBOARD */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.globalDashboard.id,
-          DYNASTY_NAVIGATION.globalDashboard.name,
-          DYNASTY_NAVIGATION.globalDashboard.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🚪 ROLE PORTALS */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-muted-foreground/60 tracking-wider">
-          🚪 Role Portals
-        </div>
-        <div className="ml-4 space-y-0.5 mt-1">
-          {DYNASTY_NAVIGATION.portals.map(portal => (
-            <Link
-              key={portal.path}
-              to={portal.path}
-              className={cn(
-                "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
-                isPathActive(portal.path)
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              {isOpen && (
+                <div className="ml-2 mt-0.5 border-l border-border/40 pl-1.5">
+                  {group.sections
+                    .filter(Boolean)
+                    .map(section => renderSection(section.id, section.name, withBadges(section).items))}
+                </div>
               )}
-            >
-              <portal.icon className="h-3 w-3 shrink-0" />
-              <span className="truncate">{portal.label}</span>
-            </Link>
-          ))}
-        </div>
+            </div>
+          );
+        })}
       </div>
-    </div>
-  );
+    );
+  };
+
 
   return (
     <div className="min-h-screen bg-background safe-area-top safe-area-x">
@@ -1805,19 +1507,56 @@ const Layout = ({ children }: LayoutProps) => {
 
       <div className="flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden md:flex w-64 xl:w-72 flex-col border-r border-border/50 bg-card h-[calc(100vh-3.5rem)] overflow-hidden sticky top-14 self-start" style={{ opacity: 1, filter: 'none', backdropFilter: 'none', zIndex: 40 }}>
-          <div className="p-3 border-b border-border/50">
-            <h2 className="text-sm font-bold mb-1">🏛️ Dynasty OS</h2>
-            <p className="text-xs text-muted-foreground mb-2">Empire Command Center</p>
-            {!businessLoading && currentBusiness && (
-              <BusinessSwitcher />
-            )}
+        <aside
+          className={cn(
+            'hidden md:flex flex-col border-r border-border/50 bg-card h-[calc(100vh-3.5rem)] overflow-hidden sticky top-14 self-start transition-[width]',
+            railMode ? 'w-14' : 'w-56',
+          )}
+          style={{ opacity: 1, filter: 'none', backdropFilter: 'none', zIndex: 40 }}
+        >
+          <div className="p-2 border-b border-border/50 space-y-2">
+            <div className="flex items-center gap-1">
+              {!railMode && <h2 className="text-sm font-bold flex-1 truncate">🏛️ Dynasty OS</h2>}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={toggleRail}
+                aria-label={railMode ? 'Expand navigation' : 'Collapse navigation to icons'}
+                title={railMode ? 'Expand navigation' : 'Collapse navigation to icons'}
+              >
+                {railMode ? <ChevronRight className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </Button>
+            </div>
+            {!railMode && !businessLoading && currentBusiness && <BusinessSwitcher />}
           </div>
-          <ScrollArea className="flex-1">
-            <nav className="p-2">
-              <NavigationContent />
+          {railMode ? (
+            <nav className="flex flex-col items-center gap-1 p-1.5">
+              {NAV_GROUPS.filter(g => !g.adminOnly || ['owner', 'admin', 'ceo'].includes(role || '')).map(group => {
+                const GroupIcon = group.icon;
+                return (
+                  <button
+                    key={group.id}
+                    onClick={() => { setRailMode(false); try { localStorage.setItem(RAIL_STATE_KEY, '0'); localStorage.setItem(GROUP_STATE_KEY, group.id); } catch { /* noop */ } setOpenGroup(group.id); }}
+                    title={group.name}
+                    aria-label={group.name}
+                    className={cn(
+                      'h-9 w-9 flex items-center justify-center rounded-md transition-colors',
+                      openGroup === group.id ? 'bg-muted/60 text-foreground' : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
+                    )}
+                  >
+                    <GroupIcon className="h-4 w-4" />
+                  </button>
+                );
+              })}
             </nav>
-          </ScrollArea>
+          ) : (
+            <ScrollArea className="flex-1">
+              <nav className="p-2">
+                <NavigationContent />
+              </nav>
+            </ScrollArea>
+          )}
         </aside>
 
         {/* Main Content */}
