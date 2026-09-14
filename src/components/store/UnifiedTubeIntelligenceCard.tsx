@@ -258,7 +258,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
       const isActive = getBrandIsActive(brand.id);
       return activeFilter === 'active' ? isActive : !isActive;
     });
-  }, [activeFilter, relationships]);
+  }, [activeFilter, relationships, skuActiveOverrides]);
 
   const canEditCounts = role === 'admin' || role === 'ambassador' || role === 'biker';
   const tubeIntelRole: TubeIntelRole = role as TubeIntelRole;
