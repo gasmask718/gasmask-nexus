@@ -47,6 +47,9 @@ import { StoreCadenceOverrideCard } from "@/components/store/StoreCadenceOverrid
 import { useTranslation } from "@/hooks/useTranslation";
 import { CanonicalStoreProfileProvider } from "@/components/store/CanonicalStoreProfile";
 import { useStoreMasterResolver } from "@/hooks/useStoreMasterResolver";
+import { useReturnNavigation } from "@/hooks/useReturnNavigation";
+import { PrimaryContactInline } from "@/components/store/PrimaryContactInline";
+import { MarkHandledTodayButton } from "@/components/store/MarkHandledTodayButton";
 // ═══════════════════════════════════════════════════════════════════════════════
 // CANONICAL SHARED SECTIONS — Drift prevention layer
 // Adding a section to these components propagates to ALL store profile pages.
@@ -480,7 +483,7 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
         <div className="text-center space-y-4">
           <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
           <p className="text-muted-foreground">Store not found</p>
-          <Button onClick={() => navigate("/stores")}>Back to Stores</Button>
+          <Button onClick={goBack}>Back</Button>
         </div>
       </div>
     );
@@ -537,11 +540,11 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
 
           <div className="flex items-start gap-3">
             {!isCaller && (
-              <Button variant="ghost" size="icon" onClick={() => navigate('/stores')} aria-label="Back to stores">
+              <Button variant="ghost" size="icon" onClick={goBack} aria-label="Back">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             )}
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 space-y-3">
               <StoreExecutiveOverview
                 storeId={storeId}
                 name={store.name}
@@ -552,6 +555,13 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
                 paymentTerms={store.payment_type}
                 hideFinancials={isCaller}
               />
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card/60 px-3 py-2">
+                <PrimaryContactInline
+                  storeId={storeId}
+                  fallbackName={store.primary_contact_name || store.owner_name}
+                />
+                <MarkHandledTodayButton storeId={storeId} />
+              </div>
             </div>
           </div>
 
