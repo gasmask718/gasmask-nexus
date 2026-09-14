@@ -167,6 +167,7 @@ const Stores = () => {
   // Add Store Modal State
   const [showAddStore, setShowAddStore] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [showPurpose, setShowPurpose] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
   const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
   const [newStoreData, setNewStoreData] = useState({
