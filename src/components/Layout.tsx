@@ -1507,19 +1507,56 @@ const Layout = ({ children }: LayoutProps) => {
 
       <div className="flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden md:flex w-64 xl:w-72 flex-col border-r border-border/50 bg-card h-[calc(100vh-3.5rem)] overflow-hidden sticky top-14 self-start" style={{ opacity: 1, filter: 'none', backdropFilter: 'none', zIndex: 40 }}>
-          <div className="p-3 border-b border-border/50">
-            <h2 className="text-sm font-bold mb-1">🏛️ Dynasty OS</h2>
-            <p className="text-xs text-muted-foreground mb-2">Empire Command Center</p>
-            {!businessLoading && currentBusiness && (
-              <BusinessSwitcher />
-            )}
+        <aside
+          className={cn(
+            'hidden md:flex flex-col border-r border-border/50 bg-card h-[calc(100vh-3.5rem)] overflow-hidden sticky top-14 self-start transition-[width]',
+            railMode ? 'w-14' : 'w-56',
+          )}
+          style={{ opacity: 1, filter: 'none', backdropFilter: 'none', zIndex: 40 }}
+        >
+          <div className="p-2 border-b border-border/50 space-y-2">
+            <div className="flex items-center gap-1">
+              {!railMode && <h2 className="text-sm font-bold flex-1 truncate">🏛️ Dynasty OS</h2>}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={toggleRail}
+                aria-label={railMode ? 'Expand navigation' : 'Collapse navigation to icons'}
+                title={railMode ? 'Expand navigation' : 'Collapse navigation to icons'}
+              >
+                {railMode ? <ChevronRight className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </Button>
+            </div>
+            {!railMode && !businessLoading && currentBusiness && <BusinessSwitcher />}
           </div>
-          <ScrollArea className="flex-1">
-            <nav className="p-2">
-              <NavigationContent />
+          {railMode ? (
+            <nav className="flex flex-col items-center gap-1 p-1.5">
+              {NAV_GROUPS.filter(g => !g.adminOnly || ['owner', 'admin', 'ceo'].includes(role || '')).map(group => {
+                const GroupIcon = group.icon;
+                return (
+                  <button
+                    key={group.id}
+                    onClick={() => { setRailMode(false); try { localStorage.setItem(RAIL_STATE_KEY, '0'); } catch { /* noop */ } selectGroup(group.id); }}
+                    title={group.name}
+                    aria-label={group.name}
+                    className={cn(
+                      'h-9 w-9 flex items-center justify-center rounded-md transition-colors',
+                      openGroup === group.id ? 'bg-muted/60 text-foreground' : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
+                    )}
+                  >
+                    <GroupIcon className="h-4 w-4" />
+                  </button>
+                );
+              })}
             </nav>
-          </ScrollArea>
+          ) : (
+            <ScrollArea className="flex-1">
+              <nav className="p-2">
+                <NavigationContent />
+              </nav>
+            </ScrollArea>
+          )}
         </aside>
 
         {/* Main Content */}
