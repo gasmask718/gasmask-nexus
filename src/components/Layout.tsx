@@ -1537,7 +1537,7 @@ const Layout = ({ children }: LayoutProps) => {
                 return (
                   <button
                     key={group.id}
-                    onClick={() => { setRailMode(false); try { localStorage.setItem(RAIL_STATE_KEY, '0'); } catch { /* noop */ } selectGroup(group.id); }}
+                    onClick={() => { setRailMode(false); try { localStorage.setItem(RAIL_STATE_KEY, '0'); localStorage.setItem(GROUP_STATE_KEY, group.id); } catch { /* noop */ } setOpenGroup(group.id); }}
                     title={group.name}
                     aria-label={group.name}
                     className={cn(
