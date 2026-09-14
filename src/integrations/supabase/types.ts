@@ -102577,6 +102577,320 @@ export type Database = {
         }
         Relationships: []
       }
+      recruiting_applicants: {
+        Row: {
+          assigned_to: string | null
+          availability_summary: string | null
+          call_status: string
+          city: string | null
+          country: string | null
+          created_at: string
+          email: string | null
+          email_norm: string | null
+          experience_summary: string | null
+          full_name: string
+          id: string
+          last_contacted_at: string | null
+          license_info: string | null
+          notes: string | null
+          onboarding_status: string
+          phone: string | null
+          phone_last10: string | null
+          qualifications: string | null
+          review_status: string
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          availability_summary?: string | null
+          call_status?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          email_norm?: string | null
+          experience_summary?: string | null
+          full_name: string
+          id?: string
+          last_contacted_at?: string | null
+          license_info?: string | null
+          notes?: string | null
+          onboarding_status?: string
+          phone?: string | null
+          phone_last10?: string | null
+          qualifications?: string | null
+          review_status?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          availability_summary?: string | null
+          call_status?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          email_norm?: string | null
+          experience_summary?: string | null
+          full_name?: string
+          id?: string
+          last_contacted_at?: string | null
+          license_info?: string | null
+          notes?: string | null
+          onboarding_status?: string
+          phone?: string | null
+          phone_last10?: string | null
+          qualifications?: string | null
+          review_status?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      recruiting_applications: {
+        Row: {
+          applicant_id: string
+          application_status: string
+          availability_summary: string | null
+          business_slug: string | null
+          campaign_id: string | null
+          category_id: string
+          city: string | null
+          created_at: string
+          experience_summary: string | null
+          id: string
+          license_info: string | null
+          payload: Json | null
+          role_id: string | null
+          source_ad_id: string | null
+          source_platform: string | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          applicant_id: string
+          application_status?: string
+          availability_summary?: string | null
+          business_slug?: string | null
+          campaign_id?: string | null
+          category_id: string
+          city?: string | null
+          created_at?: string
+          experience_summary?: string | null
+          id?: string
+          license_info?: string | null
+          payload?: Json | null
+          role_id?: string | null
+          source_ad_id?: string | null
+          source_platform?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applicant_id?: string
+          application_status?: string
+          availability_summary?: string | null
+          business_slug?: string | null
+          campaign_id?: string | null
+          category_id?: string
+          city?: string | null
+          created_at?: string
+          experience_summary?: string | null
+          id?: string
+          license_info?: string | null
+          payload?: Json | null
+          role_id?: string | null
+          source_ad_id?: string | null
+          source_platform?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_applications_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_applicants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruiting_applications_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "v_recruiting_applicant_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruiting_applications_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruiting_applications_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruiting_applications_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruiting_campaigns: {
+        Row: {
+          business_slug: string | null
+          category_id: string | null
+          city: string | null
+          code: string
+          created_at: string
+          external_ad_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          platform: string | null
+          role_id: string | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_slug?: string | null
+          category_id?: string | null
+          city?: string | null
+          code: string
+          created_at?: string
+          external_ad_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          platform?: string | null
+          role_id?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_slug?: string | null
+          category_id?: string | null
+          city?: string | null
+          code?: string
+          created_at?: string
+          external_ad_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          platform?: string | null
+          role_id?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_campaigns_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruiting_campaigns_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruiting_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      recruiting_roles: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          requires_license: boolean
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          requires_license?: boolean
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          requires_license?: boolean
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_roles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       refund_tickets: {
         Row: {
           ai_suggestion: string | null
@@ -148524,14 +148838,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -156708,6 +157022,34 @@ export type Database = {
         }
         Relationships: []
       }
+      v_recruiting_applicant_queue: {
+        Row: {
+          application_count: number | null
+          assigned_to: string | null
+          availability_summary: string | null
+          business_slugs: string[] | null
+          call_status: string | null
+          campaign_codes: string[] | null
+          category_names: string[] | null
+          category_slugs: string[] | null
+          city: string | null
+          created_at: string | null
+          email: string | null
+          experience_summary: string | null
+          full_name: string | null
+          id: string | null
+          last_contacted_at: string | null
+          license_info: string | null
+          onboarding_status: string | null
+          phone: string | null
+          review_status: string | null
+          role_names: string[] | null
+          source_platforms: string[] | null
+          state: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       v_rep_close_rate: {
         Row: {
           close_rate: number | null
@@ -162067,6 +162409,7 @@ export type Database = {
       increment_sent: { Args: { num: string }; Returns: number }
       ingest_bland_cost_tick: { Args: never; Returns: Json }
       ingest_portal_actions: { Args: { _actions: Json }; Returns: Json }
+      ingest_recruiting_applicant: { Args: { p_payload: Json }; Returns: Json }
       ingest_territory_addresses: { Args: { p_addresses: Json }; Returns: Json }
       ingest_twilio_cost_tick: { Args: never; Returns: Json }
       is_admin: { Args: { _user_id: string }; Returns: boolean }

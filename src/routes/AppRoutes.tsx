@@ -1079,6 +1079,7 @@ const PbxCandidates = lazy(() => import('@/pages/os/playboxxx/recruiting/Candida
 const PbxAutomationRuns = lazy(() => import('@/pages/os/playboxxx/recruiting/AutomationRuns'));
 const PbxAuditLogs = lazy(() => import('@/pages/os/playboxxx/recruiting/AuditLogs'));
 const PbxRecruitingSettings = lazy(() => import('@/pages/os/playboxxx/recruiting/RecruitingSettings'));
+const RecruitingApplicants = lazy(() => import('@/pages/os/recruiting/RecruitingApplicants'));
 const SpecialNeedsDashboard = lazy(() => import('@/pages/os/specialneeds/SpecialNeedsDashboard'));
 // FundingDashboard (orphan /os/funding) — REMOVED, use /funding-machine instead
 const GrantsDashboard = lazy(() => import('@/pages/os/grants/GrantsDashboard'));
@@ -2377,6 +2378,8 @@ export default function AppRoutes() {
         <Route path="/os/playboxxx/recruiting/automation-runs" element={<PbxAutomationRuns />} />
         <Route path="/os/playboxxx/recruiting/audit-logs" element={<PbxAuditLogs />} />
         <Route path="/os/playboxxx/recruiting/settings" element={<PbxRecruitingSettings />} />
+        <Route path="/os/recruiting" element={<Navigate to="/os/recruiting/applicants" replace />} />
+        <Route path="/os/recruiting/applicants" element={<RequireRole allowedRoles={['admin','owner']} showLocked><RecruitingApplicants /></RequireRole>} />
         <Route path="/os/special-needs" element={<SpecialNeedsDashboard />} />
         {/* /os/funding removed — orphan mock page, real system is /funding-machine */}
         <Route path="/os/grants" element={<RequireRole allowedRoles={['admin','owner']} showLocked><GrantsDashboard /></RequireRole>} />
