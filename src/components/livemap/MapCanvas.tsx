@@ -320,7 +320,7 @@ export function MapCanvas({
           <div style="font-size:12px;color:#374151;line-height:1.4;">${addressLine2}</div>
           ${p.phone ? `<div style="font-size:12px;color:#6b7280;margin-top:4px;">📞 ${p.phone}</div>` : ''}
           ${healthBar}
-          <a href="/stores/${p.id}" style="display:inline-block;margin-top:8px;padding:4px 10px;font-size:11px;font-weight:600;color:white;background:#3b82f6;border-radius:6px;text-decoration:none;">View Profile →</a>
+          <a href="/stores/${p.id}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}" style="display:inline-block;margin-top:8px;padding:4px 10px;font-size:11px;font-weight:600;color:white;background:#3b82f6;border-radius:6px;text-decoration:none;">View Profile →</a>
         </div>`;
 
         storePopupRef.current?.remove();
@@ -788,7 +788,7 @@ export function MapCanvas({
             <div style="font-size:11px;color:#6b7280;margin-top:2px;">🚚 ${assigneeName}</div>
             ${arrivalInfo}
             ${stop.notes_to_worker ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px;font-style:italic;">"${stop.notes_to_worker}"</div>` : ''}
-            <a href="/stores/${stop.store_id}" style="display:inline-block;margin-top:8px;padding:4px 10px;font-size:11px;font-weight:600;color:white;background:#3b82f6;border-radius:6px;text-decoration:none;">View Store →</a>
+            <a href="/stores/${stop.store_id}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}" style="display:inline-block;margin-top:8px;padding:4px 10px;font-size:11px;font-weight:600;color:white;background:#3b82f6;border-radius:6px;text-decoration:none;">View Store →</a>
           </div>`;
 
           storePopupRef.current = new mapboxgl.Popup({ offset: [0, -16], closeButton: true, maxWidth: '280px' })
