@@ -964,17 +964,19 @@ const Layout = ({ children }: LayoutProps) => {
   const verifiedNav = ensureBrandaroInNav(DYNASTY_NAVIGATION);
   const brandaroStatus = useBrandaroVerify(verifiedNav);
   
-  // All sections open by default — brandaro-hub PERMANENTLY included
-  const [openSections, setOpenSections] = useState<string[]>([
-    'penthouse', 'sbo-ai-engine', 'security-governance',
-    'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
-    'surplus-funds-os', 'dynasty-funding-hub', 'uben-hq', 'dynasty-earn', 'clipper-nation', 'real-estate-os', 'solar-os',
-    'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
-    'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
-    'brandaro-hub', 'dynasty-connect', 'voice-ops', 'global-dashboard', 'portals',
-    'dynasty-direct'
-  ]);
-  
+  // Sections are collapsed by default. The section holding the current route
+  // opens automatically; anything the operator opens/closes by hand is
+  // remembered for the session (and across reloads). No section is removed.
+  const SECTION_STATE_KEY = 'nexus.sidebar.sections';
+  const [sectionOverrides, setSectionOverrides] = useState<Record<string, boolean>>(() => {
+    try {
+      const raw = localStorage.getItem(SECTION_STATE_KEY);
+      return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    } catch {
+      return {};
+    }
+  });
+
   const currentPath = location.pathname;
 
   // Close the mobile nav sheet whenever the route changes
@@ -986,11 +988,15 @@ const Layout = ({ children }: LayoutProps) => {
     return currentPath === path || currentPath.startsWith(path + '/');
   };
 
-  const toggleSection = (id: string) => {
-    setOpenSections(prev =>
-      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
-    );
+  const toggleSection = (id: string, currentlyOpen: boolean) => {
+    setSectionOverrides(prev => {
+      const next = { ...prev, [id]: !currentlyOpen };
+      try { localStorage.setItem(SECTION_STATE_KEY, JSON.stringify(next)); } catch { /* storage disabled */ }
+      return next;
+    });
   };
+
+  const openSections = Object.keys(sectionOverrides).filter(id => sectionOverrides[id]);
 
   useEffect(() => {
     if (!isFloor9Route) return;
@@ -1003,7 +1009,7 @@ const Layout = ({ children }: LayoutProps) => {
     }, 50);
 
     return () => window.clearTimeout(timer);
-  }, [isFloor9Route, openSections]);
+  }, [isFloor9Route, sectionOverrides]);
 
   useEffect(() => {
     if (isAdmin()) {
@@ -1066,13 +1072,14 @@ const Layout = ({ children }: LayoutProps) => {
   }
 
   const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any; testId?: string; badge?: number; highlight?: boolean; gold?: boolean }>) => {
-    const isOpen = openSections.includes(id);
+    const hasActiveItem = items.some(i => isPathActive(i.path));
+    const isOpen = sectionOverrides[id] ?? hasActiveItem;
     const sectionWired = sectionHasDispatch(items.map(i => i.path));
 
     return (
       <div key={id} className="mb-1">
         <button
-          onClick={() => toggleSection(id)}
+          onClick={() => toggleSection(id, isOpen)}
           className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-foreground/80 hover:bg-muted/50 rounded-md transition-colors"
         >
           <span className="flex-1 text-left truncate text-xs">{name}</span>
@@ -1798,7 +1805,7 @@ const Layout = ({ children }: LayoutProps) => {
 
       <div className="flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden md:flex w-72 flex-col border-r border-border/50 bg-card h-[calc(100vh-3.5rem)] overflow-hidden sticky top-14 self-start" style={{ opacity: 1, filter: 'none', backdropFilter: 'none', zIndex: 40 }}>
+        <aside className="hidden md:flex w-64 xl:w-72 flex-col border-r border-border/50 bg-card h-[calc(100vh-3.5rem)] overflow-hidden sticky top-14 self-start" style={{ opacity: 1, filter: 'none', backdropFilter: 'none', zIndex: 40 }}>
           <div className="p-3 border-b border-border/50">
             <h2 className="text-sm font-bold mb-1">🏛️ Dynasty OS</h2>
             <p className="text-xs text-muted-foreground mb-2">Empire Command Center</p>

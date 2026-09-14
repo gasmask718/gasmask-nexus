@@ -14,11 +14,13 @@ interface Props {
   paymentTerms?: string | null;
   /** Caller/VA mode: hide finance facts (balance, terms). Operational facts stay. */
   hideFinancials?: boolean;
+  /** Page already shows the name/address in its header — render facts only. */
+  hideIdentity?: boolean;
 }
 
 const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString() : 'No activity yet';
 
-export function StoreExecutiveOverview({ storeId, name, address, primaryContact, phone, lastOrderAt, paymentTerms, hideFinancials = false }: Props) {
+export function StoreExecutiveOverview({ storeId, name, address, primaryContact, phone, lastOrderAt, paymentTerms, hideFinancials = false, hideIdentity = false }: Props) {
   const { storeMasterId } = useStoreMasterResolver(storeId);
   // Canonical account facts — same row the Account Summary brief is generated from.
   const { data: summary } = useQuery({
@@ -66,7 +68,9 @@ export function StoreExecutiveOverview({ storeId, name, address, primaryContact,
   const terms = master?.invoice_payment_method || paymentTerms || null;
 
   const facts = [
-    ['Primary Contact', contactName || 'Not assigned'],
+    // The page header already shows the editable primary contact when identity
+    // is rendered there — don't repeat it.
+    ...(hideIdentity ? [] : [['Primary Contact', contactName || 'Not assigned'] as string[]]),
     ['Last Contact', formatDate(lastContact)],
     ['Last Order', formatDate(lastOrderAt ?? summary?.last_order_date ?? null)],
     // Finance facts are owner/admin-only — the caller workspace passes hideFinancials.
@@ -78,14 +82,16 @@ export function StoreExecutiveOverview({ storeId, name, address, primaryContact,
 
 
   return (
-    <section className="border-b border-border/60 pb-5">
+    <section className={hideIdentity ? '' : 'border-b border-border/60 pb-5'}>
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-        <div className="min-w-0 space-y-2">
-          <h1 className="text-2xl font-bold sm:text-3xl">{name}</h1>
-          <p className="text-sm text-muted-foreground">{address || 'Address not available'}</p>
-          {phone && <p className="text-sm text-muted-foreground">{phone}</p>}
-        </div>
-        <div className="grid min-w-0 grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 xl:min-w-[640px]">
+        {!hideIdentity && (
+          <div className="min-w-0 space-y-2">
+            <h1 className="text-2xl font-bold sm:text-3xl">{name}</h1>
+            <p className="text-sm text-muted-foreground">{address || 'Address not available'}</p>
+            {phone && <p className="text-sm text-muted-foreground">{phone}</p>}
+          </div>
+        )}
+        <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
           {facts.map(([label, value]) => (
             <div key={label} className="min-w-0">
               <p className="text-xs font-medium uppercase text-muted-foreground">{label}</p>

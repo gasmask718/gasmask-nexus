@@ -841,9 +841,9 @@ const Stores = () => {
                 onClick={() => navigate(`/stores/${store.id}`, { state: { from: window.location.pathname + window.location.search } })}
               >
                 <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg">{store.owner_name || store.name}</CardTitle>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <CardTitle className="truncate text-lg">{store.owner_name || store.name}</CardTitle>
                       {store.owner_name && store.name !== store.owner_name && (
                         <p className="text-xs text-muted-foreground">{store.name}</p>
                       )}
@@ -857,7 +857,7 @@ const Stores = () => {
                         )}
                       </div>
                     </div>
-                  <div className="flex items-start gap-2">
+                  <div className="flex shrink-0 flex-wrap items-start justify-end gap-1">
                     <Checkbox
                       checked={selectedStoreIds.includes(store.id)}
                       onCheckedChange={(checked) => {
@@ -956,6 +956,12 @@ const Stores = () => {
                     </div>
                   </div>
 
+                  {/* Secondary metadata — collapsed by default, nothing removed */}
+                  <details className="group rounded-md border border-border/40" onClick={(e) => e.stopPropagation()}>
+                    <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
+                      More details
+                    </summary>
+                    <div className="space-y-3 px-3 pb-3">
                   {/* All Contacts */}
                   <div className="flex items-start gap-2 text-sm">
                     <Users className="h-4 w-4 mt-0.5 text-primary shrink-0" />
@@ -1178,8 +1184,21 @@ const Stores = () => {
                           )}
                         </div>
                       </div>
-                    )}
-                    <StoreCardQuickView storeId={store.id} storeName={store.owner_name || store.name} />
+                     )}
+                     <StoreCardQuickView storeId={store.id} storeName={store.owner_name || store.name} />
+                    </div>
+                  </details>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/stores/${store.id}`, { state: { from: window.location.pathname + window.location.search } });
+                    }}
+                  >
+                    Open account
+                  </Button>
                  </CardContent>
               </Card>
             );
