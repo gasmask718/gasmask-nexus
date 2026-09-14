@@ -1157,6 +1157,44 @@ const Layout = ({ children }: LayoutProps) => {
 
   const openSections = Object.keys(sectionOverrides).filter(id => sectionOverrides[id]);
 
+  // ── Top-level group accordion: one open at a time, current route's group wins
+  const GROUP_STATE_KEY = 'nexus.sidebar.group';
+  const RAIL_STATE_KEY = 'nexus.sidebar.rail';
+  const activeGroupId =
+    NAV_GROUPS.find(g =>
+      g.sections.some(s =>
+        s.items.some((i: any) =>
+          i.path === '/' ? currentPath === '/' : currentPath === i.path || currentPath.startsWith(i.path + '/'),
+        ),
+      ),
+    )?.id ?? null;
+
+  const [openGroup, setOpenGroup] = useState<string | null>(() => {
+    try { return localStorage.getItem(GROUP_STATE_KEY); } catch { return null; }
+  });
+  const [railMode, setRailMode] = useState<boolean>(() => {
+    try { return localStorage.getItem(RAIL_STATE_KEY) === '1'; } catch { return false; }
+  });
+
+  useEffect(() => {
+    if (activeGroupId) setOpenGroup(activeGroupId);
+  }, [activeGroupId]);
+
+  const selectGroup = (id: string) => {
+    setOpenGroup(prev => {
+      const next = prev === id ? null : id;
+      try { next ? localStorage.setItem(GROUP_STATE_KEY, next) : localStorage.removeItem(GROUP_STATE_KEY); } catch { /* storage disabled */ }
+      return next;
+    });
+  };
+
+  const toggleRail = () => {
+    setRailMode(prev => {
+      try { localStorage.setItem(RAIL_STATE_KEY, prev ? '0' : '1'); } catch { /* storage disabled */ }
+      return !prev;
+    });
+  };
+
   useEffect(() => {
     if (!isFloor9Route) return;
 
