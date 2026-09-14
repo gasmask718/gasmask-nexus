@@ -249,8 +249,9 @@ export function normalizeLead(raw: RawLead, defaultSource: string | null): Norma
 
   return {
     ok: true,
+    lane,
     phoneLast10,
-    nameKey: `${normText(name)}|${normText(city)}|${state}`,
+    nameKey: `${normText(name)}|${normText(city)}|${state ?? ''}`,
     lead: {
       business: 'playboxxx',
       business_name: name,
