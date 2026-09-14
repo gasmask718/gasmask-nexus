@@ -280,6 +280,25 @@ const Stores = () => {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Handled-today lookup (read-only). Reuses the same store_review_events rows the
+  // store account page writes via mark_store_handled_today — no new system.
+  const { data: handledTodayIds = new Set<string>() } = useQuery({
+    queryKey: ['stores-handled-today'],
+    queryFn: async () => {
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
+      const { data, error } = await (supabase as any)
+        .from('store_review_events')
+        .select('store_id')
+        .eq('review_type', 'handled')
+        .eq('handled_on', today);
+      if (error) throw error;
+      const ids = new Set<string>();
+      (data || []).forEach((r: any) => r.store_id && ids.add(r.store_id));
+      return ids;
+    },
+    staleTime: 60 * 1000,
+  });
+
   // (Legacy full-fetch removed — server path is authoritative.)
 
 
