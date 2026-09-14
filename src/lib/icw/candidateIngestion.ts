@@ -26,6 +26,7 @@ import {
   createIngestRunContext,
   type IngestRunContext,
 } from './leadIngestion';
+import { startIngestionRun, completeIngestionRun, type StartRunInput } from './ingestionRuns';
 
 export interface ICWCandidateLead {
   id: string;
@@ -227,6 +228,8 @@ export interface CandidateIngestBatchSummary {
   /** newCandidateCount + sameRunSelfMatchCount — rows this run actually added. */
   netNewRowCount: number;
   rawResultCount: number;
+  /** icw_ingestion_runs.id for this batch — provenance for every row it wrote. */
+  ingestionRunId?: string;
 }
 
 /**
@@ -235,6 +238,7 @@ export interface CandidateIngestBatchSummary {
  */
 export async function ingestCandidateLeads(
   inputs: ICWCandidateInput[],
+  runMeta?: StartRunInput,
 ): Promise<CandidateIngestBatchSummary> {
   const run = createIngestRunContext();
   const results: CandidateUpsertResult[] = [];
@@ -242,13 +246,40 @@ export async function ingestCandidateLeads(
   let sameRunSelfMatchCount = 0;
   let preExistingDuplicateCount = 0;
 
-  for (const input of inputs) {
-    const res = await upsertCandidateLead(input, { run });
-    if (res.outcome === 'inserted') newCandidateCount++;
-    else if (res.outcome === 'same_run_self_match') sameRunSelfMatchCount++;
-    else preExistingDuplicateCount++;
-    results.push(res);
+  // Every batch is observable: a run row is opened before the first write and
+  // closed with real counts (or 'failed' + the error) afterwards.
+  const runRow = await startIngestionRun(runMeta ?? { source: 'manual_candidate_batch' });
+
+  try {
+    for (const input of inputs) {
+      const res = await upsertCandidateLead(
+        { ...input, ingestion_run_id: input.ingestion_run_id ?? runRow.id },
+        { run },
+      );
+      if (res.outcome === 'inserted') newCandidateCount++;
+      else if (res.outcome === 'same_run_self_match') sameRunSelfMatchCount++;
+      else preExistingDuplicateCount++;
+      results.push(res);
+    }
+  } catch (err) {
+    await completeIngestionRun(
+      runRow.id,
+      {
+        raw_result_count: inputs.length,
+        new_lead_count: newCandidateCount + sameRunSelfMatchCount,
+        duplicate_count: preExistingDuplicateCount,
+      },
+      'failed',
+      err instanceof Error ? err.message : String(err),
+    );
+    throw err;
   }
+
+  await completeIngestionRun(runRow.id, {
+    raw_result_count: inputs.length,
+    new_lead_count: newCandidateCount + sameRunSelfMatchCount,
+    duplicate_count: preExistingDuplicateCount,
+  });
 
   return {
     results,
@@ -257,5 +288,6 @@ export async function ingestCandidateLeads(
     preExistingDuplicateCount,
     netNewRowCount: newCandidateCount + sameRunSelfMatchCount,
     rawResultCount: inputs.length,
+    ingestionRunId: runRow.id,
   };
 }

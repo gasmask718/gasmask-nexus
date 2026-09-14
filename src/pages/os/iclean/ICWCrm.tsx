@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { UserPlus } from 'lucide-react';
+import { toast } from 'sonner';
+import { mutationErrorMessage } from '@/lib/verifiedMutation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -27,6 +31,7 @@ const statusClass = (s: string) =>
         : 'bg-[#4FC3E8]/10 text-[#4FC3E8] border-[#4FC3E8]/20';
 
 export default function ICWCrm() {
+  const qc = useQueryClient();
   const [status, setStatus] = useState<string>('all');
   const [category, setCategory] = useState<string>('all');
   const [country, setCountry] = useState<string>('all');
@@ -42,6 +47,32 @@ export default function ICWCrm() {
       if (error) throw error;
       return (data ?? []) as unknown as ICWSourcedLead[];
     },
+  });
+
+  // Promotion reuses the canonical person: the RPC links an existing worker
+  // with the same phone/email instead of creating a second identity.
+  const promote = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.rpc('icw_promote_to_worker', {
+        _source: 'lead',
+        _record_id: id,
+      });
+      if (error) throw error;
+      return data as { worker_id: string; action: string };
+    },
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['icw-sourced-leads'] });
+      qc.invalidateQueries({ queryKey: ['icw-workers'] });
+      qc.invalidateQueries({ queryKey: ['icw-command-metrics'] });
+      toast.success(
+        res.action === 'worker_created'
+          ? 'Worker record created'
+          : res.action === 'linked_existing_worker'
+            ? 'Linked to the existing worker with the same phone/email'
+            : 'Already promoted — same worker',
+      );
+    },
+    onError: (err) => toast.error(mutationErrorMessage(err)),
   });
 
   // Countries actually present in the data — never a hardcoded US-only list.
@@ -177,7 +208,7 @@ export default function ICWCrm() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border/50">
-                    {['Name', 'Contact', 'Location', 'Categories', 'Source', 'License', 'Status'].map(
+                    {['Name', 'Contact', 'Location', 'Categories', 'Source', 'License', 'Status', 'Action'].map(
                       (h) => (
                         <th
                           key={h}
@@ -238,6 +269,27 @@ export default function ICWCrm() {
                         <Badge variant="outline" className={statusClass(l.status)}>
                           {l.status}
                         </Badge>
+                      </td>
+                      <td className="p-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={
+                            promote.isPending ||
+                            Boolean(l.promoted_worker_id) ||
+                            l.status !== 'qualified'
+                          }
+                          onClick={() => promote.mutate(l.id)}
+                          title={
+                            l.promoted_worker_id
+                              ? 'Already a worker'
+                              : l.status !== 'qualified'
+                                ? 'Mark qualified first'
+                                : 'Create the worker record'
+                          }
+                        >
+                          <UserPlus className="h-4 w-4 mr-1" /> Worker
+                        </Button>
                       </td>
                     </tr>
                   ))}

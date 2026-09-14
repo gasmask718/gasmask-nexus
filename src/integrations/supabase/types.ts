@@ -163353,6 +163353,10 @@ export type Database = {
         Args: { _minutes?: number }
         Returns: Json
       }
+      icw_promote_to_worker: {
+        Args: { _record_id: string; _source: string }
+        Returns: Json
+      }
       icw_worker_is_available: {
         Args: { _availability: string }
         Returns: boolean

@@ -485,6 +485,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/icw/my-jobs', label: '📋 My ICW Jobs', icon: Home },
       { path: '/os/icw/map', label: '🗺️ IClean Hub Map', icon: Home },
       { path: '/os/icw/crm', label: '📇 ICW CRM', icon: Users },
+      { path: '/os/icw/candidates', label: '🧾 ICW Applicants', icon: Users },
       { path: '/os/playboxxx', label: '🎮 PlayBoxxx OS', icon: Sparkles },
       { path: '/os/special-needs', label: '♿ Special Needs App OS', icon: Accessibility },
     ],

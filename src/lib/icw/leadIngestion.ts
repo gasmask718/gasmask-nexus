@@ -17,6 +17,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { verifiedInsert, verifiedUpdate } from '@/lib/verifiedMutation';
+import { startIngestionRun, completeIngestionRun, type StartRunInput } from './ingestionRuns';
 
 export interface ICWSourcedLead {
   id: string;
@@ -421,6 +422,8 @@ export interface IngestBatchSummary {
   netNewRowCount: number;
   registeredAddressOnlyCount: number;
   rawResultCount: number;
+  /** icw_ingestion_runs.id for this batch — provenance for every row it wrote. */
+  ingestionRunId?: string;
 }
 
 /**
@@ -429,7 +432,10 @@ export interface IngestBatchSummary {
  */
 export async function ingestSourcedLeads(
   inputs: ICWLeadInput[],
-  options: { addressProvenanceFor?: (input: ICWLeadInput) => AddressProvenance | undefined } = {},
+  options: {
+    addressProvenanceFor?: (input: ICWLeadInput) => AddressProvenance | undefined;
+    runMeta?: StartRunInput;
+  } = {},
 ): Promise<IngestBatchSummary> {
   const run = createIngestRunContext();
   const results: UpsertResult[] = [];
@@ -438,19 +444,47 @@ export async function ingestSourcedLeads(
   let preExistingDuplicateCount = 0;
   let registeredAddressOnlyCount = 0;
 
-  for (const input of inputs) {
-    const res = await upsertSourcedLead(input, {
-      run,
-      addressProvenance: options.addressProvenanceFor?.(input),
-    });
-    if (res.outcome === 'inserted') newLeadCount++;
-    else if (res.outcome === 'same_run_self_match') sameRunSelfMatchCount++;
-    else preExistingDuplicateCount++;
-    if (res.registeredAddressOnly) registeredAddressOnlyCount++;
-    results.push(res);
+  // Every batch is observable: a run row is opened before the first write and
+  // closed with real counts (or 'failed' + the error) afterwards.
+  const runRow = await startIngestionRun(options.runMeta ?? { source: 'manual_lead_batch' });
+
+  try {
+    for (const input of inputs) {
+      const res = await upsertSourcedLead(
+        { ...input, ingestion_run_id: input.ingestion_run_id ?? runRow.id },
+        {
+          run,
+          addressProvenance: options.addressProvenanceFor?.(input),
+        },
+      );
+      if (res.outcome === 'inserted') newLeadCount++;
+      else if (res.outcome === 'same_run_self_match') sameRunSelfMatchCount++;
+      else preExistingDuplicateCount++;
+      if (res.registeredAddressOnly) registeredAddressOnlyCount++;
+      results.push(res);
+    }
+  } catch (err) {
+    await completeIngestionRun(
+      runRow.id,
+      {
+        raw_result_count: inputs.length,
+        new_lead_count: newLeadCount + sameRunSelfMatchCount,
+        duplicate_count: preExistingDuplicateCount,
+      },
+      'failed',
+      err instanceof Error ? err.message : String(err),
+    );
+    throw err;
   }
 
+  await completeIngestionRun(runRow.id, {
+    raw_result_count: inputs.length,
+    new_lead_count: newLeadCount + sameRunSelfMatchCount,
+    duplicate_count: preExistingDuplicateCount,
+  });
+
   return {
+    ingestionRunId: runRow.id,
     results,
     newLeadCount,
     sameRunSelfMatchCount,

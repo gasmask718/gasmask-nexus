@@ -1071,6 +1071,7 @@ const ICWWorkerRoster = lazy(() => import('@/pages/os/iclean/ICWWorkerRoster'));
 const ICWMyJobs = lazy(() => import('@/pages/os/iclean/ICWMyJobs'));
 const ICWLeadMap = lazy(() => import('@/pages/os/iclean/ICWLeadMap'));
 const ICWCrm = lazy(() => import('@/pages/os/iclean/ICWCrm'));
+const ICWCandidateQueue = lazy(() => import('@/pages/os/iclean/ICWCandidateQueue'));
 const PlayboxxxDashboard = lazy(() => import('@/pages/os/playboxxx/PlayboxxxDashboard'));
 const PbxRecruitingDashboard = lazy(() => import('@/pages/os/playboxxx/recruiting/RecruitingDashboard'));
 const PbxStaffSourcing = lazy(() => import('@/pages/os/playboxxx/recruiting/StaffSourcing'));
@@ -2372,6 +2373,7 @@ export default function AppRoutes() {
         <Route path="/os/icw/my-jobs" element={<ICWMyJobs />} />
         <Route path="/os/icw/map" element={<ICWLeadMap />} />
         <Route path="/os/icw/crm" element={<ICWCrm />} />
+        <Route path="/os/icw/candidates" element={<ICWCandidateQueue />} />
         <Route path="/os/playboxxx" element={<PlayboxxxDashboard />} />
         <Route path="/os/playboxxx/recruiting" element={<PbxRecruitingDashboard />} />
         <Route path="/os/playboxxx/recruiting/staff-sourcing" element={<PbxStaffSourcing />} />
