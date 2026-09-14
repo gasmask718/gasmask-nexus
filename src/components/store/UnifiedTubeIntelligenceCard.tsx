@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSimulationSafeMutation } from '@/hooks/useSimulationSafeMutation';
 import { useSimulationMode } from '@/contexts/SimulationModeContext';
 import { useTubeIntelligence, canEditField, TubeIntelRole } from '@/hooks/useTubeIntelligence';
@@ -128,11 +128,91 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   // ── Switch Tubes draft state (decoupled from server) ──
   const [switchDrafts, setSwitchDrafts] = useState<Record<string, { quantity: string; notes: string; dirty: boolean; saving: boolean; status: 'idle' | 'dirty' | 'saving' | 'saved' | 'error' }>>({});
 
-  // ── Brand relationship data (is_active source of truth) ──
+  // ── Brand relationship data (brand-level default for activation) ──
   const { relationships, updateRelationship } = useStoreBrandRelationships(storeId);
 
+  // ── Per-SKU activation overrides (canonical: store_tube_inventory_status.is_active) ──
+  const skuActiveQueryKey = ['store-sku-active', storeId, simulationMode] as const;
+  const { data: skuActiveOverrides = {} } = useQuery({
+    queryKey: skuActiveQueryKey,
+    enabled: !!storeId,
+    queryFn: async (): Promise<Record<string, boolean>> => {
+      const { data, error } = await supabase
+        .from('store_tube_inventory_status')
+        .select('brand_id, is_active')
+        .eq('store_id', storeId)
+        .eq('is_simulation', simulationMode);
+      if (error) throw error;
+      const out: Record<string, boolean> = {};
+      for (const r of (data ?? []) as any[]) {
+        if (typeof r.is_active === 'boolean') out[r.brand_id] = r.is_active;
+      }
+      return out;
+    },
+  });
+
+  const toggleSkuActive = useMutation({
+    mutationFn: async ({ brandId, next }: { brandId: string; next: boolean }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const brandName = VALID_TUBE_BRANDS.find(b => b.id === brandId)?.name ?? brandId;
+      // Writes exactly ONE canonical row: (store_id, brand_id, is_simulation).
+      const { error } = await supabase
+        .from('store_tube_inventory_status')
+        .upsert(
+          {
+            store_id: storeId,
+            brand_id: brandId,
+            brand_name: brandName,
+            is_active: next,
+            is_simulation: simulationMode,
+            last_updated_at: new Date().toISOString(),
+            last_updated_by: user?.id ?? null,
+          } as any,
+          { onConflict: 'store_id,brand_id,is_simulation' },
+        );
+      if (error) throw error;
+      return { brandId, next };
+    },
+    onMutate: async ({ brandId, next }) => {
+      await queryClient.cancelQueries({ queryKey: skuActiveQueryKey });
+      const prev = queryClient.getQueryData<Record<string, boolean>>(skuActiveQueryKey as any);
+      queryClient.setQueryData<Record<string, boolean>>(skuActiveQueryKey as any, {
+        ...(prev ?? {}),
+        [brandId]: next,
+      });
+      return { prev };
+    },
+    onError: (err: any, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(skuActiveQueryKey as any, ctx.prev);
+      toast.error(`Could not change this product: ${err.message}`);
+    },
+    onSuccess: ({ brandId, next }) => {
+      const name = VALID_TUBE_BRANDS.find(b => b.id === brandId)?.name ?? brandId;
+      toast.success(`${name} ${next ? 'activated' : 'paused'} for this store`);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['store-sku-active', storeId] });
+    },
+  });
+
+
+  // ══════════════════════════════════════════════════════════════════
+  // PER-PRODUCT ACTIVATION (power switch)
+  //
+  // Each lane below is its own SKU. Activation is stored PER SKU on the
+  // canonical store_tube_inventory_status row (store_id, brand_id,
+  // is_simulation).is_active. NULL on that row means "inherit the
+  // brand-level store_brand_relationships flag", which preserves every
+  // pre-existing store's behaviour until a lane is toggled explicitly.
+  //
+  // Previously this toggle wrote the 4-brand relationship row, so flipping
+  // GasMask Tubes also flipped GasMask Bags + Redtops (and one Hotscolatti
+  // lane flipped all four) — the "it powers all brands" bug.
+  // ══════════════════════════════════════════════════════════════════
   const getBrandIsActive = (brandId: string): boolean => {
-    // Map tube brand IDs to canonical relationship brand IDs
+    const skuOverride = skuActiveOverrides[brandId];
+    if (typeof skuOverride === 'boolean') return skuOverride;
+    // Map tube brand IDs to canonical relationship brand IDs (inherited default)
     const mappings: Record<string, string> = {
       gasmask: 'gasmask',
       gasmasktubes: 'gasmask',
@@ -165,11 +245,10 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
     return relationships.find(r => r.brand_id === canonicalId);
   };
 
+  // Toggles ONLY the product lane that was clicked. Never touches sibling
+  // SKUs and never rewrites the shared brand relationship row.
   const handleActiveToggle = (brandId: string) => {
-    const rel = getRelationshipForBrand(brandId);
-    if (!rel) return;
-    const newHealth = rel.is_active ? 'paused' : 'healthy';
-    updateRelationship({ id: rel.id, updates: { relationship_health: newHealth as any } });
+    toggleSkuActive.mutate({ brandId, next: !getBrandIsActive(brandId) });
   };
 
   // ── Filtered brands based on active filter ──
@@ -179,7 +258,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
       const isActive = getBrandIsActive(brand.id);
       return activeFilter === 'active' ? isActive : !isActive;
     });
-  }, [activeFilter, relationships]);
+  }, [activeFilter, relationships, skuActiveOverrides]);
 
   const canEditCounts = role === 'admin' || role === 'ambassador' || role === 'biker';
   const tubeIntelRole: TubeIntelRole = role as TubeIntelRole;
@@ -594,6 +673,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                                 <Power className={cn('h-3 w-3', brandIsActive ? 'text-green-500' : 'text-muted-foreground')} />
                                 <Switch
                                   checked={brandIsActive}
+                                  aria-label={`Power ${brand.name}`}
                                   onCheckedChange={() => handleActiveToggle(brand.id)}
                                   disabled={!canToggleActive}
                                   className="scale-90"
@@ -601,7 +681,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                               </div>
                             </TooltipTrigger>
                             <TooltipContent side="left">
-                              <p className="text-xs">{brandIsActive ? 'Brand is active — toggle to pause' : 'Brand is inactive — toggle to activate'}</p>
+                              <p className="text-xs">{brandIsActive ? `${brand.name} is active at this store — toggle to pause just this product` : `${brand.name} is paused at this store — toggle to activate just this product`}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>

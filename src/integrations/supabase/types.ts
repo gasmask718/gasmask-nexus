@@ -121652,6 +121652,7 @@ export type Database = {
           current_tubes_left: number | null
           has_ever_ordered: boolean
           id: string
+          is_active: boolean | null
           is_simulation: boolean
           last_inventory_check_at: string | null
           last_inventory_check_by: string | null
@@ -121683,6 +121684,7 @@ export type Database = {
           current_tubes_left?: number | null
           has_ever_ordered?: boolean
           id?: string
+          is_active?: boolean | null
           is_simulation?: boolean
           last_inventory_check_at?: string | null
           last_inventory_check_by?: string | null
@@ -121714,6 +121716,7 @@ export type Database = {
           current_tubes_left?: number | null
           has_ever_ordered?: boolean
           id?: string
+          is_active?: boolean | null
           is_simulation?: boolean
           last_inventory_check_at?: string | null
           last_inventory_check_by?: string | null
