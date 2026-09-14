@@ -29654,8 +29654,113 @@ export type Database = {
           },
         ]
       }
+      business_lead_eligibility: {
+        Row: {
+          company: string
+          created_at: string
+          eligible: boolean
+          id: string
+          lead_id: string
+          reason: string | null
+          rule: string | null
+          updated_at: string
+        }
+        Insert: {
+          company: string
+          created_at?: string
+          eligible?: boolean
+          id?: string
+          lead_id: string
+          reason?: string | null
+          rule?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company?: string
+          created_at?: string
+          eligible?: boolean
+          id?: string
+          lead_id?: string
+          reason?: string | null
+          rule?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_lead_eligibility_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_lead_eligibility_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_lead_eligibility_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_lead_eligibility_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_lead_eligibility_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_lead_eligibility_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_lead_eligibility_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_lead_eligibility_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_lead_eligibility_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_toptier_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_lead_eligibility_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supply"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_leads: {
         Row: {
+          addr_norm: string | null
           ai_call_eligible: boolean
           ai_call_last_attempt_at: string | null
           ai_call_result: string | null
@@ -29676,6 +29781,7 @@ export type Database = {
           category_original: string | null
           city: string | null
           contact_name: string | null
+          country: string | null
           created_at: string
           duplicate_of: string | null
           duplicate_reason: string | null
@@ -29689,6 +29795,7 @@ export type Database = {
           google_rating: number | null
           google_types: string[] | null
           id: string
+          ingestion_run_id: string | null
           instagram_bio: string | null
           instagram_followers: number | null
           instagram_url: string | null
@@ -29700,6 +29807,7 @@ export type Database = {
           longitude: number | null
           maps_url: string | null
           metro: string | null
+          name_norm: string | null
           next_step: string | null
           notes: string | null
           onboarded_at: string | null
@@ -29716,14 +29824,20 @@ export type Database = {
           search_term: string | null
           sms_count: number | null
           source: string | null
+          source_record_id: string | null
+          source_url: string | null
           state: string | null
           status: string
+          street_address: string | null
           times_seen: number
           timezone: string | null
           updated_at: string
           website: string | null
+          website_domain: string | null
+          zip: string | null
         }
         Insert: {
+          addr_norm?: string | null
           ai_call_eligible?: boolean
           ai_call_last_attempt_at?: string | null
           ai_call_result?: string | null
@@ -29744,6 +29858,7 @@ export type Database = {
           category_original?: string | null
           city?: string | null
           contact_name?: string | null
+          country?: string | null
           created_at?: string
           duplicate_of?: string | null
           duplicate_reason?: string | null
@@ -29757,6 +29872,7 @@ export type Database = {
           google_rating?: number | null
           google_types?: string[] | null
           id?: string
+          ingestion_run_id?: string | null
           instagram_bio?: string | null
           instagram_followers?: number | null
           instagram_url?: string | null
@@ -29768,6 +29884,7 @@ export type Database = {
           longitude?: number | null
           maps_url?: string | null
           metro?: string | null
+          name_norm?: string | null
           next_step?: string | null
           notes?: string | null
           onboarded_at?: string | null
@@ -29784,14 +29901,20 @@ export type Database = {
           search_term?: string | null
           sms_count?: number | null
           source?: string | null
+          source_record_id?: string | null
+          source_url?: string | null
           state?: string | null
           status?: string
+          street_address?: string | null
           times_seen?: number
           timezone?: string | null
           updated_at?: string
           website?: string | null
+          website_domain?: string | null
+          zip?: string | null
         }
         Update: {
+          addr_norm?: string | null
           ai_call_eligible?: boolean
           ai_call_last_attempt_at?: string | null
           ai_call_result?: string | null
@@ -29812,6 +29935,7 @@ export type Database = {
           category_original?: string | null
           city?: string | null
           contact_name?: string | null
+          country?: string | null
           created_at?: string
           duplicate_of?: string | null
           duplicate_reason?: string | null
@@ -29825,6 +29949,7 @@ export type Database = {
           google_rating?: number | null
           google_types?: string[] | null
           id?: string
+          ingestion_run_id?: string | null
           instagram_bio?: string | null
           instagram_followers?: number | null
           instagram_url?: string | null
@@ -29836,6 +29961,7 @@ export type Database = {
           longitude?: number | null
           maps_url?: string | null
           metro?: string | null
+          name_norm?: string | null
           next_step?: string | null
           notes?: string | null
           onboarded_at?: string | null
@@ -29852,12 +29978,17 @@ export type Database = {
           search_term?: string | null
           sms_count?: number | null
           source?: string | null
+          source_record_id?: string | null
+          source_url?: string | null
           state?: string | null
           status?: string
+          street_address?: string | null
           times_seen?: number
           timezone?: string | null
           updated_at?: string
           website?: string | null
+          website_domain?: string | null
+          zip?: string | null
         }
         Relationships: [
           {
@@ -29892,7 +30023,28 @@ export type Database = {
             foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
             columns: ["duplicate_of"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -79425,6 +79577,66 @@ export type Database = {
           prior_value?: string | null
           run_id?: string | null
           store_id?: string
+        }
+        Relationships: []
+      }
+      lead_ingestion_runs: {
+        Row: {
+          category: string | null
+          companies: string[]
+          completed_at: string | null
+          created_by: string | null
+          deduped_count: number
+          error_detail: string | null
+          geography: string | null
+          id: string
+          inserted_count: number
+          notes: string | null
+          outcome: string
+          query_term: string | null
+          raw_result_count: number
+          skipped_count: number
+          source: string
+          started_at: string
+          updated_count: number
+        }
+        Insert: {
+          category?: string | null
+          companies?: string[]
+          completed_at?: string | null
+          created_by?: string | null
+          deduped_count?: number
+          error_detail?: string | null
+          geography?: string | null
+          id?: string
+          inserted_count?: number
+          notes?: string | null
+          outcome?: string
+          query_term?: string | null
+          raw_result_count?: number
+          skipped_count?: number
+          source: string
+          started_at?: string
+          updated_count?: number
+        }
+        Update: {
+          category?: string | null
+          companies?: string[]
+          completed_at?: string | null
+          created_by?: string | null
+          deduped_count?: number
+          error_detail?: string | null
+          geography?: string | null
+          id?: string
+          inserted_count?: number
+          notes?: string | null
+          outcome?: string
+          query_term?: string | null
+          raw_result_count?: number
+          skipped_count?: number
+          source?: string
+          started_at?: string
+          updated_count?: number
         }
         Relationships: []
       }
@@ -132615,7 +132827,28 @@ export type Database = {
             foreignKeyName: "ut_call_notes_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_call_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_call_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_call_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -134416,7 +134649,28 @@ export type Database = {
             foreignKeyName: "ut_outreach_logs_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_outreach_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_outreach_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_outreach_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -135616,7 +135870,28 @@ export type Database = {
             foreignKeyName: "ut_partner_onboarding_source_lead_id_fkey"
             columns: ["source_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_onboarding_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_onboarding_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_onboarding_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -135822,7 +136097,28 @@ export type Database = {
             foreignKeyName: "ut_partner_profiles_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_profiles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_profiles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_profiles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -135871,7 +136167,28 @@ export type Database = {
             foreignKeyName: "ut_partner_profiles_source_lead_id_fkey"
             columns: ["source_lead_id"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_profiles_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_profiles_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_profiles_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -139572,7 +139889,28 @@ export type Database = {
             foreignKeyName: "ut_va_tasks_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_va_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_va_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_va_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -148868,14 +149206,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["last_va_id"]
+            columns: ["assigned_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "va_sessions_va_id_fkey"
-            columns: ["assigned_va_id"]
+            columns: ["last_va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -152375,7 +152713,28 @@ export type Database = {
             foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
             columns: ["duplicate_of"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -152637,7 +152996,28 @@ export type Database = {
             foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
             columns: ["duplicate_of"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -152870,7 +153250,28 @@ export type Database = {
             foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
             columns: ["duplicate_of"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -154020,6 +154421,159 @@ export type Database = {
           },
         ]
       }
+      v_brandaro_business_leads: {
+        Row: {
+          addr_norm: string | null
+          ai_call_eligible: boolean | null
+          ai_call_last_attempt_at: string | null
+          ai_call_result: string | null
+          ai_handoff_reason: string | null
+          ai_score: number | null
+          ai_score_post_call: number | null
+          ai_score_reasons: Json | null
+          assigned_to: string | null
+          assigned_va: string | null
+          automation_state: string | null
+          best_time_to_call: string | null
+          business: string | null
+          business_name: string | null
+          callback_due_at: string | null
+          category: string | null
+          category_confidence: number | null
+          category_group: string | null
+          category_original: string | null
+          city: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string | null
+          duplicate_of: string | null
+          duplicate_reason: string | null
+          eligibility_reason: string | null
+          eligibility_rule: string | null
+          email: string | null
+          external_place_id: string | null
+          external_source: string | null
+          follow_up_at: string | null
+          full_address: string | null
+          geocode_source: string | null
+          geocoded_at: string | null
+          google_rating: number | null
+          google_types: string[] | null
+          id: string | null
+          ingestion_run_id: string | null
+          instagram_bio: string | null
+          instagram_followers: number | null
+          instagram_url: string | null
+          instagram_username: string | null
+          last_contacted_at: string | null
+          last_outcome: string | null
+          last_sms_template: string | null
+          latitude: number | null
+          longitude: number | null
+          maps_url: string | null
+          metro: string | null
+          name_norm: string | null
+          next_step: string | null
+          notes: string | null
+          onboarded_at: string | null
+          onboarding_link_sent_at: string | null
+          outreach_count: number | null
+          owner_verified: boolean | null
+          partner_id: string | null
+          phone: string | null
+          phone_last10: string | null
+          priority_bucket: string | null
+          priority_score: number | null
+          recommended_ai_agent: string | null
+          review_count: number | null
+          search_term: string | null
+          sms_count: number | null
+          source: string | null
+          source_record_id: string | null
+          source_url: string | null
+          state: string | null
+          status: string | null
+          street_address: string | null
+          times_seen: number | null
+          timezone: string | null
+          updated_at: string | null
+          website: string | null
+          website_domain: string | null
+          zip: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_toptier_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supply"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_callable_entities: {
         Row: {
           address: string | null
@@ -155002,7 +155556,28 @@ export type Database = {
             foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
             columns: ["duplicate_of"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -155340,6 +155915,159 @@ export type Database = {
           store_name: string | null
         }
         Relationships: []
+      }
+      v_goddess_in_you_business_leads: {
+        Row: {
+          addr_norm: string | null
+          ai_call_eligible: boolean | null
+          ai_call_last_attempt_at: string | null
+          ai_call_result: string | null
+          ai_handoff_reason: string | null
+          ai_score: number | null
+          ai_score_post_call: number | null
+          ai_score_reasons: Json | null
+          assigned_to: string | null
+          assigned_va: string | null
+          automation_state: string | null
+          best_time_to_call: string | null
+          business: string | null
+          business_name: string | null
+          callback_due_at: string | null
+          category: string | null
+          category_confidence: number | null
+          category_group: string | null
+          category_original: string | null
+          city: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string | null
+          duplicate_of: string | null
+          duplicate_reason: string | null
+          eligibility_reason: string | null
+          eligibility_rule: string | null
+          email: string | null
+          external_place_id: string | null
+          external_source: string | null
+          follow_up_at: string | null
+          full_address: string | null
+          geocode_source: string | null
+          geocoded_at: string | null
+          google_rating: number | null
+          google_types: string[] | null
+          id: string | null
+          ingestion_run_id: string | null
+          instagram_bio: string | null
+          instagram_followers: number | null
+          instagram_url: string | null
+          instagram_username: string | null
+          last_contacted_at: string | null
+          last_outcome: string | null
+          last_sms_template: string | null
+          latitude: number | null
+          longitude: number | null
+          maps_url: string | null
+          metro: string | null
+          name_norm: string | null
+          next_step: string | null
+          notes: string | null
+          onboarded_at: string | null
+          onboarding_link_sent_at: string | null
+          outreach_count: number | null
+          owner_verified: boolean | null
+          partner_id: string | null
+          phone: string | null
+          phone_last10: string | null
+          priority_bucket: string | null
+          priority_score: number | null
+          recommended_ai_agent: string | null
+          review_count: number | null
+          search_term: string | null
+          sms_count: number | null
+          source: string | null
+          source_record_id: string | null
+          source_url: string | null
+          state: string | null
+          status: string | null
+          street_address: string | null
+          times_seen: number | null
+          timezone: string | null
+          updated_at: string | null
+          website: string | null
+          website_domain: string | null
+          zip: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_toptier_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supply"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_historical_invoice_audit: {
         Row: {
@@ -157410,6 +158138,159 @@ export type Database = {
         }
         Relationships: []
       }
+      v_services_io_business_leads: {
+        Row: {
+          addr_norm: string | null
+          ai_call_eligible: boolean | null
+          ai_call_last_attempt_at: string | null
+          ai_call_result: string | null
+          ai_handoff_reason: string | null
+          ai_score: number | null
+          ai_score_post_call: number | null
+          ai_score_reasons: Json | null
+          assigned_to: string | null
+          assigned_va: string | null
+          automation_state: string | null
+          best_time_to_call: string | null
+          business: string | null
+          business_name: string | null
+          callback_due_at: string | null
+          category: string | null
+          category_confidence: number | null
+          category_group: string | null
+          category_original: string | null
+          city: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string | null
+          duplicate_of: string | null
+          duplicate_reason: string | null
+          eligibility_reason: string | null
+          eligibility_rule: string | null
+          email: string | null
+          external_place_id: string | null
+          external_source: string | null
+          follow_up_at: string | null
+          full_address: string | null
+          geocode_source: string | null
+          geocoded_at: string | null
+          google_rating: number | null
+          google_types: string[] | null
+          id: string | null
+          ingestion_run_id: string | null
+          instagram_bio: string | null
+          instagram_followers: number | null
+          instagram_url: string | null
+          instagram_username: string | null
+          last_contacted_at: string | null
+          last_outcome: string | null
+          last_sms_template: string | null
+          latitude: number | null
+          longitude: number | null
+          maps_url: string | null
+          metro: string | null
+          name_norm: string | null
+          next_step: string | null
+          notes: string | null
+          onboarded_at: string | null
+          onboarding_link_sent_at: string | null
+          outreach_count: number | null
+          owner_verified: boolean | null
+          partner_id: string | null
+          phone: string | null
+          phone_last10: string | null
+          priority_bucket: string | null
+          priority_score: number | null
+          recommended_ai_agent: string | null
+          review_count: number | null
+          search_term: string | null
+          sms_count: number | null
+          source: string | null
+          source_record_id: string | null
+          source_url: string | null
+          state: string | null
+          status: string | null
+          street_address: string | null
+          times_seen: number | null
+          timezone: string | null
+          updated_at: string | null
+          website: string | null
+          website_domain: string | null
+          zip: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_event_halls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "ut_verified_rental_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_toptier_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supply"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_sku_sales_velocity: {
         Row: {
           avg_daily_velocity_14d: number | null
@@ -159430,7 +160311,28 @@ export type Database = {
             foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
             columns: ["duplicate_of"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -159968,7 +160870,28 @@ export type Database = {
             foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
             columns: ["duplicate_of"]
             isOneToOne: false
+            referencedRelation: "v_brandaro_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
             referencedRelation: "v_dynasty_prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_goddess_in_you_business_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "v_services_io_business_leads"
             referencedColumns: ["id"]
           },
           {
@@ -160623,6 +161546,10 @@ export type Database = {
           review_priority: string
         }[]
       }
+      apply_business_lead_eligibility: {
+        Args: { _lead_id: string }
+        Returns: undefined
+      }
       apply_call_disposition: {
         Args: {
           p_actual_revenue?: number
@@ -160728,6 +161655,10 @@ export type Database = {
         }[]
       }
       bags_from_note: { Args: { raw: string }; Returns: number }
+      bl_canonical_category: { Args: { _raw: string }; Returns: string }
+      bl_domain: { Args: { _url: string }; Returns: string }
+      bl_norm_addr: { Args: { _t: string }; Returns: string }
+      bl_norm_name: { Args: { _t: string }; Returns: string }
       boost_queue_priority_for_hour: {
         Args: { p_business_id: string; p_now_ts?: string }
         Returns: Json
@@ -162438,6 +163369,7 @@ export type Database = {
       increment_received: { Args: { num: string }; Returns: number }
       increment_sent: { Args: { num: string }; Returns: number }
       ingest_bland_cost_tick: { Args: never; Returns: Json }
+      ingest_business_lead: { Args: { p: Json }; Returns: Json }
       ingest_portal_actions: { Args: { _actions: Json }; Returns: Json }
       ingest_recruiting_applicant: { Args: { p_payload: Json }; Returns: Json }
       ingest_territory_addresses: { Args: { p_addresses: Json }; Returns: Json }
