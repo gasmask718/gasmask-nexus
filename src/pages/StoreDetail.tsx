@@ -242,6 +242,7 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
   const id = storeIdProp ?? params.id;
   const isCaller = variant === 'caller';
   const navigate = useNavigate();
+  const { goBack } = useReturnNavigation('/stores');
   const { t } = useTranslation();
   const { roles } = useUserRole();
   const isAmbassador = roles?.includes('ambassador' as any);
