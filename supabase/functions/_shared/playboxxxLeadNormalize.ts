@@ -160,6 +160,21 @@ export function toNumberOrNull(raw: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Creator-lane categories are PEOPLE, not businesses. They are routed to the
+ * canonical recruiting applicant (ingest_recruiting_applicant), never inserted
+ * as a business_leads row. Mapping is category -> recruiting taxonomy.
+ */
+export const CREATOR_LANE: Record<string, { category_slug: string; role_slug: string }> = {
+  model: { category_slug: 'specialty', role_slug: 'model' },
+  creator: { category_slug: 'specialty', role_slug: 'content-creator' },
+  photographer: { category_slug: 'camera-team', role_slug: 'photographer' },
+  cameraman: { category_slug: 'camera-team', role_slug: 'cameraman' },
+  videographer: { category_slug: 'camera-team', role_slug: 'videographer' },
+};
+
+export const isCreatorLane = (category: string) => category in CREATOR_LANE;
+
 export type RawLead = Record<string, unknown>;
 
 export type NormalizedLead = {
