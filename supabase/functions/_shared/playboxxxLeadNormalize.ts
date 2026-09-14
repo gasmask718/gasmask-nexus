@@ -160,6 +160,21 @@ export function toNumberOrNull(raw: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Creator-lane categories are PEOPLE, not businesses. They are routed to the
+ * canonical recruiting applicant (ingest_recruiting_applicant), never inserted
+ * as a business_leads row. Mapping is category -> recruiting taxonomy.
+ */
+export const CREATOR_LANE: Record<string, { category_slug: string; role_slug: string }> = {
+  model: { category_slug: 'specialty', role_slug: 'model' },
+  creator: { category_slug: 'specialty', role_slug: 'content-creator' },
+  photographer: { category_slug: 'camera-team', role_slug: 'photographer' },
+  cameraman: { category_slug: 'camera-team', role_slug: 'cameraman' },
+  videographer: { category_slug: 'camera-team', role_slug: 'videographer' },
+};
+
+export const isCreatorLane = (category: string) => category in CREATOR_LANE;
+
 export type RawLead = Record<string, unknown>;
 
 export type NormalizedLead = {
@@ -172,7 +187,7 @@ export type NormalizedLead = {
   website: string | null;
   full_address: string | null;
   city: string | null;
-  state: string;
+  state: string | null;
   latitude: number | null;
   longitude: number | null;
   external_place_id: string | null;
@@ -186,7 +201,7 @@ export type NormalizedLead = {
 };
 
 export type NormalizeResult =
-  | { ok: true; lead: NormalizedLead; phoneLast10: string | null; nameKey: string }
+  | { ok: true; lead: NormalizedLead; phoneLast10: string | null; nameKey: string; lane: 'business' | 'creator' }
   | { ok: false; error: string };
 
 /** Validate + normalise a single inbound Make.com lead. */
@@ -205,10 +220,16 @@ export function normalizeLead(raw: RawLead, defaultSource: string | null): Norma
     };
   }
 
+  // Creator-lane people go to the recruiting applicant table, whose state column
+  // is nullable — so an Instagram creator with no location is kept, not rejected.
+  // Business-lane rows still land in business_leads, where state is NOT NULL.
+  const lane: 'business' | 'creator' = isCreatorLane(category) ? 'creator' : 'business';
   const stateRaw = cleanText(raw.state ?? raw.region, 40);
-  if (!stateRaw) return { ok: false, error: 'state is required (2-letter US state)' };
-  const state = stateRaw.toUpperCase();
-  if (state.length !== 2 || !US_STATES.has(state)) {
+  if (!stateRaw && lane === 'business') {
+    return { ok: false, error: 'state is required (2-letter US state)' };
+  }
+  const state = stateRaw ? stateRaw.toUpperCase() : null;
+  if (state && (state.length !== 2 || !US_STATES.has(state))) {
     return {
       ok: false,
       error: `state must be a 2-letter US state — got '${stateRaw}'. Non-US leads are not supported in stage 1.`,
@@ -228,8 +249,9 @@ export function normalizeLead(raw: RawLead, defaultSource: string | null): Norma
 
   return {
     ok: true,
+    lane,
     phoneLast10,
-    nameKey: `${normText(name)}|${normText(city)}|${state}`,
+    nameKey: `${normText(name)}|${normText(city)}|${state ?? ''}`,
     lead: {
       business: 'playboxxx',
       business_name: name,

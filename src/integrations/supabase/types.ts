@@ -102802,6 +102802,7 @@ export type Database = {
           experience_summary: string | null
           full_name: string
           id: string
+          instagram_username: string | null
           last_contacted_at: string | null
           license_info: string | null
           notes: string | null
@@ -102825,6 +102826,7 @@ export type Database = {
           experience_summary?: string | null
           full_name: string
           id?: string
+          instagram_username?: string | null
           last_contacted_at?: string | null
           license_info?: string | null
           notes?: string | null
@@ -102848,6 +102850,7 @@ export type Database = {
           experience_summary?: string | null
           full_name?: string
           id?: string
+          instagram_username?: string | null
           last_contacted_at?: string | null
           license_info?: string | null
           notes?: string | null
@@ -157469,6 +157472,44 @@ export type Database = {
           sms_webhook_url: string | null
           source: string | null
           voice_webhook_url: string | null
+        }
+        Relationships: []
+      }
+      v_playboxxx_business_leads: {
+        Row: {
+          business_name: string | null
+          category: string | null
+          category_original: string | null
+          city: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string | null
+          eligibility_reason: string | null
+          eligibility_rule: string | null
+          email: string | null
+          external_place_id: string | null
+          external_source: string | null
+          full_address: string | null
+          id: string | null
+          ingestion_run_id: string | null
+          instagram_followers: number | null
+          instagram_url: string | null
+          instagram_username: string | null
+          latitude: number | null
+          longitude: number | null
+          phone: string | null
+          record_lane: string | null
+          search_term: string | null
+          source: string | null
+          source_record_id: string | null
+          source_url: string | null
+          state: string | null
+          status: string | null
+          street_address: string | null
+          times_seen: number | null
+          updated_at: string | null
+          website: string | null
+          zip: string | null
         }
         Relationships: []
       }
