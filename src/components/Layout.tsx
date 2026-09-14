@@ -948,6 +948,165 @@ const DYNASTY_NAVIGATION = {
   ],
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOP-LEVEL NAVIGATION CONSOLIDATION
+// Nine work-type groups. Every existing section is nested inside one of them —
+// nothing is deleted, no route is removed.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+type NavSection = { id: string; name: string; items: any[]; adminOnly?: boolean };
+
+const floorOf = (id: string): NavSection =>
+  (DYNASTY_NAVIGATION.grabbaSkyscraper as NavSection[]).find(f => f.id === id) as NavSection;
+
+const TERRITORY_SECTION: NavSection = {
+  id: 'territory-intelligence',
+  name: '🌍 Territory Intelligence',
+  items: [
+    { path: '/territory', label: 'Territory Control', icon: Map },
+    { path: '/territory/coverage', label: 'Neighborhood Coverage', icon: MapPin },
+    { path: '/territory/tube-intelligence', label: 'Tube Territory', icon: MapPin },
+    { path: '/territory/gap-intelligence', label: 'Gap Intelligence', icon: Search },
+    { path: '/territory/ingestion', label: 'Ingestion Wizard', icon: Upload },
+    { path: '/territory/planning', label: 'Strategic Planning', icon: Target },
+    { path: '/territory/planning/history', label: 'Commitment History', icon: Clock },
+    { path: '/territory/ai-permissions', label: 'AI Permissions', icon: Shield },
+    { path: '/territory/ai-permissions/neighborhoods', label: 'AI × Neighborhoods', icon: MapPin },
+    { path: '/territory/ai-permissions/actions', label: 'AI × Actions', icon: Zap },
+    { path: '/territory/ai-violations', label: 'AI Violations', icon: AlertTriangle },
+    { path: '/territory/ai-review-queue', label: 'AI Review Queue', icon: ClipboardList },
+    { path: '/territory/playbooks', label: 'Playbooks', icon: FileText },
+  ],
+};
+
+const RECRUITING_SECTION: NavSection = {
+  id: 'recruiting-intake',
+  name: '🧑‍💼 Recruiting Intake',
+  items: [
+    { path: '/os/recruiting/applicants', label: 'Recruiting Applicants', icon: ClipboardList },
+    { path: '/admin/recruitment', label: 'Recruitment Campaigns', icon: Megaphone, adminOnly: true },
+    { path: '/security/ambassador-requests', label: 'Ambassador Requests', icon: UserPlus },
+  ],
+};
+
+const PORTALS_SECTION: NavSection = {
+  id: 'role-portals',
+  name: '🚪 Role Portals',
+  items: DYNASTY_NAVIGATION.portals,
+};
+
+const NAV_GROUPS: Array<{ id: string; name: string; icon: any; adminOnly?: boolean; sections: NavSection[] }> = [
+  {
+    id: 'g-command',
+    name: 'Command',
+    icon: Crown,
+    sections: [
+      DYNASTY_NAVIGATION.globalDashboard as NavSection,
+      DYNASTY_NAVIGATION.penthouse as NavSection,
+      floorOf('grabba-command'),
+      DYNASTY_NAVIGATION.exportsFloor as NavSection,
+    ],
+  },
+  {
+    id: 'g-operations',
+    name: 'Operations',
+    icon: Store,
+    sections: [
+      floorOf('floor-1'),
+      TERRITORY_SECTION,
+      floorOf('floor-3'),
+      floorOf('floor-4'),
+      floorOf('floor-6'),
+      DYNASTY_NAVIGATION.logistics as NavSection,
+      DYNASTY_NAVIGATION.highway as NavSection,
+      DYNASTY_NAVIGATION.fieldVerification as NavSection,
+    ],
+  },
+  {
+    id: 'g-leads-sales',
+    name: 'Leads & Sales',
+    icon: TrendingUp,
+    sections: [
+      floorOf('floor-2'),
+      DYNASTY_NAVIGATION.communicationSystems as NavSection,
+      DYNASTY_NAVIGATION.dynastyConnect as NavSection,
+      DYNASTY_NAVIGATION.voiceOps as NavSection,
+      DYNASTY_NAVIGATION.brandaroHub as NavSection,
+      DYNASTY_NAVIGATION.crmCustomerService as NavSection,
+    ],
+  },
+  {
+    id: 'g-people',
+    name: 'Recruiting & People',
+    icon: Users,
+    sections: [
+      RECRUITING_SECTION,
+      floorOf('floor-8'),
+      DYNASTY_NAVIGATION.systemsHR as NavSection,
+      PORTALS_SECTION,
+    ],
+  },
+  {
+    id: 'g-businesses',
+    name: 'Businesses',
+    icon: Building2,
+    sections: [
+      DYNASTY_NAVIGATION.grabbaBrands as NavSection,
+      DYNASTY_NAVIGATION.dynastyDirect as NavSection,
+      DYNASTY_NAVIGATION.unforgettableHub as NavSection,
+      DYNASTY_NAVIGATION.uftPlatform as NavSection,
+      DYNASTY_NAVIGATION.dynastyBusiness as NavSection,
+      DYNASTY_NAVIGATION.playboxxHub as NavSection,
+      DYNASTY_NAVIGATION.topTierExperience as NavSection,
+      DYNASTY_NAVIGATION.topTierCRM as NavSection,
+      DYNASTY_NAVIGATION.topTierPenthouse as NavSection,
+      DYNASTY_NAVIGATION.ubenHq as NavSection,
+      DYNASTY_NAVIGATION.dynastyEarn as NavSection,
+      DYNASTY_NAVIGATION.clipperNation as NavSection,
+      DYNASTY_NAVIGATION.realEstateOs as NavSection,
+      DYNASTY_NAVIGATION.realEstateHq as NavSection,
+      DYNASTY_NAVIGATION.solarOs as NavSection,
+      DYNASTY_NAVIGATION.goddessInYou as NavSection,
+      DYNASTY_NAVIGATION.servicesIo as NavSection,
+    ],
+  },
+  {
+    id: 'g-intelligence',
+    name: 'Intelligence & Automation',
+    icon: Brain,
+    sections: [
+      floorOf('floor-9'),
+      DYNASTY_NAVIGATION.aiSystems as NavSection,
+      DYNASTY_NAVIGATION.sboAiEngine as NavSection,
+    ],
+  },
+  {
+    id: 'g-finance',
+    name: 'Finance & Commerce',
+    icon: DollarSign,
+    sections: [
+      floorOf('floor-5'),
+      floorOf('floor-7'),
+      DYNASTY_NAVIGATION.marketplaces as NavSection,
+      DYNASTY_NAVIGATION.financeAcquisition as NavSection,
+      DYNASTY_NAVIGATION.dynastyFundingHub as NavSection,
+      DYNASTY_NAVIGATION.surplusFundsOs as NavSection,
+      DYNASTY_NAVIGATION.grantOS as NavSection,
+    ],
+  },
+  {
+    id: 'g-admin',
+    name: 'Admin & System',
+    icon: Shield,
+    adminOnly: true,
+    sections: [
+      DYNASTY_NAVIGATION.securityGovernance as NavSection,
+      DYNASTY_NAVIGATION.dynastyPartners as NavSection,
+    ],
+  },
+];
+
+
 const Layout = ({ children }: LayoutProps) => {
   const { signOut } = useAuth();
   const { role, isAdmin } = useUserRole();
