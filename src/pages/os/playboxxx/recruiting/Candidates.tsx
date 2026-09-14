@@ -35,13 +35,14 @@ export default function Candidates() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['recruiting-candidates', tab, search, role, source, sort, page],
     queryFn: async () => {
+      // Canonical Playboxxx queue: shared-lane businesses flagged eligible for
+      // playboxxx + the original playboxxx-lane rows, both suppression-filtered.
       let q = supabase
-        .from('business_leads')
+        .from('v_playboxxx_business_leads')
         .select(
           'id,business_name,contact_name,category,city,state,phone,email,website,full_address,source,external_source,status,created_at,updated_at',
           { count: 'exact' },
         )
-        .eq('business', 'playboxxx')
         .in('category', role === 'all' ? laneCategories : [role])
         .order(sort, { ascending: sort === 'business_name' })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
@@ -69,6 +70,15 @@ export default function Candidates() {
         badge="Search + Ingestion Only"
       />
       <OutreachDisabledBanner />
+
+      <div className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+        Businesses appear here. Models, creators, photographers, cameramen and videographers are
+        people — they are stored once in the recruiting applicant queue at{' '}
+        <Link to="/os/recruiting/applicants" className="text-foreground underline underline-offset-4">
+          Recruiting → Applicants
+        </Link>
+        .
+      </div>
 
       <Tabs
         value={tab}
