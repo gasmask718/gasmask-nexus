@@ -161655,6 +161655,7 @@ export type Database = {
         }[]
       }
       bags_from_note: { Args: { raw: string }; Returns: number }
+      bl_canonical_category: { Args: { _raw: string }; Returns: string }
       bl_domain: { Args: { _url: string }; Returns: string }
       bl_norm_addr: { Args: { _t: string }; Returns: string }
       bl_norm_name: { Args: { _t: string }; Returns: string }
