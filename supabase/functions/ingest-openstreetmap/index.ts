@@ -218,7 +218,9 @@ serve(async (req) => {
         bbox: target.bbox,
       };
 
-      if (!target.bbox) {
+      const preFetched: any[] = Array.isArray(elements) ? elements : [];
+
+      if (!target.bbox && preFetched.length === 0) {
         result.status = 'failed';
         result.error = 'Could not resolve bounding box via Nominatim';
         neighborhoodResults.push(result);
@@ -236,9 +238,18 @@ serve(async (req) => {
       const seenOsmIds = new Set<string>();
       let queryFailures = 0;
 
+      if (preFetched.length > 0) {
+        // Caller supplied Overpass elements — same normalize/dedupe/insert path below.
+        for (const e of preFetched) {
+          if (e?.tags?.name && !seenOsmIds.has(String(e.id))) {
+            seenOsmIds.add(String(e.id));
+            allElements.push(e);
+          }
+        }
+      } else {
       // Query per business type within this neighborhood's bbox
       for (const filter of typeFilters) {
-        const query = buildBBoxQuery(target.bbox, filter);
+        const query = buildBBoxQuery(target.bbox!, filter);
         const data = await fetchOverpassWithRetry(query);
 
         if (!data) {
@@ -255,6 +266,7 @@ serve(async (req) => {
       }
 
       if (queryFailures === typeFilters.length) {
+
         result.status = 'failed';
         result.error = 'All Overpass queries timed out';
         neighborhoodResults.push(result);
