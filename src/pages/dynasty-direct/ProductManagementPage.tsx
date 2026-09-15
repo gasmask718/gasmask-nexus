@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import ProductDetailPanel from '@/components/dynasty-direct/ProductDetailPanel';
 import { uploadOriginalToStorage } from '@/lib/dynastyDirect/productImages';
+import { requestSpecSourcing, specStatusLabel, hasCompleteSpecs } from '@/lib/dynastyDirect/shippingSpecs';
 
 const GOLD = '#C9A84C';
 
@@ -47,6 +48,7 @@ type ProductRow = {
   description: string | null;
   inventory_qty: number | null;
   created_at: string;
+  shipping_spec_status?: string | null;
 };
 
 type SupplierRow = { id: string; name: string };
@@ -98,7 +100,7 @@ export default function ProductManagementPage() {
     queryFn: async (): Promise<ProductRow[]> => {
       const { data, error } = await supabase
         .from('products_all')
-        .select('id, product_name, category, brand, supplier_id, supplier_cost, store_price_a, dtc_price_b, length_in, width_in, height_in, weight_oz, status, description, inventory_qty, created_at')
+        .select('id, product_name, category, brand, supplier_id, supplier_cost, store_price_a, dtc_price_b, length_in, width_in, height_in, weight_oz, status, description, inventory_qty, created_at, shipping_spec_status')
         .neq('status', 'deleted')
         .order('created_at', { ascending: false })
         .limit(1000);
@@ -175,19 +177,35 @@ export default function ProductManagementPage() {
     qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
   }
 
+  /** Shared auto-sourcing call used by Add Product and Bulk Import. */
+  async function runSourcing(ids: string[], triggeredBy: string) {
+    if (!ids.length) return;
+    const toastId = toast.loading(`Looking up shipping specs for ${ids.length} product(s)…`);
+    try {
+      const results = await requestSpecSourcing(ids, { triggeredBy });
+      const applied = results.filter(r => r.applied).length;
+      const review = results.filter(r => r.status === 'needs_review').length;
+      const none = results.filter(r => r.status === 'not_found').length;
+      toast.success(
+        `Shipping specs: ${applied} found automatically` +
+        (review ? `, ${review} need review` : '') +
+        (none ? `, ${none} not found` : ''),
+        { id: toastId },
+      );
+      qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
+    } catch (e: any) {
+      toast.error(`Shipping spec lookup failed: ${e.message ?? e}`, { id: toastId });
+    }
+  }
+
   async function handleAdd() {
     const num = (v: string) => (v.trim() === '' ? null : Number(v));
     if (!form.product_name.trim()) return toast.error('Product name required');
     if (!form.category) return toast.error('Category required');
 
-    // Pre-flight the two database gates so the operator gets a plain answer
-    // instead of a raw trigger error at the end of the save.
     const weight = num(form.weight_oz);
     const L = num(form.length_in), W = num(form.width_in), H = num(form.height_in);
-    if (!(Number(weight) > 0)) return toast.error('Shipping weight (oz) is required — shipping is rated on it');
-    if (!(Number(L) > 0 && Number(W) > 0 && Number(H) > 0)) {
-      return toast.error('Length, width and height (inches) are required before a product can go live');
-    }
+    const specsComplete = Number(weight) > 0 && Number(L) > 0 && Number(W) > 0 && Number(H) > 0;
     const cost = num(form.supplier_cost);
     const storeP = num(form.store_price_a);
     const dtcP = num(form.dtc_price_b);
@@ -197,7 +215,9 @@ export default function ProductManagementPage() {
 
     setSubmitting(true);
     try {
-      const requestedStatus = 'active';
+      // Missing size/weight no longer blocks the save: the product is created
+      // as a Draft and the app goes and sources the shipping specs itself.
+      const requestedStatus = specsComplete ? 'active' : 'draft';
       const insert = {
         product_name: form.product_name.trim(),
         category: form.category,
@@ -211,6 +231,8 @@ export default function ProductManagementPage() {
         width_in: W,
         height_in: H,
         status: requestedStatus,
+        shipping_spec_status: specsComplete ? 'manual' : 'sourcing',
+        shipping_spec_locked: specsComplete,
       };
       const { data, error } = await supabase
         .from('products_all')
@@ -233,7 +255,15 @@ export default function ProductManagementPage() {
         }
       }
 
-      toast.success('Product created — pricing running via trigger');
+      toast.success(
+        specsComplete
+          ? 'Product created — pricing running via trigger'
+          : 'Product saved as Draft — looking up shipping weight and size online…',
+      );
+
+      // AUTO-SOURCING: physical product with missing shipping specs.
+      if (!specsComplete && data?.id) void runSourcing([data.id], 'add_product');
+
       setAddOpen(false);
       setForm(emptyForm);
       setPhotoFile(null);
@@ -289,27 +319,39 @@ export default function ProductManagementPage() {
 
       if (!rows.length) throw new Error('No valid rows');
 
-      // Shipping data is required before a product can go live — say which rows
-      // are short instead of letting the database reject the whole batch.
-      const short = rows.filter(r =>
-        !(Number(r.weight_oz) > 0 && Number(r.length_in) > 0 && Number(r.width_in) > 0 && Number(r.height_in) > 0));
-      if (short.length) {
-        throw new Error(
-          `${short.length} row(s) are missing weight_oz / length_in / width_in / height_in — ` +
-          `for example "${short[0].product_name}". Fill those in and re-import.`,
-        );
+      // Rows without size/weight are imported as Drafts and queued for
+      // automatic spec sourcing — one unresolved product never fails the batch.
+      let queued = 0;
+      for (const r of rows) {
+        const complete = Number(r.weight_oz) > 0 && Number(r.length_in) > 0 &&
+          Number(r.width_in) > 0 && Number(r.height_in) > 0;
+        if (complete) {
+          r.shipping_spec_status = 'manual';
+          r.shipping_spec_locked = true;
+        } else {
+          r.status = 'draft';
+          r.shipping_spec_status = 'sourcing';
+          queued++;
+        }
       }
 
       // Batch insert in chunks of 100
       let inserted = 0;
+      const queuedIds: string[] = [];
       for (let i = 0; i < rows.length; i += 100) {
         const chunk = rows.slice(i, i + 100);
-        const { error } = await supabase.from('products_all').insert(chunk);
+        const { data: ins, error } = await supabase.from('products_all').insert(chunk).select('id, weight_oz, length_in, width_in, height_in');
         if (error) throw error;
         inserted += chunk.length;
+        for (const row of ins ?? []) if (!hasCompleteSpecs(row as any)) queuedIds.push((row as any).id);
       }
-      toast.success(`Imported ${inserted} products — triggers running for pricing + descriptions`, { id: toastId });
+      toast.success(
+        `Imported ${inserted} products` +
+        (queued ? ` — ${queued} saved as Draft while shipping specs are sourced` : ''),
+        { id: toastId },
+      );
       qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
+      if (queuedIds.length) void runSourcing(queuedIds, 'bulk_import');
     } catch (e: any) {
       toast.error(e.message ?? 'Import failed', { id: toastId });
     } finally {
@@ -530,9 +572,22 @@ export default function ProductManagementPage() {
                     <TableCell className="text-right">{money(p.store_price_a)}</TableCell>
                     <TableCell className="text-right">{money(p.dtc_price_b)}</TableCell>
                     <TableCell>
-                      {hasDims(p)
-                        ? <Badge variant="outline" className="text-green-600 border-green-600">Complete</Badge>
-                        : <Badge variant="outline" className="text-amber-600 border-amber-600"><AlertTriangle className="h-3 w-3 mr-1" />Missing</Badge>}
+                      {(() => {
+                        const s = specStatusLabel(p.shipping_spec_status as any, hasDims(p));
+                        const cls = s.tone === 'good'
+                          ? 'text-green-600 border-green-600'
+                          : s.tone === 'warn'
+                            ? 'text-amber-600 border-amber-600'
+                            : s.tone === 'bad'
+                              ? 'text-destructive border-destructive'
+                              : 'text-muted-foreground';
+                        return (
+                          <Badge variant="outline" className={cls}>
+                            {s.tone === 'bad' && <AlertTriangle className="h-3 w-3 mr-1" />}
+                            {s.label}
+                          </Badge>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       <Badge variant={p.status === 'active' ? 'default' : 'secondary'}>{p.status ?? '—'}</Badge>
