@@ -505,7 +505,7 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
                 {(!p.image_urls || p.image_urls.length === 0) ? (
                   <div className="text-sm text-muted-foreground text-center py-6">
                     <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                    No images yet. Upload one to run <code>dd-process-image</code>.
+                    No photo yet. Upload one — it is stored permanently even if enhancement is unavailable.
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-2">
