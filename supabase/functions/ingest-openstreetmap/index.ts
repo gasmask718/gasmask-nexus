@@ -353,7 +353,9 @@ serve(async (req) => {
             zip: tags['addr:postcode'] || null,
             latitude: lat,
             longitude: lng,
-            address_type: category,
+            // territory_addresses.address_type is constrained to commercial/residential/unknown;
+            // the OSM category is preserved in notes.
+            address_type: 'commercial',
             phone: rawPhone,
             website: tags.website || tags['contact:website'] || null,
             place_id: placeId,
@@ -361,7 +363,7 @@ serve(async (req) => {
             last_scan_at: new Date().toISOString(),
             notes: `OSM ${placeId} | kind=${kind} | category=${category} | verification=${strong ? 'confirmed' : 'needs_verification'} [${target.name}]`,
             neighborhood_label: target.name,
-            discovery_status: strong ? 'new' : 'unknown',
+            discovery_status: kind === 'wholesaler' ? 'wholesaler' : (strong ? 'scouted' : 'unknown'),
             discovered_by: 'openstreetmap',
           };
 
