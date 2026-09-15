@@ -18,8 +18,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
-  Package, DollarSign, Image as ImageIcon, Sparkles, Upload, Save, X, Star, AlertTriangle, Trash2,
+  Package, DollarSign, Image as ImageIcon, Sparkles, Upload, Save, X, Star, AlertTriangle, Trash2, Ruler,
 } from 'lucide-react';
+import { uploadOriginalToStorage, missingShippingData } from '@/lib/dynastyDirect/productImages';
 
 const GOLD = '#C9A84C';
 
