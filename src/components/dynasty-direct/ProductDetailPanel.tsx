@@ -125,6 +125,13 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
     });
   }, [p, editingPricing]);
 
+  useEffect(() => {
+    if (p && !editingShipping) setShipping({
+      weight_oz: p.weight_oz, length_in: p.length_in,
+      width_in: p.width_in, height_in: p.height_in,
+    });
+  }, [p, editingShipping]);
+
   async function saveCore() {
     if (!productId) return;
     setSaving(true);
@@ -222,10 +229,19 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
     finally { setSaving(false); }
   }
 
+  /**
+   * PHOTO SAVE. dd-process-image always answers HTTP 200 — an enhancement failure
+   * arrives as { success: false, error }. Reporting that as success is how a photo
+   * "disappeared". Any failure (or demo mode) now falls back to storing the ORIGINAL
+   * file in the product-images bucket and attaching it, so the photo is never lost.
+   */
   async function handleImageUpload(file: File) {
     if (!productId) return;
+    if (!file.type.startsWith('image/')) return toast.error('That file is not an image');
+    if (file.size > 10 * 1024 * 1024) return toast.error('Image must be under 10MB');
+
     setUploading(true);
-    const toastId = toast.loading('Processing image…');
+    const toastId = toast.loading('Saving photo…');
     try {
       const b64 = await new Promise<string>((res, rej) => {
         const r = new FileReader();
@@ -237,18 +253,49 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
         body: { product_id: productId, image_base64: b64, filename: file.name, persist: true },
       });
       if (error) throw error;
-      if (data?.demo_mode) {
-        toast.message('Image saved in demo mode — Cloudinary/Remove.bg keys not configured yet', { id: toastId });
+
+      if (data?.success === true) {
+        toast.success('Photo saved and enhanced', { id: toastId });
       } else {
-        toast.success('Image processed and attached', { id: toastId });
+        const reason = data?.error || data?.reason || 'image enhancement unavailable';
+        const url = await uploadOriginalToStorage(file, productId);
+        const current = Array.isArray(p?.image_urls) ? p!.image_urls! : [];
+        const next = current.includes(url) ? current : [...current, url];
+        const patch: Record<string, unknown> = { image_urls: next };
+        if (!p?.primary_image_url) patch.primary_image_url = url;
+        const { error: upErr } = await supabase.from('products_all').update(patch).eq('id', productId);
+        if (upErr) throw new Error(`${reason} — and saving the original failed: ${upErr.message}`);
+        toast.warning(`Photo saved unedited (${reason})`, { id: toastId });
       }
       qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
+      qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
     } catch (e: any) {
-      toast.error(e.message ?? 'Upload failed', { id: toastId });
+      toast.error(e.message ?? 'Photo could not be saved', { id: toastId });
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
     }
+  }
+
+  async function saveShipping() {
+    if (!productId) return;
+    const toNum = (v: any) => (v === '' || v == null ? null : Number(v));
+    const payload = {
+      weight_oz: toNum(shipping.weight_oz),
+      length_in: toNum(shipping.length_in),
+      width_in: toNum(shipping.width_in),
+      height_in: toNum(shipping.height_in),
+    };
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('products_all').update(payload).eq('id', productId);
+      if (error) throw error;
+      toast.success('Shipping weight and size saved');
+      setEditingShipping(false);
+      qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
+      qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
+    } catch (e: any) { toast.error(e.message ?? 'Save failed'); }
+    finally { setSaving(false); }
   }
 
   async function setPrimary(url: string) {
