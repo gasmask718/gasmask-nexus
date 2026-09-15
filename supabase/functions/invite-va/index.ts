@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
       p_metadata: { email_target: email, phone_target: phoneRaw || null },
     });
 
-    const baseUrl = 'https://gasmask-os-nexus.lovable.app';
+    const baseUrl = (Deno.env.get('APP_PUBLIC_URL') || 'https://gasmask-os-nexus.lovable.app').replace(/\/+$/, '');
     const acceptUrl = `${baseUrl}/va/auth?invite=${token}`;
 
     let emailSent = false;

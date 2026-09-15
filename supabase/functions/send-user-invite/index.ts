@@ -24,7 +24,7 @@ serve(async (req) => {
   try {
     const GMAIL_USER = Deno.env.get("VA_GMAIL_USER");
     const GMAIL_PASS = Deno.env.get("VA_GMAIL_APP_PASSWORD");
-    const frontendBaseUrl = Deno.env.get("FRONTEND_BASE_URL") || "https://gasmask-os-nexus.lovable.app";
+    const frontendBaseUrl = Deno.env.get("APP_PUBLIC_URL") || Deno.env.get("FRONTEND_BASE_URL") || "https://gasmask-os-nexus.lovable.app";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 

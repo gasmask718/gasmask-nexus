@@ -303,7 +303,7 @@ export default function VAManagementPage() {
   );
 
   const copyLink = async (token: string) => {
-    const url = `https://gasmask-os-nexus.lovable.app/va/auth?invite=${token}`;
+    const url = `${window.location.origin}/va/auth?invite=${token}`;
     await navigator.clipboard.writeText(url);
     toast.success('Invite link copied');
   };
