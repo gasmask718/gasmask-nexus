@@ -327,6 +327,52 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
     finally { setSaving(false); }
   }
 
+  /**
+   * PHOTO → IDENTITY → SPECS. Reads the printed text/barcode on the saved photo.
+   * Only an IDENTIFIED read feeds identifiers into the existing spec sourcing;
+   * a likely match waits for an admin click. Failure here never touches the photo.
+   */
+  async function runIdentify(force: boolean) {
+    if (!productId) return;
+    setIdentifying(true);
+    const toastId = toast.loading('Identifying product…');
+    try {
+      const res = await identifyProductPhoto(productId, { force, triggeredBy: 'product_detail' });
+      setPhotoId(res);
+      qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
+      qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
+      if (res.skipped === 'rate_limited') { toast.message('Already identified recently', { id: toastId }); return; }
+      if (res.status === 'identified' || res.status === 'confirmed_by_admin') {
+        const s = res.sourcing;
+        if (s?.applied) toast.success('Product identified — shipping specs found and saved', { id: toastId });
+        else if (s?.status === 'needs_review') toast.warning('Product identified — shipping specs need review', { id: toastId });
+        else toast.success('Product identified', { id: toastId });
+      } else if (res.status === 'likely_match') {
+        toast.warning('Likely match — confirm it below', { id: toastId });
+      } else if (res.status === 'needs_more_photos') {
+        toast.warning('Need another photo of the barcode or back label', { id: toastId });
+      } else {
+        toast.error('Could not identify this product from the photo', { id: toastId });
+      }
+    } catch (e: any) {
+      toast.error(e.message ?? 'Identification failed — the photo is still saved', { id: toastId });
+    } finally { setIdentifying(false); }
+  }
+
+  async function confirmIdentity() {
+    if (!productId) return;
+    setIdentifying(true);
+    const toastId = toast.loading('Confirming and finding shipping specs…');
+    try {
+      const res = await confirmPhotoIdentification(productId, 'product_detail');
+      setPhotoId(res);
+      qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
+      toast.success(res.sourcing?.applied ? 'Confirmed — shipping specs saved' : 'Identity confirmed', { id: toastId });
+    } catch (e: any) {
+      toast.error(e.message ?? 'Could not confirm', { id: toastId });
+    } finally { setIdentifying(false); }
+  }
+
   /** Manual re-run of the automatic online lookup. */
   async function findSpecs(force: boolean) {
     if (!productId) return;
