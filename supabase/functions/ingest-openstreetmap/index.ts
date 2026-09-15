@@ -103,9 +103,26 @@ function mapBusinessTypeToOSM(type: string): string[] {
     gas_station: ['["amenity"="fuel"]'],
     liquor_store: ['["shop"="alcohol"]'],
     vape_shop: ['["shop"="e-cigarette"]'],
+    newsagent: ['["shop"="newsagent"]'],
+    kiosk: ['["shop"="kiosk"]'],
+    wholesaler: ['["shop"="wholesale"]', '["shop"="trade"]'],
+    tobacco_wholesaler: ['["shop"="wholesale"]', '["shop"="trade"]'],
   };
   return mapping[type] || [`["shop"="${type}"]`];
 }
+
+// Wholesaler / cash-and-carry detection by OSM category or business name.
+const WHOLESALE_NAME = /wholesale|cash\s*(and|&|n)\s*carry|distribut|supply|supplies|depot/i;
+function classifyKind(category: string, name: string): 'wholesaler' | 'store' {
+  if (category === 'wholesale' || category === 'trade') return 'wholesaler';
+  return WHOLESALE_NAME.test(name || '') ? 'wholesaler' : 'store';
+}
+
+// OSM lifecycle prefixes mean the place is gone / not operating.
+function looksClosed(tags: Record<string, any>): boolean {
+  return Object.keys(tags).some((k) => /^(disused|was|abandoned|removed):/.test(k));
+}
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -118,7 +135,9 @@ serve(async (req) => {
       business_types = [],
       neighborhood_ids = [],    // preferred: UUIDs from neighborhoods table
       neighborhoods = [],       // legacy: free-text neighborhood names
+      elements = [],            // optional: pre-fetched Overpass elements (same insert/dedupe path)
     } = await req.json();
+
 
     if (!city || !state) throw new Error('city and state are required');
 
@@ -199,7 +218,9 @@ serve(async (req) => {
         bbox: target.bbox,
       };
 
-      if (!target.bbox) {
+      const preFetched: any[] = Array.isArray(elements) ? elements : [];
+
+      if (!target.bbox && preFetched.length === 0) {
         result.status = 'failed';
         result.error = 'Could not resolve bounding box via Nominatim';
         neighborhoodResults.push(result);
@@ -217,9 +238,18 @@ serve(async (req) => {
       const seenOsmIds = new Set<string>();
       let queryFailures = 0;
 
+      if (preFetched.length > 0) {
+        // Caller supplied Overpass elements — same normalize/dedupe/insert path below.
+        for (const e of preFetched) {
+          if (e?.tags?.name && !seenOsmIds.has(String(e.id))) {
+            seenOsmIds.add(String(e.id));
+            allElements.push(e);
+          }
+        }
+      } else {
       // Query per business type within this neighborhood's bbox
       for (const filter of typeFilters) {
-        const query = buildBBoxQuery(target.bbox, filter);
+        const query = buildBBoxQuery(target.bbox!, filter);
         const data = await fetchOverpassWithRetry(query);
 
         if (!data) {
@@ -236,6 +266,7 @@ serve(async (req) => {
       }
 
       if (queryFailures === typeFilters.length) {
+
         result.status = 'failed';
         result.error = 'All Overpass queries timed out';
         neighborhoodResults.push(result);
@@ -249,6 +280,8 @@ serve(async (req) => {
       }
 
       if (queryFailures > 0) result.status = 'partial';
+      }
+
 
       result.total = allElements.length;
 
@@ -260,8 +293,25 @@ serve(async (req) => {
         const street = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' ');
         const fullAddress = [street, tags['addr:city'] || city, tags['addr:state'] || state].filter(Boolean).join(', ');
         const addrStr = fullAddress || tags.name;
+        const placeId = `osm:${e.type}/${e.id}`;
+        const category = tags.shop || tags.amenity || 'unknown';
+        const kind = classifyKind(category, tags.name || '');
+        const rawPhone: string | null = tags.phone || tags['contact:phone'] || null;
+        const phone10 = rawPhone ? rawPhone.replace(/\D/g, '').slice(-10) : '';
+
+        // Never treat a closed/lifecycle-tagged place as a live prospect.
+        if (looksClosed(tags)) { result.skipped++; continue; }
 
         try {
+          // Dedupe 1 — same OSM object already ingested.
+          const { data: byPlace } = await supabase
+            .from('territory_addresses')
+            .select('id')
+            .eq('place_id', placeId)
+            .limit(1);
+          if (byPlace && byPlace.length > 0) { result.skipped++; continue; }
+
+          // Dedupe 2 — same address already in the prospect table.
           const { data: existing } = await supabase
             .from('territory_addresses')
             .select('id')
@@ -271,6 +321,30 @@ serve(async (req) => {
 
           if (existing && existing.length > 0) { result.skipped++; continue; }
 
+          // Dedupe 3 — already a real store in the CRM (phone match, then address match).
+          if (phone10.length === 10) {
+            const { data: byPhone } = await supabase
+              .from('store_master')
+              .select('id')
+              .eq('phone_last10', phone10)
+              .is('deleted_at', null)
+              .limit(1);
+            if (byPhone && byPhone.length > 0) { result.skipped++; continue; }
+          }
+          if (street) {
+            const { data: byAddr } = await supabase
+              .from('store_master')
+              .select('id')
+              .ilike('address', `%${street}%`)
+              .is('deleted_at', null)
+              .limit(1);
+            if (byAddr && byAddr.length > 0) { result.skipped++; continue; }
+          }
+
+          // Only tobacco-native categories (and wholesalers) are field-ready on OSM
+          // evidence alone; everything else is stored flagged for verification.
+          const strong = kind === 'wholesaler' || ['tobacco', 'e-cigarette', 'hookah_lounge'].includes(category);
+
           const insertData: Record<string, any> = {
             store_name: tags.name || null,
             full_address: addrStr,
@@ -279,10 +353,17 @@ serve(async (req) => {
             zip: tags['addr:postcode'] || null,
             latitude: lat,
             longitude: lng,
-            address_type: tags.shop || tags.amenity || 'unknown',
-            notes: `OSM: ${tags.name}${tags.phone ? ' | ' + tags.phone : ''} [${target.name}]`,
-            neighborhood: target.name,
-            discovery_status: 'unknown',
+            // territory_addresses.address_type is constrained to commercial/residential/unknown;
+            // the OSM category is preserved in notes.
+            address_type: 'commercial',
+            phone: rawPhone,
+            website: tags.website || tags['contact:website'] || null,
+            place_id: placeId,
+            scan_source: 'overpass',
+            last_scan_at: new Date().toISOString(),
+            notes: `OSM ${placeId} | kind=${kind} | category=${category} | verification=${strong ? 'confirmed' : 'needs_verification'} [${target.name}]`,
+            neighborhood_label: target.name,
+            discovery_status: kind === 'wholesaler' ? 'wholesaler' : (strong ? 'scouted' : 'unknown'),
             discovered_by: 'openstreetmap',
           };
 
@@ -290,9 +371,10 @@ serve(async (req) => {
           if (target.id) insertData.neighborhood_id = target.id;
 
           const { error } = await supabase.from('territory_addresses').insert(insertData);
-          if (error) { result.skipped++; } else { result.inserted++; }
-        } catch { result.skipped++; }
+          if (error) { console.warn('insert failed:', error.message, JSON.stringify(insertData).slice(0,200)); result.skipped++; } else { result.inserted++; }
+        } catch (err) { console.warn('row failed:', String(err)); result.skipped++; }
       }
+
 
       // Update neighborhood ingestion status in DB
       if (target.id) {
