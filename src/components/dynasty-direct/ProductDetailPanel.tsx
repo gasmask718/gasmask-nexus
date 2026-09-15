@@ -22,6 +22,10 @@ import {
 } from 'lucide-react';
 import { uploadOriginalToStorage, missingShippingData } from '@/lib/dynastyDirect/productImages';
 import { requestSpecSourcing, specStatusLabel } from '@/lib/dynastyDirect/shippingSpecs';
+import {
+  identifyProductPhoto, confirmPhotoIdentification, photoIdLabel,
+  type PhotoIdResponse,
+} from '@/lib/dynastyDirect/photoIdentify';
 
 const GOLD = '#C9A84C';
 
@@ -70,6 +74,8 @@ type ProductDetail = {
   upc: string | null;
   gtin: string | null;
   supplier_sku: string | null;
+  photo_id_status: string | null;
+  photo_identification: any | null;
 };
 
 type Props = {
