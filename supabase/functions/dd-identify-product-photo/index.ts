@@ -42,8 +42,11 @@ function fillBlanks(p: any, r: PhotoIdResult): Record<string, unknown> {
   const patch: Record<string, unknown> = {};
   const blank = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
   if (r.gtin_valid && id.barcode_digits) {
-    if (blank(p.upc)) patch.upc = id.barcode_digits;
-    if (blank(p.gtin)) patch.gtin = id.barcode_digits;
+    const digits = id.barcode_digits.replace(/\D/g, "");
+    if (blank(p.upc)) patch.upc = digits;
+    // The catalog stores GTIN in its 14-digit form (GTIN-14), so shorter
+    // symbologies (UPC-A, EAN-8/13) are left-padded with zeros.
+    if (blank(p.gtin) && digits.length <= 14) patch.gtin = digits.padStart(14, "0");
   }
   if (blank(p.brand) && id.brand) patch.brand = id.brand;
   if (blank(p.size_or_count) && id.size_or_count) patch.size_or_count = id.size_or_count;
