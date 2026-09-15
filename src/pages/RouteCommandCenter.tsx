@@ -10,12 +10,16 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, MapPin, AlertTriangle, Package, DollarSign, Phone, Sparkles, X, Route as RouteIcon,
   Gift, RotateCcw, TrendingDown, Zap,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useFieldWorkforce } from '@/hooks/useFieldWorkforce';
+import { WorkforceRosterPanel } from '@/components/routes/WorkforceRosterPanel';
+import { LiveRoutesPanel } from '@/components/routes/LiveRoutesPanel';
 
 const TYPE_META: Record<CandidateType, { label: string; icon: any; color: string }> = {
   reorder: { label: 'Reorder', icon: Package, color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
@@ -34,6 +38,7 @@ type DueFilter = 'today_overdue' | 'week' | 'all';
 
 export default function RouteCommandCenter() {
   const { data: candidates = [], isLoading } = useRouteCandidates();
+  const { data: workforce, isLoading: workforceLoading } = useFieldWorkforce();
   const [search, setSearch] = useState('');
   const [neighborhood, setNeighborhood] = useState<string>('all');
   const [city, setCity] = useState<string>('all');
@@ -186,6 +191,23 @@ export default function RouteCommandCenter() {
           </Button>
         </div>
       </div>
+
+      <Tabs defaultValue="dispatch" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="dispatch">Dispatch board</TabsTrigger>
+          <TabsTrigger value="workforce">Field workforce</TabsTrigger>
+          <TabsTrigger value="routes">Live routes</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="workforce">
+          <WorkforceRosterPanel workers={workforce?.workers ?? []} isLoading={workforceLoading} />
+        </TabsContent>
+
+        <TabsContent value="routes">
+          <LiveRoutesPanel routes={workforce?.liveRoutes ?? []} isLoading={workforceLoading} />
+        </TabsContent>
+
+        <TabsContent value="dispatch" className="space-y-6">
 
       {optimizedPreview && (
         <Card className="border-primary/30 bg-primary/5">
@@ -387,6 +409,8 @@ export default function RouteCommandCenter() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Assignment dialog — reuses existing wired component */}
       <RouteAssignmentDialog

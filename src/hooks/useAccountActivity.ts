@@ -26,7 +26,9 @@ export type ActivityKind =
   | 'followup'
   | 'inventory'
   | 'invoice'
-  | 'field';
+  | 'field'
+  | 'claim'
+  | 'status';
 
 export interface ActivityRow {
   activity_id: string;
@@ -63,7 +65,21 @@ export const ACTIVITY_FILTERS: { value: string; label: string; kinds: ActivityKi
   { value: 'invoice', label: 'Invoices / payments', kinds: ['invoice'] },
   { value: 'visit', label: 'Visits', kinds: ['visit'] },
   { value: 'field', label: 'Field updates', kinds: ['field'] },
+  { value: 'claim', label: 'Secured / claimed stores', kinds: ['claim'] },
+  { value: 'status', label: 'Status changes', kinds: ['status'] },
 ];
+
+/** Real field roles resolved from role tables — never inferred from names. */
+export type ActivityRoleFilter = 'all' | 'ambassador' | 'driver' | 'biker' | 'va' | 'admin';
+
+/** Photo / review filters — resolved from field_submissions (the review system). */
+export type ActivityReviewFilter =
+  | 'all'
+  | 'has_photo'
+  | 'no_photo'
+  | 'needs_verification'
+  | 'verified'
+  | 'rejected';
 
 export interface AccountActivityParams {
   storeId?: string;
@@ -76,6 +92,25 @@ export interface AccountActivityParams {
   pageSize?: number;
   includeReviewAudit?: boolean;
   enabled?: boolean;
+  /** ISO timestamps (inclusive lower / exclusive upper) */
+  dateFrom?: string;
+  dateTo?: string;
+  roleFilter?: ActivityRoleFilter;
+  reviewFilter?: ActivityReviewFilter;
+}
+
+const PHOTO_KEY_RE = /(photo|image|picture|screenshot)/i;
+
+function payloadHasPhoto(payload: unknown): boolean {
+  if (!payload) return false;
+  try {
+    const text = JSON.stringify(payload);
+    if (!PHOTO_KEY_RE.test(text)) return false;
+    // A photo key must carry an actual value, not just be mentioned.
+    return /"[^"]*(photo|image|picture|screenshot)[^"]*"\s*:\s*("[^"]+"|\[[^\]]*[^\s\]])/i.test(text);
+  } catch {
+    return false;
+  }
 }
 
 export function useAccountActivity(params: AccountActivityParams) {
@@ -90,6 +125,10 @@ export function useAccountActivity(params: AccountActivityParams) {
     pageSize = 25,
     includeReviewAudit = false,
     enabled = true,
+    dateFrom,
+    dateTo,
+    roleFilter = 'all',
+    reviewFilter = 'all',
   } = params;
 
   return useQuery({
