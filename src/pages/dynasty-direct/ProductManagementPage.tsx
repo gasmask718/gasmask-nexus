@@ -402,6 +402,42 @@ export default function ProductManagementPage() {
                     onChange={e => setForm({ ...form, inventory_qty: e.target.value })} />
                   <p className="text-xs text-muted-foreground mt-1">Units on hand. Leave blank if unknown — storefront will show "Sold Out" until set.</p>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Store Price ($)</Label>
+                    <Input type="number" step="0.01" value={form.store_price_a}
+                      onChange={e => setForm({ ...form, store_price_a: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Customer Price ($)</Label>
+                    <Input type="number" step="0.01" value={form.dtc_price_b}
+                      onChange={e => setForm({ ...form, dtc_price_b: e.target.value })} />
+                  </div>
+                </div>
+                <div>
+                  <Label>Product Photo</Label>
+                  <Input ref={photoRef} type="file" accept="image/*"
+                    onChange={e => setPhotoFile(e.target.files?.[0] ?? null)} />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Saved permanently with the product. {photoFile ? `Selected: ${photoFile.name}` : ''}
+                  </p>
+                </div>
+                <div>
+                  <Label>Shipping Weight &amp; Size *</Label>
+                  <div className="grid grid-cols-4 gap-2 mt-1">
+                    <Input type="number" step="0.01" min="0" placeholder="Weight oz" value={form.weight_oz}
+                      onChange={e => setForm({ ...form, weight_oz: e.target.value })} />
+                    <Input type="number" step="0.01" min="0" placeholder="Length in" value={form.length_in}
+                      onChange={e => setForm({ ...form, length_in: e.target.value })} />
+                    <Input type="number" step="0.01" min="0" placeholder="Width in" value={form.width_in}
+                      onChange={e => setForm({ ...form, width_in: e.target.value })} />
+                    <Input type="number" step="0.01" min="0" placeholder="Height in" value={form.height_in}
+                      onChange={e => setForm({ ...form, height_in: e.target.value })} />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ounces and inches. Shipping is charged on these numbers, so a live product cannot be saved without them.
+                  </p>
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setAddOpen(false)}>Cancel</Button>
