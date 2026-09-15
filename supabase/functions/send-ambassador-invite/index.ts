@@ -134,6 +134,8 @@ Deno.serve(async (req) => {
             to_number: toPhone,
             message_body: msg,
             idempotency_key: `amb-invite-${invite.id}-${Date.now()}`,
+            // Field-team onboarding link = workforce traffic (mandatory class).
+            send_class: "workforce",
             purpose: "ambassador_invite",
             metadata: { invite_id: invite.id, resend: !!invite_id },
           },
