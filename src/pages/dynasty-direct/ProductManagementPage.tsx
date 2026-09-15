@@ -21,6 +21,7 @@ import {
   Package, Plus, Search, Upload, RefreshCw, Ruler, DollarSign, AlertTriangle,
 } from 'lucide-react';
 import ProductDetailPanel from '@/components/dynasty-direct/ProductDetailPanel';
+import { uploadOriginalToStorage } from '@/lib/dynastyDirect/productImages';
 
 const GOLD = '#C9A84C';
 
@@ -77,7 +78,20 @@ export default function ProductManagementPage() {
     supplier_id: '',
     supplier_cost: '',
     inventory_qty: '',
+    store_price_a: '',
+    dtc_price_b: '',
+    weight_oz: '',
+    length_in: '',
+    width_in: '',
+    height_in: '',
   });
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
+
+  const emptyForm = {
+    product_name: '', category: '', supplier_id: '', supplier_cost: '', inventory_qty: '',
+    store_price_a: '', dtc_price_b: '', weight_oz: '', length_in: '', width_in: '', height_in: '',
+  };
 
   const productsQ = useQuery({
     queryKey: ['dd-products-mgmt'],
@@ -162,8 +176,25 @@ export default function ProductManagementPage() {
   }
 
   async function handleAdd() {
+    const num = (v: string) => (v.trim() === '' ? null : Number(v));
     if (!form.product_name.trim()) return toast.error('Product name required');
     if (!form.category) return toast.error('Category required');
+
+    // Pre-flight the two database gates so the operator gets a plain answer
+    // instead of a raw trigger error at the end of the save.
+    const weight = num(form.weight_oz);
+    const L = num(form.length_in), W = num(form.width_in), H = num(form.height_in);
+    if (!(Number(weight) > 0)) return toast.error('Shipping weight (oz) is required — shipping is rated on it');
+    if (!(Number(L) > 0 && Number(W) > 0 && Number(H) > 0)) {
+      return toast.error('Length, width and height (inches) are required before a product can go live');
+    }
+    const cost = num(form.supplier_cost);
+    const storeP = num(form.store_price_a);
+    const dtcP = num(form.dtc_price_b);
+    if (Number(cost) > 0 && !(Number(storeP) > 0 || Number(dtcP) > 0)) {
+      return toast.error('With a supplier cost set, enter a store price or a customer price');
+    }
+
     setSubmitting(true);
     try {
       const requestedStatus = 'active';
@@ -171,8 +202,14 @@ export default function ProductManagementPage() {
         product_name: form.product_name.trim(),
         category: form.category,
         supplier_id: form.supplier_id || null,
-        supplier_cost: form.supplier_cost ? Number(form.supplier_cost) : null,
+        supplier_cost: cost,
         inventory_qty: form.inventory_qty !== '' ? Number(form.inventory_qty) : null,
+        store_price_a: storeP,
+        dtc_price_b: dtcP,
+        weight_oz: weight,
+        length_in: L,
+        width_in: W,
+        height_in: H,
         status: requestedStatus,
       };
       const { data, error } = await supabase
@@ -182,9 +219,25 @@ export default function ProductManagementPage() {
         .single();
       if (error) throw error;
 
+      // PHOTO: stored in the public product-images bucket and attached to the row.
+      if (photoFile && data?.id) {
+        try {
+          const url = await uploadOriginalToStorage(photoFile, data.id);
+          const { error: imgErr } = await supabase
+            .from('products_all')
+            .update({ image_urls: [url], primary_image_url: url })
+            .eq('id', data.id);
+          if (imgErr) throw imgErr;
+        } catch (imgE: any) {
+          toast.error(`Product saved, but the photo did not: ${imgE.message ?? imgE}`);
+        }
+      }
+
       toast.success('Product created — pricing running via trigger');
       setAddOpen(false);
-      setForm({ product_name: '', category: '', supplier_id: '', supplier_cost: '', inventory_qty: '' });
+      setForm(emptyForm);
+      setPhotoFile(null);
+      if (photoRef.current) photoRef.current.value = '';
       qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
 
       // Gate immediate feedback (in case dd_enforce_catalog_confirm_gate downgraded status)
@@ -216,19 +269,36 @@ export default function ProductManagementPage() {
       const need = ['product_name', 'category'];
       for (const n of need) if (!headers.includes(n)) throw new Error(`Missing column: ${n}`);
 
+      const NUMERIC = [
+        'supplier_cost', 'store_price_a', 'dtc_price_b',
+        'weight_oz', 'length_in', 'width_in', 'height_in', 'inventory_qty',
+      ];
       const rows = lines.slice(1).map(line => {
         const cells = line.split(',').map(c => c.trim());
         const rec: any = { status: 'active' };
         headers.forEach((h, i) => {
           const v = cells[i];
           if (v === undefined || v === '') return;
-          if (['supplier_cost', 'store_price_a', 'dtc_price_b', 'weight_oz'].includes(h)) rec[h] = Number(v);
+          if (NUMERIC.includes(h)) rec[h] = Number(v);
+          // A photo can be supplied as a public image URL per row.
+          else if (h === 'image_url') { rec.image_urls = [v]; rec.primary_image_url = v; }
           else rec[h] = v;
         });
         return rec;
       }).filter(r => r.product_name && r.category);
 
       if (!rows.length) throw new Error('No valid rows');
+
+      // Shipping data is required before a product can go live — say which rows
+      // are short instead of letting the database reject the whole batch.
+      const short = rows.filter(r =>
+        !(Number(r.weight_oz) > 0 && Number(r.length_in) > 0 && Number(r.width_in) > 0 && Number(r.height_in) > 0));
+      if (short.length) {
+        throw new Error(
+          `${short.length} row(s) are missing weight_oz / length_in / width_in / height_in — ` +
+          `for example "${short[0].product_name}". Fill those in and re-import.`,
+        );
+      }
 
       // Batch insert in chunks of 100
       let inserted = 0;
@@ -249,7 +319,9 @@ export default function ProductManagementPage() {
   }
 
   function downloadCsvTemplate() {
-    const csv = 'product_name,category,brand,supplier_cost,store_price_a,dtc_price_b,weight_oz\nExample Item,accessories,Acme,1.25,,,2.5\n';
+    const csv =
+      'product_name,category,brand,supplier_cost,store_price_a,dtc_price_b,inventory_qty,weight_oz,length_in,width_in,height_in,image_url\n' +
+      'Example Item,accessories,Acme,1.25,2.50,3.99,24,2.5,6,4,2,https://example.com/photo.jpg\n';
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -329,6 +401,42 @@ export default function ProductManagementPage() {
                   <Input type="number" min="0" step="1" placeholder="0" value={form.inventory_qty}
                     onChange={e => setForm({ ...form, inventory_qty: e.target.value })} />
                   <p className="text-xs text-muted-foreground mt-1">Units on hand. Leave blank if unknown — storefront will show "Sold Out" until set.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Store Price ($)</Label>
+                    <Input type="number" step="0.01" value={form.store_price_a}
+                      onChange={e => setForm({ ...form, store_price_a: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Customer Price ($)</Label>
+                    <Input type="number" step="0.01" value={form.dtc_price_b}
+                      onChange={e => setForm({ ...form, dtc_price_b: e.target.value })} />
+                  </div>
+                </div>
+                <div>
+                  <Label>Product Photo</Label>
+                  <Input ref={photoRef} type="file" accept="image/*"
+                    onChange={e => setPhotoFile(e.target.files?.[0] ?? null)} />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Saved permanently with the product. {photoFile ? `Selected: ${photoFile.name}` : ''}
+                  </p>
+                </div>
+                <div>
+                  <Label>Shipping Weight &amp; Size *</Label>
+                  <div className="grid grid-cols-4 gap-2 mt-1">
+                    <Input type="number" step="0.01" min="0" placeholder="Weight oz" value={form.weight_oz}
+                      onChange={e => setForm({ ...form, weight_oz: e.target.value })} />
+                    <Input type="number" step="0.01" min="0" placeholder="Length in" value={form.length_in}
+                      onChange={e => setForm({ ...form, length_in: e.target.value })} />
+                    <Input type="number" step="0.01" min="0" placeholder="Width in" value={form.width_in}
+                      onChange={e => setForm({ ...form, width_in: e.target.value })} />
+                    <Input type="number" step="0.01" min="0" placeholder="Height in" value={form.height_in}
+                      onChange={e => setForm({ ...form, height_in: e.target.value })} />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ounces and inches. Shipping is charged on these numbers, so a live product cannot be saved without them.
+                  </p>
                 </div>
               </div>
               <DialogFooter>

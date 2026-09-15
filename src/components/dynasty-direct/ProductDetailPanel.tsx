@@ -18,8 +18,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
-  Package, DollarSign, Image as ImageIcon, Sparkles, Upload, Save, X, Star, AlertTriangle, Trash2,
+  Package, DollarSign, Image as ImageIcon, Sparkles, Upload, Save, X, Star, AlertTriangle, Trash2, Ruler,
 } from 'lucide-react';
+import { uploadOriginalToStorage, missingShippingData } from '@/lib/dynastyDirect/productImages';
 
 const GOLD = '#C9A84C';
 
@@ -53,6 +54,10 @@ type ProductDetail = {
   primary_image_url: string | null;
   image_urls: string[] | null;
   image_enhanced_at: string | null;
+  weight_oz: number | null;
+  length_in: number | null;
+  width_in: number | null;
+  height_in: number | null;
 };
 
 type Props = {
@@ -76,6 +81,8 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
   const [regenerating, setRegenerating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editingShipping, setEditingShipping] = useState(false);
+  const [shipping, setShipping] = useState<Partial<ProductDetail>>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
   const detailQ = useQuery({
@@ -85,7 +92,7 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       if (!productId) return null;
       const { data, error } = await supabase
         .from('products_all')
-        .select('id, product_name, category, brand, supplier_id, status, inventory_qty, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at')
+        .select('id, product_name, category, brand, supplier_id, status, inventory_qty, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at, weight_oz, length_in, width_in, height_in')
         .eq('id', productId)
         .maybeSingle();
       if (error) throw error;
@@ -118,6 +125,13 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       dtc_price_b: p.dtc_price_b, map_price: p.map_price,
     });
   }, [p, editingPricing]);
+
+  useEffect(() => {
+    if (p && !editingShipping) setShipping({
+      weight_oz: p.weight_oz, length_in: p.length_in,
+      width_in: p.width_in, height_in: p.height_in,
+    });
+  }, [p, editingShipping]);
 
   async function saveCore() {
     if (!productId) return;
@@ -216,10 +230,19 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
     finally { setSaving(false); }
   }
 
+  /**
+   * PHOTO SAVE. dd-process-image always answers HTTP 200 — an enhancement failure
+   * arrives as { success: false, error }. Reporting that as success is how a photo
+   * "disappeared". Any failure (or demo mode) now falls back to storing the ORIGINAL
+   * file in the product-images bucket and attaching it, so the photo is never lost.
+   */
   async function handleImageUpload(file: File) {
     if (!productId) return;
+    if (!file.type.startsWith('image/')) return toast.error('That file is not an image');
+    if (file.size > 10 * 1024 * 1024) return toast.error('Image must be under 10MB');
+
     setUploading(true);
-    const toastId = toast.loading('Processing image…');
+    const toastId = toast.loading('Saving photo…');
     try {
       const b64 = await new Promise<string>((res, rej) => {
         const r = new FileReader();
@@ -231,18 +254,49 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
         body: { product_id: productId, image_base64: b64, filename: file.name, persist: true },
       });
       if (error) throw error;
-      if (data?.demo_mode) {
-        toast.message('Image saved in demo mode — Cloudinary/Remove.bg keys not configured yet', { id: toastId });
+
+      if (data?.success === true) {
+        toast.success('Photo saved and enhanced', { id: toastId });
       } else {
-        toast.success('Image processed and attached', { id: toastId });
+        const reason = data?.error || data?.reason || 'image enhancement unavailable';
+        const url = await uploadOriginalToStorage(file, productId);
+        const current = Array.isArray(p?.image_urls) ? p!.image_urls! : [];
+        const next = current.includes(url) ? current : [...current, url];
+        const patch: Record<string, unknown> = { image_urls: next };
+        if (!p?.primary_image_url) patch.primary_image_url = url;
+        const { error: upErr } = await supabase.from('products_all').update(patch).eq('id', productId);
+        if (upErr) throw new Error(`${reason} — and saving the original failed: ${upErr.message}`);
+        toast.warning(`Photo saved unedited (${reason})`, { id: toastId });
       }
       qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
+      qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
     } catch (e: any) {
-      toast.error(e.message ?? 'Upload failed', { id: toastId });
+      toast.error(e.message ?? 'Photo could not be saved', { id: toastId });
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
     }
+  }
+
+  async function saveShipping() {
+    if (!productId) return;
+    const toNum = (v: any) => (v === '' || v == null ? null : Number(v));
+    const payload = {
+      weight_oz: toNum(shipping.weight_oz),
+      length_in: toNum(shipping.length_in),
+      width_in: toNum(shipping.width_in),
+      height_in: toNum(shipping.height_in),
+    };
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('products_all').update(payload).eq('id', productId);
+      if (error) throw error;
+      toast.success('Shipping weight and size saved');
+      setEditingShipping(false);
+      qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
+      qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
+    } catch (e: any) { toast.error(e.message ?? 'Save failed'); }
+    finally { setSaving(false); }
   }
 
   async function setPrimary(url: string) {
@@ -451,7 +505,7 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
                 {(!p.image_urls || p.image_urls.length === 0) ? (
                   <div className="text-sm text-muted-foreground text-center py-6">
                     <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                    No images yet. Upload one to run <code>dd-process-image</code>.
+                    No photo yet. Upload one — it is stored permanently even if enhancement is unavailable.
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-2">
@@ -473,6 +527,69 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
                 )}
               </CardContent>
             </Card>
+
+            {/* SHIPPING SIZE + WEIGHT — what the shipping calculator actually rates on */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Ruler className="h-4 w-4" style={{ color: GOLD }} /> Shipping Size &amp; Weight
+                </CardTitle>
+                {editingShipping ? (
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => setEditingShipping(false)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" disabled={saving} onClick={saveShipping} style={{ background: GOLD, color: '#000' }}>
+                      <Save className="h-4 w-4 mr-1" /> Save
+                    </Button>
+                  </div>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setEditingShipping(true)}>Edit</Button>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {missingShippingData(p) && (
+                  <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/15 p-3 text-sm">
+                    <AlertTriangle className="h-4 w-4 mt-0.5" />
+                    <span>
+                      Missing shipping data. Shipping is quoted on a fallback parcel until weight and all
+                      three sides are filled in, and this product cannot be set live.
+                    </span>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Weight (oz)</Label>
+                    <Input type="number" step="0.01" min="0" disabled={!editingShipping}
+                      value={shipping.weight_oz ?? ''}
+                      onChange={e => setShipping({ ...shipping, weight_oz: e.target.value as any })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Length (in)</Label>
+                    <Input type="number" step="0.01" min="0" disabled={!editingShipping}
+                      value={shipping.length_in ?? ''}
+                      onChange={e => setShipping({ ...shipping, length_in: e.target.value as any })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Width (in)</Label>
+                    <Input type="number" step="0.01" min="0" disabled={!editingShipping}
+                      value={shipping.width_in ?? ''}
+                      onChange={e => setShipping({ ...shipping, width_in: e.target.value as any })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Height (in)</Label>
+                    <Input type="number" step="0.01" min="0" disabled={!editingShipping}
+                      value={shipping.height_in ?? ''}
+                      onChange={e => setShipping({ ...shipping, height_in: e.target.value as any })} />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Units are fixed: ounces and inches — the same units the carrier rate and the packing
+                  algorithm use. Enter the packed item, not the bare product.
+                </p>
+              </CardContent>
+            </Card>
+
 
             {/* AI DESCRIPTION */}
             <Card>
