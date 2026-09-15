@@ -280,6 +280,8 @@ serve(async (req) => {
       }
 
       if (queryFailures > 0) result.status = 'partial';
+      }
+
 
       result.total = allElements.length;
 
