@@ -180,14 +180,15 @@ export async function identifyProductFromPhotos(
   const namedProduct = !!(identifiers.brand && identifiers.product_name);
   const sizeKnown = !!(identifiers.size_or_count || identifiers.pack_count);
 
-  if (p.product_visible === false || (!namedProduct && !gtin_valid && !identifiers.model_mpn)) {
+  if (gtin_valid) {
+    // A checksum-valid barcode is the strongest evidence there is, whether or
+    // not the rest of the package is legible.
+    status = "identified";
+    reason = "barcode_read_and_checksum_valid";
+  } else if (p.product_visible === false || (!namedProduct && !identifiers.model_mpn)) {
     status = "not_identified";
     reason = !text_legible ? "package_text_not_legible" : "no_identifying_text";
     next_photo_hint = "Take a clear photo of the barcode or back label.";
-  } else if (gtin_valid) {
-    // A checksum-valid barcode is the strongest evidence there is.
-    status = "identified";
-    reason = "barcode_read_and_checksum_valid";
   } else if (namedProduct && identifiers.model_mpn && sizeKnown && vision_confidence !== "low") {
     status = "identified";
     reason = "brand_model_and_package_size_printed";
