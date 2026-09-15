@@ -269,19 +269,36 @@ export default function ProductManagementPage() {
       const need = ['product_name', 'category'];
       for (const n of need) if (!headers.includes(n)) throw new Error(`Missing column: ${n}`);
 
+      const NUMERIC = [
+        'supplier_cost', 'store_price_a', 'dtc_price_b',
+        'weight_oz', 'length_in', 'width_in', 'height_in', 'inventory_qty',
+      ];
       const rows = lines.slice(1).map(line => {
         const cells = line.split(',').map(c => c.trim());
         const rec: any = { status: 'active' };
         headers.forEach((h, i) => {
           const v = cells[i];
           if (v === undefined || v === '') return;
-          if (['supplier_cost', 'store_price_a', 'dtc_price_b', 'weight_oz'].includes(h)) rec[h] = Number(v);
+          if (NUMERIC.includes(h)) rec[h] = Number(v);
+          // A photo can be supplied as a public image URL per row.
+          else if (h === 'image_url') { rec.image_urls = [v]; rec.primary_image_url = v; }
           else rec[h] = v;
         });
         return rec;
       }).filter(r => r.product_name && r.category);
 
       if (!rows.length) throw new Error('No valid rows');
+
+      // Shipping data is required before a product can go live — say which rows
+      // are short instead of letting the database reject the whole batch.
+      const short = rows.filter(r =>
+        !(Number(r.weight_oz) > 0 && Number(r.length_in) > 0 && Number(r.width_in) > 0 && Number(r.height_in) > 0));
+      if (short.length) {
+        throw new Error(
+          `${short.length} row(s) are missing weight_oz / length_in / width_in / height_in — ` +
+          `for example "${short[0].product_name}". Fill those in and re-import.`,
+        );
+      }
 
       // Batch insert in chunks of 100
       let inserted = 0;
