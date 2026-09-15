@@ -292,6 +292,87 @@ export function AccountActivityTable({
             </SelectContent>
           </Select>
         </div>
+
+        {showFieldFilters && (
+          <div className="grid grid-cols-1 gap-2 pt-2 sm:grid-cols-2 lg:grid-cols-4">
+            <Select value={datePreset} onValueChange={(v) => reset(() => setDatePreset(v))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Date" />
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_PRESETS.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {datePreset === 'custom' ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => reset(() => setCustomFrom(e.target.value))}
+                  aria-label="From date"
+                />
+                <Input
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => reset(() => setCustomTo(e.target.value))}
+                  aria-label="To date"
+                />
+              </div>
+            ) : (
+              <Select value={roleFilter} onValueChange={(v) => reset(() => setRoleFilter(v as ActivityRoleFilter))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All roles</SelectItem>
+                  <SelectItem value="ambassador">Ambassadors</SelectItem>
+                  <SelectItem value="driver">Drivers</SelectItem>
+                  <SelectItem value="biker">Bikers</SelectItem>
+                  <SelectItem value="va">VAs</SelectItem>
+                  <SelectItem value="admin">Admins</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
+            {datePreset === 'custom' && (
+              <Select value={roleFilter} onValueChange={(v) => reset(() => setRoleFilter(v as ActivityRoleFilter))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All roles</SelectItem>
+                  <SelectItem value="ambassador">Ambassadors</SelectItem>
+                  <SelectItem value="driver">Drivers</SelectItem>
+                  <SelectItem value="biker">Bikers</SelectItem>
+                  <SelectItem value="va">VAs</SelectItem>
+                  <SelectItem value="admin">Admins</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
+            <Select
+              value={reviewFilter}
+              onValueChange={(v) => reset(() => setReviewFilter(v as ActivityReviewFilter))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Photo / review" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any photo / review state</SelectItem>
+                <SelectItem value="has_photo">Has photo</SelectItem>
+                <SelectItem value="no_photo">No photo</SelectItem>
+                <SelectItem value="needs_verification">Needs verification</SelectItem>
+                <SelectItem value="verified">Verified / approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="pt-0">
