@@ -94,6 +94,58 @@ interface Props {
   defaultOpenState?: 'all' | 'open' | 'done';
   defaultPageSize?: number;
   className?: string;
+  /** Management view: date range, field-role and photo/verification filters. */
+  showFieldFilters?: boolean;
+}
+
+const DATE_PRESETS = [
+  { value: 'all', label: 'All time' },
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: '7d', label: 'Last 7 days' },
+  { value: 'custom', label: 'Custom range' },
+];
+
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function resolveDateRange(
+  preset: string,
+  customFrom: string,
+  customTo: string,
+): { from?: string; to?: string } {
+  const today = startOfDay(new Date());
+  if (preset === 'today') {
+    const to = new Date(today);
+    to.setDate(to.getDate() + 1);
+    return { from: today.toISOString(), to: to.toISOString() };
+  }
+  if (preset === 'yesterday') {
+    const from = new Date(today);
+    from.setDate(from.getDate() - 1);
+    return { from: from.toISOString(), to: today.toISOString() };
+  }
+  if (preset === '7d') {
+    const from = new Date(today);
+    from.setDate(from.getDate() - 6);
+    const to = new Date(today);
+    to.setDate(to.getDate() + 1);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (preset === 'custom') {
+    const out: { from?: string; to?: string } = {};
+    if (customFrom) out.from = startOfDay(new Date(customFrom)).toISOString();
+    if (customTo) {
+      const t = startOfDay(new Date(customTo));
+      t.setDate(t.getDate() + 1);
+      out.to = t.toISOString();
+    }
+    return out;
+  }
+  return {};
 }
 
 function pageWindow(current: number, total: number): number[] {
