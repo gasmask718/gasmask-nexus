@@ -291,6 +291,12 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       }
       qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
       qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
+      // The photo is already stored. Identification runs afterwards and is
+      // allowed to fail without affecting the saved photo.
+      const needsIdentity = !p?.upc && !p?.gtin;
+      if (needsIdentity || missingShippingData(p ?? {})) {
+        void runIdentify(false);
+      }
     } catch (e: any) {
       toast.error(e.message ?? 'Photo could not be saved', { id: toastId });
     } finally {
