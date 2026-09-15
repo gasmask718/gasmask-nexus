@@ -154,15 +154,25 @@ async function serpApiLinks(key: string, query: string): Promise<SearchLink[]> {
   return out;
 }
 
-/** Non-US storefronts sell different pack/packaging variants — never trust them. */
-const FOREIGN_TLD =
-  /\.(it|de|fr|es|nl|pl|se|eg|ae|sa|in|jp|cn|br|mx|ru|tr|co\.uk|co\.jp|com\.au|com\.br|com\.mx|ca)$/;
+/**
+ * Non-US storefronts sell different pack/packaging variants — never trust them.
+ * Allow-list, not block-list: anything outside these generic/US endings (or any
+ * `something.co.xx` / `something.com.xx` country storefront) is rejected, so a
+ * new country domain can never slip through by simply not being listed.
+ */
+const US_TLD = /\.(com|net|org|us|edu|gov|shop|store|biz|info)$/;
+const COUNTRY_SECOND_LEVEL = /\.(co|com|net|org|ac|gov)\.[a-z]{2}$/;
+
+function isForeignHost(host: string): boolean {
+  if (COUNTRY_SECOND_LEVEL.test(host)) return true;
+  return !US_TLD.test(host);
+}
 
 /** Ranking of a host as a spec source (higher = more trusted). 0 = reject. */
 function hostScore(url: string, p: ProductIdentifiers): number {
   let host = "";
   try { host = new URL(url).hostname.replace(/^www\./, "").toLowerCase(); } catch { return 0; }
-  if (FOREIGN_TLD.test(host)) return 0;
+  if (isForeignHost(host)) return 0;
   const brand = (p.brand ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
   if (brand.length >= 4 && host.replace(/[^a-z0-9]/g, "").includes(brand)) return 100; // manufacturer
   if (/(^|\.)(amazon|walmart|target|homedepot|lowes|staples|officedepot|costco|samsclub|bhphotovideo|newegg|webstaurantstore|uline)\./.test(`.${host}.`)) return 70;

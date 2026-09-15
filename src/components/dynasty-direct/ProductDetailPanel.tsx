@@ -22,6 +22,10 @@ import {
 } from 'lucide-react';
 import { uploadOriginalToStorage, missingShippingData } from '@/lib/dynastyDirect/productImages';
 import { requestSpecSourcing, specStatusLabel } from '@/lib/dynastyDirect/shippingSpecs';
+import {
+  identifyProductPhoto, confirmPhotoIdentification, photoIdLabel,
+  type PhotoIdResponse,
+} from '@/lib/dynastyDirect/photoIdentify';
 
 const GOLD = '#C9A84C';
 
@@ -70,6 +74,8 @@ type ProductDetail = {
   upc: string | null;
   gtin: string | null;
   supplier_sku: string | null;
+  photo_id_status: string | null;
+  photo_identification: any | null;
 };
 
 type Props = {
@@ -96,6 +102,8 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
   const [editingShipping, setEditingShipping] = useState(false);
   const [shipping, setShipping] = useState<Partial<ProductDetail>>({});
   const [sourcing, setSourcing] = useState(false);
+  const [identifying, setIdentifying] = useState(false);
+  const [photoId, setPhotoId] = useState<PhotoIdResponse | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const detailQ = useQuery({
@@ -105,7 +113,7 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       if (!productId) return null;
       const { data, error } = await supabase
         .from('products_all')
-        .select('id, product_name, category, brand, supplier_id, status, inventory_qty, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at, weight_oz, length_in, width_in, height_in, shipping_spec_status, shipping_spec_candidates, shipping_spec_locked, shipping_spec_checked_at, spec_source, spec_source_ref, shipping_data_source, specs_verified_at, upc, gtin, supplier_sku')
+        .select('id, product_name, category, brand, supplier_id, status, inventory_qty, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at, weight_oz, length_in, width_in, height_in, shipping_spec_status, shipping_spec_candidates, shipping_spec_locked, shipping_spec_checked_at, spec_source, spec_source_ref, shipping_data_source, specs_verified_at, upc, gtin, supplier_sku, photo_id_status, photo_identification')
         .eq('id', productId)
         .maybeSingle();
       if (error) throw error;
@@ -283,6 +291,12 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       }
       qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
       qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
+      // The photo is already stored. Identification runs afterwards and is
+      // allowed to fail without affecting the saved photo.
+      const needsIdentity = !p?.upc && !p?.gtin;
+      if (needsIdentity || missingShippingData(p ?? {})) {
+        void runIdentify(false);
+      }
     } catch (e: any) {
       toast.error(e.message ?? 'Photo could not be saved', { id: toastId });
     } finally {
@@ -317,6 +331,52 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
     } catch (e: any) { toast.error(e.message ?? 'Save failed'); }
     finally { setSaving(false); }
+  }
+
+  /**
+   * PHOTO → IDENTITY → SPECS. Reads the printed text/barcode on the saved photo.
+   * Only an IDENTIFIED read feeds identifiers into the existing spec sourcing;
+   * a likely match waits for an admin click. Failure here never touches the photo.
+   */
+  async function runIdentify(force: boolean) {
+    if (!productId) return;
+    setIdentifying(true);
+    const toastId = toast.loading('Identifying product…');
+    try {
+      const res = await identifyProductPhoto(productId, { force, triggeredBy: 'product_detail' });
+      setPhotoId(res);
+      qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
+      qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
+      if (res.skipped === 'rate_limited') { toast.message('Already identified recently', { id: toastId }); return; }
+      if (res.status === 'identified' || res.status === 'confirmed_by_admin') {
+        const s = res.sourcing;
+        if (s?.applied) toast.success('Product identified — shipping specs found and saved', { id: toastId });
+        else if (s?.status === 'needs_review') toast.warning('Product identified — shipping specs need review', { id: toastId });
+        else toast.success('Product identified', { id: toastId });
+      } else if (res.status === 'likely_match') {
+        toast.warning('Likely match — confirm it below', { id: toastId });
+      } else if (res.status === 'needs_more_photos') {
+        toast.warning('Need another photo of the barcode or back label', { id: toastId });
+      } else {
+        toast.error('Could not identify this product from the photo', { id: toastId });
+      }
+    } catch (e: any) {
+      toast.error(e.message ?? 'Identification failed — the photo is still saved', { id: toastId });
+    } finally { setIdentifying(false); }
+  }
+
+  async function confirmIdentity() {
+    if (!productId) return;
+    setIdentifying(true);
+    const toastId = toast.loading('Confirming and finding shipping specs…');
+    try {
+      const res = await confirmPhotoIdentification(productId, 'product_detail');
+      setPhotoId(res);
+      qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
+      toast.success(res.sourcing?.applied ? 'Confirmed — shipping specs saved' : 'Identity confirmed', { id: toastId });
+    } catch (e: any) {
+      toast.error(e.message ?? 'Could not confirm', { id: toastId });
+    } finally { setIdentifying(false); }
   }
 
   /** Manual re-run of the automatic online lookup. */
@@ -592,6 +652,65 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
                     })}
                   </div>
                 )}
+
+                {/* PHOTO → PRODUCT IDENTITY */}
+                {(() => {
+                  const live = photoId;
+                  const saved = p.photo_identification as any | null;
+                  const status = (live?.status ?? p.photo_id_status) as any;
+                  const ids = live?.identifiers ?? saved?.identifiers ?? null;
+                  const hint = live?.next_photo_hint ?? saved?.next_photo_hint ?? null;
+                  const lab = photoIdLabel(status);
+                  const cls = lab.tone === 'good'
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                    : lab.tone === 'warn'
+                      ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                      : lab.tone === 'bad'
+                        ? 'bg-destructive/15 text-destructive border-destructive/30'
+                        : 'bg-muted text-muted-foreground border-border';
+                  const hasPhoto = !!(p.image_urls?.length || p.primary_image_url);
+                  return (
+                    <div className="mt-4 pt-3 border-t space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge variant="outline" className={cls}>
+                          {identifying ? 'Identifying product…' : lab.label}
+                        </Badge>
+                        <Button size="sm" variant="outline" disabled={identifying || !hasPhoto}
+                          onClick={() => runIdentify(true)}>
+                          <Search className="h-4 w-4 mr-1" />
+                          {identifying ? 'Reading photo…' : 'Identify from photo'}
+                        </Button>
+                      </div>
+
+                      {ids && (status === 'identified' || status === 'confirmed_by_admin' || status === 'likely_match') && (
+                        <div className="text-xs text-muted-foreground space-y-0.5">
+                          {ids.product_name && <div><span className="text-foreground">{ids.brand ? `${ids.brand} ` : ''}{ids.product_name}</span></div>}
+                          {ids.size_or_count && <div>Size / count read: {ids.size_or_count}</div>}
+                          {ids.barcode_digits && <div>Barcode read: {ids.barcode_digits}</div>}
+                          {ids.model_mpn && <div>Model: {ids.model_mpn}</div>}
+                        </div>
+                      )}
+
+                      {status === 'likely_match' && (
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-amber-400 flex-1">
+                            Strong candidate, but no barcode or model was readable. Confirm before it is used.
+                          </p>
+                          <Button size="sm" disabled={identifying} onClick={confirmIdentity}
+                            style={{ background: GOLD, color: '#000' }}>
+                            Confirm match
+                          </Button>
+                        </div>
+                      )}
+
+                      {(status === 'needs_more_photos' || status === 'not_identified') && (
+                        <p className="text-xs text-muted-foreground">
+                          {hint ?? 'Take a clear photo of the barcode or back label.'}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 

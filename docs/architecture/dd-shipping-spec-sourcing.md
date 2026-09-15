@@ -67,3 +67,18 @@ batches of 4; one unresolved product never fails the import.
 Unchanged. It reads `weight_oz`/`length_in`/`width_in`/`height_in`; products
 without them still quote on the clearly-labelled conservative fallback parcel,
 and `dd_require_shipping_dimensions()` keeps them out of Active.
+
+## Photo → identity → specs (extension)
+
+`dd-identify-product-photo` reads the product's stored photos with the existing
+Gemini vision path and returns one of: `identified` (checksum-valid barcode, or
+printed brand + model + size), `likely_match` (brand/name/size printed, no
+barcode or model — admin must confirm), `needs_more_photos`, `not_identified`.
+Only `identified` (or an admin-confirmed likely match) feeds identifiers into
+`dd-source-shipping-specs`; nothing is ever inferred from logo or shape. GTINs
+are stored padded to 14 digits; the original photo is written before any
+identification and survives every failure path.
+
+Source hosts are now allow-listed (generic/US endings only); any
+`something.co.xx` / `something.com.xx` country storefront is rejected, because
+foreign storefronts sell different packaging variants.
