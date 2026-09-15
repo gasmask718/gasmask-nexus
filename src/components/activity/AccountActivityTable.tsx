@@ -42,6 +42,8 @@ import {
   useActivityWorkers,
   type ActivityKind,
   type ActivityRow,
+  type ActivityRoleFilter,
+  type ActivityReviewFilter,
 } from '@/hooks/useAccountActivity';
 
 const KIND_LABEL: Record<ActivityKind, string> = {
