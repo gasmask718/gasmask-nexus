@@ -102,6 +102,8 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
   const [editingShipping, setEditingShipping] = useState(false);
   const [shipping, setShipping] = useState<Partial<ProductDetail>>({});
   const [sourcing, setSourcing] = useState(false);
+  const [identifying, setIdentifying] = useState(false);
+  const [photoId, setPhotoId] = useState<PhotoIdResponse | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const detailQ = useQuery({
@@ -111,7 +113,7 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       if (!productId) return null;
       const { data, error } = await supabase
         .from('products_all')
-        .select('id, product_name, category, brand, supplier_id, status, inventory_qty, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at, weight_oz, length_in, width_in, height_in, shipping_spec_status, shipping_spec_candidates, shipping_spec_locked, shipping_spec_checked_at, spec_source, spec_source_ref, shipping_data_source, specs_verified_at, upc, gtin, supplier_sku')
+        .select('id, product_name, category, brand, supplier_id, status, inventory_qty, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at, weight_oz, length_in, width_in, height_in, shipping_spec_status, shipping_spec_candidates, shipping_spec_locked, shipping_spec_checked_at, spec_source, spec_source_ref, shipping_data_source, specs_verified_at, upc, gtin, supplier_sku, photo_id_status, photo_identification')
         .eq('id', productId)
         .maybeSingle();
       if (error) throw error;
