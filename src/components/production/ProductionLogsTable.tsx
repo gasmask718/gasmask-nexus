@@ -21,7 +21,7 @@ export function ProductionLogsTable({ officeId }: { officeId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('production_batches')
-        .select('id, batch_number, brand, boxes_produced, tubes_total, produced_by, shift_label, batch_date, created_at, status')
+        .select('id, brand, boxes_produced, tubes_total, produced_by, shift_label, batch_date, created_at, status')
         .eq('office_id', officeId)
         .order('created_at', { ascending: false })
         .limit(100);
