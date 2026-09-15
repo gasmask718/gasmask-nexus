@@ -21,6 +21,7 @@ import {
   Package, Plus, Search, Upload, RefreshCw, Ruler, DollarSign, AlertTriangle,
 } from 'lucide-react';
 import ProductDetailPanel from '@/components/dynasty-direct/ProductDetailPanel';
+import { uploadOriginalToStorage } from '@/lib/dynastyDirect/productImages';
 
 const GOLD = '#C9A84C';
 
