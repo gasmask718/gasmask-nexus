@@ -175,8 +175,25 @@ export default function ProductManagementPage() {
   }
 
   async function handleAdd() {
+    const num = (v: string) => (v.trim() === '' ? null : Number(v));
     if (!form.product_name.trim()) return toast.error('Product name required');
     if (!form.category) return toast.error('Category required');
+
+    // Pre-flight the two database gates so the operator gets a plain answer
+    // instead of a raw trigger error at the end of the save.
+    const weight = num(form.weight_oz);
+    const L = num(form.length_in), W = num(form.width_in), H = num(form.height_in);
+    if (!(Number(weight) > 0)) return toast.error('Shipping weight (oz) is required — shipping is rated on it');
+    if (!(Number(L) > 0 && Number(W) > 0 && Number(H) > 0)) {
+      return toast.error('Length, width and height (inches) are required before a product can go live');
+    }
+    const cost = num(form.supplier_cost);
+    const storeP = num(form.store_price_a);
+    const dtcP = num(form.dtc_price_b);
+    if (Number(cost) > 0 && !(Number(storeP) > 0 || Number(dtcP) > 0)) {
+      return toast.error('With a supplier cost set, enter a store price or a customer price');
+    }
+
     setSubmitting(true);
     try {
       const requestedStatus = 'active';
@@ -184,8 +201,14 @@ export default function ProductManagementPage() {
         product_name: form.product_name.trim(),
         category: form.category,
         supplier_id: form.supplier_id || null,
-        supplier_cost: form.supplier_cost ? Number(form.supplier_cost) : null,
+        supplier_cost: cost,
         inventory_qty: form.inventory_qty !== '' ? Number(form.inventory_qty) : null,
+        store_price_a: storeP,
+        dtc_price_b: dtcP,
+        weight_oz: weight,
+        length_in: L,
+        width_in: W,
+        height_in: H,
         status: requestedStatus,
       };
       const { data, error } = await supabase
@@ -195,9 +218,25 @@ export default function ProductManagementPage() {
         .single();
       if (error) throw error;
 
+      // PHOTO: stored in the public product-images bucket and attached to the row.
+      if (photoFile && data?.id) {
+        try {
+          const url = await uploadOriginalToStorage(photoFile, data.id);
+          const { error: imgErr } = await supabase
+            .from('products_all')
+            .update({ image_urls: [url], primary_image_url: url })
+            .eq('id', data.id);
+          if (imgErr) throw imgErr;
+        } catch (imgE: any) {
+          toast.error(`Product saved, but the photo did not: ${imgE.message ?? imgE}`);
+        }
+      }
+
       toast.success('Product created — pricing running via trigger');
       setAddOpen(false);
-      setForm({ product_name: '', category: '', supplier_id: '', supplier_cost: '', inventory_qty: '' });
+      setForm(emptyForm);
+      setPhotoFile(null);
+      if (photoRef.current) photoRef.current.value = '';
       qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
 
       // Gate immediate feedback (in case dd_enforce_catalog_confirm_gate downgraded status)
