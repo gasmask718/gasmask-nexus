@@ -53,6 +53,10 @@ type ProductDetail = {
   primary_image_url: string | null;
   image_urls: string[] | null;
   image_enhanced_at: string | null;
+  weight_oz: number | null;
+  length_in: number | null;
+  width_in: number | null;
+  height_in: number | null;
 };
 
 type Props = {
@@ -76,6 +80,8 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
   const [regenerating, setRegenerating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editingShipping, setEditingShipping] = useState(false);
+  const [shipping, setShipping] = useState<Partial<ProductDetail>>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
   const detailQ = useQuery({
@@ -85,7 +91,7 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       if (!productId) return null;
       const { data, error } = await supabase
         .from('products_all')
-        .select('id, product_name, category, brand, supplier_id, status, inventory_qty, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at')
+        .select('id, product_name, category, brand, supplier_id, status, inventory_qty, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at, weight_oz, length_in, width_in, height_in')
         .eq('id', productId)
         .maybeSingle();
       if (error) throw error;
