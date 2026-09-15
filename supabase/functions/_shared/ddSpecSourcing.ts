@@ -99,20 +99,26 @@ export function identifierKey(p: ProductIdentifiers): string | null {
 
 /** Search queries, strongest identifier first. */
 export function buildQueries(p: ProductIdentifiers): string[] {
+  // Without these exclusions the spec phrases pull in shipping-calculator and
+  // carrier help pages instead of product listings.
+  const NEG = ` -calculator -"dimensional weight" -inurl:calculator`;
   const q: string[] = [];
   const gt = digits(p.gtin) || digits(p.upc);
   if (gt.length >= 8) {
     // The bare barcode surfaces barcode databases and retailer listings that
     // carry both the identifier and a package-dimensions block.
     q.push(`"${gt}"`);
-    q.push(`"${gt}" "package dimensions"`);
+    q.push(`"${gt}" "package dimensions"${NEG}`);
   }
   const sku = (p.supplier_sku || p.sku || "").trim();
-  if (sku) q.push(`${p.brand ?? ""} "${sku}" "package dimensions"`.trim());
+  if (sku) {
+    q.push(`${p.brand ?? ""} "${sku}" "package dimensions"${NEG}`.trim());
+    q.push(`${p.brand ?? ""} "${sku}" "shipping weight"${NEG}`.trim());
+  }
   const desc = [p.brand, p.product_name, p.size_or_count, p.flavor_or_variant]
     .filter(Boolean).join(" ");
-  if (desc) q.push(`${desc} "package dimensions" "item weight"`);
-  return q.slice(0, 3);
+  if (desc) q.push(`${desc} "package dimensions" "item weight"${NEG}`);
+  return q.slice(0, 4);
 }
 
 /* ------------------------- candidate discovery ------------------------- */
@@ -148,15 +154,31 @@ async function serpApiLinks(key: string, query: string): Promise<SearchLink[]> {
   return out;
 }
 
-/** Ranking of a host as a spec source (higher = more trusted). */
+/** Non-US storefronts sell different pack/packaging variants — never trust them. */
+const FOREIGN_TLD =
+  /\.(it|de|fr|es|nl|pl|se|eg|ae|sa|in|jp|cn|br|mx|ru|tr|co\.uk|co\.jp|com\.au|com\.br|com\.mx|ca)$/;
+
+/** Ranking of a host as a spec source (higher = more trusted). 0 = reject. */
 function hostScore(url: string, p: ProductIdentifiers): number {
   let host = "";
   try { host = new URL(url).hostname.replace(/^www\./, "").toLowerCase(); } catch { return 0; }
+  if (FOREIGN_TLD.test(host)) return 0;
   const brand = (p.brand ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
   if (brand.length >= 4 && host.replace(/[^a-z0-9]/g, "").includes(brand)) return 100; // manufacturer
   if (/(^|\.)(amazon|walmart|target|homedepot|lowes|staples|officedepot|costco|samsclub|bhphotovideo|newegg|webstaurantstore|uline)\./.test(`.${host}.`)) return 70;
   if (/(upcitemdb|barcodelookup|go-upc|upcdatabase)\./.test(`.${host}.`)) return 55;
   return 40;
+}
+
+/**
+ * Per-seller marketplace listings can describe their own repackaging, so they
+ * may be shown as review candidates but never auto-applied.
+ */
+export function isAutoApplyHost(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+    return !/(^|\.)(ebay|aliexpress|etsy|mercari|poshmark|wish|alibaba|dhgate|temu)\./.test(`.${host}.`);
+  } catch { return false; }
 }
 
 /* --------------------------- page extraction --------------------------- */
@@ -319,12 +341,23 @@ export function verifyMatch(
     (ex.gtins.some((g) => last12(g) === last12(ourGtin)) || urlDigits.includes(ourGtin))) {
     matched.push("gtin");
   }
-  const sku = (p.supplier_sku || p.sku || "").trim().toLowerCase();
-  if (sku && (ex.mpns.includes(sku) || ex.title.toLowerCase().includes(sku))) matched.push("mpn_sku");
-
   const title = ex.title.toLowerCase();
-  const brand = (p.brand ?? "").toLowerCase();
-  if (brand && title.includes(brand)) matched.push("brand");
+  const brand = (p.brand ?? "").toLowerCase().trim();
+  // Listings shorten brands ("Rubbermaid Commercial" -> "Rubbermaid®"), so the
+  // leading brand token counts as a brand match.
+  const brandRoot = brand.split(/[\s®™,-]+/).filter(Boolean)[0] ?? "";
+  const brandOk = !!brand && (title.includes(brand) || (brandRoot.length >= 4 && title.includes(brandRoot)));
+  if (brandOk) matched.push("brand");
+
+  const sku = (p.supplier_sku || p.sku || "").trim().toLowerCase();
+  if (sku) {
+    const inMpn = ex.mpns.includes(sku);
+    const inTitle = title.includes(sku);
+    const inUrl = pageUrl.toLowerCase().includes(sku);
+    // A model number quoted loosely in a listing for a DIFFERENT item (e.g. a
+    // "fits 2407-20" accessory) must not count as an exact match.
+    if (inMpn || ((inTitle || inUrl) && brandOk)) matched.push("mpn_sku");
+  }
 
   // Pack / count / size configuration must agree when we know ours.
   const ourPack = packCount(p.size_or_count) ?? packCount(p.package_text) ?? packCount(p.product_name);
@@ -489,12 +522,17 @@ export async function sourceShippingSpecs(
     if (links.length >= 12) break;
   }
 
-  links.sort((a, b) => hostScore(b.url, p) - hostScore(a.url, p));
+  const usable = links.filter((l) => {
+    if (hostScore(l.url, p) > 0) return true;
+    sources_tried.push(`rejected:foreign_storefront:${l.url}`);
+    return false;
+  });
+  usable.sort((a, b) => hostScore(b.url, p) - hostScore(a.url, p));
   const maxPages = opts.maxPages ?? 8;
 
   const candidates: SpecCandidate[] = [...preCandidates];
-  sources_tried.push(`links_found:${links.length}`);
-  for (const link of links.slice(0, maxPages)) {
+  sources_tried.push(`links_found:${usable.length}`);
+  for (const link of usable.slice(0, maxPages)) {
     const html = await fetchPage(link.url);
     if (!html) sources_tried.push(`fetch_failed:${link.url}`);
     const body = `${html ?? ""}\n${link.title}\n${link.snippet}`;
@@ -517,21 +555,49 @@ export async function sourceShippingSpecs(
   }
 
   candidates.sort((a, b) => b.score - a.score);
-  const best = candidates[0];
+  const isStrong = (c: SpecCandidate) =>
+    c.matched_on.includes("gtin") || c.matched_on.includes("mpn_sku");
+
+  // Real listings often carry the package dimensions on one page and the
+  // shipping weight on another. Combining them is only allowed when BOTH parts
+  // came from an exact-identifier match and are labelled as package/shipping
+  // values — never by inferring a missing half.
+  let best = candidates[0];
+  let composed_from: string | null = null;
+  const autoOk = (c: SpecCandidate) => isStrong(c) && c.packaged && isAutoApplyHost(c.source_url);
+  if (autoOk(best)) {
+    const hasDims = !!(best.length_in && best.width_in && best.height_in);
+    if (hasDims && !best.weight_oz) {
+      const w = candidates.find((c) => c !== best && c.weight_oz && autoOk(c));
+      if (w) { best = { ...best, weight_oz: w.weight_oz, raw: { ...best.raw, weight_from: w.source_url, weight_text: w.raw?.weight_text } }; composed_from = w.source_url; }
+    } else if (!hasDims && best.weight_oz) {
+      const d = candidates.find((c) => c !== best && c.length_in && c.width_in && c.height_in && autoOk(c));
+      if (d) { best = { ...best, length_in: d.length_in, width_in: d.width_in, height_in: d.height_in, raw: { ...best.raw, dims_from: d.source_url, dims_text: d.raw?.dims_text } }; composed_from = d.source_url; }
+    }
+  }
+
   const complete = !!(best.weight_oz && best.length_in && best.width_in && best.height_in);
-  const strong = best.matched_on.includes("gtin") || best.matched_on.includes("mpn_sku");
-  const conflicting = candidates.slice(1).some((c) => conflicts(best, c));
+  const strong = isStrong(best);
+  const conflicting = candidates.slice(1).some((c) => conflicts(candidates[0], c));
 
   if (conflicting) {
     return { status: "needs_review", chosen: null, candidates, identifier_key: identifierKey(p), sources_tried, reason: "sources_conflict" };
   }
-  if (strong && complete && best.packaged) {
+  if (strong && complete && best.packaged && isAutoApplyHost(best.source_url)) {
     // Two independent agreeing sources, or the manufacturer's own page.
-    const corroborated = candidates.length > 1 || best.score >= 160;
+    const corroborated = !composed_from && (candidates.length > 1 || best.score >= 160);
     return {
       status: corroborated ? "confirmed" : "high_confidence",
       chosen: best, candidates, identifier_key: identifierKey(p), sources_tried,
-      reason: corroborated ? "strong_identifier_packaged_specs_corroborated" : "strong_identifier_packaged_specs",
+      reason: composed_from
+        ? `composed_packaged_specs:${composed_from}`
+        : (corroborated ? "strong_identifier_packaged_specs_corroborated" : "strong_identifier_packaged_specs"),
+    };
+  }
+  if (strong && complete && best.packaged) {
+    return {
+      status: "needs_review", chosen: null, candidates, identifier_key: identifierKey(p),
+      sources_tried, reason: "marketplace_source_needs_review",
     };
   }
   return {

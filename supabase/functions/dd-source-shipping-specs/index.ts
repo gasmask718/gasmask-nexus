@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
           reason,
           raw: chosen.raw,
         },
-        shipping_data_source: chosen.source_name,
+        shipping_data_source: "sourced_web",
         shipping_verified: status === "confirmed",
         specs_verified_at: new Date().toISOString(),
       });
