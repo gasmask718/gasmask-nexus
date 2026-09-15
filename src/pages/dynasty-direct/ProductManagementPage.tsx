@@ -319,7 +319,9 @@ export default function ProductManagementPage() {
   }
 
   function downloadCsvTemplate() {
-    const csv = 'product_name,category,brand,supplier_cost,store_price_a,dtc_price_b,weight_oz\nExample Item,accessories,Acme,1.25,,,2.5\n';
+    const csv =
+      'product_name,category,brand,supplier_cost,store_price_a,dtc_price_b,inventory_qty,weight_oz,length_in,width_in,height_in,image_url\n' +
+      'Example Item,accessories,Acme,1.25,2.50,3.99,24,2.5,6,4,2,https://example.com/photo.jpg\n';
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
