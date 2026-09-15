@@ -42,6 +42,8 @@ import {
   useActivityWorkers,
   type ActivityKind,
   type ActivityRow,
+  type ActivityRoleFilter,
+  type ActivityReviewFilter,
 } from '@/hooks/useAccountActivity';
 
 const KIND_LABEL: Record<ActivityKind, string> = {
@@ -59,6 +61,8 @@ const KIND_LABEL: Record<ActivityKind, string> = {
   inventory: 'Inventory',
   invoice: 'Invoice',
   field: 'Field update',
+  claim: 'Secured store',
+  status: 'Status change',
 };
 
 const KIND_TONE: Record<ActivityKind, string> = {
@@ -76,6 +80,8 @@ const KIND_TONE: Record<ActivityKind, string> = {
   inventory: 'bg-cyan-500/15 text-cyan-600',
   invoice: 'bg-yellow-500/15 text-yellow-700',
   field: 'bg-slate-500/15 text-slate-600',
+  claim: 'bg-emerald-500/15 text-emerald-600',
+  status: 'bg-rose-500/15 text-rose-600',
 };
 
 interface Props {
@@ -90,6 +96,58 @@ interface Props {
   defaultOpenState?: 'all' | 'open' | 'done';
   defaultPageSize?: number;
   className?: string;
+  /** Management view: date range, field-role and photo/verification filters. */
+  showFieldFilters?: boolean;
+}
+
+const DATE_PRESETS = [
+  { value: 'all', label: 'All time' },
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: '7d', label: 'Last 7 days' },
+  { value: 'custom', label: 'Custom range' },
+];
+
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function resolveDateRange(
+  preset: string,
+  customFrom: string,
+  customTo: string,
+): { from?: string; to?: string } {
+  const today = startOfDay(new Date());
+  if (preset === 'today') {
+    const to = new Date(today);
+    to.setDate(to.getDate() + 1);
+    return { from: today.toISOString(), to: to.toISOString() };
+  }
+  if (preset === 'yesterday') {
+    const from = new Date(today);
+    from.setDate(from.getDate() - 1);
+    return { from: from.toISOString(), to: today.toISOString() };
+  }
+  if (preset === '7d') {
+    const from = new Date(today);
+    from.setDate(from.getDate() - 6);
+    const to = new Date(today);
+    to.setDate(to.getDate() + 1);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (preset === 'custom') {
+    const out: { from?: string; to?: string } = {};
+    if (customFrom) out.from = startOfDay(new Date(customFrom)).toISOString();
+    if (customTo) {
+      const t = startOfDay(new Date(customTo));
+      t.setDate(t.getDate() + 1);
+      out.to = t.toISOString();
+    }
+    return out;
+  }
+  return {};
 }
 
 function pageWindow(current: number, total: number): number[] {
@@ -111,6 +169,7 @@ export function AccountActivityTable({
   defaultOpenState = 'all',
   defaultPageSize = 25,
   className,
+  showFieldFilters = false,
 }: Props) {
   const [kindFilter, setKindFilter] = useState(defaultKind);
   const [workerId, setWorkerId] = useState<string>('all');
@@ -120,6 +179,16 @@ export function AccountActivityTable({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [showAudit, setShowAudit] = useState(false);
+  const [datePreset, setDatePreset] = useState('all');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [roleFilter, setRoleFilter] = useState<ActivityRoleFilter>('all');
+  const [reviewFilter, setReviewFilter] = useState<ActivityReviewFilter>('all');
+
+  const dateRange = useMemo(
+    () => (showFieldFilters ? resolveDateRange(datePreset, customFrom, customTo) : {}),
+    [showFieldFilters, datePreset, customFrom, customTo],
+  );
 
   const { data, isLoading, error } = useAccountActivity({
     storeId,
@@ -131,6 +200,10 @@ export function AccountActivityTable({
     page,
     pageSize,
     includeReviewAudit: showAudit,
+    dateFrom: dateRange.from,
+    dateTo: dateRange.to,
+    roleFilter: showFieldFilters ? roleFilter : 'all',
+    reviewFilter: showFieldFilters ? reviewFilter : 'all',
   });
   const { data: workers } = useActivityWorkers();
 
@@ -219,6 +292,87 @@ export function AccountActivityTable({
             </SelectContent>
           </Select>
         </div>
+
+        {showFieldFilters && (
+          <div className="grid grid-cols-1 gap-2 pt-2 sm:grid-cols-2 lg:grid-cols-4">
+            <Select value={datePreset} onValueChange={(v) => reset(() => setDatePreset(v))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Date" />
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_PRESETS.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {datePreset === 'custom' ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => reset(() => setCustomFrom(e.target.value))}
+                  aria-label="From date"
+                />
+                <Input
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => reset(() => setCustomTo(e.target.value))}
+                  aria-label="To date"
+                />
+              </div>
+            ) : (
+              <Select value={roleFilter} onValueChange={(v) => reset(() => setRoleFilter(v as ActivityRoleFilter))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All roles</SelectItem>
+                  <SelectItem value="ambassador">Ambassadors</SelectItem>
+                  <SelectItem value="driver">Drivers</SelectItem>
+                  <SelectItem value="biker">Bikers</SelectItem>
+                  <SelectItem value="va">VAs</SelectItem>
+                  <SelectItem value="admin">Admins</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
+            {datePreset === 'custom' && (
+              <Select value={roleFilter} onValueChange={(v) => reset(() => setRoleFilter(v as ActivityRoleFilter))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All roles</SelectItem>
+                  <SelectItem value="ambassador">Ambassadors</SelectItem>
+                  <SelectItem value="driver">Drivers</SelectItem>
+                  <SelectItem value="biker">Bikers</SelectItem>
+                  <SelectItem value="va">VAs</SelectItem>
+                  <SelectItem value="admin">Admins</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
+            <Select
+              value={reviewFilter}
+              onValueChange={(v) => reset(() => setReviewFilter(v as ActivityReviewFilter))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Photo / review" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any photo / review state</SelectItem>
+                <SelectItem value="has_photo">Has photo</SelectItem>
+                <SelectItem value="no_photo">No photo</SelectItem>
+                <SelectItem value="needs_verification">Needs verification</SelectItem>
+                <SelectItem value="verified">Verified / approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="pt-0">

@@ -26,7 +26,9 @@ export type ActivityKind =
   | 'followup'
   | 'inventory'
   | 'invoice'
-  | 'field';
+  | 'field'
+  | 'claim'
+  | 'status';
 
 export interface ActivityRow {
   activity_id: string;
@@ -63,7 +65,21 @@ export const ACTIVITY_FILTERS: { value: string; label: string; kinds: ActivityKi
   { value: 'invoice', label: 'Invoices / payments', kinds: ['invoice'] },
   { value: 'visit', label: 'Visits', kinds: ['visit'] },
   { value: 'field', label: 'Field updates', kinds: ['field'] },
+  { value: 'claim', label: 'Secured / claimed stores', kinds: ['claim'] },
+  { value: 'status', label: 'Status changes', kinds: ['status'] },
 ];
+
+/** Real field roles resolved from role tables — never inferred from names. */
+export type ActivityRoleFilter = 'all' | 'ambassador' | 'driver' | 'biker' | 'va' | 'admin';
+
+/** Photo / review filters — resolved from field_submissions (the review system). */
+export type ActivityReviewFilter =
+  | 'all'
+  | 'has_photo'
+  | 'no_photo'
+  | 'needs_verification'
+  | 'verified'
+  | 'rejected';
 
 export interface AccountActivityParams {
   storeId?: string;
@@ -76,6 +92,25 @@ export interface AccountActivityParams {
   pageSize?: number;
   includeReviewAudit?: boolean;
   enabled?: boolean;
+  /** ISO timestamps (inclusive lower / exclusive upper) */
+  dateFrom?: string;
+  dateTo?: string;
+  roleFilter?: ActivityRoleFilter;
+  reviewFilter?: ActivityReviewFilter;
+}
+
+const PHOTO_KEY_RE = /(photo|image|picture|screenshot)/i;
+
+function payloadHasPhoto(payload: unknown): boolean {
+  if (!payload) return false;
+  try {
+    const text = JSON.stringify(payload);
+    if (!PHOTO_KEY_RE.test(text)) return false;
+    // A photo key must carry an actual value, not just be mentioned.
+    return /"[^"]*(photo|image|picture|screenshot)[^"]*"\s*:\s*("[^"]+"|\[[^\]]*[^\s\]])/i.test(text);
+  } catch {
+    return false;
+  }
 }
 
 export function useAccountActivity(params: AccountActivityParams) {
@@ -90,6 +125,10 @@ export function useAccountActivity(params: AccountActivityParams) {
     pageSize = 25,
     includeReviewAudit = false,
     enabled = true,
+    dateFrom,
+    dateTo,
+    roleFilter = 'all',
+    reviewFilter = 'all',
   } = params;
 
   return useQuery({
@@ -104,6 +143,10 @@ export function useAccountActivity(params: AccountActivityParams) {
       page,
       pageSize,
       includeReviewAudit,
+      dateFrom ?? null,
+      dateTo ?? null,
+      roleFilter,
+      reviewFilter,
     ],
     enabled,
     staleTime: 15_000,
@@ -150,6 +193,52 @@ export function useAccountActivity(params: AccountActivityParams) {
       if (workerId) q = q.eq('actor_id', workerId);
       if (openState === 'open') q = q.eq('is_open', true);
       if (openState === 'done') q = q.eq('is_open', false);
+      if (dateFrom) q = q.gte('occurred_at', dateFrom);
+      if (dateTo) q = q.lt('occurred_at', dateTo);
+
+      // Role filter — resolved from the real role tables (user_roles + the
+      // ambassador / driver / biker rosters). Never inferred from names.
+      if (roleFilter !== 'all') {
+        const lookups: Promise<any>[] = [
+          (supabase as any).from('user_roles').select('user_id').eq('role', roleFilter).limit(1000),
+        ];
+        if (roleFilter === 'ambassador') {
+          lookups.push((supabase as any).from('ambassadors').select('user_id').not('user_id', 'is', null).limit(1000));
+        } else if (roleFilter === 'driver') {
+          lookups.push((supabase as any).from('drivers').select('user_id').not('user_id', 'is', null).limit(1000));
+        } else if (roleFilter === 'biker') {
+          lookups.push((supabase as any).from('bikers').select('user_id').not('user_id', 'is', null).limit(1000));
+        }
+        const results = await Promise.all(lookups);
+        const ids = Array.from(
+          new Set(
+            results.flatMap((r: any) => (r.data || []).map((x: any) => x.user_id)).filter(Boolean),
+          ),
+        ) as string[];
+        if (ids.length === 0) return { rows: [] as ActivityRow[], total: 0 };
+        q = q.in('actor_id', ids);
+      }
+
+      // Photo / verification filter — resolved from field_submissions, the
+      // existing review system. No image or submission records are duplicated.
+      if (reviewFilter !== 'all') {
+        let fq = (supabase as any)
+          .from('field_submissions')
+          .select('id, payload_after, submission_status')
+          .order('created_at', { ascending: false })
+          .limit(1000);
+        if (reviewFilter === 'needs_verification') fq = fq.eq('submission_status', 'pending_review');
+        if (reviewFilter === 'verified') fq = fq.eq('submission_status', 'approved');
+        if (reviewFilter === 'rejected') fq = fq.eq('submission_status', 'rejected');
+        const { data: subs, error: subErr } = await fq;
+        if (subErr) throw subErr;
+        let matching = (subs || []) as any[];
+        if (reviewFilter === 'has_photo') matching = matching.filter((s) => payloadHasPhoto(s.payload_after));
+        if (reviewFilter === 'no_photo') matching = matching.filter((s) => !payloadHasPhoto(s.payload_after));
+        const activityIds = matching.map((s) => `field:${s.id}`);
+        if (activityIds.length === 0) return { rows: [] as ActivityRow[], total: 0 };
+        q = q.in('activity_id', activityIds);
+      }
 
       const from = (page - 1) * pageSize;
       q = q.range(from, from + pageSize - 1);

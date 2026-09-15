@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { AccountActivityTable } from '@/components/activity/AccountActivityTable';
+import { PendingFieldReviewQueue } from '@/components/activity/PendingFieldReviewQueue';
 
 export default function AccountActivity() {
   return (
@@ -12,10 +13,12 @@ export default function AccountActivity() {
         <h1 className="text-2xl font-bold tracking-tight">Account Activity</h1>
         <p className="text-sm text-muted-foreground">
           Everything the system already recorded against an exact account — reviews, notes, calls,
-          texts, deliveries, routes, orders, samples, follow-ups, inventory and invoices.
+          texts, deliveries, routes, orders, samples, follow-ups, inventory, invoices, secured
+          stores and status changes.
         </p>
       </div>
-      <AccountActivityTable title="All account activity" defaultPageSize={25} />
+      <PendingFieldReviewQueue />
+      <AccountActivityTable title="All account activity" defaultPageSize={25} showFieldFilters />
     </div>
   );
 }
