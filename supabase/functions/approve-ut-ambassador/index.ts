@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
     }, { onConflict: "user_id,role" }).select();
 
     // Get the site URL for the password reset redirect
-    const siteUrl = Deno.env.get("SITE_URL") || "https://gasmask-os-nexus.lovable.app";
+    const siteUrl = Deno.env.get("APP_PUBLIC_URL") || Deno.env.get("SITE_URL") || "https://gasmask-os-nexus.lovable.app";
 
     // Send password reset email so ambassador can set their password
     const { error: resetErr } = await admin.auth.admin.generateLink({

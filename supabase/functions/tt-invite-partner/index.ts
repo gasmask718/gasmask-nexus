@@ -56,6 +56,7 @@ Deno.serve(async (req) => {
     }
 
     const origin =
+      Deno.env.get('APP_PUBLIC_URL')?.replace(/\/+$/, '') ||
       redirect_origin || req.headers.get('origin') || 'https://gasmask-os-nexus.lovable.app';
     const redirectTo = `${origin}/partner/claim?partner_id=${partner.id}`;
 

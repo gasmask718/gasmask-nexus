@@ -9,7 +9,8 @@ const corsHeaders = {
 // Public intake form served from THIS app (token-gated).
 // Override via PUBLIC_APP_URL env if you want to force a domain (e.g. published URL).
 // Falls back to the request's Origin header so preview / production both work.
-const FALLBACK_APP_URL = "https://gasmask-os-nexus.lovable.app";
+const FALLBACK_APP_URL =
+  (Deno.env.get("APP_PUBLIC_URL") || "https://gasmask-os-nexus.lovable.app").replace(/\/+$/, "");
 
 interface Body {
   business_name?: string;
