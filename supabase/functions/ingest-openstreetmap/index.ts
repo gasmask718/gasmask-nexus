@@ -135,7 +135,9 @@ serve(async (req) => {
       business_types = [],
       neighborhood_ids = [],    // preferred: UUIDs from neighborhoods table
       neighborhoods = [],       // legacy: free-text neighborhood names
+      elements = [],            // optional: pre-fetched Overpass elements (same insert/dedupe path)
     } = await req.json();
+
 
     if (!city || !state) throw new Error('city and state are required');
 
