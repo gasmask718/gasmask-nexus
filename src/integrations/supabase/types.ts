@@ -100015,6 +100015,9 @@ export type Database = {
           min_order_qty: number | null
           min_store_margin_pct: number | null
           package_text: string | null
+          photo_id_checked_at: string | null
+          photo_id_status: string | null
+          photo_identification: Json | null
           pricing_strategy: string | null
           primary_image_url: string | null
           processing_time: string | null
@@ -100110,6 +100113,9 @@ export type Database = {
           min_order_qty?: number | null
           min_store_margin_pct?: number | null
           package_text?: string | null
+          photo_id_checked_at?: string | null
+          photo_id_status?: string | null
+          photo_identification?: Json | null
           pricing_strategy?: string | null
           primary_image_url?: string | null
           processing_time?: string | null
@@ -100205,6 +100211,9 @@ export type Database = {
           min_order_qty?: number | null
           min_store_margin_pct?: number | null
           package_text?: string | null
+          photo_id_checked_at?: string | null
+          photo_id_status?: string | null
+          photo_identification?: Json | null
           pricing_strategy?: string | null
           primary_image_url?: string | null
           processing_time?: string | null
@@ -162716,6 +162725,9 @@ export type Database = {
           min_order_qty: number | null
           min_store_margin_pct: number | null
           package_text: string | null
+          photo_id_checked_at: string | null
+          photo_id_status: string | null
+          photo_identification: Json | null
           pricing_strategy: string | null
           primary_image_url: string | null
           processing_time: string | null
@@ -162894,6 +162906,9 @@ export type Database = {
           min_order_qty: number | null
           min_store_margin_pct: number | null
           package_text: string | null
+          photo_id_checked_at: string | null
+          photo_id_status: string | null
+          photo_identification: Json | null
           pricing_strategy: string | null
           primary_image_url: string | null
           processing_time: string | null
