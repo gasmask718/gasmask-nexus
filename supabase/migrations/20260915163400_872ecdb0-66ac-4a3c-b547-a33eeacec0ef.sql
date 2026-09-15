@@ -1,0 +1,1 @@
+ALTER TABLE public.ambassador_invites ALTER COLUMN invited_by_ambassador_id DROP NOT NULL;
