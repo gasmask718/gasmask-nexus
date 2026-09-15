@@ -172,7 +172,7 @@ function isForeignHost(host: string): boolean {
 function hostScore(url: string, p: ProductIdentifiers): number {
   let host = "";
   try { host = new URL(url).hostname.replace(/^www\./, "").toLowerCase(); } catch { return 0; }
-  if (FOREIGN_TLD.test(host)) return 0;
+  if (isForeignHost(host)) return 0;
   const brand = (p.brand ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
   if (brand.length >= 4 && host.replace(/[^a-z0-9]/g, "").includes(brand)) return 100; // manufacturer
   if (/(^|\.)(amazon|walmart|target|homedepot|lowes|staples|officedepot|costco|samsclub|bhphotovideo|newegg|webstaurantstore|uline)\./.test(`.${host}.`)) return 70;
