@@ -309,7 +309,7 @@ serve(async (req) => {
             .select('id')
             .eq('place_id', placeId)
             .limit(1);
-          if (byPlace && byPlace.length > 0) { result.skipped++; continue; }
+          if (byPlace && byPlace.length > 0) { console.log('dupe place_id', placeId); result.skipped++; continue; }
 
           // Dedupe 2 — same address already in the prospect table.
           const { data: existing } = await supabase
@@ -319,7 +319,7 @@ serve(async (req) => {
             .eq('city', tags['addr:city'] || city)
             .limit(1);
 
-          if (existing && existing.length > 0) { result.skipped++; continue; }
+          if (existing && existing.length > 0) { console.log('dupe address', addrStr); result.skipped++; continue; }
 
           // Dedupe 3 — already a real store in the CRM (phone match, then address match).
           if (phone10.length === 10) {
@@ -329,7 +329,7 @@ serve(async (req) => {
               .eq('phone_last10', phone10)
               .is('deleted_at', null)
               .limit(1);
-            if (byPhone && byPhone.length > 0) { result.skipped++; continue; }
+            if (byPhone && byPhone.length > 0) { console.log('dupe phone', phone10); result.skipped++; continue; }
           }
           if (street) {
             const { data: byAddr } = await supabase
@@ -338,7 +338,7 @@ serve(async (req) => {
               .ilike('address', `%${street}%`)
               .is('deleted_at', null)
               .limit(1);
-            if (byAddr && byAddr.length > 0) { result.skipped++; continue; }
+            if (byAddr && byAddr.length > 0) { console.log('dupe store addr', street); result.skipped++; continue; }
           }
 
           // Only tobacco-native categories (and wholesalers) are field-ready on OSM
@@ -369,8 +369,8 @@ serve(async (req) => {
           if (target.id) insertData.neighborhood_id = target.id;
 
           const { error } = await supabase.from('territory_addresses').insert(insertData);
-          if (error) { result.skipped++; } else { result.inserted++; }
-        } catch { result.skipped++; }
+          if (error) { console.warn('insert failed:', error.message, JSON.stringify(insertData).slice(0,200)); result.skipped++; } else { result.inserted++; }
+        } catch (err) { console.warn('row failed:', String(err)); result.skipped++; }
       }
 
 
