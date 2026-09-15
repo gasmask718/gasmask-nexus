@@ -98226,6 +98226,83 @@ export type Database = {
           },
         ]
       }
+      production_office_returns: {
+        Row: {
+          brand: string | null
+          created_at: string
+          hq_notes: string | null
+          id: string
+          initiated_at: string
+          initiated_by: string
+          item_condition: string | null
+          item_name: string
+          material_type: string | null
+          notes: string | null
+          office_id: string
+          quantity: number
+          reason: string | null
+          received_at: string | null
+          received_by: string | null
+          received_quantity: number | null
+          return_type: string
+          status: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          hq_notes?: string | null
+          id?: string
+          initiated_at?: string
+          initiated_by?: string
+          item_condition?: string | null
+          item_name: string
+          material_type?: string | null
+          notes?: string | null
+          office_id: string
+          quantity: number
+          reason?: string | null
+          received_at?: string | null
+          received_by?: string | null
+          received_quantity?: number | null
+          return_type: string
+          status?: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          hq_notes?: string | null
+          id?: string
+          initiated_at?: string
+          initiated_by?: string
+          item_condition?: string | null
+          item_name?: string
+          material_type?: string | null
+          notes?: string | null
+          office_id?: string
+          quantity?: number
+          reason?: string | null
+          received_at?: string | null
+          received_by?: string | null
+          received_quantity?: number | null
+          return_type?: string
+          status?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_office_returns_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_office_shipment_items: {
         Row: {
           brand: string | null
@@ -98783,6 +98860,85 @@ export type Database = {
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_tool_issues: {
+        Row: {
+          created_at: string
+          description: string
+          equipment_assignment_id: string | null
+          id: string
+          issue_type: string
+          office_id: string
+          reported_at: string
+          reported_by: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          tool_id: string | null
+          tool_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          equipment_assignment_id?: string | null
+          id?: string
+          issue_type?: string
+          office_id: string
+          reported_at?: string
+          reported_by?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          tool_id?: string | null
+          tool_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          equipment_assignment_id?: string | null
+          id?: string
+          issue_type?: string
+          office_id?: string
+          reported_at?: string
+          reported_by?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          tool_id?: string | null
+          tool_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_tool_issues_equipment_assignment_id_fkey"
+            columns: ["equipment_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "production_equipment_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_tool_issues_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_tool_issues_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "production_office_tools"
             referencedColumns: ["id"]
           },
         ]

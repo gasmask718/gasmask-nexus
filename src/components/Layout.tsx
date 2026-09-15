@@ -354,13 +354,14 @@ const DYNASTY_NAVIGATION = {
       id: 'floor-6',
       name: '🏭 Floor 6 — Production',
       items: [
-        { path: '/grabba/production', label: 'Production Dashboard', icon: Factory },
-        { path: '/portals/production', label: 'Manufacturing OS', icon: Factory },
-        { path: '/portals/production/conversion', label: 'Conversion Intelligence', icon: Flame },
-        { path: '/portals/production/yield-watch', label: 'Yield Watch', icon: Scale },
-        { path: '/portals/production/intelligence', label: 'Owner Intelligence', icon: BarChart },
-        { path: '/portals/production/supplier-yield', label: 'Supplier Yield Rankings', icon: Factory },
-        { path: '/portals/production/sales-velocity', label: 'Sales Velocity Intelligence', icon: TrendingUp },
+        { path: '/portals/production', label: 'Production Floor (Manufacturing OS)', icon: Factory },
+        { path: '/portals/production/offices', label: 'Offices', icon: Factory, adminOnly: true },
+        { path: '/portals/production/staff', label: 'Production Staff', icon: Clock, adminOnly: true },
+        { path: '/portals/production/conversion', label: 'Conversion Intelligence', icon: Flame, adminOnly: true },
+        { path: '/portals/production/yield-watch', label: 'Yield Watch', icon: Scale, adminOnly: true },
+        { path: '/portals/production/intelligence', label: 'Owner Intelligence', icon: BarChart, adminOnly: true },
+        { path: '/portals/production/supplier-yield', label: 'Supplier Yield Rankings', icon: Factory, adminOnly: true },
+        { path: '/portals/production/sales-velocity', label: 'Sales Velocity Intelligence', icon: TrendingUp, adminOnly: true },
         { path: '/portals/production/task-timer', label: 'Task Timer', icon: Clock },
         { path: '/production/cost-history', label: 'Cost Ledger', icon: Factory },
         { path: '/portal/production', label: 'Worker View (Read-Only)', icon: Settings },
@@ -1269,7 +1270,10 @@ const Layout = ({ children }: LayoutProps) => {
     );
   }
 
-  const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any; testId?: string; badge?: number; highlight?: boolean; gold?: boolean }>) => {
+  const renderSection = (id: string, name: string, allItems: Array<{ path: string; label: string; icon: any; testId?: string; badge?: number; highlight?: boolean; gold?: boolean; adminOnly?: boolean }>) => {
+    const navPrivileged = ['owner', 'admin', 'ceo'].includes(role || '');
+    const items = allItems.filter(i => !i.adminOnly || navPrivileged);
+    if (items.length === 0) return null;
     const hasActiveItem = items.some(i => isPathActive(i.path));
     const isOpen = sectionOverrides[id] ?? hasActiveItem;
     const sectionWired = sectionHasDispatch(items.map(i => i.path));

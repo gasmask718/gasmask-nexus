@@ -33,6 +33,10 @@ export function routeUserByRole(role: AppRole): string {
       return '/';
     case 'va':
       return '/va/dashboard';
+    // Office managers land in their scoped Manufacturing OS workspace,
+    // not the read-only worker view.
+    case 'production' as AppRole:
+      return '/portals/production';
     case 'creator':
       return '/portal/creator';
 
