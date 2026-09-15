@@ -167,6 +167,7 @@ export function AccountActivityTable({
   defaultOpenState = 'all',
   defaultPageSize = 25,
   className,
+  showFieldFilters = false,
 }: Props) {
   const [kindFilter, setKindFilter] = useState(defaultKind);
   const [workerId, setWorkerId] = useState<string>('all');
@@ -176,6 +177,16 @@ export function AccountActivityTable({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [showAudit, setShowAudit] = useState(false);
+  const [datePreset, setDatePreset] = useState('all');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [roleFilter, setRoleFilter] = useState<ActivityRoleFilter>('all');
+  const [reviewFilter, setReviewFilter] = useState<ActivityReviewFilter>('all');
+
+  const dateRange = useMemo(
+    () => (showFieldFilters ? resolveDateRange(datePreset, customFrom, customTo) : {}),
+    [showFieldFilters, datePreset, customFrom, customTo],
+  );
 
   const { data, isLoading, error } = useAccountActivity({
     storeId,
@@ -187,6 +198,10 @@ export function AccountActivityTable({
     page,
     pageSize,
     includeReviewAudit: showAudit,
+    dateFrom: dateRange.from,
+    dateTo: dateRange.to,
+    roleFilter: showFieldFilters ? roleFilter : 'all',
+    reviewFilter: showFieldFilters ? reviewFilter : 'all',
   });
   const { data: workers } = useActivityWorkers();
 
