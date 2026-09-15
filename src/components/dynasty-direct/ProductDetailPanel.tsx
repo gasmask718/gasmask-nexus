@@ -652,6 +652,65 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
                     })}
                   </div>
                 )}
+
+                {/* PHOTO → PRODUCT IDENTITY */}
+                {(() => {
+                  const live = photoId;
+                  const saved = p.photo_identification as any | null;
+                  const status = (live?.status ?? p.photo_id_status) as any;
+                  const ids = live?.identifiers ?? saved?.identifiers ?? null;
+                  const hint = live?.next_photo_hint ?? saved?.next_photo_hint ?? null;
+                  const lab = photoIdLabel(status);
+                  const cls = lab.tone === 'good'
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                    : lab.tone === 'warn'
+                      ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                      : lab.tone === 'bad'
+                        ? 'bg-destructive/15 text-destructive border-destructive/30'
+                        : 'bg-muted text-muted-foreground border-border';
+                  const hasPhoto = !!(p.image_urls?.length || p.primary_image_url);
+                  return (
+                    <div className="mt-4 pt-3 border-t space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge variant="outline" className={cls}>
+                          {identifying ? 'Identifying product…' : lab.label}
+                        </Badge>
+                        <Button size="sm" variant="outline" disabled={identifying || !hasPhoto}
+                          onClick={() => runIdentify(true)}>
+                          <Search className="h-4 w-4 mr-1" />
+                          {identifying ? 'Reading photo…' : 'Identify from photo'}
+                        </Button>
+                      </div>
+
+                      {ids && (status === 'identified' || status === 'confirmed_by_admin' || status === 'likely_match') && (
+                        <div className="text-xs text-muted-foreground space-y-0.5">
+                          {ids.product_name && <div><span className="text-foreground">{ids.brand ? `${ids.brand} ` : ''}{ids.product_name}</span></div>}
+                          {ids.size_or_count && <div>Size / count read: {ids.size_or_count}</div>}
+                          {ids.barcode_digits && <div>Barcode read: {ids.barcode_digits}</div>}
+                          {ids.model_mpn && <div>Model: {ids.model_mpn}</div>}
+                        </div>
+                      )}
+
+                      {status === 'likely_match' && (
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-amber-400 flex-1">
+                            Strong candidate, but no barcode or model was readable. Confirm before it is used.
+                          </p>
+                          <Button size="sm" disabled={identifying} onClick={confirmIdentity}
+                            style={{ background: GOLD, color: '#000' }}>
+                            Confirm match
+                          </Button>
+                        </div>
+                      )}
+
+                      {(status === 'needs_more_photos' || status === 'not_identified') && (
+                        <p className="text-xs text-muted-foreground">
+                          {hint ?? 'Take a clear photo of the barcode or back label.'}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 
