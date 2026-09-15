@@ -21,7 +21,7 @@ export function ProductionLogsTable({ officeId }: { officeId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('production_batches')
-        .select('id, batch_number, brand, boxes_produced, tubes_total, produced_by, shift_label, batch_date, created_at, status')
+        .select('id, brand, boxes_produced, tubes_total, produced_by, shift_label, batch_date, created_at, status')
         .eq('office_id', officeId)
         .order('created_at', { ascending: false })
         .limit(100);
@@ -67,7 +67,7 @@ export function ProductionLogsTable({ officeId }: { officeId: string }) {
             <TableBody>
               {batches.map((b: any) => (
                 <TableRow key={b.id}>
-                  <TableCell className="font-medium">{b.batch_number || b.id.slice(0, 8)}</TableCell>
+                  <TableCell className="font-medium">{b.id.slice(0, 8)}</TableCell>
                   <TableCell><Badge variant="outline">{b.brand}</Badge></TableCell>
                   <TableCell className="text-right font-mono">{b.boxes_produced || 0}</TableCell>
                   <TableCell className="text-right font-mono">{b.tubes_total || (b.boxes_produced || 0) * 100}</TableCell>

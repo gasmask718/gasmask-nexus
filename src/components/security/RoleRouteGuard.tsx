@@ -217,6 +217,22 @@ const DEVELOPER_BUSINESS_PATHS: Record<string, string[]> = {
   iclean_weclean: ["/os/icw"],
 };
 
+/**
+ * Production management surfaces that only elevated roles (owner/admin/ceo)
+ * may open. An office manager with the `production` role is allowed
+ * /portals/production (their own scoped workspace) but never these — direct
+ * URL entry is blocked, not just hidden in navigation.
+ */
+const ADMIN_ONLY_PATHS = [
+  "/portals/production/offices",
+  "/portals/production/staff",
+  "/portals/production/intelligence",
+  "/portals/production/war-room",
+  "/portals/production/conversion",
+  "/portals/production/sales-velocity",
+  "/portals/production/supplier-yield",
+];
+
 // Default redirect per role
 const ROLE_HOME: Record<string, string> = {
   biker: "/portal/biker",
@@ -228,7 +244,9 @@ const ROLE_HOME: Record<string, string> = {
   store: "/portal/store",
   store_owner: "/portal/store",
   va: "/va/dashboard",
-  production: "/portal/production",
+  // Office managers belong in the Manufacturing OS workspace, not the
+  // read-only worker view.
+  production: "/portals/production",
   influencer: "/portal/influencer",
   verification_crew: "/portal/verification-crew",
   developer: "/portal/home",
@@ -353,6 +371,12 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
     }
   }
 
+  // Admin-only production management surfaces: non-elevated roles are denied
+  // even if a role prefix would otherwise cover the path.
+  const isAdminOnlyPath = ADMIN_ONLY_PATHS.some(
+    (p) => currentPath === p || currentPath.startsWith(p + "/"),
+  );
+
   // Check if any of the user's roles grant access to the current path
   const hasPathAccess = effectiveRoles.some((role) => {
     const allowedPaths = ROLE_ALLOWED_PATHS[role];
@@ -360,7 +384,7 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
     return allowedPaths.some((prefix) => currentPath === prefix || currentPath.startsWith(prefix + "/"));
   });
 
-  if (hasPathAccess) {
+  if (hasPathAccess && !isAdminOnlyPath) {
     return grant();
   }
 

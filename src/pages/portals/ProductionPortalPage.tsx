@@ -68,6 +68,10 @@ import {
 } from '@/components/production';
 import { WorkerTaskTimer } from '@/components/production/WorkerTaskTimer';
 import { OfficeLeaderToday } from '@/components/production/OfficeLeaderToday';
+import { ManagerWorkspace } from '@/components/production/ManagerWorkspace';
+import { OfficeReturnsPanel } from '@/components/production/OfficeReturnsPanel';
+import { AdminToolIssuesPanel } from '@/components/production/AdminToolIssuesPanel';
+import { useMyManagedOffices } from '@/hooks/useProductionFloorOps';
 import { LaborEfficiencyPanel } from '@/components/production/LaborEfficiencyPanel';
 import { usePendingSubmissionCount } from '@/hooks/useWorkerSubmissions';
 import { useProductionRBAC } from '@/hooks/useProductionRBAC';
@@ -144,12 +148,16 @@ export default function ProductionPortalPage() {
   const { data: pendingSubmissionCount = 0 } = usePendingSubmissionCount(selectedOfficeId);
   const rbac = useProductionRBAC();
   const { data: myAssignments = [] } = useMyOfficeAssignments();
+  const { data: myManagedOfficeIds = [] } = useMyManagedOffices();
 
-  // Office leaders (production role with an assignment) only see their own
-  // office(s). Core staff (admin tier) and unassigned managers see all.
-  const isOfficeScoped = rbac.tier !== 'admin' && myAssignments.length > 0;
+  // Office leaders (production role with an assignment OR a manager record)
+  // only see their own office(s). Core staff (admin tier) see all.
+  const myOfficeIds = Array.from(
+    new Set([...myAssignments.map(a => a.office_id), ...myManagedOfficeIds])
+  );
+  const isOfficeScoped = rbac.tier !== 'admin' && myOfficeIds.length > 0;
   const visibleOffices = isOfficeScoped
-    ? offices.filter(o => myAssignments.some(a => a.office_id === o.id))
+    ? offices.filter(o => myOfficeIds.includes(o.id))
     : offices;
   const singleOffice = visibleOffices.length === 1;
   // Check if wizard was completed for this office
@@ -246,7 +254,7 @@ export default function ProductionPortalPage() {
         )}
 
         {selectedOfficeId ? (
-          <OfficeLeaderToday
+          <ManagerWorkspace
             officeId={selectedOfficeId}
             officeName={selectedOffice?.name || ''}
           />
@@ -592,13 +600,15 @@ export default function ProductionPortalPage() {
                     <Truck className="h-4 w-4" />
                     <BilingualLabel tKey="production.shipments" en="Shipments" />
                   </TabsTrigger>
-                  <TabsTrigger value="equipment" className="flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    <BilingualLabel tKey="production.equipment" en="Equipment" />
-                  </TabsTrigger>
+                  {/* Tools and Equipment are one management area — the split
+                      confused admins. Both underlying systems are preserved. */}
                   <TabsTrigger value="tools" className="flex items-center gap-2">
                     <Wrench className="h-4 w-4" />
-                    <BilingualLabel tKey="production.tools_tab" en="Tools" />
+                    <BilingualLabel tKey="production.tools_tab" en="Tools & Equipment" />
+                  </TabsTrigger>
+                  <TabsTrigger value="returns" className="flex items-center gap-2">
+                    <Truck className="h-4 w-4" />
+                    <span>Returns &amp; Issues</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -615,11 +625,18 @@ export default function ProductionPortalPage() {
                 <TabsContent value="shipments">
                   <ShipmentsPanel officeId={selectedOfficeId} />
                 </TabsContent>
-                <TabsContent value="equipment">
-                  <EquipmentAssignmentPanel officeId={selectedOfficeId} />
-                </TabsContent>
                 <TabsContent value="tools">
-                  <ToolsInventory officeId={selectedOfficeId} />
+                  <div className="space-y-4">
+                    <ToolsInventory officeId={selectedOfficeId} />
+                    <EquipmentAssignmentPanel officeId={selectedOfficeId} />
+                    <AdminToolIssuesPanel officeId={selectedOfficeId} />
+                  </div>
+                </TabsContent>
+                <TabsContent value="returns">
+                  <div className="space-y-4">
+                    <OfficeReturnsPanel officeId={selectedOfficeId} mode="hq" />
+                    <AdminToolIssuesPanel officeId={selectedOfficeId} />
+                  </div>
                 </TabsContent>
               </Tabs>
             </TabsContent>
