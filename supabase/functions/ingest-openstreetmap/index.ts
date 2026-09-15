@@ -103,9 +103,26 @@ function mapBusinessTypeToOSM(type: string): string[] {
     gas_station: ['["amenity"="fuel"]'],
     liquor_store: ['["shop"="alcohol"]'],
     vape_shop: ['["shop"="e-cigarette"]'],
+    newsagent: ['["shop"="newsagent"]'],
+    kiosk: ['["shop"="kiosk"]'],
+    wholesaler: ['["shop"="wholesale"]', '["shop"="trade"]'],
+    tobacco_wholesaler: ['["shop"="wholesale"]', '["shop"="trade"]'],
   };
   return mapping[type] || [`["shop"="${type}"]`];
 }
+
+// Wholesaler / cash-and-carry detection by OSM category or business name.
+const WHOLESALE_NAME = /wholesale|cash\s*(and|&|n)\s*carry|distribut|supply|supplies|depot/i;
+function classifyKind(category: string, name: string): 'wholesaler' | 'store' {
+  if (category === 'wholesale' || category === 'trade') return 'wholesaler';
+  return WHOLESALE_NAME.test(name || '') ? 'wholesaler' : 'store';
+}
+
+// OSM lifecycle prefixes mean the place is gone / not operating.
+function looksClosed(tags: Record<string, any>): boolean {
+  return Object.keys(tags).some((k) => /^(disused|was|abandoned|removed):/.test(k));
+}
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -260,8 +277,25 @@ serve(async (req) => {
         const street = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' ');
         const fullAddress = [street, tags['addr:city'] || city, tags['addr:state'] || state].filter(Boolean).join(', ');
         const addrStr = fullAddress || tags.name;
+        const placeId = `osm:${e.type}/${e.id}`;
+        const category = tags.shop || tags.amenity || 'unknown';
+        const kind = classifyKind(category, tags.name || '');
+        const rawPhone: string | null = tags.phone || tags['contact:phone'] || null;
+        const phone10 = rawPhone ? rawPhone.replace(/\D/g, '').slice(-10) : '';
+
+        // Never treat a closed/lifecycle-tagged place as a live prospect.
+        if (looksClosed(tags)) { result.skipped++; continue; }
 
         try {
+          // Dedupe 1 — same OSM object already ingested.
+          const { data: byPlace } = await supabase
+            .from('territory_addresses')
+            .select('id')
+            .eq('place_id', placeId)
+            .limit(1);
+          if (byPlace && byPlace.length > 0) { result.skipped++; continue; }
+
+          // Dedupe 2 — same address already in the prospect table.
           const { data: existing } = await supabase
             .from('territory_addresses')
             .select('id')
@@ -271,6 +305,30 @@ serve(async (req) => {
 
           if (existing && existing.length > 0) { result.skipped++; continue; }
 
+          // Dedupe 3 — already a real store in the CRM (phone match, then address match).
+          if (phone10.length === 10) {
+            const { data: byPhone } = await supabase
+              .from('store_master')
+              .select('id')
+              .eq('phone_last10', phone10)
+              .is('deleted_at', null)
+              .limit(1);
+            if (byPhone && byPhone.length > 0) { result.skipped++; continue; }
+          }
+          if (street) {
+            const { data: byAddr } = await supabase
+              .from('store_master')
+              .select('id')
+              .ilike('address', `%${street}%`)
+              .is('deleted_at', null)
+              .limit(1);
+            if (byAddr && byAddr.length > 0) { result.skipped++; continue; }
+          }
+
+          // Only tobacco-native categories (and wholesalers) are field-ready on OSM
+          // evidence alone; everything else is stored flagged for verification.
+          const strong = kind === 'wholesaler' || ['tobacco', 'e-cigarette', 'hookah_lounge'].includes(category);
+
           const insertData: Record<string, any> = {
             store_name: tags.name || null,
             full_address: addrStr,
@@ -279,10 +337,15 @@ serve(async (req) => {
             zip: tags['addr:postcode'] || null,
             latitude: lat,
             longitude: lng,
-            address_type: tags.shop || tags.amenity || 'unknown',
-            notes: `OSM: ${tags.name}${tags.phone ? ' | ' + tags.phone : ''} [${target.name}]`,
-            neighborhood: target.name,
-            discovery_status: 'unknown',
+            address_type: category,
+            phone: rawPhone,
+            website: tags.website || tags['contact:website'] || null,
+            place_id: placeId,
+            scan_source: 'overpass',
+            last_scan_at: new Date().toISOString(),
+            notes: `OSM ${placeId} | kind=${kind} | category=${category} | verification=${strong ? 'confirmed' : 'needs_verification'} [${target.name}]`,
+            neighborhood_label: target.name,
+            discovery_status: strong ? 'new' : 'unknown',
             discovered_by: 'openstreetmap',
           };
 
@@ -293,6 +356,7 @@ serve(async (req) => {
           if (error) { result.skipped++; } else { result.inserted++; }
         } catch { result.skipped++; }
       }
+
 
       // Update neighborhood ingestion status in DB
       if (target.id) {
