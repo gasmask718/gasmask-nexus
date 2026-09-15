@@ -18,9 +18,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
-  Package, DollarSign, Image as ImageIcon, Sparkles, Upload, Save, X, Star, AlertTriangle, Trash2, Ruler,
+  Package, DollarSign, Image as ImageIcon, Sparkles, Upload, Save, X, Star, AlertTriangle, Trash2, Ruler, Search,
 } from 'lucide-react';
 import { uploadOriginalToStorage, missingShippingData } from '@/lib/dynastyDirect/productImages';
+import { requestSpecSourcing, specStatusLabel } from '@/lib/dynastyDirect/shippingSpecs';
 
 const GOLD = '#C9A84C';
 
@@ -58,6 +59,17 @@ type ProductDetail = {
   length_in: number | null;
   width_in: number | null;
   height_in: number | null;
+  shipping_spec_status: string | null;
+  shipping_spec_candidates: any[] | null;
+  shipping_spec_locked: boolean | null;
+  shipping_spec_checked_at: string | null;
+  spec_source: string | null;
+  spec_source_ref: any | null;
+  shipping_data_source: string | null;
+  specs_verified_at: string | null;
+  upc: string | null;
+  gtin: string | null;
+  supplier_sku: string | null;
 };
 
 type Props = {
@@ -83,6 +95,7 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editingShipping, setEditingShipping] = useState(false);
   const [shipping, setShipping] = useState<Partial<ProductDetail>>({});
+  const [sourcing, setSourcing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const detailQ = useQuery({
@@ -92,7 +105,7 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       if (!productId) return null;
       const { data, error } = await supabase
         .from('products_all')
-        .select('id, product_name, category, brand, supplier_id, status, inventory_qty, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at, weight_oz, length_in, width_in, height_in')
+        .select('id, product_name, category, brand, supplier_id, status, inventory_qty, supplier_cost, store_price_a, dtc_price_b, map_price, store_margin_pct, dtc_margin_pct, min_store_margin_pct, target_store_margin_pct, min_dtc_margin_pct, target_dtc_margin_pct, description, ai_description, ai_description_short, description_generated_at, primary_image_url, image_urls, image_enhanced_at, weight_oz, length_in, width_in, height_in, shipping_spec_status, shipping_spec_candidates, shipping_spec_locked, shipping_spec_checked_at, spec_source, spec_source_ref, shipping_data_source, specs_verified_at, upc, gtin, supplier_sku')
         .eq('id', productId)
         .maybeSingle();
       if (error) throw error;
@@ -286,6 +299,13 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       length_in: toNum(shipping.length_in),
       width_in: toNum(shipping.width_in),
       height_in: toNum(shipping.height_in),
+      // A manual entry is an operator decision: it is locked so automatic
+      // sourcing never overwrites it unless an admin asks for a new lookup.
+      shipping_spec_status: 'manual',
+      shipping_spec_locked: true,
+      shipping_verified: true,
+      spec_source: 'manual_admin',
+      specs_verified_at: new Date().toISOString(),
     };
     setSaving(true);
     try {
@@ -296,6 +316,53 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
       qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
       qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
     } catch (e: any) { toast.error(e.message ?? 'Save failed'); }
+    finally { setSaving(false); }
+  }
+
+  /** Manual re-run of the automatic online lookup. */
+  async function findSpecs(force: boolean) {
+    if (!productId) return;
+    setSourcing(true);
+    const toastId = toast.loading('Searching trusted sources for shipping specs…');
+    try {
+      const [res] = await requestSpecSourcing([productId], { force, triggeredBy: 'product_detail' });
+      qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
+      qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
+      if (!res) { toast.message('No lookup ran', { id: toastId }); return; }
+      if (res.applied) toast.success('Shipping specs found and saved', { id: toastId });
+      else if (res.status === 'needs_review') toast.warning('Found possible matches — review them below', { id: toastId });
+      else if (res.status === 'not_found') toast.error('No trustworthy match found online — enter the specs manually', { id: toastId });
+      else toast.message(res.skipped ? `Skipped: ${res.skipped}` : (res.status ?? 'Done'), { id: toastId });
+    } catch (e: any) {
+      toast.error(e.message ?? 'Lookup failed', { id: toastId });
+    } finally { setSourcing(false); }
+  }
+
+  /** Admin accepts one reviewed candidate. */
+  async function applyCandidate(c: any) {
+    if (!productId) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('products_all').update({
+        weight_oz: c.weight_oz, length_in: c.length_in,
+        width_in: c.width_in, height_in: c.height_in,
+        shipping_spec_status: 'manual',
+        shipping_spec_locked: true,
+        shipping_verified: true,
+        spec_source: 'admin_reviewed_web',
+        spec_source_ref: {
+          source_url: c.source_url, source_name: c.source_name,
+          matched_on: c.matched_on, packaged_dimensions: c.packaged,
+          retrieved_at: c.retrieved_at, confidence: 'admin_reviewed',
+        },
+        shipping_data_source: c.source_name,
+        specs_verified_at: new Date().toISOString(),
+      }).eq('id', productId);
+      if (error) throw error;
+      toast.success('Shipping specs confirmed from the selected source');
+      qc.invalidateQueries({ queryKey: ['dd-product-detail', productId] });
+      qc.invalidateQueries({ queryKey: ['dd-products-mgmt'] });
+    } catch (e: any) { toast.error(e.message ?? 'Could not apply'); }
     finally { setSaving(false); }
   }
 
@@ -548,13 +615,61 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
                 )}
               </CardHeader>
               <CardContent className="space-y-3">
+                {(() => {
+                  const st = specStatusLabel(p.shipping_spec_status as any, !missingShippingData(p));
+                  const cls = st.tone === 'good'
+                    ? 'text-green-600 border-green-600'
+                    : st.tone === 'warn'
+                      ? 'text-amber-600 border-amber-600'
+                      : st.tone === 'bad'
+                        ? 'text-destructive border-destructive'
+                        : 'text-muted-foreground';
+                  return (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline" className={cls}>{st.label}</Badge>
+                      <Button size="sm" variant="outline" disabled={sourcing}
+                        onClick={() => findSpecs(true)}>
+                        <Search className="h-4 w-4 mr-1" />
+                        {sourcing ? 'Searching…' : 'Find Shipping Specs'}
+                      </Button>
+                    </div>
+                  );
+                })()}
+
                 {missingShippingData(p) && (
                   <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/15 p-3 text-sm">
                     <AlertTriangle className="h-4 w-4 mt-0.5" />
                     <span>
-                      Missing shipping data. Shipping is quoted on a fallback parcel until weight and all
-                      three sides are filled in, and this product cannot be set live.
+                      Missing shipping data. Shipping is quoted on an estimated fallback parcel — not a
+                      confirmed quote — until weight and all three sides are filled in, and this product
+                      cannot be set live.
                     </span>
+                  </div>
+                )}
+
+                {/* Candidates awaiting review — never auto-applied. */}
+                {Array.isArray(p.shipping_spec_candidates) && p.shipping_spec_candidates.length > 0 &&
+                  p.shipping_spec_status === 'needs_review' && (
+                  <div className="rounded-md border border-amber-600/40 bg-amber-500/10 p-3 space-y-2 text-sm">
+                    <div className="font-medium">Found online — needs your confirmation</div>
+                    {(p.shipping_spec_candidates as any[]).map((c, i) => (
+                      <div key={i} className="flex items-start justify-between gap-3 border-t border-amber-600/20 pt-2 first:border-0 first:pt-0">
+                        <div>
+                          <div>
+                            {c.weight_oz ?? '—'} oz · {c.length_in ?? '—'} × {c.width_in ?? '—'} × {c.height_in ?? '—'} in
+                            {' '}<span className="text-xs text-muted-foreground">
+                              ({c.packaged ? 'package dimensions' : 'item dimensions'})
+                            </span>
+                          </div>
+                          <a href={c.source_url} target="_blank" rel="noreferrer"
+                            className="text-xs underline text-muted-foreground break-all">
+                            {c.source_name} · matched on {(c.matched_on ?? []).join(', ') || 'title'}
+                          </a>
+                        </div>
+                        <Button size="sm" variant="outline" disabled={saving}
+                          onClick={() => applyCandidate(c)}>Use these</Button>
+                      </div>
+                    ))}
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-3">
@@ -587,6 +702,30 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
                   Units are fixed: ounces and inches — the same units the carrier rate and the packing
                   algorithm use. Enter the packed item, not the bare product.
                 </p>
+
+                {/* Where did these numbers come from? */}
+                {(p.spec_source || p.shipping_data_source || p.shipping_spec_checked_at) && (
+                  <details className="text-xs text-muted-foreground">
+                    <summary className="cursor-pointer">Source details</summary>
+                    <div className="mt-2 space-y-1">
+                      <div>Source: {p.spec_source ?? '—'}{p.shipping_data_source ? ` (${p.shipping_data_source})` : ''}</div>
+                      {p.spec_source_ref?.source_url && (
+                        <div>
+                          Page: <a className="underline break-all" href={p.spec_source_ref.source_url}
+                            target="_blank" rel="noreferrer">{p.spec_source_ref.source_url}</a>
+                        </div>
+                      )}
+                      {p.spec_source_ref?.matched_on && (
+                        <div>Matched on: {(p.spec_source_ref.matched_on as string[]).join(', ')}</div>
+                      )}
+                      {p.spec_source_ref?.packaged_dimensions != null && (
+                        <div>{p.spec_source_ref.packaged_dimensions ? 'Package/shipping dimensions' : 'Item dimensions (reviewed)'}</div>
+                      )}
+                      <div>Last looked up: {p.shipping_spec_checked_at ? new Date(p.shipping_spec_checked_at).toLocaleString() : '—'}</div>
+                      <div>Confirmed at: {p.specs_verified_at ? new Date(p.specs_verified_at).toLocaleString() : '—'}</div>
+                    </div>
+                  </details>
+                )}
               </CardContent>
             </Card>
 

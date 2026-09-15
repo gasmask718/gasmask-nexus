@@ -11,6 +11,7 @@ import { verifiedUpdate, mutationErrorMessage } from '@/lib/verifiedMutation';
 import { toast } from 'sonner';
 import { AlertTriangle, ArrowLeft, CheckCircle2, ExternalLink, Loader2, Ruler, ShieldAlert, Sparkles, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { requestSpecSourcing } from '@/lib/dynastyDirect/shippingSpecs';
 
 // ---------- types (mirror of jsonb written by dd-catalog-pipeline) ----------
 interface PriceResearch {
@@ -309,6 +310,12 @@ export default function DynastyDirectCatalogReview() {
       const { data: userRes } = await supabase.auth.getUser();
       const data = await invokePipeline({ mode: 'publish', draft_id: d.id, confirmed_by: userRes.user?.id ?? null });
       toast.success(`Approved → live · product ${String(data.product_id || '').slice(0, 8)}`);
+      // Same reusable service as Add Product / Bulk Import: if the published
+      // product still has no shipping weight or size, go source it.
+      if (data.product_id) {
+        void requestSpecSourcing([String(data.product_id)], { triggeredBy: 'catalog_wizard' })
+          .catch(() => { /* sourcing is best-effort; publish already succeeded */ });
+      }
       await load();
     } catch (e) { toast.error(`Approve failed: ${mutationErrorMessage(e)}`); }
     finally { setAction(d.id, null); }

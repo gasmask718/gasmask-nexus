@@ -51747,6 +51747,101 @@ export type Database = {
         }
         Relationships: []
       }
+      dd_spec_sourcing_log: {
+        Row: {
+          applied: boolean
+          candidates: Json
+          chosen: Json | null
+          created_at: string
+          error: string | null
+          id: string
+          identifier_key: string | null
+          identifiers: Json
+          product_id: string | null
+          sources_tried: Json
+          status: string
+          triggered_by: string | null
+        }
+        Insert: {
+          applied?: boolean
+          candidates?: Json
+          chosen?: Json | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          identifier_key?: string | null
+          identifiers?: Json
+          product_id?: string | null
+          sources_tried?: Json
+          status: string
+          triggered_by?: string | null
+        }
+        Update: {
+          applied?: boolean
+          candidates?: Json
+          chosen?: Json | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          identifier_key?: string | null
+          identifiers?: Json
+          product_id?: string | null
+          sources_tried?: Json
+          status?: string
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dd_spec_sourcing_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_low_stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_spec_sourcing_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dd_wholesaler_products_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_spec_sourcing_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_spec_sourcing_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_spec_sourcing_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_pricing_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_spec_sourcing_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dd_spec_sourcing_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_products_all_with_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd_split_ledger: {
         Row: {
           created_at: string
@@ -99934,6 +100029,10 @@ export type Database = {
           shipping_data_source: string | null
           shipping_from_city: string | null
           shipping_from_state: string | null
+          shipping_spec_candidates: Json | null
+          shipping_spec_checked_at: string | null
+          shipping_spec_locked: boolean
+          shipping_spec_status: string | null
           shipping_verified: boolean
           size_or_count: string | null
           source_draft_id: string | null
@@ -100025,6 +100124,10 @@ export type Database = {
           shipping_data_source?: string | null
           shipping_from_city?: string | null
           shipping_from_state?: string | null
+          shipping_spec_candidates?: Json | null
+          shipping_spec_checked_at?: string | null
+          shipping_spec_locked?: boolean
+          shipping_spec_status?: string | null
           shipping_verified?: boolean
           size_or_count?: string | null
           source_draft_id?: string | null
@@ -100116,6 +100219,10 @@ export type Database = {
           shipping_data_source?: string | null
           shipping_from_city?: string | null
           shipping_from_state?: string | null
+          shipping_spec_candidates?: Json | null
+          shipping_spec_checked_at?: string | null
+          shipping_spec_locked?: boolean
+          shipping_spec_status?: string | null
           shipping_verified?: boolean
           size_or_count?: string | null
           source_draft_id?: string | null
@@ -162623,6 +162730,10 @@ export type Database = {
           shipping_data_source: string | null
           shipping_from_city: string | null
           shipping_from_state: string | null
+          shipping_spec_candidates: Json | null
+          shipping_spec_checked_at: string | null
+          shipping_spec_locked: boolean
+          shipping_spec_status: string | null
           shipping_verified: boolean
           size_or_count: string | null
           source_draft_id: string | null
@@ -162797,6 +162908,10 @@ export type Database = {
           shipping_data_source: string | null
           shipping_from_city: string | null
           shipping_from_state: string | null
+          shipping_spec_candidates: Json | null
+          shipping_spec_checked_at: string | null
+          shipping_spec_locked: boolean
+          shipping_spec_status: string | null
           shipping_verified: boolean
           size_or_count: string | null
           source_draft_id: string | null
