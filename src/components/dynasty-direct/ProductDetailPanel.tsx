@@ -528,6 +528,69 @@ export default function ProductDetailPanel({ productId, open, onOpenChange }: Pr
               </CardContent>
             </Card>
 
+            {/* SHIPPING SIZE + WEIGHT — what the shipping calculator actually rates on */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Ruler className="h-4 w-4" style={{ color: GOLD }} /> Shipping Size &amp; Weight
+                </CardTitle>
+                {editingShipping ? (
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => setEditingShipping(false)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" disabled={saving} onClick={saveShipping} style={{ background: GOLD, color: '#000' }}>
+                      <Save className="h-4 w-4 mr-1" /> Save
+                    </Button>
+                  </div>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setEditingShipping(true)}>Edit</Button>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {missingShippingData(p) && (
+                  <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/15 p-3 text-sm">
+                    <AlertTriangle className="h-4 w-4 mt-0.5" />
+                    <span>
+                      Missing shipping data. Shipping is quoted on a fallback parcel until weight and all
+                      three sides are filled in, and this product cannot be set live.
+                    </span>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Weight (oz)</Label>
+                    <Input type="number" step="0.01" min="0" disabled={!editingShipping}
+                      value={shipping.weight_oz ?? ''}
+                      onChange={e => setShipping({ ...shipping, weight_oz: e.target.value as any })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Length (in)</Label>
+                    <Input type="number" step="0.01" min="0" disabled={!editingShipping}
+                      value={shipping.length_in ?? ''}
+                      onChange={e => setShipping({ ...shipping, length_in: e.target.value as any })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Width (in)</Label>
+                    <Input type="number" step="0.01" min="0" disabled={!editingShipping}
+                      value={shipping.width_in ?? ''}
+                      onChange={e => setShipping({ ...shipping, width_in: e.target.value as any })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Height (in)</Label>
+                    <Input type="number" step="0.01" min="0" disabled={!editingShipping}
+                      value={shipping.height_in ?? ''}
+                      onChange={e => setShipping({ ...shipping, height_in: e.target.value as any })} />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Units are fixed: ounces and inches — the same units the carrier rate and the packing
+                  algorithm use. Enter the packed item, not the bare product.
+                </p>
+              </CardContent>
+            </Card>
+
+
             {/* AI DESCRIPTION */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
