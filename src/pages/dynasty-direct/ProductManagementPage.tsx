@@ -77,7 +77,20 @@ export default function ProductManagementPage() {
     supplier_id: '',
     supplier_cost: '',
     inventory_qty: '',
+    store_price_a: '',
+    dtc_price_b: '',
+    weight_oz: '',
+    length_in: '',
+    width_in: '',
+    height_in: '',
   });
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
+
+  const emptyForm = {
+    product_name: '', category: '', supplier_id: '', supplier_cost: '', inventory_qty: '',
+    store_price_a: '', dtc_price_b: '', weight_oz: '', length_in: '', width_in: '', height_in: '',
+  };
 
   const productsQ = useQuery({
     queryKey: ['dd-products-mgmt'],
