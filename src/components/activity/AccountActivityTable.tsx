@@ -59,6 +59,8 @@ const KIND_LABEL: Record<ActivityKind, string> = {
   inventory: 'Inventory',
   invoice: 'Invoice',
   field: 'Field update',
+  claim: 'Secured store',
+  status: 'Status change',
 };
 
 const KIND_TONE: Record<ActivityKind, string> = {
@@ -76,6 +78,8 @@ const KIND_TONE: Record<ActivityKind, string> = {
   inventory: 'bg-cyan-500/15 text-cyan-600',
   invoice: 'bg-yellow-500/15 text-yellow-700',
   field: 'bg-slate-500/15 text-slate-600',
+  claim: 'bg-emerald-500/15 text-emerald-600',
+  status: 'bg-rose-500/15 text-rose-600',
 };
 
 interface Props {
