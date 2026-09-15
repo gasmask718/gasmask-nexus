@@ -11028,7 +11028,7 @@ export type Database = {
           id: string
           invite_request_id: string | null
           invite_token: string
-          invited_by_ambassador_id: string
+          invited_by_ambassador_id: string | null
           invited_by_user_id: string
           owner_approved_at: string | null
           owner_approved_by: string | null
@@ -11052,7 +11052,7 @@ export type Database = {
           id?: string
           invite_request_id?: string | null
           invite_token: string
-          invited_by_ambassador_id: string
+          invited_by_ambassador_id?: string | null
           invited_by_user_id: string
           owner_approved_at?: string | null
           owner_approved_by?: string | null
@@ -11076,7 +11076,7 @@ export type Database = {
           id?: string
           invite_request_id?: string | null
           invite_token?: string
-          invited_by_ambassador_id?: string
+          invited_by_ambassador_id?: string | null
           invited_by_user_id?: string
           owner_approved_at?: string | null
           owner_approved_by?: string | null
