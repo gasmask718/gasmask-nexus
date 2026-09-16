@@ -229,7 +229,7 @@ export default function AmbassadorInviteAccept() {
 
               <div className="rounded-xl border border-border/60 bg-muted/50 p-4 flex items-start gap-3">
                 <div className="h-9 w-9 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Shield className="h-4.5 w-4.5 text-primary" />
+                  <Shield className="h-5 w-5 text-primary" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-base font-semibold leading-snug">Ambassador</p>
