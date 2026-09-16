@@ -147,8 +147,8 @@ export default function AmbassadorInviteAccept() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8 w-full overflow-x-hidden">
+      <Card className="w-full max-w-md mx-auto">
         {state === 'validating' && (
           <CardContent className="pt-8 pb-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
@@ -196,7 +196,7 @@ export default function AmbassadorInviteAccept() {
                 You've been invited to join the ambassador program. Create your account below.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <div className="space-y-2">
                 <Label>Full Name</Label>
                 <Input
@@ -227,14 +227,22 @@ export default function AmbassadorInviteAccept() {
                 />
               </div>
 
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-xs text-muted-foreground flex items-center gap-2">
-                  <Shield className="h-3 w-3 shrink-0" />
-                  Your role will be set to <strong>Ambassador</strong>. This cannot be changed during signup.
-                </p>
+              <div className="rounded-xl border border-border/60 bg-muted/50 p-4 flex items-start gap-3">
+                <div className="h-9 w-9 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Shield className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-base font-semibold leading-snug">Ambassador</p>
+                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                    Your role is already set from this invite.
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    It cannot be changed during signup.
+                  </p>
+                </div>
               </div>
 
-              <Button className="w-full" onClick={handleSignup} disabled={isSubmitting}>
+              <Button className="w-full h-12 text-base" onClick={handleSignup} disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
