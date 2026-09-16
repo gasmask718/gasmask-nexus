@@ -262,7 +262,7 @@ export default function AmbassadorInviteAccept() {
             </CardHeader>
             <CardContent className="space-y-4 text-center">
               <InstallAppPrompt compact />
-              <Button onClick={() => navigate('/ambassador/dashboard')}>
+              <Button onClick={() => navigate('/ambassador', { replace: true })}>
                 Go to Dashboard
               </Button>
             </CardContent>
