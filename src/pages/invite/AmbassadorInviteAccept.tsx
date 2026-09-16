@@ -171,6 +171,22 @@ export default function AmbassadorInviteAccept() {
           </>
         )}
 
+        {state === 'awaiting_confirm' && (
+          <>
+            <CardHeader className="text-center">
+              <Shield className="h-10 w-10 text-primary mx-auto mb-2" />
+              <CardTitle>Confirm your email</CardTitle>
+              <CardDescription>
+                We sent a confirmation link to <strong>{email}</strong>. Open it on this device and
+                you'll come straight back here — your ambassador access is set up automatically.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center text-xs text-muted-foreground">
+              Your invite link stays valid until you confirm.
+            </CardContent>
+          </>
+        )}
+
         {(state === 'valid' || state === 'accepting') && (
           <>
             <CardHeader className="text-center">
