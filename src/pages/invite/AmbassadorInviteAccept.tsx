@@ -147,8 +147,8 @@ export default function AmbassadorInviteAccept() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8 w-full overflow-x-hidden">
+      <Card className="w-full max-w-md mx-auto">
         {state === 'validating' && (
           <CardContent className="pt-8 pb-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
