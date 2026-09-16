@@ -50,9 +50,38 @@ export default function AmbassadorInviteAccept() {
       }
       setInviteData(data);
       if ((data as any)?.email) setEmail((data as any).email);
+
+      // Returning from the email-confirmation link: a session now exists, so
+      // finish the acceptance automatically instead of asking for a password.
+      const { data: sess } = await supabase.auth.getSession();
+      if (sess?.session?.user) {
+        setState('accepting');
+        const ok = await finishAccept(sess.session.user.id);
+        if (ok) return;
+      }
       setState('valid');
     })();
   }, [token]);
+
+  // Applies the invite: role, profile and ambassador record all come from the
+  // trusted invite record — the user is never asked to pick a role.
+  const finishAccept = async (userId: string): Promise<boolean> => {
+    const { data: acceptResult, error: acceptError } = await supabase.rpc('accept_ambassador_invite', {
+      p_token: token!,
+      p_user_id: userId,
+    });
+    if (acceptError) {
+      toast.error(acceptError.message || 'Could not activate your account');
+      return false;
+    }
+    if (!(acceptResult as any)?.success) {
+      toast.error((acceptResult as any)?.error || 'Could not activate your account');
+      return false;
+    }
+    setState('done');
+    toast.success('Welcome! Your ambassador account is ready.');
+    return true;
+  };
 
   const handleSignup = async () => {
     if (!email || !password || !fullName) {
@@ -68,27 +97,47 @@ export default function AmbassadorInviteAccept() {
     setState('accepting');
 
     try {
-      // 1. Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName } },
-      });
+      let userId: string | null = null;
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create account');
+      const { data: sess } = await supabase.auth.getSession();
+      if (sess?.session?.user) {
+        userId = sess.session.user.id;
+      } else {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName },
+            // Come back to this same invite link after confirming, so setup
+            // completes automatically.
+            emailRedirectTo: `${window.location.origin}/invite/ambassador/${token}`,
+          },
+        });
 
-      // 2. Accept invite (creates ambassador record + role)
-      const { data: acceptResult, error: acceptError } = await supabase.rpc('accept_ambassador_invite', {
-        p_token: token!,
-        p_user_id: authData.user.id,
-      });
+        if (authError) {
+          // Account already exists — sign in and link that login instead of
+          // creating a second account.
+          const { data: si, error: siErr } = await supabase.auth.signInWithPassword({ email, password });
+          if (siErr || !si?.session) throw authError;
+          userId = si.session.user.id;
+        } else if (authData.session?.user) {
+          userId = authData.session.user.id;
+        } else {
+          // Email confirmation required — no session yet.
+          const { data: si } = await supabase.auth.signInWithPassword({ email, password });
+          if (si?.session?.user) {
+            userId = si.session.user.id;
+          } else {
+            setState('awaiting_confirm');
+            setIsSubmitting(false);
+            return;
+          }
+        }
+      }
 
-      if (acceptError) throw acceptError;
-      if (!(acceptResult as any)?.success) throw new Error((acceptResult as any)?.error || 'Failed to accept invite');
-
-      setState('done');
-      toast.success('Welcome! Your ambassador account is ready.');
+      if (!userId) throw new Error('Failed to create account');
+      const ok = await finishAccept(userId);
+      if (!ok) setState('valid');
     } catch (err: any) {
       setState('valid');
       toast.error(err.message || 'Signup failed');
