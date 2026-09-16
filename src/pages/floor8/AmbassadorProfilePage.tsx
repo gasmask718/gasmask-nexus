@@ -33,6 +33,8 @@ import { TerritoryCoveragePanel } from '@/components/ambassador/TerritoryCoverag
 import { ProfileCompletenessScore, computeAmbassadorCompleteness } from '@/components/profile/ProfileCompletenessScore';
 import { useAmbassadorTerritory } from '@/hooks/useAmbassadorTerritory';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+import { AmbassadorInviteActions } from '@/components/ambassador/AmbassadorInviteActions';
+import { useAmbassadorInviteStateOne, EMPTY_INVITE_STATE } from '@/hooks/useAmbassadorInviteState';
 
 export default function AmbassadorProfilePage() {
   const { ambassadorId } = useParams<{ ambassadorId: string }>();
@@ -59,6 +61,9 @@ export default function AmbassadorProfilePage() {
     },
     enabled: !!ambassadorId,
   });
+
+  // Invite / account state for this exact ambassador record
+  const { data: inviteState } = useAmbassadorInviteStateOne(ambassadorId, !!(ambassador as any)?.user_id);
 
   // Fetch assigned stores (legacy query, now supplemented by useAmbassadorStoreData)
   const { data: stores = [] } = useQuery({
@@ -207,6 +212,16 @@ export default function AmbassadorProfilePage() {
             <RouteIcon className="mr-1 h-4 w-4" /> Assign Route
           </Button>
         </div>
+
+        {/* Invite / Account */}
+        <AmbassadorInviteActions
+          ambassadorId={ambassador.id}
+          ambassadorName={displayName}
+          email={(ambassador as any).email}
+          phone={(ambassador as any).phone_primary}
+          invite={inviteState ?? EMPTY_INVITE_STATE}
+          mode="panel"
+        />
 
         {/* KPI Cards - Distinct sourced vs managed counts */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4">

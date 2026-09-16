@@ -37,6 +37,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAdminAmbassadorCommand, type AdminAmbassadorProfile } from '@/hooks/useAdminAmbassadorCommand';
+import { useAmbassadorInviteStates, EMPTY_INVITE_STATE } from '@/hooks/useAmbassadorInviteState';
+import { AmbassadorInviteActions, AmbassadorInviteStatusBadge } from '@/components/ambassador/AmbassadorInviteActions';
 import { formatDistanceToNow } from 'date-fns';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 
@@ -90,6 +92,9 @@ function StatusBadge({ isActive }: { isActive: boolean }) {
 export default function AllAmbassadorsTable() {
   const navigate = useNavigate();
   const { ambassadors, isLoading } = useAdminAmbassadorCommand();
+  const { data: inviteStates } = useAmbassadorInviteStates(
+    ambassadors.map((a) => ({ id: a.id, user_id: a.user_id }))
+  );
   
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState<string>('all');
@@ -321,13 +326,14 @@ export default function AllAmbassadorsTable() {
                   </div>
                 </TableHead>
                 <TableHead>Trend</TableHead>
+                <TableHead>Account</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredAmbassadors.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
                     No ambassadors found matching your filters
                   </TableCell>
                 </TableRow>
@@ -395,6 +401,11 @@ export default function AllAmbassadorsTable() {
                       <TrendBadge trend={amb.trend} />
                     </TableCell>
                     <TableCell>
+                      <AmbassadorInviteStatusBadge
+                        state={(inviteStates?.get(amb.id) ?? EMPTY_INVITE_STATE).state}
+                      />
+                    </TableCell>
+                    <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -428,6 +439,13 @@ export default function AllAmbassadorsTable() {
                             <DollarSign className="h-4 w-4 mr-2" />
                             View Payouts
                           </DropdownMenuItem>
+                          <AmbassadorInviteActions
+                            ambassadorId={amb.id}
+                            ambassadorName={amb.name}
+                            phone={amb.phone_primary}
+                            invite={inviteStates?.get(amb.id) ?? EMPTY_INVITE_STATE}
+                            mode="menu"
+                          />
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
