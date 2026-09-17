@@ -309,11 +309,21 @@ export default function AmbassadorProfilePage() {
                       </div>
                     </div>
                   )}
-                  {ambassador.profiles?.email && (
+                  {(ambassador as any).email && (
                     <div className="flex items-center gap-3 p-3 rounded-lg">
                       <Mail className="h-5 w-5 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="text-sm text-muted-foreground">Contact email</p>
+                        <p>{(ambassador as any).email}</p>
+                      </div>
+                    </div>
+                  )}
+                  {ambassador.profiles?.email &&
+                    ambassador.profiles.email !== (ambassador as any).email && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg">
+                      <Mail className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Account email (sign-in)</p>
                         <p>{ambassador.profiles.email}</p>
                       </div>
                     </div>
