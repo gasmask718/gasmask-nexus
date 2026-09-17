@@ -14,8 +14,10 @@ import { useLocation } from 'react-router-dom';
  */
 const DEFAULT_MANIFEST = '/manifest.json';
 const AMBASSADOR_MANIFEST = '/ambassador.webmanifest';
+const ROUTE_PLANNER_MANIFEST = '/route-planner.webmanifest';
 const DEFAULT_IOS_TITLE = 'GasMask';
 const AMBASSADOR_IOS_TITLE = 'Ambassador Portal';
+const ROUTE_PLANNER_IOS_TITLE = 'Route Planner';
 
 function isAmbassadorSurface(pathname: string) {
   return (
@@ -25,15 +27,24 @@ function isAmbassadorSurface(pathname: string) {
   );
 }
 
+function isRoutePlannerSurface(pathname: string) {
+  return pathname === '/route-planner' || pathname.startsWith('/route-planner/');
+}
+
 export default function PortalManifest() {
   const { pathname } = useLocation();
 
   useEffect(() => {
     const ambassador = isAmbassadorSurface(pathname);
+    const routePlanner = isRoutePlannerSurface(pathname);
 
     const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
     if (link) {
-      const href = ambassador ? AMBASSADOR_MANIFEST : DEFAULT_MANIFEST;
+      const href = ambassador
+        ? AMBASSADOR_MANIFEST
+        : routePlanner
+          ? ROUTE_PLANNER_MANIFEST
+          : DEFAULT_MANIFEST;
       if (!link.href.endsWith(href)) link.href = href;
     }
 
@@ -41,9 +52,14 @@ export default function PortalManifest() {
       'meta[name="apple-mobile-web-app-title"]',
     );
     if (iosTitle) {
-      iosTitle.content = ambassador ? AMBASSADOR_IOS_TITLE : DEFAULT_IOS_TITLE;
+      iosTitle.content = ambassador
+        ? AMBASSADOR_IOS_TITLE
+        : routePlanner
+          ? ROUTE_PLANNER_IOS_TITLE
+          : DEFAULT_IOS_TITLE;
     }
   }, [pathname]);
+
 
   return null;
 }

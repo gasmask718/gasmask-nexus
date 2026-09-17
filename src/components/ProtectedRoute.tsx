@@ -25,15 +25,25 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     // instead of being dropped into the full GasMask OS sign-in page.
     const isAmbassadorSurface =
       location.pathname === '/ambassador' || location.pathname.startsWith('/ambassador/');
+    // Route-planner users stay inside the dedicated Route Planner experience.
+    const isRoutePlannerSurface =
+      location.pathname === '/route-planner' || location.pathname.startsWith('/route-planner/');
+
+    const loginPath = isAmbassadorSurface
+      ? '/ambassador/login'
+      : isRoutePlannerSurface
+        ? '/route-planner/login'
+        : '/auth';
 
     return (
       <Navigate
-        to={isAmbassadorSurface ? '/ambassador/login' : '/auth'}
+        to={loginPath}
         replace
         state={{ returnTo: `${location.pathname}${location.search}` }}
       />
     );
   }
+
 
   return <>{children}</>;
 };
