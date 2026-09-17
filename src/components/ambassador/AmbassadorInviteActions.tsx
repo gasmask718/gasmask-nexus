@@ -26,8 +26,11 @@ import type { AmbassadorInviteState } from '@/hooks/useAmbassadorInviteState';
 interface Props {
   ambassadorId: string;
   ambassadorName: string;
+  /** Ambassador record contact email (business data). */
   email?: string | null;
   phone?: string | null;
+  /** Email of the linked authentication account, when one exists. */
+  accountEmail?: string | null;
   invite: AmbassadorInviteState;
   mode?: 'menu' | 'panel';
 }
