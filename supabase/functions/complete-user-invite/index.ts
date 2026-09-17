@@ -243,6 +243,23 @@ serve(async (req) => {
       if (seatError) console.error("dialer seat upsert failed", seatError);
     }
 
+    // Route assignment carried on the server-verified invitation row: assigns
+    // the named route(s) to the new user ONLY when the route is still
+    // unassigned. Never reassigns a route that already belongs to someone.
+    const assignRouteIds = Array.isArray((meta as any).assign_route_ids)
+      ? ((meta as any).assign_route_ids as unknown[]).map((v) => String(v)).filter(Boolean)
+      : [];
+    for (const rid of assignRouteIds) {
+      const { error: routeError } = await admin
+        .from("routes")
+        .update({ assigned_to: userId })
+        .eq("id", rid)
+        .is("assigned_to", null);
+      if (routeError) console.error("route assignment failed", rid, routeError);
+    }
+
+
+
 
 
     const { error: acceptError } = await admin

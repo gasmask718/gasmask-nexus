@@ -90,24 +90,31 @@ export default function InviteSignup() {
 
       let redirectPath = "/auth";
 
-      switch (invitation.role) {
-        case "va":
-          redirectPath = "/va/dashboard";
-          break;
-        case "biker":
-          redirectPath = "/portal/biker";
-          break;
-        case "driver":
-          redirectPath = "/portal/driver";
-          break;
-        case "customer":
-        case "user":
-          redirectPath = "/portal";
-          break;
-        default:
-          redirectPath = "/auth";
-          break;
+      const invitePurpose = (invitation as any)?.metadata?.purpose;
+
+      if (invitePurpose === "route_planner_trial") {
+        redirectPath = "/route-planner";
+      } else {
+        switch (invitation.role) {
+          case "va":
+            redirectPath = "/va/dashboard";
+            break;
+          case "biker":
+            redirectPath = "/portal/biker";
+            break;
+          case "driver":
+            redirectPath = "/portal/driver";
+            break;
+          case "customer":
+          case "user":
+            redirectPath = "/portal";
+            break;
+          default:
+            redirectPath = "/auth";
+            break;
+        }
       }
+
 
       setTimeout(() => {
         navigate(redirectPath, { replace: true });

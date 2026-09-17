@@ -283,6 +283,9 @@ const AdminDNCManagerPage = lazy(() => import('@/pages/admin/AdminDNCManager'));
 const BrandaroScriptsAdminPage = lazy(() => import('@/pages/admin/BrandaroScriptsAdminPage'));
 const AmbassadorLogin = lazy(() => import('@/pages/ambassador/AmbassadorLogin'));
 const AmbassadorPortalEntry = lazy(() => import('@/pages/ambassador/AmbassadorPortalEntry'));
+const RoutePlannerLogin = lazy(() => import('@/pages/route-planner/RoutePlannerLogin'));
+const RoutePlannerHome = lazy(() => import('@/pages/route-planner/RoutePlannerHome'));
+
 const AmbassadorSetPassword = lazy(() => import('@/pages/ambassador/AmbassadorSetPassword'));
 const UTAmbassadorDashboard = lazy(() => import('@/pages/ut-ambassador/UTAmbassadorDashboard'));
 const AmbassadorEarningsPage = lazy(() => import('@/pages/ambassador/reports').then(m => ({ default: m.AmbassadorEarningsPage })));
@@ -1494,6 +1497,13 @@ export default function AppRoutes() {
       {/* Brandaro paid-client intake (public, no login) */}
       <Route path="/intake" element={<BrandaroIntakePage />} />
       <Route path="/ambassador/login" element={<AmbassadorLogin />} />
+      {/* Dedicated GasMask Route Planner — field-only, assigned routes only */}
+      <Route path="/route-planner/login" element={<RoutePlannerLogin />} />
+      <Route
+        path="/route-planner"
+        element={<ProtectedRoute><RoutePlannerHome /></ProtectedRoute>}
+      />
+
       {/* Dedicated Ambassador Portal entry — signed in goes straight to field mode */}
       <Route path="/ambassador" element={<AmbassadorPortalEntry />} />
       <Route path="/ambassador/portal" element={<AmbassadorPortalEntry />} />

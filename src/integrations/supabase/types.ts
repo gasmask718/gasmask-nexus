@@ -105369,9 +105369,13 @@ export type Database = {
           actual_arrival: string | null
           actual_departure: string | null
           actual_duration_minutes: number | null
+          address: string | null
+          area: string | null
           brand_id: string | null
           created_at: string | null
           id: string
+          lat: number | null
+          lng: number | null
           notes: string | null
           notes_to_worker: string | null
           opportunity_ids: string[] | null
@@ -105384,14 +105388,19 @@ export type Database = {
           store_id: string | null
           updated_at: string | null
           was_on_time: boolean | null
+          zip: string | null
         }
         Insert: {
           actual_arrival?: string | null
           actual_departure?: string | null
           actual_duration_minutes?: number | null
+          address?: string | null
+          area?: string | null
           brand_id?: string | null
           created_at?: string | null
           id?: string
+          lat?: number | null
+          lng?: number | null
           notes?: string | null
           notes_to_worker?: string | null
           opportunity_ids?: string[] | null
@@ -105404,14 +105413,19 @@ export type Database = {
           store_id?: string | null
           updated_at?: string | null
           was_on_time?: boolean | null
+          zip?: string | null
         }
         Update: {
           actual_arrival?: string | null
           actual_departure?: string | null
           actual_duration_minutes?: number | null
+          address?: string | null
+          area?: string | null
           brand_id?: string | null
           created_at?: string | null
           id?: string
+          lat?: number | null
+          lng?: number | null
           notes?: string | null
           notes_to_worker?: string | null
           opportunity_ids?: string[] | null
@@ -105424,6 +105438,7 @@ export type Database = {
           store_id?: string | null
           updated_at?: string | null
           was_on_time?: boolean | null
+          zip?: string | null
         }
         Relationships: [
           {
@@ -105789,6 +105804,7 @@ export type Database = {
           estimated_profit: number | null
           id: string
           is_optimized: boolean | null
+          is_trial: boolean
           locked_at: string | null
           locked_by: string | null
           name: string | null
@@ -105824,6 +105840,7 @@ export type Database = {
           estimated_profit?: number | null
           id?: string
           is_optimized?: boolean | null
+          is_trial?: boolean
           locked_at?: string | null
           locked_by?: string | null
           name?: string | null
@@ -105859,6 +105876,7 @@ export type Database = {
           estimated_profit?: number | null
           id?: string
           is_optimized?: boolean | null
+          is_trial?: boolean
           locked_at?: string | null
           locked_by?: string | null
           name?: string | null
