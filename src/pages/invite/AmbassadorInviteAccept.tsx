@@ -26,6 +26,7 @@ type InviteState =
 export default function AmbassadorInviteAccept() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [state, setState] = useState<InviteState>('validating');
   const [error, setError] = useState('');
   const [inviteData, setInviteData] = useState<any>(null);
