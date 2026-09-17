@@ -34,28 +34,73 @@ interface Props {
   firstDayTitle?: string;
   /** Extra className for the floating button position */
   className?: string;
+  /** Hide the built-in floating ❓ button (when a consolidated Help menu opens it instead) */
+  hideLauncher?: boolean;
 }
+
+/** Events other surfaces can dispatch to drive this panel without a second floating button. */
+export const TRAINING_OPEN_EVENT = 'training-help:open';
+export const TRAINING_FIRST_DAY_EVENT = 'training-help:first-day';
+
+const seenKey = (userId: string | undefined, role: string) =>
+  `first-day-tour-seen:${userId ?? 'anon'}:${role}`;
 
 /**
  * TrainingHelp — drop once per portal.
  * Renders the floating ❓ button + role-filtered SOP drawer + first-day welcome.
  */
-export function TrainingHelp({ role, firstDayTitle, className }: Props) {
+export function TrainingHelp({ role, firstDayTitle, className, hideLauncher }: Props) {
+  const { user } = useAuth();
   const { data: modules = [], isLoading } = useTrainingModules(role);
-  const { data: progress } = useTrainingProgress();
+  const { data: progress, isLoading: progressLoading, isFetched: progressFetched } =
+    useTrainingProgress();
   const updateProgress = useUpdateProgress();
 
   const [open, setOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [firstDayOpen, setFirstDayOpen] = useState(false);
 
-  // Auto-trigger first-day prompt when user has no progress row & we have modules.
-  useEffect(() => {
-    if (isLoading) return;
-    if (!progress || !progress.first_day_dismissed_at) {
-      if (modules.length > 0) setFirstDayOpen(true);
+  const markSeenLocally = () => {
+    try {
+      localStorage.setItem(seenKey(user?.id, role), new Date().toISOString());
+    } catch {
+      /* storage unavailable — server row is still the source of truth */
     }
-  }, [progress, isLoading, modules.length]);
+  };
+
+  const seenLocally = () => {
+    try {
+      return !!localStorage.getItem(seenKey(user?.id, role));
+    } catch {
+      return false;
+    }
+  };
+
+  // Auto-open ONCE for a genuinely first-time user.
+  // Waits for the saved progress row to load, and also respects a local
+  // "seen" marker so a failed/slow save can never re-open the tour.
+  useEffect(() => {
+    if (isLoading || progressLoading || !progressFetched) return;
+    if (!user?.id) return;
+    if (modules.length === 0) return;
+    if (progress?.first_day_dismissed_at || progress?.first_day_started_at) return;
+    if (seenLocally()) return;
+    markSeenLocally();
+    setFirstDayOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progress, isLoading, progressLoading, progressFetched, modules.length, user?.id]);
+
+  // External triggers (consolidated Help menu)
+  useEffect(() => {
+    const openPanel = () => setOpen(true);
+    const openTour = () => setFirstDayOpen(true);
+    window.addEventListener(TRAINING_OPEN_EVENT, openPanel);
+    window.addEventListener(TRAINING_FIRST_DAY_EVENT, openTour);
+    return () => {
+      window.removeEventListener(TRAINING_OPEN_EVENT, openPanel);
+      window.removeEventListener(TRAINING_FIRST_DAY_EVENT, openTour);
+    };
+  }, []);
 
   const startFirstDay = () => {
     setFirstDayOpen(false);
