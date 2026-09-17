@@ -435,11 +435,15 @@ function NotesList({
   notes,
   onEdit,
   onDelete,
+  canEdit = () => true,
+  canDelete = () => true,
   emptyLabel,
 }: {
   notes: CleanStoreNote[] | undefined;
   onEdit: (n: CleanStoreNote) => void;
   onDelete: (n: CleanStoreNote) => void;
+  canEdit?: (n: CleanStoreNote) => boolean;
+  canDelete?: (n: CleanStoreNote) => boolean;
   emptyLabel: string;
 }) {
   const [showAll, setShowAll] = useState(false);
