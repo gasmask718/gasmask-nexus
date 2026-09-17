@@ -175,11 +175,11 @@ export default function InviteSignup() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center mx-auto shadow-lg">
-            <Crown className="h-8 w-8 text-primary-foreground" />
+            <Icon className="h-8 w-8 text-primary-foreground" />
           </div>
           <div>
-            <CardTitle className="text-2xl">Join Dynasty OS</CardTitle>
-            <CardDescription>Complete your account setup</CardDescription>
+            <CardTitle className="text-2xl">{title}</CardTitle>
+            <CardDescription>{subtitle}</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -191,7 +191,7 @@ export default function InviteSignup() {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Role</span>
-              <Badge variant="secondary">{getRoleDisplayName(invitation.role as OSRole)}</Badge>
+              <Badge variant="secondary">{roleLabel}</Badge>
             </div>
           </div>
 
@@ -243,7 +243,7 @@ export default function InviteSignup() {
               ) : (
                 <>
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Create Account
+                  {submitLabel}
                 </>
               )}
             </Button>
