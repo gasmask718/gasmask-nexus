@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { GeocodingService } from "@/services/geocoding";
@@ -247,8 +247,21 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
   const { t } = useTranslation();
   const { roles } = useUserRole();
   const isAmbassador = roles?.includes('ambassador' as any);
+  const isAdminRole = roles?.includes('admin' as any);
+  // Ambassador-only surface: field workflow first, admin surfaces hidden.
+  const isAmbassadorOnly = !!isAmbassador && !isAdminRole;
   const [store, setStore] = useState<Store | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const ambassadorDefaultApplied = useRef(false);
+
+  // Roles resolve asynchronously; once we know this is an ambassador-only
+  // session, land on Notes unless the operator already picked another tab.
+  useEffect(() => {
+    if (ambassadorDefaultApplied.current) return;
+    if (!roles || roles.length === 0) return;
+    ambassadorDefaultApplied.current = true;
+    if (isAmbassadorOnly) setActiveTab('notes');
+  }, [roles, isAmbassadorOnly]);
   const [visits, setVisits] = useState<VisitLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
@@ -542,7 +555,7 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
     <CanonicalStoreDataProvider storeId={id}>
       <CanonicalStoreProfileProvider storeId={storeId}>
         <div className={isCaller ? "space-y-4" : "mx-auto max-w-[1700px] space-y-4 animate-fade-in"}>
-          {!isCaller && <PagePurpose pageKey="page.store_profile" config={storeProfileConfig} variant="default" />}
+          {!isCaller && <PagePurpose pageKey="page.store_profile" config={storeProfileConfig} variant="collapsible" />}
 
           {/* ── Operational header: who, how to reach them, handled state, actions ── */}
           <header className="rounded-xl border border-border/60 bg-card/60 p-4 sm:p-5">
@@ -614,14 +627,43 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="flex w-full flex-wrap justify-start gap-1 h-auto">
+              <TabsTrigger value="notes">Notes</TabsTrigger>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="contacts">Contacts</TabsTrigger>
               <TabsTrigger value="field">Field &amp; Route</TabsTrigger>
               <TabsTrigger value="tube">Tube Intelligence</TabsTrigger>
               {!isCaller && <TabsTrigger value="commercial">Commercial</TabsTrigger>}
               <TabsTrigger value="activity">Activity</TabsTrigger>
-              {!isCaller && <TabsTrigger value="admin">Admin</TabsTrigger>}
+              {!isCaller && !isAmbassadorOnly && <TabsTrigger value="admin">Admin</TabsTrigger>}
             </TabsList>
+
+            {/* ───────────── NOTES (canonical store_notes) ───────────── */}
+            <TabsContent value="notes" className="mt-4 space-y-5">
+              <StoreProfileSection
+                id="store-notes"
+                title="Notes"
+                description="Authored notes for this store — add a note, see who wrote it and when."
+              >
+                <div className="space-y-4">
+                  <StoreProfileNotesGroup
+                    storeId={storeId}
+                    storeName={store.name}
+                    onLogInteraction={() => setUnifiedInteractionModalOpen(true)}
+                  />
+                  {(store.notes || store.notes_overview || store.notes_old || store.special_information) && (
+                    <details className="rounded-md border border-border/50 p-4">
+                      <summary className="cursor-pointer text-sm font-medium">Legacy &amp; system context</summary>
+                      <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+                        {store.notes && <p className="whitespace-pre-wrap">{store.notes}</p>}
+                        {store.notes_overview && <p className="whitespace-pre-wrap">{store.notes_overview}</p>}
+                        {store.special_information && <p className="whitespace-pre-wrap">{store.special_information}</p>}
+                        {store.notes_old && <p className="whitespace-pre-wrap">{store.notes_old}</p>}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              </StoreProfileSection>
+            </TabsContent>
 
             {/* ───────────── OVERVIEW ───────────── */}
             <TabsContent value="overview" className="mt-4 space-y-5">
@@ -832,30 +874,6 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
                 />
               </StoreProfileSection>
 
-              <StoreProfileSection
-                id="notes-activity"
-                title="Notes"
-                description="One primary area for authored notes, interactions, field activity, and legacy context."
-              >
-                <div className="space-y-4">
-                  <StoreProfileNotesGroup
-                    storeId={storeId}
-                    storeName={store.name}
-                    onLogInteraction={() => setUnifiedInteractionModalOpen(true)}
-                  />
-                  {(store.notes || store.notes_overview || store.notes_old || store.special_information) && (
-                    <details className="rounded-md border border-border/50 p-4">
-                      <summary className="cursor-pointer text-sm font-medium">Legacy & system context</summary>
-                      <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-                        {store.notes && <p className="whitespace-pre-wrap">{store.notes}</p>}
-                        {store.notes_overview && <p className="whitespace-pre-wrap">{store.notes_overview}</p>}
-                        {store.special_information && <p className="whitespace-pre-wrap">{store.special_information}</p>}
-                        {store.notes_old && <p className="whitespace-pre-wrap">{store.notes_old}</p>}
-                      </div>
-                    </details>
-                  )}
-                </div>
-              </StoreProfileSection>
 
               <StoreProfileSection
                 id="messages-calls"

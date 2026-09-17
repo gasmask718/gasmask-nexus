@@ -2,7 +2,8 @@
  * PagePurpose - Role-aware page explanation component
  * Displays context-sensitive guidance based on user role and language
  */
-import { Info, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
+import { Info, CheckCircle2, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
@@ -28,7 +29,7 @@ export interface PagePurposeConfig {
 interface PagePurposeProps {
   pageKey: string; // Used to fetch translations like 'page.dashboard.purpose'
   config: PagePurposeConfig;
-  variant?: 'default' | 'compact';
+  variant?: 'default' | 'compact' | 'collapsible';
   className?: string;
 }
 
@@ -36,7 +37,20 @@ export function PagePurpose({ pageKey, config, variant = 'default', className }:
   const { t, isRTL } = useTranslation();
   const { data: profileData } = useCurrentUserProfile();
   const role = profileData?.profile?.primary_role || 'default';
-  
+
+  // Collapsible helper: open on the very first view of this page, collapsed after.
+  const seenKey = `page-purpose-seen:${pageKey}`;
+  const [open, setOpen] = useState(() => {
+    if (variant !== 'collapsible') return false;
+    try {
+      if (localStorage.getItem(seenKey)) return false;
+      localStorage.setItem(seenKey, '1');
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
   // Get role-specific content or fallback to default
   const content = config[role as keyof PagePurposeConfig] || config.default;
   
@@ -52,6 +66,51 @@ export function PagePurpose({ pageKey, config, variant = 'default', className }:
       </div>
     );
   }
+
+  if (variant === 'collapsible') {
+    return (
+      <div className={cn('rounded-lg border border-border/50 bg-card/40', isRTL && 'text-right', className)}>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className={cn(
+            'flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground',
+            isRTL && 'flex-row-reverse',
+          )}
+        >
+          <Info className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-start font-medium">
+            {t('guidance.what_can_i_do') || 'What can I do here?'}
+          </span>
+          <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', open && 'rotate-180')} />
+        </button>
+        {open && (
+          <div className="space-y-3 border-t border-border/50 px-3 py-3">
+            <p className="text-sm text-muted-foreground">{content.description}</p>
+            {content.actions.length > 0 && (
+              <ul className="space-y-1">
+                {content.actions.map((action, idx) => (
+                  <li key={idx} className={cn('flex items-center gap-2 text-sm', isRTL && 'flex-row-reverse')}>
+                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
+                    <span>{action}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {content.warnings && content.warnings.length > 0 && (
+              <ul className="space-y-1">
+                {content.warnings.map((warning, idx) => (
+                  <li key={idx} className="text-sm text-amber-600">• {warning}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+  
   
   return (
     <div className={cn(
