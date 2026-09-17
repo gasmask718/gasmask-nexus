@@ -351,6 +351,8 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
                   notes={filteredNotes}
                   onEdit={handleEditNote}
                   onDelete={handleDeleteNote}
+                  canEdit={canEditNote}
+                  canDelete={() => isElevated}
                   emptyLabel={
                     tabKey === 'all'
                       ? 'No notes yet'
