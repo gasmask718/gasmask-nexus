@@ -21,9 +21,14 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!user || !session) {
+    // Ambassadors stay inside the dedicated Ambassador Portal experience
+    // instead of being dropped into the full GasMask OS sign-in page.
+    const isAmbassadorSurface =
+      location.pathname === '/ambassador' || location.pathname.startsWith('/ambassador/');
+
     return (
       <Navigate
-        to="/auth"
+        to={isAmbassadorSurface ? '/ambassador/login' : '/auth'}
         replace
         state={{ returnTo: `${location.pathname}${location.search}` }}
       />

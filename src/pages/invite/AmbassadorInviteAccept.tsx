@@ -78,6 +78,7 @@ export default function AmbassadorInviteAccept() {
       toast.error((acceptResult as any)?.error || 'Could not activate your account');
       return false;
     }
+    try { localStorage.removeItem('gasmask_pending_ambassador_invite'); } catch { /* noop */ }
     setState('done');
     toast.success('Welcome! Your ambassador account is ready.');
     return true;
@@ -110,7 +111,13 @@ export default function AmbassadorInviteAccept() {
             data: { full_name: fullName },
             // Come back to this same invite link after confirming, so setup
             // completes automatically.
-            emailRedirectTo: `${window.location.origin}/invite/ambassador/${token}`,
+            // Confirmation goes through the auth callback (it exchanges the
+            // code for a session) and is then handed straight back to THIS
+            // invite link, so ambassador setup finishes automatically instead
+            // of dropping the user on the generic GasMask sign-in page.
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+              `/invite/ambassador/${token}`,
+            )}`,
           },
         });
 
@@ -128,6 +135,11 @@ export default function AmbassadorInviteAccept() {
           if (si?.session?.user) {
             userId = si.session.user.id;
           } else {
+            // Safe, non-sensitive breadcrumb (token only) so the confirmation
+            // round-trip can always find its way back to this invite.
+            try {
+              localStorage.setItem('gasmask_pending_ambassador_invite', token!);
+            } catch { /* storage unavailable — email link still carries `next` */ }
             setState('awaiting_confirm');
             setIsSubmitting(false);
             return;
