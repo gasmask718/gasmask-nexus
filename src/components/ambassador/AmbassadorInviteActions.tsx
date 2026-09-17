@@ -63,6 +63,7 @@ export function AmbassadorInviteActions({
   ambassadorName,
   email,
   phone,
+  accountEmail,
   invite,
   mode = 'menu',
 }: Props) {
