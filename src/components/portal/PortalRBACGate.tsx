@@ -4,6 +4,7 @@ import { ShieldAlert, ArrowLeft, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Role } from '@/lib/permissions';
 import { Loader2 } from 'lucide-react';
 
