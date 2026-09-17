@@ -874,30 +874,6 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
                 />
               </StoreProfileSection>
 
-              <StoreProfileSection
-                id="notes-activity"
-                title="Notes"
-                description="One primary area for authored notes, interactions, field activity, and legacy context."
-              >
-                <div className="space-y-4">
-                  <StoreProfileNotesGroup
-                    storeId={storeId}
-                    storeName={store.name}
-                    onLogInteraction={() => setUnifiedInteractionModalOpen(true)}
-                  />
-                  {(store.notes || store.notes_overview || store.notes_old || store.special_information) && (
-                    <details className="rounded-md border border-border/50 p-4">
-                      <summary className="cursor-pointer text-sm font-medium">Legacy & system context</summary>
-                      <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-                        {store.notes && <p className="whitespace-pre-wrap">{store.notes}</p>}
-                        {store.notes_overview && <p className="whitespace-pre-wrap">{store.notes_overview}</p>}
-                        {store.special_information && <p className="whitespace-pre-wrap">{store.special_information}</p>}
-                        {store.notes_old && <p className="whitespace-pre-wrap">{store.notes_old}</p>}
-                      </div>
-                    </details>
-                  )}
-                </div>
-              </StoreProfileSection>
 
               <StoreProfileSection
                 id="messages-calls"
