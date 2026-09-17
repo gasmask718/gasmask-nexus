@@ -278,25 +278,29 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
             )}
           </CardTitle>
           <div className="flex gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => cleanupMutation.mutate()}
-              disabled={cleanupMutation.isPending || !storeMasterId}
-              className="text-base h-11"
-              title="Remove duplicate notes for this store"
-            >
-              {cleanupMutation.isPending ? (
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              ) : (
-                <Eraser className="h-5 w-5 mr-2" />
-              )}
-              Clean up notes
-            </Button>
-            <Button variant="outline" size="lg" onClick={() => setBulkUploaderOpen(true)} className="text-base h-11">
-              <Upload className="h-5 w-5 mr-2" />
-              Bulk Upload
-            </Button>
+            {isElevated && (
+              <>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => cleanupMutation.mutate()}
+                  disabled={cleanupMutation.isPending || !storeMasterId}
+                  className="text-base h-11"
+                  title="Remove duplicate notes for this store"
+                >
+                  {cleanupMutation.isPending ? (
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  ) : (
+                    <Eraser className="h-5 w-5 mr-2" />
+                  )}
+                  Clean up notes
+                </Button>
+                <Button variant="outline" size="lg" onClick={() => setBulkUploaderOpen(true)} className="text-base h-11">
+                  <Upload className="h-5 w-5 mr-2" />
+                  Bulk Upload
+                </Button>
+              </>
+            )}
             <Button
               size="lg"
               onClick={() => {
