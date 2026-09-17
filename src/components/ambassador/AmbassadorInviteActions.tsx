@@ -187,35 +187,73 @@ export function AmbassadorInviteActions({
   const showResend = invite.state === 'pending';
 
   if (mode === 'panel') {
+    const contactEmail = email || null;
+    const differs = !!(accountEmail && contactEmail && accountEmail !== contactEmail);
+    const inviteDiffers = !!(
+      invite.email && invite.email !== contactEmail && invite.email !== accountEmail
+    );
     return (
       <Card>
-        <CardContent className="py-4 flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Invite / Account</span>
-            <AmbassadorInviteStatusBadge state={invite.state} />
+        <CardContent className="py-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Invite / Account</span>
+              <AmbassadorInviteStatusBadge state={invite.state} />
+            </div>
+            {invite.state === 'pending' && invite.expiresAt && (
+              <span className="text-xs text-muted-foreground">
+                Expires {new Date(invite.expiresAt).toLocaleDateString()}
+              </span>
+            )}
+            <div className="ml-auto flex flex-wrap gap-2">
+              {canCopy && (
+                <Button size="sm" variant="outline" disabled={busyAll} onClick={handleCopy}>
+                  <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy Invite Link
+                </Button>
+              )}
+              {showSend && (
+                <Button size="sm" disabled={busyAll} onClick={handleSend}>
+                  <Send className="h-3.5 w-3.5 mr-1.5" /> Send Invite
+                </Button>
+              )}
+              {showResend && (
+                <Button size="sm" variant="outline" disabled={busyAll} onClick={handleResend}>
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Resend Invite
+                </Button>
+              )}
+            </div>
           </div>
-          {invite.state === 'pending' && invite.expiresAt && (
-            <span className="text-xs text-muted-foreground">
-              Expires {new Date(invite.expiresAt).toLocaleDateString()}
-            </span>
+
+          {/* Identity clarity: contact vs account vs invite destination */}
+          {(contactEmail || accountEmail || invite.email) && (
+            <div className="grid gap-1 text-xs">
+              {contactEmail && (
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground w-28 shrink-0">Contact email</span>
+                  <span className="truncate">{contactEmail}</span>
+                </div>
+              )}
+              {accountEmail && (differs || !contactEmail) && (
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground w-28 shrink-0">Account email</span>
+                  <span className="truncate">{accountEmail}</span>
+                </div>
+              )}
+              {inviteDiffers && (
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground w-28 shrink-0">Invite sent to</span>
+                  <span className="truncate">{invite.email}</span>
+                </div>
+              )}
+            </div>
           )}
-          <div className="ml-auto flex flex-wrap gap-2">
-            {canCopy && (
-              <Button size="sm" variant="outline" disabled={busyAll} onClick={handleCopy}>
-                <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy Invite Link
-              </Button>
-            )}
-            {showSend && (
-              <Button size="sm" disabled={busyAll} onClick={handleSend}>
-                <Send className="h-3.5 w-3.5 mr-1.5" /> Send Invite
-              </Button>
-            )}
-            {showResend && (
-              <Button size="sm" variant="outline" disabled={busyAll} onClick={handleResend}>
-                <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Resend Invite
-              </Button>
-            )}
-          </div>
+
+          {invite.staleInvite && (
+            <p className="text-xs text-amber-400">
+              A sign-up invite from {invite.expiresAt ? new Date(invite.expiresAt).toLocaleDateString() : ''} is
+              still open in the invite history. The account is already linked, so that link is no longer needed.
+            </p>
+          )}
         </CardContent>
       </Card>
     );
