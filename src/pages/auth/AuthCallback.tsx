@@ -56,7 +56,8 @@ export default function AuthCallback() {
       const code = url.searchParams.get('code');
       // OAuth providers drop the original query string — fall back to the
       // destination parked before the round-trip (e.g. /portal/wholesaler).
-      const nextParam = url.searchParams.get('next') ?? consumePendingNext();
+      const nextParam =
+        url.searchParams.get('next') ?? consumePendingNext() ?? pendingAmbassadorInvitePath();
       const errorDesc =
         url.searchParams.get('error_description') ||
         url.searchParams.get('error');
