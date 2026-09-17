@@ -32,6 +32,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { BulkNotesUploader } from '@/components/admin/BulkNotesUploader';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 
 // Brand config — derived from canonical registry
 import { CANONICAL_BRANDS, CANONICAL_BRAND_IDS, type CanonicalBrandId } from '@/config/brands';
@@ -73,6 +75,7 @@ interface CleanStoreNote {
   raw_note: string | null;
   brand_scope: string | null;
   created_at: string | null;
+  created_by: string | null;
   profile?: { name: string; role?: string } | null;
 }
 
