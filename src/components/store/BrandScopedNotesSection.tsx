@@ -114,6 +114,17 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
   const [activeTab, setActiveTab] = useState<string>('all');
   const [defaultBrandScope, setDefaultBrandScope] = useState<BrandScopeKey>(null);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { roles } = useUserRole();
+
+  // Elevated staff keep the full toolset (bulk upload, dedupe, delete, edit any
+  // note). Field roles such as ambassadors may add notes and edit their own —
+  // which mirrors what the database itself permits.
+  const isElevated = (roles || []).some((r) =>
+    ['owner', 'admin', 'super_admin', 'manager'].includes(String(r)),
+  );
+  const canEditNote = (note: CleanStoreNote) =>
+    isElevated || (!!user?.id && note.created_by === user.id);
 
   const { storeMasterId, isLoading: resolving } = useStoreMasterResolver(storeId);
 
@@ -142,6 +153,7 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
         ...n,
         brand_scope: metaById.get(n.id)?.brand_scope ?? null,
         created_at: metaById.get(n.id)?.created_at ?? null,
+        created_by: metaById.get(n.id)?.created_by ?? null,
         profile: metaById.get(n.id)?.profile ?? null,
       })) as CleanStoreNote[];
 
