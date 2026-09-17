@@ -247,8 +247,21 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
   const { t } = useTranslation();
   const { roles } = useUserRole();
   const isAmbassador = roles?.includes('ambassador' as any);
+  const isAdminRole = roles?.includes('admin' as any);
+  // Ambassador-only surface: field workflow first, admin surfaces hidden.
+  const isAmbassadorOnly = !!isAmbassador && !isAdminRole;
   const [store, setStore] = useState<Store | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const ambassadorDefaultApplied = useRef(false);
+
+  // Roles resolve asynchronously; once we know this is an ambassador-only
+  // session, land on Notes unless the operator already picked another tab.
+  useEffect(() => {
+    if (ambassadorDefaultApplied.current) return;
+    if (!roles || roles.length === 0) return;
+    ambassadorDefaultApplied.current = true;
+    if (isAmbassadorOnly) setActiveTab('notes');
+  }, [roles, isAmbassadorOnly]);
   const [visits, setVisits] = useState<VisitLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
