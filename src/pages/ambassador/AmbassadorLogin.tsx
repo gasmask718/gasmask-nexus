@@ -115,9 +115,9 @@ export default function AmbassadorLogin() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <LogIn className="h-10 w-10 text-primary mx-auto mb-2" />
-          <CardTitle>Ambassador Login</CardTitle>
+          <CardTitle className="text-2xl">Ambassador Portal</CardTitle>
           <CardDescription>
-            Sign in to your Unforgettable Times ambassador dashboard
+            Sign in to access your GasMask ambassador workspace.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

@@ -23,6 +23,7 @@ import { GlobalTrainingHelp } from "./components/training/GlobalTrainingHelp";
 import { RefCapture } from "./components/dynasty-direct/RefCapture";
 import { AgeGate } from "./components/dynasty-direct/AgeGate";
 import { FlashSaleBanner } from "./components/FlashSaleBanner";
+import PortalManifest from "./components/pwa/PortalManifest";
 
 import './modules';
 import AppRoutes from './routes/AppRoutes';
@@ -48,6 +49,7 @@ const App = () => (
       <BrowserRouter>
         <ErrorBoundary>
           <AuthTokenCatcher />
+          <PortalManifest />
           <BackendMismatchGuard>
             <AuthProvider>
               <BusinessProvider>
