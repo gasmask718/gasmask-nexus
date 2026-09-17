@@ -11,7 +11,7 @@ import { ReactNode } from 'react';
 import { EnhancedPortalLayout } from '@/components/portal/EnhancedPortalLayout';
 import { AmbassadorPortalNav } from '@/components/ambassador/AmbassadorPortalNav';
 import { AmbassadorMobileBottomNav } from '@/components/ambassador/AmbassadorMobileBottomNav';
-import { FeedbackFloatingButton } from '@/components/feedback/FeedbackFloatingButton';
+import { AmbassadorHelpMenu } from '@/components/ambassador/AmbassadorHelpMenu';
 import { QuickDialPad } from '@/components/ambassador/QuickDialPad';
 import { AmbassadorFieldSession } from '@/components/ambassador/AmbassadorFieldSession';
 import InstallAppPrompt from '@/components/pwa/InstallAppPrompt';
@@ -54,7 +54,7 @@ export function AmbassadorLayout({
       </div>
       {/* Mobile-only bottom-pad so fixed nav doesn't cover content */}
       <div className="pb-20 md:pb-0">{children}</div>
-      <FeedbackFloatingButton />
+      <AmbassadorHelpMenu />
       <QuickDialPad />
       <AmbassadorMobileBottomNav />
     </EnhancedPortalLayout>

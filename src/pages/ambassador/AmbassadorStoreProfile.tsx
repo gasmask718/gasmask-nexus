@@ -308,10 +308,13 @@ function StoreProfileContent() {
       <BrandStickersCard storeId={store.id} role="ambassador" />
 
       {/* Tabs */}
-      <Tabs defaultValue="orders" className="space-y-4">
+      <Tabs defaultValue="notes" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="notes">
+            <FileText className="h-4 w-4 mr-1.5" />
+            Notes ({notes.length})
+          </TabsTrigger>
           <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
-          <TabsTrigger value="notes">Notes ({notes.length})</TabsTrigger>
           <TabsTrigger value="contacts">Contacts ({contacts.length})</TabsTrigger>
         </TabsList>
 

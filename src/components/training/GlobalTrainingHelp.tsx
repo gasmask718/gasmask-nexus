@@ -65,7 +65,11 @@ export function GlobalTrainingHelp() {
   const role = detectRole(pathname, userRole);
   if (!role) return null;
 
-  return <TrainingHelp role={role} />;
+  // Ambassador Portal has ONE consolidated Help menu that opens this panel
+  // by event — suppress the duplicate floating ❓ circle there.
+  const hideLauncher = pathname.toLowerCase().startsWith('/ambassador');
+
+  return <TrainingHelp role={role} hideLauncher={hideLauncher} />;
 }
 
 export default GlobalTrainingHelp;

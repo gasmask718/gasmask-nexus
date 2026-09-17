@@ -4,13 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { IdeaSubmitDialog } from './IdeaSubmitDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 /** App-wide floating "Submit Idea" launcher. Visible to every signed-in role. */
 export function IdeaBoxLauncher() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
 
   if (!user) return null;
+  // Ambassador Portal reaches "Submit an idea" from its single Help menu.
+  if (pathname.toLowerCase().startsWith('/ambassador')) return null;
 
   return (
     <>

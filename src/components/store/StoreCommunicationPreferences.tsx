@@ -186,13 +186,16 @@ export function StoreCommunicationPreferences({ storeId }: Props) {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label className="text-xs">Notes</Label>
+            <Label className="text-xs">Contact preference notes</Label>
             <Textarea
               rows={2}
               value={prefs.notes ?? ''}
               onChange={(e) => setPrefs((p) => ({ ...p, notes: e.target.value || null }))}
               placeholder="e.g. Owner prefers Spanish, only contact after 10am."
             />
+            <p className="text-[11px] text-muted-foreground">
+              How to contact this store only — visit and account notes live in the Notes section.
+            </p>
           </div>
         </div>
 
