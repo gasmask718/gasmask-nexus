@@ -555,7 +555,7 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
     <CanonicalStoreDataProvider storeId={id}>
       <CanonicalStoreProfileProvider storeId={storeId}>
         <div className={isCaller ? "space-y-4" : "mx-auto max-w-[1700px] space-y-4 animate-fade-in"}>
-          {!isCaller && <PagePurpose pageKey="page.store_profile" config={storeProfileConfig} variant="default" />}
+          {!isCaller && <PagePurpose pageKey="page.store_profile" config={storeProfileConfig} variant="collapsible" />}
 
           {/* ── Operational header: who, how to reach them, handled state, actions ── */}
           <header className="rounded-xl border border-border/60 bg-card/60 p-4 sm:p-5">
