@@ -363,7 +363,16 @@ export default function GrabbaAmbassadors() {
                             </div>
                             <div>
                               <div className="font-medium text-foreground">{amb.name || amb.user?.name || 'Unknown Ambassador'}</div>
-                              <div className="text-sm text-muted-foreground">{amb.email || amb.user?.email || <span className="text-amber-400 italic">No email</span>}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {amb.email
+                                  ? <>Contact: {amb.email}</>
+                                  : amb.user?.email
+                                    ? <>Account: {amb.user.email}</>
+                                    : <span className="text-amber-400 italic">No email</span>}
+                              </div>
+                              {amb.email && amb.user?.email && amb.user.email !== amb.email && (
+                                <div className="text-xs text-muted-foreground/80">Account: {amb.user.email}</div>
+                              )}
                               <div className="flex gap-2 mt-1">
                                 <Badge variant={amb.is_active ? 'default' : 'secondary'}>
                                   {amb.is_active ? 'Active' : 'Inactive'}
