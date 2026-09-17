@@ -30,8 +30,12 @@ export function PortalRBACGate({
   fallbackPath = '/portal/home'
 }: PortalRBACGateProps) {
   const { data, isLoading, error } = useCurrentUserProfile();
+  // Role membership is the canonical check: a person can legitimately hold
+  // several roles (e.g. driver + ambassador). Reading only primary_role locked
+  // invited ambassadors out of their own portal.
+  const { roles: membershipRoles, loading: rolesLoading } = useUserRole();
 
-  if (isLoading) {
+  if (isLoading || rolesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
