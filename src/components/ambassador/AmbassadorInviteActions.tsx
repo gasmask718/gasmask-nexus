@@ -79,6 +79,31 @@ export function AmbassadorInviteActions({
     qc.invalidateQueries({ queryKey: ['all-ambassador-invites'] });
   }
 
+  /**
+   * Close a leftover open invite for an ambassador whose account is ALREADY
+   * linked. The database function re-verifies the invite belongs to that exact
+   * ambassador and that the ambassador has a linked login; the row and its
+   * history are kept, only marked used.
+   */
+  async function closeStaleInvite() {
+    if (!invite.inviteId) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc(
+        'close_ambassador_invite_for_linked_account' as any,
+        { p_invite_id: invite.inviteId } as any,
+      );
+      if (error) throw error;
+      if ((data as any)?.success === false) throw new Error((data as any).error);
+      toast.success('Invite marked as used');
+      refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Could not close the invite');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function copyLink(token: string) {
     const link = ambassadorInviteLink(token);
     try {
@@ -249,10 +274,16 @@ export function AmbassadorInviteActions({
           )}
 
           {invite.staleInvite && (
-            <p className="text-xs text-amber-400">
-              A sign-up invite from {invite.expiresAt ? new Date(invite.expiresAt).toLocaleDateString() : ''} is
-              still open in the invite history. The account is already linked, so that link is no longer needed.
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs text-amber-400 flex-1 min-w-[16rem]">
+                A sign-up invite is still open (expires{' '}
+                {invite.expiresAt ? new Date(invite.expiresAt).toLocaleDateString() : '—'}). The account is
+                already linked, so that link is no longer needed.
+              </p>
+              <Button size="sm" variant="outline" disabled={busyAll} onClick={closeStaleInvite}>
+                Mark invite as used
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
