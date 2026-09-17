@@ -218,6 +218,7 @@ export default function AmbassadorProfilePage() {
           ambassadorId={ambassador.id}
           ambassadorName={displayName}
           email={(ambassador as any).email}
+          accountEmail={(ambassador as any).profiles?.email}
           phone={(ambassador as any).phone_primary}
           invite={inviteState ?? EMPTY_INVITE_STATE}
           mode="panel"
@@ -308,11 +309,21 @@ export default function AmbassadorProfilePage() {
                       </div>
                     </div>
                   )}
-                  {ambassador.profiles?.email && (
+                  {(ambassador as any).email && (
                     <div className="flex items-center gap-3 p-3 rounded-lg">
                       <Mail className="h-5 w-5 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="text-sm text-muted-foreground">Contact email</p>
+                        <p>{(ambassador as any).email}</p>
+                      </div>
+                    </div>
+                  )}
+                  {ambassador.profiles?.email &&
+                    ambassador.profiles.email !== (ambassador as any).email && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg">
+                      <Mail className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Account email (sign-in)</p>
                         <p>{ambassador.profiles.email}</p>
                       </div>
                     </div>
@@ -530,11 +541,22 @@ export default function AmbassadorProfilePage() {
                     </div>
                   )}
 
-                  {ambassador.profiles?.email && (
+                  {(ambassador as any).email && (
                     <div className="flex items-center gap-3 p-2 rounded-lg">
                       <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground">Email</p>
+                        <p className="text-xs text-muted-foreground">Contact email</p>
+                        <p className="text-sm truncate">{(ambassador as any).email}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {ambassador.profiles?.email &&
+                    ambassador.profiles.email !== (ambassador as any).email && (
+                    <div className="flex items-center gap-3 p-2 rounded-lg">
+                      <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">Account email (sign-in)</p>
                         <p className="text-sm truncate">{ambassador.profiles.email}</p>
                       </div>
                     </div>
