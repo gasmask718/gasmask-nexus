@@ -85,7 +85,7 @@ export function PortalRBACGate({
   return (
     <AccessDeniedPage 
       portalName={portalName}
-      currentRole={userRole}
+      currentRole={userRole ?? undefined}
       requiredRoles={allowedRoles}
       fallbackPath={fallbackPath}
     />
