@@ -501,25 +501,29 @@ function NotesList({
                     <NoteContentDisplay content={note.note_text} asHtml collapsedLines={4} className="text-base" />
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => onEdit(note)}
-                      title="Edit note"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      className="h-10 w-10 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => onDelete(note)}
-                      title="Delete note"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </Button>
+                    {canEdit(note) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => onEdit(note)}
+                        title="Edit note"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </Button>
+                    )}
+                    {canDelete(note) && (
+                      <Button
+                        variant="ghost"
+                        size="lg"
+                        className="h-10 w-10 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => onDelete(note)}
+                        title="Delete note"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 pt-2 border-t border-border/20 flex-wrap">
