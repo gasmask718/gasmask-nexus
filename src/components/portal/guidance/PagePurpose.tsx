@@ -2,7 +2,8 @@
  * PagePurpose - Role-aware page explanation component
  * Displays context-sensitive guidance based on user role and language
  */
-import { Info, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
+import { Info, CheckCircle2, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
