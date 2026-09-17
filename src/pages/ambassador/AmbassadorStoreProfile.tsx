@@ -42,6 +42,8 @@ function StoreProfileContent() {
   const { initiateCall } = useCall();
   const [newNote, setNewNote] = useState('');
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState('');
 
   const { 
     store, 
@@ -49,10 +51,13 @@ function StoreProfileContent() {
     notes, 
     contacts,
     claim,
+    currentUserId,
     isLoading, 
     isError,
     addNote,
     isAddingNote,
+    updateNote,
+    isUpdatingNote,
     secureStore,
     isSecuringStore
   } = useAmbassadorStoreProfile(storeId || null);
@@ -62,6 +67,27 @@ function StoreProfileContent() {
     await addNote(newNote);
     setNewNote('');
     setIsNoteDialogOpen(false);
+  };
+
+  const startEditNote = (note: any) => {
+    setEditingNoteId(note.id);
+    // Strip any stored markup so the ambassador edits plain readable text.
+    setEditingNoteText(String(note.note_text || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, ''));
+  };
+
+  const cancelEditNote = () => {
+    setEditingNoteId(null);
+    setEditingNoteText('');
+  };
+
+  const saveEditNote = async () => {
+    if (!editingNoteId || !editingNoteText.trim()) return;
+    try {
+      await updateNote({ noteId: editingNoteId, noteText: editingNoteText.trim() });
+      cancelEditNote();
+    } catch {
+      /* error toast already surfaced by the mutation */
+    }
   };
 
   if (isLoading) {
@@ -362,26 +388,62 @@ function StoreProfileContent() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {notes.map((note: any) => (
-                      <div 
-                        key={note.id}
-                        className="p-4 rounded-lg bg-muted/30 border"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-muted-foreground">
-                            {format(new Date(note.note_date || note.created_at), 'MMM d, yyyy h:mm a')}
-                          </span>
-                          {note.note_type && (
-                            <Badge variant="outline">{note.note_type}</Badge>
+                    {notes.map((note: any) => {
+                      const isMine = !!currentUserId && note.created_by === currentUserId;
+                      const isEditing = editingNoteId === note.id;
+                      return (
+                        <div 
+                          key={note.id}
+                          className="p-4 rounded-lg bg-muted/30 border"
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="text-sm text-muted-foreground">
+                              {format(new Date(note.note_date || note.created_at), 'MMM d, yyyy h:mm a')}
+                              {note.edited_at && (
+                                <span className="ml-2 italic">
+                                  edited {formatDistanceToNow(new Date(note.edited_at), { addSuffix: true })}
+                                </span>
+                              )}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              {note.note_type && (
+                                <Badge variant="outline">{note.note_type}</Badge>
+                              )}
+                              {isMine && !isEditing && (
+                                <Button size="sm" variant="ghost" onClick={() => startEditNote(note)}>
+                                  <Edit className="h-4 w-4" />
+                                  <span className="sr-only">Edit note</span>
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          {isEditing ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                value={editingNoteText}
+                                onChange={(e) => setEditingNoteText(e.target.value)}
+                                rows={4}
+                              />
+                              <div className="flex justify-end gap-2">
+                                <Button size="sm" variant="outline" onClick={cancelEditNote} disabled={isUpdatingNote}>
+                                  Cancel
+                                </Button>
+                                <Button size="sm" onClick={saveEditNote} disabled={isUpdatingNote || !editingNoteText.trim()}>
+                                  {isUpdatingNote ? 'Saving...' : 'Save Changes'}
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div 
+                              className="text-sm whitespace-pre-wrap [&_p]:mb-2 [&_strong]:font-semibold [&_br]:block"
+                              dangerouslySetInnerHTML={{ __html: note.note_text }}
+                            />
                           )}
                         </div>
-                        <div 
-                          className="text-sm [&_p]:mb-2 [&_strong]:font-semibold [&_br]:block"
-                          dangerouslySetInnerHTML={{ __html: note.note_text }}
-                        />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
+
                 )}
               </ScrollArea>
             </CardContent>

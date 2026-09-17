@@ -333,6 +333,7 @@ export function useAmbassadorStoreProfile(storeId: string | null) {
         .from('store_notes')
         .select('*')
         .eq('store_id', storeId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -417,16 +418,50 @@ export function useAmbassadorStoreProfile(storeId: string | null) {
     },
   });
 
+  // Update an existing note. RLS only permits the note's own author (or staff),
+  // so a non-author edit returns zero rows and is surfaced as an error.
+  const updateNoteMutation = useMutation({
+    mutationFn: async ({ noteId, noteText }: { noteId: string; noteText: string }) => {
+      if (!noteId || !user?.id) throw new Error('Missing note or user');
+
+      const { data, error } = await supabase
+        .from('store_notes')
+        .update({
+          note_text: noteText,
+          edited_at: new Date().toISOString(),
+          edited_by: user.id,
+        })
+        .eq('id', noteId)
+        .is('deleted_at', null)
+        .select('id');
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('You can only edit notes you wrote.');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ambassador-store-notes', storeId] });
+      toast.success('Note updated');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update note: ${error.message}`);
+    },
+  });
+
   return {
     store: storeQuery.data,
     orders: ordersQuery.data || [],
     notes: notesQuery.data || [],
     contacts: contactsQuery.data || [],
     claim: claimQuery.data,
+    currentUserId: user?.id ?? null,
     isLoading: storeQuery.isLoading,
     isError: storeQuery.isError,
     addNote: addNoteMutation.mutateAsync,
     isAddingNote: addNoteMutation.isPending,
+    updateNote: updateNoteMutation.mutateAsync,
+    isUpdatingNote: updateNoteMutation.isPending,
     secureStore: secureStoreMutation.mutateAsync,
     isSecuringStore: secureStoreMutation.isPending,
     refetch: () => {

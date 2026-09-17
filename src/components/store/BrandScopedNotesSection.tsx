@@ -32,6 +32,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { BulkNotesUploader } from '@/components/admin/BulkNotesUploader';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 
 // Brand config — derived from canonical registry
 import { CANONICAL_BRANDS, CANONICAL_BRAND_IDS, type CanonicalBrandId } from '@/config/brands';
@@ -73,6 +75,7 @@ interface CleanStoreNote {
   raw_note: string | null;
   brand_scope: string | null;
   created_at: string | null;
+  created_by: string | null;
   profile?: { name: string; role?: string } | null;
 }
 
@@ -111,6 +114,17 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
   const [activeTab, setActiveTab] = useState<string>('all');
   const [defaultBrandScope, setDefaultBrandScope] = useState<BrandScopeKey>(null);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { roles } = useUserRole();
+
+  // Elevated staff keep the full toolset (bulk upload, dedupe, delete, edit any
+  // note). Field roles such as ambassadors may add notes and edit their own —
+  // which mirrors what the database itself permits.
+  const isElevated = (roles || []).some((r) =>
+    ['owner', 'admin', 'super_admin', 'manager'].includes(String(r)),
+  );
+  const canEditNote = (note: CleanStoreNote) =>
+    isElevated || (!!user?.id && note.created_by === user.id);
 
   const { storeMasterId, isLoading: resolving } = useStoreMasterResolver(storeId);
 
@@ -139,6 +153,7 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
         ...n,
         brand_scope: metaById.get(n.id)?.brand_scope ?? null,
         created_at: metaById.get(n.id)?.created_at ?? null,
+        created_by: metaById.get(n.id)?.created_by ?? null,
         profile: metaById.get(n.id)?.profile ?? null,
       })) as CleanStoreNote[];
 
@@ -263,25 +278,29 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
             )}
           </CardTitle>
           <div className="flex gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => cleanupMutation.mutate()}
-              disabled={cleanupMutation.isPending || !storeMasterId}
-              className="text-base h-11"
-              title="Remove duplicate notes for this store"
-            >
-              {cleanupMutation.isPending ? (
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              ) : (
-                <Eraser className="h-5 w-5 mr-2" />
-              )}
-              Clean up notes
-            </Button>
-            <Button variant="outline" size="lg" onClick={() => setBulkUploaderOpen(true)} className="text-base h-11">
-              <Upload className="h-5 w-5 mr-2" />
-              Bulk Upload
-            </Button>
+            {isElevated && (
+              <>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => cleanupMutation.mutate()}
+                  disabled={cleanupMutation.isPending || !storeMasterId}
+                  className="text-base h-11"
+                  title="Remove duplicate notes for this store"
+                >
+                  {cleanupMutation.isPending ? (
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  ) : (
+                    <Eraser className="h-5 w-5 mr-2" />
+                  )}
+                  Clean up notes
+                </Button>
+                <Button variant="outline" size="lg" onClick={() => setBulkUploaderOpen(true)} className="text-base h-11">
+                  <Upload className="h-5 w-5 mr-2" />
+                  Bulk Upload
+                </Button>
+              </>
+            )}
             <Button
               size="lg"
               onClick={() => {
@@ -332,6 +351,8 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
                   notes={filteredNotes}
                   onEdit={handleEditNote}
                   onDelete={handleDeleteNote}
+                  canEdit={canEditNote}
+                  canDelete={() => isElevated}
                   emptyLabel={
                     tabKey === 'all'
                       ? 'No notes yet'
@@ -414,11 +435,15 @@ function NotesList({
   notes,
   onEdit,
   onDelete,
+  canEdit = () => true,
+  canDelete = () => true,
   emptyLabel,
 }: {
   notes: CleanStoreNote[] | undefined;
   onEdit: (n: CleanStoreNote) => void;
   onDelete: (n: CleanStoreNote) => void;
+  canEdit?: (n: CleanStoreNote) => boolean;
+  canDelete?: (n: CleanStoreNote) => boolean;
   emptyLabel: string;
 }) {
   const [showAll, setShowAll] = useState(false);
@@ -476,25 +501,29 @@ function NotesList({
                     <NoteContentDisplay content={note.note_text} asHtml collapsedLines={4} className="text-base" />
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => onEdit(note)}
-                      title="Edit note"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      className="h-10 w-10 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => onDelete(note)}
-                      title="Delete note"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </Button>
+                    {canEdit(note) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => onEdit(note)}
+                        title="Edit note"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </Button>
+                    )}
+                    {canDelete(note) && (
+                      <Button
+                        variant="ghost"
+                        size="lg"
+                        className="h-10 w-10 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => onDelete(note)}
+                        title="Delete note"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 pt-2 border-t border-border/20 flex-wrap">
