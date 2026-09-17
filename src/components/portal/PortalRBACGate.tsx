@@ -4,6 +4,7 @@ import { ShieldAlert, ArrowLeft, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Role } from '@/lib/permissions';
 import { Loader2 } from 'lucide-react';
 
@@ -29,8 +30,12 @@ export function PortalRBACGate({
   fallbackPath = '/portal/home'
 }: PortalRBACGateProps) {
   const { data, isLoading, error } = useCurrentUserProfile();
+  // Role membership is the canonical check: a person can legitimately hold
+  // several roles (e.g. driver + ambassador). Reading only primary_role locked
+  // invited ambassadors out of their own portal.
+  const { roles: membershipRoles, loading: rolesLoading } = useUserRole();
 
-  if (isLoading) {
+  if (isLoading || rolesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -41,7 +46,32 @@ export function PortalRBACGate({
     );
   }
 
-  if (error || !data?.profile) {
+  const profile: any = data?.profile ?? null;
+  const userRole = (profile?.primary_role ?? null) as PortalRole | null;
+
+  // Every role this account actually holds: primary_role, extra_roles on the
+  // profile, and user_roles membership (which is where an accepted ambassador
+  // invite grants access).
+  const heldRoles = new Set<string>(
+    [
+      userRole,
+      ...((profile?.extra_roles as string[] | null) ?? []),
+      ...membershipRoles,
+    ]
+      .filter(Boolean)
+      .map((r) => String(r).trim().toLowerCase()),
+  );
+
+  // Owner and admin always have access
+  if (heldRoles.has('admin') || heldRoles.has('owner')) {
+    return <>{children}</>;
+  }
+
+  if (allowedRoles.some((r) => heldRoles.has(String(r).toLowerCase()))) {
+    return <>{children}</>;
+  }
+
+  if (error || !profile) {
     return (
       <AccessDeniedPage 
         portalName={portalName}
@@ -51,22 +81,11 @@ export function PortalRBACGate({
     );
   }
 
-  const userRole = data.profile.primary_role as PortalRole;
-  
-  // Owner and admin always have access
-  if (userRole === 'admin') {
-    return <>{children}</>;
-  }
-
-  // Check if user's role is in the allowed list
-  if (allowedRoles.includes(userRole)) {
-    return <>{children}</>;
-  }
 
   return (
     <AccessDeniedPage 
       portalName={portalName}
-      currentRole={userRole}
+      currentRole={userRole ?? undefined}
       requiredRoles={allowedRoles}
       fallbackPath={fallbackPath}
     />

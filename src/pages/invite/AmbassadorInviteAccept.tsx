@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Shield, AlertTriangle, Check, UserPlus, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ type InviteState =
 export default function AmbassadorInviteAccept() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [state, setState] = useState<InviteState>('validating');
   const [error, setError] = useState('');
   const [inviteData, setInviteData] = useState<any>(null);
@@ -79,6 +81,9 @@ export default function AmbassadorInviteAccept() {
       return false;
     }
     try { localStorage.removeItem('gasmask_pending_ambassador_invite'); } catch { /* noop */ }
+    // The role was just granted server-side; drop the cached profile/role
+    // snapshot so the ambassador guard sees it without a manual reload.
+    await queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
     setState('done');
     toast.success('Welcome! Your ambassador account is ready.');
     return true;
