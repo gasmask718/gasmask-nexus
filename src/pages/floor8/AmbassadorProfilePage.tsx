@@ -218,6 +218,7 @@ export default function AmbassadorProfilePage() {
           ambassadorId={ambassador.id}
           ambassadorName={displayName}
           email={(ambassador as any).email}
+          accountEmail={(ambassador as any).profiles?.email}
           phone={(ambassador as any).phone_primary}
           invite={inviteState ?? EMPTY_INVITE_STATE}
           mode="panel"
