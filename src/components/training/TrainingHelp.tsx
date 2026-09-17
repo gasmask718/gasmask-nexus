@@ -224,16 +224,14 @@ export function TrainingHelp({ role, firstDayTitle, className, hideLauncher }: P
                 );
               })}
 
-              {progress?.first_day_dismissed_at && (
-                <Button
-                  variant="outline"
-                  className="w-full mt-4"
-                  onClick={() => setFirstDayOpen(true)}
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Re-launch first-day tour
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                className="w-full mt-4"
+                onClick={() => setFirstDayOpen(true)}
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Re-launch first-day tour
+              </Button>
             </div>
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
