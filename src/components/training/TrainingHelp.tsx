@@ -105,9 +105,11 @@ export function TrainingHelp({ role, firstDayTitle, className, hideLauncher }: P
 
   const startFirstDay = () => {
     setFirstDayOpen(false);
+    markSeenLocally();
     updateProgress.mutate({
       role,
       first_day_started_at: new Date().toISOString(),
+      first_day_dismissed_at: new Date().toISOString(),
     });
     const first = modules.find((m) => m.is_first_day) ?? modules[0];
     if (first) {
@@ -118,6 +120,7 @@ export function TrainingHelp({ role, firstDayTitle, className, hideLauncher }: P
 
   const dismissFirstDay = () => {
     setFirstDayOpen(false);
+    markSeenLocally();
     updateProgress.mutate({
       role,
       first_day_dismissed_at: new Date().toISOString(),
@@ -144,19 +147,21 @@ export function TrainingHelp({ role, firstDayTitle, className, hideLauncher }: P
 
   return (
     <>
-      {/* Floating ❓ button */}
-      <Button
-        size="icon"
-        variant="default"
-        onClick={() => setOpen(true)}
-        aria-label="How do I..."
-        className={cn(
-          'fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg hover:scale-105 transition',
-          className,
-        )}
-      >
-        <HelpCircle className="h-6 w-6" />
-      </Button>
+      {/* Floating ❓ button (suppressed where a consolidated Help menu exists) */}
+      {!hideLauncher && (
+        <Button
+          size="icon"
+          variant="default"
+          onClick={() => setOpen(true)}
+          aria-label="How do I..."
+          className={cn(
+            'fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg hover:scale-105 transition',
+            className,
+          )}
+        >
+          <HelpCircle className="h-6 w-6" />
+        </Button>
+      )}
 
       {/* Drawer */}
       <Sheet open={open} onOpenChange={setOpen}>
