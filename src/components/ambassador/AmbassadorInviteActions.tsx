@@ -274,10 +274,16 @@ export function AmbassadorInviteActions({
           )}
 
           {invite.staleInvite && (
-            <p className="text-xs text-amber-400">
-              A sign-up invite from {invite.expiresAt ? new Date(invite.expiresAt).toLocaleDateString() : ''} is
-              still open in the invite history. The account is already linked, so that link is no longer needed.
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs text-amber-400 flex-1 min-w-[16rem]">
+                A sign-up invite is still open (expires{' '}
+                {invite.expiresAt ? new Date(invite.expiresAt).toLocaleDateString() : '—'}). The account is
+                already linked, so that link is no longer needed.
+              </p>
+              <Button size="sm" variant="outline" disabled={busyAll} onClick={closeStaleInvite}>
+                Mark invite as used
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
