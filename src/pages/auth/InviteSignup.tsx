@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Crown, Loader2, AlertCircle, UserPlus } from "lucide-react";
+import { Crown, Map, Loader2, AlertCircle, UserPlus } from "lucide-react";
 import { validateInviteToken, type Invitation } from "@/services/invitationService";
 import { supabase } from "@/integrations/supabase/client";
 import { getRoleDisplayName } from "@/services/roleService";
@@ -161,16 +161,25 @@ export default function InviteSignup() {
     return null;
   }
 
+  // Route Planner trial invites get their own presentation only — the
+  // backend role stays "driver", permissions and assignment logic unchanged.
+  const isRoutePlanner = (invitation as any)?.metadata?.purpose === "route_planner_trial";
+  const title = isRoutePlanner ? "GasMask Route Planner" : "Join Dynasty OS";
+  const subtitle = isRoutePlanner ? "Set up your Route Planner account" : "Complete your account setup";
+  const roleLabel = isRoutePlanner ? "Field Route User" : getRoleDisplayName(invitation.role as OSRole);
+  const submitLabel = isRoutePlanner ? "Create Route Planner Account" : "Create Account";
+  const Icon = isRoutePlanner ? Map : Crown;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center mx-auto shadow-lg">
-            <Crown className="h-8 w-8 text-primary-foreground" />
+            <Icon className="h-8 w-8 text-primary-foreground" />
           </div>
           <div>
-            <CardTitle className="text-2xl">Join Dynasty OS</CardTitle>
-            <CardDescription>Complete your account setup</CardDescription>
+            <CardTitle className="text-2xl">{title}</CardTitle>
+            <CardDescription>{subtitle}</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -182,7 +191,7 @@ export default function InviteSignup() {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Role</span>
-              <Badge variant="secondary">{getRoleDisplayName(invitation.role as OSRole)}</Badge>
+              <Badge variant="secondary">{roleLabel}</Badge>
             </div>
           </div>
 
@@ -234,7 +243,7 @@ export default function InviteSignup() {
               ) : (
                 <>
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Create Account
+                  {submitLabel}
                 </>
               )}
             </Button>
