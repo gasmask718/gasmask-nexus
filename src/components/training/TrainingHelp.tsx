@@ -27,6 +27,7 @@ import {
   type TrainingModule,
   type TrainingRole,
 } from './useTrainingData';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
   role: TrainingRole;
