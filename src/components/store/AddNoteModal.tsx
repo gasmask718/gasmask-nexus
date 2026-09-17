@@ -177,7 +177,10 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
         dateToUse.setHours(23, 59, 59, 999);
       }
       
-      const { error } = await supabase
+      // Verify the write actually landed. Access rules only permit the note's
+      // own author (or elevated staff) to edit; a blocked edit returns zero
+      // rows with no error, which would otherwise look like a silent success.
+      const { data: updated, error } = await supabase
         .from('store_notes')
         .update({
           note_text: noteText.trim(),
@@ -186,9 +189,13 @@ export function AddNoteModal({ open, onOpenChange, storeId, storeName, onSuccess
           edited_at: new Date().toISOString(),
           edited_by: user?.id ?? null,
         })
-        .eq('id', editingNote.id);
+        .eq('id', editingNote.id)
+        .select('id');
 
       if (error) throw error;
+      if (!updated || updated.length === 0) {
+        throw new Error('You do not have permission to edit this note. Only the person who wrote it can change it.');
+      }
 
       toast.success('Note updated successfully');
       setNoteText('');
