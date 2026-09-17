@@ -42,6 +42,8 @@ function StoreProfileContent() {
   const { initiateCall } = useCall();
   const [newNote, setNewNote] = useState('');
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState('');
 
   const { 
     store, 
@@ -49,10 +51,13 @@ function StoreProfileContent() {
     notes, 
     contacts,
     claim,
+    currentUserId,
     isLoading, 
     isError,
     addNote,
     isAddingNote,
+    updateNote,
+    isUpdatingNote,
     secureStore,
     isSecuringStore
   } = useAmbassadorStoreProfile(storeId || null);
@@ -62,6 +67,27 @@ function StoreProfileContent() {
     await addNote(newNote);
     setNewNote('');
     setIsNoteDialogOpen(false);
+  };
+
+  const startEditNote = (note: any) => {
+    setEditingNoteId(note.id);
+    // Strip any stored markup so the ambassador edits plain readable text.
+    setEditingNoteText(String(note.note_text || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, ''));
+  };
+
+  const cancelEditNote = () => {
+    setEditingNoteId(null);
+    setEditingNoteText('');
+  };
+
+  const saveEditNote = async () => {
+    if (!editingNoteId || !editingNoteText.trim()) return;
+    try {
+      await updateNote({ noteId: editingNoteId, noteText: editingNoteText.trim() });
+      cancelEditNote();
+    } catch {
+      /* error toast already surfaced by the mutation */
+    }
   };
 
   if (isLoading) {
