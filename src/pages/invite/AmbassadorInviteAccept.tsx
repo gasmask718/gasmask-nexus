@@ -79,6 +79,9 @@ export default function AmbassadorInviteAccept() {
       return false;
     }
     try { localStorage.removeItem('gasmask_pending_ambassador_invite'); } catch { /* noop */ }
+    // The role was just granted server-side; drop the cached profile/role
+    // snapshot so the ambassador guard sees it without a manual reload.
+    await queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
     setState('done');
     toast.success('Welcome! Your ambassador account is ready.');
     return true;
