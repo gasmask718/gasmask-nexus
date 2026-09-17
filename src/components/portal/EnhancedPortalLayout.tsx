@@ -59,7 +59,11 @@ export function EnhancedPortalLayout({
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/auth');
+    // Ambassador Portal sign-out must stay inside the Ambassador experience —
+    // never drop ambassadors into the generic GasMask OS login.
+    const isAmbassadorSurface =
+      window.location.pathname === '/ambassador' || window.location.pathname.startsWith('/ambassador/');
+    navigate(isAmbassadorSurface ? '/ambassador/login' : '/auth');
   };
 
   return (
