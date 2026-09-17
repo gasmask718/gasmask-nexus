@@ -78,6 +78,7 @@ export default function AmbassadorInviteAccept() {
       toast.error((acceptResult as any)?.error || 'Could not activate your account');
       return false;
     }
+    try { localStorage.removeItem('gasmask_pending_ambassador_invite'); } catch { /* noop */ }
     setState('done');
     toast.success('Welcome! Your ambassador account is ready.');
     return true;

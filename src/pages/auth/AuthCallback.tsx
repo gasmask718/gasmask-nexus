@@ -6,6 +6,20 @@ import { Loader2 } from 'lucide-react';
 import { getRoleRedirectPath, type OSRole } from '@/config/osNavigation';
 import { consumePendingNext, isSafeNextPath } from '@/lib/authNext';
 
+/**
+ * An ambassador who confirms their email must return to their invite link —
+ * never to the generic GasMask sign-in page. The email link already carries
+ * `next`; this is the fallback when a provider strips the query string.
+ */
+function pendingAmbassadorInvitePath(): string | null {
+  try {
+    const token = localStorage.getItem('gasmask_pending_ambassador_invite');
+    return token ? `/invite/ambassador/${token}` : null;
+  } catch {
+    return null;
+  }
+}
+
 async function resolveRoleDestination(fallback: string): Promise<string> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
