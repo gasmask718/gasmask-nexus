@@ -79,6 +79,31 @@ export function AmbassadorInviteActions({
     qc.invalidateQueries({ queryKey: ['all-ambassador-invites'] });
   }
 
+  /**
+   * Close a leftover open invite for an ambassador whose account is ALREADY
+   * linked. The database function re-verifies the invite belongs to that exact
+   * ambassador and that the ambassador has a linked login; the row and its
+   * history are kept, only marked used.
+   */
+  async function closeStaleInvite() {
+    if (!invite.inviteId) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc(
+        'close_ambassador_invite_for_linked_account' as any,
+        { p_invite_id: invite.inviteId } as any,
+      );
+      if (error) throw error;
+      if ((data as any)?.success === false) throw new Error((data as any).error);
+      toast.success('Invite marked as used');
+      refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Could not close the invite');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function copyLink(token: string) {
     const link = ambassadorInviteLink(token);
     try {
