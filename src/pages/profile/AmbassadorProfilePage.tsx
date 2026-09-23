@@ -147,7 +147,7 @@ export default function AmbassadorProfilePage() {
       <div className="text-center py-12">
         <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
         <h2 className="text-xl font-bold mb-2">Ambassador Not Found</h2>
-        <Button onClick={() => navigate(portalAwarePath('/ambassadors', '/ambassador/dashboard', location.pathname))}>Back to Ambassadors</Button>
+        <Button onClick={() => navigate(portalAwarePath('/ambassadors', '/ambassador/dashboard'))}>Back to Ambassadors</Button>
       </div>
     );
   }
@@ -515,7 +515,7 @@ export default function AmbassadorProfilePage() {
   return (
     <ProfileLayout
         isLoading={isLoading}
-        backPath={portalAwarePath('/ambassadors', '/ambassador/dashboard', location.pathname)}
+        backPath={portalAwarePath('/ambassadors', '/ambassador/dashboard')}
         backLabel="Back to Ambassadors"
         header={{
           icon: <User className="h-6 w-6 text-primary" />,

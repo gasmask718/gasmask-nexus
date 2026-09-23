@@ -119,7 +119,7 @@ export default function InfluencerProfilePage() {
       <div className="text-center py-12">
         <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
         <h2 className="text-xl font-bold mb-2">Influencer Not Found</h2>
-        <Button onClick={() => navigate(portalAwarePath('/influencers', '/ambassador/dashboard', location.pathname))}>Back to Influencers</Button>
+        <Button onClick={() => navigate(portalAwarePath('/influencers', '/ambassador/dashboard'))}>Back to Influencers</Button>
       </div>
     );
   }
@@ -395,7 +395,7 @@ export default function InfluencerProfilePage() {
   return (
     <ProfileLayout
       isLoading={isLoading}
-      backPath={portalAwarePath('/influencers', '/ambassador/dashboard', location.pathname)}
+      backPath={portalAwarePath('/influencers', '/ambassador/dashboard')}
       backLabel="Back to Influencers"
       header={{
         icon: <Megaphone className="h-6 w-6 text-primary" />,

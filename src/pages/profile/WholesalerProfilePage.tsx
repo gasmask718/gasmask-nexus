@@ -90,7 +90,7 @@ export default function WholesalerProfilePage() {
       <div className="text-center py-12">
         <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
         <h2 className="text-xl font-bold mb-2">Wholesaler Not Found</h2>
-        <Button onClick={() => navigate(portalAwarePath('/wholesale', '/ambassador/wholesalers', location.pathname))}>Back to Wholesalers</Button>
+        <Button onClick={() => navigate(portalAwarePath('/wholesale', '/ambassador/wholesalers'))}>Back to Wholesalers</Button>
       </div>
     );
   }
@@ -279,7 +279,7 @@ export default function WholesalerProfilePage() {
   return (
     <ProfileLayout
         isLoading={isLoading}
-        backPath={portalAwarePath('/wholesale', '/ambassador/wholesalers', location.pathname)}
+        backPath={portalAwarePath('/wholesale', '/ambassador/wholesalers')}
         backLabel="Back to Wholesalers"
         header={{
           icon: <Building2 className="h-6 w-6 text-primary" />,
