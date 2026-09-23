@@ -113,6 +113,7 @@ export function TrainingHelp({ role, firstDayTitle, className, hideLauncher }: P
 
   const startFirstDay = () => {
     setFirstDayOpen(false);
+    setAutoShown(false);
     markSeenLocally();
     updateProgress.mutate({
       role,
@@ -128,11 +129,21 @@ export function TrainingHelp({ role, firstDayTitle, className, hideLauncher }: P
 
   const dismissFirstDay = () => {
     setFirstDayOpen(false);
+    setAutoShown(false);
     markSeenLocally();
     updateProgress.mutate({
       role,
       first_day_dismissed_at: new Date().toISOString(),
     });
+  };
+
+  /** Closing the auto-shown welcome any way (X, Esc, outside click) counts as seen. */
+  const handleFirstDayOpenChange = (next: boolean) => {
+    if (!next && autoShown) {
+      dismissFirstDay();
+      return;
+    }
+    setFirstDayOpen(next);
   };
 
   const active = modules.find((m) => m.id === activeId) ?? null;
