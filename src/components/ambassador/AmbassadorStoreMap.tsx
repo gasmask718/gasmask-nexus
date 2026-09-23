@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, MapPin } from 'lucide-react';
 import { GeoMapView, type GeoPoint } from '@/components/map/GeoMapView';
+import { getProspectSourceArea, getStoreSourceArea } from '@/lib/ambassadorAreaBreakdown';
 
 export interface MapStore {
   id: string;
@@ -64,7 +65,7 @@ function PortfolioStoreMap({ title, height }: { title?: string; height?: number 
   const mapped: MapStore[] = (portfolio || []).map((s) => ({
     id: s.store_id,
     name: s.store_name,
-    address: [s.store_address, s.store_city, s.store_state].filter(Boolean).join(', '),
+    address: [s.store_address, getStoreSourceArea(s), s.store_state].filter(Boolean).join(', '),
     lat: s.latitude,
     lng: s.longitude,
     statusKey: s.secured_ambassador_name ? 'secured' : s.access_source === 'territory' ? 'territory' : 'assigned',
@@ -76,7 +77,7 @@ function PortfolioStoreMap({ title, height }: { title?: string; height?: number 
   const prospectPins: MapStore[] = (prospects || []).map((p) => ({
     id: `prospect-${p.prospect_id}`,
     name: p.store_name || 'Unnamed location',
-    address: [p.full_address, p.neighborhood, p.city].filter(Boolean).join(', '),
+    address: [p.full_address, getProspectSourceArea(p), p.state].filter(Boolean).join(', '),
     lat: p.latitude,
     lng: p.longitude,
     statusKey: 'prospect',

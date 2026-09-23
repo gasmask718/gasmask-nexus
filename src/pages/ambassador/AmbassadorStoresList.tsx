@@ -34,6 +34,11 @@ import { StoreClaimStatus } from '@/components/ambassador/StoreClaimStatus';
 import { useAmbassadorProspects, type AmbassadorProspect } from '@/hooks/useAmbassadorProspects';
 import { ProspectPromoteDialog } from '@/components/ambassador/ProspectPromoteDialog';
 import { Compass } from 'lucide-react';
+import {
+  buildUpperManhattanBreakdown,
+  getProspectSourceArea,
+  getStoreSourceArea,
+} from '@/lib/ambassadorAreaBreakdown';
 
 
 interface StoreCardProps {
@@ -107,7 +112,7 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
-                {store.store_city}, {store.store_state}
+                 {getStoreSourceArea(store)}, {store.store_state}
               </span>
               {store.store_phone && (
                 <span className="flex items-center gap-1">
@@ -208,7 +213,7 @@ function ProspectCard({ prospect, onPromote }: { prospect: AmbassadorProspect; o
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
-                {[prospect.neighborhood, prospect.city, prospect.state].filter(Boolean).join(', ')}
+                 {[getProspectSourceArea(prospect), prospect.state].filter(Boolean).join(', ')}
               </span>
               {prospect.phone && (
                 <span className="flex items-center gap-1">
@@ -291,6 +296,14 @@ function StoresListContent() {
     );
   }, [prospects, searchQuery]);
 
+  const upperManhattanBreakdown = useMemo(
+    () => buildUpperManhattanBreakdown(stores, prospects),
+    [stores, prospects],
+  );
+  const showUpperManhattan = upperManhattanBreakdown.some(
+    (row) => row.label !== 'Manhattan overall' && row.landscape > 0,
+  );
+
 
   const handleStoreClick = (storeId: string) => {
     navigate(`/ambassador/stores/${storeId}`);
@@ -356,6 +369,39 @@ function StoresListContent() {
           </CardContent>
         </Card>
       </div>
+
+      {showUpperManhattan && (
+        <section className="space-y-3" aria-labelledby="upper-manhattan-heading">
+          <div>
+            <h2 id="upper-manhattan-heading" className="font-semibold">Upper Manhattan</h2>
+            <p className="text-sm text-muted-foreground">
+              Areas stay separate below. Manhattan overall already includes its neighborhoods.
+            </p>
+          </div>
+          <div className="overflow-x-auto rounded-md border">
+            <table className="w-full min-w-[34rem] text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium">Area</th>
+                  <th className="px-3 py-2 text-right font-medium">Existing</th>
+                  <th className="px-3 py-2 text-right font-medium">Prospects</th>
+                  <th className="px-3 py-2 text-right font-medium">Landscape</th>
+                </tr>
+              </thead>
+              <tbody>
+                {upperManhattanBreakdown.map((row) => (
+                  <tr key={row.label} className={cn('border-t', row.label === 'Manhattan overall' && 'font-semibold bg-muted/20')}>
+                    <td className="px-3 py-2">{row.label}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{row.existing}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{row.prospects}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{row.landscape}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {/* Search + Dispatch */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">

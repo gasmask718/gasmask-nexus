@@ -1,1 +1,1 @@
-- [ ] Preserve and clarify Upper Manhattan area labels/counts for ambassador stores and prospects
+- [x] Preserve and clarify Upper Manhattan area labels/counts for ambassador stores and prospects
