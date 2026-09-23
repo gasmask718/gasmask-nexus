@@ -69,7 +69,7 @@ export function EnhancedPortalLayout({
   };
 
   return (
-    <div className={cn('min-h-screen bg-background safe-area-top safe-area-x', isRTL ? 'rtl' : 'ltr')} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={cn('min-h-screen max-w-full overflow-x-hidden bg-background safe-area-top safe-area-x', isRTL ? 'rtl' : 'ltr')} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50 safe-area-top">
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
@@ -188,7 +188,7 @@ export function EnhancedPortalLayout({
       </header>
 
       {/* Main Content */}
-      <main className={cn('container mx-auto px-3 sm:px-4 py-4 sm:py-6', className)}>
+      <main className={cn('container mx-auto min-w-0 max-w-full px-3 sm:px-4 py-4 sm:py-6', className)}>
         {children}
       </main>
     </div>

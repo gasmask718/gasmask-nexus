@@ -30,7 +30,7 @@ export function AmbassadorMobileBottomNav() {
     <nav
       role="navigation"
       aria-label="Ambassador mobile navigation"
-      className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t bg-background/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-hidden border-t bg-background/95 pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-md md:hidden"
     >
       <ul className="grid grid-cols-5">
         {TABS.map((tab) => {
@@ -42,16 +42,16 @@ export function AmbassadorMobileBottomNav() {
           const label = t(tab.i18n);
 
           return (
-            <li key={tab.id}>
+            <li key={tab.id} className="min-w-0">
               <Link
                 to={tab.path}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors leading-tight',
+                  'flex min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden px-0.5 py-2 text-[10px] font-medium leading-tight transition-colors',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 <Icon className={cn('h-5 w-5', isActive && 'text-primary')} />
-                <span className="text-center">
+                <span className="block w-full truncate text-center">
                   {label}
                   {language !== 'en' && (
                     <span className="block text-[8px] uppercase tracking-wide opacity-60">

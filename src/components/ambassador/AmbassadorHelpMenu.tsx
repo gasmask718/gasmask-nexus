@@ -37,7 +37,7 @@ export function AmbassadorHelpMenu() {
           <Button
             size="icon"
             aria-label="Help"
-            className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40 h-14 w-14 rounded-full shadow-lg"
+            className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-4 z-50 h-14 w-14 rounded-full shadow-lg md:bottom-6 md:right-6"
           >
             <HelpCircle className="h-6 w-6" />
           </Button>

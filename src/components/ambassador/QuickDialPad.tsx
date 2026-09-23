@@ -271,7 +271,7 @@ export function QuickDialPad() {
       <Button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 left-4 md:bottom-6 md:left-6 z-50 h-14 w-14 rounded-full shadow-lg p-0"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] left-4 z-50 h-14 w-14 rounded-full p-0 shadow-lg md:bottom-6 md:left-6"
         aria-label="Quick dial pad"
       >
         <Phone className="h-6 w-6" />

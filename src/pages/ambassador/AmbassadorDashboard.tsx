@@ -542,7 +542,7 @@ function DashboardContent() {
       <Sheet open={captureOpen} onOpenChange={setCaptureOpen}>
         <SheetTrigger asChild>
           <Button
-            className="fixed bottom-6 right-6 h-14 rounded-full shadow-lg gap-2 z-50"
+            className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] left-1/2 z-50 h-14 -translate-x-1/2 rounded-full shadow-lg gap-2 md:bottom-6 md:left-auto md:right-6 md:translate-x-0"
           >
             <Camera className="h-5 w-5" />
             <span className="hidden sm:inline"><BilingualLabel tKey="amb.dashboard.capture_new_store" en="Capture New Store" inline /></span>
