@@ -48190,6 +48190,57 @@ export type Database = {
           },
         ]
       }
+      dd_capture_backup: {
+        Row: {
+          batch_key: string
+          created_at: string
+          finalized_at: string | null
+          finalized_product_id: string | null
+          id: string
+          identifiers: Json | null
+          payload: Json
+          photo_count: number
+          photo_paths: string[]
+          provenance: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+          wholesaler_id: string | null
+        }
+        Insert: {
+          batch_key: string
+          created_at?: string
+          finalized_at?: string | null
+          finalized_product_id?: string | null
+          id: string
+          identifiers?: Json | null
+          payload: Json
+          photo_count?: number
+          photo_paths?: string[]
+          provenance?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          wholesaler_id?: string | null
+        }
+        Update: {
+          batch_key?: string
+          created_at?: string
+          finalized_at?: string | null
+          finalized_product_id?: string | null
+          id?: string
+          identifiers?: Json | null
+          payload?: Json
+          photo_count?: number
+          photo_paths?: string[]
+          provenance?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          wholesaler_id?: string | null
+        }
+        Relationships: []
+      }
       dd_catalog_drafts: {
         Row: {
           candidates: Json
