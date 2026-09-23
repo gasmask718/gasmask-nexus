@@ -4,7 +4,7 @@
  * Shows: My Stores, My Wholesalers, My Ambassadors, My Influencers
  */
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Store, Users, ShoppingCart, Megaphone, 
   ArrowRight, Trash2, Phone, MapPin, Mail,
@@ -22,15 +22,18 @@ import { useAmbassadorWholesalers, type PortfolioWholesaler } from '@/hooks/useA
 import { useAmbassadorInfluencers, type PortfolioInfluencer } from '@/hooks/useAmbassadorInfluencers';
 import { useAmbassadorRecruits, type RecruitedAmbassador } from '@/hooks/useAmbassadorRecruits';
 import { formatDistanceToNow } from 'date-fns';
+import { fromHere } from '@/hooks/useReturnNavigation';
 
 // ============ STORE CARD ============
 function StoreCard({ store, onRemove }: { store: PortfolioStore; onRemove: () => void }) {
   const navigate = useNavigate();
+  const location = useLocation();
   
   return (
     <div 
       className="p-3 rounded-lg border bg-card hover:border-primary/50 transition-colors cursor-pointer group"
-      onClick={() => navigate(`/ambassador/stores/${store.store_id}`)}
+      id={`portfolio-store-${store.store_id}`}
+      onClick={() => navigate(`/ambassador/stores/${store.store_id}`, { state: fromHere(location, `portfolio-store-${store.store_id}`) })}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -60,11 +63,13 @@ function StoreCard({ store, onRemove }: { store: PortfolioStore; onRemove: () =>
 // ============ WHOLESALER CARD ============
 function WholesalerCard({ wholesaler, onRemove }: { wholesaler: PortfolioWholesaler; onRemove: () => void }) {
   const navigate = useNavigate();
+  const location = useLocation();
   
   return (
     <div 
       className="p-3 rounded-lg border bg-card hover:border-primary/50 transition-colors cursor-pointer group"
-      onClick={() => navigate(`/ambassador/wholesalers/${wholesaler.wholesaler_id}`)}
+      id={`portfolio-wholesaler-${wholesaler.wholesaler_id}`}
+      onClick={() => navigate(`/ambassador/wholesalers/${wholesaler.wholesaler_id}`, { state: fromHere(location, `portfolio-wholesaler-${wholesaler.wholesaler_id}`) })}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -94,11 +99,13 @@ function WholesalerCard({ wholesaler, onRemove }: { wholesaler: PortfolioWholesa
 // ============ INFLUENCER CARD ============
 function InfluencerCard({ influencer, onRemove }: { influencer: PortfolioInfluencer; onRemove: () => void }) {
   const navigate = useNavigate();
+  const location = useLocation();
   
   return (
     <div 
       className="p-3 rounded-lg border bg-card hover:border-primary/50 transition-colors cursor-pointer group"
-      onClick={() => navigate(`/ambassador/influencers/${influencer.influencer_id}`)}
+      id={`portfolio-influencer-${influencer.influencer_id}`}
+      onClick={() => navigate(`/ambassador/influencers/${influencer.influencer_id}`, { state: fromHere(location, `portfolio-influencer-${influencer.influencer_id}`) })}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -140,11 +147,13 @@ function InfluencerCard({ influencer, onRemove }: { influencer: PortfolioInfluen
 // ============ AMBASSADOR RECRUIT CARD ============
 function RecruitCard({ recruit, onRemove }: { recruit: RecruitedAmbassador; onRemove: () => void }) {
   const navigate = useNavigate();
+  const location = useLocation();
   
   return (
     <div 
       className="p-3 rounded-lg border bg-card hover:border-primary/50 transition-colors cursor-pointer group"
-      onClick={() => navigate(`/ambassador/ambassadors/${recruit.id}`)}
+      id={`portfolio-recruit-${recruit.id}`}
+      onClick={() => navigate(`/ambassador/ambassadors/${recruit.id}`, { state: fromHere(location, `portfolio-recruit-${recruit.id}`) })}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -179,7 +188,13 @@ function RecruitCard({ recruit, onRemove }: { recruit: RecruitedAmbassador; onRe
 // ============ MAIN PORTFOLIO SECTION ============
 export function PortfolioSection() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('stores');
+  const location = useLocation();
+  const returnAnchor = (location.state as { restoreAnchor?: string } | null)?.restoreAnchor ?? '';
+  const restoredTab = returnAnchor.startsWith('portfolio-wholesaler-') ? 'wholesalers'
+    : returnAnchor.startsWith('portfolio-influencer-') ? 'influencers'
+      : returnAnchor.startsWith('portfolio-recruit-') ? 'recruits'
+        : 'stores';
+  const [activeTab, setActiveTab] = useState(restoredTab);
   
   // Load all portfolio data
   const { stores, unassignStore, isLoading: storesLoading } = useAmbassadorPortfolio();

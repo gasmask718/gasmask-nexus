@@ -50,7 +50,11 @@ export default function AmbassadorLeads() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
-  const [activeLane, setActiveLane] = useState<'stores' | 'wholesalers' | 'influencers' | 'ambassadors'>('stores');
+  const requestedLane = new URLSearchParams(location.search).get('lane');
+  const initialLane = ['stores', 'wholesalers', 'influencers', 'ambassadors'].includes(requestedLane || '')
+    ? requestedLane as 'stores' | 'wholesalers' | 'influencers' | 'ambassadors'
+    : 'stores';
+  const [activeLane, setActiveLane] = useState<'stores' | 'wholesalers' | 'influencers' | 'ambassadors'>(initialLane);
   const [debugOpen, setDebugOpen] = useState(false);
 
   // Resolve targetUserId from route ambassador ID if present
@@ -551,49 +555,26 @@ export default function AmbassadorLeads() {
           </Collapsible>
         )}
 
-        {/* KPI Summary Cards - MASTER GENIUS ARCHITECT: Always render, never conditional on truthy count */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {pipelines.map((pipeline) => {
-            // CRITICAL: force render from authoritative counts object, never from UI columns
-            const leadType = laneToLeadType[pipeline.id as keyof typeof laneToLeadType];
-            const countNum = Number(kpiCounts?.[leadType] ?? 0);
-            const count = Number.isNaN(countNum) ? 0 : countNum;
-            
-            return (
-              <Card 
-                key={pipeline.id}
-                className="border-primary/20 hover:border-primary/40 transition-colors cursor-pointer"
-                onClick={() => {
-                  // Scroll to corresponding tab or set active
-                  const tabElement = document.querySelector(`[value="${pipeline.id}"]`);
-                  tabElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  (tabElement as HTMLElement)?.click();
-                }}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-primary/10">
-                      {pipeline.icon}
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground"><BilingualLabel tKey={`amb.lead.${pipeline.id.replace("s", "")}_leads`} en={pipeline.name} /></p>
-                      <p className="text-2xl font-bold font-mono">{count}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
         {/* Pipeline Tabs */}
         <Tabs value={activeLane} onValueChange={(v) => setActiveLane(v as any)} className="space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <TabsList className="flex-wrap h-auto">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold">Lead categories</h2>
+                <p className="text-xs text-muted-foreground">Choose which pipeline to view</p>
+              </div>
+              {!isReadOnly && (
+                <Button onClick={() => setAddLeadOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  <BilingualLabel tKey="amb.leads.add_lead" en="Add Lead" inline />
+                </Button>
+              )}
+            </div>
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1 sm:grid-cols-4">
               {pipelines.map((pipeline) => (
-                <TabsTrigger key={pipeline.id} value={pipeline.id} className="gap-2">
+                <TabsTrigger key={pipeline.id} value={pipeline.id} className="min-h-11 gap-2 px-2 data-[state=active]:border-primary/40 data-[state=active]:bg-background">
                   {pipeline.icon}
-                  <span className="hidden sm:inline"><BilingualLabel tKey={`amb.lead.${pipeline.id.replace("s", "")}_leads`} en={pipeline.name} /></span>
+                  <span className="truncate"><BilingualLabel tKey={`amb.lead.${pipeline.id.replace("s", "")}_leads`} en={pipeline.name.replace(' Leads', '')} /></span>
                   <Badge variant="secondary" className="ml-1">
                     {Number.isNaN(Number(kpiCounts?.[laneToLeadType[pipeline.id as keyof typeof laneToLeadType]] ?? 0))
                       ? 0
@@ -603,12 +584,6 @@ export default function AmbassadorLeads() {
                 </TabsTrigger>
               ))}
             </TabsList>
-            {!isReadOnly && (
-              <Button onClick={() => setAddLeadOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                <BilingualLabel tKey="amb.leads.add_lead" en="Add Lead" inline />
-              </Button>
-            )}
           </div>
 
           {pipelines.map((pipeline) => (

@@ -4,6 +4,7 @@
  * Never delete, only unassign (deactivate assignment)
  */
 import { useState, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Building2, Search, MapPin, Phone, Mail, Calendar,
   Trash2, ExternalLink
@@ -19,20 +20,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { useAmbassadorWholesalers, type PortfolioWholesaler } from '@/hooks/useAmbassadorWholesalers';
 import { formatDistanceToNow } from 'date-fns';
+import { fromHere } from '@/hooks/useReturnNavigation';
 
 interface WholesalerCardProps {
   wholesaler: PortfolioWholesaler;
   onRemove: () => void;
+  onOpen: () => void;
 }
 
-function WholesalerCard({ wholesaler, onRemove }: WholesalerCardProps) {
+function WholesalerCard({ wholesaler, onRemove, onOpen }: WholesalerCardProps) {
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onRemove();
   };
 
   return (
-    <Card className="hover:border-primary/50 transition-colors group">
+    <Card id={`wholesaler-${wholesaler.wholesaler_id}`} className="hover:border-primary/50 transition-colors group cursor-pointer" onClick={onOpen}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -108,6 +111,8 @@ function WholesalerCard({ wholesaler, onRemove }: WholesalerCardProps) {
 }
 
 function WholesalersListContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { wholesalers, metrics, isLoading, unassignWholesaler, isUnassigning } = useAmbassadorWholesalers();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
@@ -232,6 +237,7 @@ function WholesalersListContent() {
                   key={wholesaler.assignment_id} 
                   wholesaler={wholesaler}
                   onRemove={() => handleRemoveClick(wholesaler)}
+                  onOpen={() => navigate(`/ambassador/wholesalers/${wholesaler.wholesaler_id}`, { state: fromHere(location, `wholesaler-${wholesaler.wholesaler_id}`) })}
                 />
               ))}
             </div>
