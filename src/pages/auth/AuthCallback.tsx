@@ -74,7 +74,14 @@ export default function AuthCallback() {
       const safeNext = isSafeNextPath(nextParam) ? nextParam : '/';
 
       const bounceFail = (reason: string) => {
-        navigate(`/auth?verify=failed&reason=${encodeURIComponent(reason)}`, { replace: true });
+        // Keep the intended destination (e.g. the ambassador invite) so signing
+        // in from the bounce page lands where the email link was headed.
+        const keepNext = isSafeNextPath(nextParam)
+          ? `&next=${encodeURIComponent(nextParam as string)}`
+          : '';
+        navigate(`/auth?verify=failed&reason=${encodeURIComponent(reason)}${keepNext}`, {
+          replace: true,
+        });
       };
 
       const goOn = async () => {
