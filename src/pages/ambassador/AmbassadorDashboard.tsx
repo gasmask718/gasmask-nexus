@@ -320,6 +320,10 @@ function DashboardContent() {
       {/* My Captured Stores - portfolio of stores ambassador captured */}
       <MyCapturedStores />
 
+      {/* My Store Activity — what THIS ambassador personally handled / added */}
+      <MyWorkSection />
+
+
       {/* MASTER GENIUS ARCHITECT: Lead KPI Cards - ALWAYS render, never conditional */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {(Object.keys(LEAD_KPI_CONFIG) as LeadType[]).map((leadType) => {

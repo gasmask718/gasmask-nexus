@@ -439,11 +439,24 @@ function StoresListContent() {
           <TabsTrigger value="all">{t('amb.stores.tab_all')} ({stores.length})</TabsTrigger>
           <TabsTrigger value="assigned">{t('amb.stores.tab_assigned')} ({metrics.assignedStores})</TabsTrigger>
           <TabsTrigger value="sourced">{t('amb.stores.tab_sourced')} ({metrics.sourcedStores})</TabsTrigger>
+          <TabsTrigger value="handled">Handled ({handledStores.length})</TabsTrigger>
           <TabsTrigger value="prospects">Prospects ({prospects.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-4">
-          {activeTab === 'prospects' ? (
+          {activeTab === 'handled' ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Stores you personally marked handled. Handled is your own work record — it is not an
+                assignment or ownership.
+              </p>
+              <MyWorkStoreList
+                rows={filteredHandled}
+                isLoading={handledLoading}
+                emptyText="You haven't marked any stores handled yet."
+              />
+            </div>
+          ) : activeTab === 'prospects' ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
                 Newly discovered locations in your areas. These are not yours yet and are not counted
