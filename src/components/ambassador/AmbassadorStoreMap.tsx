@@ -5,6 +5,7 @@
  */
 import { useMemo } from 'react';
 import { useAmbassadorPortfolio } from '@/hooks/useAmbassadorPortfolio';
+import { useAmbassadorProspects } from '@/hooks/useAmbassadorProspects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, MapPin } from 'lucide-react';
@@ -21,6 +22,9 @@ export interface MapStore {
   order?: number;
   securedAmbassadorName?: string | null;
   securedAt?: string | null;
+  /** True for read-only discovery pins (never an owned store). */
+  isProspect?: boolean;
+  phone?: string | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
