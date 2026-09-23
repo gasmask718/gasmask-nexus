@@ -52,7 +52,7 @@ export function AmbassadorPortalNav() {
   }
 
   return (
-    <div className="border-b bg-card/50 backdrop-blur-sm -mx-4 px-4 mb-6">
+    <div className="-mx-3 mb-6 border-b bg-card/50 px-3 backdrop-blur-sm sm:-mx-4 sm:px-4">
       <ScrollArea className="w-full">
         <nav className="flex items-center gap-1 py-1" role="navigation" aria-label="Ambassador portal navigation">
           {AMBASSADOR_NAV_ITEMS.map((item) => {

@@ -56,8 +56,10 @@ export function AmbassadorLayout({
       <div className="md:hidden mb-3">
         <InstallAppPrompt compact />
       </div>
-      {/* Mobile-only bottom-pad so fixed nav doesn't cover content */}
-      <div className="pb-20 md:pb-0">{children}</div>
+      {/* Keep page content above the mobile nav, floating controls, and iPhone home indicator. */}
+      <div className="min-w-0 max-w-full overflow-x-hidden pb-[calc(9rem+env(safe-area-inset-bottom,0px))] md:overflow-x-visible md:pb-0">
+        {children}
+      </div>
       <AmbassadorHelpMenu />
       <QuickDialPad />
       <AmbassadorMobileBottomNav />

@@ -367,7 +367,7 @@ function StoresListContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden md:overflow-x-visible">
       {/* Header Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card>
@@ -404,7 +404,7 @@ function StoresListContent() {
               Areas stay separate below. Manhattan overall already includes its neighborhoods.
             </p>
           </div>
-          <div className="overflow-x-auto rounded-md border">
+          <div className="max-w-full overflow-x-auto rounded-md border">
             <table className="w-full min-w-[34rem] text-sm">
               <thead className="bg-muted/40 text-muted-foreground">
                 <tr>
@@ -461,7 +461,7 @@ function StoresListContent() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); clearSelection(); }}>
-        <TabsList className="h-auto max-w-full justify-start overflow-x-auto">
+        <TabsList className="h-auto w-full max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="all">{t('amb.stores.tab_all')} ({stores.length})</TabsTrigger>
           <TabsTrigger value="assigned">{t('amb.stores.tab_assigned')} ({metrics.assignedStores})</TabsTrigger>
           <TabsTrigger value="sourced">{t('amb.stores.tab_sourced')} ({metrics.sourcedStores})</TabsTrigger>
