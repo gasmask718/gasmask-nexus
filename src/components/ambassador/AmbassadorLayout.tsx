@@ -15,6 +15,7 @@ import { AmbassadorHelpMenu } from '@/components/ambassador/AmbassadorHelpMenu';
 import { QuickDialPad } from '@/components/ambassador/QuickDialPad';
 import { AmbassadorFieldSession } from '@/components/ambassador/AmbassadorFieldSession';
 import InstallAppPrompt from '@/components/pwa/InstallAppPrompt';
+import { useReturnScrollRestoration } from '@/hooks/useReturnNavigation';
 
 interface AmbassadorLayoutProps {
   children: ReactNode;
@@ -37,6 +38,8 @@ export function AmbassadorLayout({
   showBusinessSelector,
   className,
 }: AmbassadorLayoutProps) {
+  useReturnScrollRestoration();
+
   return (
     <EnhancedPortalLayout
       title={title}

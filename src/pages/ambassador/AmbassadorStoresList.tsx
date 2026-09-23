@@ -3,7 +3,7 @@
  * MASTER GENIUS ARCHITECT: Never delete stores, only unassign (deactivate assignment)
  */
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   Store, Search, Filter, MapPin, Phone, Calendar,
@@ -24,7 +24,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MyWorkStoreList } from '@/components/ambassador/MyWorkSection';
-import { useMyHandledStores } from '@/hooks/useAmbassadorMyWork';
+import { useMyAddedStores, useMyHandledStores } from '@/hooks/useAmbassadorMyWork';
+import { fromHere } from '@/hooks/useReturnNavigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
@@ -237,12 +238,14 @@ function ProspectCard({ prospect, onPromote }: { prospect: AmbassadorProspect; o
 
 function StoresListContent() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { initiateCall } = useCall();
   const { t } = useTranslation();
   const { stores, metrics, isLoading, unassignStore, isUnassigningStore, secureStore, isSecuringStore, ambassador } = useAmbassadorPortfolio();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
+  const requestedTab = new URLSearchParams(location.search).get('tab');
+  const [activeTab, setActiveTab] = useState(requestedTab === 'handled' || requestedTab === 'added' ? requestedTab : 'all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
   const [newStoreOpen, setNewStoreOpen] = useState(false);
@@ -253,6 +256,8 @@ function StoresListContent() {
   // Same canonical handled data the dashboard uses — no second implementation.
   const { data: handledData, isLoading: handledLoading } = useMyHandledStores();
   const handledStores = handledData ?? [];
+  const { data: addedData, isLoading: addedLoading } = useMyAddedStores();
+  const addedStores = addedData ?? [];
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -309,6 +314,14 @@ function StoresListContent() {
     );
   }, [handledStores, searchQuery]);
 
+  const filteredAdded = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return addedStores;
+    return addedStores.filter(store =>
+      store.name.toLowerCase().includes(query) || (store.location || '').toLowerCase().includes(query)
+    );
+  }, [addedStores, searchQuery]);
+
   const upperManhattanBreakdown = useMemo(
     () => buildUpperManhattanBreakdown(stores, prospects),
     [stores, prospects],
@@ -319,7 +332,7 @@ function StoresListContent() {
 
 
   const handleStoreClick = (storeId: string) => {
-    navigate(`/ambassador/stores/${storeId}`);
+    navigate(`/ambassador/stores/${storeId}`, { state: fromHere(location, `store-${storeId}`) });
   };
 
   const handleRemoveClick = (store: PortfolioStore) => {
@@ -453,6 +466,7 @@ function StoresListContent() {
           <TabsTrigger value="assigned">{t('amb.stores.tab_assigned')} ({metrics.assignedStores})</TabsTrigger>
           <TabsTrigger value="sourced">{t('amb.stores.tab_sourced')} ({metrics.sourcedStores})</TabsTrigger>
           <TabsTrigger value="handled">Handled ({handledStores.length})</TabsTrigger>
+          <TabsTrigger value="added">Added by Me ({addedStores.length})</TabsTrigger>
           <TabsTrigger value="prospects">Prospects ({prospects.length})</TabsTrigger>
         </TabsList>
 
@@ -467,6 +481,18 @@ function StoresListContent() {
                 rows={filteredHandled}
                 isLoading={handledLoading}
                 emptyText="You haven't marked any stores handled yet."
+                originAnchor="handled-stores"
+              />
+            </div>
+          ) : activeTab === 'added' ? (
+            <div id="added-stores" className="space-y-3">
+              <p className="text-sm text-muted-foreground">Your complete added-store history, including current approval status.</p>
+              <MyWorkStoreList
+                rows={filteredAdded}
+                isLoading={addedLoading}
+                emptyText="You haven't added any stores yet."
+                showApproval
+                originAnchor="added-stores"
               />
             </div>
           ) : activeTab === 'prospects' ? (
@@ -505,8 +531,8 @@ function StoresListContent() {
           ) : (
             <div className="grid gap-3">
               {filteredStores.map((store) => (
+                <div id={`store-${store.store_id}`} key={store.store_id}>
                 <StoreCard 
-                  key={store.store_id}
                   store={store}
                   onClick={() => handleStoreClick(store.store_id)}
                   onRemove={() => handleRemoveClick(store)}
@@ -527,6 +553,7 @@ function StoresListContent() {
                   selected={selectedIds.includes(store.store_id)}
                   losSnapshots={losMap?.get(store.store_id)}
                 />
+                </div>
 
               ))}
             </div>

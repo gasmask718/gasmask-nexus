@@ -195,7 +195,7 @@ function MyCapturedStores() {
             {myStores.map((store: any) => (
               <button
                 key={store.id}
-                onClick={() => navigate(`/ambassador/stores/${store.id}`)}
+              onClick={() => navigate(`/ambassador/stores/${store.id}`)}
                 className="w-full text-left flex items-start justify-between gap-3 p-3 rounded-lg border hover:border-primary/50 hover:bg-muted/30 transition-colors"
               >
                 <div className="flex-1 min-w-0">
@@ -338,7 +338,7 @@ function DashboardContent() {
             <Card 
               key={leadType}
               className={`${config.bgClass} ${config.borderClass} border hover:scale-[1.02] transition-transform cursor-pointer`}
-              onClick={() => navigate('/ambassador/leads')}
+              onClick={() => navigate(`/ambassador/leads?lane=${leadType === 'store' ? 'stores' : `${leadType}s`}`)}
             >
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">

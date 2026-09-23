@@ -2,13 +2,14 @@
  * MyWorkSection — the ambassador's OWN store activity on their dashboard.
  * Handled by me + New stores I added. Server data only (see useAmbassadorMyWork).
  */
-import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, MapPin, PlusCircle } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, MapPin, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { useMyAddedStores, useMyHandledStores, type MyWorkStore } from '@/hooks/useAmbassadorMyWork';
+import { fromHere } from '@/hooks/useReturnNavigation';
 
 function fmt(at: string | null) {
   if (!at) return '';
@@ -31,13 +32,16 @@ export function MyWorkStoreList({
   isLoading,
   emptyText,
   showApproval,
+  originAnchor,
 }: {
   rows: MyWorkStore[];
   isLoading: boolean;
   emptyText: string;
   showApproval?: boolean;
+  originAnchor?: string;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -54,13 +58,13 @@ export function MyWorkStoreList({
   }
 
   return (
-    <ScrollArea className="max-h-72">
-      <div className="space-y-2">
+    <div className="space-y-2">
         {rows.map((row) => (
-          <button
+          <Button
             key={row.store_id}
-            onClick={() => navigate(`/ambassador/stores/${row.store_id}`)}
-            className="w-full text-left flex items-start justify-between gap-3 p-3 rounded-lg border hover:border-primary/50 hover:bg-muted/30 transition-colors"
+            variant="ghost"
+            onClick={() => navigate(`/ambassador/stores/${row.store_id}`, { state: fromHere(location, originAnchor) })}
+            className="w-full h-auto min-h-11 text-left flex items-start justify-between gap-3 p-3 rounded-lg border hover:border-primary/50 hover:bg-muted/30"
           >
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm truncate">{row.name}</p>
@@ -87,10 +91,9 @@ export function MyWorkStoreList({
                 </Badge>
               )}
             </div>
-          </button>
+          </Button>
         ))}
-      </div>
-    </ScrollArea>
+    </div>
   );
 }
 
@@ -100,10 +103,11 @@ export function MyWorkSection() {
 
   const handledRows = handled.data ?? [];
   const addedRows = added.data ?? [];
+  const previewLimit = 3;
 
   return (
     <div className="grid md:grid-cols-2 gap-4">
-      <Card>
+      <Card id="my-work-handled">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -113,14 +117,20 @@ export function MyWorkSection() {
         </CardHeader>
         <CardContent>
           <MyWorkStoreList
-            rows={handledRows}
+            rows={handledRows.slice(0, previewLimit)}
             isLoading={handled.isLoading}
             emptyText="No stores marked handled yet."
+            originAnchor="my-work-handled"
           />
+          {handledRows.length > previewLimit && (
+            <Button variant="outline" className="mt-3 w-full" onClick={() => navigate('/ambassador/stores?tab=handled')}>
+              View All {handledRows.length}<ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          )}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="my-work-added">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <PlusCircle className="h-4 w-4 text-primary" />
@@ -130,11 +140,17 @@ export function MyWorkSection() {
         </CardHeader>
         <CardContent>
           <MyWorkStoreList
-            rows={addedRows}
+            rows={addedRows.slice(0, previewLimit)}
             isLoading={added.isLoading}
             emptyText="You haven't added any stores yet."
             showApproval
+            originAnchor="my-work-added"
           />
+          {addedRows.length > previewLimit && (
+            <Button variant="outline" className="mt-3 w-full" onClick={() => navigate('/ambassador/stores?tab=added')}>
+              View All {addedRows.length}<ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>
