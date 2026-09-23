@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAmbassadorHost } from '@/lib/portalHost';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -23,7 +24,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   if (!user || !session) {
     // Ambassadors stay inside the dedicated Ambassador Portal experience
     // instead of being dropped into the full GasMask OS sign-in page.
+    // Entry context: the ambassador subdomain keeps EVERY route inside the
+    // ambassador sign-in, including the site root.
     const isAmbassadorSurface =
+      isAmbassadorHost() ||
       location.pathname === '/ambassador' || location.pathname.startsWith('/ambassador/');
     // Route-planner users stay inside the dedicated Route Planner experience.
     const isRoutePlannerSurface =

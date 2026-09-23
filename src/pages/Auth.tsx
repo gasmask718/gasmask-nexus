@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Package } from 'lucide-react';
 import { getRoleRedirectPath, type OSRole } from '@/config/osNavigation';
+import { isAmbassadorHost, AMBASSADOR_PORTAL_ENTRY } from '@/lib/portalHost';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useUserRole } from '@/hooks/useUserRole';
 import { consumePendingNext, isSafeNextPath, peekPendingNext, storePendingNext } from '@/lib/authNext';
@@ -66,6 +67,10 @@ const Auth = () => {
 
     if (explicit) {
       navigate(explicit, { replace: true });
+    } else if (isAmbassadorHost()) {
+      // Entry context wins over role: an owner/admin who came in through the
+      // ambassador subdomain stays in field mode (roles are untouched).
+      navigate(AMBASSADOR_PORTAL_ENTRY, { replace: true });
     } else if (resolvedRole) {
       navigate(getRoleRedirectPath(resolvedRole), { replace: true });
     } else {
