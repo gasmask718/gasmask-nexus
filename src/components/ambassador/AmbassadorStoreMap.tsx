@@ -156,6 +156,10 @@ function MapBody({ stores, title, height }: { stores: MapStore[]; title: string;
               initialZoom={points.length === 1 ? 13 : 10}
               clustering={points.length > 150}
               renderPopupHTML={(point) => {
+                if (point.meta?.isProspect) {
+                  const phone = point.meta?.phone ? `<br>${escapePopupText(point.meta.phone)}` : '';
+                  return `<strong>${escapePopupText(point.title)}</strong><br>${escapePopupText(point.subtitle)}${phone}<br><em>Prospect — not yet a store</em>`;
+                }
                 const securedBy = point.meta?.securedAmbassadorName;
                 const status = securedBy ? `Secured by ${String(securedBy)}` : 'Available';
                 return `<strong>${escapePopupText(point.title)}</strong><br>${escapePopupText(point.subtitle)}<br>${escapePopupText(status)}`;
