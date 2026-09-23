@@ -329,7 +329,7 @@ export function TrainingHelp({ role, firstDayTitle, className, hideLauncher }: P
       </Sheet>
 
       {/* First-day welcome */}
-      <Dialog open={firstDayOpen} onOpenChange={setFirstDayOpen}>
+      <Dialog open={firstDayOpen} onOpenChange={handleFirstDayOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
