@@ -114,6 +114,8 @@ function MapBody({ stores, title, height }: { stores: MapStore[]; title: string;
         meta: {
           securedAmbassadorName: s.securedAmbassadorName,
           securedAt: s.securedAt,
+          isProspect: s.isProspect === true,
+          phone: s.phone,
         },
       })),
     [withCoords],
@@ -133,11 +135,14 @@ function MapBody({ stores, title, height }: { stores: MapStore[]; title: string;
           <MapPin className="h-4 w-4" /> {title}
         </CardTitle>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{withCoords.length} mapped</Badge>
-          {missing.length > 0 && (
+          <Badge variant="secondary">{withCoords.filter((s) => !s.isProspect).length} existing</Badge>
+          {withCoords.some((s) => s.isProspect) && (
             <Badge variant="outline" className="text-amber-500 border-amber-500/40">
-              {missing.length} need geocoding
+              {withCoords.filter((s) => s.isProspect).length} prospects
             </Badge>
+          )}
+          {missing.length > 0 && (
+            <Badge variant="outline">{missing.length} need geocoding</Badge>
           )}
         </div>
       </CardHeader>
