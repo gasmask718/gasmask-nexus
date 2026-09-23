@@ -165011,6 +165011,7 @@ export type Database = {
         }
         Returns: string
       }
+      territory_data_staff: { Args: { _user_id: string }; Returns: boolean }
       territory_matches_store: {
         Args: {
           _region_type: string
