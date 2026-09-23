@@ -14,6 +14,8 @@ export interface PortfolioStore {
   store_address: string;
   store_city: string;
   store_state: string;
+  store_borough: string;
+  store_neighborhood: string;
   store_phone: string;
   store_owner: string;
   assignment_type: 'assigned' | 'sourced' | 'area_access' | string;
@@ -109,18 +111,30 @@ export function useAmbassadorPortfolio() {
     queryFn: async () => {
       if (!ambassadorId) return [];
 
-      const { data, error } = await supabase.rpc('ambassador_visible_stores');
+      const [{ data, error }, { data: geography, error: geographyError }] = await Promise.all([
+        supabase.rpc('ambassador_visible_stores'),
+        supabase.rpc('ambassador_visible_store_geography'),
+      ]);
 
       if (error) throw error;
+      if (geographyError) throw geographyError;
+
+      const geographyByStore = new Map(
+        (geography || []).map((row) => [row.store_id, row]),
+      );
 
       // Transform to PortfolioStore format
-      return (data || []).map((row): PortfolioStore => ({
+      return (data || []).map((row): PortfolioStore => {
+        const storeGeography = geographyByStore.get(row.store_id);
+        return ({
         assignment_id: row.assignment_id,
         store_id: row.store_id,
         store_name: row.store_name || 'Unknown Store',
         store_address: row.store_address || '',
         store_city: row.store_city || '',
         store_state: row.store_state || '',
+        store_borough: storeGeography?.borough || '',
+        store_neighborhood: storeGeography?.neighborhood || '',
         store_phone: row.store_phone || '',
         store_owner: row.store_owner || '',
         assignment_type: row.assignment_type || 'area_access',
@@ -137,7 +151,8 @@ export function useAmbassadorPortfolio() {
         secured_ambassador_name: row.secured_ambassador_name,
         secured_at: row.secured_at,
         secured_by_me: row.secured_by_me || false,
-      }));
+      });
+      });
     },
     enabled: !!ambassadorId,
   });
