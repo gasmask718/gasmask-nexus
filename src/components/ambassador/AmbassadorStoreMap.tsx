@@ -32,6 +32,8 @@ const STATUS_COLORS: Record<string, string> = {
   assigned: '#8b5cf6',
   territory: '#0ea5e9',
   secured: '#16a34a',
+  /** Read-only discovery layer — never an owned store. */
+  prospect: '#eab308',
 };
 
 function escapePopupText(value: unknown): string {
@@ -53,6 +55,8 @@ interface Props {
 /** Self-loading variant: the signed-in ambassador's own assigned stores. */
 function PortfolioStoreMap({ title, height }: { title?: string; height?: number }) {
   const { stores: portfolio } = useAmbassadorPortfolio();
+  const { prospects } = useAmbassadorProspects();
+
   const mapped: MapStore[] = (portfolio || []).map((s) => ({
     id: s.store_id,
     name: s.store_name,
@@ -64,7 +68,19 @@ function PortfolioStoreMap({ title, height }: { title?: string; height?: number 
     securedAt: s.secured_at,
   }));
 
-  return <MapBody stores={mapped} title={title || 'My Stores'} height={height ?? 420} />;
+  // Read-only prospect pins. Not owned, not assigned — clearly labelled in the popup.
+  const prospectPins: MapStore[] = (prospects || []).map((p) => ({
+    id: `prospect-${p.prospect_id}`,
+    name: p.store_name || 'Unnamed location',
+    address: [p.full_address, p.neighborhood, p.city].filter(Boolean).join(', '),
+    lat: p.latitude,
+    lng: p.longitude,
+    statusKey: 'prospect',
+    isProspect: true,
+    phone: p.phone,
+  }));
+
+  return <MapBody stores={[...mapped, ...prospectPins]} title={title || 'My Stores'} height={height ?? 420} />;
 }
 
 export function AmbassadorStoreMap({ stores, title, height }: Props) {
