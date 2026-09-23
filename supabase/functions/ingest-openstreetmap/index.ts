@@ -72,7 +72,11 @@ async function fetchOverpassWithRetry(query: string): Promise<any | null> {
         const response = await fetch(mirror, {
           method: 'POST',
           body: `data=${encodeURIComponent(query)}`,
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            // Overpass mirrors answer 406 Not Acceptable without a UA.
+            'User-Agent': 'DynastyOS-TerritoryIngestion/1.0',
+          },
           signal: controller.signal,
         });
         clearTimeout(timeout);
