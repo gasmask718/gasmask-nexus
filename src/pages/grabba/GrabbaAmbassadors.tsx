@@ -38,16 +38,22 @@ export default function GrabbaAmbassadors() {
   // CRUD Mutations
   const createMutation = useMutation({
     mutationFn: async (data: Record<string, unknown>) => {
-      // Get current user ID to satisfy user_id NOT NULL constraint
+      // An admin-created ambassador record must NOT be owned by the admin's own
+      // login. ambassadors.user_id is the ambassador's AUTH ACCOUNT and is only
+      // ever stamped by accept_ambassador_invite, after the invited person signs
+      // in with the invited email. Stamping it here silently handed every new
+      // ambassador to whichever admin filled in the form.
+      // created_by (audit: who added the row) is the only field that carries the
+      // admin's id — same shape as the applications approval flow.
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id;
       if (!userId) throw new Error("You must be logged in to create an ambassador");
-      
+
       const { data: result, error } = await supabase
         .from("ambassadors")
         .insert({
           ...data,
-          user_id: userId,
+          user_id: null,
           created_by: userId,
           total_earnings: 0,
         } as any)
