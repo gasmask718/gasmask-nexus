@@ -23,6 +23,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MyWorkStoreList } from '@/components/ambassador/MyWorkSection';
+import { useMyHandledStores } from '@/hooks/useAmbassadorMyWork';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
@@ -248,6 +250,9 @@ function StoresListContent() {
   // Read-only prospect landscape (territory-scoped server-side). Never mixed into metrics.
   const { prospects, isLoading: prospectsLoading, promoteProspect, isPromoting } = useAmbassadorProspects();
   const [promoteTarget, setPromoteTarget] = useState<AmbassadorProspect | null>(null);
+  // Same canonical handled data the dashboard uses — no second implementation.
+  const { data: handledData, isLoading: handledLoading } = useMyHandledStores();
+  const handledStores = handledData ?? [];
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -295,6 +300,14 @@ function StoresListContent() {
       (p.neighborhood || '').toLowerCase().includes(query)
     );
   }, [prospects, searchQuery]);
+
+  const filteredHandled = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return handledStores;
+    return handledStores.filter(h =>
+      h.name.toLowerCase().includes(query) || (h.location || '').toLowerCase().includes(query)
+    );
+  }, [handledStores, searchQuery]);
 
   const upperManhattanBreakdown = useMemo(
     () => buildUpperManhattanBreakdown(stores, prospects),
@@ -439,11 +452,24 @@ function StoresListContent() {
           <TabsTrigger value="all">{t('amb.stores.tab_all')} ({stores.length})</TabsTrigger>
           <TabsTrigger value="assigned">{t('amb.stores.tab_assigned')} ({metrics.assignedStores})</TabsTrigger>
           <TabsTrigger value="sourced">{t('amb.stores.tab_sourced')} ({metrics.sourcedStores})</TabsTrigger>
+          <TabsTrigger value="handled">Handled ({handledStores.length})</TabsTrigger>
           <TabsTrigger value="prospects">Prospects ({prospects.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-4">
-          {activeTab === 'prospects' ? (
+          {activeTab === 'handled' ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Stores you personally marked handled. Handled is your own work record — it is not an
+                assignment or ownership.
+              </p>
+              <MyWorkStoreList
+                rows={filteredHandled}
+                isLoading={handledLoading}
+                emptyText="You haven't marked any stores handled yet."
+              />
+            </div>
+          ) : activeTab === 'prospects' ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
                 Newly discovered locations in your areas. These are not yours yet and are not counted

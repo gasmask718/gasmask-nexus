@@ -24,6 +24,7 @@ import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassad
 import { useCommissionTotals, useCommissionLedger } from '@/hooks/useCommissionLedger';
 import { useEffectiveAmbassadorId } from '@/hooks/useAmbassadorComms';
 import { useAuth } from '@/contexts/AuthContext';
+import { MyWorkSection } from '@/components/ambassador/MyWorkSection';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -319,6 +320,10 @@ function DashboardContent() {
 
       {/* My Captured Stores - portfolio of stores ambassador captured */}
       <MyCapturedStores />
+
+      {/* My Store Activity — what THIS ambassador personally handled / added */}
+      <MyWorkSection />
+
 
       {/* MASTER GENIUS ARCHITECT: Lead KPI Cards - ALWAYS render, never conditional */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
