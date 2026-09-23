@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Package } from 'lucide-react';
 import { getRoleRedirectPath, type OSRole } from '@/config/osNavigation';
+import { isAmbassadorHost, AMBASSADOR_PORTAL_ENTRY } from '@/lib/portalHost';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useUserRole } from '@/hooks/useUserRole';
 import { consumePendingNext, isSafeNextPath, peekPendingNext, storePendingNext } from '@/lib/authNext';
