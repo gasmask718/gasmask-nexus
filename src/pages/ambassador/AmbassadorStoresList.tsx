@@ -31,6 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassadorPortfolio';
+import { useAmbassadorTerritory } from '@/hooks/useAmbassadorTerritory';
 import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from '@/hooks/useTranslation';
 import { StoreClaimStatus } from '@/components/ambassador/StoreClaimStatus';
@@ -322,13 +323,30 @@ function StoresListContent() {
     );
   }, [addedStores, searchQuery]);
 
+  // Ambassador field scope only (never admin/owner roles): which Upper
+  // Manhattan areas does this ambassador's own territory coverage include?
+  const { territories: myCoverage } = useAmbassadorTerritory(ambassador?.id);
+  const coveredUpperAreas = useMemo(() => {
+    const values = myCoverage.map((t) => (t.region_value || '').toLowerCase());
+    const hasManhattan = values.some((v) => /\bmanhattan\b/.test(v) || /^new york( city)?(,\s*ny)?$/.test(v.trim()));
+    const covered = new Set<string>();
+    const checks: Array<[string, RegExp]> = [
+      ['Washington Heights', /washington h/],
+      ['Dyckman', /dyckman/],
+      ['Inwood', /inwood/],
+      ['Harlem', /harlem/],
+    ];
+    for (const [label, re] of checks) {
+      if (hasManhattan || values.some((v) => re.test(v))) covered.add(label);
+    }
+    if (hasManhattan) covered.add('Manhattan overall');
+    return covered;
+  }, [myCoverage]);
   const upperManhattanBreakdown = useMemo(
-    () => buildUpperManhattanBreakdown(stores, prospects),
-    [stores, prospects],
+    () => buildUpperManhattanBreakdown(stores, prospects).filter((row) => coveredUpperAreas.has(row.label)),
+    [stores, prospects, coveredUpperAreas],
   );
-  const showUpperManhattan = upperManhattanBreakdown.some(
-    (row) => row.label !== 'Manhattan overall' && row.landscape > 0,
-  );
+  const showUpperManhattan = upperManhattanBreakdown.length > 0;
 
 
   const handleStoreClick = (storeId: string) => {
