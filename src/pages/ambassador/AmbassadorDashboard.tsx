@@ -24,6 +24,7 @@ import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassad
 import { useCommissionTotals, useCommissionLedger } from '@/hooks/useCommissionLedger';
 import { useEffectiveAmbassadorId } from '@/hooks/useAmbassadorComms';
 import { useAuth } from '@/contexts/AuthContext';
+import { MyWorkSection } from '@/components/ambassador/MyWorkSection';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, formatDistanceToNow } from 'date-fns';

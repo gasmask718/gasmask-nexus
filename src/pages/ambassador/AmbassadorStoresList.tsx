@@ -23,6 +23,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MyWorkStoreList } from '@/components/ambassador/MyWorkSection';
+import { useMyHandledStores } from '@/hooks/useAmbassadorMyWork';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DeleteConfirmModal } from '@/components/crud/DeleteConfirmModal';
@@ -248,6 +250,9 @@ function StoresListContent() {
   // Read-only prospect landscape (territory-scoped server-side). Never mixed into metrics.
   const { prospects, isLoading: prospectsLoading, promoteProspect, isPromoting } = useAmbassadorProspects();
   const [promoteTarget, setPromoteTarget] = useState<AmbassadorProspect | null>(null);
+  // Same canonical handled data the dashboard uses — no second implementation.
+  const { data: handledData, isLoading: handledLoading } = useMyHandledStores();
+  const handledStores = handledData ?? [];
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -295,6 +300,14 @@ function StoresListContent() {
       (p.neighborhood || '').toLowerCase().includes(query)
     );
   }, [prospects, searchQuery]);
+
+  const filteredHandled = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return handledStores;
+    return handledStores.filter(h =>
+      h.name.toLowerCase().includes(query) || (h.location || '').toLowerCase().includes(query)
+    );
+  }, [handledStores, searchQuery]);
 
   const upperManhattanBreakdown = useMemo(
     () => buildUpperManhattanBreakdown(stores, prospects),
