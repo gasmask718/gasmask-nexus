@@ -161860,6 +161860,15 @@ export type Database = {
           zip: string
         }[]
       }
+      ambassador_visible_store_geography: {
+        Args: never
+        Returns: {
+          borough: string
+          city: string
+          neighborhood: string
+          store_id: string
+        }[]
+      }
       ambassador_visible_store_ids_for_user: {
         Args: { _user_id: string }
         Returns: {
