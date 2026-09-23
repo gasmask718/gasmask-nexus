@@ -26,7 +26,7 @@ function fmt(at: string | null) {
   }
 }
 
-function WorkList({
+export function MyWorkStoreList({
   rows,
   isLoading,
   emptyText,
@@ -112,7 +112,7 @@ export function MyWorkSection() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <WorkList
+          <MyWorkStoreList
             rows={handledRows}
             isLoading={handled.isLoading}
             emptyText="No stores marked handled yet."
@@ -129,7 +129,7 @@ export function MyWorkSection() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <WorkList
+          <MyWorkStoreList
             rows={addedRows}
             isLoading={added.isLoading}
             emptyText="You haven't added any stores yet."
