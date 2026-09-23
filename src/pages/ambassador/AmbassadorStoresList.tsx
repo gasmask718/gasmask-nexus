@@ -31,6 +31,9 @@ import { useAmbassadorPortfolio, type PortfolioStore } from '@/hooks/useAmbassad
 import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from '@/hooks/useTranslation';
 import { StoreClaimStatus } from '@/components/ambassador/StoreClaimStatus';
+import { useAmbassadorProspects, type AmbassadorProspect } from '@/hooks/useAmbassadorProspects';
+import { ProspectPromoteDialog } from '@/components/ambassador/ProspectPromoteDialog';
+import { Compass } from 'lucide-react';
 
 
 interface StoreCardProps {
@@ -182,6 +185,49 @@ function StoreCard({ store, onClick, onRemove, onToggle, onDispatch, onCall, onM
 }
 
 
+/**
+ * ProspectCard — READ-ONLY discovery row. Not owned, not assigned, not a store.
+ * The only write action is "Confirm", which files an approval request.
+ */
+function ProspectCard({ prospect, onPromote }: { prospect: AmbassadorProspect; onPromote: () => void }) {
+  const pending = prospect.promotion_status === 'pending';
+  return (
+    <Card className="border-dashed">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <Compass className="h-4 w-4 text-muted-foreground shrink-0" />
+              <h3 className="font-semibold truncate">{prospect.store_name || 'Unnamed location'}</h3>
+              <Badge variant="outline" className="text-xs shrink-0">Prospect</Badge>
+              {pending && <Badge variant="secondary" className="text-xs shrink-0">Awaiting approval</Badge>}
+            </div>
+            {prospect.full_address && (
+              <p className="text-sm text-muted-foreground mb-1">{prospect.full_address}</p>
+            )}
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {[prospect.neighborhood, prospect.city, prospect.state].filter(Boolean).join(', ')}
+              </span>
+              {prospect.phone && (
+                <span className="flex items-center gap-1">
+                  <Phone className="h-3 w-3" />
+                  {prospect.phone}
+                </span>
+              )}
+              {prospect.discovered_by && <span>Source: {prospect.discovered_by}</span>}
+            </div>
+          </div>
+          <Button size="sm" variant="outline" onClick={onPromote} disabled={pending}>
+            {pending ? 'Pending' : 'Confirm'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function StoresListContent() {
   const navigate = useNavigate();
   const { initiateCall } = useCall();
@@ -194,6 +240,9 @@ function StoresListContent() {
   const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
   const [newStoreOpen, setNewStoreOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  // Read-only prospect landscape (territory-scoped server-side). Never mixed into metrics.
+  const { prospects, isLoading: prospectsLoading, promoteProspect, isPromoting } = useAmbassadorProspects();
+  const [promoteTarget, setPromoteTarget] = useState<AmbassadorProspect | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -269,11 +318,11 @@ function StoresListContent() {
   return (
     <div className="space-y-6">
       {/* Header Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold text-primary">{metrics.totalStores}</p>
-            <p className="text-sm text-muted-foreground">{t('amb.kpi.total_stores')}</p>
+            <p className="text-sm text-muted-foreground">Existing stores</p>
           </CardContent>
         </Card>
         <Card>
@@ -284,8 +333,14 @@ function StoresListContent() {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-3xl font-bold text-green-500">{metrics.sourcedStores}</p>
-            <p className="text-sm text-muted-foreground">{t('amb.stores.tab_sourced')}</p>
+            <p className="text-3xl font-bold text-amber-500">{prospects.length}</p>
+            <p className="text-sm text-muted-foreground">Prospects</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-3xl font-bold">{metrics.totalStores + prospects.length}</p>
+            <p className="text-sm text-muted-foreground">Total landscape</p>
           </CardContent>
         </Card>
       </div>
