@@ -219,12 +219,15 @@ export function useUserRole(currentBusinessId?: string | null) {
         if (rolesList.length > 0) {
           setRoles(rolesList);
 
-          // Set primary role (admin takes precedence, then driver, then biker)
+          // Set primary role (admin takes precedence, then driver, then biker).
+          // A leftover 'pending' marker must never win over a real role — an
+          // approved user would otherwise be bounced to /pending-approval.
+          const realRoles = rolesList.filter((r) => r !== 'pending');
           const primaryRole = rolesList.includes('admin')
             ? 'admin'
             : rolesList.includes('driver')
               ? 'driver'
-              : rolesList[0];
+              : (realRoles[0] ?? rolesList[0]);
 
           setRole(primaryRole);
 
