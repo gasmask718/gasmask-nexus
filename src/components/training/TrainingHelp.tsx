@@ -53,13 +53,19 @@ const seenKey = (userId: string | undefined, role: string) =>
 export function TrainingHelp({ role, firstDayTitle, className, hideLauncher }: Props) {
   const { user } = useAuth();
   const { data: modules = [], isLoading } = useTrainingModules(role);
-  const { data: progress, isLoading: progressLoading, isFetched: progressFetched } =
-    useTrainingProgress();
+  const {
+    data: progress,
+    isLoading: progressLoading,
+    isFetched: progressFetched,
+    isError: progressError,
+  } = useTrainingProgress();
   const updateProgress = useUpdateProgress();
 
   const [open, setOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [firstDayOpen, setFirstDayOpen] = useState(false);
+  /** True only while the welcome dialog was opened automatically (first visit). */
+  const [autoShown, setAutoShown] = useState(false);
 
   const markSeenLocally = () => {
     try {
@@ -78,18 +84,20 @@ export function TrainingHelp({ role, firstDayTitle, className, hideLauncher }: P
   };
 
   // Auto-open ONCE for a genuinely first-time user.
-  // Waits for the saved progress row to load, and also respects a local
-  // "seen" marker so a failed/slow save can never re-open the tour.
+  // The per-user server row (role_sop_user_progress) is the source of truth;
+  // the local marker is only a same-browser backstop. Fails CLOSED: if the
+  // saved state can't be read, the welcome dialog is never auto-shown.
   useEffect(() => {
-    if (isLoading || progressLoading || !progressFetched) return;
+    if (isLoading || progressLoading || !progressFetched || progressError) return;
     if (!user?.id) return;
     if (modules.length === 0) return;
     if (progress?.first_day_dismissed_at || progress?.first_day_started_at) return;
     if (seenLocally()) return;
     markSeenLocally();
+    setAutoShown(true);
     setFirstDayOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [progress, isLoading, progressLoading, progressFetched, modules.length, user?.id]);
+  }, [progress, isLoading, progressLoading, progressFetched, progressError, modules.length, user?.id]);
 
   // External triggers (consolidated Help menu)
   useEffect(() => {
