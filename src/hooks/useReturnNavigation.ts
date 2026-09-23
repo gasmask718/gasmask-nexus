@@ -90,18 +90,18 @@ export function useReturnScrollRestoration() {
     if (y === null || restoredKey.current === location.key) return;
     restoredKey.current = location.key;
 
-    let frame = 0;
+    let timer = 0;
     let attempts = 0;
     const restore = () => {
       const target = anchor ? document.getElementById(anchor) : null;
       const nextY = target ? Math.max(0, target.getBoundingClientRect().top + window.scrollY - 88) : y;
       window.scrollTo({ top: nextY, behavior: 'auto' });
       attempts += 1;
-      if (attempts < 12 && document.documentElement.scrollHeight < y + window.innerHeight) {
-        frame = window.requestAnimationFrame(restore);
+      if (attempts < 30 && ((anchor && !target) || document.documentElement.scrollHeight < y + window.innerHeight)) {
+        timer = window.setTimeout(restore, 100);
       }
     };
-    frame = window.requestAnimationFrame(restore);
-    return () => window.cancelAnimationFrame(frame);
+    timer = window.setTimeout(restore, 0);
+    return () => window.clearTimeout(timer);
   }, [location.key, location.state]);
 }

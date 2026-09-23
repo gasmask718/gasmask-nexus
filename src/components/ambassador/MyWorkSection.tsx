@@ -98,6 +98,7 @@ export function MyWorkStoreList({
 }
 
 export function MyWorkSection() {
+  const navigate = useNavigate();
   const handled = useMyHandledStores();
   const added = useMyAddedStores();
 

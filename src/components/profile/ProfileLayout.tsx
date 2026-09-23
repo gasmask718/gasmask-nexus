@@ -3,7 +3,6 @@
  * Provides consistent header, tabs, and notes/activity system
  */
 import { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Phone, MessageSquare, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useReturnNavigation } from '@/hooks/useReturnNavigation';
 
 export interface ProfileTab {
   id: string;
@@ -65,7 +65,7 @@ export function ProfileLayout({
   onMessage,
   onAddNote,
 }: ProfileLayoutProps) {
-  const navigate = useNavigate();
+  const { goBack } = useReturnNavigation(backPath);
 
   if (isLoading) {
     return (
@@ -92,7 +92,7 @@ export function ProfileLayout({
   return (
     <div className="space-y-6">
       {/* Back Button */}
-      <Button variant="ghost" size="sm" onClick={() => navigate(backPath)}>
+      <Button variant="ghost" size="sm" onClick={goBack}>
         <ArrowLeft className="mr-2 h-4 w-4" />
         {backLabel}
       </Button>
