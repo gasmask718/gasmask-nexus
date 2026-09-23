@@ -5,7 +5,7 @@
  * MASTER GENIUS ARCHITECT: Complete portfolio visibility for all entity types
  */
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Store, DollarSign, TrendingUp, Package, Users, 
   ArrowRight, Phone, MessageSquare, MapPin, AlertTriangle,
@@ -45,6 +45,7 @@ import { AmbassadorStoreMap } from '@/components/ambassador/AmbassadorStoreMap';
 import NextStopNavigator from '@/components/map/NextStopNavigator';
 import { useTranslation } from '@/hooks/useTranslation';
 import { BilingualLabel } from '@/components/portal/BilingualLabel';
+import { fromHere } from '@/hooks/useReturnNavigation';
 
 // MASTER GENIUS ARCHITECT: Lead KPI config - all lead types must be represented
 const LEAD_KPI_CONFIG = {
@@ -127,6 +128,7 @@ function StoreCard({ store, onClick }: { store: PortfolioStore; onClick: () => v
 
 function MyCapturedStores() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { t } = useTranslation();
 
@@ -195,7 +197,8 @@ function MyCapturedStores() {
             {myStores.map((store: any) => (
               <button
                 key={store.id}
-              onClick={() => navigate(`/ambassador/stores/${store.id}`)}
+                id={`captured-store-${store.id}`}
+                onClick={() => navigate(`/ambassador/stores/${store.id}`, { state: fromHere(location, `captured-store-${store.id}`) })}
                 className="w-full text-left flex items-start justify-between gap-3 p-3 rounded-lg border hover:border-primary/50 hover:bg-muted/30 transition-colors"
               >
                 <div className="flex-1 min-w-0">
@@ -222,6 +225,7 @@ function MyCapturedStores() {
 
 function DashboardContent() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { t } = useTranslation();
   const { ambassador, stores, metrics, isLoading: portfolioLoading } = useAmbassadorPortfolio();
@@ -270,7 +274,7 @@ function DashboardContent() {
   const isLoading = portfolioLoading || totalsLoading || ledgerLoading || leadsLoading;
 
   const handleStoreClick = (storeId: string) => {
-    navigate(`/ambassador/stores/${storeId}`);
+    navigate(`/ambassador/stores/${storeId}`, { state: fromHere(location, `dashboard-store-${storeId}`) });
   };
 
   if (isLoading) {
