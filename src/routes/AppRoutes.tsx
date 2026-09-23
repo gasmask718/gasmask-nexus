@@ -17,6 +17,7 @@ import { RequireRole } from '@/components/security/RequireRole';
 import Layout from '@/components/Layout';
 import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAmbassadorHost } from '@/lib/portalHost';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Layouts — kept static (used as wrappers, always needed)
@@ -1570,7 +1571,9 @@ export default function AppRoutes() {
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
         {/* Dashboard */}
-        <Route path="/" element={<Dashboard />} />
+        {/* Entry context: the ambassador subdomain opens the Ambassador Portal
+            at the site root; app.gasmaskapproved.com keeps the OS dashboard. */}
+        <Route path="/" element={isAmbassadorHost() ? <Navigate to="/ambassador" replace /> : <Dashboard />} />
         <Route path="/sidebar-test" element={<SidebarVisualTest />} />
         <Route path="/sidebar-debug" element={<SidebarDebug />} />
 

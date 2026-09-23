@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { getRoleRedirectPath, type OSRole } from '@/config/osNavigation';
 import { consumePendingNext, isSafeNextPath } from '@/lib/authNext';
+import { isAmbassadorHost, AMBASSADOR_PORTAL_ENTRY } from '@/lib/portalHost';
 
 /**
  * An ambassador who confirms their email must return to their invite link —
@@ -21,6 +22,10 @@ function pendingAmbassadorInvitePath(): string | null {
 }
 
 async function resolveRoleDestination(fallback: string): Promise<string> {
+  // The hostname that initiated the login decides the interface — an
+  // owner/admin confirming through the ambassador subdomain stays in the
+  // Ambassador Portal. No role is read or changed here.
+  if (isAmbassadorHost()) return AMBASSADOR_PORTAL_ENTRY;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return fallback;
