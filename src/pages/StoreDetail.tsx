@@ -1,3 +1,4 @@
+import { portalAwarePath } from '@/lib/portalHost';
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -243,7 +244,7 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
   const id = storeIdProp ?? params.id;
   const isCaller = variant === 'caller';
   const navigate = useNavigate();
-  const { goBack } = useReturnNavigation('/stores');
+  const { goBack } = useReturnNavigation(portalAwarePath('/stores', '/ambassador/stores'));
   const { t } = useTranslation();
   const { roles } = useUserRole();
   const isAmbassador = roles?.includes('ambassador' as any);
