@@ -5,6 +5,7 @@
  */
 import { useMemo } from 'react';
 import { useAmbassadorPortfolio } from '@/hooks/useAmbassadorPortfolio';
+import { useAmbassadorProspects } from '@/hooks/useAmbassadorProspects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, MapPin } from 'lucide-react';
@@ -21,6 +22,9 @@ export interface MapStore {
   order?: number;
   securedAmbassadorName?: string | null;
   securedAt?: string | null;
+  /** True for read-only discovery pins (never an owned store). */
+  isProspect?: boolean;
+  phone?: string | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -32,6 +36,8 @@ const STATUS_COLORS: Record<string, string> = {
   assigned: '#8b5cf6',
   territory: '#0ea5e9',
   secured: '#16a34a',
+  /** Read-only discovery layer — never an owned store. */
+  prospect: '#eab308',
 };
 
 function escapePopupText(value: unknown): string {
@@ -53,6 +59,8 @@ interface Props {
 /** Self-loading variant: the signed-in ambassador's own assigned stores. */
 function PortfolioStoreMap({ title, height }: { title?: string; height?: number }) {
   const { stores: portfolio } = useAmbassadorPortfolio();
+  const { prospects } = useAmbassadorProspects();
+
   const mapped: MapStore[] = (portfolio || []).map((s) => ({
     id: s.store_id,
     name: s.store_name,
@@ -64,7 +72,19 @@ function PortfolioStoreMap({ title, height }: { title?: string; height?: number 
     securedAt: s.secured_at,
   }));
 
-  return <MapBody stores={mapped} title={title || 'My Stores'} height={height ?? 420} />;
+  // Read-only prospect pins. Not owned, not assigned — clearly labelled in the popup.
+  const prospectPins: MapStore[] = (prospects || []).map((p) => ({
+    id: `prospect-${p.prospect_id}`,
+    name: p.store_name || 'Unnamed location',
+    address: [p.full_address, p.neighborhood, p.city].filter(Boolean).join(', '),
+    lat: p.latitude,
+    lng: p.longitude,
+    statusKey: 'prospect',
+    isProspect: true,
+    phone: p.phone,
+  }));
+
+  return <MapBody stores={[...mapped, ...prospectPins]} title={title || 'My Stores'} height={height ?? 420} />;
 }
 
 export function AmbassadorStoreMap({ stores, title, height }: Props) {
@@ -94,6 +114,8 @@ function MapBody({ stores, title, height }: { stores: MapStore[]; title: string;
         meta: {
           securedAmbassadorName: s.securedAmbassadorName,
           securedAt: s.securedAt,
+          isProspect: s.isProspect === true,
+          phone: s.phone,
         },
       })),
     [withCoords],
@@ -113,11 +135,14 @@ function MapBody({ stores, title, height }: { stores: MapStore[]; title: string;
           <MapPin className="h-4 w-4" /> {title}
         </CardTitle>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{withCoords.length} mapped</Badge>
-          {missing.length > 0 && (
+          <Badge variant="secondary">{withCoords.filter((s) => !s.isProspect).length} existing</Badge>
+          {withCoords.some((s) => s.isProspect) && (
             <Badge variant="outline" className="text-amber-500 border-amber-500/40">
-              {missing.length} need geocoding
+              {withCoords.filter((s) => s.isProspect).length} prospects
             </Badge>
+          )}
+          {missing.length > 0 && (
+            <Badge variant="outline">{missing.length} need geocoding</Badge>
           )}
         </div>
       </CardHeader>
@@ -131,6 +156,10 @@ function MapBody({ stores, title, height }: { stores: MapStore[]; title: string;
               initialZoom={points.length === 1 ? 13 : 10}
               clustering={points.length > 150}
               renderPopupHTML={(point) => {
+                if (point.meta?.isProspect) {
+                  const phone = point.meta?.phone ? `<br>${escapePopupText(point.meta.phone)}` : '';
+                  return `<strong>${escapePopupText(point.title)}</strong><br>${escapePopupText(point.subtitle)}${phone}<br><em>Prospect — not yet a store</em>`;
+                }
                 const securedBy = point.meta?.securedAmbassadorName;
                 const status = securedBy ? `Secured by ${String(securedBy)}` : 'Available';
                 return `<strong>${escapePopupText(point.title)}</strong><br>${escapePopupText(point.subtitle)}<br>${escapePopupText(status)}`;

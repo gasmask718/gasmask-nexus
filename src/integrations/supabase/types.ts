@@ -126449,6 +126449,33 @@ export type Database = {
         }
         Relationships: []
       }
+      territory_label_aliases: {
+        Row: {
+          alias_label: string
+          canonical_label: string
+          created_at: string
+          id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          alias_label: string
+          canonical_label: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alias_label?: string
+          canonical_label?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       territory_neighborhoods: {
         Row: {
           city: string
@@ -161811,6 +161838,26 @@ export type Database = {
           secured_at: string
           secured_by_me: boolean
           store_id: string
+        }[]
+      }
+      ambassador_visible_prospects: {
+        Args: never
+        Returns: {
+          candidate_id: string
+          canonical_area: string
+          city: string
+          discovered_by: string
+          discovery_status: string
+          full_address: string
+          latitude: number
+          longitude: number
+          neighborhood: string
+          phone: string
+          promotion_status: string
+          prospect_id: string
+          state: string
+          store_name: string
+          zip: string
         }[]
       }
       ambassador_visible_store_ids_for_user: {
