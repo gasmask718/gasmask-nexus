@@ -461,7 +461,7 @@ function StoresListContent() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); clearSelection(); }}>
-        <TabsList>
+        <TabsList className="h-auto max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="all">{t('amb.stores.tab_all')} ({stores.length})</TabsTrigger>
           <TabsTrigger value="assigned">{t('amb.stores.tab_assigned')} ({metrics.assignedStores})</TabsTrigger>
           <TabsTrigger value="sourced">{t('amb.stores.tab_sourced')} ({metrics.sourcedStores})</TabsTrigger>

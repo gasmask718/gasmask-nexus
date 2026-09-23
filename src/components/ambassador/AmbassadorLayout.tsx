@@ -49,6 +49,7 @@ export function AmbassadorLayout({
       backLabel={backLabel}
       showBusinessSelector={showBusinessSelector}
       className={className}
+      homePath="/ambassador/dashboard"
     >
       <AmbassadorPortalNav />
       <AmbassadorFieldSession />

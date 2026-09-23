@@ -37,6 +37,7 @@ interface EnhancedPortalLayoutProps {
   quickActions?: QuickAction[];
   showBusinessSelector?: boolean;
   className?: string;
+  homePath?: string;
 }
 
 export function EnhancedPortalLayout({ 
@@ -49,6 +50,7 @@ export function EnhancedPortalLayout({
   quickActions = [],
   showBusinessSelector = true,
   className,
+  homePath = '/portal/home',
 }: EnhancedPortalLayoutProps) {
   const navigate = useNavigate();
   const { data: profileData } = useCurrentUserProfile();
@@ -84,7 +86,7 @@ export function EnhancedPortalLayout({
               )}
 
               {/* Logo */}
-              <Link to="/portal/home" className="flex items-center gap-2 shrink-0">
+              <Link to={homePath} className="flex items-center gap-2 shrink-0">
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   {portalIcon || <span className="text-primary-foreground font-bold text-sm">OS</span>}
                 </div>
@@ -172,7 +174,7 @@ export function EnhancedPortalLayout({
               {/* User Menu */}
               <div className="flex items-center gap-0.5">
                 <Button variant="ghost" size="icon" asChild className="touch-target">
-                  <Link to="/portal/home">
+                  <Link to={homePath}>
                     <Home className="h-4 w-4" />
                   </Link>
                 </Button>
