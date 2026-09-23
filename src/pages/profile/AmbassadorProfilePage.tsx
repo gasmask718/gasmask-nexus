@@ -4,6 +4,7 @@
  */
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { portalAwarePath } from '@/lib/portalHost';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
@@ -146,7 +147,7 @@ export default function AmbassadorProfilePage() {
       <div className="text-center py-12">
         <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
         <h2 className="text-xl font-bold mb-2">Ambassador Not Found</h2>
-        <Button onClick={() => navigate('/ambassadors')}>Back to Ambassadors</Button>
+        <Button onClick={() => navigate(portalAwarePath('/ambassadors', '/ambassador/dashboard', location.pathname))}>Back to Ambassadors</Button>
       </div>
     );
   }
@@ -514,7 +515,7 @@ export default function AmbassadorProfilePage() {
   return (
     <ProfileLayout
         isLoading={isLoading}
-        backPath="/ambassadors"
+        backPath={portalAwarePath('/ambassadors', '/ambassador/dashboard', location.pathname)}
         backLabel="Back to Ambassadors"
         header={{
           icon: <User className="h-6 w-6 text-primary" />,

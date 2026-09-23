@@ -26,3 +26,18 @@ export function isAmbassadorHost(host?: string): boolean {
 export const AMBASSADOR_PORTAL_HOME = '/ambassador/dashboard';
 export const AMBASSADOR_PORTAL_ENTRY = '/ambassador';
 export const AMBASSADOR_LOGIN_PATH = '/ambassador/login';
+
+/**
+ * True when the person is working inside the Ambassador Portal — either on the
+ * ambassador hostname or on an /ambassador/* route. Entry context only; it
+ * never reads or changes roles.
+ */
+export function isAmbassadorPortalContext(pathname?: string): boolean {
+  const path = pathname ?? (typeof window !== 'undefined' ? window.location.pathname : '');
+  return isAmbassadorHost() || path === '/ambassador' || path.startsWith('/ambassador/');
+}
+
+/** Pick a destination that keeps portal users inside the portal. */
+export function portalAwarePath(osPath: string, ambassadorPath: string, pathname?: string): string {
+  return isAmbassadorPortalContext(pathname) ? ambassadorPath : osPath;
+}
