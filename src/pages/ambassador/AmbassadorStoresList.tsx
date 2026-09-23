@@ -280,6 +280,18 @@ function StoresListContent() {
     return result;
   }, [stores, searchQuery, activeTab]);
 
+  const filteredProspects = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return prospects;
+    return prospects.filter(p =>
+      (p.store_name || '').toLowerCase().includes(query) ||
+      (p.full_address || '').toLowerCase().includes(query) ||
+      (p.city || '').toLowerCase().includes(query) ||
+      (p.neighborhood || '').toLowerCase().includes(query)
+    );
+  }, [prospects, searchQuery]);
+
+
   const handleStoreClick = (storeId: string) => {
     navigate(`/ambassador/stores/${storeId}`);
   };
