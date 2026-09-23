@@ -381,10 +381,34 @@ function StoresListContent() {
           <TabsTrigger value="all">{t('amb.stores.tab_all')} ({stores.length})</TabsTrigger>
           <TabsTrigger value="assigned">{t('amb.stores.tab_assigned')} ({metrics.assignedStores})</TabsTrigger>
           <TabsTrigger value="sourced">{t('amb.stores.tab_sourced')} ({metrics.sourcedStores})</TabsTrigger>
+          <TabsTrigger value="prospects">Prospects ({prospects.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-4">
-          {filteredStores.length === 0 ? (
+          {activeTab === 'prospects' ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Newly discovered locations in your areas. These are not yours yet and are not counted
+                as your stores — confirm one to send it for approval.
+              </p>
+              {prospectsLoading ? (
+                <Skeleton className="h-24" />
+              ) : filteredProspects.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Compass className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                    <p className="text-lg font-medium">No prospects in your areas</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-3">
+                  {filteredProspects.map((p) => (
+                    <ProspectCard key={p.prospect_id} prospect={p} onPromote={() => setPromoteTarget(p)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : filteredStores.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <Store className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
@@ -425,6 +449,14 @@ function StoresListContent() {
           )}
         </TabsContent>
       </Tabs>
+
+      <ProspectPromoteDialog
+        prospect={promoteTarget}
+        open={!!promoteTarget}
+        onOpenChange={(open) => { if (!open) setPromoteTarget(null); }}
+        onSubmit={promoteProspect}
+        isSubmitting={isPromoting}
+      />
 
       {/* Remove Store Confirmation Modal */}
       <DeleteConfirmModal
