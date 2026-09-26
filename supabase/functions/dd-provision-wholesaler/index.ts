@@ -127,10 +127,28 @@ serve(async (req) => {
         user_metadata: { name: body?.contact_name ?? companyName, role: "wholesaler" },
       });
       if (createErr || !created?.user) {
-        console.error("[dd-provision-wholesaler] createUser failed", createErr);
-        return json({ error: createErr?.message ?? "Could not create login" }, 500);
+        // Fallback when listUsers is unavailable: resolve the existing login
+        // via the public profiles table and reset its password instead.
+        if (createErr && /already been registered/i.test(createErr.message ?? "")) {
+          const { data: prof } = await admin
+            .from("profiles")
+            .select("id")
+            .ilike("email", email)
+            .maybeSingle();
+          if (prof?.id) {
+            await admin.auth.admin.updateUserById(prof.id, { password, email_confirm: true });
+            userId = prof.id;
+          } else {
+            console.error("[dd-provision-wholesaler] createUser failed", createErr);
+            return json({ error: createErr?.message ?? "Could not create login" }, 500);
+          }
+        } else {
+          console.error("[dd-provision-wholesaler] createUser failed", createErr);
+          return json({ error: createErr?.message ?? "Could not create login" }, 500);
+        }
+      } else {
+        userId = created.user.id;
       }
-      userId = created.user.id;
     }
 
     await admin.from("profiles").upsert(
