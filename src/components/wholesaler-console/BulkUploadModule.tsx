@@ -330,6 +330,9 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
           long_description: item.ai_description,
           category_guess: item.ai_category,
           subcategory: item.ai_subcategory,
+          source_description: item.description,
+          source_product_name: item.product_name,
+          source_raw_data: item.raw_data,
         },
       });
 
