@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Package, Search, MoreVertical, Edit, Trash2,
-  AlertTriangle, Eye, Camera, Check, X, Loader2,
+  AlertTriangle, Eye, Camera, Check, X, Loader2, FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -117,9 +117,12 @@ export default function WholesalerProducts() {
         </div>
         {/* PRIMARY add-product action is camera-first. The typed form stays reachable
             from inside the camera screen as a secondary path, never as the default. */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button asChild style={{ background: "hsl(var(--dd-gold))", color: "hsl(var(--dd-navy-deep))" }}>
             <Link to="/portal/wholesaler/catalog/onboard"><Camera className="h-4 w-4 mr-2" />Add product</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/portal/wholesaler/catalog/onboard?mode=spreadsheet"><FileSpreadsheet className="h-4 w-4 mr-2" />Import spreadsheet (CSV/Excel)</Link>
           </Button>
         </div>
       </div>
