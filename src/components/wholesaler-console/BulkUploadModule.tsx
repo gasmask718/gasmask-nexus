@@ -479,7 +479,7 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/30">
-                        {rawItems.slice(0, 20).map((item, idx) => (
+                        {rawItems.map((item, idx) => (
                           <tr key={item.id} className="hover:bg-muted/20">
                             <td className="p-2.5 text-muted-foreground">{idx + 1}</td>
                             <td className="p-2.5 font-medium max-w-[200px] truncate">{item.product_name}</td>
@@ -491,11 +491,9 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
                       </tbody>
                     </table>
                   </div>
-                  {rawItems.length > 20 && (
-                    <div className="text-center py-2 text-xs text-muted-foreground bg-muted/30">
-                      + {rawItems.length - 20} more items
-                    </div>
-                  )}
+                  <div className="text-center py-2 text-xs text-muted-foreground bg-muted/30">
+                    {rawItems.length} rows parsed — scroll to see all
+                  </div>
                 </div>
 
                 <div className="flex justify-between items-center mt-4">
