@@ -471,7 +471,7 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
                           <th className="text-left p-2.5 font-semibold text-muted-foreground">#</th>
                           <th className="text-left p-2.5 font-semibold text-muted-foreground">Name</th>
                           <th className="text-left p-2.5 font-semibold text-muted-foreground">Category</th>
-                          <th className="text-left p-2.5 font-semibold text-muted-foreground">Price</th>
+                          <th className="text-left p-2.5 font-semibold text-muted-foreground">Cost</th>
                           <th className="text-left p-2.5 font-semibold text-muted-foreground">Images</th>
                         </tr>
                       </thead>
@@ -481,7 +481,7 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
                             <td className="p-2.5 text-muted-foreground">{idx + 1}</td>
                             <td className="p-2.5 font-medium max-w-[200px] truncate">{item.product_name}</td>
                             <td className="p-2.5 text-muted-foreground">{item.category || '—'}</td>
-                            <td className="p-2.5">{item.price ? `$${item.price.toFixed(2)}` : '—'}</td>
+                            <td className="p-2.5">{item.supplier_cost != null ? `$${item.supplier_cost.toFixed(2)}` : '—'}</td>
                             <td className="p-2.5">{item.images.length || 0}</td>
                           </tr>
                         ))}
