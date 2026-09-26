@@ -38,7 +38,12 @@ function genPassword(): string {
 async function findUserByEmail(admin: any, email: string): Promise<string | null> {
   for (let page = 1; page <= 20; page++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-    if (error) throw error;
+    if (error) {
+      // listUsers can fail on backends with auth-schema quirks; fall through to
+      // createUser, which itself rejects duplicates with a clear error.
+      console.warn("[dd-provision-wholesaler] listUsers failed, falling back", error.message);
+      return null;
+    }
     const hit = (data?.users ?? []).find(
       (u: any) => (u.email ?? "").toLowerCase() === email.toLowerCase(),
     );
