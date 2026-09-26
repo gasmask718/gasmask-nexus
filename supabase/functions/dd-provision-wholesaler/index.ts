@@ -61,12 +61,17 @@ serve(async (req) => {
   });
 
   // ---- authorize -----------------------------------------------------------
-  const provisionSecret = Deno.env.get("DD_PROVISION_SECRET");
+  // Accept DD_PROVISION_SECRET (dedicated) or DYNASTY_OS_API_KEY (existing ops
+  // secret) as the bootstrap/ops credential.
+  const provisionSecrets = [
+    Deno.env.get("DD_PROVISION_SECRET"),
+    Deno.env.get("DYNASTY_OS_API_KEY"),
+  ].filter((s): s is string => Boolean(s));
   const presented = req.headers.get("x-provision-secret");
   let actorId: string | null = null;
   let authorized = false;
 
-  if (provisionSecret && presented && presented === provisionSecret) {
+  if (presented && provisionSecrets.includes(presented)) {
     authorized = true;
   } else {
     const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
