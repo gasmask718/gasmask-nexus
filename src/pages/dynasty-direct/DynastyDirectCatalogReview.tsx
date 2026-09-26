@@ -519,9 +519,9 @@ export default function DynastyDirectCatalogReview() {
                     </div>
                   )}
 
-                  {sp && sp.status !== 'sourced' && (
+                  {sp && sp.status && sp.status !== 'sourced' && (
                     <div className="rounded border border-dashed border-destructive/50 bg-destructive/10 p-3 text-xs space-y-1">
-                      <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {sp.status === 'needs_measurement' ? 'NEEDS MEASUREMENT' : sp.status.toUpperCase()} — no complete same-quantity match</div>
+                      <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {sp.status === 'needs_measurement' ? 'NEEDS MEASUREMENT' : String(sp.status ?? 'needs review').toUpperCase()} — no complete same-quantity match</div>
                       {sp.reason && <div className="text-muted-foreground">{sp.reason}</div>}
                       {sp.suggested_box ? (
                         <div>
