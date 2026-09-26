@@ -38,7 +38,12 @@ function genPassword(): string {
 async function findUserByEmail(admin: any, email: string): Promise<string | null> {
   for (let page = 1; page <= 20; page++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-    if (error) throw error;
+    if (error) {
+      // listUsers can fail on backends with auth-schema quirks; fall through to
+      // createUser, which itself rejects duplicates with a clear error.
+      console.warn("[dd-provision-wholesaler] listUsers failed, falling back", error.message);
+      return null;
+    }
     const hit = (data?.users ?? []).find(
       (u: any) => (u.email ?? "").toLowerCase() === email.toLowerCase(),
     );
@@ -61,12 +66,17 @@ serve(async (req) => {
   });
 
   // ---- authorize -----------------------------------------------------------
-  const provisionSecret = Deno.env.get("DD_PROVISION_SECRET");
+  // Accept DD_PROVISION_SECRET (dedicated) or DYNASTY_OS_API_KEY (existing ops
+  // secret) as the bootstrap/ops credential.
+  const provisionSecrets = [
+    Deno.env.get("DD_PROVISION_SECRET"),
+    Deno.env.get("DYNASTY_OS_API_KEY"),
+  ].filter((s): s is string => Boolean(s));
   const presented = req.headers.get("x-provision-secret");
   let actorId: string | null = null;
   let authorized = false;
 
-  if (provisionSecret && presented && presented === provisionSecret) {
+  if (presented && provisionSecrets.includes(presented)) {
     authorized = true;
   } else {
     const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
@@ -117,10 +127,28 @@ serve(async (req) => {
         user_metadata: { name: body?.contact_name ?? companyName, role: "wholesaler" },
       });
       if (createErr || !created?.user) {
-        console.error("[dd-provision-wholesaler] createUser failed", createErr);
-        return json({ error: createErr?.message ?? "Could not create login" }, 500);
+        // Fallback when listUsers is unavailable: resolve the existing login
+        // via the public profiles table and reset its password instead.
+        if (createErr && /already been registered/i.test(createErr.message ?? "")) {
+          const { data: prof } = await admin
+            .from("profiles")
+            .select("id")
+            .ilike("email", email)
+            .maybeSingle();
+          if (prof?.id) {
+            await admin.auth.admin.updateUserById(prof.id, { password, email_confirm: true });
+            userId = prof.id;
+          } else {
+            console.error("[dd-provision-wholesaler] createUser failed", createErr);
+            return json({ error: createErr?.message ?? "Could not create login" }, 500);
+          }
+        } else {
+          console.error("[dd-provision-wholesaler] createUser failed", createErr);
+          return json({ error: createErr?.message ?? "Could not create login" }, 500);
+        }
+      } else {
+        userId = created.user.id;
       }
-      userId = created.user.id;
     }
 
     await admin.from("profiles").upsert(
