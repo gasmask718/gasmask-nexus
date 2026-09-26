@@ -635,6 +635,7 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
                           ) : (
                             <div className="font-medium max-w-[180px] truncate">{item.ai_name}</div>
                           )}
+                          {item.supplier_cost != null && <div className="text-muted-foreground mt-0.5">Cost: ${item.supplier_cost.toFixed(2)}</div>}
                           {item.price && <div className="text-muted-foreground mt-0.5">${item.price.toFixed(2)}</div>}
                         </td>
                         <td className="p-3">
