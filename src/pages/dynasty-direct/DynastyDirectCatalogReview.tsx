@@ -62,6 +62,11 @@ interface SourcedSpecs {
   weight_agreement?: number;
   dimension_agreement?: number;
   confidence?: string;
+  engine?: string;
+  lookup_status?: string;
+  identifier_key?: string | null;
+  provenance?: { source_url: string; source_name: string; matched_on: string[]; packaged_dimensions: boolean; retrieved_at: string; match_checks?: { pack: string; variant: string; size: string } } | null;
+  candidates?: { source_url: string; source_name: string; matched_on: string[]; packaged: boolean; weight_oz: number | null; length_in: number | null; width_in: number | null; height_in: number | null; source_title?: string | null }[];
   suggested_box: { box_id: string; box_name: string; length_in: number; width_in: number; height_in: number; max_weight_oz: number | null; reason: string } | null;
   checked_at?: string;
 }
@@ -215,17 +220,22 @@ export default function DynastyDirectCatalogReview() {
     finally { setAction(d.id, null); }
   }
 
+  // Uses the SAME verified lookup as "Find Shipping Specs" (identifier match,
+  // pack/size/variant checks, trusted hosts). It only stores a proposal on the
+  // draft — never an estimate, and nothing counts until a human confirms.
   async function runSizing(d: PendingDraft) {
     setAction(d.id, 'sizing');
     try {
-      await invokePipeline({
-        mode: 'estimate_measurements', draft_id: d.id,
-        product_name: d.recognition?.product_name || d.copy?.title || d.product_name,
-        brand_hint: d.recognition?.brand_visible || null,
+      const { data, error } = await supabase.functions.invoke('dd-source-shipping-specs', {
+        body: { draft_id: d.id, triggered_by: 'review_queue' },
       });
-      toast.success('Sourced sizing lookup complete');
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const r = (data as any)?.results?.[0];
+      if (r?.update_error) throw new Error(r.update_error);
+      toast.success(r?.status === 'sourced' ? 'Verified match found — review and confirm' : `No verified match: ${r?.reason ?? r?.skipped ?? 'unknown'}`);
       await load();
-    } catch (e) { toast.error(`Sizing lookup failed: ${mutationErrorMessage(e)}`); }
+    } catch (e) { toast.error(`Shipping spec lookup failed: ${mutationErrorMessage(e)}`); }
     finally { setAction(d.id, null); }
   }
 
@@ -452,7 +462,7 @@ export default function DynastyDirectCatalogReview() {
                     <div className="font-semibold flex items-center gap-2"><Ruler className="h-4 w-4" /> Shipping size &amp; weight</div>
                     <Button size="sm" variant="outline" disabled={isBusy(d.id)} onClick={() => runSizing(d)}>
                       {action === 'sizing' ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
-                      {sp ? 'Re-run sourced lookup' : 'Run sourced lookup'}
+                      {sp ? 'Re-run Find Shipping Specs' : 'Find Shipping Specs'}
                     </Button>
                   </div>
 
@@ -510,6 +520,15 @@ export default function DynastyDirectCatalogReview() {
                         </div>
                       </div>
                       {sp.reason && <div className="text-muted-foreground">{sp.reason}</div>}
+                      {sp.provenance && (
+                        <div className="rounded border p-2 space-y-1">
+                          <div className="font-semibold">Why this was accepted</div>
+                          <div>Source: <a href={sp.provenance.source_url} target="_blank" rel="noreferrer" className="text-primary underline">{sp.provenance.source_name}</a></div>
+                          <div>Matched on: {sp.provenance.matched_on.join(', ')} · {sp.provenance.packaged_dimensions ? 'package values' : 'item values'}</div>
+                          {sp.provenance.match_checks && <div>Pack: {sp.provenance.match_checks.pack} · Variant: {sp.provenance.match_checks.variant} · Size: {sp.provenance.match_checks.size}</div>}
+                          <div className="text-muted-foreground">Retrieved {new Date(sp.provenance.retrieved_at).toLocaleString()}</div>
+                        </div>
+                      )}
                       {!verified && sp.weight && sp.dimensions && (
                         <Button size="sm" disabled={isBusy(d.id)} onClick={() => confirmSourced(d)}>
                           {action === 'confirm' ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
@@ -521,9 +540,21 @@ export default function DynastyDirectCatalogReview() {
 
                   {sp && sp.status && sp.status !== 'sourced' && (
                     <div className="rounded border border-dashed border-destructive/50 bg-destructive/10 p-3 text-xs space-y-1">
-                      <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {sp.status === 'needs_measurement' ? 'NEEDS MEASUREMENT' : String(sp.status ?? 'needs review').toUpperCase()} — no complete same-quantity match</div>
-                      {sp.reason && <div className="text-muted-foreground">{sp.reason}</div>}
-                      {sp.suggested_box ? (
+                      <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {sp.status === 'needs_measurement' ? 'NEEDS MEASUREMENT' : String(sp.status ?? 'needs review').replace(/_/g, ' ').toUpperCase()} — no verified exact match · measure manually</div>
+                      {sp.reason && <div className="text-muted-foreground">Reason: {sp.reason}</div>}
+                      {sp.identifier_key && <div className="text-muted-foreground">Searched as: {sp.identifier_key}</div>}
+                      {(sp.candidates ?? []).length > 0 && (
+                        <div className="space-y-1">
+                          <div className="font-semibold">Unverified candidates (not used)</div>
+                          {sp.candidates!.map((c) => (
+                            <div key={c.source_url}>
+                              <a href={c.source_url} target="_blank" rel="noreferrer" className="text-primary underline">{c.source_name}</a>
+                              {' '}· {c.weight_oz ?? '—'} oz · {c.length_in ?? '—'}×{c.width_in ?? '—'}×{c.height_in ?? '—'} in · {c.matched_on.join(', ')}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {sp.engine ? null : sp.suggested_box ? (
                         <div>
                           <span className="font-semibold">Suggested box (suggestion only, not a measurement): </span>
                           {sp.suggested_box.box_name} · {sp.suggested_box.length_in} × {sp.suggested_box.width_in} × {sp.suggested_box.height_in} in
