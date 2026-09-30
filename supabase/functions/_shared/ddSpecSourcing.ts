@@ -332,6 +332,28 @@ export function extractFromHtml(html: string): Extracted {
 
 const PACK_RE = /(\d+)\s*(?:ct|count|pack|pk|pcs|pieces|rolls?|booklets?|sheets?)\b/i;
 
+const SIZE_RE = /(\d+(?:\.\d+)?)\s*(mm|cm|ml|oz|g|in|inch(?:es)?|"|”)(?![a-z])/gi;
+function sizeTokens(s: string | null | undefined): { value: number; unit: string }[] {
+  if (!s) return [];
+  const out: { value: number; unit: string }[] = [];
+  for (const m of String(s).matchAll(SIZE_RE)) {
+    let unit = m[2].toLowerCase();
+    if (unit === '"' || unit === "”" || unit.startsWith("inch")) unit = "in";
+    out.push({ value: Number(m[1]), unit });
+  }
+  return out;
+}
+
+const VARIANT_STOP = new Set(["the", "and", "with", "for", "assorted", "mixed", "original", "regular", "flavor", "flavour", "color", "colour"]);
+function variantTokens(s: string | null | undefined): string[] {
+  if (!s) return [];
+  return String(s).toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length >= 3 && !VARIANT_STOP.has(t));
+}
+
+/** Evidence flags that forbid auto-apply: identity not fully established. */
+export const UNVERIFIED_FLAGS = ["pack_unverified", "variant_unverified", "size_unverified"];
+const hasUnverified = (c: { matched_on: string[] }) => c.matched_on.some((m) => UNVERIFIED_FLAGS.includes(m));
+
 function packCount(s: string | null | undefined): number | null {
   if (!s) return null;
   const m = String(s).match(PACK_RE);
@@ -376,10 +398,35 @@ export function verifyMatch(
     return { ok: false, matched_on: matched, reason: `pack_mismatch:${ourPack}_vs_${theirPack}` };
   }
   if (ourPack != null && theirPack != null && ourPack === theirPack) matched.push("pack_count");
+  // A multi-count item (e.g. "-20ct") matched to a listing that states no
+  // count can never auto-apply: it may be a single-unit listing.
+  if (ourPack != null && ourPack > 1 && theirPack == null) matched.push("pack_unverified");
 
   // Never inherit case-pack specs for a single unit.
-  if ((p.units_per_case ?? 0) <= 1 && /\b(case|carton|display box|master case)\b/i.test(ex.title)) {
+  if ((p.units_per_case ?? 0) <= 1 && (ourPack ?? 1) <= 1 &&
+    /\b(case|carton|display box|master case)\b/i.test(ex.title)) {
     return { ok: false, matched_on: matched, reason: "case_pack_source_for_single_unit" };
+  }
+
+  // Size must agree (14mm vs 18mm, 10" vs 12" are different sellable items).
+  const ourSizes = sizeTokens(`${p.product_name} ${p.size_or_count ?? ""}`);
+  if (ourSizes.length) {
+    const theirSizes = sizeTokens(ex.title);
+    for (const o of ourSizes) {
+      const sameUnit = theirSizes.filter((t) => t.unit === o.unit);
+      if (sameUnit.length && !sameUnit.some((t) => t.value === o.value)) {
+        return { ok: false, matched_on: matched, reason: `size_mismatch:${o.value}${o.unit}_vs_${sameUnit[0].value}${sameUnit[0].unit}` };
+      }
+      if (!sameUnit.length) { matched.push("size_unverified"); break; }
+    }
+    if (!matched.includes("size_unverified")) matched.push("size");
+  }
+
+  // Variant / flavor must be present in the listing when we know ours.
+  const vTokens = variantTokens(p.flavor_or_variant);
+  if (vTokens.length) {
+    if (vTokens.every((t) => title.includes(t))) matched.push("variant");
+    else matched.push("variant_unverified");
   }
 
   if (matched.includes("gtin") || matched.includes("mpn_sku")) {
@@ -574,7 +621,7 @@ export async function sourceShippingSpecs(
   // values — never by inferring a missing half.
   let best = candidates[0];
   let composed_from: string | null = null;
-  const autoOk = (c: SpecCandidate) => isStrong(c) && c.packaged && isAutoApplyHost(c.source_url);
+  const autoOk = (c: SpecCandidate) => isStrong(c) && !hasUnverified(c) && c.packaged && isAutoApplyHost(c.source_url);
   if (autoOk(best)) {
     const hasDims = !!(best.length_in && best.width_in && best.height_in);
     if (hasDims && !best.weight_oz) {
@@ -592,6 +639,12 @@ export async function sourceShippingSpecs(
 
   if (conflicting) {
     return { status: "needs_review", chosen: null, candidates, identifier_key: identifierKey(p), sources_tried, reason: "sources_conflict" };
+  }
+  if (strong && hasUnverified(best)) {
+    return {
+      status: "needs_review", chosen: null, candidates, identifier_key: identifierKey(p), sources_tried,
+      reason: `identity_not_established:${best.matched_on.filter((m) => UNVERIFIED_FLAGS.includes(m)).join(",")}`,
+    };
   }
   if (strong && complete && best.packaged && isAutoApplyHost(best.source_url)) {
     // Two independent agreeing sources, or the manufacturer's own page.
