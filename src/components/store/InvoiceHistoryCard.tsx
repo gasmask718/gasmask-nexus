@@ -119,22 +119,17 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
 
   const togglePaymentStatusMutation = useMutation({
     mutationFn: async ({ invoiceId, newStatus }: { invoiceId: string; newStatus: string }) => {
-      const updateData: any = {
-        payment_status: newStatus,
-      };
-
-      if (newStatus === 'paid') {
-        updateData.paid_at = new Date().toISOString();
-      } else {
-        updateData.paid_at = null;
-      }
-
-      const { error } = await supabase
-        .from('invoices')
-        .update(updateData)
-        .eq('id', invoiceId);
+      // Server-side, permission-checked update. Fails closed: a silent
+      // 0-row RLS update used to report "paid" without changing anything.
+      const { data, error } = await (supabase as any).rpc('set_invoice_payment_status', {
+        _invoice_id: invoiceId,
+        _status: newStatus,
+      });
 
       if (error) throw error;
+      if (!data || data.payment_status !== newStatus) {
+        throw new Error('Invoice was not updated — please refresh and try again');
+      }
     },
     onSuccess: () => {
       toast.success(`Invoice status updated to ${newStatus}`);

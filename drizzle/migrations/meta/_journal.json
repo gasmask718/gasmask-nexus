@@ -15,6 +15,13 @@
       "when": 1791060926717,
       "tag": "0001_add_payment_fields_to_customer_invoices",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791061405595,
+      "tag": "0002_set_invoice_payment_status_rpc",
+      "breakpoints": true
     }
   ]
 }
