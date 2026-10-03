@@ -1,3 +1,4 @@
+import { setInvoicePaymentStatus } from '@/lib/invoicePayment';
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -752,11 +753,7 @@ function QuickOrderSection({ storeId, storeName }: { storeId: string; storeName:
 
       // R6/R7 — only NOW mark paid, after line items exist.
       if (paymentChoice === 'paid') {
-        const { error: payErr } = await supabase
-          .from('invoices')
-          .update({ payment_status: 'paid', paid_at: nowIso } as any)
-          .eq('id', invoice!.id);
-        if (payErr) throw payErr;
+        await setInvoicePaymentStatus(invoice!.id, 'paid');
       }
 
 
@@ -1011,11 +1008,7 @@ function PaymentSection({ storeId, storeName }: { storeId: string; storeName: st
   const markPaid = useMutation({
     mutationFn: async (invoiceId: string) => {
       const nowIso = new Date().toISOString();
-      const { error } = await supabase
-        .from('invoices')
-        .update({ payment_status: 'paid', paid_at: nowIso } as any)
-        .eq('id', invoiceId);
-      if (error) throw error;
+      await setInvoicePaymentStatus(invoiceId, 'paid');
       await supabase
         .from('store_master')
         .update({ updated_at: nowIso, updated_by: user?.id ?? null } as any)

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { setInvoicePaymentStatus } from '@/lib/invoicePayment';
 import { ArrowLeft, FileText, Download, DollarSign, Calendar, Store, CreditCard, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { InvoiceActivityTimeline } from '@/components/invoice';
@@ -39,9 +40,10 @@ const BillingInvoiceDetail = () => {
           store:stores(id, name, address_street, address_city, phone)
         `)
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (storeInvoice) return storeInvoice as any;
+      // Tag which table the row came from so payment writes hit the right one.
+      if (storeInvoice) return { ...(storeInvoice as any), __table: 'invoices' };
 
       // Fallback to customer_invoices
       const { data: customerInvoice, error } = await supabase
@@ -54,30 +56,41 @@ const BillingInvoiceDetail = () => {
         .single();
 
       if (error) throw error;
-      return customerInvoice as any;
+      return { ...(customerInvoice as any), __table: 'customer_invoices' };
     },
     enabled: !!id,
   });
 
   const markPaidMutation = useMutation({
     mutationFn: async (paymentMethod: string) => {
-      const table = invoice?.source === 'invoices' ? 'invoices' : 'customer_invoices';
-      const { error } = await supabase
-        .from(table)
+      if (invoice?.__table === 'invoices') {
+        await setInvoicePaymentStatus(id!, 'paid', paymentMethod);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('customer_invoices')
         .update({
           payment_status: 'paid',
           payment_method: paymentMethod,
           paid_at: new Date().toISOString(),
           amount_paid: invoice?.total_amount || invoice?.total,
-        })
-        .eq('id', id);
+        } as any)
+        .eq('id', id!)
+        .select('id');
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('Invoice was not updated — you may not have permission. Please refresh and try again.');
+      }
     },
     onSuccess: () => {
       toast.success('Invoice marked as paid');
       queryClient.invalidateQueries({ queryKey: ['invoice-detail', id] });
       queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['store-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });
+      queryClient.invalidateQueries({ queryKey: ['store-recent-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['store-recent-invoices-sku'] });
     },
     onError: (error: any) => {
       toast.error(`Failed to update invoice: ${error.message}`);

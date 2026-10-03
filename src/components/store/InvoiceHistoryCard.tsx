@@ -32,6 +32,7 @@ import { FileText, DollarSign, Calendar, Package, Plus, Loader2, MoreVertical, E
 import { format } from 'date-fns';
 import { dynastyDate, dynastyStamp, dynastyRelative, dynastyDateWithWeekday } from '@/lib/dates';
 import { toast } from 'sonner';
+import { setInvoicePaymentStatus } from '@/lib/invoicePayment';
 import { EditStoreInvoiceModal } from './EditStoreInvoiceModal';
 import { BulkInvoiceUploader } from './BulkInvoiceUploader';
 import { useNavigate } from 'react-router-dom';
@@ -119,17 +120,8 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
 
   const togglePaymentStatusMutation = useMutation({
     mutationFn: async ({ invoiceId, newStatus }: { invoiceId: string; newStatus: string }) => {
-      // Server-side, permission-checked update. Fails closed: a silent
-      // 0-row RLS update used to report "paid" without changing anything.
-      const { data, error } = await (supabase as any).rpc('set_invoice_payment_status', {
-        _invoice_id: invoiceId,
-        _status: newStatus,
-      });
-
-      if (error) throw error;
-      if (!data || data.payment_status !== newStatus) {
-        throw new Error('Invoice was not updated — please refresh and try again');
-      }
+      // Server-side, permission-checked, fail-closed update.
+      await setInvoicePaymentStatus(invoiceId, newStatus as 'paid' | 'unpaid');
     },
     onSuccess: () => {
       toast.success(`Invoice status updated to ${newStatus}`);

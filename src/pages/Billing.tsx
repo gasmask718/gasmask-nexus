@@ -1,3 +1,4 @@
+import { setInvoicePaymentStatus } from '@/lib/invoicePayment';
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,20 +40,13 @@ export default function Billing() {
 
   const markPaidMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
-      const { error } = await supabase
-        .from("invoices")
-        .update({
-          payment_status: "paid",
-          paid_at: new Date().toISOString(),
-        })
-        .eq("id", invoiceId);
-
-      if (error) throw error;
+      await setInvoicePaymentStatus(invoiceId, 'paid');
     },
     onSuccess: () => {
       toast.success("Invoice marked as paid");
       refetch();
     },
+    onError: (e: any) => toast.error(`Failed to mark paid: ${e?.message}`),
   });
 
   const unpaidInvoices = invoices?.filter(i => i.payment_status === "unpaid") || [];
