@@ -1,0 +1,1 @@
+ALTER TABLE public.customer_invoices ADD COLUMN IF NOT EXISTS amount_paid NUMERIC NOT NULL DEFAULT 0;
