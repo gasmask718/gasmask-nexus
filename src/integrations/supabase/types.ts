@@ -164910,7 +164910,7 @@ export type Database = {
         Returns: undefined
       }
       set_invoice_payment_status: {
-        Args: { _invoice_id: string; _status: string }
+        Args: { _invoice_id: string; _payment_method?: string; _status: string }
         Returns: {
           amount_paid: number
           amount_source: string | null
