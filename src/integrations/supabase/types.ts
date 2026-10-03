@@ -45605,6 +45605,9 @@ export type Database = {
           invoice_number: string | null
           is_historical: boolean
           notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          payment_status: string | null
           pdf_url: string | null
           receipt_delivered_at: string | null
           receipt_failure_reason: string | null
@@ -45628,6 +45631,9 @@ export type Database = {
           invoice_number?: string | null
           is_historical?: boolean
           notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
           pdf_url?: string | null
           receipt_delivered_at?: string | null
           receipt_failure_reason?: string | null
@@ -45651,6 +45657,9 @@ export type Database = {
           invoice_number?: string | null
           is_historical?: boolean
           notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
           pdf_url?: string | null
           receipt_delivered_at?: string | null
           receipt_failure_reason?: string | null
