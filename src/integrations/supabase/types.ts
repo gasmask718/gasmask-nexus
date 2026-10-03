@@ -164909,6 +164909,81 @@ export type Database = {
         Args: { p_authorized: boolean }
         Returns: undefined
       }
+      set_invoice_payment_status: {
+        Args: { _invoice_id: string; _status: string }
+        Returns: {
+          amount_paid: number
+          amount_source: string | null
+          amount_writeback_run_id: string | null
+          brand: string | null
+          business_date: string
+          business_date_source: string | null
+          business_date_source_note: string | null
+          business_id: string
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_type: string | null
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          delivery_photos: string[] | null
+          due_date: string | null
+          enrichment_run_id: string | null
+          entity_id: string | null
+          entity_type: string | null
+          entry_mode: string | null
+          finalized_at: string | null
+          finalized_by: string | null
+          id: string
+          invoice_number: string
+          invoice_pdf_url: string | null
+          is_historical: boolean
+          notes: string | null
+          order_id: string | null
+          paid_at: string | null
+          partial_amount: number | null
+          payment_method: string | null
+          payment_status: string
+          payment_status_source: string
+          payment_status_source_note: string | null
+          pricing_mode: string | null
+          receipt_delivered_at: string | null
+          receipt_failure_reason: string | null
+          receipt_message_sid: string | null
+          receipt_phone_used: string | null
+          receipt_sent_at: string | null
+          receipt_status: string | null
+          received_by: string | null
+          referenced_external_number: string | null
+          reopened_for_edit: boolean
+          repair_notes: string | null
+          repair_status: string
+          repaired_at: string | null
+          repaired_by: string | null
+          revenue_role: string
+          sale_never_imported: boolean
+          status: string
+          store_id: string | null
+          subtotal: number | null
+          tax: number | null
+          total: number | null
+          total_amount: number | null
+          total_amount_source: string
+          total_amount_source_note: string | null
+          total_boxes_sold: number
+          total_tubes_sold: number
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_outreach: {
         Args: { p_hours?: number; p_key: string; p_on: boolean }
         Returns: Json
