@@ -45595,6 +45595,7 @@ export type Database = {
       }
       customer_invoices: {
         Row: {
+          amount_paid: number
           created_at: string | null
           customer_id: string | null
           due_date: string | null
@@ -45617,6 +45618,7 @@ export type Database = {
           total_amount: number | null
         }
         Insert: {
+          amount_paid?: number
           created_at?: string | null
           customer_id?: string | null
           due_date?: string | null
@@ -45639,6 +45641,7 @@ export type Database = {
           total_amount?: number | null
         }
         Update: {
+          amount_paid?: number
           created_at?: string | null
           customer_id?: string | null
           due_date?: string | null
