@@ -68,6 +68,12 @@ export const VALID_TUBE_BRANDS = [
   { id: 'grabba_r_us',        name: 'Grabba R Us',           color: TUBE_BRAND_COLORS.grabba.hex },
 ] as const;
 
+// Card row id → the single product it represents (rows sharing the "GasMask" invoice brand).
+const GASMASK_ROW_PRODUCT: Record<string, string> = {
+  gasmasktubes: 'dd5e14c0-d6c5-403a-a2d7-504181b0f4ea', // GasMask Tubes
+  gasmask: '170adb8f-ac4e-40f4-a283-38730d30c5de',      // GasMask Bags
+};
+
 interface TubeInventoryRecord {
   id: string;
   brand: string;
@@ -278,6 +284,41 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   const getLOSForBrand = (brandId: string) => {
     return losSnapshots?.find(s => s.brand_key === brandId || s.canonical_brand_id === brandId);
   };
+
+  // GasMask Tubes and GasMask Bags share the invoice brand "GasMask", so the
+  // brand-level snapshot can't tell them apart. Resolve their last order per
+  // PRODUCT from invoice line items, counted in each product's own unit.
+  const { data: gmProductLastOrders } = useQuery({
+    queryKey: ['store-gasmask-product-last-order', storeId],
+    queryFn: async () => {
+      const ids = Object.values(GASMASK_ROW_PRODUCT);
+      const { data, error } = await supabase
+        .from('invoice_line_items')
+        .select('product_id, computed_units_total, quantity, invoices!inner(store_id, business_date, created_at, deleted_at)')
+        .in('product_id', ids)
+        .eq('invoices.store_id', storeId)
+        .is('invoices.deleted_at', null)
+        .is('deleted_at', null);
+      if (error) throw error;
+      const out: Record<string, { date: string; units: number }> = {};
+      const byInvoiceDate = new Map<string, { date: string; units: number }>();
+      for (const r of (data || []) as any[]) {
+        const date = r.invoices?.business_date || r.invoices?.created_at;
+        if (!date) continue;
+        const units = Number(r.computed_units_total ?? r.quantity ?? 0);
+        const key = `${r.product_id}|${date}`;
+        const prev = byInvoiceDate.get(key);
+        byInvoiceDate.set(key, { date, units: (prev?.units ?? 0) + units });
+      }
+      for (const [key, v] of byInvoiceDate) {
+        const pid = key.split('|')[0];
+        if (!out[pid] || new Date(v.date) > new Date(out[pid].date)) out[pid] = v;
+      }
+      return out;
+    },
+    enabled: !!storeId,
+    staleTime: 30_000,
+  });
   useEffect(() => {
     if (!intelLoading && intelData && intelData.length < VALID_TUBE_BRANDS.length && storeId) {
       initializeBrands.mutate(storeId);
