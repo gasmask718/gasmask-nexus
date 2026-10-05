@@ -117,7 +117,8 @@ export function useLastOrderSnapshot(storeId: string | null | undefined) {
 
       const rows: LastOrderSnapshot[] = ((data || []) as any[]).map((row) => ({
         ...row,
-        canonical_brand_id: normalizeBrandId(row.brand_name),
+        // Bag lines are their own row (e.g. "GasMask Bags") — never merge them into the tube brand row.
+        canonical_brand_id: String(row.brand_key || '').endsWith(' bags') ? null : normalizeBrandId(row.brand_name),
         is_placeholder: false,
       }));
 
@@ -169,7 +170,8 @@ export function useLastOrderSnapshotBatch(storeIds: string[]) {
       for (const row of (data || []) as any[]) {
         const enriched: LastOrderSnapshot = {
           ...row,
-          canonical_brand_id: normalizeBrandId(row.brand_name),
+          // Bag lines are their own row (e.g. "GasMask Bags") — never merge them into the tube brand row.
+        canonical_brand_id: String(row.brand_key || '').endsWith(' bags') ? null : normalizeBrandId(row.brand_name),
           is_placeholder: false,
         };
         const existing = rawMap.get(row.store_id) || [];
