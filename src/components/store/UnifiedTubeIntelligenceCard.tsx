@@ -758,6 +758,29 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
 
                     {/* ── Last Order Info (enriched with LOS snapshot) ── */}
                     {(() => {
+                      const productId = GASMASK_ROW_PRODUCT[brand.id];
+                      if (productId) {
+                        const po = gmProductLastOrders?.[productId];
+                        const unit = unitLabelForBrandId(brand.id);
+                        const days = po ? Math.max(0, Math.floor((Date.now() - new Date(po.date).getTime()) / 86400000)) : 0;
+                        return (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>
+                              {t('card.tube_intel.last_order')}:{' '}
+                              {po ? (
+                                <span className="text-foreground">
+                                  {dynastyDateAbsolute(po.date)}
+                                  {' · '}{po.units.toLocaleString()} {unit}
+                                  <span className="text-muted-foreground"> · {days}d ago</span>
+                                </span>
+                              ) : (
+                                <span className="text-warning font-medium">{t('card.tube_intel.never_ordered')}</span>
+                              )}
+                            </span>
+                          </div>
+                        );
+                      }
                       const los = getLOSForBrand(brand.id);
                       return (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
