@@ -71,6 +71,24 @@ export type Database = {
         }
         Relationships: []
       }
+      _auto_book_backup: {
+        Row: {
+          backup_date: string
+          row_data: Json
+          table_name: string
+        }
+        Insert: {
+          backup_date?: string
+          row_data: Json
+          table_name: string
+        }
+        Update: {
+          backup_date?: string
+          row_data?: Json
+          table_name?: string
+        }
+        Relationships: []
+      }
       _batch_run_results: {
         Row: {
           batch_num: number
@@ -2291,6 +2309,72 @@ export type Database = {
         }
         Relationships: []
       }
+      _june_master: {
+        Row: {
+          contact: string | null
+          key: string | null
+          last_order: string | null
+          matched_store_id: string | null
+          phones: string | null
+          status: string | null
+          store_name: string | null
+        }
+        Insert: {
+          contact?: string | null
+          key?: string | null
+          last_order?: string | null
+          matched_store_id?: string | null
+          phones?: string | null
+          status?: string | null
+          store_name?: string | null
+        }
+        Update: {
+          contact?: string | null
+          key?: string | null
+          last_order?: string | null
+          matched_store_id?: string | null
+          phones?: string | null
+          status?: string | null
+          store_name?: string | null
+        }
+        Relationships: []
+      }
+      _june_money: {
+        Row: {
+          key: string | null
+          owed_amt: number | null
+          paid_amt: number | null
+          paid_flag: string | null
+        }
+        Insert: {
+          key?: string | null
+          owed_amt?: number | null
+          paid_amt?: number | null
+          paid_flag?: string | null
+        }
+        Update: {
+          key?: string | null
+          owed_amt?: number | null
+          paid_amt?: number | null
+          paid_flag?: string | null
+        }
+        Relationships: []
+      }
+      _june_notes: {
+        Row: {
+          key: string | null
+          note: string | null
+        }
+        Insert: {
+          key?: string | null
+          note?: string | null
+        }
+        Update: {
+          key?: string | null
+          note?: string | null
+        }
+        Relationships: []
+      }
       _merge_matrix_results: {
         Row: {
           actual: string | null
@@ -3158,6 +3242,21 @@ export type Database = {
           total_attempts?: number | null
           updated_at?: string | null
           zip?: string | null
+        }
+        Relationships: []
+      }
+      _route_log_result: {
+        Row: {
+          k: string | null
+          v: number | null
+        }
+        Insert: {
+          k?: string | null
+          v?: number | null
+        }
+        Update: {
+          k?: string | null
+          v?: number | null
         }
         Relationships: []
       }
