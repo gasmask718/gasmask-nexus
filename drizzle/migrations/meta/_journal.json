@@ -43,6 +43,13 @@
       "when": 1791173067607,
       "tag": "0005_last_order_snapshot_empty_invoices",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793113708899,
+      "tag": "0006_ambassador_portal_e2e_fixes",
+      "breakpoints": true
     }
   ]
 }

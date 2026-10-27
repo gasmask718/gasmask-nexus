@@ -163626,6 +163626,10 @@ export type Database = {
       bump_number_answered_v2: { Args: { p_id: string }; Returns: undefined }
       bump_number_usage: { Args: { p_number_id: string }; Returns: undefined }
       bump_number_usage_v2: { Args: { p_id: string }; Returns: undefined }
+      bump_store_last_visit: {
+        Args: { _store_id: string; _ts: string }
+        Returns: undefined
+      }
       calculate_and_persist_drift_alerts: { Args: never; Returns: number }
       calculate_creator_score: {
         Args: { p_creator_id: string }
