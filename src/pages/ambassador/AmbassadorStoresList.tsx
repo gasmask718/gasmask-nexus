@@ -38,6 +38,7 @@ import { StoreClaimStatus } from '@/components/ambassador/StoreClaimStatus';
 import { useAmbassadorProspects, type AmbassadorProspect } from '@/hooks/useAmbassadorProspects';
 import { ProspectPromoteDialog } from '@/components/ambassador/ProspectPromoteDialog';
 import { AreaProspectsList } from '@/components/ambassador/AreaProspectsList';
+import { useAmbassadorAreaProspects } from '@/hooks/useAmbassadorAreaProspects';
 import { Compass } from 'lucide-react';
 import {
   buildUpperManhattanBreakdown,
@@ -248,6 +249,7 @@ function StoresListContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [prospectNeighborhood, setProspectNeighborhood] = useState('');
   const [prospectPage, setProspectPage] = useState(1);
+  const { data: areaProspects } = useAmbassadorAreaProspects(searchQuery, prospectNeighborhood, prospectPage);
   const requestedTab = new URLSearchParams(location.search).get('tab');
   const [activeTab, setActiveTab] = useState(requestedTab === 'handled' || requestedTab === 'added' || requestedTab === 'prospects' ? requestedTab : 'all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -405,13 +407,13 @@ function StoresListContent() {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-3xl font-bold text-amber-500">{prospects.length}</p>
+            <p className="text-3xl font-bold text-primary">{prospects.length + (areaProspects?.area_total || 0)}</p>
             <p className="text-sm text-muted-foreground">Prospects</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-3xl font-bold">{metrics.totalStores + prospects.length}</p>
+            <p className="text-3xl font-bold">{metrics.totalStores + prospects.length + (areaProspects?.area_total || 0)}</p>
             <p className="text-sm text-muted-foreground">Total landscape</p>
           </CardContent>
         </Card>
@@ -488,7 +490,7 @@ function StoresListContent() {
           <TabsTrigger value="sourced">{t('amb.stores.tab_sourced')} ({metrics.sourcedStores})</TabsTrigger>
           <TabsTrigger value="handled">Handled ({handledStores.length})</TabsTrigger>
           <TabsTrigger value="added">Added by Me ({addedStores.length})</TabsTrigger>
-          <TabsTrigger value="prospects">Prospects ({prospects.length})</TabsTrigger>
+          <TabsTrigger value="prospects">Prospects ({prospects.length + (areaProspects?.area_total || 0)})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-4">
