@@ -71,6 +71,13 @@
       "when": 1793118119037,
       "tag": "0009_ambassador_area_prospects_read_only",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793119433049,
+      "tag": "0010_ambassador_prospect_promote_and_activity",
+      "breakpoints": true
     }
   ]
 }

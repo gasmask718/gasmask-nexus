@@ -79354,6 +79354,7 @@ export type Database = {
           notes: string | null
           order_id: string | null
           paid_at: string | null
+          paid_by_user_id: string | null
           partial_amount: number | null
           payment_method: string | null
           payment_status: string
@@ -79367,6 +79368,7 @@ export type Database = {
           receipt_sent_at: string | null
           receipt_status: string | null
           received_by: string | null
+          recorded_by_user_id: string | null
           referenced_external_number: string | null
           reopened_for_edit: boolean
           repair_notes: string | null
@@ -79420,6 +79422,7 @@ export type Database = {
           notes?: string | null
           order_id?: string | null
           paid_at?: string | null
+          paid_by_user_id?: string | null
           partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
@@ -79433,6 +79436,7 @@ export type Database = {
           receipt_sent_at?: string | null
           receipt_status?: string | null
           received_by?: string | null
+          recorded_by_user_id?: string | null
           referenced_external_number?: string | null
           reopened_for_edit?: boolean
           repair_notes?: string | null
@@ -79486,6 +79490,7 @@ export type Database = {
           notes?: string | null
           order_id?: string | null
           paid_at?: string | null
+          paid_by_user_id?: string | null
           partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
@@ -79499,6 +79504,7 @@ export type Database = {
           receipt_sent_at?: string | null
           receipt_status?: string | null
           received_by?: string | null
+          recorded_by_user_id?: string | null
           referenced_external_number?: string | null
           reopened_for_edit?: boolean
           repair_notes?: string | null
@@ -120118,6 +120124,7 @@ export type Database = {
           shirt_size: string | null
           show_on_public_site: boolean
           sms_capable: boolean | null
+          source: string | null
           sourced_at: string | null
           sourced_by_ambassador_id: string | null
           state: string
@@ -120250,6 +120257,7 @@ export type Database = {
           shirt_size?: string | null
           show_on_public_site?: boolean
           sms_capable?: boolean | null
+          source?: string | null
           sourced_at?: string | null
           sourced_by_ambassador_id?: string | null
           state: string
@@ -120382,6 +120390,7 @@ export type Database = {
           shirt_size?: string | null
           show_on_public_site?: boolean
           sms_capable?: boolean | null
+          source?: string | null
           sourced_at?: string | null
           sourced_by_ambassador_id?: string | null
           state?: string
@@ -121961,6 +121970,7 @@ export type Database = {
       store_prospects: {
         Row: {
           address: string | null
+          ambassador_action_note: string | null
           black_pct: number | null
           borough_or_county: string | null
           city: string | null
@@ -121980,6 +121990,7 @@ export type Database = {
           phone: string | null
           priority_score: number | null
           promoted_at: string | null
+          promoted_by: string | null
           promoted_store_id: string | null
           prospect_key: string
           prospect_status: string
@@ -121998,6 +122009,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          ambassador_action_note?: string | null
           black_pct?: number | null
           borough_or_county?: string | null
           city?: string | null
@@ -122017,6 +122029,7 @@ export type Database = {
           phone?: string | null
           priority_score?: number | null
           promoted_at?: string | null
+          promoted_by?: string | null
           promoted_store_id?: string | null
           prospect_key: string
           prospect_status?: string
@@ -122035,6 +122048,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          ambassador_action_note?: string | null
           black_pct?: number | null
           borough_or_county?: string | null
           city?: string | null
@@ -122054,6 +122068,7 @@ export type Database = {
           phone?: string | null
           priority_score?: number | null
           promoted_at?: string | null
+          promoted_by?: string | null
           promoted_store_id?: string | null
           prospect_key?: string
           prospect_status?: string
@@ -163329,6 +163344,10 @@ export type Database = {
         Returns: number
       }
       ai_worker_performance_tick: { Args: never; Returns: Json }
+      ambassador_activity_day: {
+        Args: { p_ambassador_id: string; p_day: string }
+        Returns: Json
+      }
       ambassador_area_prospect_keys: { Args: never; Returns: string[] }
       ambassador_area_prospects_page: {
         Args: { p_neighborhood?: string; p_page?: number; p_search?: string }
@@ -163345,6 +163364,14 @@ export type Database = {
       ambassador_login_is_shared: {
         Args: { _user_id: string }
         Returns: boolean
+      }
+      ambassador_promote_prospect: {
+        Args: {
+          p_outcome?: string
+          p_prospect_key: string
+          p_visit_note?: string
+        }
+        Returns: Json
       }
       ambassador_store_claim_status: {
         Args: { _store_id: string }
@@ -166110,6 +166137,7 @@ export type Database = {
           shirt_size: string | null
           show_on_public_site: boolean
           sms_capable: boolean | null
+          source: string | null
           sourced_at: string | null
           sourced_by_ambassador_id: string | null
           state: string
@@ -166470,6 +166498,7 @@ export type Database = {
           notes: string | null
           order_id: string | null
           paid_at: string | null
+          paid_by_user_id: string | null
           partial_amount: number | null
           payment_method: string | null
           payment_status: string
@@ -166483,6 +166512,7 @@ export type Database = {
           receipt_sent_at: string | null
           receipt_status: string | null
           received_by: string | null
+          recorded_by_user_id: string | null
           referenced_external_number: string | null
           reopened_for_edit: boolean
           repair_notes: string | null
