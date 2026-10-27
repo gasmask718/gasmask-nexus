@@ -1,3 +1,7 @@
 - [x] Preserve and clarify Upper Manhattan area labels/counts for ambassador stores and prospects
 - [x] Fix Ambassador Portal list clipping, detail-return scroll restoration, and duplicate-looking Leads category navigation
 - [x] Make the Ambassador Home and My Stores mobile shell match the working Leads shell
+- [x] Add territory-only read access and a paginated ambassador Prospects section
+- [x] Verify Feeno and Naeem visibility, filtering, and write denial in rollback tests
+- [ ] Verify Nutt authenticated CT access — blocked: his ambassador has no linked user_id
+- [ ] Check populated Prospects list on mobile as Feeno — blocked: account-specific session approval unavailable

@@ -37,6 +37,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { StoreClaimStatus } from '@/components/ambassador/StoreClaimStatus';
 import { useAmbassadorProspects, type AmbassadorProspect } from '@/hooks/useAmbassadorProspects';
 import { ProspectPromoteDialog } from '@/components/ambassador/ProspectPromoteDialog';
+import { AreaProspectsList } from '@/components/ambassador/AreaProspectsList';
+import { useAmbassadorAreaProspects } from '@/hooks/useAmbassadorAreaProspects';
 import { Compass } from 'lucide-react';
 import {
   buildUpperManhattanBreakdown,
@@ -245,8 +247,11 @@ function StoresListContent() {
   const { stores, metrics, isLoading, unassignStore, isUnassigningStore, secureStore, isSecuringStore, ambassador } = useAmbassadorPortfolio();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [prospectNeighborhood, setProspectNeighborhood] = useState('');
+  const [prospectPage, setProspectPage] = useState(1);
+  const { data: areaProspects } = useAmbassadorAreaProspects(searchQuery, prospectNeighborhood, prospectPage);
   const requestedTab = new URLSearchParams(location.search).get('tab');
-  const [activeTab, setActiveTab] = useState(requestedTab === 'handled' || requestedTab === 'added' ? requestedTab : 'all');
+  const [activeTab, setActiveTab] = useState(requestedTab === 'handled' || requestedTab === 'added' || requestedTab === 'prospects' ? requestedTab : 'all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [dispatchStores, setDispatchStores] = useState<string[] | null>(null);
   const [newStoreOpen, setNewStoreOpen] = useState(false);
@@ -402,13 +407,13 @@ function StoresListContent() {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-3xl font-bold text-amber-500">{prospects.length}</p>
+            <p className="text-3xl font-bold text-primary">{prospects.length + (areaProspects?.area_total || 0)}</p>
             <p className="text-sm text-muted-foreground">Prospects</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-3xl font-bold">{metrics.totalStores + prospects.length}</p>
+            <p className="text-3xl font-bold">{metrics.totalStores + prospects.length + (areaProspects?.area_total || 0)}</p>
             <p className="text-sm text-muted-foreground">Total landscape</p>
           </CardContent>
         </Card>
@@ -454,7 +459,7 @@ function StoresListContent() {
           <Input 
             placeholder={t('amb.stores.search_placeholder')}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setProspectPage(1); }}
             className="pl-10"
           />
         </div>
@@ -485,7 +490,7 @@ function StoresListContent() {
           <TabsTrigger value="sourced">{t('amb.stores.tab_sourced')} ({metrics.sourcedStores})</TabsTrigger>
           <TabsTrigger value="handled">Handled ({handledStores.length})</TabsTrigger>
           <TabsTrigger value="added">Added by Me ({addedStores.length})</TabsTrigger>
-          <TabsTrigger value="prospects">Prospects ({prospects.length})</TabsTrigger>
+          <TabsTrigger value="prospects">Prospects ({prospects.length + (areaProspects?.area_total || 0)})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-4">
@@ -515,6 +520,9 @@ function StoresListContent() {
             </div>
           ) : activeTab === 'prospects' ? (
             <div className="space-y-3">
+              <AreaProspectsList search={searchQuery} neighborhood={prospectNeighborhood} page={prospectPage}
+                onNeighborhoodChange={(value) => { setProspectNeighborhood(value); setProspectPage(1); }} onPageChange={setProspectPage} />
+              <h2 className="border-t pt-4 font-semibold">Discovered locations</h2>
               <p className="text-sm text-muted-foreground">
                 Newly discovered locations in your areas. These are not yours yet and are not counted
                 as your stores — confirm one to send it for approval.
