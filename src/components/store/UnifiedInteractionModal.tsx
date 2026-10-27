@@ -33,6 +33,7 @@ import { format } from 'date-fns';
 import { PhotoUploadMultiple } from './PhotoUploadMultiple';
 import { extractOpportunitiesFromNote, extractOpportunitiesFromInteraction } from '@/services/opportunityExtractionService';
 import { DatePicker, TimePicker } from '@/components/ui/datetime-picker';
+import { normalizeTubeBrandId } from '@/lib/inventory/tubeSkuKeys';
 
 const INTERACTION_TYPES = [
   { value: 'delivery', label: 'Delivery', icon: Package, requiresProducts: true },
