@@ -1,3 +1,5 @@
 - [x] Preserve and clarify Upper Manhattan area labels/counts for ambassador stores and prospects
 - [x] Fix Ambassador Portal list clipping, detail-return scroll restoration, and duplicate-looking Leads category navigation
 - [x] Make the Ambassador Home and My Stores mobile shell match the working Leads shell
+- [ ] Add territory-only read access and a paginated ambassador Prospects section
+- [ ] Verify ambassador prospect visibility and write denial without changing records
