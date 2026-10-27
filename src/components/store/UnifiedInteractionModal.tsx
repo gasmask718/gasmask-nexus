@@ -328,7 +328,11 @@ export function UnifiedInteractionModal({
 
           const brandQuantities = new Map<string, number>();
           for (const product of selectedProducts) {
-            const tubeId = brandNameToTubeId[product.brand_name];
+            // GasMask bags and tubes share the brand name "GasMask"; resolve by
+            // product first so tubes land on 'gasmasktubes', bags on 'gasmask'.
+            const tubeId =
+              normalizeTubeBrandId((product as any).product_name) ??
+              (product.brand_name === 'GasMask' ? 'gasmasktubes' : brandNameToTubeId[product.brand_name]);
             if (tubeId) {
               const current = brandQuantities.get(tubeId) || 0;
               brandQuantities.set(tubeId, current + product.quantity);

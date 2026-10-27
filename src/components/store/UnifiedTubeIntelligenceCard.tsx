@@ -436,7 +436,18 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   };
 
   const handleSave = () => {
-    const updates = Object.entries(editedCounts).map(([brand, count]) => ({ brand, count }));
+    // Only write brands whose count actually changed — re-saving unchanged rows
+    // would overwrite their real "counted on" date with today.
+    const updates = Object.entries(editedCounts)
+      .filter(([brand, count]) => {
+        const original = inventory?.find(i => i.brand === brand);
+        return original ? original.current_tubes_left !== count : count > 0;
+      })
+      .map(([brand, count]) => ({ brand, count }));
+    if (updates.length === 0) {
+      setHasChanges(false);
+      return;
+    }
     saveMutation.mutate(updates);
   };
 
@@ -811,12 +822,26 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground mb-3">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        Counts updated:{' '}
-                        <span className="text-foreground font-medium">
-                          {originalItem?.last_updated
-                            ? dynastyStampWithRelative(originalItem.last_updated)
-                            : 'never'}
-                        </span>
+                        {brand.id === 'gasmask' ? (
+                          <>
+                            Bags left:{' '}
+                            <span className="text-foreground font-medium">
+                              {originalItem ? originalItem.current_tubes_left.toLocaleString() : '—'}
+                              {originalItem?.last_updated
+                                ? ` (counted ${dynastyDateAbsolute(originalItem.last_updated)})`
+                                : ' (never counted)'}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            Counted on:{' '}
+                            <span className="text-foreground font-medium">
+                              {originalItem?.last_updated
+                                ? dynastyStampWithRelative(originalItem.last_updated)
+                                : 'never'}
+                            </span>
+                          </>
+                        )}
                       </span>
                       <span className="flex items-center gap-1">
                         <Eye className="h-3 w-3" />
