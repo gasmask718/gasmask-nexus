@@ -563,8 +563,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
             .single();
 
           if (invoiceError) {
-            console.error('Error creating invoice:', invoiceError);
-            continue;
+            throw new Error(`Order for ${order.brand_name} was not saved: ${invoiceError.message}`);
           }
 
           // Create line items
@@ -574,9 +573,12 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               toLineItemRow(item, invoice.id, { lineSource: 'field_visit' }),
             );
 
-            await supabase
+            const { error: lineError } = await supabase
               .from('invoice_line_items')
               .insert(lineItems);
+            if (lineError) {
+              throw new Error(`Order ${invoiceNumber} saved but its items failed: ${lineError.message}`);
+            }
 
             // Send receipt text for LIVE invoices only (not historical)
             if (invoiceMode === 'live') {
@@ -605,7 +607,11 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
         description: 'Your changes have been submitted and are pending admin approval. You will see the updates once approved.',
       });
 
-      navigate(portalType === 'driver' ? '/portal/driver' : '/portal/biker');
+      navigate(
+        portalType === 'ambassador'
+          ? `/ambassador/stores/${storeId}`
+          : portalType === 'driver' ? '/portal/driver' : '/portal/biker',
+      );
     } catch (error) {
       console.error('Error submitting visit:', error);
       toast(getRLSErrorToast(error));

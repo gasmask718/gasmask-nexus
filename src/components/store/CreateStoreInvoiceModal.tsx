@@ -264,7 +264,7 @@ export function CreateStoreInvoiceModal({
               payment_method: paymentMethod as any || null,
               customer_response: notes || `Invoice ${invoiceNumber}${receivedByName ? ` - Received by: ${receivedByName}` : ''}`,
               products_delivered: productsDeliveredJson as any,
-              delivery_photos: photos.length > 0 ? photos as any : null,
+              photos: photos.length > 0 ? photos : null,
             });
 
           if (visitLogError) {

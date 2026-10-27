@@ -33,6 +33,7 @@ import { format } from 'date-fns';
 import { PhotoUploadMultiple } from './PhotoUploadMultiple';
 import { extractOpportunitiesFromNote, extractOpportunitiesFromInteraction } from '@/services/opportunityExtractionService';
 import { DatePicker, TimePicker } from '@/components/ui/datetime-picker';
+import { normalizeTubeBrandId } from '@/lib/inventory/tubeSkuKeys';
 
 const INTERACTION_TYPES = [
   { value: 'delivery', label: 'Delivery', icon: Package, requiresProducts: true },
@@ -328,7 +329,11 @@ export function UnifiedInteractionModal({
 
           const brandQuantities = new Map<string, number>();
           for (const product of selectedProducts) {
-            const tubeId = brandNameToTubeId[product.brand_name];
+            // GasMask bags and tubes share the brand name "GasMask"; resolve by
+            // product first so tubes land on 'gasmasktubes', bags on 'gasmask'.
+            const tubeId =
+              normalizeTubeBrandId((product as any).product_name) ??
+              (product.brand_name === 'GasMask' ? 'gasmasktubes' : brandNameToTubeId[product.brand_name]);
             if (tubeId) {
               const current = brandQuantities.get(tubeId) || 0;
               brandQuantities.set(tubeId, current + product.quantity);
