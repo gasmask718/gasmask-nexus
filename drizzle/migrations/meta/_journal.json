@@ -64,6 +64,13 @@
       "when": 1793113836813,
       "tag": "0008_change_lists_allow_ambassador_role",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793118119037,
+      "tag": "0009_ambassador_area_prospects_read_only",
+      "breakpoints": true
     }
   ]
 }

@@ -163329,6 +163329,11 @@ export type Database = {
         Returns: number
       }
       ai_worker_performance_tick: { Args: never; Returns: Json }
+      ambassador_area_prospect_keys: { Args: never; Returns: string[] }
+      ambassador_area_prospects_page: {
+        Args: { p_neighborhood?: string; p_page?: number; p_search?: string }
+        Returns: Json
+      }
       ambassador_has_active_assignment: {
         Args: { _store_id: string; _user_id: string }
         Returns: boolean
