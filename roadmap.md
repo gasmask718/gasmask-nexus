@@ -26,4 +26,6 @@
   - [x] (partial) Hidden from RCC candidates; stores.is_test_data=true; no ambassador/invoices so not in ambassador lists or money. Raw store totals still count it +1. (orig:) Hide is_portal_test stores from v_route_candidates store branches, ambassador lists, KPIs, money reports, store counts (its delivery requests still show in RCC)
 
 - BLOCKED on owner: test phone number; Twilio key fix (all outbound texts failing 70051).
-- FLAG: pre-existing — anon (signed-out) can read every row of public.stores via stores_simulation_select; not changed (needs owner decision).
+
+- NEW (Oct 28): A) Photo verification audit — screens/roles/buckets (crew-drop-photos, checklist-photos, storefront-captures), GPS+timestamp, review path; fix ambassador photo visit → store profile. Real upload test, clean up own rows.
+- NEW (Oct 28): B) Owner route portal — verify Ching's 10 draft routes (Oct 29–Nov 9, assigned_to owner's profile) + 170 stores appear in his ambassador/field portal and RCC; wire if needed.
