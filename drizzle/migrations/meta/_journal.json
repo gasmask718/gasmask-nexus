@@ -85,6 +85,13 @@
       "when": 1793179415669,
       "tag": "0011_store_customer_portal",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793179592900,
+      "tag": "0012_v_route_candidates_delivery_requests",
+      "breakpoints": true
     }
   ]
 }
