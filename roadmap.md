@@ -1,5 +1,12 @@
 # Roadmap — Oct 28
 
+- PHONE ROUTE RUN — Oct 28
+  - [x] Near Me sorting, radius, two-minute visible-page location refresh, navigation links and mobile stop tools
+  - [x] Route inventory + GPS photo reuse; authenticated MASTER/day completion sync
+  - [x] Census backfill deployed and run on all 580 live non-test missing-coordinate stores: 195 exact matches saved; 385 unresolved. 402 soft-deleted + 1 test store skipped deliberately. MASTER missing coordinates reduced 62 → 39. Google existing key rejected fallback (REQUEST_DENIED); no guessed coordinates.
+  - [x] Owner 390px checks: sorting, half-mile radius (6 stops), Maps nine-stop URL, inventory save/readback (18 tubes, route_visit), MASTER/day test completion and next-closest. Four unit tests passed; cancelled/outsider/lock SQL checks passed rolled back. Two new QA routes cancelled, test inventory retained on existing test store, no deletes.
+  - [ ] Embedded Google route map deployed using existing browser-only key; live map unverified because sandbox Maps checks are unsupported. Existing Mapbox map was blank (401); Google fallback geocoding remains blocked by key permissions. Owner must check embedded map on authorized deployed origin.
+
 - [x] STEP 0: snapshot 11 tables → `_snap_*_20261028`, counts verified vs live
   - NOTE: no pre-existing nightly snapshot job existed; created dated snapshot tables now (additive). Real backup = daily platform backups (More → Database → Manage → Backups).
 

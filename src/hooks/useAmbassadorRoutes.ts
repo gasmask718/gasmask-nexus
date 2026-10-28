@@ -19,7 +19,9 @@ export interface RouteStop {
   custom_address?: string;
   planned_time?: string;
   planned_order: number;
-  status: 'planned' | 'complete' | 'skipped';
+  status: string;
+  phone?: string | null;
+  stop_reason?: string | null;
   outcome_notes?: string;
   completed_at?: string;
 }
@@ -83,11 +85,12 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
             id,
             store_id,
             planned_order,
+            lat, lng, address, stop_reason, completed_at,
             status,
             notes_to_worker,
             planned_arrival_time,
             store:stores!route_stops_store_id_fkey(
-              id, name, address_street, address_city, address_state, lat, lng
+              id, name, address_street, address_city, address_state, phone, lat, lng
             )
           )
         `)
@@ -107,7 +110,7 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
       
       if (error) {
         console.error('Routes fetch error:', error);
-        return [];
+        throw error;
       }
 
       return (data || []).map((route: any): AmbassadorRoute => {
@@ -129,9 +132,12 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
             store_id: s.store_id,
             store_name: s.store?.name || undefined,
             store_address: [s.store?.address_street, s.store?.address_city, s.store?.address_state]
-              .filter(Boolean).join(', ') || undefined,
-            store_lat: s.store?.lat ?? null,
-            store_lng: s.store?.lng ?? null,
+              .filter(Boolean).join(', ') || s.address || undefined,
+            store_lat: s.lat != null ? Number(s.lat) : s.store?.lat ?? null,
+            store_lng: s.lng != null ? Number(s.lng) : s.store?.lng ?? null,
+            phone: s.store?.phone,
+            stop_reason: s.stop_reason,
+            completed_at: s.completed_at,
             planned_order: s.planned_order,
             status: s.status || 'planned',
             outcome_notes: s.notes_to_worker,
@@ -248,19 +254,17 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
 
   // Complete stop mutation
   const completeStopMutation = useMutation({
-    mutationFn: async (input: { stopId: string; status: 'complete' | 'skipped'; notes?: string }) => {
-      const { error } = await supabase
-        .from('route_stops')
-        .update({
-          status: input.status,
-          notes_to_worker: input.notes,
-        })
-        .eq('id', input.stopId);
-
+    mutationFn: async (input: { stopId: string; status: 'complete' | 'skipped' | 'closed'; notes?: string; lat?: number; lng?: number }) => {
+      const { error } = await supabase.rpc('field_route_stop_outcome', {
+        p_stop_id: input.stopId, p_outcome: input.status === 'complete' ? 'completed' : input.status,
+        p_lat: input.lat ?? null, p_lng: input.lng ?? null,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ambassador-routes'] });
+      queryClient.invalidateQueries({ queryKey: ['field-workforce'] });
+      queryClient.invalidateQueries({ queryKey: ['route-manager'] });
       toast.success('Stop updated');
     },
     onError: (error: Error) => {

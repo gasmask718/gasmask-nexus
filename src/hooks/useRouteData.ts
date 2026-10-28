@@ -45,7 +45,8 @@ export function useRoutes(filters?: { date?: string; status?: string; type?: str
           assignee:profiles!routes_assigned_to_fkey(id, name, role),
           route_stops(count)
         `)
-        .order("date", { ascending: false });
+        .neq("status", "cancelled").neq("status", "canceled")
+        .order("date", { ascending: true });
 
       if (filters?.date) query = query.eq("date", filters.date);
       if (filters?.status) query = query.eq("status", filters.status);
@@ -77,6 +78,7 @@ export function useRouteWithStops(routeId?: string) {
           assignee:profiles!routes_assigned_to_fkey(id, name, role)
         `)
         .eq("id", routeId)
+        .neq("status", "cancelled").neq("status", "canceled")
         .single();
       
       if (routeError) throw routeError;

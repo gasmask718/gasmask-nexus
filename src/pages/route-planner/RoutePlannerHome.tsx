@@ -47,11 +47,13 @@ export default function RoutePlannerHome() {
     queryKey: ['route-planner-routes', user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from('routes')
         .select('id, name, date, status, territory, is_trial, total_stops')
-        .eq('assigned_to', user!.id)
-        .order('date', { ascending: false });
+        .eq('assigned_to', user.id)
+        .neq('status', 'cancelled').neq('status', 'canceled')
+        .order('date', { ascending: true });
       if (error) throw error;
       return data || [];
     },
@@ -64,10 +66,11 @@ export default function RoutePlannerHome() {
     queryKey: ['route-planner-stops', activeRouteId],
     enabled: !!activeRouteId,
     queryFn: async () => {
+      if (!activeRouteId) return [];
       const { data, error } = await supabase
         .from('route_stops')
         .select('id, planned_order, status, address, zip, area, notes')
-        .eq('route_id', activeRouteId!)
+        .eq('route_id', activeRouteId)
         .order('planned_order', { ascending: true });
       if (error) throw error;
       return data || [];

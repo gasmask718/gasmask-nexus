@@ -99,6 +99,7 @@ export function useFieldWorkforce() {
         (supabase as any)
           .from('routes')
           .select('id, name, date, type, status, territory, assigned_to, started_at, completed_at, created_at')
+          .neq('status', 'cancelled').neq('status', 'canceled')
           .order('date', { ascending: false })
           .limit(500),
         (supabase as any)
