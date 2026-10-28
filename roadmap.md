@@ -1,5 +1,11 @@
 # Roadmap — Oct 28
 
+- PHONE ROUTE RUN — Oct 28
+  - [ ] Near Me sorting, radius, location refresh, navigation links and mobile stop tools
+  - [ ] Route inventory + GPS photo reuse; authenticated MASTER/day completion sync
+  - [ ] Census coordinate backfill, non-overwrite coordinate sync and route-stop fill
+  - [ ] Owner phone-size checks, concrete rule tests and final counts
+
 - [x] STEP 0: snapshot 11 tables → `_snap_*_20261028`, counts verified vs live
   - NOTE: no pre-existing nightly snapshot job existed; created dated snapshot tables now (additive). Real backup = daily platform backups (More → Database → Manage → Backups).
 
