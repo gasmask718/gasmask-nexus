@@ -92,7 +92,9 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
           )
         `)
         .eq('assigned_to', user?.id)
-        .order('date', { ascending: false });
+        .neq('status', 'cancelled')
+        .neq('status', 'canceled')
+        .order('date', { ascending: true });
 
       if (dateFrom) {
         query = query.gte('date', dateFrom);
