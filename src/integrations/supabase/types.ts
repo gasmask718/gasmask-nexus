@@ -166655,6 +166655,15 @@ export type Database = {
         }
         Returns: Json
       }
+      contact_verification_record_call: {
+        Args: {
+          p_attempt_id: string
+          p_contact_id: string
+          p_outcome: string
+          p_started_at: string
+        }
+        Returns: undefined
+      }
       contact_verification_save: {
         Args: {
           p_name: string

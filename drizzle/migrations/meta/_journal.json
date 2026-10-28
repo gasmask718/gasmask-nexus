@@ -204,6 +204,13 @@
       "when": 1793194021339,
       "tag": "0028_contact_verification_plain_log_idempotency",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1793194090623,
+      "tag": "0029_contact_verification_authoritative_roles_and_call_reuse",
+      "breakpoints": true
     }
   ]
 }
