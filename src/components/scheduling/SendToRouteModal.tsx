@@ -315,6 +315,20 @@ export function SendToRouteModal({
             route_stop_id: stop?.id ?? null,
           })
           .eq('id', pendingStopId);
+
+        // Store-portal requests: the queue row's approval marks the store's
+        // delivery request scheduled (DB trigger); send the store its confirmation.
+        const { data: dr } = await (supabase as any)
+          .from('delivery_requests')
+          .select('id')
+          .eq('pending_route_stop_id', pendingStopId)
+          .maybeSingle();
+        if (dr?.id) {
+          const { error: notifyErr } = await supabase.functions.invoke('store-portal-notify', {
+            body: { request_id: dr.id, event: 'scheduled' },
+          });
+          if (notifyErr) toast.error(`Store confirmation text failed: ${notifyErr.message}`);
+        }
       } catch (err) {
         console.error('Failed to mark pending stop approved', err);
       }

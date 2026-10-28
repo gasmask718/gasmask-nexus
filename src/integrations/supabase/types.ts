@@ -57427,6 +57427,7 @@ export type Database = {
           id: string
           items: Json
           notes: string | null
+          pending_route_stop_id: string | null
           request_type: string
           requested_by: string | null
           requested_date: string | null
@@ -57442,6 +57443,7 @@ export type Database = {
           id?: string
           items?: Json
           notes?: string | null
+          pending_route_stop_id?: string | null
           request_type?: string
           requested_by?: string | null
           requested_date?: string | null
@@ -57457,6 +57459,7 @@ export type Database = {
           id?: string
           items?: Json
           notes?: string | null
+          pending_route_stop_id?: string | null
           request_type?: string
           requested_by?: string | null
           requested_date?: string | null
@@ -169088,6 +169091,7 @@ export type Database = {
           id: string
           items: Json
           notes: string | null
+          pending_route_stop_id: string | null
           request_type: string
           requested_by: string | null
           requested_date: string | null

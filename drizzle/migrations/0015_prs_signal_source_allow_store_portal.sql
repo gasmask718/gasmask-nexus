@@ -1,0 +1,2 @@
+ALTER TABLE public.pending_route_stops DROP CONSTRAINT IF EXISTS prs_signal_source_chk;
+ALTER TABLE public.pending_route_stops ADD CONSTRAINT prs_signal_source_chk CHECK (signal_source IS NULL OR signal_source = ANY (ARRAY['ai_score','sell_through','brand_crm','opportunities','ai_call_outcome','sms_outcome','manual_disposition','owner_order','coverage_gap','manual','store_portal']));
