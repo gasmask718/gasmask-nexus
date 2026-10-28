@@ -25,11 +25,11 @@ export async function sendVerifiedStorePortalInvite(sb: any, storeId: string, co
     const link = `${base}/portal/invite/${rawToken}`;
     const body = `GasMask: update your inventory or schedule your next delivery here: ${link} - Ching`;
     const sms = await sendSms({ to: claim.phone, body, idempotencyKey: `store-portal-contact-${claim.attempt_id}`, sendClass: 'transactional', storeId, purpose: 'store_portal_invite', skipCooldown: true, metadata: { contact_id: contactId, verification_attempt_id: claim.attempt_id } });
-    const { error: logError } = await sb.from('communication_logs').insert({
+    const { error: logError } = await sb.from('communication_logs').upsert({
       store_id: storeId, contact_id: contactId, channel: 'sms', direction: 'outbound', summary: 'Verified contact portal invite attempt', message_content: body, full_message: body,
       recipient_phone: claim.phone, delivery_status: sms.success ? 'sent' : 'failed', provider_message_id: sms.providerMessageId, twilio_sid: sms.providerMessageId,
       error_code: sms.errorCode, error_message: sms.errorMessage, idempotency_key: `store-portal-contact-${claim.attempt_id}`, source_table: 'portal_invites', source_id: invite.id, created_by: claim.actor, business_id: claim.business_id,
-    });
+    }, { onConflict: 'idempotency_key' });
     if (logError) throw new Error(logError.message);
     await finish({ portal_link_status: sms.success ? 'sent' : sms.blocked ? 'blocked' : 'failed', portal_link_error: sms.errorMessage });
     return { success: sms.success, status: sms.status, invite_id: invite.id, expires_at: invite.expires_at, error: sms.errorMessage, error_code: sms.errorCode };
