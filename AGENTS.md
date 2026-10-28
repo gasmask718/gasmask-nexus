@@ -13,3 +13,5 @@
 - Phone route execution uses RouteRunPanel in the ambassador planner and assigned-user route detail; Near Me is a transient display order and never rewrites planned_order.
 - MASTER/day completion runs through field_route_stop_outcome with server-side assignee validation and active plan/date boundaries, so sibling completion is atomic without touching cancelled plans.
 - Census store geocoding accepts exact address-range matches only, leaves uncertain/deleted/test addresses untouched, and uses apply_missing_store_geocode for race-safe null-only writes; store_master coordinates sync to stores and missing route-stop coordinates through one trigger.
+- ContactVerificationFlow uses contact_verification_* RPCs for authorized reads/writes; inbound handlers share contactVerificationInbound and text-store-portal-invite shares storePortalInvite so confirmed-number, STOP, attempt dedupe and launch-lock rules cannot diverge. In-person overrides never grant text confirmation.
+- SMS contact audit writes enrich the existing communication_logs row by its plain unique idempotency key, because send-sms already writes that row; never insert a duplicate send log.
