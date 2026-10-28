@@ -46,13 +46,15 @@ export function LiveRoutesPanel({ routes, isLoading }: { routes: LiveRouteRow[];
       routes
         .filter((r) => {
           const s = String(r.status || '').toLowerCase();
+          // Cancelled routes are superseded — never show them, whatever the filter.
+          if (s === 'cancelled' || s === 'canceled') return false;
           if (status === 'open' && FINISHED.includes(s)) return false;
           if (status !== 'open' && status !== 'all' && r.status !== status) return false;
           if (role !== 'all' && r.workerRole !== role) return false;
           if (territory !== 'all' && r.territory !== territory) return false;
           return true;
         })
-        .sort((a, b) => (b.date || '').localeCompare(a.date || '')),
+        .sort((a, b) => (a.date || '').localeCompare(b.date || '')),
     [routes, status, role, territory],
   );
 
