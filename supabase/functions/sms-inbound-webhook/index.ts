@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { verifyTwilio } from "../_shared/dialer.ts";
+import { receiveContactVerification, isVerificationStop } from "../_shared/contactVerificationInbound.ts";
 import { verifiedInsertSoft } from "../_shared/verifiedWrite.ts";
 
 const corsHeaders = {
@@ -61,6 +62,10 @@ serve(async (req: Request) => {
       }
     }
 
+    if (!isTwilioForm && req.headers.get("Authorization") !== `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`) {
+      return new Response("Forbidden", { status: 403, headers: corsHeaders });
+    }
+
     const fromNumber = body.From || body.from || body.from_number || "";
     const toNumber = body.To || body.to || body.to_number || "";
     const messageBody = body.Body || body.body || body.message || "";
@@ -74,6 +79,16 @@ serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    if (isVerificationStop(messageBody)) {
+      const { error } = await supabase.rpc("handle_sms_opt_out", { p_phone: fromNumber, p_method: "STOP_keyword" });
+      if (error) throw new Error(error.message);
+      const { error: logError } = await supabase.from("communication_logs").insert({ channel: "sms", direction: "inbound", sender_phone: fromNumber, recipient_phone: toNumber, message_content: messageBody, twilio_sid: messageSid, delivery_status: "received", summary: "Customer opted out (STOP)", business_id: null });
+      if (logError) throw new Error(logError.message);
+      return new Response('<?xml version="1.0"?><Response/>', { headers: { ...corsHeaders, "Content-Type": "text/xml" } });
+    }
+    const verification = await receiveContactVerification(supabase, fromNumber, toNumber, messageBody, messageSid);
+    if (verification.matched) return new Response('<?xml version="1.0"?><Response/>', { headers: { ...corsHeaders, "Content-Type": "text/xml" } });
 
     const normalizedFrom = normalizePhone(fromNumber);
     const trimmedBody = messageBody.trim();
