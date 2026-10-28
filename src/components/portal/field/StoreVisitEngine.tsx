@@ -429,7 +429,9 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
       Object.entries(visitData.questionnaire).forEach(([key, value]) => {
         changeItems.push({
           change_list_id: changeList.id,
-          entity_type: 'store_questionnaire',
+          // change_list_items CHECK only allows 'questionnaire' ('store_questionnaire'
+          // is the field_submissions type and is rejected here)
+          entity_type: 'questionnaire',
           entity_id: storeId,
           field_name: key,
           new_value: { value },
