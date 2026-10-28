@@ -106,6 +106,13 @@
       "when": 1793181383631,
       "tag": "0014_store_portal_feeds_pending_route_stops",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793181537793,
+      "tag": "0015_prs_signal_source_allow_store_portal",
+      "breakpoints": true
     }
   ]
 }
