@@ -169062,6 +169062,15 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: Json
       }
+      store_portal_catalog: {
+        Args: never
+        Returns: {
+          brand: string
+          name: string
+          product_id: string
+          unit_price: number
+        }[]
+      }
       store_portal_home: { Args: { p_store_id: string }; Returns: Json }
       store_portal_inventory: {
         Args: { p_store_id: string }
