@@ -76,15 +76,23 @@ Deno.serve(async (req) => {
 
     const { data: store } = await supabase
       .from('store_master')
-      .select('id, store_name, address, city, state, zip, business_id, assigned_ambassador_id')
+      .select('id, store_name, address, city, state, zip, business_id, assigned_ambassador_id, is_portal_test')
       .eq('id', request.store_id)
       .maybeSingle()
     if (!store) return json({ error: 'Store not found' }, 404)
+
+    // Launch lock: never text a real store while the portal is not live (fail closed).
+    const { data: portalLive, error: liveError } = await supabase.rpc('store_portal_is_live')
+    const storeTextingAllowed = !liveError && (portalLive === true || store.is_portal_test === true)
 
     const storeLabel = `${store.store_name}, ${store.address}${store.city ? `, ${store.city}` : ''}`
     const sent: { to: string; ok: boolean; status: string }[] = []
 
     async function textStoreContact(body: string, keySuffix: string) {
+      if (!storeTextingAllowed) {
+        sent.push({ to: 'store', ok: false, status: 'blocked_portal_not_live' })
+        return
+      }
       const { data: contact } = await supabase
         .from('store_contacts')
         .select('phone')

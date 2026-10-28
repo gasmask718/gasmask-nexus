@@ -49,10 +49,18 @@ Deno.serve(async (req) => {
     // Load the store.
     const { data: store, error: storeError } = await supabase
       .from('store_master')
-      .select('id, store_name, address, city, state, zip, business_id, deleted_at')
+      .select('id, store_name, address, city, state, zip, business_id, deleted_at, is_portal_test')
       .eq('id', store_id)
       .maybeSingle()
     if (storeError || !store || store.deleted_at) return json({ error: 'Store not found' }, 404)
+
+    // Launch lock: while the portal is not live, only test stores may be texted. Fail closed.
+    const { data: live, error: liveError } = await supabase.rpc('store_portal_is_live')
+    if (liveError) return json({ error: 'Could not read portal launch setting' }, 500)
+    if (live !== true && store.is_portal_test !== true) {
+      return json({ error: 'Portal not live yet' }, 403)
+    }
+
 
     // Primary SMS-capable contact (fail closed if none).
     const { data: contact } = await supabase
