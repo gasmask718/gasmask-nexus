@@ -65,22 +65,26 @@ export function VisitHistoryTab({ storeId }: VisitHistoryTabProps) {
         // Fetch change lists
         const { data: changeListsData } = await (supabase as any)
           .from('change_lists')
-          .select(`
-            id,
-            created_at,
-            status,
-            profiles:submitted_by (full_name)
-          `)
+          .select('id, created_at, status, submitted_by')
           .eq('store_id', storeId)
           .order('created_at', { ascending: false })
           .limit(20);
 
         if (changeListsData) {
+          const submitterIds = [...new Set(changeListsData.map((c: any) => c.submitted_by).filter(Boolean))];
+          const nameBySubmitter = new Map<string, string>();
+          if (submitterIds.length > 0) {
+            const { data: profileRows } = await (supabase as any)
+              .from('profiles')
+              .select('id, name')
+              .in('id', submitterIds);
+            (profileRows || []).forEach((p: any) => nameBySubmitter.set(p.id, p.name));
+          }
           setChangeLists(changeListsData.map((c: any) => ({
             id: c.id,
             created_at: c.created_at,
             status: c.status,
-            submitted_by_name: c.profiles?.full_name,
+            submitted_by_name: nameBySubmitter.get(c.submitted_by),
           })));
         }
       } catch (error) {

@@ -74,6 +74,7 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
         .from('routes')
         .select(`
           id,
+          name,
           date,
           status,
           territory,
@@ -115,7 +116,7 @@ export function useAmbassadorRoutes(options?: { dateFrom?: string; dateTo?: stri
         
         return {
           id: route.id,
-          title: route.territory || `Route for ${format(new Date(route.date), 'MMM d, yyyy')}`,
+          title: route.name || route.territory || `Route for ${format(new Date(route.date), 'MMM d, yyyy')}`,
           route_date: route.date,
           status: route.status || 'scheduled',
           stops_count: stops.length,
