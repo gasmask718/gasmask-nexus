@@ -15122,6 +15122,33 @@ export type Database = {
           },
         ]
       }
+      anon_access_revocation_log: {
+        Row: {
+          id: number
+          note: string | null
+          object_kind: string
+          object_name: string
+          privileges_before: string | null
+          revoked_at: string
+        }
+        Insert: {
+          id?: number
+          note?: string | null
+          object_kind: string
+          object_name: string
+          privileges_before?: string | null
+          revoked_at?: string
+        }
+        Update: {
+          id?: number
+          note?: string | null
+          object_kind?: string
+          object_name?: string
+          privileges_before?: string | null
+          revoked_at?: string
+        }
+        Relationships: []
+      }
       api_clients: {
         Row: {
           client_id: string
