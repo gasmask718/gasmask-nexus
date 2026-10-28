@@ -27,5 +27,5 @@
 
 - BLOCKED on owner: test phone number; Twilio key fix (all outbound texts failing 70051).
 
-- NEW (Oct 28): A) Photo verification audit — screens/roles/buckets (crew-drop-photos, checklist-photos, storefront-captures), GPS+timestamp, review path; fix ambassador photo visit → store profile. Real upload test, clean up own rows.
-- NEW (Oct 28): B) Owner route portal — verify Ching's 10 draft routes (Oct 29–Nov 9, assigned_to owner's profile) + 170 stores appear in his ambassador/field portal and RCC; wire if needed.
+- [x] A) Photo verification audit + fix: field-visit-photos private bucket + storage policies; store_visits.photo_paths; StoreVisitEngine photo capture + GPS; StoreDetail field-visits section; fixed change_list_items entity_type 'store_questionnaire'→'questionnaire' (blocked EVERY visit submit); fixed VisitHistoryTab broken columns. E2E tested as owner on TEST store (photo uploaded, GPS 40.6782/-73.9442, row saved, photo+location render on store profile). Test photo files deleted; 3 test store_visits rows marked 'TEST ROW' (delete_guard blocks removal).
+- [x] B) Owner route portal: all 10 Ching Day routes (170 stops, all join to stores) verified visible in /ambassador/routes (screenshot) and RCC Live tab (66 mentions). routes.assigned_to = owner user id matches both portals' filters; RLS allows assignee read/update. Route-name display fix (useAmbassadorRoutes title = route.name) applied but NOT re-verified in preview.
