@@ -176,6 +176,13 @@
       "when": 1793189925950,
       "tag": "0024_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793192168230,
+      "tag": "0025_phone_route_execution_and_coordinate_sync",
+      "breakpoints": true
     }
   ]
 }

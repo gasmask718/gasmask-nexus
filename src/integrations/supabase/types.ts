@@ -108662,6 +108662,10 @@ export type Database = {
           address: string | null
           area: string | null
           brand_id: string | null
+          completed_at: string | null
+          completed_by: string | null
+          completion_gps_lat: number | null
+          completion_gps_lng: number | null
           created_at: string | null
           id: string
           lat: number | null
@@ -108687,6 +108691,10 @@ export type Database = {
           address?: string | null
           area?: string | null
           brand_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_gps_lat?: number | null
+          completion_gps_lng?: number | null
           created_at?: string | null
           id?: string
           lat?: number | null
@@ -108712,6 +108720,10 @@ export type Database = {
           address?: string | null
           area?: string | null
           brand_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_gps_lat?: number | null
+          completion_gps_lng?: number | null
           created_at?: string | null
           id?: string
           lat?: number | null
@@ -122262,6 +122274,10 @@ export type Database = {
           formality_level: string | null
           frustration_triggers: string[] | null
           gasmask_call_status: string | null
+          geocode_attempted_at: string | null
+          geocode_confidence: string | null
+          geocode_source: string | null
+          geocoded_at: string | null
           grabba_demand_score: number | null
           has_expansion: boolean | null
           health_status: string | null
@@ -122398,6 +122414,10 @@ export type Database = {
           formality_level?: string | null
           frustration_triggers?: string[] | null
           gasmask_call_status?: string | null
+          geocode_attempted_at?: string | null
+          geocode_confidence?: string | null
+          geocode_source?: string | null
+          geocoded_at?: string | null
           grabba_demand_score?: number | null
           has_expansion?: boolean | null
           health_status?: string | null
@@ -122534,6 +122554,10 @@ export type Database = {
           formality_level?: string | null
           frustration_triggers?: string[] | null
           gasmask_call_status?: string | null
+          geocode_attempted_at?: string | null
+          geocode_confidence?: string | null
+          geocode_source?: string | null
+          geocoded_at?: string | null
           grabba_demand_score?: number | null
           has_expansion?: boolean | null
           health_status?: string | null
@@ -165987,6 +166011,16 @@ export type Database = {
         Args: { p_submission_id: string }
         Returns: Json
       }
+      apply_missing_store_geocode: {
+        Args: {
+          p_confidence: string
+          p_id: string
+          p_lat: number
+          p_lon: number
+          p_source: string
+        }
+        Returns: boolean
+      }
       approve_ai_draft_invoice: {
         Args: { p_invoice_id: string; p_reviewer: string }
         Returns: Json
@@ -167419,6 +167453,15 @@ export type Database = {
         }[]
       }
       extract_address_from_name: { Args: { p_name: string }; Returns: string }
+      field_route_stop_outcome: {
+        Args: {
+          p_lat?: number
+          p_lng?: number
+          p_outcome: string
+          p_stop_id: string
+        }
+        Returns: number
+      }
       field_worker_has_store: {
         Args: { _store_id: string; _user_id: string }
         Returns: boolean
@@ -168510,6 +168553,10 @@ export type Database = {
           formality_level: string | null
           frustration_triggers: string[] | null
           gasmask_call_status: string | null
+          geocode_attempted_at: string | null
+          geocode_confidence: string | null
+          geocode_source: string | null
+          geocoded_at: string | null
           grabba_demand_score: number | null
           has_expansion: boolean | null
           health_status: string | null
