@@ -1,5 +1,10 @@
 # Roadmap — Oct 28
 
+- AT THE STORE CONTACT VERIFICATION
+  - [ ] Reuse contact/call/text/invite paths; secure dedupe, outcomes, confirmation and override.
+  - [ ] Route/profile wizard, live badges and onboarding counters.
+  - [ ] Owner test contact send, rollback YES/auto-link/isolation tests and 390px screenshots; launch lock stays OFF.
+
 - PHONE ROUTE RUN — Oct 28
   - [x] Near Me sorting, radius, two-minute visible-page location refresh, navigation links and mobile stop tools
   - [x] Route inventory + GPS photo reuse; authenticated MASTER/day completion sync
