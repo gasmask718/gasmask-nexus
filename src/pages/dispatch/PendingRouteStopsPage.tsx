@@ -34,6 +34,9 @@ function nextDateForDay(day: string | null): string {
     today.setDate(today.getDate() + 1);
     return format(today, 'yyyy-MM-dd');
   }
+  // Store-portal requests carry an exact date (yyyy-MM-dd) or "ASAP".
+  if (/^\d{4}-\d{2}-\d{2}$/.test(day)) return day;
+  if (day.toUpperCase() === 'ASAP') return format(today, 'yyyy-MM-dd');
   const map: Record<string, number> = {
     sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
     thursday: 4, friday: 5, saturday: 6,
