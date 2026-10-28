@@ -103,6 +103,7 @@ import {
   X,
   CreditCard,
 } from "lucide-react";
+import { SignedImage } from "@/components/ui/signed-image";
 import { toast } from "sonner";
 import { BulkCommunicationLogModal } from "@/components/communication/BulkCommunicationLogModal";
 import { AccountActivityTable } from '@/components/activity/AccountActivityTable';
