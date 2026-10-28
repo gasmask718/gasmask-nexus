@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LocateFixed, Navigation, Camera, Check, SkipForward, DoorClosed, Package, Loader2, Phone } from 'lucide-react';
 import { nearbyStops, nearestNext, googleDirections, travelEstimate, type Position } from '@/lib/routes/nearMe';
-import { AmbassadorStoreMap } from './AmbassadorStoreMap';
+import { RouteMiniMap } from './RouteMiniMap';
 import { RouteInventoryDialog } from './RouteInventoryDialog';
 import { toast } from 'sonner';
 import { tubeBrandName } from '@/lib/inventory/tubeSkuKeys';
@@ -35,7 +35,7 @@ export function RouteRunPanel({ route }: { route: AmbassadorRoute }) {
  {location&&<p className="text-xs text-muted-foreground">Near Me · GPS {locatedAt?.toLocaleTimeString()} · accuracy ±{Math.round(accuracy||0)} m</p>}
  <div className="grid gap-2"><Button onClick={()=>maps(false)} disabled={!next}><Navigation className="h-4 w-4"/>Start route</Button><Button variant="outline" onClick={()=>maps(true)} disabled={!location||!visible.some(s=>s.store_lat!=null&&s.store_lng!=null)}><Navigation className="h-4 w-4"/>Open next 9 in Google Maps</Button></div>
  <p className="text-sm text-muted-foreground">{visible.length} remaining{radius!=='all'?` within ${radius} mi`:''} · {route.completed_stops}/{route.stops_count} done</p>
- <AmbassadorStoreMap height={230} title="Route stops" stores={[...visible.filter(s=>s.store_lat!=null&&s.store_lng!=null).map(s=>({id:s.id,name:s.store_name||'Stop',lat:s.store_lat,lng:s.store_lng,address:s.store_address,statusKey:'pending'})),...(location?[{id:'your-location',name:'Your current location',lat:location.lat,lng:location.lng,statusKey:'secured'}]:[])]}/>
+ <RouteMiniMap stops={visible} location={location}/>
  {facts.error&&<p className="text-destructive text-sm">Inventory/order details: {facts.error.message}</p>}
  {!visible.length&&<p className="py-6 text-muted-foreground">{radius==='all'?'No remaining stops.':'No remaining stops inside this radius.'}</p>}
  {visible.map(stop=>{const inv=facts.data?.inventories.filter(r=>r.store_id===stop.store_id)||[];const order=facts.data?.orders.find(r=>r.store_id===stop.store_id);const estimate=stop.distance!==null?travelEstimate(stop.distance):null;return <article key={stop.id} data-testid="route-stop" data-stop-id={stop.id} className="border rounded-lg p-4 space-y-3 bg-card min-w-0">
