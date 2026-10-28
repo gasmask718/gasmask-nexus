@@ -9,6 +9,7 @@
   - [x] Migration `0012_v_route_candidates_delivery_requests`: open requests appear as candidates (verified: view runs, 2,156 rows)
   - [x] Edge functions deployed: text-store-portal-invite, store-portal-auth (code via send-sms + admin magiclink session), store-portal-notify (created→David+ambassador, scheduled/delivered→store contact); all log communication_logs
   - [ ] Portal UI: /portal/mystore pages (PATH CHANGE: /portal/store is the existing Dynasty Direct buyer portal — new GasMask portal must NOT take that path), invite landing phone-code flow (note: /portal/invite/:token → UniversalInviteAccept, not InviteLanding), osNavigation 'store' entry + RoleRouter
+  - [x] Reuse audit (Oct 28): existing request queue = pending_route_stops + /dispatch/pending-stops. delivery_requests now FEEDS it via trigger (migrations 0014/0015); duplicate RCC branch removed; approve→request scheduled + store text; reject/cancel synced. The admin list is /dispatch/pending-stops; do NOT build a separate Delivery Requests list — put launch toggle + checklist on that page.
   - [ ] Staff UI: Text portal link button (StoreTaskRouteButtons), Delivery Requests admin page + Layout nav, Portal panel on StoreDetail, RCC candidate add-to-route → notify
   - [ ] End-to-end test + RLS isolation tests; remove test rows
   - [ ] Final report
