@@ -92,6 +92,13 @@
       "when": 1793179592900,
       "tag": "0012_v_route_candidates_delivery_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793180514361,
+      "tag": "0013_store_portal_launch_lock",
+      "breakpoints": true
     }
   ]
 }
