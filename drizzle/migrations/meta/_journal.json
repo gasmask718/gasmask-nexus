@@ -127,6 +127,13 @@
       "when": 1793181793489,
       "tag": "0017_store_portal_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793182056539,
+      "tag": "0018_delivery_requests_staff_policy_fix",
+      "breakpoints": true
     }
   ]
 }
