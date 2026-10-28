@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import StorePortalInviteLanding from "@/components/store-portal/StorePortalInviteLanding";
+import { sha256Hex } from "@/lib/storePortal";
 
 const ROLE_THEME: Record<string, { title: string; sub: string; color: string }> = {
   wholesaler: { title: "Wholesaler", sub: "You've been invited to Dynasty Direct as a Wholesaler.", color: "bg-indigo-600" },
@@ -29,6 +31,7 @@ export default function UniversalInviteAccept() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [awaitingConfirm, setAwaitingConfirm] = useState(false);
+  const [storeInvite, setStoreInvite] = useState<{ store_name: string | null; phone_last4: string | null } | null>(null);
 
   async function finishAccept() {
     if (!token) return false;
@@ -47,7 +50,14 @@ export default function UniversalInviteAccept() {
       const { data, error } = await supabase.rpc("get_invite_by_token", { p_token: token });
       const row: any = Array.isArray(data) ? data[0] : data;
       if (error || !row) {
-        setErr("Invite not found or expired.");
+        // Not a universal invite — it may be a GasMask store portal link (portal_invites, hashed token).
+        const { data: info } = await supabase.rpc("portal_invite_info", { p_token_hash: await sha256Hex(token) });
+        const pi: any = info;
+        if (pi?.valid && pi.role === "store") {
+          setStoreInvite({ store_name: pi.store_name ?? null, phone_last4: pi.phone_last4 ?? null });
+        } else {
+          setErr(pi?.error || "Invite not found or expired.");
+        }
       } else {
         setInvite(row);
         setEmail(row.sent_to_email || "");
@@ -131,6 +141,10 @@ export default function UniversalInviteAccept() {
         <p className="text-sm text-muted-foreground">{err}</p>
       </div>
     </div>
+  );
+
+  if (storeInvite && token) return (
+    <StorePortalInviteLanding token={token} storeName={storeInvite.store_name} phoneLast4={storeInvite.phone_last4} />
   );
 
   if (awaitingConfirm) return (

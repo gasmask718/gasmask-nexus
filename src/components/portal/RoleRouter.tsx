@@ -54,8 +54,14 @@ export default function RoleRouter() {
 
     setStatus('redirecting');
 
-    // Get redirect path based on primary role from centralized config
+    // GasMask store-portal users (linked via store_users) open their store portal.
     const role = data.profile.primary_role as OSRole;
+    if (role === 'store' || role === ('store_owner' as OSRole)) {
+      (supabase as any).from('store_users').select('store_id').limit(1).then(({ data: su }: any) => {
+        navigate(su?.length ? '/portal/mystore' : getRoleRedirectPath(role), { replace: true });
+      });
+      return;
+    }
     const redirectPath = getRoleRedirectPath(role);
 
     console.log('🚀 RoleRouter: Redirecting', role, '→', redirectPath);

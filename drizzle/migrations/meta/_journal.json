@@ -113,6 +113,55 @@
       "when": 1793181537793,
       "tag": "0015_prs_signal_source_allow_store_portal",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793181698798,
+      "tag": "0016_store_portal_staff_panel_invite_links_test_hiding",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793181793489,
+      "tag": "0017_store_portal_catalog",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793182056539,
+      "tag": "0018_delivery_requests_staff_policy_fix",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793182092990,
+      "tag": "0019_delivery_requests_guard_fix",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793182139597,
+      "tag": "0020_stores_restrict_store_portal_users",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793182172103,
+      "tag": "0021_invites_link_ambassador_fix_routes_column",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793182193691,
+      "tag": "0022_portal_security_events_allow_store_ambassador",
+      "breakpoints": true
     }
   ]
 }

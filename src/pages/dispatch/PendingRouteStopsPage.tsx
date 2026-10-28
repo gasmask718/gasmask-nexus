@@ -6,6 +6,7 @@ import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { usePendingRouteStops, type PendingRouteStop } from '@/hooks/usePendingRouteStops';
 import { SendToRouteModal } from '@/components/scheduling/SendToRouteModal';
+import { StorePortalLaunchPanel } from '@/components/store-portal/StorePortalLaunchPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,9 @@ function nextDateForDay(day: string | null): string {
     today.setDate(today.getDate() + 1);
     return format(today, 'yyyy-MM-dd');
   }
+  // Store-portal requests carry an exact date (yyyy-MM-dd) or "ASAP".
+  if (/^\d{4}-\d{2}-\d{2}$/.test(day)) return day;
+  if (day.toUpperCase() === 'ASAP') return format(today, 'yyyy-MM-dd');
   const map: Record<string, number> = {
     sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
     thursday: 4, friday: 5, saturday: 6,
@@ -181,11 +185,13 @@ export default function PendingRouteStopsPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Pending Route Stops</h1>
+        <h1 className="text-2xl font-bold">Delivery Requests</h1>
         <p className="text-muted-foreground text-sm">
-          AI-flagged delivery requests from inbound calls awaiting dispatcher approval.
+          Every delivery request in one queue — store portal requests, inbound calls and owner orders — awaiting dispatcher approval onto a route.
         </p>
       </div>
+
+      <StorePortalLaunchPanel />
 
       {isLoading && (
         <div className="flex items-center gap-2 text-muted-foreground">

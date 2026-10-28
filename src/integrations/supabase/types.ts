@@ -167790,6 +167790,7 @@ export type Database = {
       ingest_recruiting_applicant: { Args: { p_payload: Json }; Returns: Json }
       ingest_territory_addresses: { Args: { p_addresses: Json }; Returns: Json }
       ingest_twilio_cost_tick: { Args: never; Returns: Json }
+      invite_redirect_for_role: { Args: { p_role: string }; Returns: string }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { p_user_id: string }; Returns: boolean }
       is_ambassador_for_store: {
@@ -169056,9 +169057,19 @@ export type Database = {
       }
       stock_from_note: { Args: { raw: string }; Returns: number }
       stop_all_outreach: { Args: never; Returns: Json }
+      store_portal_admin_panel: { Args: { p_store_id: string }; Returns: Json }
       store_portal_cancel_request: {
         Args: { p_request_id: string }
         Returns: Json
+      }
+      store_portal_catalog: {
+        Args: never
+        Returns: {
+          brand: string
+          name: string
+          product_id: string
+          unit_price: number
+        }[]
       }
       store_portal_home: { Args: { p_store_id: string }; Returns: Json }
       store_portal_inventory: {
