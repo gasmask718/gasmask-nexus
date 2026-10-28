@@ -121457,6 +121457,7 @@ export type Database = {
           is_simulation: boolean
           last_call_answered_at: string | null
           last_call_attempt_at: string | null
+          last_call_outcome: string | null
           last_responded_at: string | null
           last_text_received_at: string | null
           last_text_sent_at: string | null
@@ -121481,6 +121482,10 @@ export type Database = {
           owner_confirmed_by: string | null
           phone: string | null
           phone_note: string | null
+          portal_link_attempt_at: string | null
+          portal_link_error: string | null
+          portal_link_invite_id: string | null
+          portal_link_status: string | null
           preferred_sms_provider: string | null
           relationship_type: string | null
           relationship_type_custom: string | null
@@ -121500,6 +121505,13 @@ export type Database = {
           total_texts_received: number | null
           total_texts_sent: number | null
           updated_by: string | null
+          verification_attempt_id: string | null
+          verification_auto_send_link: boolean
+          verification_from_phone: string | null
+          verification_method: string | null
+          verification_override_at: string | null
+          verification_override_by: string | null
+          verification_override_reason: string | null
           verified_at: string | null
           verified_by: string | null
         }
@@ -121525,6 +121537,7 @@ export type Database = {
           is_simulation?: boolean
           last_call_answered_at?: string | null
           last_call_attempt_at?: string | null
+          last_call_outcome?: string | null
           last_responded_at?: string | null
           last_text_received_at?: string | null
           last_text_sent_at?: string | null
@@ -121549,6 +121562,10 @@ export type Database = {
           owner_confirmed_by?: string | null
           phone?: string | null
           phone_note?: string | null
+          portal_link_attempt_at?: string | null
+          portal_link_error?: string | null
+          portal_link_invite_id?: string | null
+          portal_link_status?: string | null
           preferred_sms_provider?: string | null
           relationship_type?: string | null
           relationship_type_custom?: string | null
@@ -121568,6 +121585,13 @@ export type Database = {
           total_texts_received?: number | null
           total_texts_sent?: number | null
           updated_by?: string | null
+          verification_attempt_id?: string | null
+          verification_auto_send_link?: boolean
+          verification_from_phone?: string | null
+          verification_method?: string | null
+          verification_override_at?: string | null
+          verification_override_by?: string | null
+          verification_override_reason?: string | null
           verified_at?: string | null
           verified_by?: string | null
         }
@@ -121593,6 +121617,7 @@ export type Database = {
           is_simulation?: boolean
           last_call_answered_at?: string | null
           last_call_attempt_at?: string | null
+          last_call_outcome?: string | null
           last_responded_at?: string | null
           last_text_received_at?: string | null
           last_text_sent_at?: string | null
@@ -121617,6 +121642,10 @@ export type Database = {
           owner_confirmed_by?: string | null
           phone?: string | null
           phone_note?: string | null
+          portal_link_attempt_at?: string | null
+          portal_link_error?: string | null
+          portal_link_invite_id?: string | null
+          portal_link_status?: string | null
           preferred_sms_provider?: string | null
           relationship_type?: string | null
           relationship_type_custom?: string | null
@@ -121636,6 +121665,13 @@ export type Database = {
           total_texts_received?: number | null
           total_texts_sent?: number | null
           updated_by?: string | null
+          verification_attempt_id?: string | null
+          verification_auto_send_link?: boolean
+          verification_from_phone?: string | null
+          verification_method?: string | null
+          verification_override_at?: string | null
+          verification_override_by?: string | null
+          verification_override_reason?: string | null
           verified_at?: string | null
           verified_by?: string | null
         }
@@ -166576,6 +166612,58 @@ export type Database = {
         Args: { p_product_id: string; p_qty: number; p_wholesaler_id: string }
         Returns: boolean
       }
+      contact_verification_auto_link: {
+        Args: { p_contact_id: string; p_enabled: boolean }
+        Returns: undefined
+      }
+      contact_verification_begin: {
+        Args: { p_auto: boolean; p_contact_id: string; p_from: string }
+        Returns: Json
+      }
+      contact_verification_call_outcome: {
+        Args: { p_attempt_id: string; p_contact_id: string; p_outcome: string }
+        Returns: undefined
+      }
+      contact_verification_can_access: {
+        Args: { p_store_id: string }
+        Returns: boolean
+      }
+      contact_verification_claim_link: {
+        Args: {
+          p_actor: string
+          p_auto?: boolean
+          p_contact_id: string
+          p_store_id: string
+        }
+        Returns: Json
+      }
+      contact_verification_contacts: {
+        Args: { p_store_id: string }
+        Returns: Json
+      }
+      contact_verification_override: {
+        Args: { p_contact_id: string; p_reason: string }
+        Returns: undefined
+      }
+      contact_verification_receive: {
+        Args: {
+          p_body: string
+          p_business_id: string
+          p_from: string
+          p_sid: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      contact_verification_save: {
+        Args: {
+          p_name: string
+          p_phone: string
+          p_role: string
+          p_store_id: string
+        }
+        Returns: string
+      }
       count_route_actions_last_hour: {
         Args: { p_route_id: string }
         Returns: number
@@ -169160,6 +169248,7 @@ export type Database = {
       }
       store_portal_is_live: { Args: never; Returns: boolean }
       store_portal_launch_state: { Args: never; Returns: Json }
+      store_portal_onboarding_counts: { Args: never; Returns: Json }
       store_portal_request_delivery: {
         Args: {
           p_items: Json
