@@ -148,6 +148,13 @@
       "when": 1793182139597,
       "tag": "0020_stores_restrict_store_portal_users",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793182172103,
+      "tag": "0021_invites_link_ambassador_fix_routes_column",
+      "breakpoints": true
     }
   ]
 }
