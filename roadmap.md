@@ -1,7 +1,12 @@
-- [x] Preserve and clarify Upper Manhattan area labels/counts for ambassador stores and prospects
-- [x] Fix Ambassador Portal list clipping, detail-return scroll restoration, and duplicate-looking Leads category navigation
-- [x] Make the Ambassador Home and My Stores mobile shell match the working Leads shell
-- [x] Add territory-only read access and a paginated ambassador Prospects section
-- [x] Verify Feeno and Naeem visibility, filtering, and write denial in rollback tests
-- [ ] Verify Nutt authenticated CT access — blocked: his ambassador has no linked user_id
-- [ ] Check populated Prospects list on mobile as Feeno — blocked: account-specific session approval unavailable
+# Store Customer Portal — roadmap
+
+- [ ] Audit exact schemas (redeem RPC, ambassador_assignments, store_contacts, store_tube_inventory_status, invoices, v_route_candidates, products, send-sms)
+- [ ] Verify phone OTP availability (auth config); else build send-sms code fallback
+- [ ] Migration: store_users, helpers, delivery_requests, RLS, v_route_candidates branch, redeem RPC store linking
+- [ ] Edge function: text-store-portal-invite
+- [ ] Edge function: store-portal-notify (new request → admin+ambassador; route/delivered → store)
+- [ ] Portal UI: /portal/store home, inventory, delivery request, invite landing OTP flow
+- [ ] Staff UI: Text portal link button, Delivery Requests page, Portal panel on StoreDetail, RCC candidates
+- [ ] RoleRouter/osNavigation: route 'store' role to /portal/store
+- [ ] End-to-end test with test store + rollback RLS tests; remove test rows
+- [ ] Regenerate types; final report (routes/URLs, secrets needed)
