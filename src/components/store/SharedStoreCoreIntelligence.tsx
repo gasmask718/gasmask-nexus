@@ -1,3 +1,4 @@
+import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
  * SHARED STORE CORE INTELLIGENCE — Canonical Section Registry
@@ -199,6 +200,7 @@ export function SharedStoreCoreIntelligence({
 }: SharedStoreCoreIntelligenceProps) {
   return (
     <>
+      <ContactVerificationFlow storeId={storeId} storeName={storeName} />
       {/* ══════════════ Account Summary (v_store_summary) ══════════════ */}
       <StoreAccountSummaryCard storeId={storeId} />
 

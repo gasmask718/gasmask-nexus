@@ -1,3 +1,4 @@
+import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -178,6 +179,7 @@ export function AssignedRoutesPage({ portalType }: AssignedRoutesPageProps) {
                               Call
                             </Button>
                           )}
+                          <ContactVerificationFlow storeId={stop.store_id} storeName={stop.store.store_name} />
                           <Button size="sm" onClick={() => openVisit(stop)}>
                             <Store className="mr-1 h-3 w-3" />
                             Visit

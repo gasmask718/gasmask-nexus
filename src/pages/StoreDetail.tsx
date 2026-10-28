@@ -1,3 +1,4 @@
+import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 import { portalAwarePath } from '@/lib/portalHost';
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -725,6 +726,8 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
                 onLogInteraction={() => setUnifiedInteractionModalOpen(true)}
                 onInventoryUpdated={fetchInventoryAndVisits}
               />
+
+              <ContactVerificationFlow storeId={storeId} storeName={store.name} />
 
               <StoreProfileSection
                 id="relationship-overview"

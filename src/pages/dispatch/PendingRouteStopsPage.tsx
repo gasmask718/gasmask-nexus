@@ -1,3 +1,5 @@
+import { StorePortalOnboardingCounts } from '@/components/store-portal/StorePortalOnboardingCounts';
+import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 // ═══════════════════════════════════════════════════════════════════════════════
 // PENDING ROUTE STOPS — Step 6 dispatcher queue (AI-flagged delivery requests)
 // Three sections: Pending approval, Approved (today), Rejected (today).
@@ -90,6 +92,7 @@ function StopCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {stop.store_id && <ContactVerificationFlow storeId={stop.store_id} storeName={stop.store_name || 'Store'} />}
         {stop.intent_summary && (
           <p className="text-sm italic text-muted-foreground border-l-2 border-border pl-3">
             "{stop.intent_summary}"
@@ -191,6 +194,7 @@ export default function PendingRouteStopsPage() {
         </p>
       </div>
 
+      <StorePortalOnboardingCounts />
       <StorePortalLaunchPanel />
 
       {isLoading && (
