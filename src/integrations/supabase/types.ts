@@ -126502,6 +126502,7 @@ export type Database = {
           id: string
           notes: string | null
           payment_collected: boolean | null
+          photo_paths: string[] | null
           role_type: string
           started_at: string
           status: string
@@ -126519,6 +126520,7 @@ export type Database = {
           id?: string
           notes?: string | null
           payment_collected?: boolean | null
+          photo_paths?: string[] | null
           role_type: string
           started_at?: string
           status?: string
@@ -126536,6 +126538,7 @@ export type Database = {
           id?: string
           notes?: string | null
           payment_collected?: boolean | null
+          photo_paths?: string[] | null
           role_type?: string
           started_at?: string
           status?: string

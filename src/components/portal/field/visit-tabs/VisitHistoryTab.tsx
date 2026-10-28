@@ -34,51 +34,57 @@ export function VisitHistoryTab({ storeId }: VisitHistoryTabProps) {
   useEffect(() => {
     async function fetchHistory() {
       try {
-        // Fetch visits
+        // Fetch visits (store_visits has started_at, not visited_at; profiles has name, not full_name)
         const { data: visitsData } = await (supabase as any)
           .from('store_visits')
-          .select(`
-            id,
-            visited_at,
-            role_type,
-            visit_type,
-            status,
-            profiles:visited_by (full_name)
-          `)
+          .select('id, started_at, role_type, visit_type, status, visited_by')
           .eq('store_id', storeId)
-          .order('visited_at', { ascending: false })
+          .order('started_at', { ascending: false })
           .limit(20);
 
         if (visitsData) {
+          const visitorIds = [...new Set(visitsData.map((v: any) => v.visited_by).filter(Boolean))];
+          const nameByVisitor = new Map<string, string>();
+          if (visitorIds.length > 0) {
+            const { data: profileRows } = await (supabase as any)
+              .from('profiles')
+              .select('id, name')
+              .in('id', visitorIds);
+            (profileRows || []).forEach((p: any) => nameByVisitor.set(p.id, p.name));
+          }
           setVisits(visitsData.map((v: any) => ({
             id: v.id,
-            visited_at: v.visited_at,
+            visited_at: v.started_at,
             visitor_type: v.role_type,
             visit_type: v.visit_type,
             status: v.status,
-            visitor_name: v.profiles?.full_name,
+            visitor_name: nameByVisitor.get(v.visited_by),
           })));
         }
 
         // Fetch change lists
         const { data: changeListsData } = await (supabase as any)
           .from('change_lists')
-          .select(`
-            id,
-            created_at,
-            status,
-            profiles:submitted_by (full_name)
-          `)
+          .select('id, created_at, status, submitted_by')
           .eq('store_id', storeId)
           .order('created_at', { ascending: false })
           .limit(20);
 
         if (changeListsData) {
+          const submitterIds = [...new Set(changeListsData.map((c: any) => c.submitted_by).filter(Boolean))];
+          const nameBySubmitter = new Map<string, string>();
+          if (submitterIds.length > 0) {
+            const { data: profileRows } = await (supabase as any)
+              .from('profiles')
+              .select('id, name')
+              .in('id', submitterIds);
+            (profileRows || []).forEach((p: any) => nameBySubmitter.set(p.id, p.name));
+          }
           setChangeLists(changeListsData.map((c: any) => ({
             id: c.id,
             created_at: c.created_at,
             status: c.status,
-            submitted_by_name: c.profiles?.full_name,
+            submitted_by_name: nameBySubmitter.get(c.submitted_by),
           })));
         }
       } catch (error) {

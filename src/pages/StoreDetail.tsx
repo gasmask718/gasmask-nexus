@@ -103,6 +103,7 @@ import {
   X,
   CreditCard,
 } from "lucide-react";
+import { SignedImage } from "@/components/ui/signed-image";
 import { toast } from "sonner";
 import { BulkCommunicationLogModal } from "@/components/communication/BulkCommunicationLogModal";
 import { AccountActivityTable } from '@/components/activity/AccountActivityTable';
@@ -265,6 +266,18 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
     if (isAmbassadorOnly) setActiveTab('notes');
   }, [roles, isAmbassadorOnly]);
   const [visits, setVisits] = useState<VisitLog[]>([]);
+  const [fieldVisits, setFieldVisits] = useState<Array<{
+    id: string;
+    visit_type: string | null;
+    role_type: string | null;
+    status: string | null;
+    started_at: string | null;
+    completed_at: string | null;
+    gps_lat: number | null;
+    gps_lng: number | null;
+    photo_paths: string[] | null;
+    visitor_name: string | null;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
   const [bulkCommModalOpen, setBulkCommModalOpen] = useState(false);
@@ -482,6 +495,35 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
         .limit(10);
 
       setVisits((visitsData as any) || []);
+
+      // Field visits (store_visits) carry GPS + photo proof from the visit engine
+      const { data: fieldVisitsData } = await supabase
+        .from("store_visits")
+        .select("id, visit_type, role_type, status, started_at, completed_at, gps_lat, gps_lng, photo_paths, visited_by")
+        .eq("store_id", id)
+        .order("started_at", { ascending: false })
+        .limit(20);
+
+      const visitorIds = [...new Set((fieldVisitsData || []).map((v) => v.visited_by).filter(Boolean))] as string[];
+      const nameByVisitor = new Map<string, string>();
+      if (visitorIds.length > 0) {
+        const { data: profileRows } = await supabase.from("profiles").select("id, name").in("id", visitorIds);
+        (profileRows || []).forEach((p) => nameByVisitor.set(p.id, p.name));
+      }
+      setFieldVisits(
+        (fieldVisitsData || []).map((v) => ({
+          id: v.id,
+          visit_type: v.visit_type,
+          role_type: v.role_type,
+          status: v.status,
+          started_at: v.started_at,
+          completed_at: v.completed_at,
+          gps_lat: v.gps_lat,
+          gps_lng: v.gps_lng,
+          photo_paths: v.photo_paths,
+          visitor_name: nameByVisitor.get(v.visited_by) ?? null,
+        })),
+      );
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -799,6 +841,43 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
                           <p className="mt-1 text-muted-foreground">{visit.user.name} · {getSourceFromRole(visit.user.role)}</p>
                         </div>
                       )) : <p className="py-6 text-center text-sm text-muted-foreground">No visit history available</p>}
+                      {fieldVisits.length > 0 && (
+                        <div className="space-y-3 pt-2">
+                          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Field visits (GPS + photo proof)</p>
+                          {fieldVisits.map((fv) => (
+                            <div key={fv.id} className="rounded-md border border-border/50 p-3 text-sm space-y-2">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="font-medium capitalize">{fv.visit_type || 'check'} visit{fv.role_type ? ` · ${fv.role_type}` : ''}</span>
+                                <span className="text-muted-foreground">{fv.started_at ? new Date(fv.started_at).toLocaleString() : '—'}</span>
+                              </div>
+                              {fv.visitor_name && <p className="text-muted-foreground">{fv.visitor_name}</p>}
+                              {fv.gps_lat != null && fv.gps_lng != null && (
+                                <a
+                                  className="inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline"
+                                  href={`https://www.google.com/maps?q=${fv.gps_lat},${fv.gps_lng}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  <Navigation className="h-3 w-3" /> Recorded location ({fv.gps_lat.toFixed(5)}, {fv.gps_lng.toFixed(5)})
+                                </a>
+                              )}
+                              {fv.photo_paths && fv.photo_paths.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {fv.photo_paths.map((path) => (
+                                    <SignedImage
+                                      key={path}
+                                      bucket="field-visit-photos"
+                                      path={path}
+                                      alt="Visit proof photo"
+                                      className="h-24 w-24 rounded-md object-cover border border-border"
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </TabsContent>
                     <TabsContent value="review" className="mt-4"><StoreReviewControls storeId={storeId} /></TabsContent>
                     <TabsContent value="recon" className="mt-4"><StoreReconCard storeId={storeId} /></TabsContent>

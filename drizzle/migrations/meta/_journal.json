@@ -169,6 +169,13 @@
       "when": 1793185729404,
       "tag": "0023_close_anon_store_data_access",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793189925950,
+      "tag": "0024_migration",
+      "breakpoints": true
     }
   ]
 }

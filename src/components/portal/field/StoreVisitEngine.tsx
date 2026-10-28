@@ -4,7 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, AlertTriangle, Shield } from 'lucide-react';
+import { ArrowLeft, Send, AlertTriangle, Shield, MapPin } from 'lucide-react';
+import { VisitPhotoCapture } from './visit-tabs/VisitPhotoCapture';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
@@ -153,6 +154,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
   });
   const [loadingConnectedStores, setLoadingConnectedStores] = useState(false);
   const [loadingWholesalers, setLoadingWholesalers] = useState(false);
+  const [visitPhotos, setVisitPhotos] = useState<File[]>([]);
 
   // Fetch store data, brands (for other sections), and products
   useEffect(() => {
@@ -338,6 +340,28 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Best-effort GPS fix for visit proof (never blocks the visit)
+      const gps = await new Promise<{ lat: number | null; lng: number | null }>((resolve) => {
+        if (!navigator.geolocation) return resolve({ lat: null, lng: null });
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => resolve({ lat: null, lng: null }),
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+        );
+      });
+
+      // Upload visit proof photos to the private field-visit-photos bucket.
+      // Paths (never URLs) are stored on the visit row; render via SignedImage.
+      const photoPaths: string[] = [];
+      for (const file of visitPhotos) {
+        const path = `${user.id}/${storeId}/${crypto.randomUUID()}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from('field-visit-photos')
+          .upload(path, file, { contentType: file.type || 'image/jpeg' });
+        if (uploadError) throw new Error(`Photo upload failed: ${uploadError.message}`);
+        photoPaths.push(path);
+      }
+
       // Create visit record
       const { data: visit, error: visitError } = await supabase
         .from('store_visits')
@@ -348,6 +372,9 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
           visit_type: 'check',
           status: 'completed',
           notes: visitData.internalNotes,
+          gps_lat: gps.lat,
+          gps_lng: gps.lng,
+          photo_paths: photoPaths.length > 0 ? photoPaths : null,
         })
         .select()
         .single();
@@ -402,7 +429,9 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
       Object.entries(visitData.questionnaire).forEach(([key, value]) => {
         changeItems.push({
           change_list_id: changeList.id,
-          entity_type: 'store_questionnaire',
+          // change_list_items CHECK only allows 'questionnaire' ('store_questionnaire'
+          // is the field_submissions type and is rejected here)
+          entity_type: 'questionnaire',
           entity_id: storeId,
           field_name: key,
           new_value: { value },
@@ -778,6 +807,17 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
       {/* Submit Button */}
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="py-4">
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium flex items-center gap-2">
+                Visit proof
+                <span className="text-xs font-normal text-muted-foreground flex items-center gap-1">
+                  <MapPin className="h-3 w-3" /> GPS + time are recorded automatically
+                </span>
+              </p>
+              <VisitPhotoCapture photos={visitPhotos} onChange={setVisitPhotos} />
+            </div>
+          </div>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Ready to submit?</p>
@@ -785,7 +825,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
                 Your changes will be submitted for admin review and approval.
               </p>
             </div>
-            <Button 
+            <Button
               onClick={handleSubmitToChangeControl}
               disabled={submitting}
               className="gap-2"
