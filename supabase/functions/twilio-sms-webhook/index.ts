@@ -16,9 +16,10 @@ import {
   TWILIO_SHARED_NUMBER,
 } from "../_shared/twilio-operator.ts";
 import { buildSmsTemplate } from "../_shared/smsTemplates.ts";
+import { receiveContactVerification } from "../_shared/contactVerificationInbound.ts";
 import { resolveNumberBrand } from "../_shared/inboundNumberBrand.ts";
 
-const STOP_RE = /^\s*(STOP|UNSUBSCRIBE|QUIT|CANCEL|END)\s*$/i;
+const STOP_RE = /^\s*(STOP|STOPALL|UNSUBSCRIBE|QUIT|CANCEL|END)\s*$/i;
 const START_RE = /^\s*(START|UNSTOP|SUBSCRIBE)\s*$/i;
 const SKIP_VERIFY =
   (Deno.env.get("DIALER_SKIP_TWILIO_VERIFY") || "").toLowerCase() === "true";
@@ -72,10 +73,11 @@ Deno.serve(async (req) => {
 
   // STOP keyword
   if (STOP_RE.test(Body)) {
-    const { data: cid } = await sb.rpc("handle_sms_opt_out", {
+    const { error: stopError } = await sb.rpc("handle_sms_opt_out", {
       p_phone: From,
       p_method: "STOP_keyword",
     });
+    if (stopError) return new Response(stopError.message, { status: 500, headers: corsHeaders });
     // Association left to autolink_communication_log() (conversation-first).
     await sb.from("communication_logs").insert({
       store_id: null,
@@ -137,54 +139,13 @@ Deno.serve(async (req) => {
     return new Response(EMPTY_TWIML, { headers: xmlHeaders });
   }
 
-  // ── NUMBER VERIFICATION — confirm contact if recent verification text is pending ──
-  // Runs for ALL inbound numbers, regardless of which Twilio number received the YES.
+  // Single confirmation rule shared by the configured inbound paths.
   try {
-    const body_lower_v = Body.trim().toLowerCase();
-    const isYes = /^(y|yes|yep|yeah|yup|ok|okay|sure|confirmed|got it|gotit|saved|👍)\b/.test(body_lower_v);
-    if (isYes) {
-      const last10 = (From || "").replace(/\D/g, "").slice(-10);
-      if (last10.length === 10) {
-        const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        const { data: pendingVerif } = await sb
-          .from("store_contacts")
-          .select("id, name, store_id")
-          .ilike("phone", `%${last10}`)
-          .in("number_verification_status", ["sent", "delivered"])
-          .gte("number_verification_sent_at", sinceIso)
-          .order("number_verification_sent_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (pendingVerif) {
-          await sb.from("store_contacts").update({
-            number_verification_status: "confirmed",
-            number_verification_confirmed_at: new Date().toISOString(),
-            verified_at: new Date().toISOString(),
-          }).eq("id", pendingVerif.id);
-          console.log(`[twilio-sms-webhook][VERIFY] ✅ Contact ${pendingVerif.id} (${pendingVerif.name}) CONFIRMED via YES from ${From} to ${To}`);
-
-          await sb.from("communication_logs").insert({
-            store_id: pendingVerif.store_id ?? null,
-            contact_id: pendingVerif.id, // store_contacts.id — no FK on communication_logs.contact_id
-            channel: "sms",
-            direction: "inbound",
-            summary: `Number verification CONFIRMED by ${pendingVerif.name}`,
-            message_content: Body.trim(),
-            sender_phone: From,
-            recipient_phone: To,
-            twilio_sid: MessageSid,
-            business_id: numberBrand.business_id,
-            brand: numberBrand.brand,
-            source_business: numberBrand.source_business,
-            delivery_status: "received",
-            outcome: "verification_confirmed",
-          });
-        }
-      }
-    }
-  } catch (vErr) {
-    console.error("[twilio-sms-webhook][VERIFY] error:", (vErr as Error).message);
+    const result = await receiveContactVerification(sb, From, To, Body, MessageSid);
+    if (result.matched) return new Response(EMPTY_TWIML, { headers: xmlHeaders });
+  } catch (e) {
+    console.error("Contact confirmation failed", (e as Error).message);
+    return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
   // ── ACCOUNT ASSOCIATION ──

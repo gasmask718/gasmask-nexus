@@ -252,8 +252,10 @@ const handler = async (req: Request): Promise<Response> => {
       .from("communication_logs")
       .update({
         delivery_status: dbStatus,
+        error_code: errorCode,
+        error_message: errorMessage,
       })
-      .eq("recipient_phone", to)
+      .or(`twilio_sid.eq.${messageSid},provider_message_id.eq.${messageSid}`)
       .eq("channel", "sms")
       .eq("direction", "outbound")
       .order("created_at", { ascending: false })
@@ -280,13 +282,14 @@ const handler = async (req: Request): Promise<Response> => {
         if (dbStatus === "delivered" && verifContact.number_verification_status !== "confirmed") {
           verifPatch.number_verification_status = "delivered";
           verifPatch.number_verification_delivered_at = new Date().toISOString();
-        } else if (isError) {
+        } else if (isError && verifContact.number_verification_status !== "confirmed") {
           verifPatch.number_verification_status = "failed";
           verifPatch.number_verification_failed_at = new Date().toISOString();
           verifPatch.number_verification_error = errorMessage || errorCode || "Delivery failed";
         }
         if (Object.keys(verifPatch).length > 0) {
-          await supabase.from("store_contacts").update(verifPatch).eq("id", verifContact.id);
+          const { error: verificationError } = await supabase.from("store_contacts").update(verifPatch).eq("id", verifContact.id);
+          if (verificationError) throw new Error(verificationError.message);
           console.log(`✅ store_contacts ${verifContact.id} verification → ${verifPatch.number_verification_status}`);
         }
       }

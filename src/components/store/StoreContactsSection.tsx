@@ -16,7 +16,7 @@ import { useStoreContactsWithResponsiveness } from '@/hooks/useContactResponsive
 import { ContactResponsivenessBadge } from '@/components/contact/ContactResponsivenessBadge';
 import { ContactLastInteraction } from '@/components/contact/ContactLastInteraction';
 import { ContactCommunicationTimeline } from './ContactCommunicationTimeline';
-import { VerifyNumberButton } from './VerifyNumberButton';
+import { ContactVerificationFlow } from './ContactVerificationFlow';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { StoreContactActions } from './StoreContactActions';
 import { ContactRelationshipMarkers } from './ContactRelationshipMarkers';
@@ -366,18 +366,7 @@ export function StoreContactsSection({ storeId, storeName }: StoreContactsSectio
 
                   {/* Number verification push button */}
                   <div className="pl-13 ml-13">
-                    <VerifyNumberButton
-                      contactId={contact.id}
-                      storeId={storeId}
-                      contactName={contact.name}
-                      contactPhone={contact.phone}
-                      status={contact.number_verification_status}
-                      sentAt={contact.number_verification_sent_at}
-                      deliveredAt={contact.number_verification_delivered_at}
-                      confirmedAt={contact.number_verification_confirmed_at}
-                      error={contact.number_verification_error}
-                      onChanged={() => queryClient.invalidateQueries({ queryKey: ['store-contacts-responsiveness', storeId] })}
-                    />
+                    <ContactVerificationFlow storeId={storeId} storeName={storeName} contactId={contact.id} />
                   </div>
 
                   <CollapsibleContent>

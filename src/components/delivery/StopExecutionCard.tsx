@@ -1,3 +1,4 @@
+import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -127,6 +128,8 @@ export default function StopExecutionCard({
                 </Button>
               )}
             </div>
+
+            {store?.id && <div className="mt-3"><ContactVerificationFlow storeId={store.id} storeName={store.name} /></div>}
 
             {/* Execution Actions */}
             {isActive && isPending && (

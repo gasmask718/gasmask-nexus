@@ -1,3 +1,4 @@
+import { useContactVerification } from '@/components/store/ContactVerificationFlow';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -14,6 +15,8 @@ const fmt = (v?: string | null) => (v ? format(new Date(v), 'MMM d, h:mma') : 'â
 /** "Portal" panel on the store profile: invite status, last sign-in, last inventory update + Text portal link. */
 export function StorePortalStaffPanel({ storeId }: { storeId: string }) {
   const qc = useQueryClient();
+  const verification = useContactVerification(storeId);
+  const verifiedContact = verification.data?.contacts.find(c => c.status === 'confirmed' && c.confirmed_at && !c.opted_out);
   const { data, isLoading, error } = useQuery({
     queryKey: ['store-portal-admin-panel', storeId],
     queryFn: async () => {
@@ -25,7 +28,7 @@ export function StorePortalStaffPanel({ storeId }: { storeId: string }) {
 
   const send = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('text-store-portal-invite', { body: { store_id: storeId } });
+      const { data, error } = await supabase.functions.invoke('text-store-portal-invite', { body: { store_id: storeId, contact_id: verifiedContact?.id } });
       if (error) throw new Error(await readFunctionError(error));
       if (data?.error) throw new Error(data.error);
       return data;
@@ -56,9 +59,9 @@ export function StorePortalStaffPanel({ storeId }: { storeId: string }) {
           <div><div className="text-muted-foreground">Open delivery requests</div><div>{data.open_requests}</div></div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => send.mutate()} disabled={locked || send.isPending}>
+          <Button onClick={() => send.mutate()} disabled={locked || !verifiedContact || send.isPending}>
             {send.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageSquare className="mr-2 h-4 w-4" />}
-            {locked ? 'Portal not live yet' : 'Text portal link'}
+            {locked ? 'Portal not live yet' : !verifiedContact ? 'Verify contact first' : 'Text portal link'}
           </Button>
           <Button variant="outline" asChild>
             <Link to="/dispatch/pending-stops"><Truck className="mr-2 h-4 w-4" />Delivery Requests</Link>

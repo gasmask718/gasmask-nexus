@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS communication_logs_idempotency_plain_unique ON public.communication_logs(idempotency_key);
