@@ -14,3 +14,12 @@
   - [ ] Final report
 
 - [ ] STEP 2: Ambassador SL invite (AMB-SL, id 2148a425-1dd9-4c76-9752-74e8fa62cfe3, 929-944-3067) — NOT STARTED
+
+- LAUNCH LOCK (added Oct 28)
+  - [x] `store_master.is_portal_test` (default false); setting `store_portal_live` in system_settings (default OFF) + `store_portal_is_live()`, `store_portal_launch_state()`, owner/admin-only `set_store_portal_launch(live, checklist)` that refuses ON unless all 8 checklist steps are true
+  - [x] text-store-portal-invite rejects non-test stores while OFF ("Portal not live yet"); store-portal-notify never texts a real store while OFF (fail closed) — deployed
+  - [x] Test store created: "TEST - Owner Portal Test Store" id 8d962954-2466-4a72-b03f-7229a3ebd55b (source='portal_test', zip 00000)
+  - [ ] Owner sets test phone (primary contact, can_receive_sms) — blocked on owner's number
+  - [ ] Delivery Requests page: ON/OFF toggle + 8-step checklist (part of Staff UI item)
+  - [ ] Text portal link button disabled "Portal not live yet" for non-test stores while OFF (part of Staff UI item)
+  - [ ] Hide is_portal_test stores from v_route_candidates store branches, ambassador lists, KPIs, money reports, store counts (its delivery requests still show in RCC)
