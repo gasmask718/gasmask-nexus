@@ -6,3 +6,5 @@
 - Imported ambassador prospects use ambassador_area_prospect_keys for territory-only SELECT RLS and ambassador_area_prospects_page for canonical server-side filtering/pagination; keep the existing discovered-location approval flow separate because its identifiers are not store_prospects keys.
 
 - Delivery requests have ONE queue: public.pending_route_stops (/dispatch/pending-stops). Store-portal delivery_requests rows feed it via trigger (source_ref 'delivery_request:<id>') and sync status back; never list delivery_requests separately in Route Command Center or a second admin page.
+- Store customer portal lives at /portal/mystore (not /portal/store, which is the Dynasty Direct buyer portal); store users are identified by store_users rows and all their data access goes through store_portal_* SECURITY DEFINER RPCs.
+- Ambassador invites in public.invites may carry target_link {ambassador_id, route_ids}; the accept trigger links ambassadors.user_id and assigns those routes, so never link ambassador accounts by hand.
