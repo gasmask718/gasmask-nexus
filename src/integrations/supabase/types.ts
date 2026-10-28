@@ -120027,6 +120027,8 @@ export type Database = {
           business_id: string | null
           city: string
           communication_preference: string | null
+          confirmed_at: string | null
+          confirmed_by_ambassador_id: string | null
           connected_group_id: string | null
           consent_source: string | null
           consent_timestamp: string | null
@@ -120160,6 +120162,8 @@ export type Database = {
           business_id?: string | null
           city: string
           communication_preference?: string | null
+          confirmed_at?: string | null
+          confirmed_by_ambassador_id?: string | null
           connected_group_id?: string | null
           consent_source?: string | null
           consent_timestamp?: string | null
@@ -120293,6 +120297,8 @@ export type Database = {
           business_id?: string | null
           city?: string
           communication_preference?: string | null
+          confirmed_at?: string | null
+          confirmed_by_ambassador_id?: string | null
           connected_group_id?: string | null
           consent_source?: string | null
           consent_timestamp?: string | null
@@ -120478,6 +120484,48 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_master_confirmed_by_ambassador_id_fkey"
+            columns: ["confirmed_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_master_confirmed_by_ambassador_id_fkey"
+            columns: ["confirmed_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_master_confirmed_by_ambassador_id_fkey"
+            columns: ["confirmed_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_master_confirmed_by_ambassador_id_fkey"
+            columns: ["confirmed_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_master_confirmed_by_ambassador_id_fkey"
+            columns: ["confirmed_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_master_confirmed_by_ambassador_id_fkey"
+            columns: ["confirmed_by_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_referral_tree"
             referencedColumns: ["id"]
           },
           {
@@ -166040,6 +166088,8 @@ export type Database = {
           business_id: string | null
           city: string
           communication_preference: string | null
+          confirmed_at: string | null
+          confirmed_by_ambassador_id: string | null
           connected_group_id: string | null
           consent_source: string | null
           consent_timestamp: string | null
