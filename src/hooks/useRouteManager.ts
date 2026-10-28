@@ -87,7 +87,8 @@ export function useRouteManager() {
           route_state, estimated_duration_minutes, actual_duration_minutes,
           assignee:profiles!routes_assigned_to_fkey(id, name, role)
         `, { count: 'exact' })
-        .order('date', { ascending: false })
+        .neq('status', 'cancelled').neq('status', 'canceled')
+        .order('date', { ascending: true })
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -219,10 +220,10 @@ export function useRouteManager() {
         { count: completed },
         { count: todayCount },
       ] = await Promise.all([
-        supabase.from('routes').select('id', { count: 'exact', head: true }),
+        supabase.from('routes').select('id', { count: 'exact', head: true }).neq('status', 'cancelled').neq('status', 'canceled'),
         supabase.from('routes').select('id', { count: 'exact', head: true }).in('status', ['pending', 'in_progress', 'active']),
         supabase.from('routes').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
-        supabase.from('routes').select('id', { count: 'exact', head: true }).eq('date', today),
+        supabase.from('routes').select('id', { count: 'exact', head: true }).eq('date', today).neq('status', 'cancelled').neq('status', 'canceled'),
       ]);
 
       return {

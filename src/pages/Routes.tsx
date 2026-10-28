@@ -12,6 +12,7 @@ interface Route {
   date: string;
   type: string;
   territory: string;
+  name?: string;
   status: string;
   assigned_to: string | null;
 }
@@ -27,6 +28,7 @@ const Routes = () => {
       const { data, error } = await supabase
         .from('routes')
         .select('*')
+        .neq('status', 'cancelled').neq('status', 'canceled')
         .order('date', { ascending: false });
 
       if (error) {
@@ -103,7 +105,7 @@ const Routes = () => {
               )}
             </div>
             <div>
-              <CardTitle className="text-lg capitalize">{route.type} Route</CardTitle>
+              <CardTitle className="text-lg capitalize">{route.name || `${route.type} Route`}</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 {formatDate(route.date)}
               </p>

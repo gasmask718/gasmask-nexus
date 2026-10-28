@@ -27,6 +27,7 @@ import { AmbassadorLayout } from '@/components/ambassador/AmbassadorLayout';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
 import { BilingualLabel } from '@/components/portal/BilingualLabel';
+import { RouteRunPanel } from '@/components/ambassador/RouteRunPanel';
 import { FieldRouteStartCard } from '@/components/ambassador/FieldRouteStartCard';
 
 export default function AmbassadorRoutes() {
@@ -36,6 +37,7 @@ export default function AmbassadorRoutes() {
   const { routes, isLoading, createRoute, isCreatingRoute, addStop, isAddingStop, completeStop, isCompletingStop } = useAmbassadorRoutes();
   
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [activeRouteId, setActiveRouteId] = useState<string | null>(new URLSearchParams(window.location.search).get('route'));
   const [createRouteOpen, setCreateRouteOpen] = useState(false);
   const [addStopOpen, setAddStopOpen] = useState(false);
   const [completeStopOpen, setCompleteStopOpen] = useState(false);
@@ -51,7 +53,7 @@ export default function AmbassadorRoutes() {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  const todaysRoute = routes.find(r => isSameDay(new Date(r.route_date), selectedDate));
+  const todaysRoute = routes.find(r => r.id === activeRouteId) || routes.find(r => isSameDay(new Date(r.route_date + 'T12:00:00'), selectedDate)) || routes[0];
   const completedStops = todaysRoute?.completed_stops || 0;
   const totalStops = todaysRoute?.stops_count || 0;
 
@@ -130,7 +132,7 @@ export default function AmbassadorRoutes() {
         subtitle={t("amb.routes.subtitle")}
         backPath="/ambassador/dashboard"
       >
-        <div className="p-6 space-y-6">
+        <div className="p-3 sm:p-6 space-y-6 min-w-0">
           <Skeleton className="h-32" />
           <div className="grid md:grid-cols-3 gap-4">
             <Skeleton className="md:col-span-2 h-96" />
@@ -147,11 +149,16 @@ export default function AmbassadorRoutes() {
       subtitle={t("amb.routes.subtitle")}
       backPath="/ambassador/dashboard"
     >
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-6 min-w-0">
+        <Label>Choose route</Label>
+        <Select value={todaysRoute?.id || ''} onValueChange={id=>{setActiveRouteId(id);const r=routes.find(r=>r.id===id);if(r)setSelectedDate(new Date(r.route_date+'T12:00:00'));}}>
+          <SelectTrigger className="h-auto min-h-11 text-left whitespace-normal [&>span]:whitespace-normal"><SelectValue placeholder="Choose route"/></SelectTrigger>
+          <SelectContent>{routes.map(r=><SelectItem key={r.id} value={r.id}>{r.route_date} · {r.title}</SelectItem>)}</SelectContent>
+        </Select>
         {/* Week Calendar Strip */}
         <Card>
           <CardContent className="py-4">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
               <h3 className="font-semibold"><BilingualLabel tKey="amb.routes.week_of" en="Week of" inline /> {format(weekStart, 'MMMM d, yyyy')}</h3>
               <div className="flex gap-2">
                 <Button 
@@ -177,7 +184,7 @@ export default function AmbassadorRoutes() {
                 </Button>
               </div>
             </div>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1">
               {weekDays.map((day) => {
                 const isSelected = isSameDay(day, selectedDate);
                 const isToday = isSameDay(day, new Date());
@@ -186,9 +193,9 @@ export default function AmbassadorRoutes() {
                 return (
                   <button
                     key={day.toISOString()}
-                    onClick={() => setSelectedDate(day)}
+                    onClick={() => { setSelectedDate(day); setActiveRouteId(null); }}
                     className={`
-                      p-3 rounded-lg text-center transition-all
+                      p-1 sm:p-3 rounded-lg text-center transition-all
                       ${isSelected 
                         ? 'bg-primary text-primary-foreground' 
                         : 'hover:bg-muted'
@@ -236,117 +243,7 @@ export default function AmbassadorRoutes() {
               )}
             </CardHeader>
             <CardContent>
-              {todaysRoute && todaysRoute.stops && todaysRoute.stops.length > 0 ? (
-                <div className="space-y-2">
-                  {todaysRoute.stops.sort((a, b) => a.planned_order - b.planned_order).map((stop) => (
-                    <div 
-                      key={stop.id}
-                      className={`
-                        flex items-center gap-4 p-4 rounded-lg border transition-all
-                        ${stop.status === 'complete' ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/50'}
-                      `}
-                    >
-                      <div className="cursor-move">
-                        <GripVertical className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      
-                      <div className="flex-shrink-0">
-                        {getStatusIcon(stop.status)}
-                      </div>
-
-                      <div 
-                        className="flex-1 min-w-0 cursor-pointer"
-                        onClick={() => navigateToStore(stop.store_id)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{stop.store_name || stop.custom_address || `Stop #${stop.planned_order}`}</span>
-                          {stop.planned_time && (
-                            <Badge variant="outline" className="text-xs">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {stop.planned_time}
-                            </Badge>
-                          )}
-                        </div>
-                        {stop.store_address && (
-                          <p className="text-sm text-muted-foreground mt-1">{stop.store_address}</p>
-                        )}
-                        {stop.outcome_notes && (
-                          <p className="text-sm text-muted-foreground mt-1">{stop.outcome_notes}</p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {stop.status !== 'complete' && stop.status !== 'skipped' ? (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Directions"
-                              disabled={!stop.store_address}
-                              onClick={() =>
-                                window.open(
-                                  `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                                    stop.store_address || '',
-                                  )}`,
-                                  '_blank',
-                                  'noopener,noreferrer',
-                                )
-                              }
-                            >
-                              <Navigation className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" title="Store profile" onClick={() => navigateToStore(stop.store_id)}>
-                              <Store className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => stop.store_id && navigate(`/ambassador/visit/${stop.store_id}`)}
-                              disabled={!stop.store_id}
-                            >
-                              Check in
-                            </Button>
-                            <Button size="sm" onClick={() => openCompleteStop(stop)}>
-                              {t('amb.routes.complete')}
-                            </Button>
-                          </>
-                        ) : (
-                          <Button variant="ghost" size="sm" onClick={() => navigateToStore(stop.store_id)}>
-                            {t('amb.routes.view_details')}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : todaysRoute ? (
-                <div className="text-center py-8">
-                  <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="font-medium mb-2"><BilingualLabel tKey="amb.routes.no_stops_yet" en="No Stops Yet" /></h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    <BilingualLabel tKey="amb.routes.add_stores_to_route" en="Add stores to your route" />
-                  </p>
-                  <Button onClick={() => openAddStop(todaysRoute)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Stop
-                  </Button>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="font-medium mb-2"><BilingualLabel tKey="amb.routes.no_route_planned" en="No Route Planned" /></h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    <BilingualLabel tKey="amb.routes.create_route_help" en="Create a route for this day to optimize your store visits" />
-                  </p>
-                  <Button onClick={() => {
-                    setNewRoute({ ...newRoute, date: format(selectedDate, 'yyyy-MM-dd') });
-                    setCreateRouteOpen(true);
-                  }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    <BilingualLabel tKey="amb.routes.create_route" en="Create Route" inline />
-                  </Button>
-                </div>
-              )}
+              {todaysRoute ? <RouteRunPanel route={todaysRoute} /> : <p className="text-muted-foreground py-8">No routes assigned</p>}
             </CardContent>
           </Card>
 
@@ -413,25 +310,6 @@ export default function AmbassadorRoutes() {
           </div>
         </div>
 
-        {/* Route stops on the map — real coordinates only */}
-        {todaysRoute?.stops?.length ? (
-          <AmbassadorStoreMap
-            title={`${todaysRoute.title} — stop map`}
-            height={380}
-            stores={[...todaysRoute.stops]
-              .sort((a, b) => a.planned_order - b.planned_order)
-              .map((s) => ({
-                id: s.id,
-                name: s.store_name || `Stop #${s.planned_order}`,
-                address: s.store_address,
-                lat: s.store_lat ?? null,
-                lng: s.store_lng ?? null,
-                statusKey: s.status,
-                order: s.planned_order,
-              }))}
-          />
-        ) : null}
-
         {/* Route History */}
         <Card>
           <CardHeader>
@@ -441,11 +319,11 @@ export default function AmbassadorRoutes() {
           <CardContent>
             {routes.length > 0 ? (
               <div className="space-y-3">
-                {routes.slice(0, 10).map((route) => (
+                {routes.map((route) => (
                   <div 
                     key={route.id}
-                    className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 cursor-pointer"
-                    onClick={() => setSelectedDate(new Date(route.route_date))}
+                    className="flex flex-wrap gap-2 items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer"
+                    onClick={() => {setActiveRouteId(route.id);setSelectedDate(new Date(route.route_date+'T12:00:00'));window.scrollTo({top:0,behavior:'smooth'});}}
                   >
                     <div className="flex items-center gap-4">
                       <div className="p-2 rounded-full bg-primary/10">

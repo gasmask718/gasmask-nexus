@@ -22,6 +22,8 @@ import {
   DollarSign
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { AssignedRouteRun } from '@/components/ambassador/RouteRunPanel';
+import { useAuth } from '@/contexts/AuthContext';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
 
 interface Route {
@@ -56,6 +58,7 @@ interface RouteStop {
 
 const RouteDetail = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [route, setRoute] = useState<Route | null>(null);
   const [stops, setStops] = useState<RouteStop[]>([]);
@@ -77,6 +80,7 @@ const RouteDetail = () => {
             assigned_user:profiles!routes_assigned_to_fkey(name, phone)
           `)
           .eq('id', id)
+          .neq('status', 'cancelled').neq('status', 'canceled')
           .single();
 
         if (routeError) throw routeError;
@@ -176,6 +180,8 @@ const RouteDetail = () => {
       </div>
     );
   }
+
+  if (id && route.assigned_to === user?.id) return <AssignedRouteRun routeId={id} />;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
