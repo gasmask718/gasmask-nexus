@@ -122248,6 +122248,7 @@ export type Database = {
           invoice_payment_status: string | null
           invoice_received_by: string | null
           is_historical: boolean
+          is_portal_test: boolean
           is_simulation: boolean | null
           is_wholesaler: boolean | null
           jurisdiction_confidence: string | null
@@ -122383,6 +122384,7 @@ export type Database = {
           invoice_payment_status?: string | null
           invoice_received_by?: string | null
           is_historical?: boolean
+          is_portal_test?: boolean
           is_simulation?: boolean | null
           is_wholesaler?: boolean | null
           jurisdiction_confidence?: string | null
@@ -122518,6 +122520,7 @@ export type Database = {
           invoice_payment_status?: string | null
           invoice_received_by?: string | null
           is_historical?: boolean
+          is_portal_test?: boolean
           is_simulation?: boolean | null
           is_wholesaler?: boolean | null
           jurisdiction_confidence?: string | null
@@ -168489,6 +168492,7 @@ export type Database = {
           invoice_payment_status: string | null
           invoice_received_by: string | null
           is_historical: boolean
+          is_portal_test: boolean
           is_simulation: boolean | null
           is_wholesaler: boolean | null
           jurisdiction_confidence: string | null
@@ -168962,6 +168966,10 @@ export type Database = {
         Args: { p_batch_id: string; p_url: string }
         Returns: undefined
       }
+      set_store_portal_launch: {
+        Args: { p_checklist: Json; p_live: boolean }
+        Returns: Json
+      }
       set_store_primary_contact: {
         Args: { _name: string; _phone?: string; _store_id: string }
         Returns: Json
@@ -169059,6 +169067,8 @@ export type Database = {
           tubes_updated_at: string
         }[]
       }
+      store_portal_is_live: { Args: never; Returns: boolean }
+      store_portal_launch_state: { Args: never; Returns: Json }
       store_portal_request_delivery: {
         Args: {
           p_items: Json
