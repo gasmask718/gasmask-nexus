@@ -21,6 +21,7 @@ import { StoreRevenueIntelligenceTab } from "@/components/revenue/StoreRevenueIn
 import { useQuery } from "@tanstack/react-query";
 import { StoreContactsSection } from "@/components/store/StoreContactsSection";
 import { StoreTaskRouteButtons } from "@/components/store/StoreTaskRouteButtons";
+import { StorePortalStaffPanel } from "@/components/store-portal/StorePortalStaffPanel";
 import { StoreSamplesHub } from "@/components/store/StoreSamplesHub";
 import { StoreProfileJumpNav } from "@/components/store/StoreProfileJumpNav";
 import { CommunicationTimeline } from "@/components/CommunicationTimeline";
@@ -723,6 +724,7 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
               >
                 <div className="space-y-4">
                   <StoreTaskRouteButtons storeId={storeId} storeName={store.name} />
+                  {!isCaller && <StorePortalStaffPanel storeId={storeId} />}
                   <StoreProfileTasksGroup storeId={storeId} storeName={store.name} />
                 </div>
               </StoreProfileSection>

@@ -331,7 +331,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/gasmask/driver-route', label: 'Driver View', icon: MapPin },
         { path: '/live-map', label: 'Live Map', icon: MapPin },
         { path: '/delivery/deliveries', label: 'Deliveries', icon: Truck },
-        { path: '/dispatch/pending-stops', label: 'Pending Stops (AI)', icon: ClipboardList },
+        { path: '/dispatch/pending-stops', label: 'Delivery Requests', icon: ClipboardList },
       ],
     },
     {

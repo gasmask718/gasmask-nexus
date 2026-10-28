@@ -664,6 +664,7 @@ const Floor5Dashboard = lazy(() => import('@/pages/floor5').then(m => ({ default
 
 // Portal
 const RoleRouter = lazy(() => import('@/components/portal/RoleRouter'));
+const StorePortalApp = lazy(() => import('@/pages/portal/mystore/StorePortalApp'));
 const PortalDashboard = lazy(() => import('@/pages/portal/PortalDashboard'));
 const PortalInvoices = lazy(() => import('@/pages/portal/PortalInvoices'));
 const PortalHome = lazy(() => import('@/pages/portal/PortalHome'));
@@ -2907,6 +2908,9 @@ export default function AppRoutes() {
 
       {/* Portal Invite Landing — standalone, no layout, auth optional */}
       <Route path="/portal/invite/:token" element={<UniversalInviteAccept />} />
+
+      {/* GasMask Store Customer Portal — signed-in store users; data access enforced server-side (store role + store_users) */}
+      <Route path="/portal/mystore/*" element={<ProtectedRoute><StorePortalApp /></ProtectedRoute>} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* OPS/PORTAL ROUTES — Wrapped in OpsLayout (mobile-first + bottom nav)         */}

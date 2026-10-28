@@ -6,6 +6,7 @@ import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { usePendingRouteStops, type PendingRouteStop } from '@/hooks/usePendingRouteStops';
 import { SendToRouteModal } from '@/components/scheduling/SendToRouteModal';
+import { StorePortalLaunchPanel } from '@/components/store-portal/StorePortalLaunchPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -184,11 +185,13 @@ export default function PendingRouteStopsPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Pending Route Stops</h1>
+        <h1 className="text-2xl font-bold">Delivery Requests</h1>
         <p className="text-muted-foreground text-sm">
-          AI-flagged delivery requests from inbound calls awaiting dispatcher approval.
+          Every delivery request in one queue — store portal requests, inbound calls and owner orders — awaiting dispatcher approval onto a route.
         </p>
       </div>
+
+      <StorePortalLaunchPanel />
 
       {isLoading && (
         <div className="flex items-center gap-2 text-muted-foreground">
