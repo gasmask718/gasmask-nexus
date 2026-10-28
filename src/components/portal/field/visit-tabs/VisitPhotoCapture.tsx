@@ -45,6 +45,7 @@ export function VisitPhotoCapture({ photos, onChange, maxPhotos = 4 }: VisitPhot
         type="file"
         accept="image/*"
         capture="environment"
+        aria-label="Visit photo upload"
         className="hidden"
         onChange={(e) => addFiles(e.target.files)}
       />
