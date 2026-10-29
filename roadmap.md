@@ -1,5 +1,13 @@
 # Roadmap — Oct 28
 
+## Owner-approved upgrades — Oct 29 (in order)
+- [ ] 1. Automatic numbered money receipts, queued verified-contact text/email, receipt histories, required route collection inputs and daily reconciliation.
+- [ ] 2. Audit/tighten canonical store access and derived views; rollback count checks for owner, ambassador, driver and store user.
+- [ ] 3. Real private-upload driver photo proof with GPS/time and completion guard.
+- [ ] 4. Photo duplicate/location/freshness/content review using configured AI; reuse staff queue.
+- [ ] 5. Text-to-order, 25-tube low-stock prompts, same-as-last-order, portal payment and delivered receipt notices.
+- [ ] Report tests and settings needed; no live outreach or money edits; launch lock OFF.
+
 - AT THE STORE CONTACT VERIFICATION
   - [ ] Reuse contact/call/text/invite paths; secure dedupe, outcomes, confirmation and override.
   - [ ] Route/profile wizard, live badges and onboarding counters.
