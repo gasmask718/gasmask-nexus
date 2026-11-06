@@ -151,6 +151,7 @@ const AmbassadorStoreProfile = lazy(() => import('@/pages/ambassador').then(m =>
 const AmbassadorStoresList = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorStoresList })));
 const AmbassadorWholesalersList = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorWholesalersList })));
 const AmbassadorCommissions = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorCommissions })));
+const TodaysOrderRequests = lazy(() => import('@/pages/ambassador/TodaysOrderRequests'));
 const AmbassadorRoutes = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorRoutes })));
 const AmbassadorOrders = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorOrders })));
 const AmbassadorCommunications = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorCommunications })));
@@ -3578,6 +3579,13 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
             <AmbassadorProfitDashboard />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/order-requests" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner', 'ambassador']}>
+            <TodaysOrderRequests />
           </RequireRole>
         </ProtectedRoute>
       } />
