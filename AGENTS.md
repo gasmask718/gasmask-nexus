@@ -15,3 +15,5 @@
 - Census store geocoding accepts exact address-range matches only, leaves uncertain/deleted/test addresses untouched, and uses apply_missing_store_geocode for race-safe null-only writes; store_master coordinates sync to stores and missing route-stop coordinates through one trigger.
 - ContactVerificationFlow uses contact_verification_* RPCs for authorized reads/writes; inbound handlers share contactVerificationInbound and text-store-portal-invite shares storePortalInvite so confirmed-number, STOP, attempt dedupe and launch-lock rules cannot diverge. In-person overrides never grant text confirmation.
 - SMS contact audit writes enrich the existing communication_logs row by its plain unique idempotency key, because send-sms already writes that row; never insert a duplicate send log.
+
+- Field order requests are delivery_requests rows with source 'field_order_request', written only via field_order_* RPCs, so they reuse the single pending_route_stops queue and never touch invoices.

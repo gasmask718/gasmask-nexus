@@ -1,11 +1,12 @@
 # Roadmap — Oct 28
 
 ## TOP PRIORITY — Nov 6: Bring Order
-- [ ] BRING ORDER bar on route stop cards + store profile (brand rows, chips, note, deliver-by)
-- [ ] Save via delivery_requests (source field_order_request) -> pending_route_stops; store note; needs_order; same-day edit/cancel by creator
-- [ ] Today's order requests screen: grouped, brand totals, copy/print, build tomorrow's draft route, statuses
-- [ ] 8pm NY owner summary text + email (queued)
-- [ ] 390px owner + ambassador rolled-back tests
+- [x] BRING ORDER bar on route stop cards + store profile (brand rows, chips, note, deliver-by)
+- [x] Save via delivery_requests (source field_order_request) -> pending_route_stops; store note; needs_order; same-day edit/cancel by creator
+- [x] Today's order requests screen: grouped, brand totals, copy/print, build tomorrow's draft route, statuses
+- [x] 8pm NY owner summary text + email (cron 129); text blocked until Twilio fixed
+- [x] 390px owner UI test + rolled-back ambassador/owner DB test (ambassador UI sign-in not run)
+- [ ] Delivered -> receipt hook (waits on receipts upgrade #1)
 - [ ] Then: drive-full-backup nightly + run once (Drive folder link + row counts)
 
 ## Owner-approved upgrades — Oct 29 (in order)
