@@ -13,6 +13,8 @@ import { useCall } from '@/components/communication/CallProvider';
 import { toast } from 'sonner';
 import { NewStoreSubmissionDialog } from '@/components/portal/field/NewStoreSubmissionDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { CONTACT_FILTERS } from '@/components/ambassador/ContactWorkList';
 import { useEffect } from 'react';
 import { useLastOrderSnapshotBatch } from '@/hooks/useLastOrderSnapshot';
 import { LastOrderKPIBadge } from '@/components/store/LastOrderKPIBadge';
@@ -306,7 +308,7 @@ function StoresListContent() {
     }
 
     return result;
-  }, [stores, searchQuery, activeTab]);
+  }, [stores, searchQuery, activeTab, contactFilter, contactFilterQuery.data]);
 
   const filteredProspects = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
