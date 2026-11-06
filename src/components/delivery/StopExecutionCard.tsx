@@ -1,4 +1,5 @@
 import { BringOrderBar } from '@/components/orders/BringOrderBar';
+import { VoiceUpdateButton } from '@/components/voice/VoiceUpdateButton';
 import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -130,6 +131,7 @@ export default function StopExecutionCard({
               )}
             </div>
 
+            {store?.id && <VoiceUpdateButton storeId={store.id} storeName={store.name} storeAddress={`${store.address_street || ''}, ${store.address_city || ''}`} className="mt-3" />}
             {store?.id && <BringOrderBar storeId={store.id} storeName={store.name} className="mt-3" />}
             {store?.id && <div className="mt-3"><ContactVerificationFlow storeId={store.id} storeName={store.name} /></div>}
 

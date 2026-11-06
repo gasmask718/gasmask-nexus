@@ -1,4 +1,5 @@
 import { BringOrderBar } from '@/components/orders/BringOrderBar';
+import { VoiceUpdateButton } from '@/components/voice/VoiceUpdateButton';
 import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -422,6 +423,7 @@ const RouteDetail = () => {
                           </div>
                         )}
 
+                        <VoiceUpdateButton storeId={stop.store.id} storeName={stop.store.name} storeAddress={`${stop.store.address_street || ''}, ${stop.store.address_city || ''}`} className="my-2" />
                         <BringOrderBar storeId={stop.store.id} storeName={stop.store.name} className="my-2" />
                         <ContactVerificationFlow storeId={stop.store.id} storeName={stop.store.name} />
                         {stop.status !== 'completed' && (

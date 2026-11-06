@@ -35,6 +35,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { useCall } from '@/components/communication/CallProvider';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { StoreClaimStatus } from '@/components/ambassador/StoreClaimStatus';
+import { VoiceUpdateButton } from '@/components/voice/VoiceUpdateButton';
 
 function StoreProfileContent() {
   const { storeId } = useParams<{ storeId: string }>();
@@ -244,6 +245,8 @@ function StoreProfileContent() {
           </div>
         </CardContent>
       </Card>
+
+      <VoiceUpdateButton storeId={store.id} storeName={store.store_name} storeAddress={`${store.address || ''}, ${store.city || ''}`} />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

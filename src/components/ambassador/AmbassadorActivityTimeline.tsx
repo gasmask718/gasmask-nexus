@@ -8,12 +8,12 @@ import { format } from 'date-fns';
 import { 
   Clock, Store, DollarSign, UserPlus, Phone, 
   MessageSquare, MapPin, FileText, CheckCircle2,
-  AlertCircle, TrendingUp
+  AlertCircle, TrendingUp, Mic
 } from 'lucide-react';
 
 interface ActivityItem {
   id: string;
-  type: 'store_added' | 'commission_earned' | 'visit_logged' | 'status_change' | 'note_added' | 'sale_completed';
+  type: 'store_added' | 'commission_earned' | 'visit_logged' | 'status_change' | 'note_added' | 'sale_completed' | 'voice_update';
   title: string;
   description?: string;
   timestamp: string;
@@ -32,6 +32,7 @@ const activityIcons: Record<string, React.ReactNode> = {
   status_change: <UserPlus className="h-4 w-4" />,
   note_added: <FileText className="h-4 w-4" />,
   sale_completed: <CheckCircle2 className="h-4 w-4" />,
+  voice_update: <Mic className="h-4 w-4" />,
 };
 
 const activityColors: Record<string, string> = {
@@ -41,6 +42,7 @@ const activityColors: Record<string, string> = {
   status_change: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
   note_added: 'bg-muted text-muted-foreground border-border',
   sale_completed: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+  voice_update: 'bg-primary/10 text-primary border-primary/20',
 };
 
 export function AmbassadorActivityTimeline({ ambassadorId, limit = 20 }: AmbassadorActivityTimelineProps) {
@@ -109,6 +111,26 @@ export function AmbassadorActivityTimeline({ ambassadorId, limit = 20 }: Ambassa
     enabled: !!ambassadorId,
   });
 
+  const { data: ambassadorUser } = useQuery({
+    queryKey: ['ambassador-activity-user', ambassadorId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('ambassadors').select('user_id').eq('id', ambassadorId).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!ambassadorId,
+  });
+
+  const { data: voiceUpdates } = useQuery({
+    queryKey: ['ambassador-voice-updates', ambassadorUser?.user_id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('store_voice_notes').select('id,created_at,transcript,summary,saved_result,store_id').eq('created_by', ambassadorUser!.user_id).eq('status', 'confirmed').order('created_at', { ascending: false }).limit(limit);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!ambassadorUser?.user_id,
+  });
+
   // Build unified timeline
   const buildTimeline = (): ActivityItem[] => {
     const items: ActivityItem[] = [];
@@ -157,6 +179,17 @@ export function AmbassadorActivityTimeline({ ambassadorId, limit = 20 }: Ambassa
         title: 'Note added',
         description: noteText.substring(0, 100) + (noteText.length > 100 ? '...' : ''),
         timestamp: n.created_at,
+      });
+    });
+
+    (voiceUpdates || []).forEach((v: any) => {
+      items.push({
+        id: `voice-${v.id}`,
+        type: 'voice_update',
+        title: 'Voice update confirmed',
+        description: v.summary || 'Store update saved',
+        timestamp: v.created_at,
+        metadata: { transcript: v.transcript, saved: v.saved_result },
       });
     });
 
@@ -218,13 +251,20 @@ export function AmbassadorActivityTimeline({ ambassadorId, limit = 20 }: Ambassa
                       <div className="min-w-0">
                         <p className="font-medium text-sm">{item.title}</p>
                         {item.description && (
-                          <p className="text-sm text-muted-foreground truncate">{item.description}</p>
+                          <p className={item.type === 'voice_update' ? "text-sm text-muted-foreground" : "text-sm text-muted-foreground truncate"}>{item.description}</p>
                         )}
                       </div>
                       <time className="text-xs text-muted-foreground whitespace-nowrap">
                         {format(new Date(item.timestamp), 'MMM d, yyyy, h:mm a')}
                       </time>
                     </div>
+                    {item.type === 'voice_update' && item.metadata?.transcript && (
+                      <details className="mt-2 rounded-md border bg-muted/40 p-2 text-xs">
+                        <summary className="cursor-pointer font-medium">Transcript and saved result</summary>
+                        <p className="mt-2 whitespace-pre-wrap text-muted-foreground">{item.metadata.transcript}</p>
+                        <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-muted-foreground">{JSON.stringify(item.metadata.saved, null, 2)}</pre>
+                      </details>
+                    )}
                     {item.metadata?.status && (
                       <Badge variant="outline" className="mt-1 text-xs capitalize">
                         {item.metadata.status}
