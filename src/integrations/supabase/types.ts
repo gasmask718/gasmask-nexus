@@ -2129,6 +2129,429 @@ export type Database = {
         }
         Relationships: []
       }
+      _bk_store_master_20261106d: {
+        Row: {
+          address: string | null
+          assigned_ambassador_id: string | null
+          borough: string | null
+          borough_id: string | null
+          brand_id: string | null
+          bring_samples: boolean | null
+          business_id: string | null
+          city: string | null
+          communication_preference: string | null
+          confirmed_at: string | null
+          confirmed_by_ambassador_id: string | null
+          connected_group_id: string | null
+          consent_source: string | null
+          consent_timestamp: string | null
+          contact_name: string | null
+          corridor: string | null
+          country: string | null
+          country_of_origin: string | null
+          created_at: string | null
+          current_wholesalers: string | null
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_reason: string | null
+          derived_state: string | null
+          derived_timezone: string | null
+          dialect_preference: string | null
+          do_not_call: boolean | null
+          do_not_call_reason: string | null
+          email: string | null
+          expansion_notes: string | null
+          expected_open_dates: string[] | null
+          field_assignment_status: string | null
+          formality_level: string | null
+          frustration_triggers: string[] | null
+          gasmask_call_status: string | null
+          geocode_attempted_at: string | null
+          geocode_confidence: string | null
+          geocode_source: string | null
+          geocoded_at: string | null
+          grabba_demand_score: number | null
+          has_expansion: boolean | null
+          health_status: string | null
+          id: string | null
+          influence_level: string | null
+          invoice_amount: number | null
+          invoice_amount_paid: number | null
+          invoice_brand: string | null
+          invoice_date: string | null
+          invoice_due_date: string | null
+          invoice_notes: string | null
+          invoice_paid_at: string | null
+          invoice_payment_method: string | null
+          invoice_payment_status: string | null
+          invoice_received_by: string | null
+          is_historical: boolean | null
+          is_portal_test: boolean | null
+          is_simulation: boolean | null
+          is_wholesaler: boolean | null
+          jurisdiction_confidence: string | null
+          jurisdiction_resolved_at: string | null
+          jurisdiction_source: string | null
+          language_preference: string | null
+          languages: string[] | null
+          last_contacted_at: string | null
+          last_opt_out_timestamp: string | null
+          last_order_at: string | null
+          last_order_date: string | null
+          last_visit_at: string | null
+          lat: number | null
+          lon: number | null
+          loyalty_triggers: string[] | null
+          mode: string | null
+          needs_order: boolean | null
+          neighborhood: string | null
+          new_operator_last_12mo: string | null
+          new_store_addresses: string[] | null
+          nickname: string | null
+          notes: string | null
+          notes_for_tone: string | null
+          opt_out_method: string | null
+          other_stores_owned: string | null
+          owed_amount: number | null
+          owner_group_id: string | null
+          owner_name: string | null
+          owner_name_arabic: string | null
+          personality_notes: string | null
+          personality_profile_id: string | null
+          phone: string | null
+          phone_last10: string | null
+          phone_type: string | null
+          phone_verified_at: string | null
+          photo_url: string | null
+          preferred_channel: string | null
+          priority_score: number | null
+          profile_last_updated: string | null
+          red_flag: string | null
+          relationship_status: string | null
+          reviewed_by_admin: boolean | null
+          reviewed_by_admin_at: string | null
+          reviewed_by_admin_by: string | null
+          reviewed_by_va: boolean | null
+          reviewed_by_va_at: string | null
+          reviewed_by_va_by: string | null
+          risk_score: string | null
+          sells_flowers: boolean | null
+          sells_flowers_flagged_at: string | null
+          sells_flowers_flagged_by: string | null
+          sells_flowers_note: string | null
+          sells_tobacco_licensed: string | null
+          shirt_size: string | null
+          show_on_public_site: boolean | null
+          sms_capable: boolean | null
+          source: string | null
+          sourced_at: string | null
+          sourced_by_ambassador_id: string | null
+          state: string | null
+          status: string | null
+          sticker_in_store: boolean | null
+          sticker_notes: string | null
+          sticker_on_door: boolean | null
+          sticker_with_phone: boolean | null
+          store_name: string | null
+          store_type: string | null
+          storefront_photo_attempted_at: string | null
+          storefront_photo_fetched_at: string | null
+          storefront_photo_source: string | null
+          storefront_photo_status: string | null
+          storefront_photo_url: string | null
+          tier: string | null
+          total_answers: number | null
+          total_attempts: number | null
+          updated_at: string | null
+          updated_by: string | null
+          wholesale_ask: string | null
+          wholesale_last_action: string | null
+          wholesale_status: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          assigned_ambassador_id?: string | null
+          borough?: string | null
+          borough_id?: string | null
+          brand_id?: string | null
+          bring_samples?: boolean | null
+          business_id?: string | null
+          city?: string | null
+          communication_preference?: string | null
+          confirmed_at?: string | null
+          confirmed_by_ambassador_id?: string | null
+          connected_group_id?: string | null
+          consent_source?: string | null
+          consent_timestamp?: string | null
+          contact_name?: string | null
+          corridor?: string | null
+          country?: string | null
+          country_of_origin?: string | null
+          created_at?: string | null
+          current_wholesalers?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_reason?: string | null
+          derived_state?: string | null
+          derived_timezone?: string | null
+          dialect_preference?: string | null
+          do_not_call?: boolean | null
+          do_not_call_reason?: string | null
+          email?: string | null
+          expansion_notes?: string | null
+          expected_open_dates?: string[] | null
+          field_assignment_status?: string | null
+          formality_level?: string | null
+          frustration_triggers?: string[] | null
+          gasmask_call_status?: string | null
+          geocode_attempted_at?: string | null
+          geocode_confidence?: string | null
+          geocode_source?: string | null
+          geocoded_at?: string | null
+          grabba_demand_score?: number | null
+          has_expansion?: boolean | null
+          health_status?: string | null
+          id?: string | null
+          influence_level?: string | null
+          invoice_amount?: number | null
+          invoice_amount_paid?: number | null
+          invoice_brand?: string | null
+          invoice_date?: string | null
+          invoice_due_date?: string | null
+          invoice_notes?: string | null
+          invoice_paid_at?: string | null
+          invoice_payment_method?: string | null
+          invoice_payment_status?: string | null
+          invoice_received_by?: string | null
+          is_historical?: boolean | null
+          is_portal_test?: boolean | null
+          is_simulation?: boolean | null
+          is_wholesaler?: boolean | null
+          jurisdiction_confidence?: string | null
+          jurisdiction_resolved_at?: string | null
+          jurisdiction_source?: string | null
+          language_preference?: string | null
+          languages?: string[] | null
+          last_contacted_at?: string | null
+          last_opt_out_timestamp?: string | null
+          last_order_at?: string | null
+          last_order_date?: string | null
+          last_visit_at?: string | null
+          lat?: number | null
+          lon?: number | null
+          loyalty_triggers?: string[] | null
+          mode?: string | null
+          needs_order?: boolean | null
+          neighborhood?: string | null
+          new_operator_last_12mo?: string | null
+          new_store_addresses?: string[] | null
+          nickname?: string | null
+          notes?: string | null
+          notes_for_tone?: string | null
+          opt_out_method?: string | null
+          other_stores_owned?: string | null
+          owed_amount?: number | null
+          owner_group_id?: string | null
+          owner_name?: string | null
+          owner_name_arabic?: string | null
+          personality_notes?: string | null
+          personality_profile_id?: string | null
+          phone?: string | null
+          phone_last10?: string | null
+          phone_type?: string | null
+          phone_verified_at?: string | null
+          photo_url?: string | null
+          preferred_channel?: string | null
+          priority_score?: number | null
+          profile_last_updated?: string | null
+          red_flag?: string | null
+          relationship_status?: string | null
+          reviewed_by_admin?: boolean | null
+          reviewed_by_admin_at?: string | null
+          reviewed_by_admin_by?: string | null
+          reviewed_by_va?: boolean | null
+          reviewed_by_va_at?: string | null
+          reviewed_by_va_by?: string | null
+          risk_score?: string | null
+          sells_flowers?: boolean | null
+          sells_flowers_flagged_at?: string | null
+          sells_flowers_flagged_by?: string | null
+          sells_flowers_note?: string | null
+          sells_tobacco_licensed?: string | null
+          shirt_size?: string | null
+          show_on_public_site?: boolean | null
+          sms_capable?: boolean | null
+          source?: string | null
+          sourced_at?: string | null
+          sourced_by_ambassador_id?: string | null
+          state?: string | null
+          status?: string | null
+          sticker_in_store?: boolean | null
+          sticker_notes?: string | null
+          sticker_on_door?: boolean | null
+          sticker_with_phone?: boolean | null
+          store_name?: string | null
+          store_type?: string | null
+          storefront_photo_attempted_at?: string | null
+          storefront_photo_fetched_at?: string | null
+          storefront_photo_source?: string | null
+          storefront_photo_status?: string | null
+          storefront_photo_url?: string | null
+          tier?: string | null
+          total_answers?: number | null
+          total_attempts?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          wholesale_ask?: string | null
+          wholesale_last_action?: string | null
+          wholesale_status?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          assigned_ambassador_id?: string | null
+          borough?: string | null
+          borough_id?: string | null
+          brand_id?: string | null
+          bring_samples?: boolean | null
+          business_id?: string | null
+          city?: string | null
+          communication_preference?: string | null
+          confirmed_at?: string | null
+          confirmed_by_ambassador_id?: string | null
+          connected_group_id?: string | null
+          consent_source?: string | null
+          consent_timestamp?: string | null
+          contact_name?: string | null
+          corridor?: string | null
+          country?: string | null
+          country_of_origin?: string | null
+          created_at?: string | null
+          current_wholesalers?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_reason?: string | null
+          derived_state?: string | null
+          derived_timezone?: string | null
+          dialect_preference?: string | null
+          do_not_call?: boolean | null
+          do_not_call_reason?: string | null
+          email?: string | null
+          expansion_notes?: string | null
+          expected_open_dates?: string[] | null
+          field_assignment_status?: string | null
+          formality_level?: string | null
+          frustration_triggers?: string[] | null
+          gasmask_call_status?: string | null
+          geocode_attempted_at?: string | null
+          geocode_confidence?: string | null
+          geocode_source?: string | null
+          geocoded_at?: string | null
+          grabba_demand_score?: number | null
+          has_expansion?: boolean | null
+          health_status?: string | null
+          id?: string | null
+          influence_level?: string | null
+          invoice_amount?: number | null
+          invoice_amount_paid?: number | null
+          invoice_brand?: string | null
+          invoice_date?: string | null
+          invoice_due_date?: string | null
+          invoice_notes?: string | null
+          invoice_paid_at?: string | null
+          invoice_payment_method?: string | null
+          invoice_payment_status?: string | null
+          invoice_received_by?: string | null
+          is_historical?: boolean | null
+          is_portal_test?: boolean | null
+          is_simulation?: boolean | null
+          is_wholesaler?: boolean | null
+          jurisdiction_confidence?: string | null
+          jurisdiction_resolved_at?: string | null
+          jurisdiction_source?: string | null
+          language_preference?: string | null
+          languages?: string[] | null
+          last_contacted_at?: string | null
+          last_opt_out_timestamp?: string | null
+          last_order_at?: string | null
+          last_order_date?: string | null
+          last_visit_at?: string | null
+          lat?: number | null
+          lon?: number | null
+          loyalty_triggers?: string[] | null
+          mode?: string | null
+          needs_order?: boolean | null
+          neighborhood?: string | null
+          new_operator_last_12mo?: string | null
+          new_store_addresses?: string[] | null
+          nickname?: string | null
+          notes?: string | null
+          notes_for_tone?: string | null
+          opt_out_method?: string | null
+          other_stores_owned?: string | null
+          owed_amount?: number | null
+          owner_group_id?: string | null
+          owner_name?: string | null
+          owner_name_arabic?: string | null
+          personality_notes?: string | null
+          personality_profile_id?: string | null
+          phone?: string | null
+          phone_last10?: string | null
+          phone_type?: string | null
+          phone_verified_at?: string | null
+          photo_url?: string | null
+          preferred_channel?: string | null
+          priority_score?: number | null
+          profile_last_updated?: string | null
+          red_flag?: string | null
+          relationship_status?: string | null
+          reviewed_by_admin?: boolean | null
+          reviewed_by_admin_at?: string | null
+          reviewed_by_admin_by?: string | null
+          reviewed_by_va?: boolean | null
+          reviewed_by_va_at?: string | null
+          reviewed_by_va_by?: string | null
+          risk_score?: string | null
+          sells_flowers?: boolean | null
+          sells_flowers_flagged_at?: string | null
+          sells_flowers_flagged_by?: string | null
+          sells_flowers_note?: string | null
+          sells_tobacco_licensed?: string | null
+          shirt_size?: string | null
+          show_on_public_site?: boolean | null
+          sms_capable?: boolean | null
+          source?: string | null
+          sourced_at?: string | null
+          sourced_by_ambassador_id?: string | null
+          state?: string | null
+          status?: string | null
+          sticker_in_store?: boolean | null
+          sticker_notes?: string | null
+          sticker_on_door?: boolean | null
+          sticker_with_phone?: boolean | null
+          store_name?: string | null
+          store_type?: string | null
+          storefront_photo_attempted_at?: string | null
+          storefront_photo_fetched_at?: string | null
+          storefront_photo_source?: string | null
+          storefront_photo_status?: string | null
+          storefront_photo_url?: string | null
+          tier?: string | null
+          total_answers?: number | null
+          total_attempts?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          wholesale_ask?: string | null
+          wholesale_last_action?: string | null
+          wholesale_status?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
       _bk_store_notes_20261106: {
         Row: {
           ambassador_id: string | null
@@ -2321,6 +2744,39 @@ export type Database = {
           tier?: string | null
           west_indian_pct?: number | null
           zip?: string | null
+        }
+        Relationships: []
+      }
+      _bk_store_prospects_20261106b: {
+        Row: {
+          borough_or_county: string | null
+          city: string | null
+          neighborhood: string | null
+          promoted_at: string | null
+          promoted_store_id: string | null
+          prospect_key: string | null
+          prospect_status: string | null
+          recheck_note: string | null
+        }
+        Insert: {
+          borough_or_county?: string | null
+          city?: string | null
+          neighborhood?: string | null
+          promoted_at?: string | null
+          promoted_store_id?: string | null
+          prospect_key?: string | null
+          prospect_status?: string | null
+          recheck_note?: string | null
+        }
+        Update: {
+          borough_or_county?: string | null
+          city?: string | null
+          neighborhood?: string | null
+          promoted_at?: string | null
+          promoted_store_id?: string | null
+          prospect_key?: string | null
+          prospect_status?: string | null
+          recheck_note?: string | null
         }
         Relationships: []
       }
@@ -128993,11 +129449,15 @@ export type Database = {
       }
       store_voice_notes: {
         Row: {
+          check_card: Json | null
+          confirmed_at: string | null
           created_at: string
           created_by: string | null
           duration_seconds: number | null
           file_url: string
           id: string
+          processing_error: string | null
+          saved_result: Json | null
           sentiment: string | null
           status: string
           store_id: string
@@ -129006,11 +129466,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          check_card?: Json | null
+          confirmed_at?: string | null
           created_at?: string
           created_by?: string | null
           duration_seconds?: number | null
           file_url: string
           id?: string
+          processing_error?: string | null
+          saved_result?: Json | null
           sentiment?: string | null
           status?: string
           store_id: string
@@ -129019,11 +129483,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          check_card?: Json | null
+          confirmed_at?: string | null
           created_at?: string
           created_by?: string | null
           duration_seconds?: number | null
           file_url?: string
           id?: string
+          processing_error?: string | null
+          saved_result?: Json | null
           sentiment?: string | null
           status?: string
           store_id?: string
@@ -171628,6 +172096,32 @@ export type Database = {
           store_name: string
           zip: string
         }[]
+      }
+      store_voice_update_can_access: {
+        Args: { p_store_id: string }
+        Returns: boolean
+      }
+      store_voice_update_confirm: {
+        Args: {
+          p_card: Json
+          p_gps_lat?: number
+          p_gps_lng?: number
+          p_note_id: string
+          p_transcript?: string
+        }
+        Returns: Json
+      }
+      store_voice_update_create: {
+        Args: {
+          p_duration_seconds?: number
+          p_file_url: string
+          p_store_id: string
+        }
+        Returns: string
+      }
+      store_voice_update_nearest: {
+        Args: { p_lat: number; p_lng: number }
+        Returns: Json
       }
       submit_ambassador_referral: {
         Args: {

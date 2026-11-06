@@ -246,6 +246,13 @@
       "when": 1793960248931,
       "tag": "0034_widen_queue_and_crm_stage_checks",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793964897378,
+      "tag": "0035_voice_update_check_card",
+      "breakpoints": true
     }
   ]
 }
