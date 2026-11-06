@@ -18,3 +18,4 @@
 
 - Field order requests are delivery_requests rows with source 'field_order_request', written only via field_order_* RPCs, so they reuse the single pending_route_stops queue and never touch invoices.
 - Full Drive backup is drive-full-backup: resumable slices with a single-worker lease in drive_backup_runs/items, ctid-keyset paging via service-role-only backup_* RPCs, nightly start + hourly resume cron; it never deletes Drive files or rows.
+- Ambassador work history (My Work, per-store history) reads only through ambassador_work_feed/ambassador_work_summary over _ambassador_work_events; add new interaction types there so every history view agrees. Access checks must treat a NULL ambassadors.user_id as no match.

@@ -1,5 +1,10 @@
 # Roadmap — Oct 28
 
+## My Work page — Nov 6
+- [x] /ambassador/my-work: Today card, follow-ups, week/month summary, go-back list, filtered infinite timeline, owner picker
+- [x] "My history with this store" on store profiles; ambassadors see only their own (fixed unlinked-login leak in daily activity too)
+- [ ] SL has no login linked yet, so only notes/locked stores show for SL until SL accepts the invite
+
 ## Owner-approved voice update — Nov 6
 - [ ] Audit and reuse voice notes, route/store UI, inventory, order, visit, contact, activity, and payment handoff flows.
 - [ ] Record/upload/transcribe English + Spanish audio; AI check card is editable and saves nothing before Confirm.
