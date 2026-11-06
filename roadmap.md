@@ -1,5 +1,12 @@
 # Roadmap — Oct 28
 
+## Owner-approved voice update — Nov 6
+- [ ] Audit and reuse voice notes, route/store UI, inventory, order, visit, contact, activity, and payment handoff flows.
+- [ ] Record/upload/transcribe English + Spanish audio; AI check card is editable and saves nothing before Confirm.
+- [ ] Atomic confirmed save through existing flows, including voice order source and first-visit attribution; money opens normal payment UI only.
+- [ ] Add mic to route stop/Near Me and store profile; saved voice updates appear in My Activity.
+- [ ] Verify 390px UI with English, Spanish, and noisy samples; rolled-back DB tests; no texts, money changes, or portal launch change.
+
 ## TOP PRIORITY — Nov 6: Bring Order
 - [x] BRING ORDER bar on route stop cards + store profile (brand rows, chips, note, deliver-by)
 - [x] Save via delivery_requests (source field_order_request) -> pending_route_stops; store note; needs_order; same-day edit/cancel by creator
