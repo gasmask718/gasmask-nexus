@@ -61232,6 +61232,95 @@ export type Database = {
           },
         ]
       }
+      drive_backup_items: {
+        Row: {
+          bytes: number
+          error: string | null
+          file_ids: string[]
+          last_ctid: string | null
+          parts: number
+          row_count: number
+          run_id: string
+          status: string
+          table_name: string
+          updated_at: string
+        }
+        Insert: {
+          bytes?: number
+          error?: string | null
+          file_ids?: string[]
+          last_ctid?: string | null
+          parts?: number
+          row_count?: number
+          run_id: string
+          status?: string
+          table_name: string
+          updated_at?: string
+        }
+        Update: {
+          bytes?: number
+          error?: string | null
+          file_ids?: string[]
+          last_ctid?: string | null
+          parts?: number
+          row_count?: number
+          run_id?: string
+          status?: string
+          table_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_backup_items_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "drive_backup_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drive_backup_runs: {
+        Row: {
+          drive_folder_id: string | null
+          drive_folder_url: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          rows_total: number | null
+          started_at: string
+          status: string
+          tables_done: number | null
+          tables_total: number | null
+          trigger: string
+        }
+        Insert: {
+          drive_folder_id?: string | null
+          drive_folder_url?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          rows_total?: number | null
+          started_at?: string
+          status?: string
+          tables_done?: number | null
+          tables_total?: number | null
+          trigger?: string
+        }
+        Update: {
+          drive_folder_id?: string | null
+          drive_folder_url?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          rows_total?: number | null
+          started_at?: string
+          status?: string
+          tables_done?: number | null
+          tables_total?: number | null
+          trigger?: string
+        }
+        Relationships: []
+      }
       driver_assignments: {
         Row: {
           assigned_date: string
@@ -167318,6 +167407,12 @@ export type Database = {
           fulfillments_created: number
           orders_processed: number
         }[]
+      }
+      backup_list_tables: { Args: never; Returns: string[] }
+      backup_schema_sql: { Args: never; Returns: string }
+      backup_table_page: {
+        Args: { p_after: string; p_limit: number; p_table: string }
+        Returns: Json
       }
       bags_from_note: { Args: { raw: string }; Returns: number }
       bl_canonical_category: { Args: { _raw: string }; Returns: string }
