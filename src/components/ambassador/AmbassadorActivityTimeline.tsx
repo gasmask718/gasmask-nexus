@@ -111,6 +111,26 @@ export function AmbassadorActivityTimeline({ ambassadorId, limit = 20 }: Ambassa
     enabled: !!ambassadorId,
   });
 
+  const { data: ambassadorUser } = useQuery({
+    queryKey: ['ambassador-activity-user', ambassadorId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('ambassadors').select('user_id').eq('id', ambassadorId).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!ambassadorId,
+  });
+
+  const { data: voiceUpdates } = useQuery({
+    queryKey: ['ambassador-voice-updates', ambassadorUser?.user_id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('store_voice_notes').select('id,created_at,transcript,summary,saved_result,store_id').eq('created_by', ambassadorUser!.user_id).eq('status', 'confirmed').order('created_at', { ascending: false }).limit(limit);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!ambassadorUser?.user_id,
+  });
+
   // Build unified timeline
   const buildTimeline = (): ActivityItem[] => {
     const items: ActivityItem[] = [];
