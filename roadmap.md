@@ -1,5 +1,9 @@
 # Roadmap — Oct 28
 
+## Contact status badges — Nov 6
+- [x] Badges, Saved in my phone (+ contact download), Call/Text, portal invite button, store list + My Work filters, owner tile
+- [ ] Real portal-invite text + "account created" flip end-to-end (waits on Twilio key fix, error 70051)
+
 ## My Work page — Nov 6
 - [x] /ambassador/my-work: Today card, follow-ups, week/month summary, go-back list, filtered infinite timeline, owner picker
 - [x] "My history with this store" on store profiles; ambassadors see only their own (fixed unlinked-login leak in daily activity too)
