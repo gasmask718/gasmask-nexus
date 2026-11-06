@@ -20,6 +20,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 const AMBASSADOR_NAV_ITEMS = [
   { id: 'dashboard', i18n: 'ambassador.nav.dashboard', label: 'Dashboard', path: '/ambassador/dashboard', icon: LayoutDashboard },
+  { id: 'my-work', i18n: 'ambassador.nav.my_work', label: 'My Work', path: '/ambassador/my-work', icon: ClipboardList },
   { id: 'stores', i18n: 'ambassador.nav.stores', label: 'My Stores', path: '/ambassador/stores', icon: Store },
   { id: 'sell-through', i18n: 'ambassador.nav.sell_through', label: 'Sell-Through', path: '/ambassador/sell-through', icon: BarChart3 },
   { id: 'leads', i18n: 'ambassador.nav.leads', label: 'Leads', path: '/ambassador/leads', icon: Target },

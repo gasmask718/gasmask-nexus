@@ -617,6 +617,117 @@ export type Database = {
         }
         Relationships: []
       }
+      _bk_routes_20261106b: {
+        Row: {
+          actual_distance_km: number | null
+          actual_duration_minutes: number | null
+          assigned_to: string | null
+          brand_ids: string[] | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          date: string | null
+          end_time: string | null
+          estimated_distance_km: number | null
+          estimated_duration_minutes: number | null
+          estimated_profit: number | null
+          id: string | null
+          is_optimized: boolean | null
+          is_trial: boolean | null
+          locked_at: string | null
+          locked_by: string | null
+          name: string | null
+          notes: string | null
+          optimization_score: number | null
+          optimized_at: string | null
+          route_state: string | null
+          sequence_stale: boolean | null
+          source: Database["public"]["Enums"]["route_source"] | null
+          start_address: string | null
+          start_lat: number | null
+          start_lng: number | null
+          start_time: string | null
+          started_at: string | null
+          status: string | null
+          territory: string | null
+          total_stops: number | null
+          type: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          actual_distance_km?: number | null
+          actual_duration_minutes?: number | null
+          assigned_to?: string | null
+          brand_ids?: string[] | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date?: string | null
+          end_time?: string | null
+          estimated_distance_km?: number | null
+          estimated_duration_minutes?: number | null
+          estimated_profit?: number | null
+          id?: string | null
+          is_optimized?: boolean | null
+          is_trial?: boolean | null
+          locked_at?: string | null
+          locked_by?: string | null
+          name?: string | null
+          notes?: string | null
+          optimization_score?: number | null
+          optimized_at?: string | null
+          route_state?: string | null
+          sequence_stale?: boolean | null
+          source?: Database["public"]["Enums"]["route_source"] | null
+          start_address?: string | null
+          start_lat?: number | null
+          start_lng?: number | null
+          start_time?: string | null
+          started_at?: string | null
+          status?: string | null
+          territory?: string | null
+          total_stops?: number | null
+          type?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          actual_distance_km?: number | null
+          actual_duration_minutes?: number | null
+          assigned_to?: string | null
+          brand_ids?: string[] | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date?: string | null
+          end_time?: string | null
+          estimated_distance_km?: number | null
+          estimated_duration_minutes?: number | null
+          estimated_profit?: number | null
+          id?: string | null
+          is_optimized?: boolean | null
+          is_trial?: boolean | null
+          locked_at?: string | null
+          locked_by?: string | null
+          name?: string | null
+          notes?: string | null
+          optimization_score?: number | null
+          optimized_at?: string | null
+          route_state?: string | null
+          sequence_stale?: boolean | null
+          source?: Database["public"]["Enums"]["route_source"] | null
+          start_address?: string | null
+          start_lat?: number | null
+          start_lng?: number | null
+          start_time?: string | null
+          started_at?: string | null
+          status?: string | null
+          territory?: string | null
+          total_stops?: number | null
+          type?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: []
+      }
       _bk_store_contacts_20261106: {
         Row: {
           cadence_status: string | null
@@ -168416,6 +168527,24 @@ export type Database = {
         Args: { p_fields: string[]; p_new: Json; p_old: Json }
         Returns: string
       }
+      _ambassador_work_access: {
+        Args: { p_ambassador_id: string }
+        Returns: string
+      }
+      _ambassador_work_events: {
+        Args: { p_amb: string; p_from: string; p_to: string; p_uid: string }
+        Returns: {
+          amount: number
+          at: string
+          detail: string
+          extra: Json
+          item_id: string
+          status: string
+          store_id: string
+          title: string
+          type: string
+        }[]
+      }
       _assert_store_portal_access: {
         Args: { p_store_id: string }
         Returns: undefined
@@ -168683,6 +168812,30 @@ export type Database = {
           store_phone: string
           store_state: string
         }[]
+      }
+      ambassador_work_feed: {
+        Args: {
+          p_ambassador_id: string
+          p_before?: string
+          p_from?: string
+          p_limit?: number
+          p_neighborhood?: string
+          p_search?: string
+          p_store_id?: string
+          p_to?: string
+          p_type?: string
+        }
+        Returns: Json
+      }
+      ambassador_work_me: { Args: never; Returns: Json }
+      ambassador_work_summary: {
+        Args: {
+          p_ambassador_id: string
+          p_from: string
+          p_store_id?: string
+          p_to: string
+        }
+        Returns: Json
       }
       analyze_store_duplicate_groups: {
         Args: never

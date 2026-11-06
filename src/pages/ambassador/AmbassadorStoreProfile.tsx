@@ -36,6 +36,7 @@ import { useCall } from '@/components/communication/CallProvider';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { StoreClaimStatus } from '@/components/ambassador/StoreClaimStatus';
 import { VoiceUpdateButton } from '@/components/voice/VoiceUpdateButton';
+import { MyStoreHistory } from '@/components/ambassador/MyStoreHistory';
 
 function StoreProfileContent() {
   const { storeId } = useParams<{ storeId: string }>();
@@ -247,6 +248,8 @@ function StoreProfileContent() {
       </Card>
 
       <VoiceUpdateButton storeId={store.id} storeName={store.store_name} storeAddress={`${store.address || ''}, ${store.city || ''}`} />
+
+      <MyStoreHistory storeId={store.id} />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

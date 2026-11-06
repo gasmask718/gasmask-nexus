@@ -384,6 +384,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/grabba/ambassadors', label: 'Ambassador Dashboard', icon: Award },
         { path: '/ambassadors', label: 'All Ambassadors', icon: Users },
         { path: '/ambassador/order-requests', label: "Today's Order Requests", icon: ClipboardList },
+        { path: '/ambassador/my-work', label: 'Ambassador Work History', icon: ClipboardList },
         { path: '/ambassadors/assignments', label: 'Assignments & Routes', icon: Map },
         { path: '/ambassadors/route-planning', label: 'Route Planning', icon: Map },
         { path: '/ambassadors/tasks', label: 'Ambassador Tasks', icon: ClipboardList },
