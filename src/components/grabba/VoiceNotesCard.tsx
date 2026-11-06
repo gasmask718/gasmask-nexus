@@ -67,7 +67,9 @@ export function VoiceNotesCard({ storeId }: VoiceNotesCardProps) {
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      const fileName = `${storeId}/${Date.now()}_${file.name}`;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Please sign in again');
+      const fileName = `${user.id}/${storeId}/${crypto.randomUUID()}_${file.name}`;
       
       // Upload to storage
       const { error: uploadError } = await supabase.storage

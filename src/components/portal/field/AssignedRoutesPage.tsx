@@ -181,7 +181,7 @@ export function AssignedRoutesPage({ portalType }: AssignedRoutesPageProps) {
                               Call
                             </Button>
                           )}
-                          <div className="basis-full w-full"><BringOrderBar storeId={stop.store_id} storeName={stop.store.store_name} /></div>
+                          <div className="basis-full w-full"><VoiceUpdateButton storeId={stop.store_id} storeName={stop.store.store_name} storeAddress={formatAddress(stop)} /><BringOrderBar storeId={stop.store_id} storeName={stop.store.store_name} /></div>
                           <ContactVerificationFlow storeId={stop.store_id} storeName={stop.store.store_name} />
                           <Button size="sm" onClick={() => openVisit(stop)}>
                             <Store className="mr-1 h-3 w-3" />

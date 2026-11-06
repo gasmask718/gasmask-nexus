@@ -246,6 +246,8 @@ function StoreProfileContent() {
         </CardContent>
       </Card>
 
+      <VoiceUpdateButton storeId={store.id} storeName={store.store_name} storeAddress={`${store.address || ''}, ${store.city || ''}`} />
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>

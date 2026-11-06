@@ -672,7 +672,7 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
 
           <EscalationFlagsPanel storeId={storeId} />
 
-          {!isCaller && <BringOrderBar storeId={storeId} storeName={store.name} />}
+          {!isCaller && <div className="space-y-3"><VoiceUpdateButton storeId={storeId} storeName={store.name} storeAddress={address} onOpenPayment={() => { setFinanceInitialTab('invoices'); setActiveTab('commercial'); }} /><BringOrderBar storeId={storeId} storeName={store.name} /></div>}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="flex w-full flex-wrap justify-start gap-1 h-auto">
