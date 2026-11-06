@@ -8,12 +8,12 @@ import { format } from 'date-fns';
 import { 
   Clock, Store, DollarSign, UserPlus, Phone, 
   MessageSquare, MapPin, FileText, CheckCircle2,
-  AlertCircle, TrendingUp
+  AlertCircle, TrendingUp, Mic
 } from 'lucide-react';
 
 interface ActivityItem {
   id: string;
-  type: 'store_added' | 'commission_earned' | 'visit_logged' | 'status_change' | 'note_added' | 'sale_completed';
+  type: 'store_added' | 'commission_earned' | 'visit_logged' | 'status_change' | 'note_added' | 'sale_completed' | 'voice_update';
   title: string;
   description?: string;
   timestamp: string;
@@ -32,6 +32,7 @@ const activityIcons: Record<string, React.ReactNode> = {
   status_change: <UserPlus className="h-4 w-4" />,
   note_added: <FileText className="h-4 w-4" />,
   sale_completed: <CheckCircle2 className="h-4 w-4" />,
+  voice_update: <Mic className="h-4 w-4" />,
 };
 
 const activityColors: Record<string, string> = {
@@ -41,6 +42,7 @@ const activityColors: Record<string, string> = {
   status_change: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
   note_added: 'bg-muted text-muted-foreground border-border',
   sale_completed: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+  voice_update: 'bg-primary/10 text-primary border-primary/20',
 };
 
 export function AmbassadorActivityTimeline({ ambassadorId, limit = 20 }: AmbassadorActivityTimelineProps) {
