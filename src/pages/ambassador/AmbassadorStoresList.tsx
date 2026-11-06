@@ -247,6 +247,7 @@ function StoresListContent() {
   const { stores, metrics, isLoading, unassignStore, isUnassigningStore, secureStore, isSecuringStore, ambassador } = useAmbassadorPortfolio();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [contactFilter, setContactFilter] = useState('');
   const [prospectNeighborhood, setProspectNeighborhood] = useState('');
   const [prospectPage, setProspectPage] = useState(1);
   const { data: areaProspects } = useAmbassadorAreaProspects(searchQuery, prospectNeighborhood, prospectPage);
@@ -277,6 +278,11 @@ function StoresListContent() {
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
   const [storeToRemove, setStoreToRemove] = useState<PortfolioStore | null>(null);
 
+  const contactFilterQuery = useQuery({
+    enabled: !!contactFilter && storeIds.length > 0,
+    queryKey: ['contact-work-filter', contactFilter, storeIds],
+    queryFn: async () => { const { data, error } = await (supabase as any).rpc('contact_work_filter', { p_store_ids: storeIds.slice(0, 5000), p_filter: contactFilter }); if (error) throw error; return new Set<string>(data as string[]); },
+  });
   const filteredStores = useMemo(() => {
     let result = stores;
 
@@ -287,6 +293,7 @@ function StoresListContent() {
       result = result.filter(s => s.assignment_type === 'sourced');
     }
 
+    if (contactFilter && contactFilterQuery.data) result = result.filter(s => contactFilterQuery.data!.has(s.store_id));
     // Filter by search
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -463,6 +470,10 @@ function StoresListContent() {
             className="pl-10"
           />
         </div>
+        <select aria-label="Contact filter" className="h-10 rounded-md border bg-background px-2 text-sm" value={contactFilter} onChange={e => setContactFilter(e.target.value)}>
+          <option value="">All contacts</option>
+          {CONTACT_FILTERS.map(f => <option key={f.v} value={f.v}>{f.l}</option>)}
+        </select>
         <Button onClick={() => setNewStoreOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           {t('amb.stores.add_store')}
