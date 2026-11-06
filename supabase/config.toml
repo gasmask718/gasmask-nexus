@@ -626,3 +626,6 @@ verify_jwt = false
 
 [functions.icw-status-sync]
 verify_jwt = false
+
+[functions.drive-full-backup]
+verify_jwt = false

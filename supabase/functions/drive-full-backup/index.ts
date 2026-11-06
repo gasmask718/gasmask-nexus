@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
         error: failed.length ? `${failed.length} tables failed: ${failed.slice(0, 10).map((f) => f.table_name).join(", ")}` : null }).eq("id", run.id);
       return json({ finished: true, run: run.id, folder: run.drive_folder_url, tables: all.length, rows: total, failed: failed.length });
     }
-    await sb.from("drive_backup_runs").update({ tables_done: done }).eq("id", run.id);
+    await sb.from("drive_backup_runs").update({ tables_done: done, lease_until: null }).eq("id", run.id);
     // hand off to the next slice
     const next = fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/drive-full-backup`, {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}` }, body: JSON.stringify({ action: "continue" }),
