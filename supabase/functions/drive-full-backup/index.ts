@@ -49,16 +49,26 @@ async function gzip(s: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  let parsed: { action?: string; force?: boolean } = {};
+  try { parsed = await req.json(); } catch { /* cron */ }
+  const auth = req.headers.get("Authorization") || "";
+  // run in the background so a caller hanging up never kills an upload mid-table
+  const p = work(parsed, auth).then(async (r) => console.log(JSON.stringify(await r.json()))).catch((e) => console.error(e));
+  // deno-lint-ignore no-explicit-any
+  const er = (globalThis as any).EdgeRuntime;
+  if (er?.waitUntil) { er.waitUntil(p); return json({ accepted: true }, 202); }
+  await p; return json({ done: true });
+});
+
+async function work(body: { action?: string; force?: boolean }, authHeader: string): Promise<Response> {
   const t0 = Date.now();
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  let body: { action?: string; force?: boolean } = {};
-  try { body = await req.json(); } catch { /* cron */ }
   const action = body.action === "start" ? "start" : "continue";
 
   try {
     if (action === "start") {
       if (body.force) {
-        const token = req.headers.get("Authorization")?.replace("Bearer ", "") || "";
+        const token = authHeader.replace("Bearer ", "");
         const { data: u } = await sb.auth.getUser(token);
         const { data: ok } = u?.user ? await sb.rpc("field_order_is_owner", { p_user: u.user.id }) : { data: false };
         if (!ok) return json({ error: "Owner only" }, 403);
@@ -151,10 +161,9 @@ Deno.serve(async (req) => {
     const next = fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/drive-full-backup`, {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}` }, body: JSON.stringify({ action: "continue" }),
     }).catch(() => {});
-    // deno-lint-ignore no-explicit-any
-    (globalThis as any).EdgeRuntime?.waitUntil?.(next);
+    await next;
     return json({ continuing: true, run: run.id, folder: run.drive_folder_url, tables_done: done, remaining: open });
   } catch (e) {
     return json({ error: String((e as Error).message) }, 500);
   }
-});
+}
