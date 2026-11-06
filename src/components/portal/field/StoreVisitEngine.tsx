@@ -643,7 +643,12 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
       );
     } catch (error) {
       console.error('Error submitting visit:', error);
-      toast(getRLSErrorToast(error));
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.startsWith('Photo upload failed')) {
+        toast({ variant: 'destructive', title: 'Photo did not save — visit NOT submitted', description: `${msg}. Check your signal and tap Submit again; your photo is still attached.` });
+      } else {
+        toast(getRLSErrorToast(error));
+      }
     } finally {
       setSubmitting(false);
     }
