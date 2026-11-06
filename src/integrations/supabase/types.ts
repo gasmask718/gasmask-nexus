@@ -124453,6 +124453,11 @@ export type Database = {
           responsiveness_status: string | null
           responsiveness_updated_at: string | null
           role: string | null
+          saved_our_number: boolean
+          saved_our_number_at: string | null
+          saved_our_number_confirmed_by: string | null
+          saved_our_number_confirmed_by_user: string | null
+          saved_our_number_source: string | null
           shirt_size: string | null
           sms_opt_in_at: string | null
           sms_opt_in_source: string | null
@@ -124533,6 +124538,11 @@ export type Database = {
           responsiveness_status?: string | null
           responsiveness_updated_at?: string | null
           role?: string | null
+          saved_our_number?: boolean
+          saved_our_number_at?: string | null
+          saved_our_number_confirmed_by?: string | null
+          saved_our_number_confirmed_by_user?: string | null
+          saved_our_number_source?: string | null
           shirt_size?: string | null
           sms_opt_in_at?: string | null
           sms_opt_in_source?: string | null
@@ -124613,6 +124623,11 @@ export type Database = {
           responsiveness_status?: string | null
           responsiveness_updated_at?: string | null
           role?: string | null
+          saved_our_number?: boolean
+          saved_our_number_at?: string | null
+          saved_our_number_confirmed_by?: string | null
+          saved_our_number_confirmed_by_user?: string | null
+          saved_our_number_source?: string | null
           shirt_size?: string | null
           sms_opt_in_at?: string | null
           sms_opt_in_source?: string | null
@@ -124635,6 +124650,48 @@ export type Database = {
           verified_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "store_contacts_saved_our_number_confirmed_by_fkey"
+            columns: ["saved_our_number_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_saved_our_number_confirmed_by_fkey"
+            columns: ["saved_our_number_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_saved_our_number_confirmed_by_fkey"
+            columns: ["saved_our_number_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_contacts_saved_our_number_confirmed_by_fkey"
+            columns: ["saved_our_number_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_saved_our_number_confirmed_by_fkey"
+            columns: ["saved_our_number_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "store_contacts_saved_our_number_confirmed_by_fkey"
+            columns: ["saved_our_number_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_referral_tree"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "store_contacts_store_id_fkey"
             columns: ["store_id"]
@@ -169642,6 +169699,14 @@ export type Database = {
         Returns: boolean
       }
       contact_mark_saved: { Args: { p_contact_id: string }; Returns: Json }
+      contact_mark_saved_our_number: {
+        Args: { p_contact_id: string }
+        Returns: Json
+      }
+      contact_saved_our_number_receive: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
+      }
       contact_status_overview: { Args: never; Returns: Json }
       contact_verification_auto_link: {
         Args: { p_contact_id: string; p_enabled: boolean }

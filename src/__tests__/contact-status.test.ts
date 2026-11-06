@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canSendPortalInvite, contactBadges, contactVcf } from '@/lib/contactStatus';
+import { canSendPortalInvite, contactBadges, ourVcf } from '@/lib/contactStatus';
 
 const tone = (c: any, key: string) => contactBadges(c).find(b => b.key === key)!;
 
@@ -17,9 +17,9 @@ describe('contact status badges', () => {
     expect(tone({ invite_sent_at: '2026-11-06' }, 'invite').label).toBe('Invite sent');
     expect(tone({ invite_sent_at: '2026-11-06', invite_consumed_at: '2026-11-07' }, 'invite').label).toBe('ACCOUNT CREATED');
   });
-  it('saved in my phone is green only when I saved it', () => {
-    expect(tone({ saved_by: [{ name: 'SL', saved_at: 'x', me: false }] }, 'saved').tone).toBe('todo');
-    expect(tone({ saved_by: [{ name: 'Me', saved_at: 'x', me: true }] }, 'saved').tone).toBe('done');
+  it('saved our number is green only once the store contact saved it', () => {
+    expect(tone({}, 'saved').label).toBe("Hasn't saved our number");
+    expect(tone({ saved_our_number: true, saved_our_number_at: '2026-11-06' }, 'saved')).toMatchObject({ tone: 'done', label: 'Saved our number', when: '2026-11-06' });
   });
   it('portal invite only for verified owner/manager not yet invited', () => {
     expect(canSendPortalInvite({ role: 'owner', status: 'confirmed', confirmed_at: 'x' })).toBe(true);
@@ -27,8 +27,8 @@ describe('contact status badges', () => {
     expect(canSendPortalInvite({ role: 'owner', status: 'sent' })).toBe(false);
     expect(canSendPortalInvite({ role: 'owner', status: 'confirmed', confirmed_at: 'x', invite_sent_at: 'y' })).toBe(false);
   });
-  it('vcf carries name, store and phone', () => {
-    const v = contactVcf('Ali', 'Best Deli', '+1 (718) 455-0141');
-    expect(v).toContain('FN:Ali (Best Deli)'); expect(v).toContain('TEL;TYPE=CELL:+17184550141');
+  it('our contact card is GasMask - Ching + business number + portal link', () => {
+    const v = ourVcf();
+    expect(v).toContain('FN:GasMask - Ching'); expect(v).toContain('TEL;TYPE=WORK,VOICE:+18776818621'); expect(v).toContain('URL:https://app.gasmaskapproved.com/portal/mystore');
   });
 });

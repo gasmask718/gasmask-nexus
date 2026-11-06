@@ -18,7 +18,7 @@ Deno.serve(async req => {
     const sb=createClient(url,key);
     const {data:attempt,error:beginError}=await userClient.rpc('contact_verification_begin',{p_contact_id:parsed.data.contact_id,p_from:VERIFIED_FROM,p_auto:parsed.data.auto_send_app_link});
     if(beginError) return json({error:beginError.message},403);
-    const message=`GasMask: reply YES to confirm this is the number for ${attempt.store_name}. - Ching`;
+    const message=`GasMask: reply YES to confirm this is the number for ${attempt.store_name}. Save this number as GasMask so you get your delivery and order updates, then reply SAVED. - Ching`;
     const sms=await sendSms({to:attempt.phone,from:VERIFIED_FROM,body:message,sendClass:'conversational',idempotencyKey:`contact-verify-${attempt.attempt_id}`,storeId:attempt.store_id,purpose:'contact_number_verification',metadata:{contact_id:attempt.contact_id,verification_attempt_id:attempt.attempt_id},skipCooldown:true});
     const {error:updateError}=await sb.from('store_contacts').update({
       number_verification_message_sid:sms.providerMessageId,number_verification_status:sms.success?'sent':'failed',number_verification_failed_at:sms.success?null:new Date().toISOString(),number_verification_error:sms.success?null:`${sms.errorCode || ''} ${sms.errorMessage || sms.status}`.trim(),

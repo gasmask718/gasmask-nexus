@@ -7,7 +7,7 @@ import { rpc } from '@/lib/myWork';
 
 export const CONTACT_FILTERS = [
   { v: 'no_verified', l: 'No verified number' },
-  { v: 'not_saved', l: 'Not saved in my phone' },
+  { v: 'not_saved', l: "Hasn't saved our number" },
   { v: 'invite_not_sent', l: 'Invite not sent' },
   { v: 'invited_not_signed', l: 'Invited, not signed up' },
 ] as const;
