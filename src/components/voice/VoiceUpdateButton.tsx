@@ -120,21 +120,14 @@ export function VoiceUpdateButton({ storeId, storeName = '', storeAddress = '', 
         return;
       }
       const chosen = found[0];
-      setResolvedStore({ id: chosen.store_id, name: chosen.store_name, address: chosen.address || '' });
-      setCard(emptyVoiceCheckCard(chosen.store_id, chosen.store_name, chosen.address || ''));
-      setPhase('idle');
+      const store = { id: chosen.store_id, name: chosen.store_name, address: chosen.address || '' };
+      setResolvedStore(store);
+      await beginRecording(store);
     }, e => {
       setError(`Location unavailable: ${e.message}`);
       setPhase('error');
     }, { enableHighAccuracy: true, timeout: 15000 });
   }, [beginRecording, resolvedStore.id]);
-
-  useEffect(() => {
-    if (phase === 'idle' && open && !resolvedStore.id && choices.length === 0) return;
-    if (phase === 'idle' && open && resolvedStore.id && !noteId && !recorderRef.current && !saved && seconds === 0 && !error) {
-      void beginRecording();
-    }
-  }, [phase, open, resolvedStore.id, choices.length, noteId, saved, seconds, error, beginRecording]);
 
   useEffect(() => {
     if (phase !== 'recording') return;
