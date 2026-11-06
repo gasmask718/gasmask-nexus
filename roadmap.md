@@ -1,7 +1,8 @@
 # Roadmap — Oct 28
 
 ## Contact status badges — Nov 6
-- [x] Badges, Saved in my phone (+ contact download), Call/Text, portal invite button, store list + My Work filters, owner tile
+- [x] Visit photo upload verified (object saved, thumbnail, GPS); upload failure now blocks submit with a clear message
+- [x] Badges, Saved our number (QR/contact card, in-person confirm, SAVED reply), Call/Text, portal invite button, store list + My Work filters, owner tile
 - [ ] Real portal-invite text + "account created" flip end-to-end (waits on Twilio key fix, error 70051)
 
 ## My Work page — Nov 6
