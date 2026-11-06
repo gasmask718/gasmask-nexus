@@ -233,6 +233,63 @@ export type Database = {
         }
         Relationships: []
       }
+      _bk_ambassador_tasks_20261106: {
+        Row: {
+          ambassador_id: string | null
+          ambassador_name: string | null
+          created_at: string | null
+          created_by: string | null
+          done_at: string | null
+          due_date: string | null
+          id: string | null
+          is_done: boolean | null
+          outcome: string | null
+          person_to_talk_to: string | null
+          phone: string | null
+          priority: number | null
+          store_id: string | null
+          task: string | null
+          task_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ambassador_id?: string | null
+          ambassador_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          done_at?: string | null
+          due_date?: string | null
+          id?: string | null
+          is_done?: boolean | null
+          outcome?: string | null
+          person_to_talk_to?: string | null
+          phone?: string | null
+          priority?: number | null
+          store_id?: string | null
+          task?: string | null
+          task_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ambassador_id?: string | null
+          ambassador_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          done_at?: string | null
+          due_date?: string | null
+          id?: string | null
+          is_done?: boolean | null
+          outcome?: string | null
+          person_to_talk_to?: string | null
+          phone?: string | null
+          priority?: number | null
+          store_id?: string | null
+          task?: string | null
+          task_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       _bk_ambassadors_20261106: {
         Row: {
           ai_call_daily_cost_cap: number | null
@@ -16067,6 +16124,39 @@ export type Database = {
           updated_at?: string
           usage_count?: number
           voice_persona_id?: string
+        }
+        Relationships: []
+      }
+      ambassador_gps_pings: {
+        Row: {
+          accuracy_m: number | null
+          ambassador_id: string | null
+          created_at: string
+          id: number
+          lat: number
+          lng: number
+          recorded_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy_m?: number | null
+          ambassador_id?: string | null
+          created_at?: string
+          id?: number
+          lat: number
+          lng: number
+          recorded_at: string
+          user_id: string
+        }
+        Update: {
+          accuracy_m?: number | null
+          ambassador_id?: string | null
+          created_at?: string
+          id?: number
+          lat?: number
+          lng?: number
+          recorded_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -111616,6 +111706,60 @@ export type Database = {
         }
         Relationships: []
       }
+      route_stop_events: {
+        Row: {
+          ambassador_id: string | null
+          client_id: string
+          created_at: string
+          follow_up_date: string | null
+          happened_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          note: string | null
+          outcome: string
+          photo_path: string | null
+          route_id: string
+          route_stop_id: string
+          store_id: string | null
+          user_id: string
+        }
+        Insert: {
+          ambassador_id?: string | null
+          client_id: string
+          created_at?: string
+          follow_up_date?: string | null
+          happened_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          note?: string | null
+          outcome: string
+          photo_path?: string | null
+          route_id: string
+          route_stop_id: string
+          store_id?: string | null
+          user_id: string
+        }
+        Update: {
+          ambassador_id?: string | null
+          client_id?: string
+          created_at?: string
+          follow_up_date?: string | null
+          happened_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          note?: string | null
+          outcome?: string
+          photo_path?: string | null
+          route_id?: string
+          route_stop_id?: string
+          store_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       route_stops: {
         Row: {
           actual_arrival: string | null
@@ -111632,10 +111776,12 @@ export type Database = {
           id: string
           lat: number | null
           lng: number | null
+          master_stop_id: string | null
           notes: string | null
           notes_to_worker: string | null
           opportunity_ids: string[] | null
           order_ids: string[] | null
+          pinned: string | null
           planned_arrival_time: string | null
           planned_order: number
           route_id: string | null
@@ -111644,6 +111790,9 @@ export type Database = {
           store_id: string | null
           updated_at: string | null
           was_on_time: boolean | null
+          window_end: string | null
+          window_label: string | null
+          window_start: string | null
           zip: string | null
         }
         Insert: {
@@ -111661,10 +111810,12 @@ export type Database = {
           id?: string
           lat?: number | null
           lng?: number | null
+          master_stop_id?: string | null
           notes?: string | null
           notes_to_worker?: string | null
           opportunity_ids?: string[] | null
           order_ids?: string[] | null
+          pinned?: string | null
           planned_arrival_time?: string | null
           planned_order: number
           route_id?: string | null
@@ -111673,6 +111824,9 @@ export type Database = {
           store_id?: string | null
           updated_at?: string | null
           was_on_time?: boolean | null
+          window_end?: string | null
+          window_label?: string | null
+          window_start?: string | null
           zip?: string | null
         }
         Update: {
@@ -111690,10 +111844,12 @@ export type Database = {
           id?: string
           lat?: number | null
           lng?: number | null
+          master_stop_id?: string | null
           notes?: string | null
           notes_to_worker?: string | null
           opportunity_ids?: string[] | null
           order_ids?: string[] | null
+          pinned?: string | null
           planned_arrival_time?: string | null
           planned_order?: number
           route_id?: string | null
@@ -111702,6 +111858,9 @@ export type Database = {
           store_id?: string | null
           updated_at?: string | null
           was_on_time?: boolean | null
+          window_end?: string | null
+          window_label?: string | null
+          window_start?: string | null
           zip?: string | null
         }
         Relationships: [
@@ -112063,6 +112222,7 @@ export type Database = {
         Row: {
           actual_distance_km: number | null
           actual_duration_minutes: number | null
+          ambassador_id: string | null
           assigned_to: string | null
           brand_ids: string[] | null
           completed_at: string | null
@@ -112078,12 +112238,15 @@ export type Database = {
           is_trial: boolean
           locked_at: string | null
           locked_by: string | null
+          master_route_id: string | null
           name: string | null
           notes: string | null
           optimization_score: number | null
           optimized_at: string | null
+          return_to_start: boolean | null
           route_state: string | null
           sequence_stale: boolean
+          service_minutes: number | null
           source: Database["public"]["Enums"]["route_source"]
           start_address: string | null
           start_lat: number | null
@@ -112099,6 +112262,7 @@ export type Database = {
         Insert: {
           actual_distance_km?: number | null
           actual_duration_minutes?: number | null
+          ambassador_id?: string | null
           assigned_to?: string | null
           brand_ids?: string[] | null
           completed_at?: string | null
@@ -112114,12 +112278,15 @@ export type Database = {
           is_trial?: boolean
           locked_at?: string | null
           locked_by?: string | null
+          master_route_id?: string | null
           name?: string | null
           notes?: string | null
           optimization_score?: number | null
           optimized_at?: string | null
+          return_to_start?: boolean | null
           route_state?: string | null
           sequence_stale?: boolean
+          service_minutes?: number | null
           source?: Database["public"]["Enums"]["route_source"]
           start_address?: string | null
           start_lat?: number | null
@@ -112135,6 +112302,7 @@ export type Database = {
         Update: {
           actual_distance_km?: number | null
           actual_duration_minutes?: number | null
+          ambassador_id?: string | null
           assigned_to?: string | null
           brand_ids?: string[] | null
           completed_at?: string | null
@@ -112150,12 +112318,15 @@ export type Database = {
           is_trial?: boolean
           locked_at?: string | null
           locked_by?: string | null
+          master_route_id?: string | null
           name?: string | null
           notes?: string | null
           optimization_score?: number | null
           optimized_at?: string | null
+          return_to_start?: boolean | null
           route_state?: string | null
           sequence_stale?: boolean
+          service_minutes?: number | null
           source?: Database["public"]["Enums"]["route_source"]
           start_address?: string | null
           start_lat?: number | null
@@ -168768,9 +168939,14 @@ export type Database = {
         }
         Returns: Json
       }
+      _miles: {
+        Args: { a_lat: number; a_lng: number; b_lat: number; b_lng: number }
+        Returns: number
+      }
       _norm_phone: { Args: { p: string }; Returns: string }
       _norm_text: { Args: { p: string }; Returns: string }
       _portal_norm_addr: { Args: { t: string }; Returns: string }
+      _route_can_work: { Args: { p_route_id: string }; Returns: boolean }
       _test_merge_bypass_matrix: {
         Args: {
           p_invoice_id: string
@@ -171320,6 +171496,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_store_geocode_attempted: {
+        Args: { p_ids: string[] }
+        Returns: number
+      }
       mark_store_handled_today: {
         Args: { _note?: string; _store_id: string }
         Returns: Json
@@ -171501,6 +171681,27 @@ export type Database = {
           p_notes?: string
         }
         Returns: Json
+      }
+      owner_area_coverage: {
+        Args: never
+        Returns: {
+          area: string
+          needs_gps: number
+          route_id: string
+          route_name: string
+          total: number
+          visited_30d: number
+        }[]
+      }
+      owner_field_day: { Args: { p_day: string }; Returns: Json }
+      owner_gps_trail: {
+        Args: { p_day: string; p_user_id: string }
+        Returns: {
+          accuracy_m: number
+          lat: number
+          lng: number
+          recorded_at: string
+        }[]
       }
       owns_receptionist_client: {
         Args: { _client_id: string }
@@ -172025,7 +172226,79 @@ export type Database = {
         Args: { p_ambassador_id: string }
         Returns: string
       }
+      route_build_day: {
+        Args: {
+          p_date: string
+          p_master_route_id: string
+          p_miles?: number
+          p_minutes?: number
+          p_name: string
+          p_return_to_start?: boolean
+          p_service_minutes?: number
+          p_start_address?: string
+          p_start_lat?: number
+          p_start_lng?: number
+          p_stops: Json
+        }
+        Returns: string
+      }
+      route_log_gps: { Args: { p_points: Json }; Returns: number }
+      route_master_list: {
+        Args: never
+        Returns: {
+          ambassador_name: string
+          name: string
+          route_id: string
+          stops: number
+          territory: string
+        }[]
+      }
+      route_master_stops: {
+        Args: { p_limit?: number; p_offset?: number; p_route_id: string }
+        Returns: {
+          address: string
+          area: string
+          completed_at: string
+          last_visit_at: string
+          lat: number
+          lng: number
+          notes_to_worker: string
+          phone: string
+          planned_order: number
+          relationship_status: string
+          shared: boolean
+          status: string
+          stop_id: string
+          stop_reason: string
+          store_id: string
+          store_name: string
+          zip: string
+        }[]
+      }
       route_order_to_supplier: { Args: { p_order_id: string }; Returns: Json }
+      route_save_order: {
+        Args: {
+          p_miles?: number
+          p_minutes?: number
+          p_route_id: string
+          p_stop_ids: string[]
+        }
+        Returns: number
+      }
+      route_stop_action: {
+        Args: {
+          p_client_id: string
+          p_follow_up?: string
+          p_happened_at?: string
+          p_lat?: number
+          p_lng?: number
+          p_note?: string
+          p_outcome: string
+          p_photo_path?: string
+          p_stop_id: string
+        }
+        Returns: Json
+      }
       sample_brand_key_to_product_id: {
         Args: { _key: string }
         Returns: string
