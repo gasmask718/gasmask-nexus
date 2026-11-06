@@ -1,3 +1,4 @@
+import { BringOrderBar } from '@/components/orders/BringOrderBar';
 import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -179,6 +180,7 @@ export function AssignedRoutesPage({ portalType }: AssignedRoutesPageProps) {
                               Call
                             </Button>
                           )}
+                          <div className="basis-full w-full"><BringOrderBar storeId={stop.store_id} storeName={stop.store.store_name} /></div>
                           <ContactVerificationFlow storeId={stop.store_id} storeName={stop.store.store_name} />
                           <Button size="sm" onClick={() => openVisit(stop)}>
                             <Store className="mr-1 h-3 w-3" />
