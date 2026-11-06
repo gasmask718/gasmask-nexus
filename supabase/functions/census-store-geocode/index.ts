@@ -18,7 +18,7 @@ Deno.serve(async req => {
  if(!isService){const {data:{user},error:authError}=await db.auth.getUser(token);if(authError||!user)return json({error:'Invalid session'},401);
  const {data:roles,error:roleError}=await db.from('user_roles').select('role').eq('user_id',user.id).in('role',['owner','admin']); if(roleError||!roles?.length)return json({error:'Owner access required'},403);}
  const parsed=bodySchema.safeParse(await req.json());if(!parsed.success)return json({error:parsed.error.flatten()},400);const input=parsed.data;
- let query=db.from('store_master').select('id,address,city,state,zip,lat,lon').or('lat.is.null,lon.is.null').is('deleted_at',null).eq('is_portal_test',false).or(`geocode_attempted_at.is.null,geocode_attempted_at.lt.${new Date(Date.now()-30*864e5).toISOString()}`).order('id').limit(input.limit);
+ let query=db.from('store_master').select('id,address,city,state,zip,lat,lon').or(`and(or(lat.is.null,lon.is.null),or(geocode_attempted_at.is.null,geocode_attempted_at.lt.${new Date(Date.now()-30*864e5).toISOString()}))`).is('deleted_at',null).eq('is_portal_test',false).order('id').limit(input.limit);
  if(input.cursor)query=query.gt('id',input.cursor);
  const {data:stores,error}=await query;if(error)throw error;
  const rows=stores||[];const eligible=rows.filter(s=>s.address&&/\d/.test(s.address)&&s.state&&(s.city||s.zip));
