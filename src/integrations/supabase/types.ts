@@ -60308,6 +60308,7 @@ export type Database = {
       delivery_requests: {
         Row: {
           assigned_to: string | null
+          batch_id: string | null
           created_at: string
           deliver_by: string | null
           delivered_at: string | null
@@ -60327,6 +60328,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          batch_id?: string | null
           created_at?: string
           deliver_by?: string | null
           delivered_at?: string | null
@@ -60346,6 +60348,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          batch_id?: string | null
           created_at?: string
           deliver_by?: string | null
           delivered_at?: string | null
@@ -125383,6 +125386,14 @@ export type Database = {
           phone_type: string | null
           phone_verified_at: string | null
           photo_url: string | null
+          portal_owner_prospect_key: string | null
+          portal_owner_request_status: string | null
+          portal_owner_requested_at: string | null
+          portal_owner_requested_by: string | null
+          portal_owner_review_note: string | null
+          portal_owner_reviewed_at: string | null
+          portal_owner_reviewed_by: string | null
+          portal_owner_target_group: string | null
           preferred_channel: string | null
           priority_score: number | null
           profile_last_updated: string | null
@@ -125523,6 +125534,14 @@ export type Database = {
           phone_type?: string | null
           phone_verified_at?: string | null
           photo_url?: string | null
+          portal_owner_prospect_key?: string | null
+          portal_owner_request_status?: string | null
+          portal_owner_requested_at?: string | null
+          portal_owner_requested_by?: string | null
+          portal_owner_review_note?: string | null
+          portal_owner_reviewed_at?: string | null
+          portal_owner_reviewed_by?: string | null
+          portal_owner_target_group?: string | null
           preferred_channel?: string | null
           priority_score?: number | null
           profile_last_updated?: string | null
@@ -125663,6 +125682,14 @@ export type Database = {
           phone_type?: string | null
           phone_verified_at?: string | null
           photo_url?: string | null
+          portal_owner_prospect_key?: string | null
+          portal_owner_request_status?: string | null
+          portal_owner_requested_at?: string | null
+          portal_owner_requested_by?: string | null
+          portal_owner_review_note?: string | null
+          portal_owner_reviewed_at?: string | null
+          portal_owner_reviewed_by?: string | null
+          portal_owner_target_group?: string | null
           preferred_channel?: string | null
           priority_score?: number | null
           profile_last_updated?: string | null
@@ -168743,6 +168770,7 @@ export type Database = {
       }
       _norm_phone: { Args: { p: string }; Returns: string }
       _norm_text: { Args: { p: string }; Returns: string }
+      _portal_norm_addr: { Args: { t: string }; Returns: string }
       _test_merge_bypass_matrix: {
         Args: {
           p_invoice_id: string
@@ -171846,6 +171874,14 @@ export type Database = {
           phone_type: string | null
           phone_verified_at: string | null
           photo_url: string | null
+          portal_owner_prospect_key: string | null
+          portal_owner_request_status: string | null
+          portal_owner_requested_at: string | null
+          portal_owner_requested_by: string | null
+          portal_owner_review_note: string | null
+          portal_owner_reviewed_at: string | null
+          portal_owner_reviewed_by: string | null
+          portal_owner_target_group: string | null
           preferred_channel: string | null
           priority_score: number | null
           profile_last_updated: string | null
@@ -172370,6 +172406,18 @@ export type Database = {
       }
       stock_from_note: { Args: { raw: string }; Returns: number }
       stop_all_outreach: { Args: never; Returns: Json }
+      store_portal_add_owner_store: {
+        Args: {
+          p_address: string
+          p_anchor_store_id: string
+          p_city: string
+          p_phone?: string
+          p_state: string
+          p_store_name?: string
+          p_zip: string
+        }
+        Returns: Json
+      }
       store_portal_admin_panel: { Args: { p_store_id: string }; Returns: Json }
       store_portal_cancel_request: {
         Args: { p_request_id: string }
@@ -172397,6 +172445,57 @@ export type Database = {
       store_portal_is_live: { Args: never; Returns: boolean }
       store_portal_launch_state: { Args: never; Returns: Json }
       store_portal_onboarding_counts: { Args: never; Returns: Json }
+      store_portal_owner_pending_stores: {
+        Args: never
+        Returns: {
+          address: string
+          city: string
+          is_portal_test: boolean
+          kind: string
+          phone: string
+          prospect_key: string
+          requested_at: string
+          requested_by_store: string
+          state: string
+          store_id: string
+          store_name: string
+          zip: string
+        }[]
+      }
+      store_portal_owner_requests: {
+        Args: never
+        Returns: {
+          address: string
+          batch_id: string
+          created_at: string
+          id: string
+          items: Json
+          notes: string
+          request_type: string
+          requested_date: string
+          status: string
+          store_id: string
+          store_name: string
+          time_window: string
+        }[]
+      }
+      store_portal_owner_review_store: {
+        Args: { p_approve: boolean; p_note?: string; p_store_id: string }
+        Returns: Json
+      }
+      store_portal_owner_stores: {
+        Args: never
+        Returns: {
+          address: string
+          approval: string
+          city: string
+          orderable: boolean
+          state: string
+          store_id: string
+          store_name: string
+          zip: string
+        }[]
+      }
       store_portal_request_delivery: {
         Args: {
           p_items: Json
@@ -172412,6 +172511,7 @@ export type Database = {
         Args: { p_store_id: string }
         Returns: {
           assigned_to: string | null
+          batch_id: string | null
           created_at: string
           deliver_by: string | null
           delivered_at: string | null
@@ -172439,6 +172539,11 @@ export type Database = {
       store_portal_save_inventory: {
         Args: { p_counts: Json; p_store_id: string }
         Returns: Json
+      }
+      store_portal_send_order_batch: { Args: { p_orders: Json }; Returns: Json }
+      store_portal_store_orderable: {
+        Args: { p_store_id: string }
+        Returns: boolean
       }
       store_portal_stores: {
         Args: never

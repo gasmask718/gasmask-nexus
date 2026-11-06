@@ -16,11 +16,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import {
-  Home, Package, Truck, ClipboardList, Loader2, Phone, ArrowLeft, Minus, Plus, LogOut,
+  Home, Package, Truck, ClipboardList, Loader2, Phone, ArrowLeft, Minus, Plus, LogOut, Store,
 } from 'lucide-react';
 import {
   STORE_PORTAL_BRANDS, QUICK_COUNTS, LOW_STOCK_THRESHOLD, UNITS_PER_BOX, money, readFunctionError,
 } from '@/lib/storePortal';
+import { MultiStoreOrderScreen } from './MultiStoreOrder';
 
 const sb = supabase as any;
 
@@ -119,6 +120,7 @@ function HomeScreen() {
       )}
       <div className="grid gap-3">
         <Button asChild className="h-16 text-lg"><Link to="/portal/mystore/inventory"><Package className="mr-2 h-6 w-6" />Update inventory</Link></Button>
+        <Button asChild className="h-16 text-lg" variant="secondary"><Link to="/portal/mystore/order"><Store className="mr-2 h-6 w-6" />Order for my stores</Link></Button>
         <Button asChild className="h-16 text-lg" variant="secondary"><Link to="/portal/mystore/delivery"><Truck className="mr-2 h-6 w-6" />Request a delivery</Link></Button>
         <Button asChild className="h-14" variant="outline">
           <Link to="/portal/mystore/requests"><ClipboardList className="mr-2 h-5 w-5" />My requests {data.open_requests > 0 && <Badge className="ml-2">{data.open_requests} open</Badge>}</Link>
@@ -348,12 +350,13 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline' | 'dest
 };
 
 function RequestsScreen() {
-  const { storeId } = useStore();
   const qc = useQueryClient();
-  const { data = [], isLoading } = useQuery({
-    queryKey: ['store-portal-requests', storeId],
+  const [storeFilter, setStoreFilter] = useState('all');
+  const [view, setView] = useState<'list' | 'batch'>('list');
+  const { data = [], isLoading, error } = useQuery({
+    queryKey: ['store-portal-owner-requests'],
     queryFn: async () => {
-      const { data, error } = await sb.rpc('store_portal_requests', { p_store_id: storeId });
+      const { data, error } = await sb.rpc('store_portal_owner_requests');
       if (error) throw error;
       return data as any[];
     },
@@ -366,18 +369,22 @@ function RequestsScreen() {
     },
     onSuccess: () => {
       toast.success('Request cancelled');
-      qc.invalidateQueries({ queryKey: ['store-portal-requests', storeId] });
-      qc.invalidateQueries({ queryKey: ['store-portal-home', storeId] });
+      qc.invalidateQueries({ queryKey: ['store-portal-owner-requests'] });
+      qc.invalidateQueries({ queryKey: ['store-portal-home'] });
     },
     onError: (e: any) => toast.error(e.message || String(e)),
   });
-  const open = data.filter((r) => ['new', 'confirmed', 'scheduled'].includes(r.status));
-  const past = data.filter((r) => !['new', 'confirmed', 'scheduled'].includes(r.status));
+  const storeOpts = useMemo(() => Array.from(new Map(data.map((r) => [r.store_id, r.store_name])).entries()), [data]);
+  const rows = storeFilter === 'all' ? data : data.filter((r) => r.store_id === storeFilter);
+  const isOpen = (r: any) => ['new', 'confirmed', 'scheduled'].includes(r.status);
   const Row = (r: any) => (
     <div key={r.id} className="space-y-2 rounded-2xl border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <div className="font-semibold">
-          {r.request_type === 'asap' ? 'ASAP' : `${format(new Date(r.requested_date + 'T12:00:00'), 'EEE, MMM d')}${r.time_window ? ` · ${r.time_window}` : ''}`}
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate font-semibold">{r.store_name}</div>
+          <div className="text-sm">
+            {r.request_type === 'asap' ? 'ASAP' : `${format(new Date(r.requested_date + 'T12:00:00'), 'EEE, MMM d')}${r.time_window ? ` · ${r.time_window}` : ''}`}
+          </div>
         </div>
         <Badge variant={STATUS_VARIANT[r.status] ?? 'outline'} className="capitalize">{r.status}</Badge>
       </div>
@@ -386,18 +393,48 @@ function RequestsScreen() {
       </div>
       {r.notes && <div className="text-sm">“{r.notes}”</div>}
       <div className="text-xs text-muted-foreground">Requested {format(new Date(r.created_at), 'MMM d, h:mma')}</div>
-      {['new', 'confirmed'].includes(r.status) && (
+      {r.status === 'new' && (
         <Button variant="outline" className="w-full" disabled={cancel.isPending} onClick={() => cancel.mutate(r.id)}>Cancel request</Button>
       )}
     </div>
   );
+  const batches = useMemo(() => {
+    const m = new Map<string, any[]>();
+    rows.forEach((r) => { const k = r.batch_id ?? `single:${r.id}`; m.set(k, [...(m.get(k) ?? []), r]); });
+    return Array.from(m.entries());
+  }, [rows]);
   return (
     <Shell title="My requests" back>
+      {storeOpts.length > 1 && (
+        <Select value={storeFilter} onValueChange={setStoreFilter}>
+          <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All my stores</SelectItem>
+            {storeOpts.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <Button className="h-11" variant={view === 'list' ? 'default' : 'secondary'} onClick={() => setView('list')}>Open / past</Button>
+        <Button className="h-11" variant={view === 'batch' ? 'default' : 'secondary'} onClick={() => setView('batch')}>Grouped by order</Button>
+      </div>
       {isLoading && <Loader2 className="mx-auto h-6 w-6 animate-spin" />}
-      <h2 className="font-semibold">Open</h2>
-      {open.length === 0 ? <p className="text-sm text-muted-foreground">No open requests.</p> : open.map(Row)}
-      <h2 className="pt-2 font-semibold">Past</h2>
-      {past.length === 0 ? <p className="text-sm text-muted-foreground">No past requests.</p> : past.map(Row)}
+      {error && <p className="text-destructive">{(error as any).message}</p>}
+      {view === 'list' ? (
+        <>
+          <h2 className="font-semibold">Open</h2>
+          {rows.filter(isOpen).length === 0 ? <p className="text-sm text-muted-foreground">No open requests.</p> : rows.filter(isOpen).map(Row)}
+          <h2 className="pt-2 font-semibold">Past</h2>
+          {rows.filter((r) => !isOpen(r)).length === 0 ? <p className="text-sm text-muted-foreground">No past requests.</p> : rows.filter((r) => !isOpen(r)).map(Row)}
+        </>
+      ) : batches.map(([k, list]) => (
+        <div key={k} className="space-y-2 rounded-2xl border-2 p-2">
+          <div className="px-2 pt-1 text-sm font-semibold">
+            {k.startsWith('single:') ? 'Single order' : `Multi-store order · ${list.length} stores`} · {format(new Date(list[list.length - 1].created_at), 'MMM d, h:mma')}
+          </div>
+          {list.map(Row)}
+        </div>
+      ))}
     </Shell>
   );
 }
@@ -461,6 +498,7 @@ export default function StorePortalApp() {
           <Route path="inventory" element={<InventoryScreen />} />
           <Route path="delivery" element={<DeliveryScreen />} />
           <Route path="requests" element={<RequestsScreen />} />
+          <Route path="order" element={<Shell title="Order for my stores" back><MultiStoreOrderScreen /></Shell>} />
           <Route path="*" element={<Navigate to="/portal/mystore" replace />} />
         </Routes>
         <BottomNav />

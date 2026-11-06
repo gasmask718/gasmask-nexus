@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { usePendingRouteStops, type PendingRouteStop } from '@/hooks/usePendingRouteStops';
 import { SendToRouteModal } from '@/components/scheduling/SendToRouteModal';
 import { StorePortalLaunchPanel } from '@/components/store-portal/StorePortalLaunchPanel';
+import { OwnerAddedStoresPanel } from '@/components/store-portal/OwnerAddedStoresPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -195,6 +196,7 @@ export default function PendingRouteStopsPage() {
       </div>
 
       <StorePortalOnboardingCounts />
+      <OwnerAddedStoresPanel />
       <StorePortalLaunchPanel />
 
       {isLoading && (
