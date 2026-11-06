@@ -102,7 +102,7 @@ export function voiceSavedSummary(result: any): string[] {
   if (result.contact_id) lines.push('Contact saved.');
   const leads = Array.isArray(result.leads) ? result.leads : [];
   if (leads.length) lines.push(`Other stores: ${leads.map((l: any) => `${l.name} (${l.status === 'connected' ? 'connected' : 'needs review'})`).join(', ')}`);
-  if (result.status_change) lines.push(`Status changed: ${String(result.status_change).replaceAll('_', ' ')}.`);
+  if (result.status_change) lines.push(`Status changed: ${String(result.status_change).replace(/_/g, ' ')}.`);
   if (result.store_note_id) lines.push('Dated note and transcript saved.');
   if (result.visit_id) lines.push('Visit logged.');
   return lines;
