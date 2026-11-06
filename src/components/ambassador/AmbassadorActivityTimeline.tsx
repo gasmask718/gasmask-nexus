@@ -251,7 +251,7 @@ export function AmbassadorActivityTimeline({ ambassadorId, limit = 20 }: Ambassa
                       <div className="min-w-0">
                         <p className="font-medium text-sm">{item.title}</p>
                         {item.description && (
-                          <p className="text-sm text-muted-foreground truncate">{item.description}</p>
+                          <p className={item.type === 'voice_update' ? "text-sm text-muted-foreground" : "text-sm text-muted-foreground truncate"}>{item.description}</p>
                         )}
                       </div>
                       <time className="text-xs text-muted-foreground whitespace-nowrap">
