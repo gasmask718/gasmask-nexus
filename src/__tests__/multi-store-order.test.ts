@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { orderTotal, buildBatchPayload, type StoreOrder } from './multiStoreOrder';
+import { orderTotal, buildBatchPayload, type StoreOrder } from '@/lib/multiStoreOrder';
 
 const catalog = [{ product_id: 'p1', name: 'GasMask Tubes', unit_price: 2 }, { product_id: 'p2', name: 'Hot Mama', unit_price: 1.5 }];
 const o: StoreOrder = { qty: { p1: 0.5, p2: 2 }, note: 'side door', deliverBy: 'asap', date: '2026-11-07' };
