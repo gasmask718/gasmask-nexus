@@ -1,4 +1,5 @@
 import { BringOrderBar } from '@/components/orders/BringOrderBar';
+import { VoiceUpdateButton } from '@/components/voice/VoiceUpdateButton';
 import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';

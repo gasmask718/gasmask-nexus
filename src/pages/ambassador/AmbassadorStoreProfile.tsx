@@ -35,6 +35,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { useCall } from '@/components/communication/CallProvider';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { StoreClaimStatus } from '@/components/ambassador/StoreClaimStatus';
+import { VoiceUpdateButton } from '@/components/voice/VoiceUpdateButton';
 
 function StoreProfileContent() {
   const { storeId } = useParams<{ storeId: string }>();

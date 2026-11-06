@@ -71,6 +71,7 @@ import { StoreAIFuturePanel } from "@/components/grabba/StoreAIFuturePanel";
 import { StorePersonalMemoryPanel } from "@/components/grabba/StorePersonalMemoryPanel";
 import { PersonalIntelligencePanel } from "@/components/grabba/PersonalIntelligencePanel";
 import { VoiceNotesCard } from "@/components/grabba/VoiceNotesCard";
+import { VoiceUpdateButton } from "@/components/voice/VoiceUpdateButton";
 import { NeighborhoodSnapshotCard } from "@/components/store/NeighborhoodSnapshotCard";
 import { MemberSinceDisplay } from "@/components/store/MemberSinceDisplay";
 import { StoreDangerZone } from "@/components/store/StoreDangerZone";

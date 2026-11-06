@@ -89,9 +89,9 @@ export function StoreProfileTasksGroup({ storeId, storeName }: Pick<GroupProps, 
   );
 }
 
-export function StoreProfileFinanceGroup({ storeId, onCreateInvoice }: Pick<GroupProps, 'storeId' | 'onCreateInvoice'>) {
+export function StoreProfileFinanceGroup({ storeId, onCreateInvoice, initialTab = 'summary' }: Pick<GroupProps, 'storeId' | 'onCreateInvoice'> & { initialTab?: 'summary' | 'invoices' | 'sell-through' }) {
   return (
-    <Tabs defaultValue="summary" className="w-full">
+    <Tabs key={initialTab} defaultValue={initialTab} className="w-full">
       <TabsList className="w-full justify-start overflow-x-auto">
         <TabsTrigger value="summary">Summary & Last Order</TabsTrigger>
         <TabsTrigger value="invoices">Invoice History</TabsTrigger>

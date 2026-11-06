@@ -1,4 +1,5 @@
 import { BringOrderBar } from '@/components/orders/BringOrderBar';
+import { VoiceUpdateButton } from '@/components/voice/VoiceUpdateButton';
 import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

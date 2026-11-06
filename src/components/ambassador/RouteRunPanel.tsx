@@ -13,6 +13,7 @@ import { RouteInventoryDialog } from './RouteInventoryDialog';
 import { toast } from 'sonner';
 import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 import { BringOrderBar } from '@/components/orders/BringOrderBar';
+import { VoiceUpdateButton } from '@/components/voice/VoiceUpdateButton';
 import { tubeBrandName } from '@/lib/inventory/tubeSkuKeys';
 export function AssignedRouteRun({ routeId }: { routeId: string }) {
  const { routes } = useAmbassadorRoutes(); const route=routes.find(r=>r.id===routeId);
