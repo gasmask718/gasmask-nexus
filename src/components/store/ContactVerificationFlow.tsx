@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 type Contact = { id:string;name:string;role:string;phone:string;status:string;sent_at:string|null;delivered_at:string|null;confirmed_at:string|null;error:string|null;method:string|null;override_reason:string|null;auto_send:boolean;link_status:string|null;link_error:string|null;opted_out:boolean;last_call_outcome:string|null;total_calls_attempted:number;total_calls_answered:number };
 type ContactState = {contacts:Contact[];store_name:string;portal_live:boolean;is_test:boolean;can_override:boolean};
 export function useContactVerification(storeId:string, open=false) {
- return useQuery({queryKey:['contact-verification',storeId],queryFn:async()=>{const {data,error}=await supabase.rpc('contact_verification_contacts',{p_store_id:storeId});if(error)throw error;return data as unknown as ContactState;},enabled:!!storeId,refetchInterval:open?4000:30000});
+ return useQuery({queryKey:['contact-verification',storeId],queryFn:async()=>{const {data,error}=await supabase.rpc('contact_verification_contacts',{p_store_id:storeId});if(error)throw error;return data as unknown as ContactState;},enabled:!!storeId,staleTime:60000,refetchInterval:open?4000:false});
 }
 const time=(v:string|null)=>v?new Date(v).toLocaleString():'';
 export function ContactVerificationFlow({storeId,storeName,contactId}:{storeId:string;storeName?:string;contactId?:string}) {

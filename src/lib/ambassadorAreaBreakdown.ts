@@ -24,7 +24,7 @@ export function getStoreSourceArea(store: PortfolioStore): string {
 }
 
 export function getProspectSourceArea(prospect: AmbassadorProspect): string {
-  return prospect.city || prospect.neighborhood || 'Area not recorded';
+  return prospect.neighborhood || prospect.city || 'Area not recorded';
 }
 
 function upperManhattanArea(value?: string | null): UpperManhattanArea | null {
@@ -37,6 +37,8 @@ function upperManhattanArea(value?: string | null): UpperManhattanArea | null {
 }
 
 function isManhattanStore(store: PortfolioStore): boolean {
+  const borough = normalize(store.store_borough);
+  if (borough && borough !== 'manhattan' && borough !== 'new york' && borough !== 'new york city') return false;
   const values = [store.store_borough, store.store_city, store.store_neighborhood].map(normalize);
   return values.some((value) =>
     value === 'manhattan' ||

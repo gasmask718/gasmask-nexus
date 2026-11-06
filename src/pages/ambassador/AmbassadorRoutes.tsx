@@ -53,7 +53,7 @@ export default function AmbassadorRoutes() {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  const todaysRoute = routes.find(r => r.id === activeRouteId) || routes.find(r => isSameDay(new Date(r.route_date + 'T12:00:00'), selectedDate)) || routes[0];
+  const todaysRoute = routes.find(r => r.id === activeRouteId) || routes.find(r => isSameDay(new Date(r.route_date + 'T12:00:00'), selectedDate));
   const completedStops = todaysRoute?.completed_stops || 0;
   const totalStops = todaysRoute?.stops_count || 0;
 
@@ -243,7 +243,14 @@ export default function AmbassadorRoutes() {
               )}
             </CardHeader>
             <CardContent>
-              {todaysRoute ? <RouteRunPanel route={todaysRoute} /> : <p className="text-muted-foreground py-8">No routes assigned</p>}
+              {todaysRoute ? <RouteRunPanel route={todaysRoute} /> : (
+                <div className="py-8 text-center space-y-3">
+                  <p className="text-muted-foreground">No route for this day</p>
+                  <Button variant="outline" onClick={() => setCreateRouteOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />Create Route
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
