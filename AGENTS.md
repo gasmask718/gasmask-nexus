@@ -17,3 +17,4 @@
 - SMS contact audit writes enrich the existing communication_logs row by its plain unique idempotency key, because send-sms already writes that row; never insert a duplicate send log.
 
 - Field order requests are delivery_requests rows with source 'field_order_request', written only via field_order_* RPCs, so they reuse the single pending_route_stops queue and never touch invoices.
+- Full Drive backup is drive-full-backup: resumable slices with a single-worker lease in drive_backup_runs/items, ctid-keyset paging via service-role-only backup_* RPCs, nightly start + hourly resume cron; it never deletes Drive files or rows.

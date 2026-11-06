@@ -1,0 +1,1 @@
+ALTER TABLE public.drive_backup_runs ADD COLUMN lease_until timestamptz;
