@@ -253,6 +253,13 @@
       "when": 1793964897378,
       "tag": "0035_voice_update_check_card",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793965288118,
+      "tag": "0036_voice_updates_in_ambassador_activity",
+      "breakpoints": true
     }
   ]
 }
