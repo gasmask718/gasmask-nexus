@@ -1,5 +1,13 @@
 # Roadmap — Oct 28
 
+## TOP PRIORITY — Nov 6: Bring Order
+- [ ] BRING ORDER bar on route stop cards + store profile (brand rows, chips, note, deliver-by)
+- [ ] Save via delivery_requests (source field_order_request) -> pending_route_stops; store note; needs_order; same-day edit/cancel by creator
+- [ ] Today's order requests screen: grouped, brand totals, copy/print, build tomorrow's draft route, statuses
+- [ ] 8pm NY owner summary text + email (queued)
+- [ ] 390px owner + ambassador rolled-back tests
+- [ ] Then: drive-full-backup nightly + run once (Drive folder link + row counts)
+
 ## Owner-approved upgrades — Oct 29 (in order)
 - [ ] 1. Automatic numbered money receipts, queued verified-contact text/email, receipt histories, required route collection inputs and daily reconciliation.
 - [ ] 2. Audit/tighten canonical store access and derived views; rollback count checks for owner, ambassador, driver and store user.
