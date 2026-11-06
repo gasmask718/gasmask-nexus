@@ -48654,6 +48654,122 @@ export type Database = {
           },
         ]
       }
+      contact_saved_by: {
+        Row: {
+          ambassador_id: string | null
+          contact_id: string
+          id: string
+          saved_at: string
+          user_id: string
+        }
+        Insert: {
+          ambassador_id?: string | null
+          contact_id: string
+          id?: string
+          saved_at?: string
+          user_id: string
+        }
+        Update: {
+          ambassador_id?: string | null
+          contact_id?: string
+          id?: string
+          saved_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_saved_by_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "contact_saved_by_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "contact_saved_by_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_saved_by_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "contact_saved_by_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_login_readiness"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "contact_saved_by_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_referral_tree"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_saved_by_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "store_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_saved_by_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_cadence_intelligence"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_saved_by_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_line_intel"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_saved_by_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_responsiveness_summary"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_saved_by_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contacts_needing_new_number"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_saved_by_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_contact_verification"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_saved_by_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_who_to_contact"
+            referencedColumns: ["contact_id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           company: string | null
@@ -168549,6 +168665,16 @@ export type Database = {
         Args: { p_store_id: string }
         Returns: undefined
       }
+      _contact_work_flags: {
+        Args: { p_store_ids: string[]; p_uid: string }
+        Returns: {
+          invite_not_sent: boolean
+          invited_not_signed: boolean
+          no_verified: boolean
+          not_saved: boolean
+          store_id: string
+        }[]
+      }
       _execute_store_merge_from_plan: {
         Args: {
           p_group_id?: number
@@ -169515,6 +169641,8 @@ export type Database = {
         Args: { p_product_id: string; p_qty: number; p_wholesaler_id: string }
         Returns: boolean
       }
+      contact_mark_saved: { Args: { p_contact_id: string }; Returns: Json }
+      contact_status_overview: { Args: never; Returns: Json }
       contact_verification_auto_link: {
         Args: { p_contact_id: string; p_enabled: boolean }
         Returns: undefined
@@ -169575,6 +169703,14 @@ export type Database = {
           p_store_id: string
         }
         Returns: string
+      }
+      contact_work_filter: {
+        Args: { p_filter: string; p_store_ids: string[] }
+        Returns: string[]
+      }
+      contact_work_list: {
+        Args: { p_ambassador_id: string; p_filter: string; p_limit?: number }
+        Returns: Json
       }
       count_route_actions_last_hour: {
         Args: { p_route_id: string }
