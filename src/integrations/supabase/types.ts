@@ -61286,6 +61286,7 @@ export type Database = {
           error: string | null
           finished_at: string | null
           id: string
+          lease_until: string | null
           rows_total: number | null
           started_at: string
           status: string
@@ -61299,6 +61300,7 @@ export type Database = {
           error?: string | null
           finished_at?: string | null
           id?: string
+          lease_until?: string | null
           rows_total?: number | null
           started_at?: string
           status?: string
@@ -61312,6 +61314,7 @@ export type Database = {
           error?: string | null
           finished_at?: string | null
           id?: string
+          lease_until?: string | null
           rows_total?: number | null
           started_at?: string
           status?: string

@@ -89,6 +89,11 @@ Deno.serve(async (req) => {
 
     const { data: run } = await sb.from("drive_backup_runs").select("*").eq("status", "running").order("started_at", { ascending: false }).limit(1).maybeSingle();
     if (!run) return json({ idle: true });
+    // single worker lease so the cron tick and the hand-off never export the same table twice
+    const nowIso = new Date().toISOString();
+    const { data: leased } = await sb.from("drive_backup_runs").update({ lease_until: new Date(Date.now() + 150_000).toISOString() })
+      .eq("id", run.id).or(`lease_until.is.null,lease_until.lt.${nowIso}`).select("id");
+    if (!leased?.length) return json({ busy: true, run: run.id });
 
     while (Date.now() - t0 < BUDGET_MS) {
       const { data: item } = await sb.from("drive_backup_items").select("*").eq("run_id", run.id).in("status", ["pending", "running"]).order("table_name").limit(1).maybeSingle();
