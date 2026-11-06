@@ -57451,6 +57451,8 @@ export type Database = {
         Row: {
           assigned_to: string | null
           created_at: string
+          deliver_by: string | null
+          delivered_at: string | null
           id: string
           items: Json
           notes: string | null
@@ -57459,6 +57461,7 @@ export type Database = {
           requested_by: string | null
           requested_date: string | null
           route_id: string | null
+          source: string
           status: string
           store_id: string
           time_window: string | null
@@ -57467,6 +57470,8 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           created_at?: string
+          deliver_by?: string | null
+          delivered_at?: string | null
           id?: string
           items?: Json
           notes?: string | null
@@ -57475,6 +57480,7 @@ export type Database = {
           requested_by?: string | null
           requested_date?: string | null
           route_id?: string | null
+          source?: string
           status?: string
           store_id: string
           time_window?: string | null
@@ -57483,6 +57489,8 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           created_at?: string
+          deliver_by?: string | null
+          delivered_at?: string | null
           id?: string
           items?: Json
           notes?: string | null
@@ -57491,6 +57499,7 @@ export type Database = {
           requested_by?: string | null
           requested_date?: string | null
           route_id?: string | null
+          source?: string
           status?: string
           store_id?: string
           time_window?: string | null
@@ -167550,6 +167559,41 @@ export type Database = {
         }[]
       }
       extract_address_from_name: { Args: { p_name: string }; Returns: string }
+      field_order_build_route: {
+        Args: { p_request_ids: string[]; p_route_date?: string }
+        Returns: Json
+      }
+      field_order_daily_summary: { Args: { p_date: string }; Returns: Json }
+      field_order_is_owner: { Args: { p_user: string }; Returns: boolean }
+      field_order_items_text: { Args: { p_items: Json }; Returns: string }
+      field_order_mark_delivered: {
+        Args: { p_request_id: string }
+        Returns: Json
+      }
+      field_order_request_cancel: {
+        Args: { p_request_id: string }
+        Returns: Json
+      }
+      field_order_request_save: {
+        Args: {
+          p_deliver_by?: string
+          p_deliver_date?: string
+          p_items: Json
+          p_note?: string
+          p_request_id?: string
+          p_store_id: string
+        }
+        Returns: Json
+      }
+      field_order_requests_list: {
+        Args: {
+          p_from?: string
+          p_requested_by?: string
+          p_store_id?: string
+          p_to?: string
+        }
+        Returns: Json
+      }
       field_route_stop_outcome: {
         Args: {
           p_lat?: number
@@ -169274,6 +169318,8 @@ export type Database = {
         Returns: {
           assigned_to: string | null
           created_at: string
+          deliver_by: string | null
+          delivered_at: string | null
           id: string
           items: Json
           notes: string | null
@@ -169282,6 +169328,7 @@ export type Database = {
           requested_by: string | null
           requested_date: string | null
           route_id: string | null
+          source: string
           status: string
           store_id: string
           time_window: string | null
