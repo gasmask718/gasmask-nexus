@@ -7,7 +7,7 @@
 - [x] 8pm NY owner summary text + email (cron 129); text blocked until Twilio fixed
 - [x] 390px owner UI test + rolled-back ambassador/owner DB test (ambassador UI sign-in not run)
 - [ ] Delivered -> receipt hook (waits on receipts upgrade #1)
-- [ ] Then: drive-full-backup nightly + run once (Drive folder link + row counts)
+- [x] drive-full-backup nightly (07:00 UTC) + first run started Nov 6
 
 ## Owner-approved upgrades — Oct 29 (in order)
 - [ ] 1. Automatic numbered money receipts, queued verified-contact text/email, receipt histories, required route collection inputs and daily reconciliation.
