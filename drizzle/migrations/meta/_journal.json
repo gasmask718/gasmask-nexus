@@ -281,6 +281,13 @@
       "when": 1793967312212,
       "tag": "0039_contact_status_badges_saved_in_phone",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793967649194,
+      "tag": "0040_saved_our_number",
+      "breakpoints": true
     }
   ]
 }
