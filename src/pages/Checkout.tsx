@@ -143,11 +143,15 @@ export default function Checkout() {
 
   const handlePlaceOrder = async () => {
     try {
-      await maybeCreateAccount();
       if (hasRestrictedItems && !ageConfirmed) {
         toast.error('Please confirm you are 21 years or older to purchase age-restricted products.');
         return;
       }
+      if (paymentMethod === 'card' && !user) {
+        toast.error('Please sign in to pay by card, or use express pay from your cart.');
+        return;
+      }
+      await maybeCreateAccount();
 
       // Card payments MUST go through Stripe Checkout — never fulfill from the client.
       if (paymentMethod === 'card') {

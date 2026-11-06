@@ -99,7 +99,8 @@ Deno.serve(async (req) => {
   const user = userRes?.user;
   if (!user) return ok({ error: "unauthorized" }, 401);
   const { data: isAdmin } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
-  if (!isAdmin) return ok({ error: "forbidden" }, 403);
+  const { data: isOwner } = isAdmin ? { data: true } : await admin.rpc("has_role", { _user_id: user.id, _role: "owner" });
+  if (!isAdmin && !isOwner) return ok({ error: "forbidden" }, 403);
 
   const force = body.force === true;
   const triggered_by = String(body.triggered_by ?? "manual");

@@ -71,6 +71,7 @@ const BillingInvoiceDetail = () => {
         .from('customer_invoices')
         .update({
           payment_status: 'paid',
+          status: 'paid',
           payment_method: paymentMethod,
           paid_at: new Date().toISOString(),
           amount_paid: invoice?.total_amount || invoice?.total,

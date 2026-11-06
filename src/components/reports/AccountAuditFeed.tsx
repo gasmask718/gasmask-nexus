@@ -326,7 +326,7 @@ export default function AccountAuditFeed() {
   const groups = useMemo(() => {
     const map = new Map<string, { key: string; store_id: string | null; store_name: string | null; day: string; latest_at: string | null; items: AuditFeedRow[] }>();
     for (const r of rows) {
-      const day = r.occurred_at ? r.occurred_at.slice(0, 10) : 'unknown';
+      const day = r.occurred_at ? format(new Date(r.occurred_at), 'yyyy-MM-dd') : 'unknown';
       const key = `${r.store_id ?? r.store_name ?? 'unknown'}|${day}`;
       const existing = map.get(key);
       if (existing) {
