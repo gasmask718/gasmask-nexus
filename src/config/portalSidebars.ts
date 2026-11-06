@@ -403,6 +403,7 @@ export const AMBASSADOR_PORTAL: PortalConfig = {
       emoji: '🏪',
       items: [
         { id: 'dashboard', label: 'Dashboard', path: '/ambassador/dashboard', icon: LayoutDashboard, emoji: '📊' },
+        { id: 'my-work', label: 'My Work', path: '/ambassador/my-work', icon: Store, emoji: '🗂️' },
         { id: 'stores', label: 'My Stores', path: '/ambassador/stores', icon: Store, emoji: '🏪' },
         { id: 'leads', label: 'Leads Pipeline', path: '/ambassador/leads', icon: Target, emoji: '🎯' },
         { id: 'purchases', label: 'My Purchases', path: '/ambassador/purchases', icon: ShoppingBag, emoji: '🛍️' },

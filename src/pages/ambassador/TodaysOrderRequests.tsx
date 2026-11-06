@@ -86,6 +86,7 @@ export default function TodaysOrderRequests() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 print:hidden">
         <Button variant="outline" className="h-12" onClick={() => void share()}><Copy className="h-4 w-4" />Copy / share</Button>
         <Button variant="outline" className="h-12" onClick={() => window.print()}><Printer className="h-4 w-4" />Print</Button>
+        <Button variant="outline" className="h-12" onClick={() => navigate('/ambassador/my-work')}>My Work</Button>
         <Button className="h-12 col-span-2 sm:col-span-1" disabled={build.isPending} onClick={() => build.mutate()}>{build.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RouteIcon className="h-4 w-4" />}Build tomorrow's route</Button>
       </div>
 

@@ -152,6 +152,7 @@ const AmbassadorStoresList = lazy(() => import('@/pages/ambassador').then(m => (
 const AmbassadorWholesalersList = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorWholesalersList })));
 const AmbassadorCommissions = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorCommissions })));
 const TodaysOrderRequests = lazy(() => import('@/pages/ambassador/TodaysOrderRequests'));
+const MyWork = lazy(() => import('@/pages/ambassador/MyWork'));
 const AmbassadorRoutes = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorRoutes })));
 const AmbassadorOrders = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorOrders })));
 const AmbassadorCommunications = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorCommunications })));
@@ -3479,6 +3480,7 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
             <AmbassadorLayout title="End-of-Day Notes" subtitle="Log today's observations and flag wrong addresses">
+              <a href="/ambassador/my-work" className="mb-3 inline-flex h-11 items-center rounded-md border px-4 font-medium">See My Work history →</a>
               <AmbassadorEndOfDay role="ambassador" />
             </AmbassadorLayout>
           </RequireRole>
@@ -3579,6 +3581,13 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
             <AmbassadorProfitDashboard />
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/my-work" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner', 'ambassador']}>
+            <MyWork />
           </RequireRole>
         </ProtectedRoute>
       } />

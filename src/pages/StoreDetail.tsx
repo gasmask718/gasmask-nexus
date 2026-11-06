@@ -1,5 +1,6 @@
 import { BringOrderBar } from '@/components/orders/BringOrderBar';
 import { VoiceUpdateButton } from '@/components/voice/VoiceUpdateButton';
+import { MyStoreHistory } from '@/components/ambassador/MyStoreHistory';
 import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 import { portalAwarePath } from '@/lib/portalHost';
 import { useEffect, useRef, useState } from "react";
@@ -673,7 +674,7 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
 
           <EscalationFlagsPanel storeId={storeId} />
 
-          {!isCaller && <div className="space-y-3"><VoiceUpdateButton storeId={storeId} storeName={store.name} storeAddress={address} onOpenPayment={() => { setFinanceInitialTab('invoices'); setActiveTab('commercial'); }} /><BringOrderBar storeId={storeId} storeName={store.name} /></div>}
+          {!isCaller && <div className="space-y-3"><VoiceUpdateButton storeId={storeId} storeName={store.name} storeAddress={address} onOpenPayment={() => { setFinanceInitialTab('invoices'); setActiveTab('commercial'); }} /><BringOrderBar storeId={storeId} storeName={store.name} /><MyStoreHistory storeId={storeId} /></div>}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="flex w-full flex-wrap justify-start gap-1 h-auto">
