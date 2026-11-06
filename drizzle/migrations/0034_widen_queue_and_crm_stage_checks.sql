@@ -1,0 +1,8 @@
+ALTER TABLE public.outbound_call_queue DROP CONSTRAINT outbound_call_queue_status_check;
+ALTER TABLE public.outbound_call_queue ADD CONSTRAINT outbound_call_queue_status_check CHECK (status = ANY (ARRAY['queued','dialing','ringing','intro_playing','awaiting_input','answered','connected','voicemail','voicemail_detected','voicemail_left','no_answer','no_input','declined','bridging','bridged','in_ai_conversation','transferred','failed_bridge','failed','completed','skipped']));
+ALTER TABLE public.hw_lead_stages DROP CONSTRAINT hw_lead_stages_stage_check;
+ALTER TABLE public.hw_lead_stages ADD CONSTRAINT hw_lead_stages_stage_check CHECK (stage = ANY (ARRAY['new','outreach','contacted','qualified','demo','negotiation','signed','onboarded','lost','not_contacted','interested','samples_sent','negotiating','onboarding','active','dormant']));
+ALTER TABLE public.hw_lead_stages DROP CONSTRAINT hw_lead_stages_contact_method_check;
+ALTER TABLE public.hw_lead_stages ADD CONSTRAINT hw_lead_stages_contact_method_check CHECK (contact_method = ANY (ARRAY['phone','email','linkedin','in_person','referral','call','sms','video']));
+ALTER TABLE public.dd_wholesaler_stages DROP CONSTRAINT dd_wholesaler_stages_stage_check;
+ALTER TABLE public.dd_wholesaler_stages ADD CONSTRAINT dd_wholesaler_stages_stage_check CHECK (stage = ANY (ARRAY['identified','contacted','negotiated','contracted','active','inactive','not_contacted','interested','sampling','lost']));
