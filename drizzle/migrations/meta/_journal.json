@@ -267,6 +267,13 @@
       "when": 1793966747433,
       "tag": "0037_ambassador_my_work",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793967171568,
+      "tag": "0038_fix_unlinked_ambassador_history_access",
+      "breakpoints": true
     }
   ]
 }
