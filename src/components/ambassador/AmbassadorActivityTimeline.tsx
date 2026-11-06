@@ -258,6 +258,13 @@ export function AmbassadorActivityTimeline({ ambassadorId, limit = 20 }: Ambassa
                         {format(new Date(item.timestamp), 'MMM d, yyyy, h:mm a')}
                       </time>
                     </div>
+                    {item.type === 'voice_update' && item.metadata?.transcript && (
+                      <details className="mt-2 rounded-md border bg-muted/40 p-2 text-xs">
+                        <summary className="cursor-pointer font-medium">Transcript and saved result</summary>
+                        <p className="mt-2 whitespace-pre-wrap text-muted-foreground">{item.metadata.transcript}</p>
+                        <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-muted-foreground">{JSON.stringify(item.metadata.saved, null, 2)}</pre>
+                      </details>
+                    )}
                     {item.metadata?.status && (
                       <Badge variant="outline" className="mt-1 text-xs capitalize">
                         {item.metadata.status}
