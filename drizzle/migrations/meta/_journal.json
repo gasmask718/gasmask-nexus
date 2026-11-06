@@ -309,6 +309,13 @@
       "when": 1793968935069,
       "tag": "0043_route_planner_upgrade",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1793968992129,
+      "tag": "0044_owner_field_day_profile_name",
+      "breakpoints": true
     }
   ]
 }
