@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Phone } from 'lucide-react';
+import { ContactWorkList } from '@/components/ambassador/ContactWorkList';
 import { WorkTimelineItem } from '@/components/ambassador/WorkTimelineItem';
 import { money, nyDate, rangeDates, rpc, todayLine, type RangeKey, type WorkItem, type WorkSummary } from '@/lib/myWork';
 
@@ -143,6 +144,8 @@ export default function MyWork() {
             </div>
           </CardContent>
         </Card>
+
+        <ContactWorkList ambassadorId={ambId} onOpenStore={openStore} />
 
         <div className="space-y-2">
           <h2 className="text-lg font-semibold">Everything I did</h2>

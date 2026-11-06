@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ShieldCheck, Phone, Send, Loader2, ArrowLeft, Check, Lock } from 'lucide-react';
 import { readFunctionError } from '@/lib/storePortal';
 import { toast } from 'sonner';
+import { ContactStatusCards } from '@/components/store/ContactStatusCards';
 
 type Contact = { id:string;name:string;role:string;phone:string;status:string;sent_at:string|null;delivered_at:string|null;confirmed_at:string|null;error:string|null;method:string|null;override_reason:string|null;auto_send:boolean;link_status:string|null;link_error:string|null;opted_out:boolean;last_call_outcome:string|null;total_calls_attempted:number;total_calls_answered:number };
 type ContactState = {contacts:Contact[];store_name:string;portal_live:boolean;is_test:boolean;can_override:boolean};
@@ -21,7 +22,7 @@ export function useContactVerification(storeId:string, open=false) {
 }
 const time=(v:string|null)=>v?new Date(v).toLocaleString():'';
 export function ContactVerificationFlow({storeId,storeName,contactId}:{storeId:string;storeName?:string;contactId?:string}) {
- const [open,setOpen]=useState(false);const [step,setStep]=useState(1);const [selected,setSelected]=useState(contactId||'');const [name,setName]=useState('');const [role,setRole]=useState('owner');const [phone,setPhone]=useState('');const [outcome,setOutcome]=useState('');const [attempt,setAttempt]=useState(()=>crypto.randomUUID());const [startedAt,setStartedAt]=useState(()=>new Date().toISOString());const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [reason,setReason]=useState('');
+ const [open,setOpen]=useState(false);const [step,setStep]=useState(1);const [selected,setSelected]=useState(contactId||'');const [name,setName]=useState('');const [role,setRole]=useState('owner');const [phone,setPhone]=useState('');const [outcome,setOutcome]=useState('');const [attempt,setAttempt]=useState(()=>crypto.randomUUID());const [startedAt,setStartedAt]=useState(()=>new Date().toISOString());const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [reason,setReason]=useState('');const [showStatus,setShowStatus]=useState(false);
  const query=useContactVerification(storeId,open);const qc=useQueryClient();const {initiateCall}=useCall();
  const contacts=query.data?.contacts||[];const contact=contacts.find(c=>c.id===selected);const confirmed=contact?.status==='confirmed'&&!!contact.confirmed_at&&!contact.opted_out;const locked=!query.data?.portal_live&&!query.data?.is_test;
  const invalidate=()=>{['contact-verification','store-contacts-responsiveness','store-contacts','store-notes','store-portal-admin-panel','store-portal-onboarding'].forEach(key=>void qc.invalidateQueries({queryKey:[key]}));};
@@ -30,7 +31,8 @@ export function ContactVerificationFlow({storeId,storeName,contactId}:{storeId:s
  const invoke=async(fn:string,body:Record<string,unknown>)=>{const {data,error}=await supabase.functions.invoke(fn,{body});if(error)throw new Error(await readFunctionError(error));if(data?.error||data?.success===false)throw new Error(data.error||'Send did not succeed');};
  const badge=contacts.filter(c=>c.status==='confirmed'&&c.confirmed_at&&!c.opted_out);
  return <div className="space-y-2 min-w-0" onClick={e=>e.stopPropagation()}>
- <div className="flex flex-wrap items-center gap-2"><Button size="sm" variant="outline" onClick={()=>{setOpen(true);setStep(1);setError('');setSelected(contactId||selected);}}><ShieldCheck className="h-4 w-4"/>Verify contact</Button>{badge.map(c=><Badge key={c.id} variant="outline" className="text-primary border-primary/40 break-all"><ShieldCheck className="h-3 w-3 mr-1"/>{c.phone} · Verified</Badge>)}</div>
+ <div className="flex flex-wrap items-center gap-2"><Button size="sm" variant="outline" onClick={()=>{setOpen(true);setStep(1);setError('');setSelected(contactId||selected);}}><ShieldCheck className="h-4 w-4"/>Verify contact</Button>{badge.map(c=><Badge key={c.id} variant="outline" className="text-primary border-primary/40 break-all"><ShieldCheck className="h-3 w-3 mr-1"/>{c.phone} · Verified</Badge>)}<Button size="sm" variant="ghost" onClick={()=>setShowStatus(v=>!v)}>{showStatus?'Hide contacts':`Contacts (${contacts.length})`}</Button></div>
+ {showStatus&&<ContactStatusCards storeId={storeId}/>}
  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="w-[calc(100%-1.5rem)] max-w-md max-h-[90dvh] overflow-y-auto p-4 rounded-lg" onClick={e=>e.stopPropagation()}>
  <DialogHeader><DialogTitle>At the store · Verify contact</DialogTitle><DialogDescription className="break-words">{query.data?.store_name||storeName||'Store'}</DialogDescription></DialogHeader>
  <div className="grid grid-cols-3 gap-1 text-xs text-center border-b pb-3">{['1 Contact','2 Call','3 Text & app'].map((label,i)=><span key={label} className={step===i+1?'text-primary font-semibold':'text-muted-foreground'}>{label}</span>)}</div>

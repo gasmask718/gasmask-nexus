@@ -33,6 +33,7 @@ import {
 
 // Import new polished components
 import { ExecutiveKPIs } from './components/ExecutiveKPIs';
+import { ContactStatusTile } from '@/components/owner/ContactStatusTile';
 import { QuickActionsRow } from './components/QuickActionsRow';
 import { SystemHealthBar } from './components/SystemHealthBar';
 import { OwnerToolsFooter } from './components/OwnerToolsFooter';
@@ -262,6 +263,7 @@ const OwnerDashboard: React.FC = () => {
           EXECUTIVE KPIs ROW
           ═══════════════════════════════════════════════════════════════════════ */}
       <ExecutiveKPIs loading={loading} />
+      <ContactStatusTile />
 
       {/* ═══════════════════════════════════════════════════════════════════════
           QUICK ACTIONS ROW
