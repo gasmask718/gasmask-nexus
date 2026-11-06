@@ -168416,6 +168416,24 @@ export type Database = {
         Args: { p_fields: string[]; p_new: Json; p_old: Json }
         Returns: string
       }
+      _ambassador_work_access: {
+        Args: { p_ambassador_id: string }
+        Returns: string
+      }
+      _ambassador_work_events: {
+        Args: { p_amb: string; p_from: string; p_to: string; p_uid: string }
+        Returns: {
+          amount: number
+          at: string
+          detail: string
+          extra: Json
+          item_id: string
+          status: string
+          store_id: string
+          title: string
+          type: string
+        }[]
+      }
       _assert_store_portal_access: {
         Args: { p_store_id: string }
         Returns: undefined
@@ -168683,6 +168701,30 @@ export type Database = {
           store_phone: string
           store_state: string
         }[]
+      }
+      ambassador_work_feed: {
+        Args: {
+          p_ambassador_id: string
+          p_before?: string
+          p_from?: string
+          p_limit?: number
+          p_neighborhood?: string
+          p_search?: string
+          p_store_id?: string
+          p_to?: string
+          p_type?: string
+        }
+        Returns: Json
+      }
+      ambassador_work_me: { Args: never; Returns: Json }
+      ambassador_work_summary: {
+        Args: {
+          p_ambassador_id: string
+          p_from: string
+          p_store_id?: string
+          p_to: string
+        }
+        Returns: Json
       }
       analyze_store_duplicate_groups: {
         Args: never

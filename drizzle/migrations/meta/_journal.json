@@ -260,6 +260,13 @@
       "when": 1793965288118,
       "tag": "0036_voice_updates_in_ambassador_activity",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793966747433,
+      "tag": "0037_ambassador_my_work",
+      "breakpoints": true
     }
   ]
 }
