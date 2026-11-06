@@ -12,7 +12,7 @@ export type WorkSummary = {
   last_interaction: { type: string; title: string; detail: string; at: string } | null;
 };
 
-export const rpc = (fn: string, args?: Record<string, unknown>) => (supabase.rpc as any)(fn, args);
+export const rpc = (fn: string, args?: Record<string, unknown>) => (supabase as any).rpc(fn, args);
 
 export const money = (n: number) => `$${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
