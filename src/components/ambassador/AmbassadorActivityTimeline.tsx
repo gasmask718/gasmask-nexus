@@ -182,6 +182,17 @@ export function AmbassadorActivityTimeline({ ambassadorId, limit = 20 }: Ambassa
       });
     });
 
+    (voiceUpdates || []).forEach((v: any) => {
+      items.push({
+        id: `voice-${v.id}`,
+        type: 'voice_update',
+        title: 'Voice update confirmed',
+        description: v.summary || 'Store update saved',
+        timestamp: v.created_at,
+        metadata: { transcript: v.transcript, saved: v.saved_result },
+      });
+    });
+
     // Sort by timestamp descending
     items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
