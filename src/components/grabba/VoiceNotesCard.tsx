@@ -84,6 +84,7 @@ export function VoiceNotesCard({ storeId }: VoiceNotesCardProps) {
         .insert({
           store_id: storeId,
           file_url: fileName,
+          created_by: user.id,
           status: "uploaded",
         });
 

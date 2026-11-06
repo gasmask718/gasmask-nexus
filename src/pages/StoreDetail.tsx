@@ -257,7 +257,8 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
   // Ambassador-only surface: field workflow first, admin surfaces hidden.
   const isAmbassadorOnly = !!isAmbassador && !isAdminRole;
   const [store, setStore] = useState<Store | null>(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'overview');
+  const [financeInitialTab, setFinanceInitialTab] = useState<'summary' | 'invoices' | 'sell-through'>(() => new URLSearchParams(window.location.search).get('finance') === 'invoices' ? 'invoices' : 'summary');
   const ambassadorDefaultApplied = useRef(false);
 
   // Roles resolve asynchronously; once we know this is an ambassador-only
@@ -938,7 +939,7 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
                 >
                   <div className="space-y-4">
                     <StoreBalanceBanner storeId={storeId} storeName={store.name} />
-                    <StoreProfileFinanceGroup storeId={storeId} onCreateInvoice={() => setCreateInvoiceModalOpen(true)} />
+                    <StoreProfileFinanceGroup storeId={storeId} onCreateInvoice={() => setCreateInvoiceModalOpen(true)} initialTab={financeInitialTab} />
                     <details className="rounded-md border border-border/50 p-4">
                       <summary className="cursor-pointer text-sm font-medium">Per-product order history</summary>
                       <div className="mt-4"><SkuOrderHistoryPanel storeId={storeId} /></div>
