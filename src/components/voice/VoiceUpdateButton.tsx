@@ -68,10 +68,11 @@ export function VoiceUpdateButton({ storeId, storeName = '', storeAddress = '', 
     setCard(emptyVoiceCheckCard(resolvedStore.id, resolvedStore.name, resolvedStore.address));
   }, [resolvedStore]);
 
-  const beginRecording = useCallback(async () => {
+  const beginRecording = useCallback(async (storeOverride?: { id: string; name: string; address: string }) => {
+    const store = storeOverride || resolvedStore;
     try {
       setError('');
-      setCard(emptyVoiceCheckCard(resolvedStore.id, resolvedStore.name, resolvedStore.address));
+      setCard(emptyVoiceCheckCard(store.id, store.name, store.address));
       setTranscript('');
       setSaved(null);
       capturePosition();
