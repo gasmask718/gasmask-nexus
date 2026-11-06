@@ -1,3 +1,4 @@
+import { BringOrderBar } from '@/components/orders/BringOrderBar';
 import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -129,6 +130,7 @@ export default function StopExecutionCard({
               )}
             </div>
 
+            {store?.id && <BringOrderBar storeId={store.id} storeName={store.name} className="mt-3" />}
             {store?.id && <div className="mt-3"><ContactVerificationFlow storeId={store.id} storeName={store.name} /></div>}
 
             {/* Execution Actions */}

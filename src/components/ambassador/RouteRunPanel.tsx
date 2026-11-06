@@ -12,6 +12,7 @@ import { RouteMiniMap } from './RouteMiniMap';
 import { RouteInventoryDialog } from './RouteInventoryDialog';
 import { toast } from 'sonner';
 import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
+import { BringOrderBar } from '@/components/orders/BringOrderBar';
 import { tubeBrandName } from '@/lib/inventory/tubeSkuKeys';
 export function AssignedRouteRun({ routeId }: { routeId: string }) {
  const { routes } = useAmbassadorRoutes(); const route=routes.find(r=>r.id===routeId);
@@ -34,6 +35,7 @@ export function RouteRunPanel({ route }: { route: AmbassadorRoute }) {
  return <section className="space-y-4 min-w-0">
  <div className="flex flex-wrap gap-2"><Button onClick={()=>void locate()} disabled={locating}>{locating?<Loader2 className="h-4 w-4 animate-spin"/>:<LocateFixed className="h-4 w-4"/>}{location?'Re-locate':'Use my location'}</Button><Select value={radius} onValueChange={setRadius} disabled={!location}><SelectTrigger className="w-28" aria-label="Radius"><SelectValue/></SelectTrigger><SelectContent>{['0.5','1','2','5','all'].map(r=><SelectItem key={r} value={r}>{r==='all'?'All distances':`${r} mi`}</SelectItem>)}</SelectContent></Select><Select value={mode} onValueChange={v=>setMode(v as 'driving'|'walking')}><SelectTrigger className="w-28" aria-label="Travel mode"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="driving">Driving</SelectItem><SelectItem value="walking">Walking</SelectItem></SelectContent></Select></div>
  {location&&<p className="text-xs text-muted-foreground">Near Me · GPS {locatedAt?.toLocaleTimeString()} · accuracy ±{Math.round(accuracy||0)} m</p>}
+ <Button asChild variant="secondary"><a href="/ambassador/order-requests">Today's order requests</a></Button>
  <div className="grid gap-2"><Button onClick={()=>maps(false)} disabled={!next}><Navigation className="h-4 w-4"/>Start route</Button><Button variant="outline" onClick={()=>maps(true)} disabled={!location||!visible.some(s=>s.store_lat!=null&&s.store_lng!=null)}><Navigation className="h-4 w-4"/>Open next 9 in Google Maps</Button></div>
  <p className="text-sm text-muted-foreground">{visible.length} remaining{radius!=='all'?` within ${radius} mi`:''} · {route.completed_stops}/{route.stops_count} done</p>
  <RouteMiniMap stops={visible} location={location}/>
@@ -46,6 +48,7 @@ export function RouteRunPanel({ route }: { route: AmbassadorRoute }) {
  <div className="text-xs space-y-1 text-muted-foreground"><p>Last order: {order?new Date(order.created_at).toLocaleDateString():facts.isLoading?'Loading…':'Not recorded'}</p><p>Last inventory: {inv.length?inv.map(r=>`${tubeBrandName(r.brand_id)} ${r.current_tubes_left??'—'}${r.tubes_updated_at?` (${new Date(r.tubes_updated_at).toLocaleDateString()})`:''}`).join(' · '):facts.isLoading?'Loading…':'Not counted'}</p></div>
  {stop.outcome_notes&&<p className="text-sm whitespace-pre-wrap break-words">{stop.outcome_notes}</p>}
  <div className="grid grid-cols-2 gap-2"><Button variant="outline" onClick={()=>{const url=googleDirections([stop],location,mode);if(url)window.open(url,'_blank','noopener,noreferrer');}} disabled={!stop.store_address&&stop.store_lat==null}><Navigation className="h-4 w-4"/>Navigate</Button><Button variant="outline" aria-label="Update inventory" onClick={()=>setInventory(stop)} disabled={!stop.store_id}><Package className="h-3 w-3 shrink-0"/>Inventory</Button><Button variant="outline" className="col-span-2" onClick={()=>stop.store_id&&navigate(`/ambassador/visit/${stop.store_id}`)} disabled={!stop.store_id}><Camera className="h-4 w-4"/>Add visit photo</Button></div>
+ {stop.store_id&&<BringOrderBar storeId={stop.store_id} storeName={stop.store_name||undefined}/>}
  {stop.store_id&&<ContactVerificationFlow storeId={stop.store_id} storeName={stop.store_name||'Store'}/>}
  <div className="grid grid-cols-3 gap-1"><Button className="px-1 gap-1 text-xs" size="sm" disabled={isCompletingStop} onClick={()=>void finish(stop,'complete')}><Check className="h-3 w-3 shrink-0"/><span>Mark done</span></Button><Button className="px-1 gap-1 text-xs" size="sm" variant="secondary" disabled={isCompletingStop} onClick={()=>void finish(stop,'skipped')}><SkipForward className="h-3 w-3 shrink-0"/>Skip</Button><Button className="px-1 gap-1 text-xs" size="sm" variant="secondary" disabled={isCompletingStop} onClick={()=>void finish(stop,'closed')}><DoorClosed className="h-3 w-3 shrink-0"/>Closed</Button></div>
  </article>;})}

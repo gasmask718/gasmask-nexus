@@ -230,6 +230,7 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'ambassador.nav.dd_order': 'DD Catalog',
     'ambassador.nav.tasks': 'Tasks',
     'ambassador.nav.end_of_day': 'End-of-Day',
+    'ambassador.nav.order_requests': "Today's Orders",
     'ambassador.nav.home': 'Home',
     'ambassador.nav.inbox': 'Inbox',
     
@@ -1435,6 +1436,7 @@ const translations: Record<SupportedLanguage, Record<string, string>> = {
     'ambassador.nav.dd_order': 'Catálogo DD',
     'ambassador.nav.tasks': 'Tareas',
     'ambassador.nav.end_of_day': 'Fin del Día',
+    'ambassador.nav.order_requests': 'Pedidos de Hoy',
     'ambassador.nav.home': 'Inicio',
     'ambassador.nav.inbox': 'Bandeja',
     

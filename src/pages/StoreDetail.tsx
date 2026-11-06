@@ -1,3 +1,4 @@
+import { BringOrderBar } from '@/components/orders/BringOrderBar';
 import { ContactVerificationFlow } from '@/components/store/ContactVerificationFlow';
 import { portalAwarePath } from '@/lib/portalHost';
 import { useEffect, useRef, useState } from "react";
@@ -669,6 +670,8 @@ const StoreDetail = ({ storeId: storeIdProp, variant = 'page' }: StoreDetailView
           </header>
 
           <EscalationFlagsPanel storeId={storeId} />
+
+          {!isCaller && <BringOrderBar storeId={storeId} storeName={store.name} />}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="flex w-full flex-wrap justify-start gap-1 h-auto">
